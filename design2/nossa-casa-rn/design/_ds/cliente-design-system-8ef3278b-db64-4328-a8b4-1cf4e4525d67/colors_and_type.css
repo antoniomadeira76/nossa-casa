@@ -1,0 +1,209 @@
+/* =============================================================
+   +Cliente Design System — Foundations
+   Tablet UI kit for BFA (Banco de Fomento Angola) branch agents.
+   ============================================================= */
+
+/* ---------- Webfonts (Roboto + Inter from Google Fonts) ------- */
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  /* =========== COLORS ============================================ */
+
+  /* Primary — BFA Orange + dark navy */
+  --c-orange-strong:   #F16505;   /* rgba(241,101,5,1)   primary CTA */
+  --c-orange-medium:   #FF892E;   /* rgba(255,137,46,1)  hover / tonal */
+  --c-storm-blue:      #001529;   /* rgba(0,21,41,1)     navbar / dark surface */
+  --c-midnight-blue:   #011B58;   /* rgba(1,27,88,1)     deep text / outline accent */
+
+  /* Secondary */
+  --c-dark-grey:       rgba(0,0,0,0.85);   /* primary text on light */
+  --c-alert-coral:     #FF4D4F;
+
+  /* Neutrals */
+  --c-grey-1:          #FAFAFA;
+  --c-grey-2:          #F0F2F5;
+  --c-grey-3:          #D9D9D9;
+  --c-grey-4:          rgba(0,0,0,0.40);
+  --c-bg-1:            #FCFCFD;   /* card surface */
+  --c-bg-2:            #F7F8FA;   /* page surface */
+  --c-white:           #FFFFFF;
+
+  /* Text */
+  --c-text-primary:    #0A0A0A;
+  --c-text-secondary:  #262626;
+  --c-text-muted:      #6A7282;   /* 106,114,130 */
+  --c-text-subtle:     #67769B;   /* 103,118,155 — Roboto Bold field labels */
+  --c-text-disabled:   #999999;
+  --c-text-on-dark:    #FFFFFF;
+
+  /* State / Semantic */
+  --c-info:            #1890FF;    /* informative blue */
+  --c-info-bg:         #E8F4FF;
+  --c-info-violet:     #722ED1;
+  --c-info-cyan:       #08979C;
+  --c-warn-yellow:     #FAAD14;
+  --c-warn-yellow-bg:  #FEFFD0;
+  --c-warn-orange:     #F16505;
+  --c-warn-orange-bg:  #FFFBE6;
+  --c-success:         #52C41A;
+  --c-success-bg:      #DCF3D1;
+  --c-success-border:  #BAE7A3;
+  --c-error:           #FF4D4F;
+  --c-error-deep:      #CE0002;
+  --c-error-bg:        #FFF1F0;
+
+  /* Shadow tokens */
+  --shadow-token:      rgba(76,123,166,0.10);
+  --shadow-token-2:    rgba(76,123,166,0.15);
+  --shadow-token-3:    rgba(76,123,166,0.20);
+  --shadow-token-4:    rgba(76,123,166,0.25);
+  --shadow-success:    rgba(82,196,26,0.20);
+  --shadow-warn:       rgba(250,173,20,0.20);
+  --shadow-deep:       rgba(7,35,106,0.08);
+
+  /* Elevations */
+  --elev-1: 0 2px 6px 0 var(--shadow-token), 0 -2px 6px 0 var(--shadow-token);
+  --elev-2: 0 2px 6px 0 var(--shadow-token-2), 0 -2px 6px 0 var(--shadow-token-2);
+  --elev-3: 0 2px 6px 0 var(--shadow-token-3), 0 -2px 6px 0 var(--shadow-token-3);
+  --elev-navbar: 0 2px 6px 0 var(--shadow-token-3), 0 -2px 6px 0 var(--shadow-token-3);
+
+  /* =========== TYPE =============================================== */
+
+  --font-display: "Roboto", "Helvetica Neue", Arial, sans-serif;
+  --font-body:    "Roboto", "Helvetica Neue", Arial, sans-serif;
+  --font-ui:      "Inter",  "Helvetica Neue", Arial, sans-serif;   /* small UI / dense data */
+
+  /* Weights */
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  /* Type scale (px) — matches Figma usage */
+  --fs-display:  38px;   /* page header */
+  --fs-h1:       32px;   /* section header */
+  --fs-h2:       28px;
+  --fs-h3:       24px;   /* card title */
+  --fs-h4:       20px;
+  --fs-body:     18px;   /* default body */
+  --fs-base:     16px;
+  --fs-small:    14px;
+  --fs-xs:       12px;
+
+  /* Line heights */
+  --lh-tight:   1.0;
+  --lh-snug:    1.2;
+  --lh-normal:  1.3;
+  --lh-relaxed: 1.5;
+
+  /* Letter spacing */
+  --ls-button: 0.4px;
+  --ls-h1:     0.25px;
+  --ls-body:   0.15px;
+  --ls-label:  0.1px;
+
+  /* =========== SPACING & SHAPE ==================================== */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+  --sp-9: 96px;
+
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   8px;     /* navbar, cards */
+  --radius-lg:   16px;    /* form rows, document rows */
+  --radius-xl:   24px;
+  --radius-pill: 100px;   /* all buttons */
+
+  --border-default: 1px solid var(--c-grey-3);
+  --border-outline: 1px solid var(--c-midnight-blue);
+  --border-divider: 1px solid var(--c-grey-2);
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-decel:    cubic-bezier(0, 0, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+}
+
+/* =========== SEMANTIC TEXT STYLES ================================ */
+
+html, body { font-family: var(--font-body); color: var(--c-text-primary); }
+
+h1, .h1 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-display);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--ls-h1);
+  color: var(--c-text-primary);
+  margin: 0;
+}
+
+h2, .h2 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-h1);
+  line-height: var(--lh-snug);
+  color: var(--c-text-primary);
+  margin: 0;
+}
+
+h3, .h3 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-h3);
+  line-height: var(--lh-tight);
+  color: var(--c-text-subtle);
+  margin: 0;
+}
+
+h4, .h4 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-h4);
+  line-height: var(--lh-normal);
+  margin: 0;
+}
+
+p, .body {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-relaxed);
+  letter-spacing: var(--ls-body);
+  color: var(--c-text-secondary);
+  margin: 0;
+}
+
+.body-lg { font-size: var(--fs-h4); line-height: var(--lh-normal); }
+.body-sm { font-size: var(--fs-base); line-height: var(--lh-relaxed); }
+.caption { font-family: var(--font-ui); font-size: var(--fs-xs); color: var(--c-text-muted); }
+
+.label {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-h3);
+  color: var(--c-text-subtle);
+  letter-spacing: var(--ls-label);
+}
+
+.field-value {
+  font-family: var(--font-body);
+  font-size: var(--fs-h3);
+  color: var(--c-text-secondary);
+}
+
+code, .code {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", monospace;
+  font-size: var(--fs-base);
+  color: var(--c-text-primary);
+  background: var(--c-grey-2);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}

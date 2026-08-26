@@ -1,0 +1,67 @@
+import { dkey, TODAY, TODAY_KEY, TOMORROW_KEY } from './format';
+
+export const MEMBERS = {
+  'Rita':  { initial: 'R', email: 'rita.bengui@gmail.com', kid: false },
+  'Tomás': { initial: 'T', email: 'tomas.bengui@gmail.com', kid: false },
+  'Léo':   { initial: 'L', email: null, kid: true },
+  'Mia':   { initial: 'M', email: null, kid: true },
+};
+
+export const ROLES = { 'Rita': 'admin', 'Tomás': 'adulto', 'Léo': 'crianca', 'Mia': 'crianca' };
+
+export const SECTIONS = ['Frutas & Legumes', 'Frescos', 'Mercearia', 'Casa'];
+
+export const ENV_BASE = [
+  { name: 'Mercearia',         used: 412, limit: 550, color: '#1890FF' },
+  { name: 'Crianças & escola', used: 318, limit: 340, color: '#FAAD14' },
+  { name: 'Casa & contas',     used: 486, limit: 700, color: '#1890FF' },
+  { name: 'Sair & lazer',      used: 171, limit: 180, color: '#FF4D4F' },
+];
+
+// urg: 0 urgente · 1 normal · 2 sem pressa
+export const TASKS = [
+  { id: 'lixo',    title: 'Pôr o lixo na rua',          who: 'Léo',   meta: 'Rotina de quinta · 20:30', pts: 3, today: true, recur: 'Dias de semana', urg: 0, due: TODAY_KEY,    dueTime: '20:30' },
+  { id: 'mesa',    title: 'Levantar a mesa do jantar',  who: 'Mia',   meta: 'Rotina diária',            pts: 2, today: true, done: true, recur: 'Todos os dias', urg: 1 },
+  { id: 'mochila', title: 'Arrumar a mochila da escola',who: 'Léo',   meta: 'Dias de semana · 21:00',   pts: 2, today: true, recur: 'Dias de semana', urg: 1, due: TODAY_KEY,    dueTime: '21:00' },
+  { id: 'roupa',   title: 'Máquina de roupa + estender',who: 'Tomás', meta: 'Terça e sábado',           pts: 0, today: true, recur: 'Uma vez', urg: 0, due: TODAY_KEY, dueTime: '18:00' },
+  { id: 'plantas', title: 'Regar as plantas da varanda',who: 'Mia',   meta: 'Quarta e domingo',         pts: 2, recur: 'Uma vez', urg: 2, due: TOMORROW_KEY, dueTime: '19:00' },
+  { id: 'meds',    title: 'Vitamina D das crianças',    who: 'Rita',  meta: 'Rotina diária · manhã',    pts: 0, done: true, recur: 'Todos os dias', urg: 1 },
+];
+
+export const ITEMS = [
+  { id: 'maca',   s: 0, label: 'Maçã reineta · 1,5 kg',     est: 3.40, by: 'Adicionado por Rita · 19/08' },
+  { id: 'cen',    s: 0, label: 'Cenoura · 1 kg',            est: 1.20, staple: true, by: 'Artigo habitual · semanal' },
+  { id: 'ban',    s: 0, label: 'Banana · 1 kg',             est: 1.85, real: 1.85, by: 'Comprado por Tomás · 19/08' },
+  { id: 'leite',  s: 1, label: 'Leite meio-gordo · 6 un.',  est: 5.10, staple: true, by: 'Artigo habitual · semanal' },
+  { id: 'iog',    s: 1, label: 'Iogurtes das crianças · 8', est: 4.60, by: 'Adicionado pela Mia · 20/08' },
+  { id: 'queijo', s: 1, label: 'Queijo flamengo fatiado',   est: 3.20, staple: true, by: 'Artigo habitual' },
+  { id: 'mant',   s: 1, label: 'Manteiga sem sal',          est: 2.50, by: 'Adicionado por Rita · 20/08' },
+  { id: 'arroz',  s: 2, label: 'Arroz agulha · 1 kg',       est: 1.30, staple: true, by: 'Artigo habitual' },
+  { id: 'massa',  s: 2, label: 'Massa espirais · 500 g',    est: 0.95, by: 'Adicionado por Tomás · 20/08' },
+  { id: 'cafe',   s: 2, label: 'Café moído · 250 g',        est: 3.80, staple: true, by: 'Artigo habitual' },
+  { id: 'pao',    s: 2, label: 'Pão de forma',              est: 1.60, by: 'Adicionado por Rita · há 3 min' },
+  { id: 'papel',  s: 3, label: 'Papel de cozinha · 6 rolos',est: 4.20, staple: true, by: 'Artigo habitual' },
+  { id: 'det',    s: 3, label: 'Detergente da louça',       est: 2.30, staple: true, by: 'Artigo habitual' },
+];
+
+export const EVENTS = [
+  { id: 'e1', day: TODAY_KEY,    time: '08:40', title: 'Levar o Léo à escola',    who: 'Tomás · Escola Básica do Restelo', owner: 'Tomás', shared: true },
+  { id: 'e2', day: TODAY_KEY,    time: '15:30', title: 'Ballet da Mia',           who: 'Rita · até às 16:30',              owner: 'Rita',  shared: true },
+  { id: 'e3', day: TODAY_KEY,    time: '18:00', title: 'Consulta do dentista',    who: 'Tomás · Dr.ª Neves',               owner: 'Tomás', shared: false },
+  { id: 'e4', day: TOMORROW_KEY, time: '09:00', title: 'Reunião de pais — 2.º ano', who: 'Rita e Tomás',                   owner: 'Rita',  shared: true },
+  { id: 'e5', day: TOMORROW_KEY, time: '17:00', title: 'Natação do Léo',          who: 'Rita · Léo',                       owner: 'Léo',   shared: true },
+  { id: 'e6', day: dkey(2026, 7, 23), time: '10:30', title: 'Compras da semana',  who: 'Tomás · lista com 13 artigos',     owner: 'Tomás', shared: true },
+  { id: 'e7', day: dkey(2026, 7, 23), time: '16:00', title: 'Anos da Clara — festa', who: 'Mia · levar prenda',            owner: 'Mia',   shared: true },
+];
+
+export const EQUIP = [
+  { id: 'maq',  name: 'Máquina de lavar roupa Bosch', cat: 'Eletrodomésticos', bought: '12/03/2025', shop: 'Worten · Colombo',        price: 549,  warrantyEnd: '12/03/2027', daysLeft: 203,   maint: 'Limpeza do filtro',           maintDate: '15/09/2026' },
+  { id: 'frig', name: 'Frigorífico Samsung RB34',     cat: 'Eletrodomésticos', bought: '04/10/2023', shop: 'El Corte Inglés',         price: 899,  warrantyEnd: '04/10/2026', daysLeft: 44,    maint: 'Substituição do filtro de água', maintDate: '28/09/2026' },
+  { id: 'cald', name: 'Caldeira Vulcano 24 kW',       cat: 'Aquecimento',      bought: '18/11/2021', shop: 'Instalador Aquatérmica',  price: 1250, warrantyEnd: '18/11/2023', daysLeft: -1007, maint: 'Revisão anual obrigatória',   maintDate: '02/11/2026' },
+  { id: 'dell', name: 'Portátil Dell da Rita',        cat: 'Informática',      bought: '20/01/2026', shop: 'Dell Online',             price: 1099, warrantyEnd: '20/01/2028', daysLeft: 517,   maint: '',                            maintDate: '' },
+];
+
+export const GOALS = [
+  { name: 'Férias no Algarve', at: 1920, of: 3000, when: 'julho de 2027' },
+  { name: 'Carro novo',        at: 6600, of: 30000, when: 'sem prazo' },
+];
