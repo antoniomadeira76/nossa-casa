@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/cliente-design-system-8ef3278b-db64-4328-a8b4-1cf4e4525d67/colors_and_type.css">
+<link rel="stylesheet" href="_ds/cliente-design-system-8ef3278b-db64-4328-a8b4-1cf4e4525d67/ui_kits/tablet/kit.css">
+<script src="_ds/cliente-design-system-8ef3278b-db64-4328-a8b4-1cf4e4525d67/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:var(--c-grey-2)}
+a{color:var(--c-midnight-blue);text-decoration:none}a:hover{text-decoration:underline}
+</style>
+</helmet>
+
+<div style="width:1400px;box-sizing:border-box;padding:48px;display:flex;flex-direction:column;gap:32px;font-family:var(--font-body);background:var(--c-grey-2)">
+
+  <div style="display:flex;flex-direction:column;gap:12px;max-width:940px">
+    <span style="font-family:var(--font-display);font-size:32px;font-weight:500;color:var(--c-text-primary);letter-spacing:var(--ls-h1)">Segurança em Produção — Nossa Casa</span>
+    <p style="margin:0;font-size:18px;line-height:1.5;color:var(--c-text-muted)">Especificação para quem implementar. Os dois problemas que encontrei ao sondar o protótipo — o PIN das crianças e a escalada de papéis pelo armazenamento local — não são bugs isolados: são <strong>o mesmo problema visto duas vezes</strong>. Num protótipo sem servidor, toda a autorização é uma sugestão. Este documento diz o que passa para o servidor, o que fica no dispositivo, e o que nunca deve acontecer.</p>
+  </div>
+
+  <div style="background:var(--c-bg-1);border:2px solid var(--c-error);border-radius:8px;padding:24px 28px;display:flex;flex-direction:column;gap:14px;max-width:940px">
+    <span style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--c-error-deep);letter-spacing:var(--ls-label)">A regra que governa tudo o resto</span>
+    <p style="margin:0;font-size:17px;line-height:1.55;color:var(--c-text-secondary)">O cliente decide o que <em>mostra</em>. O servidor decide o que <em>existe</em>. Se um dado não deve ser visto por alguém, não é escondido na interface — <strong>não é devolvido pela consulta</strong>. Se uma operação não é permitida a alguém, não é o botão que desaparece — <strong>é a chamada que é recusada</strong>. Todas as secções abaixo são aplicações desta frase.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">1. Modelo de ameaça — quem é o adversário</span>
+    <p style="margin:0;font-size:17px;line-height:1.5;color:var(--c-text-muted);max-width:940px">Dimensionar mal isto leva a gastar esforço no lugar errado. Esta app não é atacada por criminosos organizados; é atacada por quem vive na casa e por acidentes banais.</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ threats }}" as="t" hint-placeholder-count="5">
+        <div style="background:var(--c-bg-1);border-radius:8px;box-shadow:var(--elev-1);padding:18px 24px;display:flex;align-items:flex-start;gap:24px">
+          <div style="width:230px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:17px;color:var(--c-text-primary)">{{ t.who }}</span>
+            <span style="display:inline-flex;align-self:flex-start;align-items:center;padding:3px 9px;border-radius:var(--radius-pill);border:1px solid {{ t.brd }};background:{{ t.bg }};font-family:var(--font-ui);font-size:11px;font-weight:600;color:{{ t.fg }}">{{ t.level }}</span>
+          </div>
+          <span style="flex:1;font-size:16px;line-height:1.5;color:var(--c-text-secondary)">{{ t.what }}</span>
+          <span style="flex:1;font-size:16px;line-height:1.5;color:var(--c-text-muted)">{{ t.mitig }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">2. Identidade e sessão</span>
+    <div style="display:flex;gap:16px;align-items:flex-start">
+      <sc-for list="{{ session }}" as="s" hint-placeholder-count="3">
+        <div style="flex:1;background:var(--c-bg-1);border-radius:8px;box-shadow:var(--elev-1);padding:22px 24px;display:flex;flex-direction:column;gap:12px">
+          <span style="font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">{{ s.title }}</span>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ s.points }}" as="p" hint-placeholder-count="3">
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <div style="width:6px;height:6px;border-radius:100px;background:var(--c-midnight-blue);flex:none;margin-top:8px"></div>
+                <span style="flex:1;font-size:16px;line-height:1.5;color:var(--c-text-secondary)">{{ p }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">3. O PIN das crianças — a correção completa</span>
+    <p style="margin:0;font-size:17px;line-height:1.5;color:var(--c-text-muted);max-width:940px">No protótipo corrigi o que era corrigível no cliente: sem PIN de fábrica, regras de qualidade, nunca mostrado em claro, e cinco tentativas antes de bloquear. Nada disso é suficiente — um PIN comparado no dispositivo é um PIN que está no dispositivo. Em produção:</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ pinSpec }}" as="p" hint-placeholder-count="6">
+        <div style="background:var(--c-bg-1);border-radius:8px;box-shadow:var(--elev-1);padding:18px 24px;display:flex;align-items:flex-start;gap:20px">
+          <span style="width:34px;flex:none;font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--c-text-subtle)">{{ p.n }}</span>
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+            <span style="font-size:17px;color:var(--c-text-primary)">{{ p.title }}</span>
+            <span style="font-size:16px;line-height:1.5;color:var(--c-text-secondary)">{{ p.body }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">4. Papéis e autorização</span>
+    <p style="margin:0;font-size:17px;line-height:1.5;color:var(--c-text-muted);max-width:940px">A escalada que demonstrei — reescrever <code style="font-family:var(--font-ui);font-size:15px">roles</code> no armazenamento e passar uma criança a administradora — desaparece com uma decisão: <strong>o papel nunca é lido do dispositivo</strong>. Vem na resposta da sessão e é re-verificado em cada operação que altera dados.</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;gap:24px;padding:0 24px">
+        <span style="width:280px;flex:none;font-family:var(--font-ui);font-size:12px;font-weight:600;color:var(--c-text-subtle)">Operação</span>
+        <span style="width:170px;flex:none;font-family:var(--font-ui);font-size:12px;font-weight:600;color:var(--c-text-subtle)">Papel exigido</span>
+        <span style="flex:1;font-family:var(--font-ui);font-size:12px;font-weight:600;color:var(--c-text-subtle)">Verificação no servidor</span>
+      </div>
+      <sc-for list="{{ authz }}" as="a" hint-placeholder-count="8">
+        <div style="background:var(--c-bg-1);border-radius:8px;box-shadow:var(--elev-1);padding:16px 24px;display:flex;align-items:flex-start;gap:24px">
+          <span style="width:280px;flex:none;font-size:16px;color:var(--c-text-primary)">{{ a.op }}</span>
+          <span style="width:170px;flex:none;display:inline-flex;align-self:flex-start;align-items:center;padding:3px 10px;border-radius:var(--radius-pill);border:1px solid {{ a.brd }};background:{{ a.bg }};font-family:var(--font-ui);font-size:11.5px;font-weight:600;color:{{ a.fg }}">{{ a.role }}</span>
+          <span style="flex:1;font-size:16px;line-height:1.5;color:var(--c-text-secondary)">{{ a.check }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">5. Visibilidade ao nível do registo</span>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ rls }}" as="r" hint-placeholder-count="4">
+        <div style="background:var(--c-bg-1);border-radius:8px;box-shadow:var(--elev-1);padding:18px 24px;display:flex;align-items:flex-start;gap:24px">
+          <span style="width:230px;flex:none;font-size:17px;color:var(--c-text-primary)">{{ r.what }}</span>
+          <span style="flex:1;font-size:16px;line-height:1.5;color:var(--c-text-secondary)">{{ r.rule }}</span>
+          <span style="width:300px;flex:none;font-size:15px;line-height:1.5;color:var(--c-text-muted)">{{ r.risk }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">6. Integridade do dinheiro</span>
+    <p style="margin:0;font-size:17px;line-height:1.5;color:var(--c-text-muted);max-width:940px">Não é segurança contra atacantes — é segurança contra a rede e contra dedos. Numa app de dinheiro partilhado, um registo duplicado é tão grave como um acesso indevido.</p>
+    <div style="display:flex;gap:16px;align-items:flex-start">
+      <sc-for list="{{ money }}" as="m" hint-placeholder-count="3">
+        <div style="flex:1;background:var(--c-bg-1);border-radius:8px;box-shadow:var(--elev-1);padding:22px 24px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">{{ m.title }}</span>
+          <span style="font-size:16px;line-height:1.5;color:var(--c-text-secondary)">{{ m.body }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">7. Ficheiros: faturas e fotografias</span>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ files }}" as="x" hint-placeholder-count="4">
+        <div style="background:var(--c-bg-1);border-radius:8px;box-shadow:var(--elev-1);padding:18px 24px;display:flex;align-items:flex-start;gap:20px">
+          <span style="width:230px;flex:none;font-size:17px;color:var(--c-text-primary)">{{ x.what }}</span>
+          <span style="flex:1;font-size:16px;line-height:1.5;color:var(--c-text-secondary)">{{ x.rule }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">8. Dados de menores e conformidade</span>
+    <div style="background:rgba(255,251,230,.8);border:1px solid var(--c-warn-yellow);border-radius:8px;padding:24px 28px;display:flex;flex-direction:column;gap:12px;max-width:1100px">
+      <span style="font-size:17px;line-height:1.55;color:var(--c-text-secondary)">A app guarda o nome, as tarefas, a semanada e <strong>a saúde</strong> de duas crianças. Isto não é uma app de produtividade — é tratamento de dados sensíveis de menores, e o RGPD trata-o como tal. Não é um pormenor a resolver depois do lançamento; é pré-requisito.</span>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{ compliance }}" as="c" hint-placeholder-count="6">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <span style="width:150px;flex:none;font-family:var(--font-ui);font-size:12px;font-weight:700;color:#8F5600;padding-top:3px">{{ c.k }}</span>
+            <span style="flex:1;font-size:16px;line-height:1.5;color:var(--c-text-secondary)">{{ c.v }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">9. O que nunca deve acontecer</span>
+    <div style="display:flex;flex-wrap:wrap;gap:12px">
+      <sc-for list="{{ never }}" as="n" hint-placeholder-count="8">
+        <div style="width:440px;background:var(--c-bg-1);border-left:4px solid var(--c-error);border-radius:8px;box-shadow:var(--elev-1);padding:16px 20px;display:flex;gap:12px;align-items:flex-start;box-sizing:border-box">
+          <span style="font-family:var(--font-ui);font-size:14px;font-weight:700;color:var(--c-error-deep);flex:none;padding-top:1px">✕</span>
+          <span style="flex:1;font-size:16px;line-height:1.5;color:var(--c-text-secondary)">{{ n }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">10. Testes de regressão — as sondas que corri, como suite</span>
+    <p style="margin:0;font-size:17px;line-height:1.5;color:var(--c-text-muted);max-width:940px">Cada linha abaixo foi executada contra o protótipo. Passem a testes automáticos contra a API, não contra a interface — é no servidor que têm de falhar.</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ tests }}" as="t" hint-placeholder-count="8">
+        <div style="background:var(--c-bg-1);border-radius:8px;box-shadow:var(--elev-1);padding:16px 24px;display:flex;align-items:flex-start;gap:20px">
+          <span style="width:74px;flex:none;display:inline-flex;align-self:flex-start;align-items:center;padding:3px 9px;border-radius:var(--radius-sm);border:1px solid {{ t.brd }};background:{{ t.bg }};font-family:var(--font-ui);font-size:11px;font-weight:700;color:{{ t.fg }}">{{ t.tag }}</span>
+          <span style="width:390px;flex:none;font-size:16px;line-height:1.5;color:var(--c-text-primary)">{{ t.probe }}</span>
+          <span style="flex:1;font-size:16px;line-height:1.5;color:var(--c-text-secondary)">{{ t.expect }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="background:var(--c-storm-blue);border-radius:8px;padding:28px 32px;display:flex;flex-direction:column;gap:12px;max-width:1100px">
+    <span style="font-family:var(--font-display);font-size:22px;font-weight:500;color:#FFFFFF">Ordem de implementação</span>
+    <p style="margin:0;font-size:17px;line-height:1.55;color:rgba(255,255,255,.85)">Pela ordem em que reduzem risco por unidade de trabalho: <strong style="color:#FFFFFF">(1)</strong> sessão e papéis vindos do servidor — resolve a escalada e é pré-requisito de tudo; <strong style="color:#FFFFFF">(2)</strong> autorização por operação, a tabela da secção 4; <strong style="color:#FFFFFF">(3)</strong> visibilidade por consulta, secção 5 — é o que impede o vazamento silencioso; <strong style="color:#FFFFFF">(4)</strong> PIN no servidor com hash e limite; <strong style="color:#FFFFFF">(5)</strong> movimentos aditivos e chaves de idempotência; <strong style="color:#FFFFFF">(6)</strong> ficheiros com ligações assinadas. A conformidade da secção 8 corre em paralelo desde o primeiro dia, não no fim.</p>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:2400}}">
+const P = {
+  alto: { level: 'Provável', brd: 'var(--c-error)', bg: 'rgba(255,77,79,.1)', fg: 'var(--c-error-deep)' },
+  medio: { level: 'Possível', brd: 'var(--c-warn-yellow)', bg: 'var(--c-warn-yellow-bg)', fg: '#8F5600' },
+  baixo: { level: 'Improvável', brd: 'var(--c-grey-3)', bg: 'var(--c-grey-1)', fg: 'var(--c-text-muted)' },
+};
+const R = {
+  admin: { role: 'Administração', brd: '#722ED1', bg: 'rgba(114,46,209,.1)', fg: '#722ED1' },
+  adulto: { role: 'Adulto', brd: 'var(--c-info)', bg: 'var(--c-info-bg)', fg: 'var(--c-info)' },
+  proprio: { role: 'O próprio', brd: 'var(--c-success-border)', bg: 'rgba(220,243,209,.4)', fg: '#389E0D' },
+  qualquer: { role: 'Qualquer membro', brd: 'var(--c-grey-3)', bg: 'var(--c-grey-1)', fg: 'var(--c-text-muted)' },
+};
+const T = {
+  falha: { tag: 'FALHOU', brd: 'var(--c-error)', bg: 'rgba(255,77,79,.1)', fg: 'var(--c-error-deep)' },
+  passa: { tag: 'PASSOU', brd: 'var(--c-success-border)', bg: 'rgba(220,243,209,.4)', fg: '#389E0D' },
+};
+
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      threats: [
+        { who: 'A criança curiosa', ...P.alto, what: 'Tem o dispositivo na mão todos os dias e motivo concreto: ver o orçamento, mexer na própria semanada, entrar no perfil do irmão.', mitig: 'É o adversário para quem o sistema de papéis existe. Tudo o que um perfil de criança não deve poder fazer tem de ser recusado pelo servidor.' },
+        { who: 'O adulto sem permissão', ...P.medio, what: 'Um adulto não administrador que altere o rendimento, os limites ou a semanada — por curiosidade ou por discordar.', mitig: 'Autorização por operação (secção 4) e registo de quem alterou o quê, que a app já mantém como histórico da casa.' },
+        { who: 'Dispositivo perdido ou roubado', ...P.medio, what: 'Um telefone desbloqueado dá acesso a orçamento, saúde e faturas da família inteira.', mitig: 'Sessões com validade, revogação remota a partir de outro dispositivo da casa, e nenhum segredo persistido em claro no dispositivo.' },
+        { who: 'O tablet doméstico partilhado', ...P.alto, what: 'Se as crianças usam um dispositivo comum, a sessão de um adulto esquecida é acesso total.', mitig: 'Sessão de adulto expira por inatividade e volta ao seletor de perfis; a sessão de criança nunca dá acesso a nada de adulto, mesmo no mesmo dispositivo.' },
+        { who: 'Atacante remoto', ...P.baixo, what: 'Sem interesse comercial nos dados de uma família, mas a API é pública e será sondada por varredura automática.', mitig: 'O básico bem feito: TLS, limite de pedidos por IP e por conta, sem identificadores sequenciais adivinháveis, e nenhuma consulta que aceite o identificador da casa sem verificar a pertença.' },
+      ],
+
+      session: [
+        {
+          title: 'Adultos',
+          points: [
+            'Início de sessão pela conta Google, com o fluxo de autorização a correr no navegador do sistema e nunca numa vista web embutida.',
+            'O servidor troca o código pelos seus próprios tokens de sessão; o token da Google não é guardado no dispositivo.',
+            'Token de acesso curto (minutos) com token de renovação rotativo: cada renovação invalida o anterior, de modo a que um token roubado deixe de servir na utilização seguinte.',
+            'A resposta da sessão traz identificador do membro, casa e papel. É esta a única origem do papel — ver secção 4.',
+          ],
+        },
+        {
+          title: 'Crianças',
+          points: [
+            'Não têm conta nem endereço de e-mail. São perfis da casa, e é uma decisão a manter: menos dados pessoais recolhidos, menos superfície.',
+            'O acesso é um PIN trocado por uma sessão de criança no servidor, com um âmbito reduzido — pode ler as suas tarefas e o seu cofre, e escrever só as suas conclusões.',
+            'A sessão de criança nunca pode ser elevada. Passar a adulto exige um administrador e um novo início de sessão.',
+          ],
+        },
+        {
+          title: 'No dispositivo',
+          points: [
+            'Tokens no armazenamento seguro do sistema (Keychain no iOS, Keystore no Android) — nunca no armazenamento da app nem em preferências.',
+            'A cópia local dos dados existe para funcionar sem rede e deve ser cifrada em repouso; ao terminar sessão é apagada, não apenas ocultada.',
+            'Nada de papéis, PINs, limites ou permissões lidos do disco como verdade. O disco é cache, não autoridade.',
+          ],
+        },
+      ],
+
+      pinSpec: [
+        { n: '1', title: 'Definido por um adulto, nunca de fábrica', body: 'Já está assim no protótipo. Em produção, o PIN é definido numa sessão de adulto autenticada e o pedido de definição é auditado no histórico da casa.' },
+        { n: '2', title: 'Guardado como hash com sal, no servidor', body: 'Uma função lenta e desenhada para o efeito (Argon2id ou bcrypt), com sal por perfil. Quatro dígitos são 10 000 combinações: o custo de cálculo é a única coisa que torna a força bruta impraticável, e por isso não pode ser um hash rápido.' },
+        { n: '3', title: 'Verificado no servidor, sempre', body: 'O cliente envia o PIN por TLS e recebe uma sessão ou uma recusa. O valor correto nunca chega ao dispositivo — é isto que corrige a falha de origem, e nada do que se faça no cliente a substitui.' },
+        { n: '4', title: 'Limite no servidor, não no cliente', body: 'O protótipo bloqueia após cinco tentativas, mas esse contador vive no dispositivo e apaga-se ao reinstalar. O servidor conta por perfil e por dispositivo, com espera crescente, e avisa o administrador da casa após um bloqueio.' },
+        { n: '5', title: 'Reposição só por um administrador', body: 'Não há recuperação pela própria criança, nem perguntas de segurança. Um administrador define um novo PIN, e a sessão anterior desse perfil é revogada.' },
+        { n: '6', title: 'Regras de qualidade mantidas', body: 'As que já implementei — sem dígitos repetidos, sem sequências, sem repetir o PIN de um irmão — passam a ser validadas também no servidor. Validação no cliente é conveniência; no servidor é a regra.' },
+      ],
+
+      authz: [
+        { op: 'Alterar o rendimento mensal', ...R.admin, check: 'Papel na sessão é administração e o membro pertence à casa indicada no pedido.' },
+        { op: 'Definir limites de envelopes', ...R.admin, check: 'Mesmo teste, mais coerência: a soma dos limites não excede o rendimento registado.' },
+        { op: 'Definir valor do ponto e dia da semanada', ...R.admin, check: 'Valor dentro dos limites aceites no servidor (0,01–5,00 €), não apenas no campo.' },
+        { op: 'Gerir membros, papéis e PINs', ...R.admin, check: 'Além do papel: recusar a remoção ou despromoção do último administrador, e recusar a transição adulto → criança.' },
+        { op: 'Registar despesa e fechar compras', ...R.adulto, check: 'Papel adulto ou administração; o pagador indicado tem de ser um membro adulto da casa.' },
+        { op: 'Pagar semanada e dar bónus', ...R.adulto, check: 'Papel adulto; o destino é um perfil de criança da mesma casa.' },
+        { op: 'Concluir uma tarefa', ...R.qualquer, check: 'Qualquer membro conclui, mas só a si mesmo atribuído; a confirmação que valida os pontos exige adulto.' },
+        { op: 'Ler ou escrever a própria ficha de saúde', ...R.proprio, check: 'Identificador do membro na sessão igual ao dono da ficha, ou adulto quando o dono é uma criança da casa. Nunca por parâmetro do pedido.' },
+      ],
+
+      rls: [
+        { what: 'Evento privado', rule: 'A consulta da agenda filtra por «partilhado, ou o dono é quem pede». O cliente não recebe eventos privados de outros e portanto não os pode revelar por engano.', risk: 'Se filtrado no cliente, basta uma vista nova, um registo de erro ou uma pesquisa mal filtrada para o mostrar.' },
+        { what: 'Ficha de saúde de um adulto', rule: 'Legível apenas pelo próprio. Nem o outro adulto, nem a administração da casa. É a regra mais restritiva do sistema e deve ser a mais testada.', risk: 'É o dado mais sensível da app. Um vazamento aqui não é um incómodo — é informação clínica de um adulto exposta ao companheiro.' },
+        { what: 'Ficha de saúde de uma criança', rule: 'Legível e escrita pelos adultos da casa; a criança lê a sua. Ao passar a adulto, a ficha torna-se privada dela e deixa de ser visível aos pais.', risk: 'A transição de papel tem de reavaliar a visibilidade retroativamente, não só os registos novos.' },
+        { what: 'Orçamento, envelopes e despesas', rule: 'Invisíveis a perfis de criança — ausentes da resposta, não escondidos na interface.', risk: 'Hoje é um filtro no cliente: os dados estão no dispositivo que a criança usa.' },
+      ],
+
+      money: [
+        { title: 'Só movimentos, nunca saldos', body: 'Cofres, envelopes e conclusões de tarefas guardam-se como registos aditivos; o saldo é a soma. Dois dispositivos a escrever nunca se anulam, e o histórico explica sempre como se chegou ao número — que numa app de dinheiro partilhado é metade do valor.' },
+        { title: 'Chave de idempotência por operação', body: 'Fechar a conta das compras, pagar a semanada ou acertar contas levam uma chave gerada no cliente. Um segundo toque, ou um reenvio após falha de rede, devolve o mesmo resultado em vez de duplicar a despesa.' },
+        { title: 'Valores validados no servidor', body: 'Os limites que o campo aplica — mínimos, máximos, duas casas decimais — repetem-se no servidor. Um cliente modificado envia o que quiser; o servidor é que decide se 0,01 e 5,00 € são os limites do valor do ponto.' },
+      ],
+
+      files: [
+        { what: 'Onde ficam', rule: 'Armazenamento de objetos privado, sem leitura pública. O registo do equipamento ou do episódio guarda apenas a referência, nunca o ficheiro.' },
+        { what: 'Como se acede', rule: 'Ligações assinadas de curta duração, emitidas depois de a autorização do registo respetivo ser verificada. Uma ligação de fatura não deve funcionar amanhã, nem para outra casa.' },
+        { what: 'O que se aceita', rule: 'Tipo e tamanho validados no servidor pelo conteúdo, não pela extensão nem pelo cabeçalho enviado. Metadados de localização removidos das fotografias antes de guardar.' },
+        { what: 'Exportação', rule: 'A exportação de faturas em PDF gera-se no servidor e envia-se para o e-mail verificado da conta ligada — nunca para um endereço indicado no pedido.' },
+      ],
+
+      compliance: [
+        { k: 'BASE LEGAL', v: 'Consentimento explícito de quem detém a responsabilidade parental, registado com data e versão do texto aceite — não uma caixa marcada por omissão.' },
+        { k: 'MINIMIZAÇÃO', v: 'As crianças não têm conta nem e-mail, e é para manter. Recolher só o que a funcionalidade exige: nome próprio, tarefas, semanada, saúde quando usada.' },
+        { k: 'SAÚDE', v: 'Categoria especial de dados. Cifra em repouso, acesso registado, e a regra de visibilidade da secção 5 testada como requisito, não como detalhe.' },
+        { k: 'RETENÇÃO', v: 'Prazo declarado por tipo de dado, e apagamento efetivo — incluindo as cópias locais nos dispositivos e os ficheiros no armazenamento de objetos.' },
+        { k: 'DIREITOS', v: 'Exportar e apagar a casa inteira a pedido de um administrador, e o direito de um membro adulto levar ou apagar os seus dados ao sair.' },
+        { k: 'ALOJAMENTO', v: 'Decidir a região antes de escrever o primeiro esquema de dados. Mudar depois obriga a migrar dados de menores, que é o pior momento para o fazer.' },
+      ],
+
+      never: [
+        'Ler o papel, as permissões ou o PIN do armazenamento do dispositivo como fonte de verdade.',
+        'Confiar num identificador de membro ou de casa que venha no corpo do pedido em vez da sessão.',
+        'Devolver registos que o cliente depois esconde — filtrar na interface é vazar com atraso.',
+        'Guardar o PIN no dispositivo, em claro ou com hash. O dispositivo não precisa de o conhecer.',
+        'Usar um hash rápido para o PIN: quatro dígitos caem em segundos contra SHA-256.',
+        'Escrever saldos calculados no cliente. O servidor soma os movimentos.',
+        'Aceitar uma operação de dinheiro sem chave de idempotência.',
+        'Deixar uma ligação de ficheiro sem expiração, ou um contentor de objetos com leitura pública.',
+        'Registar PINs, tokens ou dados de saúde nos ficheiros de diagnóstico ou nas ferramentas de erros.',
+        'Enviar a exportação de faturas para um endereço indicado no pedido em vez do e-mail verificado.',
+      ],
+
+      tests: [
+        { ...T.falha, probe: 'Editar o armazenamento local e pôr um perfil de criança como administração.', expect: 'Em produção: a próxima chamada usa o papel da sessão e a operação de administração é recusada com 403. O estado local não tem efeito.' },
+        { ...T.falha, probe: 'Ler o PIN de um perfil de criança a partir do armazenamento do dispositivo.', expect: 'Em produção: o PIN não existe no dispositivo. O teste passa a verificar que nenhuma resposta da API o devolve, nem em campos de depuração.' },
+        { ...T.falha, probe: 'Tentar PINs em sequência sem limite.', expect: 'Espera crescente imposta pelo servidor, bloqueio do perfil, e aviso ao administrador. O contador não se reinicia ao reinstalar a app.' },
+        { ...T.passa, probe: 'Injetar marcação em nomes de tarefas, artigos, notas e nomes de loja.', expect: 'Continua a ser tratado como texto em toda a cadeia — e também no PDF exportado e no e-mail, que são novos caminhos de saída.' },
+        { ...T.passa, probe: 'Enviar lixo, negativos e valores enormes nos campos numéricos.', expect: 'Recusa ou fixação nos limites, no servidor. Repetir com o cliente contornado: pedido direto à API com valores fora dos limites.' },
+        { ...T.passa, probe: 'Pedir a ficha de saúde de outro membro adulto.', expect: 'A consulta não devolve o registo. Testar também por identificador direto e por pesquisa, que é o caminho por onde estes vazamentos costumam sair.' },
+        { ...T.passa, probe: 'Confirmar que nenhum segredo é persistido.', expect: 'Nenhum token, senha ou credencial no armazenamento da app. Repetir após a introdução da cifra local, que é quando se costuma esquecer.' },
+        { ...T.falha, probe: 'Tocar duas vezes em Fechar Conta com a rede lenta.', expect: 'Uma só despesa registada, pela chave de idempotência. Sem ela, o protótipo registaria duas.' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>
