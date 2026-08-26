@@ -1,8 +1,8 @@
 module.exports = {
   preset: 'jest-expo',
   testEnvironment: 'jsdom',
-  testPathIgnorePatterns: ['/node_modules/', '/design2/'],
-  modulePathIgnorePatterns: ['/design2/'],
+  testPathIgnorePatterns: ['/node_modules/', '/design2/', '/nossa-casa-rn/'],
+  modulePathIgnorePatterns: ['/design2/', '/nossa-casa-rn/'],
   collectCoverageFrom: [
     'src/**/*.{js,jsx}',
     '!src/**/*.test.{js,jsx}',

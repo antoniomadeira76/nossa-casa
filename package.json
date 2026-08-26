@@ -26,7 +26,6 @@
   },
   "private": true,
   "devDependencies": {
-    "jest": "^30.4.2",
     "jest-expo": "^57.0.4"
   }
 }
