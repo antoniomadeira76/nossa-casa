@@ -135,10 +135,11 @@ function Shell() {
         {tab === 'inicio' ? <Inicio t={t} user={user} go={setTab} onSaude={() => setSaude(true)} onEquip={() => setEquip(true)} onGestao={() => setGestao(true)} onDoc={() => setDoc(true)} /> : <Screen t={t} user={user} go={setTab} />}
       </ScrollView>
 
-      {/* rodapé — último filho da raiz, sempre */}
+      {/* rodapé — último filho da raiz, sempre (INVARIANTE #1) */}
       <View style={{
         flex: 0, backgroundColor: t.chrome, flexDirection: 'row',
         paddingTop: 6, paddingBottom: Math.max(insets.bottom, 10), paddingHorizontal: 4,
+        zIndex: 100,
       }}>
         {TABS.map(x => {
           const on = tab === x.key;
@@ -155,40 +156,42 @@ function Shell() {
         })}
       </View>
 
+      {/* Perfil sheet */}
       {perfil ? <Perfil t={t} user={user} onClose={() => setPerfil(false)}
         onSignOut={() => { setPerfil(false); setUser(null); }} /> : null}
 
-      {saude ? (
-        <Modal transparent animationType="slide" onRequestClose={() => setSaude(false)}>
+      {/* Modals DENTRO da raiz com cabeçalho + rodapé visíveis */}
+      {saude && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: t.page, zIndex: 50 }}>
           <View style={{ flex: 1, backgroundColor: t.page }}>
-            <Saude t={t} user={user} />
+            <Saude t={t} user={user} onClose={() => setSaude(false)} />
           </View>
-        </Modal>
-      ) : null}
+        </View>
+      )}
 
-      {equip ? (
-        <Modal transparent animationType="slide" onRequestClose={() => setEquip(false)}>
+      {equip && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: t.page, zIndex: 50 }}>
           <View style={{ flex: 1, backgroundColor: t.page }}>
-            <Equipamentos t={t} user={user} />
+            <Equipamentos t={t} user={user} onClose={() => setEquip(false)} />
           </View>
-        </Modal>
-      ) : null}
+        </View>
+      )}
 
-      {gestao ? (
-        <Modal transparent animationType="slide" onRequestClose={() => setGestao(false)}>
+      {gestao && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: t.page, zIndex: 50 }}>
           <View style={{ flex: 1, backgroundColor: t.page }}>
             <Gestao t={t} user={user} onClose={() => setGestao(false)} />
           </View>
-        </Modal>
-      ) : null}
+        </View>
+      )}
 
-      {doc ? (
-        <Modal transparent animationType="slide" onRequestClose={() => setDoc(false)}>
+      {doc && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: t.page, zIndex: 50 }}>
           <View style={{ flex: 1, backgroundColor: t.page }}>
             <Documentacao t={t} onClose={() => setDoc(false)} />
           </View>
-        </Modal>
-      ) : null}
+        </View>
+      )}
     </View>
   );
 }

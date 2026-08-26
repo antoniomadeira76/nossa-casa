@@ -7,7 +7,7 @@ import { Card, SectionTitle, Empty, AddButton, Label, Pill, Primary } from '../u
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 
-export default function Equipamentos({ t, user }) {
+export default function Equipamentos({ t, user, onClose }) {
   const { s, set, allEquip, isAdmin } = useStore();
   const [sheet, setSheet] = useState(null);
   const [form, setForm] = useState({ name: '', purchase: '', warranty: 365, category: 0 });

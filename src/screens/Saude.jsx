@@ -7,7 +7,7 @@ import { Card, SectionTitle, Empty, AddButton, Label, Primary, Avatar } from '..
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 
-export default function Saude({ t, user }) {
+export default function Saude({ t, user, onClose }) {
   const { s, set } = useStore();
   const [sheet, setSheet] = useState(null);
   const [form, setForm] = useState({ member: 'Léo', date: '', note: '', specialty: '' });
