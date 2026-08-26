@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/cliente-design-system-8ef3278b-db64-4328-a8b4-1cf4e4525d67/colors_and_type.css">
+<link rel="stylesheet" href="_ds/cliente-design-system-8ef3278b-db64-4328-a8b4-1cf4e4525d67/ui_kits/tablet/kit.css">
+<script src="_ds/cliente-design-system-8ef3278b-db64-4328-a8b4-1cf4e4525d67/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:var(--c-grey-2)}
+a{color:var(--c-orange-strong);text-decoration:none}a:hover{color:var(--c-orange-medium)}
+</style>
+</helmet>
+
+<div style="width:1400px;box-sizing:border-box;padding:48px;display:flex;flex-direction:column;gap:32px;font-family:var(--font-body);background:var(--c-grey-2)">
+
+  <div style="display:flex;flex-direction:column;gap:12px;max-width:900px">
+    <span style="font-family:var(--font-display);font-size:32px;font-weight:500;color:var(--c-text-primary);letter-spacing:var(--ls-h1)">Sincronização entre Membros — estrutura proposta</span>
+    <p style="margin:0;font-size:18px;line-height:1.5;color:var(--c-text-muted)">Hoje o protótipo guarda os dados no dispositivo. Para a Rita e o Tomás verem o mesmo, é preciso um estado partilhado. O princípio que resolve quase tudo: <strong>a casa é a unidade de dados; o membro é a unidade de acesso</strong>. Tudo pertence à casa, e cada membro vê o que a casa lhe deixa ver.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">Modelo de Dados</span>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;gap:24px;padding:0 24px">
+        <span style="width:210px;flex:none;font-family:var(--font-ui);font-size:12px;font-weight:600;color:var(--c-text-subtle)">Coleção</span>
+        <span style="flex:1.2;font-family:var(--font-ui);font-size:12px;font-weight:600;color:var(--c-text-subtle)">O que guarda</span>
+        <span style="flex:1;font-family:var(--font-ui);font-size:12px;font-weight:600;color:var(--c-text-subtle)">Quem escreve</span>
+        <span style="flex:1;font-family:var(--font-ui);font-size:12px;font-weight:600;color:var(--c-text-subtle)">Regra de conflito</span>
+      </div>
+      <sc-for list="{{ model }}" as="m" hint-placeholder-count="8">
+        <div style="background:var(--c-bg-1);border-radius:var(--radius-lg);box-shadow:var(--elev-1);padding:18px 24px;display:flex;align-items:flex-start;gap:24px">
+          <div style="width:210px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:17px;color:var(--c-text-primary)">{{ m.name }}</span>
+            <span style="display:inline-flex;align-self:flex-start;align-items:center;padding:3px 9px;border-radius:var(--radius-pill);border:1px solid {{ m.pillBorder }};background:{{ m.pillBg }};font-family:var(--font-ui);font-size:11px;font-weight:600;color:{{ m.pillFg }}">{{ m.scope }}</span>
+          </div>
+          <span style="flex:1.2;font-size:15px;line-height:1.5;color:var(--c-text-secondary)">{{ m.holds }}</span>
+          <span style="flex:1;font-size:15px;line-height:1.5;color:var(--c-text-muted)">{{ m.writes }}</span>
+          <span style="flex:1;font-size:15px;line-height:1.5;color:var(--c-text-secondary)">{{ m.conflict }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:16px;align-items:flex-start">
+    <sc-for list="{{ pillars }}" as="p" hint-placeholder-count="3">
+      <div style="flex:1;background:var(--c-bg-1);border-radius:var(--radius-md);box-shadow:var(--elev-1);padding:24px;display:flex;flex-direction:column;gap:14px">
+        <span style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">{{ p.title }}</span>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ p.points }}" as="pt" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:16px;color:var(--c-text-primary)">{{ pt.h }}</span>
+              <span style="font-size:15px;line-height:1.5;color:var(--c-text-muted)">{{ pt.b }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="background:rgba(232,244,255,.8);border:1px solid var(--c-info);border-radius:var(--radius-md);padding:20px 24px;display:flex;gap:16px;align-items:flex-start">
+    <x-import component-from-global-scope="ClienteIcon" from="./cliente-icon.jsx" icon="infoCircle" size="24" color="#1890FF" hint-size="24px,24px"></x-import>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <span style="font-size:18px;font-weight:500;color:var(--c-text-secondary)">A decisão que condiciona todas as outras</span>
+      <span style="font-size:16px;line-height:1.5;color:var(--c-text-secondary)">O <strong>&ldquo;Só eu&rdquo; tem de ser imposto no servidor, não no telefone</strong>. Se o filtro viver no cliente, o evento privado do Tomás chega ao telefone da Rita e basta uma falha de interface para o revelar. O servidor devolve a cada membro apenas o que lhe compete — e a app deixa de poder mostrar o que não recebeu.</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--c-text-subtle);letter-spacing:var(--ls-label)">Caminho a partir do que já existe</span>
+    <div style="display:flex;gap:12px;align-items:stretch">
+      <sc-for list="{{ phases }}" as="f" hint-placeholder-count="4">
+        <div style="flex:1;background:var(--c-bg-1);border:1px solid var(--c-grey-3);border-radius:var(--radius-lg);box-shadow:var(--elev-1);padding:20px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:28px;height:28px;border-radius:100px;background:{{ f.dotBg }};display:flex;align-items:center;justify-content:center;flex:none">
+              <span style="font-family:var(--font-ui);font-size:13px;font-weight:700;color:{{ f.dotFg }}">{{ f.n }}</span>
+            </div>
+            <span style="flex:1;font-family:var(--font-display);font-size:17px;font-weight:500;color:var(--c-text-primary)">{{ f.title }}</span>
+          </div>
+          <span style="font-size:15px;line-height:1.5;color:var(--c-text-secondary)">{{ f.body }}</span>
+          <div style="margin-top:auto;display:flex;flex-direction:column;gap:4px">
+            <span style="font-family:var(--font-ui);font-size:11px;font-weight:600;color:var(--c-text-subtle)">RESULTADO</span>
+            <span style="font-family:var(--font-ui);font-size:13px;line-height:1.5;color:var(--c-text-muted)">{{ f.out }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="background:rgba(255,251,230,.8);border:1px solid var(--c-warn-yellow);border-radius:var(--radius-md);padding:20px 24px;display:flex;gap:16px;align-items:flex-start">
+    <x-import component-from-global-scope="ClienteIcon" from="./cliente-icon.jsx" icon="exclamation" size="24" color="#FAAD14" hint-size="24px,24px"></x-import>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span style="font-size:18px;font-weight:500;color:var(--c-text-secondary)">Quatro decisões que preciso de si antes de construir</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ questions }}" as="q" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:16px;color:var(--c-text-primary)">{{ q.q }}</span>
+            <span style="font-size:15px;line-height:1.5;color:var(--c-text-muted)">{{ q.why }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1700}}">
+const P = {
+  casa: { scope: 'Âmbito: casa', pillBorder: 'var(--c-info)', pillBg: 'var(--c-info-bg)', pillFg: 'var(--c-info)' },
+  membro: { scope: 'Âmbito: membro', pillBorder: '#722ED1', pillBg: 'rgba(114,46,209,.1)', pillFg: '#722ED1' },
+  misto: { scope: 'Âmbito: misto', pillBorder: 'var(--c-warn-yellow)', pillBg: 'var(--c-warn-yellow-bg)', pillFg: '#AD8B00' },
+  fich: { scope: 'Ficheiros', pillBorder: 'var(--c-success-border)', pillBg: 'rgba(220,243,209,.4)', pillFg: '#389E0D' },
+};
+
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      model: [
+        { name: 'Casa', ...P.casa, holds: 'Identificador da casa, nome, moeda, membros e respetivos papéis (administrador, adulto, criança).', writes: 'Só administradores.', conflict: 'Raramente muda — última escrita vence.' },
+        { name: 'Membros', ...P.misto, holds: 'Nome, conta ligada, cor atribuída, papel. O esquema de cor da interface é por membro e não sai do dispositivo.', writes: 'O próprio; papéis só o administrador.', conflict: 'Por campo — cada membro só escreve o seu.' },
+        { name: 'Eventos', ...P.misto, holds: 'Título, dia, hora, responsável, visibilidade (casa ou privado) e origem (manual ou Google Calendar).', writes: 'Adultos; privados só o autor.', conflict: 'Última escrita por evento; sem fusão de campos.' },
+        { name: 'Tarefas e rotinas', ...P.misto, holds: 'Definição da rotina, responsável, pontos, visibilidade. Separado do registo de conclusões.', writes: 'Adultos definem; qualquer membro conclui.', conflict: 'Definição: última escrita. Conclusões: registo aditivo, nunca sobreposto.' },
+        { name: 'Lista de compras', ...P.casa, holds: 'Artigos, secção, quem pediu, estado (por comprar, confirmado, sem stock) e preço real.', writes: 'Todos os membros.', conflict: 'Fusão por artigo — dois telefones a confirmar artigos diferentes nunca se anulam.' },
+        { name: 'Envelopes e despesas', ...P.casa, holds: 'Limites, movimentos entre envelopes e despesas com pagador e regra de divisão.', writes: 'Adultos.', conflict: 'Despesas são aditivas; limites levam o total recalculado, não um valor absoluto.' },
+        { name: 'Cofres das crianças', ...P.casa, holds: 'Saldo e histórico de semanadas, bónus e retiradas autorizadas.', writes: 'Adultos escrevem; crianças leem.', conflict: 'Só movimentos aditivos — o saldo é sempre a soma, nunca um campo escrito.' },
+        { name: 'Equipamentos', ...P.casa, holds: 'Compra, preço, garantia, manutenções e referências às fotografias.', writes: 'Adultos.', conflict: 'Última escrita por equipamento.' },
+        { name: 'Faturas e fotos', ...P.fich, holds: 'Os ficheiros propriamente ditos, fora da base de dados. O registo guarda apenas a referência e as dimensões.', writes: 'Quem registou o equipamento.', conflict: 'Imutáveis — uma nova foto é uma nova versão, não uma substituição.' },
+      ],
+
+      pillars: [
+        {
+          title: 'Sincronização',
+          points: [
+            { h: 'Offline primeiro', b: 'O dispositivo continua a ser a fonte imediata: a app escreve local e enfileira a alteração. Sem rede, tudo funciona; ao voltar, a fila esvazia por ordem.' },
+            { h: 'Fila de alterações, não de estados', b: 'Envia-se "o Tomás confirmou o leite a 5,34 €", não a lista inteira. É o que permite dois telefones a comprar ao mesmo tempo sem se atropelarem.' },
+            { h: 'Atualização ao vivo onde importa', b: 'Só a lista de compras e o modo de loja precisam de tempo real. O resto pode sincronizar ao abrir a app e a cada poucos minutos.' },
+          ],
+        },
+        {
+          title: 'Acesso e papéis',
+          points: [
+            { h: 'Três papéis, não dois', b: 'Administrador (cria a casa, convida, define limites), adulto (tudo menos gestão de membros) e criança (vê as suas tarefas e o seu cofre; não vê o orçamento).' },
+            { h: 'Crianças sem conta própria', b: 'O Léo e a Mia não têm e-mail. São perfis da casa, acedidos por PIN no telefone de um adulto ou num tablet doméstico — sem conta Google, sem dados pessoais.' },
+            { h: 'Convite por ligação', b: 'O adulto convidado entra com a sua conta Google e associa-se à casa. Avós ou ama entram como convidados: só agenda e tarefas, nunca dinheiro.' },
+          ],
+        },
+        {
+          title: 'Onde vivem os dados',
+          points: [
+            { h: 'Dados estruturados num serviço próprio', b: 'A casa precisa de um estado autoritativo com regras de acesso do lado do servidor. É o que impõe a visibilidade e o que permite convidar e revogar acessos.' },
+            { h: 'Ficheiros à parte', b: 'Faturas e fotos de equipamentos são pesados e raramente lidos: armazenamento de ficheiros com ligações temporárias, referenciado pelo registo.' },
+            { h: 'O que fica no dispositivo', b: 'Esquema de cor, último separador aberto, rascunhos a meio e a cópia local para funcionar sem rede. Nada disto precisa de viajar.' },
+          ],
+        },
+      ],
+
+      phases: [
+        { n: '1', title: 'Contrato de dados', dotBg: 'var(--c-storm-blue)', dotFg: 'var(--c-white)', body: 'Fixar as coleções acima e os identificadores. O protótipo já separa dados de interface e já guarda numa chave versionada — é sobre essa forma que se escreve o contrato.', out: 'Uma forma de dados estável, igual no dispositivo e no servidor.' },
+        { n: '2', title: 'Contas e casa', dotBg: 'var(--c-storm-blue)', dotFg: 'var(--c-white)', body: 'O login Google já existe na interface. Falta criar a casa no primeiro acesso, convidar o segundo adulto e criar os perfis das crianças com PIN.', out: 'Duas pessoas, uma casa, papéis distintos.' },
+        { n: '3', title: 'Fila e leitura remota', dotBg: 'var(--c-orange-strong)', dotFg: 'var(--c-white)', body: 'Trocar a escrita local direta por escrita local mais fila de envio, e a leitura inicial pela leitura remota com cópia local. A interface não muda.', out: 'A Rita altera e o Tomás vê, mesmo com rede fraca.' },
+        { n: '4', title: 'Tempo real e ficheiros', dotBg: 'var(--c-orange-strong)', dotFg: 'var(--c-white)', body: 'Atualização ao vivo na lista de compras e no modo de loja, e envio das fotografias de fatura para armazenamento próprio, com aviso de garantia a expirar.', out: 'Compras a dois e arquivo de faturas utilizável.' },
+      ],
+
+      questions: [
+        { q: 'As crianças usam a app num dispositivo próprio, ou sempre no telefone de um adulto?', why: 'Muda tudo no acesso: perfis com PIN partilhados num dispositivo, ou contas próprias com sessão persistente.' },
+        { q: 'A app deve ler o Google Calendar continuamente, ou só sugerir eventos quando a abre?', why: 'Leitura contínua exige autorização permanente e sincronização em segundo plano; a sugestão à abertura, que é o que está desenhado, não exige nada disso.' },
+        { q: 'O orçamento fica visível às crianças?', why: 'Determina se o papel de criança é uma vista reduzida da mesma app ou um modo separado. Recomendo esconder: veem tarefas, pontos e o seu cofre.' },
+        { q: 'As faturas precisam de sair da app — exportar, enviar para uma seguradora?', why: 'Se sim, os ficheiros precisam de nome, data e ligação partilhável; se não, basta ficarem guardados e visíveis na ficha.' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>
