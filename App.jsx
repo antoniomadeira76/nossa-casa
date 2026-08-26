@@ -129,11 +129,39 @@ function Shell() {
         </Pressable>
       </View>
 
-      {/* área de scroll */}
-      <ScrollView style={{ flex: 1, minHeight: 0 }}
-        contentContainerStyle={{ padding: 16, gap: S.xl, paddingBottom: S.xl }}>
-        {tab === 'inicio' ? <Inicio t={t} user={user} go={setTab} onSaude={() => setSaude(true)} onEquip={() => setEquip(true)} onGestao={() => setGestao(true)} onDoc={() => setDoc(true)} /> : <Screen t={t} user={user} go={setTab} />}
-      </ScrollView>
+      {/* área de scroll com modals overlay */}
+      <View style={{ flex: 1, position: 'relative' }}>
+        <ScrollView style={{ flex: 1, minHeight: 0 }}
+          contentContainerStyle={{ padding: 16, gap: S.xl, paddingBottom: S.xl }}>
+          {tab === 'inicio' ? <Inicio t={t} user={user} go={setTab} onSaude={() => setSaude(true)} onEquip={() => setEquip(true)} onGestao={() => setGestao(true)} onDoc={() => setDoc(true)} /> : <Screen t={t} user={user} go={setTab} />}
+        </ScrollView>
+
+        {/* Modals como overlay com scrim semi-transparente */}
+        {(saude || equip || gestao || doc) && (
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
+            {saude && (
+              <View style={{ flex: 0.9, width: '90%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden' }}>
+                <Saude t={t} user={user} onClose={() => setSaude(false)} />
+              </View>
+            )}
+            {equip && (
+              <View style={{ flex: 0.9, width: '90%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden' }}>
+                <Equipamentos t={t} user={user} onClose={() => setEquip(false)} />
+              </View>
+            )}
+            {gestao && (
+              <View style={{ flex: 0.9, width: '90%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden' }}>
+                <Gestao t={t} user={user} onClose={() => setGestao(false)} />
+              </View>
+            )}
+            {doc && (
+              <View style={{ flex: 0.9, width: '90%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden' }}>
+                <Documentacao t={t} onClose={() => setDoc(false)} />
+              </View>
+            )}
+          </View>
+        )}
+      </View>
 
       {/* rodapé — último filho da raiz, sempre (INVARIANTE #1) */}
       <View style={{
@@ -159,39 +187,6 @@ function Shell() {
       {/* Perfil sheet */}
       {perfil ? <Perfil t={t} user={user} onClose={() => setPerfil(false)}
         onSignOut={() => { setPerfil(false); setUser(null); }} /> : null}
-
-      {/* Modals DENTRO da raiz com cabeçalho + rodapé visíveis */}
-      {saude && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: t.page, zIndex: 50 }}>
-          <View style={{ flex: 1, backgroundColor: t.page }}>
-            <Saude t={t} user={user} onClose={() => setSaude(false)} />
-          </View>
-        </View>
-      )}
-
-      {equip && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: t.page, zIndex: 50 }}>
-          <View style={{ flex: 1, backgroundColor: t.page }}>
-            <Equipamentos t={t} user={user} onClose={() => setEquip(false)} />
-          </View>
-        </View>
-      )}
-
-      {gestao && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: t.page, zIndex: 50 }}>
-          <View style={{ flex: 1, backgroundColor: t.page }}>
-            <Gestao t={t} user={user} onClose={() => setGestao(false)} />
-          </View>
-        </View>
-      )}
-
-      {doc && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: t.page, zIndex: 50 }}>
-          <View style={{ flex: 1, backgroundColor: t.page }}>
-            <Documentacao t={t} onClose={() => setDoc(false)} />
-          </View>
-        </View>
-      )}
     </View>
   );
 }
