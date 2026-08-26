@@ -107,7 +107,7 @@ function Shell() {
       {/* cabeçalho — minHeight garante que nunca colapsa (INVARIANTE #1) */}
       <View style={{
         flex: 0, minHeight: 80, backgroundColor: t.chrome, overflow: 'hidden',
-        paddingTop: insets.top + 10, paddingBottom: 14, paddingHorizontal: 16,
+        paddingTop: insets.top + 10, paddingBottom: 24, paddingHorizontal: 16,
         flexDirection: 'row', alignItems: 'center', gap: 12, ...elev(3),
       }}>
         <Marca size={120} mono opacity={0.10}
