@@ -106,7 +106,7 @@ function Shell() {
 
       {/* cabeçalho — minHeight garante que nunca colapsa (INVARIANTE #1) */}
       <View style={{
-        flex: 0, minHeight: '80px', backgroundColor: t.chrome, overflow: 'hidden',
+        flex: 0, minHeight: 80, backgroundColor: t.chrome, overflow: 'hidden',
         paddingTop: insets.top + 10, paddingBottom: 14, paddingHorizontal: 16,
         flexDirection: 'row', alignItems: 'center', gap: 12, ...elev(3),
       }}>
@@ -165,7 +165,7 @@ function Shell() {
 
       {/* rodapé — último filho da raiz, sempre (INVARIANTE #1) */}
       <View style={{
-        flex: 0, minHeight: '60px', backgroundColor: t.chrome, flexDirection: 'row',
+        flex: 0, minHeight: 60, backgroundColor: t.chrome, flexDirection: 'row',
         paddingTop: 6, paddingBottom: Math.max(insets.bottom, 10), paddingHorizontal: 4,
         zIndex: 100,
       }}>
@@ -175,7 +175,7 @@ function Shell() {
             <Pressable key={x.key} onPress={() => setTab(x.key)}
               accessibilityRole="tab" accessibilityLabel={x.label}
               accessibilityState={{ selected: on }}
-              style={{ flex: 1, minHeight: '48px', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+              style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
               <Icon name={x.icon} size={22} color={on ? '#FFFFFF' : onC} />
               <Text style={{ fontFamily: FONT.ui, fontSize: 10.5, fontWeight: '600',
                 color: on ? '#FFFFFF' : onC }}>{x.label}</Text>
