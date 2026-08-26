@@ -7,6 +7,8 @@ import { EUR } from '../format';
 import { SECTIONS } from '../data';
 import { Card, SectionTitle, Label, Pill, Bar, Primary, AddButton, Empty, usePaged, Pager, Tap } from '../ui';
 import Icon, { Marca } from '../Icon';
+import Sheet from '../Sheet';
+import NovoArtigo from '../sheets/NovoArtigo';
 
 // Modo de loja: ecrã inteiro, mas com cabeçalho e rodapé próprios —
 // o invariante é que nunca há uma janela sem cabeçalho nem rodapé.
@@ -15,6 +17,7 @@ export default function Compras({ t, user }) {
   const { s, set, allItems } = st;
   const [shop, setShop] = useState(false);
   const [step, setStep] = useState(-1);          // -1 = Todos
+  const [sheetOpen, setSheetOpen] = useState(false);
   const insets = useSafeAreaInsets();
 
   const items = allItems();
@@ -126,7 +129,7 @@ export default function Compras({ t, user }) {
                 );
               })}
               <Pager t={t} pg={pg} />
-              <AddButton t={t} label="acrescentar artigo à lista" onPress={() => {}} />
+              <AddButton t={t} label="acrescentar artigo à lista" onPress={() => setSheetOpen(true)} />
             </View>
           </View>
 
@@ -231,7 +234,7 @@ export default function Compras({ t, user }) {
         );
       })}
 
-      <AddButton t={t} label="acrescentar artigo" onPress={() => {}} />
+      <AddButton t={t} label="acrescentar artigo" onPress={() => setSheetOpen(true)} />
       <AddButton t={t} label="iniciar compras na loja" onPress={() => { setStep(-1); setShop(true); }} />
 
       {s.shopHistory.length ? (
@@ -252,6 +255,13 @@ export default function Compras({ t, user }) {
             ))}
           </Card>
         </View>
+      ) : null}
+
+      {sheetOpen ? (
+        <Sheet t={t} title="Novo Artigo" sub="Acrescentar à lista de compras"
+          onClose={() => setSheetOpen(false)}>
+          <NovoArtigo t={t} user={user} onClose={() => setSheetOpen(false)} />
+        </Sheet>
       ) : null}
     </>
   );

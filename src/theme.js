@@ -41,9 +41,9 @@ export const S = { xs: 2, sm: 4, md: 8, lg: 16, xl: 24, empty: 48 };
 export const R = { pill: 100, card: 8, row: 6, sm: 4 };
 
 export const FONT = {
-  display: 'Roboto',   // títulos, botões
-  body: 'Roboto',      // corpo
-  ui: 'Inter',         // dados densos e etiquetas pequenas
+  display: 'Roboto-500',   // títulos, botões
+  body: 'Roboto',          // corpo
+  ui: 'Inter-600',         // dados densos e etiquetas pequenas
 };
 
 // Uma receita de sombra, três opacidades

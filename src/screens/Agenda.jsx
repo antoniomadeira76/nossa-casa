@@ -6,12 +6,15 @@ import { MONTHS, WD_SHORT, TODAY, TODAY_KEY, dkey, dayLabel, evTime, pad2 } from
 import { MEMBERS } from '../data';
 import { Card, SectionTitle, Pill, Avatar, Empty, AddButton, Tap, usePaged, Pager } from '../ui';
 import Icon from '../Icon';
+import Sheet from '../Sheet';
+import NovoEvento from '../sheets/NovoEvento';
 
 export default function Agenda({ t, user }) {
   const { s, allEvents } = useStore();
   const [open, setOpen] = useState(false);
   const [ym, setYm] = useState({ y: TODAY.y, m: TODAY.m });
   const [sel, setSel] = useState(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const mine = allEvents().filter(e => e.shared || e.owner === user);
 
@@ -196,7 +199,14 @@ export default function Agenda({ t, user }) {
       })}
       <Pager t={t} pg={pg} />
 
-      <AddButton t={t} label="agendar evento" onPress={() => {}} />
+      <AddButton t={t} label="agendar evento" onPress={() => setSheetOpen(true)} />
+
+      {sheetOpen ? (
+        <Sheet t={t} title="Novo Evento" sub="Criar um evento na agenda"
+          onClose={() => setSheetOpen(false)}>
+          <NovoEvento t={t} user={user} onClose={() => setSheetOpen(false)} />
+        </Sheet>
+      ) : null}
     </>
   );
 }

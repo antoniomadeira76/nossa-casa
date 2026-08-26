@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, useColorScheme, StatusBar } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Font from 'expo-font';
+import { Roboto_500Medium, Roboto_400Regular } from '@expo-google-fonts/roboto';
+import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { StoreProvider, useStore } from './src/store';
 import { buildTheme, onChrome, S, R, FONT, elev } from './src/theme';
 import Icon, { Marca } from './src/Icon';
@@ -28,16 +31,37 @@ function Shell() {
   const [tab, setTab] = useState('inicio');
   const [perfil, setPerfil] = useState(false);
   const [booting, setBooting] = useState(true);
+  const [fontsReady, setFontsReady] = useState(false);
   const insets = useSafeAreaInsets();
 
-  useEffect(() => { const id = setTimeout(() => setBooting(false), 900); return () => clearTimeout(id); }, []);
+  useEffect(() => {
+    (async () => {
+      try {
+        await Font.loadAsync({
+          Roboto: Roboto_400Regular,
+          'Roboto-500': Roboto_500Medium,
+          Inter: Inter_400Regular,
+          'Inter-600': Inter_600SemiBold,
+        });
+      } catch (e) {
+        console.warn('Font loading failed, using system fonts:', e.message);
+      }
+      setFontsReady(true);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!fontsReady) return;
+    const id = setTimeout(() => setBooting(false), 600);
+    return () => clearTimeout(id);
+  }, [fontsReady]);
 
   const mode = (user && s.themeByUser[user]) || 'claro';
   const dark = mode === 'escuro' || (mode === 'sistema' && sysDark);
   const t = buildTheme(user ? (s.schemeByUser[user] ?? 0) : 0, dark);
   const onC = onChrome(t.chrome);
 
-  if (booting) {
+  if (booting || !fontsReady) {
     return (
       <View style={{ flex: 1, backgroundColor: t.chrome, alignItems: 'center', justifyContent: 'center', gap: S.xl }}>
         <StatusBar barStyle="light-content" />

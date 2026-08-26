@@ -7,6 +7,7 @@ import { MEMBERS } from '../data';
 import { Card, SectionTitle, Label, Pill, Row, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
+import NovaTarefa from '../sheets/NovaTarefa';
 
 // Urgência: a caixa do número leva a cor, e a lista ordena-se por ela.
 // A forma acompanha a cor — cheia, tracejada, contorno — para não depender do matiz.
@@ -21,6 +22,7 @@ export default function Tarefas({ t, user }) {
   const { s, set, allTasks, kidPts, dueOf, isRecurring } = st;
   const [filter, setFilter] = useState('Todos');
   const [manage, setManage] = useState(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const all = allTasks();
   const shown = filter === 'Todos' ? all : all.filter(x => x.who === filter);
@@ -130,7 +132,14 @@ export default function Tarefas({ t, user }) {
         )}
       </View>
 
-      <AddButton t={t} label="acrescentar tarefa" onPress={() => {}} />
+      <AddButton t={t} label="acrescentar tarefa" onPress={() => setSheetOpen(true)} />
+
+      {sheetOpen ? (
+        <Sheet t={t} title="Nova Tarefa" sub="Criar uma tarefa recorrente ou pontual"
+          onClose={() => setSheetOpen(false)}>
+          <NovaTarefa t={t} user={user} onClose={() => setSheetOpen(false)} />
+        </Sheet>
+      ) : null}
 
       {task ? (
         <Sheet t={t} title={task.title} sub={`${task.who} · ${task.meta}`} onClose={() => setManage(null)}
