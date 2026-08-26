@@ -165,7 +165,7 @@ function Shell() {
 
       {/* rodapé — último filho da raiz, sempre (INVARIANTE #1) */}
       <View style={{
-        flex: 0, backgroundColor: t.chrome, flexDirection: 'row',
+        flex: 0, minHeight: 60, backgroundColor: t.chrome, flexDirection: 'row',
         paddingTop: 6, paddingBottom: Math.max(insets.bottom, 10), paddingHorizontal: 4,
         zIndex: 100,
       }}>
