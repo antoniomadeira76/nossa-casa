@@ -3,8 +3,8 @@ import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, MEMBER_COLOR } from '../theme';
 import { EUR } from '../format';
-import { ENV_BASE, GOALS, EQUIP } from '../data';
-import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager } from '../ui';
+import { ENV_BASE, GOALS, EQUIP, MEMBERS } from '../data';
+import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Tap } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 
@@ -53,6 +53,8 @@ export default function Dinheiro({ t, user }) {
   const [sheet, setSheet] = useState(null);
   const [mv, setMv] = useState({ from: 0, to: 3, amount: 0 });
   const [exp, setExp] = useState({ amount: 0, env: 0, payer: user, split: true });
+  const [settle, setSettle] = useState({ mode: 'all', customAmount: 0 });
+  const [openMonth, setOpenMonth] = useState({ envelopes: {} });
 
   const admin = isAdmin(user);
   const pct = Math.round((spent / budget) * 100);
@@ -63,6 +65,55 @@ export default function Dinheiro({ t, user }) {
 
   const freeOf = (i) => Math.max(0, envelopes[i].limit - envelopes[i].used);
   const envPg = usePaged(envelopes, 5);
+
+  const handleSettle = () => {
+    let amount = settleBase;
+    if (settle.mode === 'half') {
+      amount = settleBase / 2;
+    } else if (settle.mode === 'custom') {
+      amount = settle.customAmount;
+    }
+
+    set(x => ({
+      paidPts: {
+        ...x.paidPts,
+        'Tomás': (x.paidPts['Tomás'] || 0) + amount,
+      },
+      settled: true,
+    }));
+    setSheet(null);
+    setSettle({ mode: 'all', customAmount: 0 });
+  };
+
+  const handleOpenMonth = () => {
+    // Initialize envelopes with default limits for the new month
+    const envLimits = {};
+    ENV_BASE.forEach(e => {
+      envLimits[e.name] = e.limit + (openMonth.envelopes[e.name] || 0);
+    });
+
+    set(x => ({
+      monthLimits: envLimits,
+      monthZero: false,
+      monthName: 'Setembro', // This should be dynamic based on current month
+      registered: 0,
+    }));
+    setSheet(null);
+  };
+
+  const handleCloseMonth = () => {
+    // Calculate remainder and 30% to goals
+    const remainder = remaining;
+    const toGoals = remainder * 0.30;
+
+    set(x => ({
+      registered: 0,
+      settled: false,
+      paidPts: { 'Léo': 0, 'Mia': 0 },
+      envMove: {},
+    }));
+    setSheet(null);
+  };
 
   return (
     <>
@@ -133,8 +184,8 @@ export default function Dinheiro({ t, user }) {
               border={s.settled || settleBase === 0 ? t.state.okBorder : t.state.info} />
           </View>
           <Primary t={t} disabled={s.settled || settleBase === 0}
-            label={s.settled || settleBase === 0 ? 'Contas Acertadas' : 'Marcar como Pago'}
-            onPress={() => set({ settled: true })} />
+            label={s.settled || settleBase === 0 ? 'Contas Acertadas' : 'Acertar Contas'}
+            onPress={() => { setSettle({ mode: 'all', customAmount: 0 }); setSheet('settle'); }} />
         </Card>
       </View>
 
@@ -166,6 +217,135 @@ export default function Dinheiro({ t, user }) {
         </Card>
       </View>
 
+      {admin ? (
+        <View>
+          <SectionTitle t={t}>Administração</SectionTitle>
+          <Card t={t} style={{ gap: S.md }}>
+            <View style={{ flexDirection: 'row', gap: S.md }}>
+              <Pressable
+                onPress={() => { setOpenMonth({ envelopes: {} }); setSheet('openMonth'); }}
+                accessibilityRole="button"
+                accessibilityLabel="Abrir mês"
+                style={{ flex: 1, minHeight: 48, borderRadius: R.row, borderWidth: 1, borderColor: t.accent,
+                  backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.accent }}>
+                  Abrir Mês
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setSheet('closeMonth')}
+                accessibilityRole="button"
+                accessibilityLabel="Fechar mês"
+                style={{ flex: 1, minHeight: 48, borderRadius: R.row, borderWidth: 1, borderColor: t.state.warnDeep,
+                  backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.state.warnDeep }}>
+                  Fechar Mês
+                </Text>
+              </Pressable>
+            </View>
+          </Card>
+        </View>
+      ) : null}
+
+      {/* Settle Accounts Sheet */}
+      {sheet === 'settle' ? (() => {
+        const settleAmount = settle.mode === 'half' ? settleBase / 2 : settle.mode === 'custom' ? settle.customAmount : settleBase;
+        return (
+          <Sheet t={t} title="Acertar Contas"
+            sub="Registar o pagamento das despesas partilhadas"
+            onClose={() => setSheet(null)}
+            action={<Primary t={t} disabled={settleAmount <= 0}
+              label="Confirmar Pagamento"
+              onPress={handleSettle} />}>
+            <View style={{ gap: S.lg }}>
+              <View style={{ gap: S.md }}>
+                <Label t={t}>Montante devido</Label>
+                <Text style={{ fontFamily: FONT.display, fontSize: 28, color: t.text2 }}>
+                  {EUR(settleBase)}
+                </Text>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
+                  O Tomás deve à Rita este valor.
+                </Text>
+              </View>
+
+              <View style={{ gap: S.md }}>
+                <Label t={t}>Opções de Pagamento</Label>
+                <View style={{ flexDirection: 'column', gap: S.md }}>
+                  <Pressable
+                    onPress={() => setSettle({ ...settle, mode: 'all' })}
+                    accessibilityRole="button"
+                    accessibilityLabel="Pagar tudo"
+                    accessibilityState={{ selected: settle.mode === 'all' }}
+                    style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: 14,
+                      borderColor: settle.mode === 'all' ? t.chrome : t.border,
+                      backgroundColor: settle.mode === 'all' ? t.chrome : t.subtle,
+                      flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+                    <View style={{ width: 20, height: 20, borderRadius: R.pill,
+                      borderWidth: 2, borderColor: settle.mode === 'all' ? '#FFFFFF' : t.border,
+                      backgroundColor: settle.mode === 'all' ? '#FFFFFF' : 'transparent' }} />
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
+                        color: settle.mode === 'all' ? '#FFFFFF' : t.text2 }}>Tudo</Text>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 11.5,
+                        color: settle.mode === 'all' ? 'rgba(255,255,255,0.7)' : t.text3 }}>
+                        {EUR(settleBase)}
+                      </Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setSettle({ ...settle, mode: 'half' })}
+                    accessibilityRole="button"
+                    accessibilityLabel="Pagar metade"
+                    accessibilityState={{ selected: settle.mode === 'half' }}
+                    style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: 14,
+                      borderColor: settle.mode === 'half' ? t.chrome : t.border,
+                      backgroundColor: settle.mode === 'half' ? t.chrome : t.subtle,
+                      flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+                    <View style={{ width: 20, height: 20, borderRadius: R.pill,
+                      borderWidth: 2, borderColor: settle.mode === 'half' ? '#FFFFFF' : t.border,
+                      backgroundColor: settle.mode === 'half' ? '#FFFFFF' : 'transparent' }} />
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
+                        color: settle.mode === 'half' ? '#FFFFFF' : t.text2 }}>Metade</Text>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 11.5,
+                        color: settle.mode === 'half' ? 'rgba(255,255,255,0.7)' : t.text3 }}>
+                        {EUR(settleBase / 2)}
+                      </Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setSettle({ ...settle, mode: 'custom' })}
+                    accessibilityRole="button"
+                    accessibilityLabel="Valor personalizado"
+                    accessibilityState={{ selected: settle.mode === 'custom' }}
+                    style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: 14,
+                      borderColor: settle.mode === 'custom' ? t.chrome : t.border,
+                      backgroundColor: settle.mode === 'custom' ? t.chrome : t.subtle,
+                      flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+                    <View style={{ width: 20, height: 20, borderRadius: R.pill,
+                      borderWidth: 2, borderColor: settle.mode === 'custom' ? '#FFFFFF' : t.border,
+                      backgroundColor: settle.mode === 'custom' ? '#FFFFFF' : 'transparent' }} />
+                    <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
+                      color: settle.mode === 'custom' ? '#FFFFFF' : t.text2 }}>Valor Personalizado</Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {settle.mode === 'custom' ? (
+                <View style={{ gap: S.md }}>
+                  <Label t={t}>Valor a pagar</Label>
+                  <NumField t={t} value={settle.customAmount} step={5} min={0} max={settleBase * 2}
+                    onChange={(v) => setSettle({ ...settle, customAmount: v })} />
+                </View>
+              ) : null}
+            </View>
+          </Sheet>
+        );
+      })() : null}
+
+      {/* Move Money Sheet */}
       {sheet === 'mover' ? (() => {
         const free = freeOf(mv.from);
         const over = mv.amount > free;
@@ -231,6 +411,7 @@ export default function Dinheiro({ t, user }) {
         );
       })() : null}
 
+      {/* Register Expense Sheet */}
       {sheet === 'despesa' ? (
         <Sheet t={t} title="Registar Despesa" sub="Entra no envelope e na conta entre vocês"
           onClose={() => setSheet(null)}
@@ -280,6 +461,64 @@ export default function Dinheiro({ t, user }) {
             </View>
             <Toggle t={t} on={exp.split} label="Dividir a meias"
               onPress={() => setExp(x => ({ ...x, split: !x.split }))} />
+          </View>
+        </Sheet>
+      ) : null}
+
+      {/* Open Month Sheet */}
+      {sheet === 'openMonth' && admin ? (
+        <Sheet t={t} title="Abrir Mês"
+          sub="Distribuir o rendimento aos envelopes"
+          onClose={() => setSheet(null)}
+          action={<Primary t={t} label="Confirmar Abertura" onPress={handleOpenMonth} />}>
+          <View style={{ gap: S.lg }}>
+            <Text style={{ fontFamily: FONT.body, fontSize: 15, lineHeight: 22, color: t.text2 }}>
+              Distribua o rendimento mensal aos envelopes. Os limites serão atualizados no início do mês.
+            </Text>
+            <View style={{ gap: S.md }}>
+              <Label t={t}>Limites dos Envelopes</Label>
+              {ENV_BASE.map((e) => (
+                <View key={e.name} style={{ gap: S.md }}>
+                  <Label t={t}>{e.name}</Label>
+                  <NumField t={t}
+                    value={openMonth.envelopes[e.name] || 0}
+                    step={10}
+                    min={0}
+                    max={2000}
+                    onChange={(v) => setOpenMonth(x => ({
+                      envelopes: { ...x.envelopes, [e.name]: v }
+                    }))} />
+                </View>
+              ))}
+            </View>
+          </View>
+        </Sheet>
+      ) : null}
+
+      {/* Close Month Sheet */}
+      {sheet === 'closeMonth' && admin ? (
+        <Sheet t={t} title="Fechar Mês"
+          sub="Arquivar despesas e calcular alocação para metas"
+          onClose={() => setSheet(null)}
+          action={<Primary t={t} label="Confirmar Encerramento" onPress={handleCloseMonth} />}>
+          <View style={{ gap: S.lg }}>
+            <Text style={{ fontFamily: FONT.body, fontSize: 15, lineHeight: 22, color: t.text2 }}>
+              Ao fechar o mês, será acumulado 30% do saldo restante nas metas da família.
+            </Text>
+            <View style={{ gap: S.md }}>
+              <Label t={t}>Resumo do Mês</Label>
+              <View style={{ gap: S.md }}>
+                <Row t={t} title="Orçamento" value={EUR(budget)} right={<View />} last={false} />
+                <Row t={t} title="Gasto" value={EUR(spent)} right={<View />} last={false} />
+                <Row t={t} title="Disponível" value={EUR(remaining)} right={<View />} last={true} />
+              </View>
+            </View>
+            <View style={{ gap: S.md }}>
+              <Label t={t}>Cálculo para Metas</Label>
+              <Text style={{ fontFamily: FONT.body, fontSize: 14.5, lineHeight: 21, color: t.text2 }}>
+                {EUR(remaining * 0.30)} será adicionado às metas da família.
+              </Text>
+            </View>
           </View>
         </Sheet>
       ) : null}

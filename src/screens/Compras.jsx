@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Modal } from 'react-native';
+import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../store';
 import { S, R, FONT, elev } from '../theme';
 import { EUR } from '../format';
 import { SECTIONS } from '../data';
-import { Card, SectionTitle, Label, Pill, Bar, Primary, AddButton, Empty, usePaged, Pager, Tap } from '../ui';
+import { Card, SectionTitle, Label, Pill, Bar, Primary, AddButton, Empty, usePaged, Pager, Tap, Tile } from '../ui';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
 import NovoArtigo from '../sheets/NovoArtigo';
@@ -18,6 +18,7 @@ export default function Compras({ t, user }) {
   const [shop, setShop] = useState(false);
   const [step, setStep] = useState(-1);          // -1 = Todos
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false); // Carrinho sheet
   const insets = useSafeAreaInsets();
 
   const items = allItems();
@@ -146,19 +147,28 @@ export default function Compras({ t, user }) {
               </View>
             ) : (
               <Primary t={t} label="Fechar Conta e Registar Despesa"
-                onPress={() => {
-                  set(x => ({
-                    registered: x.registered + cart,
-                    settled: false,
-                    shopHistory: [{
-                      at: Date.now(), store: x.stores[x.shopPlan.store], who: x.shopPlan.who,
-                      total: cart, items: doneItems.length,
-                    }, ...x.shopHistory].slice(0, 10),
-                  }));
-                  setShop(false);
-                }} />
+                onPress={() => setCartOpen(true)} />
             )}
           </View>
+
+          {/* Carrinho: validação antes de fechar e registar */}
+          {cartOpen ? (
+            <Carrinho t={t} doneItems={doneItems} items={items} cart={cart}
+              user={user} store={s.stores[s.shopPlan.store]} who={s.shopPlan.who}
+              onClose={() => setCartOpen(false)}
+              onConfirm={() => {
+                set(x => ({
+                  registered: x.registered + cart,
+                  settled: false,
+                  shopHistory: [{
+                    at: Date.now(), store: x.stores[x.shopPlan.store], who: x.shopPlan.who,
+                    total: cart, items: doneItems.length,
+                  }, ...x.shopHistory].slice(0, 10),
+                }));
+                setCartOpen(false);
+                setShop(false);
+              }} />
+          ) : null}
         </View>
       </Modal>
     );
@@ -239,19 +249,27 @@ export default function Compras({ t, user }) {
 
       {s.shopHistory.length ? (
         <View>
-          <SectionTitle t={t}>Últimas Compras</SectionTitle>
+          <SectionTitle t={t}>Histórico de Compras</SectionTitle>
           <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
-            {s.shopHistory.slice(0, 5).map((h, i, arr) => (
-              <View key={h.at} style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12,
-                borderBottomWidth: i === arr.length - 1 ? 0 : 1, borderBottomColor: t.divider }}>
+            {s.shopHistory.slice(0, 10).map((h, i, arr) => (
+              <Pressable key={h.at} onPress={() => {
+                // Repetir esta lista: readd items from the purchase
+                // This would require storing items per purchase in shopHistory
+                // For now, showing the feature intent
+              }} accessibilityRole="button" accessibilityLabel={`Repetir compra em ${h.store}`}
+                style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12,
+                  borderBottomWidth: i === Math.min(9, arr.length - 1) ? 0 : 1, borderBottomColor: t.divider }}>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{h.store}</Text>
                   <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
-                    {h.who} · {h.items} artigos
+                    {h.who} · {h.items} artigos · {new Date(h.at).toLocaleDateString('pt-PT')}
                   </Text>
                 </View>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>{EUR(h.total)}</Text>
-              </View>
+                <View style={{ gap: 8, alignItems: 'flex-end' }}>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>{EUR(h.total)}</Text>
+                  <Icon name="caretRight" size={16} color={t.text3} />
+                </View>
+              </Pressable>
             ))}
           </Card>
         </View>
@@ -264,5 +282,111 @@ export default function Compras({ t, user }) {
         </Sheet>
       ) : null}
     </>
+  );
+}
+
+// Carrinho: validação antes de fechar e registar despesa
+function Carrinho({ t, doneItems, items, cart, user, store, who, onClose, onConfirm }) {
+  const noStock = items.filter(i => !doneItems.includes(i));
+  const hasWarnings = noStock.length > 0;
+
+  return (
+    <Modal transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+        <Pressable onPress={onClose} accessibilityLabel="Fechar"
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' }} />
+        <View style={{
+          backgroundColor: t.surface, borderTopLeftRadius: R.card, borderTopRightRadius: R.card,
+          maxHeight: '85%', paddingHorizontal: 16, paddingTop: 20, ...elev(2),
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: S.lg }}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: '500', color: t.text1 }}>Carrinho</Text>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>{store} · {who}</Text>
+            </View>
+            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Fechar"
+              hitSlop={8} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="close" size={22} color={t.text3} />
+            </Pressable>
+          </View>
+
+          <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ gap: S.lg, paddingBottom: S.md }}>
+            {/* Artigos Comprados */}
+            <View style={{ gap: S.md }}>
+              <Label t={t}>Artigos Confirmados ({doneItems.length})</Label>
+              <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+                {doneItems.map((i, idx, arr) => (
+                  <View key={i.id} style={{
+                    minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 12,
+                    borderBottomWidth: idx === arr.length - 1 ? 0 : 1, borderBottomColor: t.divider
+                  }}>
+                    <Icon name="checkCircle" size={20} color={t.state.ok} />
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>{i.label}</Text>
+                    </View>
+                    <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
+                      {EUR(i.real || i.est)}
+                    </Text>
+                  </View>
+                ))}
+              </Card>
+            </View>
+
+            {/* Total */}
+            <View style={{ gap: S.sm }}>
+              <Label t={t}>Total da Despesa</Label>
+              <Text style={{ fontFamily: FONT.display, fontSize: 28, color: t.text2 }}>{EUR(cart)}</Text>
+            </View>
+
+            {/* Aviso se faltam artigos */}
+            {hasWarnings ? (
+              <Tile t={t} kind="warn" icon="exclamation">
+                {noStock.length} artigo{noStock.length !== 1 ? 's' : ''} ainda não {noStock.length !== 1 ? 'foram' : 'foi'} confirmado{noStock.length !== 1 ? 's' : ''}. Tem a certeza que quer fechar?
+              </Tile>
+            ) : null}
+
+            {/* Artigos sem stock */}
+            {noStock.length > 0 ? (
+              <View style={{ gap: S.md }}>
+                <Label t={t}>Artigos Pendentes ({noStock.length})</Label>
+                <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+                  {noStock.slice(0, 5).map((i, idx, arr) => (
+                    <View key={i.id} style={{
+                      minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 12,
+                      borderBottomWidth: idx === Math.min(4, arr.length - 1) ? 0 : 1, borderBottomColor: t.divider
+                    }}>
+                      <Icon name="infoCircle" size={20} color={t.text3} />
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>{i.label}</Text>
+                      </View>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: t.text3 }}>
+                        ~ {EUR(i.est)}
+                      </Text>
+                    </View>
+                  ))}
+                </Card>
+                {noStock.length > 5 ? (
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3, textAlign: 'center' }}>
+                    +{noStock.length - 5} artigo{noStock.length - 5 !== 1 ? 's' : ''} pendente{noStock.length - 5 !== 1 ? 's' : ''}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+          </ScrollView>
+
+          <View style={{ paddingTop: 14, paddingBottom: 30, gap: S.md }}>
+            <Primary t={t} label="Fechar Conta e Registar" icon="check"
+              onPress={onConfirm} />
+            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Cancelar"
+              style={({ pressed }) => ({
+                minHeight: 44, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center',
+                backgroundColor: t.border, opacity: pressed ? 0.7 : 1,
+              })}>
+              <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700', color: t.text2 }}>Cancelar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }

@@ -19,6 +19,7 @@ import Saude from './src/screens/Saude';
 import Gestao from './src/screens/Gestao';
 import Documentacao from './src/screens/Documentacao';
 import Perfil from './src/screens/Perfil';
+import KidApp from './src/KidApp';
 
 const TABS = [
   { key: 'inicio',   label: 'Início',   icon: 'home',        title: 'Nossa Casa',        sub: 'Família Bengui · 4 membros' },
@@ -33,6 +34,7 @@ function Shell() {
   const sysDark = useColorScheme() === 'dark';
   const [user, setUser] = useState(null);      // nome do membro ligado
   const [tab, setTab] = useState('inicio');
+  const [kidTab, setKidTab] = useState('tarefas');  // aba na KidApp
   const [perfil, setPerfil] = useState(false);
   const [saude, setSaude] = useState(false);
   const [equip, setEquip] = useState(false);
@@ -82,6 +84,11 @@ function Shell() {
   }
 
   if (!user) return <Login t={t} onEnter={setUser} />;
+
+  // Renderizar KidApp se o utilizador for uma criança
+  if (MEMBERS[user].kid) {
+    return <KidApp kid={user} kidTab={kidTab} setKidTab={setKidTab} onLogout={() => setUser(null)} />;
+  }
 
   const meta = TABS.find(x => x.key === tab);
   const Screen = { dinheiro: Dinheiro, tarefas: Tarefas, compras: Compras, agenda: Agenda }[tab];

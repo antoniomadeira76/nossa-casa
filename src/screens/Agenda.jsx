@@ -8,6 +8,7 @@ import { Card, SectionTitle, Pill, Avatar, Empty, AddButton, Tap, usePaged, Page
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import NovoEvento from '../sheets/NovoEvento';
+import ImportarGoogle from '../sheets/ImportarGoogle';
 
 export default function Agenda({ t, user }) {
   const { s, allEvents } = useStore();
@@ -15,6 +16,8 @@ export default function Agenda({ t, user }) {
   const [ym, setYm] = useState({ y: TODAY.y, m: TODAY.m });
   const [sel, setSel] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [googleSheetOpen, setGoogleSheetOpen] = useState(false);
+  const [preFillDay, setPreFillDay] = useState(null);
 
   const mine = allEvents().filter(e => e.shared || e.owner === user);
 
@@ -98,7 +101,13 @@ export default function Agenda({ t, user }) {
                   const isToday = home && c.n === TODAY.d;
                   const on = sel === c.key;
                   return (
-                    <Pressable key={ci} onPress={() => setSel(on ? null : c.key)}
+                    <Pressable key={ci} onPress={() => {
+                      setSel(on ? null : c.key);
+                    }}
+                      onLongPress={() => {
+                        setPreFillDay(c.key);
+                        setSheetOpen(true);
+                      }}
                       accessibilityRole="button"
                       accessibilityLabel={`${c.n} de ${MONTHS[ym.m].toLowerCase()}${c.evs.length ? ` · ${c.evs.length} eventos` : ''}`}
                       accessibilityState={{ selected: on }}
@@ -199,12 +208,31 @@ export default function Agenda({ t, user }) {
       })}
       <Pager t={t} pg={pg} />
 
-      <AddButton t={t} label="agendar evento" onPress={() => setSheetOpen(true)} />
+      <View style={{ gap: S.md }}>
+        <AddButton t={t} label="agendar evento" onPress={() => {
+          setPreFillDay(null);
+          setSheetOpen(true);
+        }} />
+        <AddButton t={t} label="importar do google" onPress={() => setGoogleSheetOpen(true)} />
+      </View>
 
       {sheetOpen ? (
         <Sheet t={t} title="Novo Evento" sub="Criar um evento na agenda"
-          onClose={() => setSheetOpen(false)}>
-          <NovoEvento t={t} user={user} onClose={() => setSheetOpen(false)} />
+          onClose={() => {
+            setSheetOpen(false);
+            setPreFillDay(null);
+          }}>
+          <NovoEvento t={t} user={user} onClose={() => {
+            setSheetOpen(false);
+            setPreFillDay(null);
+          }} preFillDay={preFillDay} />
+        </Sheet>
+      ) : null}
+
+      {googleSheetOpen ? (
+        <Sheet t={t} title="Importar do Google" sub="Sincronizar eventos do Google Calendar"
+          onClose={() => setGoogleSheetOpen(false)}>
+          <ImportarGoogle t={t} user={user} onClose={() => setGoogleSheetOpen(false)} />
         </Sheet>
       ) : null}
     </>

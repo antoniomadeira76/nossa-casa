@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { Label, Pill, Toggle, Primary } from '../ui';
 import Icon from '../Icon';
 import ConfirmShare from '../ConfirmShare';
+import { parseKey } from '../format';
 
-export default function NovoEvento({ t, user, onClose }) {
+export default function NovoEvento({ t, user, onClose, preFillDay }) {
   const { set, s } = useStore();
   const [form, setForm] = useState({
     title: '',
@@ -16,6 +17,17 @@ export default function NovoEvento({ t, user, onClose }) {
     private: false,
   });
   const [confirming, setConfirming] = useState(false);
+
+  // Pre-fill date if provided
+  useEffect(() => {
+    if (preFillDay) {
+      const parsed = parseKey(preFillDay);
+      if (parsed) {
+        const dateStr = `${parsed.y}-${String(parsed.m + 1).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`;
+        setForm(f => ({ ...f, date: dateStr }));
+      }
+    }
+  }, [preFillDay]);
 
   const handleSave = () => {
     if (!form.title.trim() || !form.date) return;
