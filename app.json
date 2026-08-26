@@ -23,7 +23,8 @@
     },
     "icon": "./assets/icon.png",
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-status-bar"
     ]
   }
 }
