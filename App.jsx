@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, useColorScheme, StatusBar } from 'react-native';
+import { View, Text, ScrollView, Pressable, useColorScheme, StatusBar, Modal } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Font from 'expo-font';
 import { Roboto_500Medium, Roboto_400Regular } from '@expo-google-fonts/roboto';
@@ -14,6 +14,10 @@ import Dinheiro from './src/screens/Dinheiro';
 import Tarefas from './src/screens/Tarefas';
 import Compras from './src/screens/Compras';
 import Agenda from './src/screens/Agenda';
+import Equipamentos from './src/screens/Equipamentos';
+import Saude from './src/screens/Saude';
+import Gestao from './src/screens/Gestao';
+import Documentacao from './src/screens/Documentacao';
 import Perfil from './src/screens/Perfil';
 
 const TABS = [
@@ -30,6 +34,9 @@ function Shell() {
   const [user, setUser] = useState(null);      // nome do membro ligado
   const [tab, setTab] = useState('inicio');
   const [perfil, setPerfil] = useState(false);
+  const [saude, setSaude] = useState(false);
+  const [gestao, setGestao] = useState(false);
+  const [doc, setDoc] = useState(false);
   const [booting, setBooting] = useState(true);
   const [fontsReady, setFontsReady] = useState(false);
   const insets = useSafeAreaInsets();
@@ -76,7 +83,7 @@ function Shell() {
   if (!user) return <Login t={t} onEnter={setUser} />;
 
   const meta = TABS.find(x => x.key === tab);
-  const Screen = { inicio: Inicio, dinheiro: Dinheiro, tarefas: Tarefas, compras: Compras, agenda: Agenda }[tab];
+  const Screen = { dinheiro: Dinheiro, tarefas: Tarefas, compras: Compras, agenda: Agenda }[tab];
 
   // ⚠ INVARIANTE — ver CLAUDE.md
   // Cabeçalho e rodapé aparecem em TODAS as janelas. A raiz é uma coluna flex
@@ -117,7 +124,7 @@ function Shell() {
       {/* área de scroll */}
       <ScrollView style={{ flex: 1, minHeight: 0 }}
         contentContainerStyle={{ padding: 16, gap: S.xl, paddingBottom: S.xl }}>
-        <Screen t={t} user={user} go={setTab} />
+        {tab === 'inicio' ? <Inicio t={t} user={user} go={setTab} onGestao={() => setGestao(true)} onDoc={() => setDoc(true)} onSaude={() => setSaude(true)} /> : <Screen t={t} user={user} go={setTab} />}
       </ScrollView>
 
       {/* rodapé — último filho da raiz, sempre */}
@@ -142,6 +149,30 @@ function Shell() {
 
       {perfil ? <Perfil t={t} user={user} onClose={() => setPerfil(false)}
         onSignOut={() => { setPerfil(false); setUser(null); }} /> : null}
+
+      {saude ? (
+        <Modal transparent animationType="slide" onRequestClose={() => setSaude(false)}>
+          <View style={{ flex: 1, backgroundColor: t.page }}>
+            <Saude t={t} user={user} />
+          </View>
+        </Modal>
+      ) : null}
+
+      {gestao ? (
+        <Modal transparent animationType="slide" onRequestClose={() => setGestao(false)}>
+          <View style={{ flex: 1, backgroundColor: t.page }}>
+            <Gestao t={t} user={user} onClose={() => setGestao(false)} />
+          </View>
+        </Modal>
+      ) : null}
+
+      {doc ? (
+        <Modal transparent animationType="slide" onRequestClose={() => setDoc(false)}>
+          <View style={{ flex: 1, backgroundColor: t.page }}>
+            <Documentacao t={t} onClose={() => setDoc(false)} />
+          </View>
+        </Modal>
+      ) : null}
     </View>
   );
 }

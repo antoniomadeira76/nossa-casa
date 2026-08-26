@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, MEMBER_COLOR } from '../theme';
 import { EUR, plural, evTime, TODAY_KEY, dayLabel } from '../format';
@@ -7,7 +7,7 @@ import { MEMBERS } from '../data';
 import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager } from '../ui';
 import Icon from '../Icon';
 
-export default function Inicio({ t, user, go }) {
+export default function Inicio({ t, user, go, onGestao, onDoc, onSaude }) {
   const st = useStore();
   const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring } = st;
 
@@ -147,6 +147,36 @@ export default function Inicio({ t, user, go }) {
           ? 'As contas entre a Rita e o Tomás estão acertadas.'
           : `O Tomás deve à Rita ${EUR(settleBase)} de despesas partilhadas.`}
       </Tile>
+
+      <View style={{ flexDirection: 'row', gap: S.md, flexWrap: 'wrap' }}>
+        <Pressable onPress={onSaude}
+          style={{ flex: 1, minWidth: 140, minHeight: 48, backgroundColor: t.card, borderRadius: R.row,
+            borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center', gap: S.sm }}>
+          <Icon name="heartPulse" size={18} color={t.text2} />
+          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text2, textAlign: 'center' }}>Saúde</Text>
+        </Pressable>
+
+        <Pressable onPress={() => go('equip')}
+          style={{ flex: 1, minWidth: 140, minHeight: 48, backgroundColor: t.card, borderRadius: R.row,
+            borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center', gap: S.sm }}>
+          <Icon name="houseGear" size={18} color={t.text2} />
+          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text2, textAlign: 'center' }}>Equip.</Text>
+        </Pressable>
+
+        <Pressable onPress={onGestao}
+          style={{ flex: 1, minWidth: 140, minHeight: 48, backgroundColor: t.card, borderRadius: R.row,
+            borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center', gap: S.sm }}>
+          <Icon name="sliders" size={18} color={t.text2} />
+          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text2, textAlign: 'center' }}>Gestão</Text>
+        </Pressable>
+
+        <Pressable onPress={onDoc}
+          style={{ flex: 1, minWidth: 140, minHeight: 48, backgroundColor: t.card, borderRadius: R.row,
+            borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center', gap: S.sm }}>
+          <Icon name="fileText" size={18} color={t.text2} />
+          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text2, textAlign: 'center' }}>Docs</Text>
+        </Pressable>
+      </View>
     </>
   );
 }

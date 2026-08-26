@@ -4,6 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { Label, Pill, Toggle, Primary } from '../ui';
 import Icon from '../Icon';
+import ConfirmShare from '../ConfirmShare';
 
 export default function NovoEvento({ t, user, onClose }) {
   const { set, s } = useStore();
@@ -14,18 +15,23 @@ export default function NovoEvento({ t, user, onClose }) {
     responsible: user,
     private: false,
   });
+  const [confirming, setConfirming] = useState(false);
 
   const handleSave = () => {
-    if (!form.title.trim()) return;
+    if (!form.title.trim() || !form.date) return;
+    setConfirming(true);
+  };
 
+  const handleConfirm = () => {
     const id = 'evt-' + Date.now();
     const event = {
       id,
       title: form.title,
-      date: form.date, // será um YYYY-MM-DD
+      date: form.date,
       time: form.time,
       responsible: form.responsible,
-      private: form.private,
+      owner: user,
+      shared: !form.private,
       manual: true,
     };
 
@@ -33,6 +39,7 @@ export default function NovoEvento({ t, user, onClose }) {
       added: [...(s.added || []), event],
     }));
 
+    setConfirming(false);
     onClose();
   };
 
@@ -114,6 +121,16 @@ export default function NovoEvento({ t, user, onClose }) {
         disabled={!canSave}
         onPress={handleSave}
       />
+
+      {confirming ? (
+        <ConfirmShare
+          t={t}
+          type="evento"
+          isPrivate={form.private}
+          onConfirm={handleConfirm}
+          onCancel={() => setConfirming(false)}
+        />
+      ) : null}
     </View>
   );
 }
