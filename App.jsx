@@ -35,6 +35,7 @@ function Shell() {
   const [tab, setTab] = useState('inicio');
   const [perfil, setPerfil] = useState(false);
   const [saude, setSaude] = useState(false);
+  const [equip, setEquip] = useState(false);
   const [gestao, setGestao] = useState(false);
   const [doc, setDoc] = useState(false);
   const [booting, setBooting] = useState(true);
@@ -124,7 +125,7 @@ function Shell() {
       {/* área de scroll */}
       <ScrollView style={{ flex: 1, minHeight: 0 }}
         contentContainerStyle={{ padding: 16, gap: S.xl, paddingBottom: S.xl }}>
-        {tab === 'inicio' ? <Inicio t={t} user={user} go={setTab} onGestao={() => setGestao(true)} onDoc={() => setDoc(true)} onSaude={() => setSaude(true)} /> : <Screen t={t} user={user} go={setTab} />}
+        {tab === 'inicio' ? <Inicio t={t} user={user} go={setTab} onSaude={() => setSaude(true)} onEquip={() => setEquip(true)} onGestao={() => setGestao(true)} onDoc={() => setDoc(true)} /> : <Screen t={t} user={user} go={setTab} />}
       </ScrollView>
 
       {/* rodapé — último filho da raiz, sempre */}
@@ -154,6 +155,14 @@ function Shell() {
         <Modal transparent animationType="slide" onRequestClose={() => setSaude(false)}>
           <View style={{ flex: 1, backgroundColor: t.page }}>
             <Saude t={t} user={user} />
+          </View>
+        </Modal>
+      ) : null}
+
+      {equip ? (
+        <Modal transparent animationType="slide" onRequestClose={() => setEquip(false)}>
+          <View style={{ flex: 1, backgroundColor: t.page }}>
+            <Equipamentos t={t} user={user} />
           </View>
         </Modal>
       ) : null}

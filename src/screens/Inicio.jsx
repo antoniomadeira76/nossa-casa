@@ -7,7 +7,7 @@ import { MEMBERS } from '../data';
 import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager } from '../ui';
 import Icon from '../Icon';
 
-export default function Inicio({ t, user, go, onGestao, onDoc, onSaude }) {
+export default function Inicio({ t, user, go, onSaude, onEquip, onGestao, onDoc }) {
   const st = useStore();
   const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring } = st;
 
@@ -156,7 +156,7 @@ export default function Inicio({ t, user, go, onGestao, onDoc, onSaude }) {
           <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text2, textAlign: 'center' }}>Saúde</Text>
         </Pressable>
 
-        <Pressable onPress={() => go('equip')}
+        <Pressable onPress={onEquip}
           style={{ flex: 1, minWidth: 140, minHeight: 48, backgroundColor: t.card, borderRadius: R.row,
             borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center', gap: S.sm }}>
           <Icon name="houseGear" size={18} color={t.text2} />
