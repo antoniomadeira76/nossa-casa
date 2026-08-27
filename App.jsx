@@ -181,24 +181,36 @@ function Shell() {
 
         {/* Modals como overlay com scrim semi-transparente */}
         {(saude || equip || gestao || doc) && (
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
             {saude && (
-              <View style={{ flex: 0.9, width: '90%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden' }}>
+              <View style={{ maxHeight: '85vh', width: '100%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden', position: 'relative' }}>
+                <Pressable onPress={() => setSaude(false)} style={{ position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: t.chrome, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+                  <Icon name="close" size={20} color="#FFFFFF" />
+                </Pressable>
                 <Saude t={t} user={user} onClose={() => setSaude(false)} />
               </View>
             )}
             {equip && (
-              <View style={{ flex: 0.9, width: '90%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden' }}>
+              <View style={{ maxHeight: '85vh', width: '100%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden', position: 'relative' }}>
+                <Pressable onPress={() => setEquip(false)} style={{ position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: t.chrome, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+                  <Icon name="close" size={20} color="#FFFFFF" />
+                </Pressable>
                 <Equipamentos t={t} user={user} onClose={() => setEquip(false)} />
               </View>
             )}
             {gestao && (
-              <View style={{ flex: 0.9, width: '90%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden' }}>
+              <View style={{ maxHeight: '85vh', width: '100%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden', position: 'relative' }}>
+                <Pressable onPress={() => setGestao(false)} style={{ position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: t.chrome, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+                  <Icon name="close" size={20} color="#FFFFFF" />
+                </Pressable>
                 <Gestao t={t} user={user} onClose={() => setGestao(false)} />
               </View>
             )}
             {doc && (
-              <View style={{ flex: 0.9, width: '90%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden' }}>
+              <View style={{ maxHeight: '85vh', width: '100%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden', position: 'relative' }}>
+                <Pressable onPress={() => setDoc(false)} style={{ position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: t.chrome, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+                  <Icon name="close" size={20} color="#FFFFFF" />
+                </Pressable>
                 <Documentacao t={t} onClose={() => setDoc(false)} />
               </View>
             )}
