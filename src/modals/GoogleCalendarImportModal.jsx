@@ -62,9 +62,14 @@ export default function GoogleCalendarImportModal({ t, events, user, onImportAll
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.page, borderTopLeftRadius: 16, borderTopRightRadius: 16, overflow: 'hidden', flexDirection: 'column' }}>
+    <View style={{ maxHeight: '80vh', backgroundColor: t.page, borderTopLeftRadius: 16, borderTopRightRadius: 16, overflow: 'hidden', flexDirection: 'column', position: 'relative' }}>
+      {/* Close Button */}
+      <Pressable onPress={onClose} style={{ position: 'absolute', top: 14, right: 14, width: 32, height: 32, borderRadius: 16, backgroundColor: t.chrome, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+        <Icon name="close" size={18} color="#FFFFFF" />
+      </Pressable>
+
       {/* Cabeçalho */}
-      <View style={{ paddingHorizontal: 20, paddingVertical: 18, gap: 2, borderBottomWidth: 1, borderBottomColor: t.border }}>
+      <View style={{ paddingHorizontal: 20, paddingVertical: 18, paddingTop: 24, gap: 2, borderBottomWidth: 1, borderBottomColor: t.border }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Text style={{ fontFamily: FONT.display, fontSize: 18, fontWeight: '600', color: t.text1 }}>
             {visibleEvents.length} evento{visibleEvents.length !== 1 ? 's' : ''} novo{visibleEvents.length !== 1 ? 's' : ''}
