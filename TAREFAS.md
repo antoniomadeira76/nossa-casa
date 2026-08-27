@@ -1,106 +1,121 @@
-# Tarefas — por ordem
+# Checklist de Implementação vs Especificação
 
-Cada tarefa diz **o que fazer**, **onde**, e **como saber que está feita**. A referência visual
-é sempre `design/Nossa Casa App.dc.html` aberto no navegador, e `docs/especificacao-ecras.md`
-para as medidas.
+## 1. NAVEGAÇÃO & LAYOUT ✅
+- [x] Navbar Storm Blue com linhas de largura total
+- [x] Menu inferior de cinco entradas (Início, Dinheiro, Tarefas, Compras, Agenda)
+- [x] Cinco separadores ligados com estado partilhado
+- [x] Avatar no cabeçalho para Gestão da Casa e Perfil
 
----
+## 2. AUTENTICAÇÃO & ENTRADA
+- [x] Entrar — Continuar com Google
+- [x] Modo Criança — PIN de 4 dígitos
+- [ ] **PENDENTE:** Ao entrar — popup do evento novo do Google Calendar (Adicionar, Adicionar Só para Mim, Ignorar)
 
-## 1. Primeira compilação
+## 3. DINHEIRO & FINANÇAS
+- [x] Registar Despesa — valor, envelope, quem pagou
+- [x] Acertar Contas — pagamento parcial (Tudo, Metade, Valor)
+- [ ] **PENDENTE:** Limite de um envelope — toque para mudar contra rendimento
+- [ ] **PENDENTE:** Mover Dinheiro — toque no envelope ou botão Mover
+- [x] Dinheiro — ver envelope Mercearia após compras
+- [x] Marcar como Pago — acertar contas
+- [ ] **PENDENTE:** Abrir o mês — distribuir rendimento e reiniciar
+- [ ] **PENDENTE:** Fecho do mês — arquivar e 30% para metas
 
-`npm install && npx expo start`. Resolver o que aparecer.
+## 4. GESTÃO DA CASA (Admin)
+- [x] Gestão da Casa — no avatar (rendimento, semanada, divisão, envelopes)
+- [ ] **PENDENTE:** Papéis — toque na pílula para mudar (Administração, confirmar mudança)
+- [ ] **PENDENTE:** Lojas — criar, renomear, apagar supermercados
+- [ ] **PENDENTE:** Membros e PIN — definir PIN das crianças (rejeita iguais, sequências)
+- [ ] **PENDENTE:** Especialidades — em Marcar Consulta
 
-**Provável:** os tipos de letra. O protótipo usa Roboto (títulos e corpo) e Inter (dados densos
-e etiquetas pequenas). Em Expo: `expo-font` + `@expo-google-fonts/roboto` e
-`@expo-google-fonts/inter`, carregados em `App.jsx` antes de renderizar.
+## 5. TAREFAS & PONTOS
+- [x] Tarefas — toque para concluir, pontos recalculam
+- [ ] **PENDENTE:** Nova Tarefa — com toggle de partilha
+- [ ] **PENDENTE:** Lápis na tarefa — reatribuir, mudar pontos, remover
+- [ ] **PENDENTE:** Recorrência — "feita hoje · volta amanhã"
+- [ ] **PENDENTE:** Prazo — data/hora, 2.ª linha mostra prazo (hoje às 18:00, atrasada 1 dia, vermelha)
+- [ ] **PENDENTE:** Urgência — cores (vermelho cheio urgente, âmbar normal, cinza sem pressa)
+- [ ] **PENDENTE:** Ordem — renumeração automática 1,2,3 e arrastar dentro do grupo
+- [ ] **PENDENTE:** Paginação — 10 itens, total à esquerda, setas à direita
+- [ ] **PENDENTE:** Confirmação de tarefas — criança marca, pais confirmam
 
-**Feito quando:** a app abre no simulador, entra com a Rita, e os cinco separadores navegam.
+## 6. COMPRAS & LOJA
+- [x] Compras — Iniciar Compras abre modo de loja
+- [x] Fechar conta — despesa entra no envelope Mercearia
+- [ ] **PENDENTE:** Adicionar Artigo — escolhe secção e se é habitual
+- [ ] **PENDENTE:** Lápis do artigo — adia ou remove
+- [ ] **PENDENTE:** Artigos ordenáveis à mão (no lápis)
+- [ ] **PENDENTE:** Todos — primeira aba, lista inteira na ordem do corredor
+- [ ] **PENDENTE:** Carrinho — o que está dentro (preço), sem stock, validação
+- [ ] **PENDENTE:** Ordem do corredor — stepper segue sequência, mostra preço costumado
+- [ ] **PENDENTE:** Últimas 10 compras — data, loja, quem, total, Repetir (11.ª empurra a mais antiga)
+- [ ] **PENDENTE:** Quem vai às compras — Alterar dia, hora, loja (modo compras mostra dados)
+- [ ] **PENDENTE:** Lojas — Outra loja… também na folha das compras
 
----
+## 7. AGENDA & EVENTOS
+- [x] Agendar — campo de texto + popup (calendário em cima, roller hora/minuto em baixo)
+- [ ] **PENDENTE:** Calendário — Ver mês expande grelha, toque num dia para agendar
+- [ ] **PENDENTE:** Importar do Google — lista eventos novos com seleção, recorrentes desligados, toggle visibilidade
+- [ ] **PENDENTE:** Agendar Evento — toggle partilhado/só seu calendário
+- [ ] **PENDENTE:** Saúde na Agenda — consulta é um evento com etiqueta Saúde
+- [ ] **PENDENTE:** Agendar Manutenção (Equipamentos) — entra na Agenda
 
-## 2. Folhas de criar (novo evento, nova tarefa, novo artigo)
+## 8. SAÚDE (Nova Funcionalidade Completa)
+- [ ] **PENDENTE:** Saúde da Família — no avatar navbar
+- [ ] **PENDENTE:** Ficha por pessoa — privada para adultos, visível para crianças
+- [ ] **PENDENTE:** Arquivo clínico — procura e filtros (acima de 5 documentos)
+- [ ] **PENDENTE:** Marcar Consulta — Gerir especialidades
+- [ ] **PENDENTE:** Receitas — aviso 30 dias antes de expirar
+- [ ] **PENDENTE:** Notas do episódio — quantas quiser, autor e data
+- [ ] **PENDENTE:** Ficha de saúde — topo mostra o que exige decisão, acordeão por consulta
+- [ ] **PENDENTE:** Nenhum exame órfão — consulta É o evento, documentos gravam origem
 
-**Onde:** `src/Sheet.jsx` já tem o invólucro. Criar `src/sheets/NovoEvento.jsx`,
-`NovaTarefa.jsx`, `NovoArtigo.jsx`.
+## 9. EQUIPAMENTOS
+- [x] Equipamentos da Casa — garantias, fotos da fatura
+- [ ] **PENDENTE:** Agendar Manutenção — entra na Agenda
 
-**Padrão da folha:** cabeçalho fixo com título e ✕ · meio com scroll · ação fixa em baixo.
-Altura máxima que **para 86 px acima do fundo**, para o rodapé continuar visível.
+## 10. COFRE (Crianças)
+- [x] Cofre — nas Tarefas, saldo, movimentos
+- [x] Pagar Semanada e bónus
+- [ ] **PENDENTE:** Semanada — campo escrevível com −/+ de 0,05 € (0,01 a 5,00 €)
+- [ ] **PENDENTE:** Semanada — pode ser paga em qualquer dia (tira de abreviaturas)
+- [ ] **PENDENTE:** Metas — recebem o que sobra do rendimento: +50 € por toque (só admin)
 
-**Campos:** ver o protótipo. Evento: texto livre, dia e hora (um só popup com calendário e
-roletes), responsável, alternador de partilha. Tarefa: texto, membro, recorrência, pontos,
-urgência, prazo. Artigo: texto, secção, alternador de habitual.
+## 11. PERFIL & DADOS
+- [x] Aspeto — sol, lua ou dispositivo
+- [x] Esquema de cor — apenas no avatar navbar, apenas para perfil ligado
+- [ ] **PENDENTE:** Modo criança — reduzido a tarefas e cofre, sem orçamento
+- [ ] **PENDENTE:** Dados — guardados no dispositivo, Repor Dados de Demonstração
+- [ ] **PENDENTE:** Terminar sessão — ícone no cabeçalho da folha de perfil
+- [ ] **PENDENTE:** Começar de zero — ver estados vazios, pede confirmação
+- [ ] **PENDENTE:** Casa nova — depois de Começar de Zero, folha de arranque
 
-**Feito quando:** criar cada um dos três e vê-lo aparecer na lista respetiva, e o registo de
-alterações apanhar a criação.
+## 12. UI/UX DETALHES
+- [ ] **PENDENTE:** Confirmação — remover tarefa/artigo/evento/equipamento, repor demo
+- [ ] **PENDENTE:** Precisa de si — topo do Início, só o que exige decisão
+- [ ] **PENDENTE:** Resumo diário — no perfil, regra como frase, desligado fica uma linha
+- [ ] **PENDENTE:** Espaçamento — escala 2/4/8/16/24 px, enchimento 14/16 nos cartões
+- [ ] **PENDENTE:** Ícones — houseGear (Gestão), heartPulse (Saúde)
+- [ ] **PENDENTE:** Cor por membro — Rita violeta, Tomás cião, Léo azul, Mia azul-meia-noite
 
----
+## 13. SEGURANÇA & PAPÉIS
+- [ ] **PENDENTE:** PIN crianças — sem valor de fábrica, 5 tentativas = 1 min bloqueio
+- [ ] **PENDENTE:** Papéis — mudança pede confirmação, criança sobe a adulto, adulto nunca volta criança
+- [ ] **PENDENTE:** Ficha do membro — Membros e PIN, abre ficha com PIN e papel como linhas
 
-## 3. Popup de confirmação de partilha
+## PRIORIDADE DE IMPLEMENTAÇÃO
+1. **Crítica (INVARIANTE #1):** ✅ Já feito — Navbar, separadores, header/footer
+2. **Alta (Funcionalidade Core):**
+   - [ ] Popup evento Google ao entrar
+   - [ ] Papéis & Membros (admin pode mudar)
+   - [ ] Lojas
+   - [ ] Limite de envelope
+3. **Média (Funcionalidade Secundária):**
+   - [ ] Recorrência de tarefas
+   - [ ] Prazo com cores de urgência
+   - [ ] Saúde completa
+4. **Baixa (UI/UX Polish):**
+   - [ ] Paginação
+   - [ ] Confirmações de delete
+   - [ ] Resumo diário
 
-Tudo o que é agendado (evento, tarefa, manutenção) passa por confirmação antes de gravar, com
-as etiquetas a mudar conforme o tipo — **não fixe "Evento"**. Ver a tabela na especificação.
-
-**Feito quando:** guardar um evento privado mostra "Confirmar como Privado" e o selo *Só eu*
-aparece na Agenda.
-
----
-
-## 4. Equipamentos (ecrã inteiro)
-
-**Onde:** `src/screens/Equipamentos.jsx`.
-
-Lista com os três estados de garantia (em garantia / a expirar / fora), ficha com fotografias de
-fatura e equipamento, agendar manutenção, exportar fatura em PDF.
-
-**Regra de cor:** a expirar → texto e contorno laranja de aviso; expirada → vermelho.
-
-**Feito quando:** os três estados aparecem corretos, e agendar manutenção coloca o evento na
-Agenda com o nome do equipamento.
-
----
-
-## 5. Saúde (ecrã inteiro)
-
-**Onde:** `src/screens/Saude.jsx`.
-
-Uma ficha por membro, com episódios (consultas) e, dentro de cada um, exames, receitas e notas —
-**os anexos pertencem ao episódio que os originou**, nunca soltos.
-
-**Visibilidade:** a ficha de um adulto é visível só a esse adulto; as das crianças aos adultos.
-Esta é a regra mais restritiva do sistema e a que precisa de mais teste.
-
-**Feito quando:** um episódio marcado aparece na Agenda e no Início, e a ficha de um adulto não
-é visível ao outro.
-
----
-
-## 6. Gestão da Casa e Documentação
-
-**Onde:** `src/screens/Gestao.jsx`, `src/screens/Documentacao.jsx`.
-
-Gestão: rendimento, envelopes, semanada (valor livre do ponto, qualquer dia da semana), divisão
-das despesas, membros e PIN, lojas, categorias, especialidades. **Só administradores.**
-
-Documentação: o registo de alterações por área e por versão, ordenado por versão descendente.
-
-**Feito quando:** entrar com o Tomás (adulto) não mostra a Gestão; com a Rita mostra.
-
----
-
-## 7. Ligar ao Supabase
-
-Só depois de a app funcionar com dados locais. `docs/sincronizacao.html` tem o modelo de dados
-tabela a tabela, com quem escreve e a regra de conflito de cada uma.
-
-**Ordem:** contas e casa → leitura remota com cópia local → fila de escrita → tempo real na
-lista de compras → ficheiros (faturas e exames).
-
-**Feito quando:** a Rita altera no telefone dela e o Tomás vê no dele.
-
----
-
-## 8. Lojas, ícone e submissão
-
-Ícone e capturas estão em `docs/loja/`. Falta: política de privacidade num endereço estável
-(obrigatória nas duas lojas), verificação do acesso ao Google Calendar (leva semanas — comece
-cedo), e a declaração de recolha de dados.
