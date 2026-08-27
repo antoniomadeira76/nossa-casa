@@ -109,6 +109,13 @@ function Shell() {
   const meta = TABS.find(x => x.key === tab);
   const Screen = { dinheiro: Dinheiro, tarefas: Tarefas, compras: Compras, agenda: Agenda }[tab];
 
+  // Header dinâmico para Início; fixo para outros ecrãs
+  const isHome = tab === 'inicio';
+  const hour = new Date().getHours();
+  const greet = hour < 13 ? 'Bom dia' : hour < 20 ? 'Boa tarde' : 'Boa noite';
+  const today = new Date().toLocaleDateString('pt-PT', { weekday: 'short', day: '2-digit', month: '2-digit' })
+    .replace(/^\w/, c => c.toUpperCase());
+
   // ⚠ INVARIANTE — ver CLAUDE.md
   // Cabeçalho e rodapé aparecem em TODAS as janelas. A raiz é uma coluna flex
   // com três filhos e a condição do rodapé não leva nada além de "estar na app":
@@ -128,12 +135,32 @@ function Shell() {
       }}>
         <Marca size={120} mono opacity={0.10}
           style={{ position: 'absolute', top: insets.top + 4, right: -24 }} />
-        <Icon name={meta.icon} size={26} color="#FFFFFF" />
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: '500',
-            color: '#FFFFFF', letterSpacing: 0.25 }}>{meta.title}</Text>
-          {meta.sub ? <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 12, color: onC }}>{meta.sub}</Text> : null}
-        </View>
+
+        {isHome ? (
+          // Header dinâmico para Início
+          <>
+            <View style={{ flex: 1, gap: 3 }}>
+              <Text style={{ fontFamily: FONT.display, fontSize: 22, fontWeight: '500',
+                color: '#FFFFFF', letterSpacing: 0.25 }}>{greet}, {user}</Text>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: onC }}>{today}</Text>
+            </View>
+            <Pressable accessibilityRole="button" accessibilityLabel="Pesquisar"
+              style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="search" size={22} color="#FFFFFF" />
+            </Pressable>
+          </>
+        ) : (
+          // Header fixo para outros ecrãs
+          <>
+            <Icon name={meta.icon} size={26} color="#FFFFFF" />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: '500',
+                color: '#FFFFFF', letterSpacing: 0.25 }}>{meta.title}</Text>
+              {meta.sub ? <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 12, color: onC }}>{meta.sub}</Text> : null}
+            </View>
+          </>
+        )}
+
         <Pressable onPress={() => setPerfil(true)} accessibilityRole="button"
           accessibilityLabel="Perfil e ajustes"
           style={{ width: 36, height: 36, borderRadius: R.pill, backgroundColor: '#FFFFFF',
