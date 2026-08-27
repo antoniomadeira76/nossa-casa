@@ -13,6 +13,7 @@ const DATA_KEYS = [
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pointValue', 'payDay', 'splitHalf',
   'stores', 'shopPlan', 'shopHistory', 'health', 'specialities', 'equipCats', 'registo',
+  'recurringReset', 'healthNotes', 'healthRecipes', 'healthDecisions', // health feature
 ];
 
 export const DEMO = () => ({
@@ -36,12 +37,17 @@ export const DEMO = () => ({
   shopHistory: [], health: [], specialities: ['Medicina geral', 'Dentista', 'Pediatria', 'Oftalmologia'],
   equipCats: ['Eletrodomésticos', 'Aquecimento', 'Informática', 'Outros'],
   registo: [],
+  recurringReset: {}, // taskId -> TODAY_KEY when reset
+  healthNotes: {}, // healthId -> [{ author, date, text }]
+  healthRecipes: {}, // healthId -> [{ id, name, dosage, quantity, unit, expiresAt, decision }]
+  healthDecisions: {}, // healthId -> { type, status, note }
 });
 
 // Casa nova: os mesmos campos, todos vazios
 export const BLANK = () => ({
   ...DEMO(), done: {}, urg: {}, due: {}, vault: { 'Léo': 0, 'Mia': 0 },
   clearedSeeds: true, monthZero: true, shopHistory: [], health: [],
+  healthNotes: {}, healthRecipes: {}, healthDecisions: {},
 });
 
 const Ctx = createContext(null);
@@ -182,6 +188,83 @@ function build(s, set) {
     return null;
   };
 
+  // Health: agregar métodos para gestão de saúde
+  const addHealthRecord = (member, date, specialty) => {
+    const id = 'hlth-' + Date.now();
+    return set(x => ({
+      health: [...(x.health || []), {
+        id, member, date, specialty,
+        createdAt: new Date().toISOString(),
+      }],
+    })), id;
+  };
+
+  const addHealthNote = (healthId, author, text) => {
+    set(x => ({
+      healthNotes: {
+        ...x.healthNotes,
+        [healthId]: [...(x.healthNotes[healthId] || []), {
+          id: 'note-' + Date.now(),
+          author,
+          date: new Date().toISOString(),
+          text,
+        }],
+      },
+    }));
+  };
+
+  const addRecipe = (healthId, name, dosage, quantity, unit, expiresAt) => {
+    set(x => ({
+      healthRecipes: {
+        ...x.healthRecipes,
+        [healthId]: [...(x.healthRecipes[healthId] || []), {
+          id: 'rx-' + Date.now(),
+          name, dosage, quantity, unit,
+          expiresAt,
+          decision: null,
+        }],
+      },
+    }));
+  };
+
+  const setRecipeDecision = (healthId, recipeId, decision) => {
+    set(x => ({
+      healthRecipes: {
+        ...x.healthRecipes,
+        [healthId]: (x.healthRecipes[healthId] || []).map(r =>
+          r.id === recipeId ? { ...r, decision } : r
+        ),
+      },
+    }));
+  };
+
+  const setHealthDecision = (healthId, type, status, note) => {
+    set(x => ({
+      healthDecisions: {
+        ...x.healthDecisions,
+        [healthId]: { type, status, note, updatedAt: new Date().toISOString() },
+      },
+    }));
+  };
+
+  const addSpecialty = (name) => {
+    set(x => ({
+      specialities: [...(x.specialities || []), name],
+    }));
+  };
+
+  const removeSpecialty = (name) => {
+    set(x => ({
+      specialities: (x.specialities || []).filter(s => s !== name),
+    }));
+  };
+
+  const renameSpecialty = (oldName, newName) => {
+    set(x => ({
+      specialities: (x.specialities || []).map(s => s === oldName ? newName : s),
+    }));
+  };
+
   return {
     s, set,
     allTasks, allItems, allEvents, allEquip,
@@ -190,5 +273,8 @@ function build(s, set) {
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),
     resetDemo: () => { AsyncStorage.removeItem(KEY).catch(() => {}); set(DEMO()); },
     startBlank: () => set(BLANK()),
+    // Health feature methods
+    addHealthRecord, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision,
+    addSpecialty, removeSpecialty, renameSpecialty,
   };
 }

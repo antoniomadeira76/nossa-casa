@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, MEMBER_COLOR } from '../theme';
 import { EUR } from '../format';
@@ -93,8 +93,9 @@ export default function Tarefas({ t, user }) {
               return (
                 <Card key={x.id} t={t} style={{
                   borderWidth: done ? 2 : 1,
-                  borderColor: done ? t.state.okBorder : pend ? t.state.info : t.border,
+                  borderColor: done ? t.state.okBorder : pend ? t.state.info : u.color,
                   backgroundColor: done ? t.state.okBg : t.card,
+                  borderStyle: u.dash ? 'dashed' : 'solid',
                 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <Pressable onPress={() => st.tapTask(x.id, false)} accessibilityRole="button"
@@ -150,10 +151,54 @@ export default function Tarefas({ t, user }) {
               options={URG.map(u => ({ value: u.key, label: u.label }))}
               onChange={(v) => set(x => ({ urg: { ...x.urg, [task.id]: v } }))} />
             <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
-              {task.urgency === 0 ? 'Sobe ao topo da lista, com a caixa cheia a vermelho.'
-                : task.urgency === 1 ? 'Fica no meio da lista, com a caixa tracejada a âmbar.'
+              {task.urgency === 0 ? 'Sobe ao topo da lista, com a caixa cheia a vermelho e borda vermelha.'
+                : task.urgency === 1 ? 'Fica no meio da lista, com a caixa tracejada a âmbar e borda tracejada.'
                 : 'Desce para o fim da lista, com a caixa em contorno cinzento.'}
             </Text>
+          </View>
+
+          <View style={{ gap: S.md }}>
+            <Label t={t}>Prazo (opcional)</Label>
+            <View style={{ flexDirection: 'row', gap: S.sm, alignItems: 'center' }}>
+              <Pressable
+                onPress={() => set(x => {
+                  const newDue = { ...x.due };
+                  if (task.dueKey) {
+                    delete newDue[task.id];
+                  } else {
+                    newDue[task.id] = { key: task.dueKey || s.due[task.id]?.key, time: s.due[task.id]?.time || '18:00' };
+                  }
+                  return { due: newDue };
+                })}
+                style={{
+                  flex: 1, minHeight: 44, paddingHorizontal: S.md, borderRadius: R.row, borderWidth: 1,
+                  borderColor: task.dueKey ? t.chrome : t.border, backgroundColor: task.dueKey ? t.chrome : t.card,
+                  justifyContent: 'center',
+                }}>
+                <Text style={{ fontFamily: FONT.body, fontSize: 15, color: task.dueKey ? '#FFFFFF' : t.text2 }}>
+                  {task.dueKey ? '✓ Com prazo' : 'Sem prazo'}
+                </Text>
+              </Pressable>
+              {task.dueKey && (
+                <TextInput
+                  value={task.dueTime || '18:00'}
+                  onChangeText={(v) => set(x => ({ due: { ...x.due, [task.id]: { key: task.dueKey, time: v } } }))}
+                  placeholder="18:00"
+                  placeholderTextColor={t.text3}
+                  maxLength={5}
+                  style={{
+                    width: 70, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.ui,
+                    fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
+                    borderColor: t.border, backgroundColor: t.card, textAlign: 'center',
+                  }}
+                />
+              )}
+            </View>
+            {dueOf(task) && (
+              <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: dueOf(task).late ? t.state.errDeep : dueOf(task).soon ? t.state.warnDeep : t.text3 }}>
+                Prazo: {dueOf(task).text}
+              </Text>
+            )}
           </View>
 
           <View style={{ gap: S.md }}>
