@@ -14,6 +14,7 @@ export default function Gestao({ t, user, onClose }) {
   const [sheetOpen, setSheetOpen] = useState(null);
   const [modal, setModal] = useState(null);
   const [input, setInput] = useState('');
+  const [limitInput, setLimitInput] = useState('');
   const [selectedMember, setSelectedMember] = useState(null);
   const [selectedEnvelope, setSelectedEnvelope] = useState(null);
   const [selectedSpecialty, setSelectedSpecialty] = useState(null);
@@ -102,6 +103,28 @@ export default function Gestao({ t, user, onClose }) {
     </View>
   );
 
+  const renderShopsTab = () => (
+    <View style={{ gap: S.md }}>
+      <SectionTitle t={t}>Lojas</SectionTitle>
+      {s.stores && s.stores.map((shop, i) => (
+        <Card key={i} t={t} pad={false}>
+          <Row t={t} icon="storefront" title={shop} last
+            onPress={() => {
+              setSelectedEnvelope(i);
+              setInput(shop);
+              setSheetOpen('editShop');
+            }}
+            right={<Icon name="caretRight" size={18} color={t.text3} />}
+          />
+        </Card>
+      ))}
+      <AddButton t={t} label="adicionar loja" onPress={() => {
+        setInput('');
+        setSheetOpen('newShop');
+      }} />
+    </View>
+  );
+
   const renderMembersTab = () => (
     <View style={{ gap: S.md }}>
       <SectionTitle t={t}>Membros da casa</SectionTitle>
@@ -173,6 +196,7 @@ export default function Gestao({ t, user, onClose }) {
           <Tap label={`Editar ${env.name}`} onPress={() => {
             setSelectedEnvelope(env.name);
             setInput(env.name);
+            setLimitInput(String(env.limit));
             setSheetOpen('editEnvelope');
           }} style={{ padding: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
@@ -255,6 +279,7 @@ export default function Gestao({ t, user, onClose }) {
             { key: 'orcamento', label: 'Orçamento' },
             { key: 'membros', label: 'Membros' },
             { key: 'envelopes', label: 'Envelopes' },
+            { key: 'lojas', label: 'Lojas' },
             { key: 'especialidades', label: 'Especialidades' },
           ].map(({ key, label }) => (
             <Pressable key={key} onPress={() => setTab(key)}
@@ -269,6 +294,7 @@ export default function Gestao({ t, user, onClose }) {
         {tab === 'orcamento' && renderBudgetTab()}
         {tab === 'membros' && renderMembersTab()}
         {tab === 'envelopes' && renderEnvelopesTab()}
+        {tab === 'lojas' && renderShopsTab()}
         {tab === 'especialidades' && renderSpecialtiesTab()}
 
         <Pressable onPress={onClose} style={{ paddingVertical: S.lg }}>
@@ -333,16 +359,20 @@ export default function Gestao({ t, user, onClose }) {
             setSheetOpen(null);
             setSelectedEnvelope(null);
             setInput('');
+            setLimitInput('');
           }}
           action={
             <Primary t={t} label="Guardar" onPress={() => {
-              if (input.trim()) {
+              if (input.trim() && limitInput.trim()) {
+                const newLimit = parseFloat(limitInput.replace(',', '.'));
+                if (isNaN(newLimit) || newLimit <= 0) return;
+
                 set(s => {
                   const oldName = selectedEnvelope;
                   const newName = input.trim();
                   const newLimits = { ...s.monthLimits };
                   if (newLimits[oldName] !== undefined) {
-                    newLimits[newName] = newLimits[oldName];
+                    newLimits[newName] = newLimit;
                     delete newLimits[oldName];
                   }
                   const newMoves = { ...s.envMove };
@@ -355,6 +385,7 @@ export default function Gestao({ t, user, onClose }) {
                 setSheetOpen(null);
                 setSelectedEnvelope(null);
                 setInput('');
+                setLimitInput('');
               }
             }} />
           }>
@@ -373,18 +404,18 @@ export default function Gestao({ t, user, onClose }) {
                   borderWidth: 1,
                   borderColor: t.border,
                   fontFamily: FONT.body,
-                  fontSize: 16,
+                  fontSize: 15,
                   color: t.text1,
                 }}
               />
             </View>
             <View>
-              <Label t={t}>Limite mensal</Label>
+              <Label t={t}>Limite mensal (€)</Label>
               <TextInput
                 placeholder="0,00"
                 keyboardType="decimal-pad"
-                value={input}
-                onChangeText={setInput}
+                value={limitInput}
+                onChangeText={setLimitInput}
                 style={{
                   marginTop: S.sm,
                   paddingHorizontal: S.md,
@@ -393,7 +424,7 @@ export default function Gestao({ t, user, onClose }) {
                   borderWidth: 1,
                   borderColor: t.border,
                   fontFamily: FONT.body,
-                  fontSize: 16,
+                  fontSize: 15,
                   color: t.text1,
                 }}
               />
@@ -690,6 +721,127 @@ export default function Gestao({ t, user, onClose }) {
                       Fechar
                     </Text>
                   </View>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
+      )}
+
+      {sheetOpen === 'newShop' && (
+        <Sheet t={t} title="Adicionar Loja" sub="Nova loja"
+          onClose={() => {
+            setSheetOpen(null);
+            setInput('');
+          }}
+          action={
+            <Primary t={t} label="Adicionar" onPress={() => {
+              if (input.trim()) {
+                set(s => ({
+                  stores: [...s.stores, input.trim()],
+                }));
+                setSheetOpen(null);
+                setInput('');
+              }
+            }} disabled={!input.trim()} />
+          }>
+          <View style={{ gap: S.md }}>
+            <View>
+              <Label t={t}>Nome da loja</Label>
+              <TextInput
+                placeholder="Ex: Continente"
+                value={input}
+                onChangeText={setInput}
+                style={{
+                  marginTop: S.sm,
+                  paddingHorizontal: S.md,
+                  paddingVertical: S.md,
+                  borderRadius: R.row,
+                  borderWidth: 1,
+                  borderColor: t.border,
+                  fontFamily: FONT.body,
+                  fontSize: 15,
+                  color: t.text1,
+                }}
+              />
+            </View>
+          </View>
+        </Sheet>
+      )}
+
+      {sheetOpen === 'editShop' && (
+        <Sheet t={t} title="Editar Loja" sub={s.stores[selectedEnvelope]}
+          onClose={() => {
+            setSheetOpen(null);
+            setSelectedEnvelope(null);
+            setInput('');
+          }}
+          action={
+            <View style={{ gap: S.md }}>
+              <Primary t={t} label="Renomear" onPress={() => {
+                if (input.trim()) {
+                  set(s => ({
+                    stores: s.stores.map((shop, i) => i === selectedEnvelope ? input.trim() : shop),
+                  }));
+                  setSheetOpen(null);
+                  setSelectedEnvelope(null);
+                  setInput('');
+                }
+              }} disabled={!input.trim() || input === s.stores[selectedEnvelope]} />
+              <Pressable onPress={() => setModal('confirmDeleteShop')}
+                style={{ paddingVertical: S.md, alignItems: 'center' }}>
+                <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.state.err }}>Apagar loja</Text>
+              </Pressable>
+            </View>
+          }>
+          <View style={{ gap: S.md }}>
+            <View>
+              <Label t={t}>Nome da loja</Label>
+              <TextInput
+                placeholder="Nome da loja"
+                value={input}
+                onChangeText={setInput}
+                style={{
+                  marginTop: S.sm,
+                  paddingHorizontal: S.md,
+                  paddingVertical: S.md,
+                  borderRadius: R.row,
+                  borderWidth: 1,
+                  borderColor: t.border,
+                  fontFamily: FONT.body,
+                  fontSize: 15,
+                  color: t.text1,
+                }}
+              />
+            </View>
+          </View>
+        </Sheet>
+      )}
+
+      {modal === 'confirmDeleteShop' && (
+        <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
+          <Pressable onPress={() => setModal(null)}
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <Pressable style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 300 }}>
+              <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
+                Apagar loja?
+              </Text>
+              <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2, textAlign: 'center' }}>
+                {s.stores[selectedEnvelope]}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: S.md }}>
+                <Pressable onPress={() => setModal(null)} style={{ flex: 1, paddingVertical: S.md, borderRadius: R.row, backgroundColor: t.border }}>
+                  <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.text2, textAlign: 'center' }}>Cancelar</Text>
+                </Pressable>
+                <Pressable onPress={() => {
+                  set(s => ({
+                    stores: s.stores.filter((_, i) => i !== selectedEnvelope),
+                  }));
+                  setModal(null);
+                  setSheetOpen(null);
+                  setSelectedEnvelope(null);
+                }} style={{ flex: 1, paddingVertical: S.md, borderRadius: R.row, backgroundColor: t.state.err }}>
+                  <Text style={{ fontFamily: FONT.display, fontSize: 14, color: '#FFFFFF', textAlign: 'center' }}>Apagar</Text>
                 </Pressable>
               </View>
             </Pressable>
