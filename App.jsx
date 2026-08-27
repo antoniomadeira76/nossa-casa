@@ -137,16 +137,16 @@ function Shell() {
           style={{ position: 'absolute', top: insets.top + 4, right: -24 }} />
 
         {isHome ? (
-          // Header dinâmico para Início
+          // Header dinâmico para Início — exatamente como no mockup do iPhone
           <>
-            <View style={{ flex: 1, gap: 3 }}>
-              <Text style={{ fontFamily: FONT.display, fontSize: 22, fontWeight: '500',
-                color: '#FFFFFF', letterSpacing: 0.25 }}>{greet}, {user}</Text>
-              <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: onC }}>{today}</Text>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ fontFamily: FONT.display, fontSize: 24, fontWeight: '600',
+                color: '#FFFFFF', letterSpacing: 0.3 }}>{greet}, {user}</Text>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '400', color: onC }}>{today}</Text>
             </View>
             <Pressable accessibilityRole="button" accessibilityLabel="Pesquisar"
-              style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="search" size={22} color="#FFFFFF" />
+              style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginRight: 4 }}>
+              <Icon name="search" size={24} color="#FFFFFF" />
             </Pressable>
           </>
         ) : (
