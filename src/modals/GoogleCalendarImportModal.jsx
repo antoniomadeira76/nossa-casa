@@ -2,32 +2,28 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, Switch } from 'react-native';
 import { S, R, FONT } from '../theme';
 import Icon from '../Icon';
-import { Card, SectionTitle, Pill } from '../ui';
-import { evTime, dkey, pad2, parseKey } from '../format';
-
-/**
- * GoogleCalendarImportModal — modal para importar eventos do Google Calendar
- *
- * Props:
- *   - t: theme
- *   - events: array de eventos do Google Calendar a importar
- *   - user: nome do utilizador ligado
- *   - onImportAll: callback(events) quando clica "Adicionar" (para família)
- *   - onImportPrivate: callback(events) quando clica "Adicionar Só para Mim"
- *   - onIgnore: callback() quando clica "Ignorar"
- *   - onClose: callback() para fechar o modal
- */
+import { evTime, pad2, parseKey } from '../format';
 
 // Helper para formatar data para display (dd/mm)
 const formatDateForDisplay = (dateKey) => {
   if (!dateKey) return 'Data indisponível';
-  // Esperamos format 'd2026-08-28'
   const parsed = parseKey(dateKey);
-  if (!parsed) return dateKey; // fallback
+  if (!parsed) return dateKey;
   return `${pad2(parsed.d)}/${pad2(parsed.m + 1)}`;
 };
 
+// Helper para formatar descrição do evento
+const formatEventDescription = (event) => {
+  const parts = [];
+  if (event.date) parts.push(formatDateForDisplay(event.date));
+  if (event.time) parts.push(event.time);
+  if (event.description) parts.push(event.description);
+  return parts.join(' · ');
+};
+
 export default function GoogleCalendarImportModal({ t, events, user, onImportAll, onImportPrivate, onIgnore, onClose }) {
+  const [selected, setSelected] = useState({});
+  const [shared, setShared] = useState(true);
   const [recurringEnabled, setRecurringEnabled] = useState(false);
 
   // Separar eventos recorrentes e não recorrentes
@@ -38,134 +34,136 @@ export default function GoogleCalendarImportModal({ t, events, user, onImportAll
     };
   }, [events]);
 
-  // Determinar quais eventos mostrar (recorrentes só se enabled)
+  // Determinar quais eventos mostrar
   const visibleEvents = useMemo(() => {
     return recurringEnabled ? [...nonRecurring, ...recurring] : nonRecurring;
   }, [nonRecurring, recurring, recurringEnabled]);
 
-  const handleImportAll = () => {
-    onImportAll(visibleEvents);
+  // Inicializar seleção (todos selecionados por padrão)
+  useMemo(() => {
+    const newSelected = {};
+    nonRecurring.forEach(e => { newSelected[e.id] = true; });
+    setSelected(newSelected);
+  }, [nonRecurring]);
+
+  const toggleEvent = (eventId) => {
+    setSelected(prev => ({ ...prev, [eventId]: !prev[eventId] }));
   };
 
-  const handleImportPrivate = () => {
-    onImportPrivate(visibleEvents);
+  const selectedCount = Object.values(selected).filter(Boolean).length;
+  const selectedEvents = visibleEvents.filter(e => selected[e.id]);
+
+  const handleImport = () => {
+    if (shared) {
+      onImportAll(selectedEvents);
+    } else {
+      onImportPrivate(selectedEvents);
+    }
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.page, borderTopLeftRadius: 12, borderTopRightRadius: 12, overflow: 'hidden', flexDirection: 'column' }}>
+    <View style={{ flex: 1, backgroundColor: t.page, borderTopLeftRadius: 16, borderTopRightRadius: 16, overflow: 'hidden', flexDirection: 'column' }}>
       {/* Cabeçalho */}
-      <View style={{ backgroundColor: t.card, borderBottomWidth: 1, borderBottomColor: t.border, paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <View style={{ gap: 2, flex: 1 }}>
-          <Text style={{ fontFamily: FONT.display, fontSize: 18, fontWeight: '500', color: t.text1 }}>
-            Importar do Google
-          </Text>
-          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-            {visibleEvents.length} evento{visibleEvents.length !== 1 ? 's' : ''} a importar
+      <View style={{ paddingHorizontal: 20, paddingVertical: 18, gap: 2, borderBottomWidth: 1, borderBottomColor: t.border }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={{ fontFamily: FONT.display, fontSize: 18, fontWeight: '600', color: t.text1 }}>
+            {visibleEvents.length} evento{visibleEvents.length !== 1 ? 's' : ''} novo{visibleEvents.length !== 1 ? 's' : ''}
           </Text>
         </View>
-        <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Fechar"
-          style={{ width: 36, height: 36, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="close" size={20} color={t.text3} />
-        </Pressable>
+        <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>
+          Escolha os que quer na Nossa Casa.
+        </Text>
       </View>
 
       {/* Conteúdo scrollável */}
-      <ScrollView style={{ flex: 1, minHeight: 0 }} contentContainerStyle={{ padding: 16, gap: S.lg }}>
+      <ScrollView style={{ flex: 1, minHeight: 0 }} contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 14, gap: S.lg }}>
         {/* Toggle para eventos recorrentes */}
         {recurring.length > 0 && (
-          <Card t={t} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10 }}>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>
-                Incluir eventos recorrentes
-              </Text>
-              <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-                {recurring.length} evento{recurring.length !== 1 ? 's' : ''} recorrente{recurring.length !== 1 ? 's' : ''}
-              </Text>
+          <View style={{ gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={{ fontFamily: FONT.body, fontSize: 15, fontWeight: '500', color: t.text1 }}>
+                  Incluir eventos recorrentes
+                </Text>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
+                  {recurring.length} evento{recurring.length !== 1 ? 's' : ''} recorrente{recurring.length !== 1 ? 's' : ''}
+                </Text>
+              </View>
+              <Switch
+                value={recurringEnabled}
+                onValueChange={setRecurringEnabled}
+                trackColor={{ false: t.border, true: t.accent }}
+                thumbColor="#FFFFFF"
+              />
             </View>
-            <Switch
-              value={recurringEnabled}
-              onValueChange={setRecurringEnabled}
-              trackColor={{ false: t.border, true: t.accent }}
-              thumbColor="#FFFFFF"
-              accessibilityRole="switch"
-              accessibilityLabel="Incluir eventos recorrentes"
-            />
-          </Card>
+          </View>
         )}
 
-        {/* Lista de eventos */}
-        {visibleEvents.length > 0 ? (
+        {/* Lista de eventos com checkboxes */}
+        {visibleEvents.length > 0 && (
           <View style={{ gap: S.md }}>
-            <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text3, textTransform: 'uppercase' }}>
+            <Text style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '600', color: t.text3, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               Eventos a importar
             </Text>
-            {visibleEvents.map((event, idx) => (
-              <Card key={`${event.id}-${idx}`} t={t} style={{ gap: S.sm }}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-                  <View style={{ width: 42, flexShrink: 0 }}>
-                    <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text3 }}>
-                      {event.time ? evTime(event.time) : '—'}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1, gap: 3 }}>
-                    <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>
-                      {event.title}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <Pill label={formatDateForDisplay(event.date)}
-                        fg={t.text3} bg={t.subtle} border={t.border} />
-                      {event.isRecurring && (
-                        <Pill label="Recorrente" fg={t.state.warn} bg={t.state.warnBg} border={t.state.warn} />
-                      )}
-                      <Pill label="Google Calendar" fg={t.text3} bg={t.subtle} border={t.border} />
-                    </View>
-                    {event.description && (
-                      <Text numberOfLines={2} style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-                        {event.description}
-                      </Text>
-                    )}
-                  </View>
+            {visibleEvents.map((event) => (
+              <Pressable key={event.id} onPress={() => toggleEvent(event.id)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12,
+                  backgroundColor: t.card, borderRadius: R.card, borderWidth: 1.5,
+                  borderColor: selected[event.id] ? t.accent : t.border }}>
+                {/* Checkbox */}
+                <View style={{ width: 20, height: 20, borderRadius: 4, backgroundColor: selected[event.id] ? t.accent : 'transparent',
+                  borderWidth: selected[event.id] ? 0 : 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {selected[event.id] && <Icon name="check" size={14} color="#FFFFFF" />}
                 </View>
-              </Card>
+                {/* Conteúdo */}
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text style={{ fontFamily: FONT.body, fontSize: 14, fontWeight: '500', color: t.text1 }}>
+                    {event.title}
+                  </Text>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
+                    {formatEventDescription(event)}
+                  </Text>
+                </View>
+              </Pressable>
             ))}
-          </View>
-        ) : (
-          <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: S.xl, gap: S.md }}>
-            <Icon name="calendar" size={32} color={t.text3} />
-            <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2, textAlign: 'center' }}>
-              Nenhum evento novo para importar
-            </Text>
-            <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3, textAlign: 'center' }}>
-              Os seus eventos do Google Calendar já estão sincronizados.
-            </Text>
           </View>
         )}
       </ScrollView>
 
-      {/* Rodapé com botões */}
+      {/* Partilhar com a família */}
       {visibleEvents.length > 0 && (
-        <View style={{ backgroundColor: t.card, borderTopWidth: 1, borderTopColor: t.border, padding: 16, gap: S.md }}>
-          <Pressable onPress={handleImportAll} accessibilityRole="button" accessibilityLabel="Adicionar eventos para a família"
-            style={({ pressed }) => ({ minHeight: 48, borderRadius: R.pill, backgroundColor: t.accent,
-              alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.8 : 1 })}>
-            <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '600', color: '#FFFFFF' }}>
-              Adicionar
+        <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: t.border, gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontFamily: FONT.body, fontSize: 14, fontWeight: '500', color: t.text1 }}>
+              Partilhar com a família
             </Text>
-          </Pressable>
+            <Switch
+              value={shared}
+              onValueChange={setShared}
+              trackColor={{ false: t.border, true: t.accent }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
+            {shared ? 'Visíveis para toda a família' : 'Ficam visíveis apenas para si'}
+          </Text>
+        </View>
+      )}
 
-          <Pressable onPress={handleImportPrivate} accessibilityRole="button" accessibilityLabel="Adicionar eventos só para si"
-            style={({ pressed }) => ({ minHeight: 48, borderRadius: R.pill, borderWidth: 1, borderColor: t.accent,
-              backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
-            <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '600', color: t.accent }}>
-              Adicionar Só para Mim
-            </Text>
-          </Pressable>
-
-          <Pressable onPress={onIgnore} accessibilityRole="button" accessibilityLabel="Ignorar eventos"
-            style={({ pressed }) => ({ minHeight: 44, borderRadius: R.pill, backgroundColor: 'transparent',
-              alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
+      {/* Botões */}
+      {visibleEvents.length > 0 && selectedCount > 0 && (
+        <View style={{ paddingHorizontal: 16, paddingVertical: 14, gap: S.md, flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Pressable onPress={onIgnore} style={{ flex: 1, minHeight: 44, borderRadius: R.pill,
+            alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.text3 }}>
-              Ignorar
+              Agora não
+            </Text>
+          </Pressable>
+
+          <Pressable onPress={handleImport} style={{ flex: 1, minHeight: 44, borderRadius: R.pill,
+            backgroundColor: t.accent, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
+              Adicionar {selectedCount}
             </Text>
           </Pressable>
         </View>
