@@ -20,6 +20,7 @@ import Gestao from './src/screens/Gestao';
 import Documentacao from './src/screens/Documentacao';
 import Perfil from './src/screens/Perfil';
 import KidApp from './src/KidApp';
+import GoogleCalendarImportModal from './src/modals/GoogleCalendarImportModal';
 
 const TABS = [
   { key: 'inicio',   label: 'Início',   icon: 'home',        title: 'Nossa Casa',        sub: 'Família Bengui · 4 membros' },
@@ -30,7 +31,7 @@ const TABS = [
 ];
 
 function Shell() {
-  const { s, set } = useStore();
+  const { s, set, importGoogleEvents } = useStore();
   const sysDark = useColorScheme() === 'dark';
   const [user, setUser] = useState(null);      // nome do membro ligado
   const [tab, setTab] = useState('inicio');
@@ -40,6 +41,7 @@ function Shell() {
   const [equip, setEquip] = useState(false);
   const [gestao, setGestao] = useState(false);
   const [doc, setDoc] = useState(false);
+  const [googleImport, setGoogleImport] = useState(false);
   const [booting, setBooting] = useState(true);
   const [fontsReady, setFontsReady] = useState(false);
   const insets = useSafeAreaInsets();
@@ -65,6 +67,20 @@ function Shell() {
     const id = setTimeout(() => setBooting(false), 600);
     return () => clearTimeout(id);
   }, [fontsReady]);
+
+  // Mostrar modal de importação do Google Calendar quando o utilizador faz login
+  // por primeira vez ou quando existem novos eventos para importar
+  useEffect(() => {
+    if (!user || MEMBERS[user].kid) return;
+
+    // Mock events para demonstração — substituir por autenticação real do Google Calendar
+    const hasSeenImport = s.googleCalendarImported && Object.keys(s.googleCalendarImported).length > 0;
+    if (!hasSeenImport) {
+      // Mostrar modal com sample events na primeira vez
+      // Em produção, estes viriam de uma autenticação real do Google Calendar
+      setGoogleImport(true);
+    }
+  }, [user, s.googleCalendarImported]);
 
   const mode = (user && s.themeByUser[user]) || 'claro';
   const dark = mode === 'escuro' || (mode === 'sistema' && sysDark);
@@ -187,6 +203,42 @@ function Shell() {
       {/* Perfil sheet */}
       {perfil ? <Perfil t={t} user={user} onClose={() => setPerfil(false)}
         onSignOut={() => { setPerfil(false); setUser(null); }} /> : null}
+
+      {/* Google Calendar Import Modal */}
+      {googleImport && user && !MEMBERS[user].kid && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <GoogleCalendarImportModal
+            t={t}
+            events={[
+              { id: 'gcal-1', title: 'Reunião de equipa', date: 'd2026-08-28', time: '14:00', isRecurring: false, description: '' },
+              { id: 'gcal-2', title: 'Almoço com a mãe', date: 'd2026-08-29', time: '12:30', isRecurring: false, description: 'Restaurante Taberna' },
+              { id: 'gcal-3', title: 'Chamada com o cliente', date: 'd2026-08-30', time: '10:00', isRecurring: true, description: 'Reunião semanal' },
+            ]}
+            user={user}
+            onImportAll={(events) => {
+              importGoogleEvents(events, user, true);
+              setGoogleImport(false);
+            }}
+            onImportPrivate={(events) => {
+              importGoogleEvents(events, user, false);
+              setGoogleImport(false);
+            }}
+            onIgnore={() => {
+              // Marcar como ignorado para não mostrar novamente
+              set(x => ({
+                googleCalendarImported: {
+                  ...x.googleCalendarImported,
+                  'gcal-1': true,
+                  'gcal-2': true,
+                  'gcal-3': true,
+                },
+              }));
+              setGoogleImport(false);
+            }}
+            onClose={() => setGoogleImport(false)}
+          />
+        </View>
+      )}
     </View>
   );
 }

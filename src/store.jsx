@@ -14,6 +14,7 @@ const DATA_KEYS = [
   'eventGone', 'eventEdits', 'roles', 'pins', 'pointValue', 'payDay', 'splitHalf',
   'stores', 'shopPlan', 'shopHistory', 'health', 'specialities', 'equipCats', 'registo',
   'recurringReset', 'healthNotes', 'healthRecipes', 'healthDecisions', // health feature
+  'googleCalendarImported', // Google Calendar imports
 ];
 
 export const DEMO = () => ({
@@ -41,13 +42,14 @@ export const DEMO = () => ({
   healthNotes: {}, // healthId -> [{ author, date, text }]
   healthRecipes: {}, // healthId -> [{ id, name, dosage, quantity, unit, expiresAt, decision }]
   healthDecisions: {}, // healthId -> { type, status, note }
+  googleCalendarImported: {}, // eventId -> true (track which Google Calendar events were imported)
 });
 
 // Casa nova: os mesmos campos, todos vazios
 export const BLANK = () => ({
   ...DEMO(), done: {}, urg: {}, due: {}, vault: { 'Léo': 0, 'Mia': 0 },
   clearedSeeds: true, monthZero: true, shopHistory: [], health: [],
-  healthNotes: {}, healthRecipes: {}, healthDecisions: {},
+  healthNotes: {}, healthRecipes: {}, healthDecisions: {}, googleCalendarImported: {},
 });
 
 const Ctx = createContext(null);
@@ -142,13 +144,29 @@ function build(s, set) {
   }, {});
 
   // Tarefa: por fazer → (criança) a confirmar → (adulto) concluída
+  // Recorrentes: rastrear quando foram resetadas hoje para reassumir amanhã
   const tapTask = (id, byChild) => set(x => {
+    const task = allTasks().find(t => t.id === id);
     const done = !!x.done[id], pend = !!x.pending[id];
+    const isRecur = task && isRecurring(task);
+
     if (byChild) return pend || done
       ? { pending: { ...x.pending, [id]: false }, done: { ...x.done, [id]: false } }
       : { pending: { ...x.pending, [id]: true } };
-    if (pend) return { pending: { ...x.pending, [id]: false }, done: { ...x.done, [id]: true } };
-    return { done: { ...x.done, [id]: !done }, pending: { ...x.pending, [id]: false } };
+
+    if (pend) {
+      return {
+        pending: { ...x.pending, [id]: false },
+        done: { ...x.done, [id]: true },
+        ...(isRecur ? { recurringReset: { ...x.recurringReset, [id]: TODAY_KEY } } : {}),
+      };
+    }
+
+    return {
+      done: { ...x.done, [id]: !done },
+      pending: { ...x.pending, [id]: false },
+      ...(isRecur && !done ? { recurringReset: { ...x.recurringReset, [id]: TODAY_KEY } } : {}),
+    };
   });
 
   const isAdmin = (name) => s.roles[name] === 'admin';
@@ -191,12 +209,13 @@ function build(s, set) {
   // Health: agregar métodos para gestão de saúde
   const addHealthRecord = (member, date, specialty) => {
     const id = 'hlth-' + Date.now();
-    return set(x => ({
+    set(x => ({
       health: [...(x.health || []), {
         id, member, date, specialty,
         createdAt: new Date().toISOString(),
       }],
-    })), id;
+    }));
+    return id;
   };
 
   const addHealthNote = (healthId, author, text) => {
@@ -265,6 +284,33 @@ function build(s, set) {
     }));
   };
 
+  // Google Calendar: importar eventos
+  // events: array de { id, title, date, time, description, isRecurring }
+  // shared: true para "Adicionar", false para "Adicionar Só para Mim"
+  const importGoogleEvents = (events, user, shared = true) => {
+    set(x => {
+      const newAdded = events.map(ev => ({
+        id: `gcal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        day: ev.date, // dd/mm/yyyy → 2026-08-27
+        time: ev.time || '',
+        title: ev.title,
+        who: user,
+        owner: user,
+        shared: shared,
+        source: 'Google Calendar',
+        isRecurring: ev.isRecurring || false,
+      }));
+
+      const imported = {};
+      events.forEach(ev => { imported[ev.id] = true; });
+
+      return {
+        added: [...(x.added || []), ...newAdded],
+        googleCalendarImported: { ...(x.googleCalendarImported || {}), ...imported },
+      };
+    });
+  };
+
   return {
     s, set,
     allTasks, allItems, allEvents, allEquip,
@@ -276,5 +322,7 @@ function build(s, set) {
     // Health feature methods
     addHealthRecord, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision,
     addSpecialty, removeSpecialty, renameSpecialty,
+    // Google Calendar import
+    importGoogleEvents,
   };
 }
