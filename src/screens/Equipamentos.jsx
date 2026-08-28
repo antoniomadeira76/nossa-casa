@@ -2,23 +2,41 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { EUR } from '../format';
-import { Card, SectionTitle, Empty, AddButton, Label, Pill, Primary } from '../ui';
-import Icon from '../Icon';
+import { TODAY, pad2, plural } from '../format';
+import { Card, SectionTitle, Empty, AddButton, Label, Choice, Primary } from '../ui';
 import Sheet from '../Sheet';
 
-export default function Equipamentos({ t, user, onClose }) {
-  const { s, set, allEquip, isAdmin } = useStore();
+// dd/mm/aaaa → milissegundos UTC. É o formato em que as datas são guardadas.
+const parseDMY = (s) => {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(s || ''));
+  return m ? Date.UTC(+m[3], +m[2] - 1, +m[1]) : null;
+};
+const fmtDMY = (ms) => {
+  const d = new Date(ms);
+  return `${pad2(d.getUTCDate())}/${pad2(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`;
+};
+
+const CATS = ['Eletrodomésticos', 'Aquecimento', 'Informática', 'Outros'];
+
+// Um número negativo de «dias de garantia» não se lê. Diga-se o que aconteceu.
+const warrantyLabel = (days) => {
+  if (days <= 0) return `Garantia terminou há ${plural(Math.abs(days), 'dia', 'dias')}`;
+  return `Faltam ${plural(days, 'dia', 'dias')} de garantia`;
+};
+export default function Equipamentos({ t }) {
+  const { set, allEquip } = useStore();
   const [sheet, setSheet] = useState(null);
-  const [form, setForm] = useState({ name: '', purchase: '', warranty: 365, category: 0 });
+  const [form, setForm] = useState({ name: '', bought: '', warranty: 365, cat: CATS[0] });
 
   const eq = allEquip();
-  const today = Math.floor(Date.now() / 86400000) * 86400000;
 
+  // Dias até ao fim da garantia, contra o TODAY da app — não contra o relógio,
+  // senão os equipamentos discordam do resto dos ecrãs.
   const byWarranty = (e) => {
-    const warranty = (e.warrantyDays || 365) * 86400000 + (e.purchaseAt || today);
-    const daysLeft = Math.floor((warranty - today) / 86400000);
-    return daysLeft;
+    const end = parseDMY(e.warrantyEnd);
+    if (!end) return typeof e.daysLeft === 'number' ? e.daysLeft : 0;
+    const now = Date.UTC(TODAY.y, TODAY.m, TODAY.d);
+    return Math.round((end - now) / 86400000);
   };
 
   const inWarranty = eq.filter(e => byWarranty(e) > 90);
@@ -28,24 +46,25 @@ export default function Equipamentos({ t, user, onClose }) {
   });
   const expired = eq.filter(e => byWarranty(e) <= 0);
 
+  // Gravar na mesma forma das sementes (cat/bought/warrantyEnd). Guardar uma
+  // forma diferente era o que fazia a lista mostrar «undefined».
   const handleSave = () => {
     if (!form.name.trim()) return;
-    const id = 'eq-' + Date.now();
-    set(s => ({
-      newEquip: [...(s.newEquip || []), {
-        id,
-        name: form.name,
-        category: form.category,
-        purchase: form.purchase,
-        warrantyDays: form.warranty,
-        purchaseAt: today,
+    const boughtMs = parseDMY(form.bought) ?? Date.UTC(TODAY.y, TODAY.m, TODAY.d);
+    set(x => ({
+      newEquip: [...(x.newEquip || []), {
+        id: 'eq-' + Date.now(),
+        name: form.name.trim(),
+        cat: form.cat,
+        bought: fmtDMY(boughtMs),
+        warrantyEnd: fmtDMY(boughtMs + (form.warranty || 365) * 86400000),
       }],
     }));
     setSheet(null);
-    setForm({ name: '', purchase: '', warranty: 365, category: 0 });
+    setForm({ name: '', bought: '', warranty: 365, cat: CATS[0] });
   };
 
-  const Section = ({ title, items, color }) => (
+  const Section = ({ title, items, color, text }) => (
     items.length ? (
       <View>
         <SectionTitle t={t}>{title}</SectionTitle>
@@ -57,10 +76,10 @@ export default function Equipamentos({ t, user, onClose }) {
                   {e.name}
                 </Text>
                 <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-                  {e.category} · {e.purchase || 'Data desconhecida'}
+                  {[e.cat, e.bought && `comprado a ${e.bought}`].filter(Boolean).join(' · ')}
                 </Text>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: color }}>
-                  {Math.floor(byWarranty(e))} dias de garantia
+                <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: text }}>
+                  {warrantyLabel(byWarranty(e))}
                 </Text>
               </View>
             </Card>
@@ -72,9 +91,10 @@ export default function Equipamentos({ t, user, onClose }) {
 
   return (
     <>
-      <Section title="Em Garantia" items={inWarranty} color={t.state.ok} />
-      <Section title="A Expirar (90 dias)" items={expiring} color={t.state.warn} />
-      <Section title="Fora de Garantia" items={expired} color={t.state.err} />
+      {/* Barra na cor viva, texto no tom profundo — o vivo não contrasta sobre cartão claro */}
+      <Section title="Em Garantia" items={inWarranty} color={t.state.ok} text={t.state.okDeep} />
+      <Section title="A Expirar (90 dias)" items={expiring} color={t.state.warn} text={t.state.warnDeep} />
+      <Section title="Fora de Garantia" items={expired} color={t.state.err} text={t.state.errDeep} />
 
       {eq.length === 0 ? (
         <Empty t={t} icon="houseGear" title="Sem equipamentos registados." hint="Comece a registar os aparelhos da casa." />
@@ -102,11 +122,22 @@ export default function Equipamentos({ t, user, onClose }) {
             </View>
 
             <View style={{ gap: S.sm }}>
+              <Label t={t}>Categoria</Label>
+              <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
+                {CATS.map(c => (
+                  <Choice key={c} t={t} label={c} selected={form.cat === c}
+                    onPress={() => setForm(f => ({ ...f, cat: c }))} />
+                ))}
+              </View>
+            </View>
+
+            <View style={{ gap: S.sm }}>
               <Label t={t}>Data de compra</Label>
               <TextInput
-                value={form.purchase}
-                onChangeText={(v) => setForm(f => ({ ...f, purchase: v }))}
+                value={form.bought}
+                onChangeText={(v) => setForm(f => ({ ...f, bought: v }))}
                 placeholder="dd/mm/aaaa"
+                placeholderTextColor={t.text3}
                 style={{
                   minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
                   fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
