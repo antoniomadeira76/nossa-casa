@@ -21,6 +21,7 @@ import Documentacao from './src/screens/Documentacao';
 import Perfil from './src/screens/Perfil';
 import KidApp from './src/KidApp';
 import GoogleCalendarImportModal from './src/modals/GoogleCalendarImportModal';
+import Confirm from './src/Confirm';
 
 const TABS = [
   { key: 'inicio',   label: 'Início',   icon: 'home',        title: 'Nossa Casa',        sub: 'Família Bengui · 4 membros' },
@@ -37,6 +38,7 @@ function Shell() {
   const [tab, setTab] = useState('inicio');
   const [kidTab, setKidTab] = useState('tarefas');  // aba na KidApp
   const [perfil, setPerfil] = useState(false);
+  const [signOut, setSignOut] = useState(false);
   const [saude, setSaude] = useState(false);
   const [equip, setEquip] = useState(false);
   const [gestao, setGestao] = useState(false);
@@ -240,8 +242,19 @@ function Shell() {
       </View>
 
       {/* Perfil sheet */}
+      {/* Terminar sessão pede confirmação — é uma ação que não se desfaz
+          com um toque, e o perfil fica visível por trás para dar contexto. */}
       {perfil ? <Perfil t={t} user={user} onClose={() => setPerfil(false)}
-        onSignOut={() => { setPerfil(false); setUser(null); }} /> : null}
+        onSignOut={() => setSignOut(true)} /> : null}
+
+      {signOut ? (
+        <Confirm t={t} destructive icon="warning"
+          title="Terminar sessão?"
+          message="Volta ao ecrã de entrada. Os dados da casa ficam guardados neste dispositivo."
+          confirmLabel="Terminar sessão"
+          onCancel={() => setSignOut(false)}
+          onConfirm={() => { setSignOut(false); setPerfil(false); setUser(null); }} />
+      ) : null}
 
       {/* Google Calendar Import Modal */}
       {googleImport && user && !MEMBERS[user].kid && (

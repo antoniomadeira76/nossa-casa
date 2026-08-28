@@ -6,7 +6,7 @@ import Icon from './Icon';
 
 // Folha inferior: cabeçalho fixo, meio a rolar, ação fixa em baixo.
 // Para a folha nunca tapar o rodapé, para nos 86 px acima do fundo.
-export default function Sheet({ t, title, sub, onClose, children, action, headerRight }) {
+export default function Sheet({ t, title, sub, onClose, children, action, headerRight, leading }) {
   const insets = useSafeAreaInsets();
   return (
     <Modal transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
@@ -18,7 +18,8 @@ export default function Sheet({ t, title, sub, onClose, children, action, header
           backgroundColor: t.surface, borderTopLeftRadius: R.card, borderTopRightRadius: R.card,
           maxHeight: '82%', paddingHorizontal: 16, paddingTop: 20, ...elev(2),
         }}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: S.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: S.lg }}>
+            {leading}
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: '500', color: t.text1 }}>{title}</Text>
               {sub ? <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>{sub}</Text> : null}

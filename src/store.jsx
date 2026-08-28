@@ -21,14 +21,22 @@ const DATA_KEYS = [
 // Dois telefones que acrescentam movimentos somam; dois que escrevem um saldo
 // anulam-se. Por isso não existe `vault` — existe `vaultMoves`.
 const VAULT_SEED = () => [
-  { id: 'vm-l0', kid: 'Léo', delta: 8.30, label: 'Semanadas anteriores', day: 'd2026-08-02' },
-  { id: 'vm-l1', kid: 'Léo', delta: -2.50, label: 'Retirada — cromos · autorizado pelo Tomás', day: 'd2026-08-09' },
-  { id: 'vm-l2', kid: 'Léo', delta: 5.00, label: 'Bónus — boletim escolar · Rita', day: 'd2026-08-14' },
-  { id: 'vm-l3', kid: 'Léo', delta: 1.60, label: 'Semanada de 10 a 16 de agosto · 16 pt', day: 'd2026-08-17' },
-  { id: 'vm-m0', kid: 'Mia', delta: 7.40, label: 'Semanadas anteriores', day: 'd2026-08-02' },
-  { id: 'vm-m1', kid: 'Mia', delta: -1.00, label: 'Retirada — gelado · autorizado pela Rita', day: 'd2026-08-11' },
-  { id: 'vm-m2', kid: 'Mia', delta: 1.40, label: 'Bónus — arrumou o quarto · Tomás', day: 'd2026-08-13' },
-  { id: 'vm-m3', kid: 'Mia', delta: 1.10, label: 'Semanada de 10 a 16 de agosto · 11 pt', day: 'd2026-08-17' },
+  { id: 'vm-l0', kid: 'Léo', delta: 8.30, kind: 'semanada', day: 'd2026-08-02',
+    label: 'Semanadas anteriores', sub: 'até 2 de agosto' },
+  { id: 'vm-l1', kid: 'Léo', delta: -2.50, kind: 'retirada', day: 'd2026-08-09',
+    label: 'Retirada — cromos', sub: 'autorizado pelo Tomás' },
+  { id: 'vm-l2', kid: 'Léo', delta: 5.00, kind: 'bonus', day: 'd2026-08-14',
+    label: 'Bónus — boletim escolar', sub: 'Rita' },
+  { id: 'vm-l3', kid: 'Léo', delta: 1.60, kind: 'semanada', day: 'd2026-08-17',
+    label: 'Semanada de 10 a 16 de agosto', sub: '16 pt · pago a 17/08' },
+  { id: 'vm-m0', kid: 'Mia', delta: 7.40, kind: 'semanada', day: 'd2026-08-02',
+    label: 'Semanadas anteriores', sub: 'até 2 de agosto' },
+  { id: 'vm-m1', kid: 'Mia', delta: -1.00, kind: 'retirada', day: 'd2026-08-11',
+    label: 'Retirada — gelado', sub: 'autorizado pela Rita' },
+  { id: 'vm-m2', kid: 'Mia', delta: 1.40, kind: 'bonus', day: 'd2026-08-13',
+    label: 'Bónus — arrumou o quarto', sub: 'Tomás' },
+  { id: 'vm-m3', kid: 'Mia', delta: 1.10, kind: 'semanada', day: 'd2026-08-17',
+    label: 'Semanada de 10 a 16 de agosto', sub: '11 pt · pago a 17/08' },
 ];
 
 export const DEMO = () => ({
@@ -158,10 +166,10 @@ function build(s, set) {
   const vaultOf = (kid) => (s.vaultMoves || [])
     .reduce((n, m) => (m.kid === kid ? n + m.delta : n), 0);
   // Acrescenta um movimento. Nunca substitui o saldo.
-  const vaultAdd = (kid, delta, label, day = TODAY_KEY) => set(x => ({
+  const vaultAdd = (kid, delta, kind, label, sub, day = TODAY_KEY) => set(x => ({
     vaultMoves: [...(x.vaultMoves || []), {
       id: 'vm-' + Date.now() + '-' + Math.round(Math.random() * 1e6),
-      kid, delta, label, day,
+      kid, delta, kind, label, sub, day,
     }],
   }));
 

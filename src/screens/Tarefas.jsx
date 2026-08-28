@@ -8,6 +8,7 @@ import { Card, SectionTitle, Label, Pill, Row, Avatar, Empty, AddButton, Primary
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import NovaTarefa from '../sheets/NovaTarefa';
+import Cofre from '../sheets/Cofre';
 
 // Urgência: a caixa do número leva a cor, e a lista ordena-se por ela.
 // A forma acompanha a cor — cheia, tracejada, contorno — para não depender do matiz.
@@ -23,6 +24,7 @@ export default function Tarefas({ t, user }) {
   const [filter, setFilter] = useState('Todos');
   const [manage, setManage] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [cofre, setCofre] = useState(null);   // criança cujo cofre está aberto
 
   const all = allTasks();
   const shown = filter === 'Todos' ? all : all.filter(x => x.who === filter);
@@ -56,11 +58,15 @@ export default function Tarefas({ t, user }) {
             {['Léo', 'Mia'].map(k => {
               const pend = kidPts[k] - s.paidPts[k];
               return (
-                <View key={k} style={{ flex: 1, backgroundColor: t.subtle, borderWidth: 1, borderColor: t.border,
-                  borderRadius: R.card, padding: 14, gap: S.md }}>
+                <Pressable key={k} onPress={() => setCofre(k)}
+                  accessibilityRole="button" accessibilityLabel={`Cofre do ${k}`}
+                  style={({ pressed }) => ({ flex: 1, backgroundColor: pressed ? t.card : t.subtle,
+                    borderWidth: 1, borderColor: t.border,
+                    borderRadius: R.card, padding: 14, gap: S.md })}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <View style={{ width: 8, height: 8, borderRadius: R.pill, backgroundColor: MEMBER_COLOR[k] }} />
-                    <Text style={{ fontFamily: FONT.body, fontSize: 14.5, color: t.text2 }}>{k}</Text>
+                    <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 14.5, color: t.text2 }}>{k}</Text>
+                    <Icon name="caretRight" size={16} color={t.text3} />
                   </View>
                   <Text style={{ fontFamily: FONT.display, fontSize: 20, color: t.text2 }}>{pend} pt</Text>
                   <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{EUR(pend * s.pointValue)} por pagar</Text>
@@ -68,7 +74,7 @@ export default function Tarefas({ t, user }) {
                   <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.state.okDeep }}>
                     No cofre {EUR(st.vaultOf(k))}
                   </Text>
-                </View>
+                </Pressable>
               );
             })}
           </View>
@@ -222,6 +228,8 @@ export default function Tarefas({ t, user }) {
           </View>
         </Sheet>
       ) : null}
+
+      {cofre ? <Cofre t={t} kid={cofre} onClose={() => setCofre(null)} /> : null}
     </>
   );
 }
