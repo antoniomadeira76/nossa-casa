@@ -89,6 +89,18 @@ export default function Icon({ name, size = 24, color = '#262626', style }) {
   );
 }
 
+// O «G» da Google — marca de terceiros, cores fixas por definição.
+export function GoogleG({ size = 22, style }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" style={style}>
+      <Path fill="#4285F4" d="M23 12.2c0-.8-.1-1.6-.2-2.3H12v4.5h6.2c-.3 1.4-1.1 2.6-2.3 3.4v2.8h3.7C21.7 18.6 23 15.7 23 12.2z" />
+      <Path fill="#34A853" d="M12 23.5c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.3 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.6H2.1v2.9C3.9 21 7.7 23.5 12 23.5z" />
+      <Path fill="#FBBC05" d="M5.8 14.5c-.2-.7-.4-1.5-.4-2.3s.1-1.6.4-2.3V7H2.1C1.4 8.5 1 10.2 1 12.2s.4 3.7 1.1 5.2l3.7-2.9z" />
+      <Path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.3 1.7l3.2-3.2C17.5 2 15 1 12 1 7.7 1 3.9 3.4 2.1 7l3.7 2.9c.9-2.7 3.3-4.5 6.2-4.5z" />
+    </Svg>
+  );
+}
+
 // A marca: telhado branco e quatro pontos, um por membro.
 // Sem acento de palete — o esquema é por membro e o ícone é um só.
 export function Marca({ size = 46, mono = false, opacity = 1, style }) {

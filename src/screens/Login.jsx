@@ -1,20 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ImageBackground } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { S, R, FONT, elev } from '../theme';
-import Icon, { Marca } from '../Icon';
+import Icon, { Marca, GoogleG as G } from '../Icon';
 import { MEMBERS } from '../data';
 import { useStore } from '../store';
-
-const G = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24">
-    <Path fill="#4285F4" d="M23 12.2c0-.8-.1-1.6-.2-2.3H12v4.5h6.2c-.3 1.4-1.1 2.6-2.3 3.4v2.8h3.7C21.7 18.6 23 15.7 23 12.2z" />
-    <Path fill="#34A853" d="M12 23.5c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.3 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.6H2.1v2.9C3.9 21 7.7 23.5 12 23.5z" />
-    <Path fill="#FBBC05" d="M5.8 14.5c-.2-.7-.4-1.5-.4-2.3s.1-1.6.4-2.3V7H2.1C1.4 8.5 1 10.2 1 12.2s.4 3.7 1.1 5.2l3.7-2.9z" />
-    <Path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.3 1.7l3.2-3.2C17.5 2 15 1 12 1 7.7 1 3.9 3.4 2.1 7l3.7 2.9c.9-2.7 3.3-4.5 6.2-4.5z" />
-  </Svg>
-);
 
 export default function Login({ t, onEnter }) {
   const { s, pinError } = useStore();

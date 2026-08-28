@@ -245,7 +245,9 @@ function Shell() {
 
       {/* Google Calendar Import Modal */}
       {googleImport && user && !MEMBERS[user].kid && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center',
+          paddingHorizontal: 24, paddingTop: 24, paddingBottom: 90 }}>
           <GoogleCalendarImportModal
             t={t}
             events={[
