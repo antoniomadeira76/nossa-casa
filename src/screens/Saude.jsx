@@ -346,7 +346,7 @@ export default function Saude({ t, user, onClose }) {
                       </Text>
                     </Pressable>
                     <Pressable
-                      onPress={() => setHealthDecision(record.id, 'seguimento', 'pendente', 'Aguardando resultado')}
+                      onPress={() => setHealthDecision(record.id, 'seguimento', 'pendente', 'A aguardar resultado')}
                       style={{ flex: 1, paddingHorizontal: S.md, paddingVertical: S.sm, borderWidth: 1, borderColor: t.border, borderRadius: R.row, minHeight: 36, justifyContent: 'center' }}
                     >
                       <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text2, textAlign: 'center' }}>
@@ -483,7 +483,7 @@ function MarcarConsulta({ t, user, onClose }) {
   };
 
   return (
-    <Sheet t={t} title="Marcar Consulta" sub="Agende e gerencie especialidades" onClose={onClose}>
+    <Sheet t={t} title="Marcar Consulta" sub="Marcar consultas e gerir especialidades" onClose={onClose}>
       <View style={{ gap: S.lg }}>
         {/* Tabs */}
         <View style={{ flexDirection: 'row', gap: S.sm }}>

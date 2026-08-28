@@ -697,7 +697,7 @@ export default function Gestao({ t, user, onClose }) {
                 Fechar mês?
               </Text>
               <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2, textAlign: 'center' }}>
-                Arquivar movimentos e aplicar 30% das metas aos cofres das crianças.
+                Arquivar os movimentos do mês e recomeçar a contagem.
               </Text>
 
               <View style={{ flexDirection: 'row', gap: S.md }}>

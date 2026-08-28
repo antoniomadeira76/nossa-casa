@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, MEMBER_COLOR } from '../theme';
-import { EUR } from '../format';
+import { EUR, warrantyDaysLeft } from '../format';
 import { ENV_BASE, GOALS, EQUIP, MEMBERS } from '../data';
 import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Tap } from '../ui';
 import Icon from '../Icon';
@@ -60,8 +60,8 @@ export default function Dinheiro({ t, user }) {
   const pct = Math.round((spent / budget) * 100);
   const settleBase = s.clearedSeeds ? 0 : 86.5;
   const eq = allEquip();
-  const eqWarn = eq.filter(x => x.daysLeft >= 0 && x.daysLeft <= 90).length;
-  const eqOut = eq.filter(x => x.daysLeft < 0).length;
+  const eqWarn = eq.filter(x => { const d = warrantyDaysLeft(x); return d >= 0 && d <= 90; }).length;
+  const eqOut = eq.filter(x => warrantyDaysLeft(x) < 0).length;
 
   const freeOf = (i) => Math.max(0, envelopes[i].limit - envelopes[i].used);
   const envPg = usePaged(envelopes, 5);
@@ -101,11 +101,10 @@ export default function Dinheiro({ t, user }) {
     setSheet(null);
   };
 
+  // Fecha o mês: zera o registo e os pontos pagos. A regra dos 30 % do saldo
+  // ainda não está decidida (o texto dizia metas aqui e cofres na Gestão), por
+  // isso não se aplica nada — melhor não mover dinheiro do que movê-lo ao acaso.
   const handleCloseMonth = () => {
-    // Calculate remainder and 30% to goals
-    const remainder = remaining;
-    const toGoals = remainder * 0.30;
-
     set(x => ({
       registered: 0,
       settled: false,
@@ -498,12 +497,12 @@ export default function Dinheiro({ t, user }) {
       {/* Close Month Sheet */}
       {sheet === 'closeMonth' && admin ? (
         <Sheet t={t} title="Fechar Mês"
-          sub="Arquivar despesas e calcular alocação para metas"
+          sub="Arquivar as despesas e recomeçar a contagem"
           onClose={() => setSheet(null)}
           action={<Primary t={t} label="Confirmar Encerramento" onPress={handleCloseMonth} />}>
           <View style={{ gap: S.lg }}>
             <Text style={{ fontFamily: FONT.body, fontSize: 15, lineHeight: 22, color: t.text2 }}>
-              Ao fechar o mês, será acumulado 30% do saldo restante nas metas da família.
+              Ao fechar o mês, o registo de despesas e os pontos pagos voltam a zero. O saldo restante não é movido.
             </Text>
             <View style={{ gap: S.md }}>
               <Label t={t}>Resumo do Mês</Label>
@@ -512,12 +511,6 @@ export default function Dinheiro({ t, user }) {
                 <Row t={t} title="Gasto" value={EUR(spent)} right={<View />} last={false} />
                 <Row t={t} title="Disponível" value={EUR(remaining)} right={<View />} last={true} />
               </View>
-            </View>
-            <View style={{ gap: S.md }}>
-              <Label t={t}>Cálculo para Metas</Label>
-              <Text style={{ fontFamily: FONT.body, fontSize: 14.5, lineHeight: 21, color: t.text2 }}>
-                {EUR(remaining * 0.30)} será adicionado às metas da família.
-              </Text>
             </View>
           </View>
         </Sheet>

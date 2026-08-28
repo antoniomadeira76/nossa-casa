@@ -66,7 +66,7 @@ export default function Tarefas({ t, user }) {
                   <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{EUR(pend * s.pointValue)} por pagar</Text>
                   <View style={{ height: 1, backgroundColor: t.divider }} />
                   <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.state.okDeep }}>
-                    No cofre {EUR(s.vault[k])}
+                    No cofre {EUR(st.vaultOf(k))}
                   </Text>
                 </View>
               );

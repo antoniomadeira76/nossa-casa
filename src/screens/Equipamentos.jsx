@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, TextInput } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { TODAY, pad2, plural } from '../format';
+import { TODAY, pad2, plural, warrantyDaysLeft } from '../format';
 import { Card, SectionTitle, Empty, AddButton, Label, Choice, Primary } from '../ui';
 import Sheet from '../Sheet';
 
@@ -23,6 +23,7 @@ const warrantyLabel = (days) => {
   if (days <= 0) return `Garantia terminou há ${plural(Math.abs(days), 'dia', 'dias')}`;
   return `Faltam ${plural(days, 'dia', 'dias')} de garantia`;
 };
+
 export default function Equipamentos({ t }) {
   const { set, allEquip } = useStore();
   const [sheet, setSheet] = useState(null);
@@ -30,14 +31,7 @@ export default function Equipamentos({ t }) {
 
   const eq = allEquip();
 
-  // Dias até ao fim da garantia, contra o TODAY da app — não contra o relógio,
-  // senão os equipamentos discordam do resto dos ecrãs.
-  const byWarranty = (e) => {
-    const end = parseDMY(e.warrantyEnd);
-    if (!end) return typeof e.daysLeft === 'number' ? e.daysLeft : 0;
-    const now = Date.UTC(TODAY.y, TODAY.m, TODAY.d);
-    return Math.round((end - now) / 86400000);
-  };
+  const byWarranty = warrantyDaysLeft;
 
   const inWarranty = eq.filter(e => byWarranty(e) > 90);
   const expiring = eq.filter(e => {

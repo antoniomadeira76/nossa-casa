@@ -4,7 +4,7 @@ import { S, R, FONT } from './theme';
 import Icon from './Icon';
 
 export default function ConfirmShare({ t, type, isPrivate, onConfirm, onCancel }) {
-  const label = isPrivate ? 'Privado' : 'Compartilhado';
+  const label = isPrivate ? 'Privado' : 'Partilhado';
   const icon = isPrivate ? 'lock' : 'users';
   const msg = isPrivate
     ? 'Este evento será visível apenas para si.'

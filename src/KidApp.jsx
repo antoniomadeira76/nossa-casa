@@ -3,9 +3,15 @@ import { View, Text, ScrollView, Pressable, useColorScheme } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from './store';
 import { buildTheme, onChrome, S, R, FONT, MEMBER_COLOR, elev } from './theme';
-import { EUR } from './format';
+import { EUR, parseKey, pad2 } from './format';
 import Icon from './Icon';
 import { Card, SectionTitle, Label, Pill, Empty, Primary } from './ui';
+
+// dkey → dd/mm, para a linha do movimento
+const dayShort = (k) => {
+  const p = parseKey(k);
+  return p ? `${pad2(p.d)}/${pad2(p.m + 1)}` : null;
+};
 
 // Ícone de tarefa: traço aberto, 1,75 de espessura, grelha de 24
 const TaskIcon = ({ size = 32, color = '#67769B' }) => (
@@ -49,9 +55,10 @@ function KidTaskRow({ t, task, kid, onPress }) {
   );
 }
 
-// Transação no cofre
+// Uma parcela do cofre. O sinal vem do próprio movimento.
 function VaultTransaction({ t, entry }) {
-  const isCredit = entry.type === 'credit';
+  const isCredit = entry.delta >= 0;
+  const day = entry.day ? dayShort(entry.day) : null;
 
   return (
     <View style={{
@@ -72,16 +79,16 @@ function VaultTransaction({ t, entry }) {
         <Text style={{
           fontFamily: FONT.body, fontSize: 15, color: t.text2,
         }}>{entry.label}</Text>
-        {entry.date ? <Text style={{
+        {day ? <Text style={{
           fontFamily: FONT.ui, fontSize: 12, color: t.text3,
-        }}>{entry.date}</Text> : null}
+        }}>{day}</Text> : null}
       </View>
 
       <Text style={{
         fontFamily: FONT.display, fontSize: 15, fontWeight: '600',
         color: isCredit ? t.state.okDeep : t.text2,
       }}>
-        {isCredit ? '+' : '−'}{EUR(Math.abs(entry.amount))}
+        {isCredit ? '+' : '−'}{EUR(Math.abs(entry.delta))}
       </Text>
     </View>
   );
@@ -198,16 +205,12 @@ function KidVaultView({ t, kid }) {
   const { s, set } = st;
   const [requested, setRequested] = useState(false);
 
-  const balance = s.vault[kid] ?? 0;
+  // O saldo é a soma dos movimentos, e a lista mostra as mesmas parcelas —
+  // não uma lista à parte, que dantes contradizia o total.
+  const moves = st.vaultMoves(kid);
+  const balance = st.vaultOf(kid);
   const pending = (st.kidPts[kid] ?? 0) - (s.paidPts[kid] ?? 0);
   const pendingEur = pending * s.pointValue;
-
-  // Transações simuladas — em produção viriam do servidor
-  const transactions = [
-    { type: 'credit', label: 'Pontos pagos pela Rita', date: '18/08', amount: 2.40 },
-    { type: 'credit', label: 'Bónus da semana', date: '15/08', amount: 1.50 },
-    { type: 'debit', label: 'Compra em loja', date: '12/08', amount: 5.00 },
-  ];
 
   return (
     <ScrollView style={{ flex: 1, minHeight: 0 }}
@@ -233,8 +236,8 @@ function KidVaultView({ t, kid }) {
       <View>
         <SectionTitle t={t}>Movimentos</SectionTitle>
         <Card t={t} pad={false}>
-          {transactions.length > 0 ? transactions.map((entry, idx) => (
-            <VaultTransaction key={idx} t={t} entry={entry} />
+          {moves.length > 0 ? moves.map(m => (
+            <VaultTransaction key={m.id} t={t} entry={m} />
           )) : (
             <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
               <Text style={{
@@ -322,7 +325,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
           }}>
             {(() => {
               const p = (st.kidPts[kid] ?? 0) - (s.paidPts[kid] ?? 0);
-              return `${p} pt${p !== 1 ? 's' : ''} por pagar · ${EUR(s.vault[kid] ?? 0)} no cofre`;
+              return `${p} pt${p !== 1 ? 's' : ''} por pagar · ${EUR(st.vaultOf(kid))} no cofre`;
             })()}
           </Text>
         </View>

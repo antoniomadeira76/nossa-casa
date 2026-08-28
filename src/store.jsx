@@ -7,7 +7,7 @@ const KEY = 'nossa-casa/v1';
 
 // Só isto é gravado. O resto — separador ativo, folha aberta, rascunhos — é UI.
 const DATA_KEYS = [
-  'done', 'pending', 'status', 'registered', 'settled', 'vault', 'paidPts', 'extraLog',
+  'done', 'pending', 'status', 'registered', 'settled', 'vaultMoves', 'paidPts', 'extraLog',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'newItems', 'itemGone',
   'newEquip', 'equipGone', 'schemeByUser', 'themeByUser', 'importDone', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
@@ -17,10 +17,24 @@ const DATA_KEYS = [
   'googleCalendarImported', // Google Calendar imports
 ];
 
+// INVARIANTE #2: o cofre é a soma dos seus movimentos, nunca um campo escrito.
+// Dois telefones que acrescentam movimentos somam; dois que escrevem um saldo
+// anulam-se. Por isso não existe `vault` — existe `vaultMoves`.
+const VAULT_SEED = () => [
+  { id: 'vm-l0', kid: 'Léo', delta: 8.30, label: 'Semanadas anteriores', day: 'd2026-08-02' },
+  { id: 'vm-l1', kid: 'Léo', delta: -2.50, label: 'Retirada — cromos · autorizado pelo Tomás', day: 'd2026-08-09' },
+  { id: 'vm-l2', kid: 'Léo', delta: 5.00, label: 'Bónus — boletim escolar · Rita', day: 'd2026-08-14' },
+  { id: 'vm-l3', kid: 'Léo', delta: 1.60, label: 'Semanada de 10 a 16 de agosto · 16 pt', day: 'd2026-08-17' },
+  { id: 'vm-m0', kid: 'Mia', delta: 7.40, label: 'Semanadas anteriores', day: 'd2026-08-02' },
+  { id: 'vm-m1', kid: 'Mia', delta: -1.00, label: 'Retirada — gelado · autorizado pela Rita', day: 'd2026-08-11' },
+  { id: 'vm-m2', kid: 'Mia', delta: 1.40, label: 'Bónus — arrumou o quarto · Tomás', day: 'd2026-08-13' },
+  { id: 'vm-m3', kid: 'Mia', delta: 1.10, label: 'Semanada de 10 a 16 de agosto · 11 pt', day: 'd2026-08-17' },
+];
+
 export const DEMO = () => ({
   done: TASKS.reduce((a, t) => (a[t.id] = !!t.done, a), {}),
   pending: {}, status: {}, registered: 0, settled: false,
-  vault: { 'Léo': 12.4, 'Mia': 8.9 }, paidPts: { 'Léo': 0, 'Mia': 0 }, extraLog: {},
+  vaultMoves: VAULT_SEED(), paidPts: { 'Léo': 0, 'Mia': 0 }, extraLog: {},
   envMove: {}, added: [], newTasks: [], taskEdits: {}, taskGone: {},
   newItems: [], itemGone: {}, newEquip: [], equipGone: {},
   schemeByUser: {}, themeByUser: {}, importDone: {},
@@ -47,7 +61,7 @@ export const DEMO = () => ({
 
 // Casa nova: os mesmos campos, todos vazios
 export const BLANK = () => ({
-  ...DEMO(), done: {}, urg: {}, due: {}, vault: { 'Léo': 0, 'Mia': 0 },
+  ...DEMO(), done: {}, urg: {}, due: {}, vaultMoves: [],
   clearedSeeds: true, monthZero: true, shopHistory: [], health: [],
   healthNotes: {}, healthRecipes: {}, healthDecisions: {}, googleCalendarImported: {},
 });
@@ -135,6 +149,20 @@ function build(s, set) {
     ...e,
     used: (s.monthZero ? 0 : e.used) + (e.name === 'Mercearia' ? s.registered : 0),
     limit: (s.monthLimits ? s.monthLimits[e.name] : e.limit) + (s.envMove[e.name] || 0),
+  }));
+
+  // Saldo do cofre: soma, nunca leitura de um campo (INVARIANTE #2).
+  const vaultMoves = (kid) => (s.vaultMoves || [])
+    .filter(m => m.kid === kid)
+    .sort((a, b) => (b.day || '').localeCompare(a.day || ''));
+  const vaultOf = (kid) => (s.vaultMoves || [])
+    .reduce((n, m) => (m.kid === kid ? n + m.delta : n), 0);
+  // Acrescenta um movimento. Nunca substitui o saldo.
+  const vaultAdd = (kid, delta, label, day = TODAY_KEY) => set(x => ({
+    vaultMoves: [...(x.vaultMoves || []), {
+      id: 'vm-' + Date.now() + '-' + Math.round(Math.random() * 1e6),
+      kid, delta, label, day,
+    }],
   }));
 
   const kidPts = ['Léo', 'Mia'].reduce((a, k) => {
@@ -315,6 +343,7 @@ function build(s, set) {
     s, set,
     allTasks, allItems, allEvents, allEquip,
     budget, spent, remaining: budget - spent, envelopes, kidPts,
+    vaultOf, vaultMoves, vaultAdd,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),
     resetDemo: () => { AsyncStorage.removeItem(KEY).catch(() => {}); set(DEMO()); },

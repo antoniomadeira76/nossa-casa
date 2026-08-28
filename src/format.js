@@ -59,3 +59,14 @@ export const dueInfo = (dueKey, dueTime) => {
 };
 
 export const plural = (n, sing, plur) => `${n} ${n === 1 ? sing : plur}`;
+
+// Dias até ao fim da garantia, contra o TODAY da app — não contra o relógio.
+// Vive aqui porque os Equipamentos e o Dinheiro contam as mesmas garantias;
+// duplicá-lo fez com que só um dos dois visse os equipamentos novos.
+export const warrantyDaysLeft = (e) => {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String((e && e.warrantyEnd) || ''));
+  if (!m) return typeof (e && e.daysLeft) === 'number' ? e.daysLeft : 0;
+  return Math.round(
+    (Date.UTC(+m[3], +m[2] - 1, +m[1]) - Date.UTC(TODAY.y, TODAY.m, TODAY.d)) / 86400000
+  );
+};

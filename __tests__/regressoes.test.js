@@ -1,0 +1,190 @@
+/**
+ * Regressões — Nossa Casa
+ *
+ * Ao contrário de smoke.test.js, estes testes lêem o código-fonte e as
+ * sementes. Cada um corresponde a um defeito que chegou a estar em produção
+ * e que os testes existentes não apanharam, porque comparavam literais
+ * consigo próprios.
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const root = path.join(__dirname, '..');
+const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
+const jsxFiles = () => {
+  const out = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
+      const rel = `${dir}/${e.name}`;
+      if (e.isDirectory()) walk(rel);
+      else if (/\.jsx?$/.test(e.name)) out.push(rel);
+    }
+  };
+  walk('src');
+  return out;
+};
+
+describe('Contratos dos componentes partilhados', () => {
+  // Pill é um View de estado: não aceita selected/onPress. Quatro folhas
+  // passavam-lhos, e as pastilhas ficavam sem preenchimento e sem toque.
+  test('Pill nunca recebe selected ou onPress — para isso existe Choice', () => {
+    const offenders = [];
+    for (const f of jsxFiles()) {
+      const src = read(f);
+      for (const tag of src.match(/<Pill\b[\s\S]*?\/>/g) || []) {
+        if (/\bselected=|\bonPress=/.test(tag)) offenders.push(f);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  // Toggle declara {on, onPress} e não desenha o rótulo. Quem passava
+  // value/onChange ficava com um interruptor inerte e sem legenda.
+  test('Toggle nunca recebe value ou onChange', () => {
+    const offenders = [];
+    for (const f of jsxFiles()) {
+      const src = read(f);
+      for (const tag of src.match(/<Toggle\b[\s\S]*?\/>/g) || []) {
+        if (/\bvalue=|\bonChange=/.test(tag)) offenders.push(f);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  // Passar strings cruas dava três segmentos em branco, todos «selecionados»
+  // porque undefined === undefined.
+  test('Segmented normaliza opções em string', () => {
+    expect(read('src/ui.jsx')).toMatch(/typeof raw === 'string'/);
+  });
+
+  test('Choice existe e o seu alvo de toque tem 44', () => {
+    const ui = read('src/ui.jsx');
+    const choice = ui.slice(ui.indexOf('export const Choice'), ui.indexOf('export const Tap'));
+    expect(choice).toMatch(/minHeight: 44/);
+    expect(choice).toMatch(/t\.accent/);          // cor de ação lida do tema
+    expect(choice).not.toMatch(/#[0-9a-fA-F]{6}(?!')/); // sem literais de cor de ação
+  });
+});
+
+describe('INVARIANTE #2 — saldos são somas de movimentos', () => {
+  test('o cofre não é um campo escrito', () => {
+    const store = read('src/store.jsx');
+    expect(store).not.toMatch(/^\s*vault:\s*\{/m);
+    expect(store).toMatch(/vaultMoves/);
+  });
+
+  test('nenhum ecrã lê um saldo de cofre directamente', () => {
+    const offenders = jsxFiles().filter(f => /s\.vault\s*\[/.test(read(f)));
+    expect(offenders).toEqual([]);
+  });
+
+  test('os movimentos semeados somam os saldos da demonstração', () => {
+    const store = read('src/store.jsx');
+    const seed = store.slice(store.indexOf('const VAULT_SEED'), store.indexOf('export const DEMO'));
+    const sums = {};
+    for (const [, kid, delta] of seed.matchAll(/kid: '([^']+)', delta: (-?[\d.]+)/g)) {
+      sums[kid] = (sums[kid] || 0) + parseFloat(delta);
+    }
+    expect(+sums['Léo'].toFixed(2)).toBe(12.40);
+    expect(+sums['Mia'].toFixed(2)).toBe(8.90);
+  });
+});
+
+describe('PIN', () => {
+  // setPin grava. Chamá-lo no JSX comprometia o PIN a meio da escrita.
+  test('Gestao valida com pinError e só grava no manipulador do botão', () => {
+    const src = read('src/screens/Gestao.jsx');
+    const renderPart = src.slice(src.indexOf('return ('));
+    const calls = renderPart.match(/setPin\(/g) || [];
+    expect(calls.length).toBe(1);                       // só a do onPress
+    expect(renderPart).toMatch(/onPress=\{\(\) => \{\s*if \(setPin\(/);
+    expect(src).toMatch(/pinError\(selectedMember, input\)/);
+  });
+
+  test('não há PIN de fábrica', () => {
+    expect(read('src/store.jsx')).toMatch(/pins:\s*\{\}/);
+    const offenders = jsxFiles().filter(f =>
+      /pins\s*\[[^\]]+\]\s*\|\|\s*['"]\d{4}['"]/.test(read(f)));
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('Equipamentos', () => {
+  const dataSrc = read('src/data.js');
+  const equip = [...dataSrc.matchAll(
+    /\{ id: '(\w+)',\s+name: '([^']+)',\s+cat: '([^']+)',\s+bought: '([^']+)',[\s\S]*?warrantyEnd: '([^']+)'/g
+  )].map(([, id, name, cat, bought, warrantyEnd]) => ({ id, name, cat, bought, warrantyEnd }));
+
+  test('as sementes foram lidas', () => {
+    expect(equip.length).toBe(4);
+  });
+
+  // O ecrã lia e.category/e.purchase; as sementes têm cat/bought. Todas as
+  // linhas mostravam «undefined · Data desconhecida».
+  test('o ecrã lê os campos que as sementes carregam', () => {
+    const src = read('src/screens/Equipamentos.jsx');
+    expect(src).not.toMatch(/e\.category|e\.purchase\b|e\.warrantyDays|e\.purchaseAt/);
+    expect(src).toMatch(/e\.cat/);
+    expect(src).toMatch(/e\.bought/);
+  });
+
+  test('gravar um equipamento produz a forma das sementes', () => {
+    const src = read('src/screens/Equipamentos.jsx');
+    const save = src.slice(src.indexOf('const handleSave'), src.indexOf('const Section'));
+    for (const field of ['cat:', 'bought:', 'warrantyEnd:']) expect(save).toContain(field);
+  });
+
+  // Antes: tudo caía em today+365, e a caldeira expirada aparecia em garantia.
+  test('as sementes povoam os três estados de garantia', () => {
+    const { warrantyDaysLeft } = require('../src/format.js');
+    const bucket = (e) => {
+      const d = warrantyDaysLeft(e);
+      return d > 90 ? 'em' : d > 0 ? 'a-expirar' : 'fora';
+    };
+    const states = new Set(equip.map(bucket));
+    expect([...states].sort()).toEqual(['a-expirar', 'em', 'fora']);
+    expect(bucket(equip.find(e => /Caldeira/.test(e.name)))).toBe('fora');
+  });
+});
+
+describe('Português europeu', () => {
+  const BR = [
+    [/\bCompartilh/i, 'compartilhar → partilhar'],
+    [/\bgerenci/i, 'gerenciar → gerir'],
+    [/\bAguardando\b/, 'Aguardando → A aguardar'],
+    [/\bplanejar\b/i, 'planejar → planear'],
+    [/\busuário/i, 'usuário → utilizador'],
+    [/\bdeletar\b/i, 'deletar → eliminar'],
+  ];
+
+  test.each(BR)('nenhum ficheiro usa %s', (re, hint) => {
+    const offenders = jsxFiles().filter(f => re.test(read(f)));
+    expect({ hint, offenders }).toEqual({ hint, offenders: [] });
+  });
+
+  // Fronteiras em Unicode: \b parte-se nos acentos, e /\bvocê\b/ casava dentro
+  // de «vocês». As fronteiras aqui são «não é letra».
+  test('não há tratamento por «tu»', () => {
+    const re = /(?<![\p{L}])(tu|teu|teus|tua|tuas|contigo|ti)(?![\p{L}])/iu;
+    const offenders = jsxFiles().filter(f => re.test(read(f)));
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('O que a interface promete, o código faz', () => {
+  // O texto anunciava 30 % para as metas (Dinheiro) e para os cofres (Gestão);
+  // o manipulador não fazia nem uma coisa nem outra.
+  // Sem comentários: o que se mede é o que o utilizador lê, não as notas ao lado.
+  const withoutComments = (src) => src.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+
+  test('fechar o mês não promete mover dinheiro', () => {
+    for (const f of ['src/screens/Dinheiro.jsx', 'src/screens/Gestao.jsx']) {
+      expect(withoutComments(read(f))).not.toMatch(/30\s*%|\*\s*0\.30/);
+    }
+  });
+
+  test('não sobra o cálculo morto dos 30 %', () => {
+    expect(read('src/screens/Dinheiro.jsx')).not.toMatch(/toGoals/);
+  });
+});
