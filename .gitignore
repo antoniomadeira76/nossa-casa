@@ -8,3 +8,5 @@ npm-debug.*
 *.key
 *.mobileprovision
 .DS_Store
+android/
+ios/
