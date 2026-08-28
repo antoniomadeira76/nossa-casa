@@ -19,6 +19,10 @@ export default function Gestao({ t, user, onClose }) {
   const [selectedEnvelope, setSelectedEnvelope] = useState(null);
   const [selectedSpecialty, setSelectedSpecialty] = useState(null);
 
+  // Validar com pinError, que só lê. setPin grava — chamá-lo aqui comprometia
+  // o PIN a meio da escrita, antes de se tocar em Guardar.
+  const pinMsg = input ? pinError(selectedMember, input) : null;
+
   if (!isAdmin(user)) {
     return (
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, justifyContent: 'center', alignItems: 'center' }}>
@@ -312,14 +316,13 @@ export default function Gestao({ t, user, onClose }) {
             setInput('');
           }}
           action={
-            <Primary t={t} label="Guardar" onPress={() => {
-              const err = setPin(selectedMember, input);
-              if (!err) {
+            <Primary t={t} label="Guardar" disabled={!input || !!pinMsg}
+              onPress={() => {
+                if (setPin(selectedMember, input)) return;
                 setSheetOpen(null);
                 setSelectedMember(null);
                 setInput('');
-              }
-            }} />
+              }} />
           }>
           <View style={{ gap: S.md }}>
             <View>
@@ -344,11 +347,7 @@ export default function Gestao({ t, user, onClose }) {
                 }}
               />
             </View>
-            {input && setPin(selectedMember, input) && (
-              <Tile t={t} kind="warn">
-                {setPin(selectedMember, input)}
-              </Tile>
-            )}
+            {pinMsg ? <Tile t={t} kind="warn">{pinMsg}</Tile> : null}
           </View>
         </Sheet>
       )}
