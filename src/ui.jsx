@@ -25,11 +25,29 @@ export const Label = ({ t, children }) => (
   <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.slate }}>{children}</Text>
 );
 
+// Pastilha de estado: não se toca. Para escolher, use Choice.
 export const Pill = ({ label, fg, bg, border }) => (
   <View style={{ paddingVertical: 4, paddingHorizontal: 10, borderRadius: R.pill,
     borderWidth: 1, borderColor: border, backgroundColor: bg }}>
     <Text style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '600', color: fg }}>{label}</Text>
   </View>
+);
+
+// Chip de escolha: tocável, 44 de alvo, cor de ação lida do tema.
+// Só fora de linhas tocáveis — uma linha, um destino.
+export const Choice = ({ t, label, selected, onPress }) => (
+  <Pressable onPress={onPress} accessibilityRole="button"
+    accessibilityLabel={label} accessibilityState={{ selected: !!selected }}
+    style={({ pressed }) => ({
+      minHeight: 44, paddingHorizontal: S.lg, borderRadius: R.pill, borderWidth: 1,
+      alignItems: 'center', justifyContent: 'center',
+      backgroundColor: selected ? t.accent : t.card,
+      borderColor: selected ? t.accent : t.border,
+      opacity: pressed ? 0.85 : 1,
+    })}>
+    <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
+      color: selected ? '#FFFFFF' : t.text2 }}>{label}</Text>
+  </Pressable>
 );
 
 // Alvo de toque nunca abaixo de 44
@@ -62,10 +80,13 @@ export const Row = ({ t, icon, title, sub, value, onPress, last, right }) => (
 );
 
 // Controlo segmentado: um contorno para o grupo, divisórias por dentro
+// Aceita ['Uma vez', ...] ou [{value, label}, ...]. Passar strings cruas dava
+// três segmentos em branco, todos «selecionados» por undefined === undefined.
 export const Segmented = ({ t, options, value, onChange, small }) => (
   <View style={{ flexDirection: 'row', borderWidth: 1, borderColor: t.border,
     borderRadius: R.row, overflow: 'hidden' }}>
-    {options.map((o, i) => {
+    {options.map((raw, i) => {
+      const o = typeof raw === 'string' ? { value: raw, label: raw } : raw;
       const on = value === o.value;
       return (
         <Pressable key={o.value} onPress={() => onChange(o.value)}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, Pill, Toggle, Primary } from '../ui';
+import { Label, Choice, Toggle, Primary } from '../ui';
 import Icon from '../Icon';
 import ConfirmShare from '../ConfirmShare';
 import { parseKey } from '../format';
@@ -109,7 +109,7 @@ export default function NovoEvento({ t, user, onClose, preFillDay }) {
         <Label t={t}>Responsável</Label>
         <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
           {['Rita', 'Tomás', 'Léo', 'Mia'].map(name => (
-            <Pill
+            <Choice
               key={name}
               t={t}
               label={name}
@@ -120,12 +120,17 @@ export default function NovoEvento({ t, user, onClose, preFillDay }) {
         </View>
       </View>
 
-      <Toggle
-        t={t}
-        label="Privado (só para mim)"
-        value={form.private}
-        onChange={(v) => setForm(f => ({ ...f, private: v }))}
-      />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12,
+        borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14 }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>Privado</Text>
+          <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+            {form.private ? 'Só o próprio vê este evento.' : 'Visível para toda a família.'}
+          </Text>
+        </View>
+        <Toggle t={t} on={form.private} label="Privado"
+          onPress={() => setForm(f => ({ ...f, private: !f.private }))} />
+      </View>
 
       <Primary
         t={t}

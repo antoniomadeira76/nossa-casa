@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, Pill, Toggle, Primary } from '../ui';
+import { Label, Choice, Toggle, Primary } from '../ui';
 import { SECTIONS } from '../data';
 
 export default function NovoArtigo({ t, user, onClose }) {
@@ -58,7 +58,7 @@ export default function NovoArtigo({ t, user, onClose }) {
         <Label t={t}>Secção</Label>
         <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
           {SECTIONS.map((sec, idx) => (
-            <Pill
+            <Choice
               key={sec}
               t={t}
               label={sec}
@@ -84,12 +84,17 @@ export default function NovoArtigo({ t, user, onClose }) {
         />
       </View>
 
-      <Toggle
-        t={t}
-        label="Artigo habitual (semanal)"
-        value={form.staple}
-        onChange={(v) => setForm(f => ({ ...f, staple: v }))}
-      />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12,
+        borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14 }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>Artigo habitual</Text>
+          <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+            {form.staple ? 'Volta à lista todas as semanas.' : 'Entra só desta vez.'}
+          </Text>
+        </View>
+        <Toggle t={t} on={form.staple} label="Artigo habitual"
+          onPress={() => setForm(f => ({ ...f, staple: !f.staple }))} />
+      </View>
 
       <Primary
         t={t}

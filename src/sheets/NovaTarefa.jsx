@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, Pill, Segmented, Primary } from '../ui';
+import { Label, Choice, Segmented, Primary } from '../ui';
 import { TODAY_KEY, dkey, pad2 } from '../format';
 import Icon from '../Icon';
 
@@ -68,7 +68,7 @@ export default function NovaTarefa({ t, user, onClose }) {
         <Label t={t}>Responsável</Label>
         <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
           {['Rita', 'Tomás', 'Léo', 'Mia'].map(name => (
-            <Pill
+            <Choice
               key={name}
               t={t}
               label={name}
@@ -109,7 +109,7 @@ export default function NovaTarefa({ t, user, onClose }) {
         <Label t={t}>Urgência</Label>
         <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
           {URG_OPTS.map(opt => (
-            <Pill
+            <Choice
               key={opt.value}
               t={t}
               label={opt.label}
