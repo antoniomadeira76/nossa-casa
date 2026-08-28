@@ -10,3 +10,8 @@ npm-debug.*
 .DS_Store
 android/
 ios/
+
+# Segredos — supabase.js:14 lê a chave de .env.local
+.env
+.env.*
+!.env.example

@@ -81,16 +81,25 @@ export const syncManager = {
   },
 };
 
-// Row-level security policies (implemented on server, documented here)
-const RLS_RULES = {
-  casa: 'Admins only',
-  membros: 'Self + admins for roles',
-  events: 'Adults; private=author only',
-  tasks: 'Adults define; all complete',
-  items: 'All members',
-  envelopes: 'Adults; budgets by admin',
-  vault: 'Adults write; kids read',
-  health: 'Adults see own; all see kids',
-  equipments: 'Adults',
-  files: 'Who uploaded + admin can read',
+// Políticas de visibilidade — a implementar no servidor, uma por tabela.
+// docs/seguranca.html é a fonte; isto é um resumo e não substitui a leitura.
+//
+// ⚠ Nada disto está implementado. Este ficheiro é um esqueleto: todos os
+// corpos das funções acima estão comentados e nenhum ecrã o importa. Enquanto
+// assim for, a autorização da app vive no dispositivo — e o papel e o PIN
+// podem ser reescritos no armazenamento local, que é a escalada descrita na
+// secção 4 do documento.
+export const RLS_RULES = {
+  casa: 'Administração',
+  membros: 'O próprio; papéis só por administração',
+  events: 'Adultos; privado = apenas o autor',
+  tasks: 'Adultos definem; todos concluem',
+  items: 'Todos os membros',
+  envelopes: 'Adultos; limites por administração',
+  // O saldo é a soma dos movimentos, nunca um campo escrito (INVARIANTE #2).
+  // A tabela é de inserções: adultos inserem, crianças lêem. Sem UPDATE.
+  vault_moves: 'Adultos inserem; crianças lêem; sem UPDATE nem DELETE',
+  health: 'Adulto vê a própria; adultos vêem as das crianças; criança não vê a sua',
+  equipments: 'Adultos',
+  files: 'Quem carregou + administração',
 };
