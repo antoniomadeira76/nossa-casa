@@ -23,8 +23,11 @@ const formatEventDescription = (event) => {
 
 export default function GoogleCalendarImportModal({ t, events, user, onImportAll, onImportPrivate, onIgnore, onClose }) {
   const [selected, setSelected] = useState({});
-  const [shared, setShared] = useState(true);
+  const [shared, setShared] = useState(false);
   const [recurringEnabled, setRecurringEnabled] = useState(false);
+
+  // Cor fixa para checkboxes (azul navy, não accent)
+  const checkboxColor = '#1f3a93';
 
   // Separar eventos recorrentes e não recorrentes
   const { recurring, nonRecurring } = useMemo(() => {
@@ -114,9 +117,9 @@ export default function GoogleCalendarImportModal({ t, events, user, onImportAll
               <Pressable key={event.id} onPress={() => toggleEvent(event.id)}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12,
                   backgroundColor: t.card, borderRadius: R.card, borderWidth: 1.5,
-                  borderColor: selected[event.id] ? t.accent : t.border }}>
+                  borderColor: selected[event.id] ? checkboxColor : t.border }}>
                 {/* Checkbox */}
-                <View style={{ width: 20, height: 20, borderRadius: 4, backgroundColor: selected[event.id] ? t.accent : 'transparent',
+                <View style={{ width: 20, height: 20, borderRadius: 4, backgroundColor: selected[event.id] ? checkboxColor : 'transparent',
                   borderWidth: selected[event.id] ? 0 : 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   {selected[event.id] && <Icon name="check" size={14} color="#FFFFFF" />}
                 </View>
