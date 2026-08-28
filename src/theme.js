@@ -14,11 +14,13 @@ const LIGHT = {
   page: '#F0F2F5', card: '#FCFCFD', surface: '#FFFFFF', subtle: '#FAFAFA', border: '#D9D9D9',
   text1: '#262626', text2: '#434343', text3: '#6A7282', slate: '#67769B',
   divider: '#F0F2F5', tileWarn: 'rgba(255,251,230,0.8)', tileInfo: 'rgba(232,244,255,0.8)',
+  tileErr: 'rgba(255,241,240,0.9)',
 };
 const DARK = {
   page: '#00101C', card: '#0A2033', surface: '#0A2033', subtle: '#10293D', border: '#1E3A4F',
   text1: '#F0F2F5', text2: '#DCE3EA', text3: '#93A4B5', slate: '#9DB2D6',
   divider: '#1E3A4F', tileWarn: 'rgba(250,173,20,0.16)', tileInfo: 'rgba(24,144,255,0.16)',
+  tileErr: 'rgba(255,77,79,0.16)',
 };
 
 // Estado — do sistema, não dos esquemas

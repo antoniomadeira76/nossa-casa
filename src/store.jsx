@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES } from './data';
+import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES, HEALTH, HEALTH_DOCS } from './data';
 import { TODAY_KEY, dueInfo } from './format';
 
 const KEY = 'nossa-casa/v1';
@@ -13,7 +13,7 @@ const DATA_KEYS = [
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pointValue', 'payDay', 'splitHalf',
   'stores', 'shopPlan', 'shopHistory', 'health', 'specialities', 'equipCats', 'registo',
-  'recurringReset', 'healthNotes', 'healthRecipes', 'healthDecisions', // health feature
+  'recurringReset', 'healthNotes', 'healthRecipes', 'healthDecisions', 'healthDocs', 'healthGone',
   'googleCalendarImported', // Google Calendar imports
 ];
 
@@ -158,6 +158,28 @@ function build(s, set) {
     used: (s.monthZero ? 0 : e.used) + (e.name === 'Mercearia' ? s.registered : 0),
     limit: (s.monthLimits ? s.monthLimits[e.name] : e.limit) + (s.envMove[e.name] || 0),
   }));
+
+  // Saúde. A ficha de um adulto é só dele; as das crianças são visíveis aos
+  // adultos e invisíveis às próprias. Isto é a regra do cliente — a do
+  // servidor está em docs/seguranca.html e é a que conta (INVARIANTE #3).
+  const canSeeHealth = (member, viewer) =>
+    MEMBERS[member] && MEMBERS[member].kid
+      ? !!(MEMBERS[viewer] && !MEMBERS[viewer].kid)
+      : member === viewer;
+
+  const allHealth = () => [...(s.clearedSeeds ? [] : HEALTH), ...(s.health || [])]
+    .filter(h => !(s.healthGone || {})[h.id]);
+  const healthOf = (member, viewer) => (canSeeHealth(member, viewer)
+    ? allHealth().filter(h => h.member === member).sort((a, b) => (b.day || '').localeCompare(a.day || ''))
+    : []);
+  const allHealthDocs = () => [...(s.clearedSeeds ? [] : HEALTH_DOCS), ...(s.healthDocs || [])];
+  const docsOf = (member, viewer) => (canSeeHealth(member, viewer)
+    ? allHealthDocs().filter(d => d.member === member)
+    : []);
+  // A próxima consulta a contar de hoje, ou nada se já passaram todas.
+  const nextHealth = (member, viewer) => healthOf(member, viewer)
+    .filter(h => h.day >= TODAY_KEY)
+    .sort((a, b) => a.day.localeCompare(b.day))[0] || null;
 
   // Saldo do cofre: soma, nunca leitura de um campo (INVARIANTE #2).
   const vaultMoves = (kid) => (s.vaultMoves || [])
@@ -352,6 +374,7 @@ function build(s, set) {
     allTasks, allItems, allEvents, allEquip,
     budget, spent, remaining: budget - spent, envelopes, kidPts,
     vaultOf, vaultMoves, vaultAdd,
+    canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),
     resetDemo: () => { AsyncStorage.removeItem(KEY).catch(() => {}); set(DEMO()); },

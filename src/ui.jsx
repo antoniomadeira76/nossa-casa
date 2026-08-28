@@ -159,15 +159,22 @@ export const Bar = ({ t, pct, color, height = 8 }) => (
   </View>
 );
 
-export const Tile = ({ t, kind = 'info', icon, children }) => (
-  <View style={{ flexDirection: 'row', gap: 12, padding: 14, borderRadius: R.card, borderWidth: 1,
-    borderColor: kind === 'warn' ? t.state.warn : t.state.info,
-    backgroundColor: kind === 'warn' ? t.tileWarn : t.tileInfo }}>
-    <Icon name={icon || (kind === 'warn' ? 'exclamation' : 'infoCircle')} size={20}
-      color={kind === 'warn' ? t.state.warn : t.state.info} />
-    <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 14.5, lineHeight: 21, color: t.text2 }}>{children}</Text>
-  </View>
-);
+const TILE = {
+  info: { border: (t) => t.state.info, bg: (t) => t.tileInfo, icon: 'infoCircle' },
+  warn: { border: (t) => t.state.warn, bg: (t) => t.tileWarn, icon: 'exclamation' },
+  err:  { border: (t) => t.state.err,  bg: (t) => t.tileErr,  icon: 'lock' },
+};
+
+export const Tile = ({ t, kind = 'info', icon, children }) => {
+  const k = TILE[kind] || TILE.info;
+  return (
+    <View style={{ flexDirection: 'row', gap: 12, padding: 14, borderRadius: R.card, borderWidth: 1,
+      borderColor: k.border(t), backgroundColor: k.bg(t) }}>
+      <Icon name={icon || k.icon} size={20} color={k.border(t)} />
+      <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 14.5, lineHeight: 21, color: t.text2 }}>{children}</Text>
+    </View>
+  );
+};
 
 export const Empty = ({ t, icon, title, hint }) => (
   <View style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: t.border,

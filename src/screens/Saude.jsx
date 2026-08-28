@@ -3,13 +3,16 @@ import { View, Text, TextInput, Pressable, ScrollView, FlatList } from 'react-na
 import { useStore } from '../store';
 import { S, R, FONT, MEMBER_COLOR, STATE } from '../theme';
 import { MEMBERS } from '../data';
-import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill } from '../ui';
+import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Avatar } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
-import { pad2 } from '../format';
+import { pad2, plural, dayLabel } from '../format';
+import FichaSaude from './FichaSaude';
 
 export default function Saude({ t, user, onClose }) {
-  const { s, set, addHealthRecord, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, renameSpecialty } = useStore();
+  const st = useStore();
+  const { s, set, addHealthRecord, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, renameSpecialty } = st;
+  const [ficha, setFicha] = useState(null);   // membro cuja ficha está aberta
   const [sheet, setSheet] = useState(null);
   const [expandedRecord, setExpandedRecord] = useState(null);
   const [expandedNote, setExpandedNote] = useState(null);
@@ -363,9 +366,59 @@ export default function Saude({ t, user, onClose }) {
     );
   };
 
+  // Uma ficha por membro, como manda o desenho. Quem a pode abrir vem do
+  // store; a lista só mostra as que o utilizador pode ver.
+  const fichas = Object.keys(MEMBERS).filter(m => st.canSeeHealth(m, user));
+
+  if (ficha) {
+    return <FichaSaude t={t} member={ficha} user={user} onBack={() => setFicha(null)}
+      onMarcar={() => { setForm(f => ({ ...f, member: ficha })); setSheet("consulta"); }} />;
+  }
+
   return (
     <>
       <View style={{ gap: S.md }}>
+        <Tile t={t} kind="err" icon="lock">
+          A sua ficha é privada — nem o outro adulto a vê. As fichas das crianças
+          são visíveis aos adultos e invisíveis às próprias.
+        </Tile>
+
+        <View>
+          <SectionTitle t={t}>Fichas</SectionTitle>
+          <View style={{ gap: S.md }}>
+            {fichas.map(m => {
+              const n = st.healthOf(m, user).length;
+              const d = st.docsOf(m, user).length;
+              const prox = st.nextHealth(m, user);
+              return (
+                <Card key={m} t={t} style={{ borderLeftWidth: 3, borderLeftColor: MEMBER_COLOR[m] }}>
+                  <Pressable onPress={() => setFicha(m)} accessibilityRole="button"
+                    accessibilityLabel={m === user ? 'A minha ficha' : `Saúde do ${m}`}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52 }}>
+                    <Avatar initial={MEMBERS[m].initial} color={MEMBER_COLOR[m]} size={40} />
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text1 }}>
+                        {m === user ? 'A minha ficha' : m}
+                      </Text>
+                      <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
+                        {m === user ? 'Privada' : 'Visível aos adultos'}
+                        {' · '}
+                        {plural(n, 'consulta', 'consultas')} · {plural(d, 'documento', 'documentos')}
+                      </Text>
+                      {prox ? (
+                        <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.state.info }}>
+                          A seguir: {prox.specialty} · {dayLabel(prox.day).replace('Hoje · ', 'Hoje, ')}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Icon name="caretRight" size={18} color={t.text3} />
+                  </Pressable>
+                </Card>
+              );
+            })}
+          </View>
+        </View>
+
         {/* Botão Marcar Consulta */}
         <AddButton t={t} label="marcar consulta" onPress={() => setSheet('consulta')} />
 

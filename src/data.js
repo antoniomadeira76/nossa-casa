@@ -65,3 +65,23 @@ export const GOALS = [
   { name: 'Férias no Algarve', at: 1920, of: 3000, when: 'julho de 2027' },
   { name: 'Carro novo',        at: 6600, of: 30000, when: 'sem prazo' },
 ];
+
+// Fichas de saúde. Uma consulta é um episódio: especialidade, médico, quando,
+// e os anexos que lhe pertencem. Os documentos soltos ficam no arquivo clínico.
+// Datas explícitas: dkey não normaliza, e somar dias ao dia do mês dava «49/08».
+export const HEALTH = [
+  { id: 'h1', member: 'Mia',   specialty: 'Dentista',       doctor: 'Dr. Cardoso',
+    day: dkey(2026, 7, 28), time: '10:00' },   // 28/08, daqui a 8 dias
+  { id: 'h2', member: 'Léo',   specialty: 'Pediatria',      doctor: 'Dr.ª Neves',
+    day: dkey(2026, 7, 8),  time: '16:30' },   // 08/08, já passou
+  { id: 'h3', member: 'Léo',   specialty: 'Oftalmologia',   doctor: 'Dr. Sequeira',
+    day: dkey(2026, 8, 18), time: '09:15' },   // 18/09
+  { id: 'h4', member: 'Rita',  specialty: 'Medicina geral', doctor: 'Dr.ª Pinto',
+    day: dkey(2026, 6, 11), time: '11:00' },   // 11/07, já passou
+];
+
+// Arquivo clínico: documentos, ligados ou não a uma consulta.
+export const HEALTH_DOCS = [
+  { id: 'd1', member: 'Mia', healthId: 'h1', title: 'Plano ortodôntico', kind: 'Relatório' },
+  { id: 'd2', member: 'Léo', healthId: 'h2', title: 'Análises ao sangue', kind: 'Resultado' },
+];

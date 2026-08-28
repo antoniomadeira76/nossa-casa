@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput } from 'react-native';
+import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { TODAY, pad2, plural, warrantyDaysLeft } from '../format';
 import { Card, SectionTitle, Empty, AddButton, Label, Choice, Primary } from '../ui';
+import Icon from '../Icon';
 import Sheet from '../Sheet';
+import FichaEquipamento from '../sheets/FichaEquipamento';
 
 // dd/mm/aaaa → milissegundos UTC. É o formato em que as datas são guardadas.
 const parseDMY = (s) => {
@@ -27,6 +29,7 @@ const warrantyLabel = (days) => {
 export default function Equipamentos({ t }) {
   const { set, allEquip } = useStore();
   const [sheet, setSheet] = useState(null);
+  const [ficha, setFicha] = useState(null);   // equipamento cuja ficha está aberta
   const [form, setForm] = useState({ name: '', bought: '', warranty: 365, cat: CATS[0] });
 
   const eq = allEquip();
@@ -65,17 +68,22 @@ export default function Equipamentos({ t }) {
         <View style={{ gap: S.md }}>
           {items.map(e => (
             <Card key={e.id} t={t} style={{ borderLeftWidth: 4, borderLeftColor: color }}>
-              <View style={{ gap: S.sm }}>
-                <Text style={{ fontFamily: FONT.body, fontSize: 15, fontWeight: '600', color: t.text2 }}>
-                  {e.name}
-                </Text>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-                  {[e.cat, e.bought && `comprado a ${e.bought}`].filter(Boolean).join(' · ')}
-                </Text>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: text }}>
-                  {warrantyLabel(byWarranty(e))}
-                </Text>
-              </View>
+              <Pressable onPress={() => setFicha(e.id)} accessibilityRole="button"
+                accessibilityLabel={e.name}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52 }}>
+                <View style={{ flex: 1, gap: S.sm }}>
+                  <Text style={{ fontFamily: FONT.body, fontSize: 15, fontWeight: '600', color: t.text2 }}>
+                    {e.name}
+                  </Text>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
+                    {[e.cat, e.bought && `comprado a ${e.bought}`].filter(Boolean).join(' · ')}
+                  </Text>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: text }}>
+                    {warrantyLabel(byWarranty(e))}
+                  </Text>
+                </View>
+                <Icon name="caretRight" size={18} color={t.text3} />
+              </Pressable>
             </Card>
           ))}
         </View>
@@ -157,6 +165,10 @@ export default function Equipamentos({ t }) {
             <Primary t={t} label="Guardar" onPress={handleSave} disabled={!form.name.trim()} />
           </View>
         </Sheet>
+      ) : null}
+
+      {ficha ? (
+        <FichaEquipamento t={t} equip={eq.find(x => x.id === ficha)} onClose={() => setFicha(null)} />
       ) : null}
     </>
   );
