@@ -115,7 +115,7 @@ export default function GoogleCalendarImportModal({ t, events, user, onImportAll
             </Text>
             {visibleEvents.map((event) => (
               <Pressable key={event.id} onPress={() => toggleEvent(event.id)}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12,
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 14,
                   backgroundColor: t.card, borderRadius: R.card, borderWidth: 1.5,
                   borderColor: selected[event.id] ? checkboxColor : t.border }}>
                 {/* Checkbox */}
