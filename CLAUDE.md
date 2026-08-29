@@ -37,6 +37,21 @@ testada. Quando este ficheiro e o protótipo discordarem, o protótipo ganha.
 
 ## Invariantes — não negociáveis
 
+### 0. A base de dados está escrita
+
+`db/01-esquema.sql` é o esquema completo — 22 tabelas, 5 vistas, as funções do PIN e
+todas as políticas de acesso. `db/README.md` explica cada decisão e traz o mapeamento
+das chaves locais do protótipo para as tabelas. **Leia-o antes de ligar ao servidor**;
+as regras abaixo estão lá impostas em SQL, não por convenção.
+
+`src/supabase.js` é a camada de ligação. Sem `EXPO_PUBLIC_SUPABASE_URL` definido, a app
+corre local como sempre correu — a ligação é opcional, não um pré-requisito. Copie o
+`.env.example` para `.env.local` para a ativar.
+
+**A saúde está deliberadamente fora dessa camada.** As tabelas existem no esquema, mas
+`episodios_saude` e `anexos` não são lidas nem escritas até os cinco pontos do
+`db/README.md` estarem resolvidos. São dados clínicos de menores.
+
 ### 1. Cabeçalho e rodapé aparecem em TODAS as janelas
 
 Nenhum ecrã os esconde. Nem os de ecrã inteiro (compras, equipamentos, saúde), nem com folhas

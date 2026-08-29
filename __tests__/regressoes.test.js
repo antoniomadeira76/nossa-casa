@@ -211,6 +211,62 @@ describe('Português europeu', () => {
   });
 });
 
+describe('Camada de ligação ao servidor', () => {
+  const cliente = read('src/supabase.js');
+  const esquema = read('db/01-esquema.sql');
+
+  // O ficheiro era um esqueleto com todos os corpos comentados.
+  test('deixou de ser um esqueleto', () => {
+    expect(cliente).toMatch(/from '@supabase\/supabase-js'/);
+    expect(cliente).not.toMatch(/Supabase not configured yet/);
+    expect(cliente).toMatch(/export const ligado/);   // sem config, corre local
+  });
+
+  // INVARIANTE #3: quem decide o que existe é o servidor.
+  test('o PIN é verificado no servidor, nunca comparado aqui', () => {
+    expect(cliente).toMatch(/rpc\('verificar_pin'/);
+    expect(esquema).toMatch(/crypt\(/);
+    // nada que pareça uma comparação de PIN no cliente
+    expect(cliente).not.toMatch(/pin\s*===|===\s*pin\b/);
+  });
+
+  // INVARIANTE #2: o cliente insere movimentos e lê vistas; nunca escreve somas.
+  test('os saldos vêm de vistas, e o cliente não os escreve', () => {
+    for (const v of ['v_cofre_saldo', 'v_envelope_limite', 'v_acerto_saldo']) {
+      expect(esquema).toMatch(new RegExp(`create view ${v}`));
+      expect(cliente).toContain(v);
+    }
+    expect(cliente).not.toMatch(/update\([^)]*saldo/i);
+  });
+
+  // §6 e §9 de docs/seguranca.html: nenhuma operação de dinheiro sem chave.
+  test('as operações de dinheiro levam chave de idempotência', () => {
+    const idem = read('db/04-idempotencia.sql');
+    for (const t of ['despesas', 'acertos', 'cofre_movimentos', 'transferencias']) {
+      expect(idem).toMatch(new RegExp(`alter table ${t}\\s+add column if not exists idem_key`));
+      expect(idem).toMatch(new RegExp(`create unique index if not exists ${t}_idem`));
+      expect(cliente).toContain(`'${t}'`);
+    }
+    expect(cliente).toMatch(/COM_IDEM = new Set/);
+  });
+
+  // A decisão desta sessão: a saúde fica fora até a conformidade estar tratada.
+  test('a saúde está fora da camada de ligação', () => {
+    // as tabelas existem no esquema…
+    expect(esquema).toMatch(/create table episodios_saude/);
+    // …mas não são lidas nem escritas pelo cliente
+    const semComentarios = cliente.replace(/\/\/.*$/gm, '');
+    expect(semComentarios).not.toMatch(/from\(['"]episodios_saude|from\(['"]anexos/);
+    expect(semComentarios).not.toMatch(/'episodios_saude'|'anexos'/);
+  });
+
+  test('nenhuma chave real ficou no código', () => {
+    expect(cliente).toMatch(/process\.env\.EXPO_PUBLIC_SUPABASE/);
+    expect(cliente).not.toMatch(/supabase\.co['"]|eyJ[A-Za-z0-9_-]{20}/);
+    expect(cliente).not.toMatch(/service_role/);
+  });
+});
+
 describe('O que a interface promete, o código faz', () => {
   // O texto anunciava 30 % para as metas (Dinheiro) e para os cofres (Gestão);
   // o manipulador não fazia nem uma coisa nem outra.

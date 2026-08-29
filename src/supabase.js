@@ -1,105 +1,189 @@
-// Supabase integration skeleton
-// Implements the sync model from docs/sincronizacao.html
+// Ligação ao servidor — contra o esquema em db/01-esquema.sql.
 //
-// Structure:
-// 1. Auth: Email + password for adults, PIN for kids (managed by adults)
-// 2. Casa (house) — owned by casa, written by admins
-// 3. Membros — self-editable, roles by admin
-// 4. Events, Tasks, Items, Budgets, Health, Equipment — per spec
-// 5. Write queue — offline changes enqueued, sync on reconnect
-// 6. Real-time — only shopping list needs live updates
-// 7. Files — invoices, health exams stored with signed URLs
+// Três coisas que este ficheiro NÃO faz, de propósito:
+//
+//   1. Não filtra visibilidade. As políticas em db/01-esquema.sql é que
+//      decidem o que a consulta devolve (INVARIANTE #3). Se um evento privado
+//      de outro membro chegar aqui, o defeito é no servidor, não no filtro.
+//   2. Não escreve saldos. Cofre, envelopes e acertos são vistas que somam
+//      movimentos (INVARIANTE #2). Aqui só se inserem movimentos.
+//   3. Não toca na saúde. `episodios_saude` e `anexos` existem no esquema mas
+//      estão fora desta camada até os cinco pontos do db/README.md estarem
+//      resolvidos — são dados clínicos de menores.
 
-const SUPABASE_URL = 'https://your-project.supabase.co';
-const SUPABASE_ANON_KEY = 'your-anon-key'; // From .env.local
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createClient } from '@supabase/supabase-js';
 
-// TODO: Initialize client
-// import { createClient } from '@supabase/supabase-js';
-// const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const ANON = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabaseAPI = {
-  // Auth: Sign in adult or child (via PIN)
-  signInAdult: async (email, password) => {
-    // const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    // return { data, error };
-    console.warn('Supabase not configured yet');
+// Sem configuração, a app corre local como sempre correu. Não rebenta.
+export const ligado = Boolean(URL && ANON);
+
+export const supabase = ligado
+  ? createClient(URL, ANON, {
+      auth: { storage: AsyncStorage, persistSession: true, autoRefreshToken: true,
+              detectSessionInUrl: false },
+    })
+  : null;
+
+const semLigacao = () => ({ data: null, error: new Error('Servidor não configurado.') });
+
+// ─── Sessão ──────────────────────────────────────────────────────────────────
+
+export const auth = {
+  // Adultos entram por conta. As crianças não têm conta — ver entrarCrianca.
+  entrarAdulto: (email, password) => ligado
+    ? supabase.auth.signInWithPassword({ email, password })
+    : semLigacao(),
+
+  // O PIN é verificado no SERVIDOR. verificar_pin() usa crypt() e conta as
+  // tentativas na linha do membro; o valor correto nunca chega ao dispositivo.
+  // É isto que corrige a falha de origem, e nada no cliente a substitui.
+  entrarCrianca: async (membroId, pin) => {
+    if (!ligado) return semLigacao();
+    const { data, error } = await supabase.rpc('verificar_pin', {
+      p_membro: membroId, p_pin: pin,
+    });
+    if (error) return { data: null, error };
+    return { data: { valido: data === true }, error: null };
   },
 
-  signInChild: async (houseName, childName, pin) => {
-    // Resolve house ID from name, validate PIN for child
-    // Return session token + house context
+  // Só um adulto autenticado define um PIN — definir_pin() recusa o resto.
+  definirPin: (membroId, pin) => ligado
+    ? supabase.rpc('definir_pin', { p_membro: membroId, p_pin: pin })
+    : semLigacao(),
+
+  sair: () => (ligado ? supabase.auth.signOut() : semLigacao()),
+  sessao: () => (ligado ? supabase.auth.getSession() : semLigacao()),
+};
+
+// ─── Leitura ─────────────────────────────────────────────────────────────────
+
+// As tabelas que a app lê ao abrir. A saúde não está aqui — ver o cabeçalho.
+// Nenhuma leva filtro por casa: minha_casa_id() já o impõe nas políticas, e
+// repeti-lo aqui daria a impressão errada de que é o cliente que protege.
+const TABELAS = [
+  'casas', 'membros', 'preferencias', 'eventos', 'tarefas', 'tarefas_feitas',
+  'lojas', 'listas_compras', 'artigos', 'meses', 'envelopes', 'transferencias',
+  'despesas', 'acertos', 'cofre_movimentos', 'metas', 'categorias_equip',
+  'equipamentos', 'manutencoes', 'especialidades',
+];
+
+// Os saldos vêm somados do servidor, não calculados aqui.
+const VISTAS = [
+  'v_cofre_saldo', 'v_envelope_limite', 'v_envelope_gasto',
+  'v_acerto_saldo', 'v_pontos_por_pagar',
+];
+
+export const ler = {
+  casa: async () => {
+    if (!ligado) return semLigacao();
+    const nomes = [...TABELAS, ...VISTAS];
+    const res = await Promise.all(nomes.map(n => supabase.from(n).select('*')));
+    const erro = res.find(r => r.error);
+    if (erro) return { data: null, error: erro.error };
+    return { data: Object.fromEntries(nomes.map((n, i) => [n, res[i].data])), error: null };
   },
 
-  // Fetch initial state (read-only snapshot)
-  fetchHouse: async (houseId) => {
-    // Pull all tables: casa, membros, events, tasks, items, budget, health, equipment
-    // filtered by visibility rules (RLS policies)
+  tabela: (nome) => (ligado ? supabase.from(nome).select('*') : semLigacao()),
+};
+
+// ─── Fila de escritas ────────────────────────────────────────────────────────
+//
+// Offline, as escritas ficam em fila e vão ao reconectar. Por isso as
+// operações de dinheiro levam chave de idempotência (db/04-idempotencia.sql):
+// um reenvio colide no índice em vez de pagar a semanada duas vezes.
+
+const FILA = 'nossa-casa/fila';
+const COM_IDEM = new Set(['despesas', 'acertos', 'cofre_movimentos', 'transferencias']);
+
+const lerFila = async () => {
+  try { return JSON.parse(await AsyncStorage.getItem(FILA)) || []; }
+  catch { return []; }
+};
+const gravarFila = (f) => AsyncStorage.setItem(FILA, JSON.stringify(f)).catch(() => {});
+
+// A chave é gerada aqui, no cliente, e viaja com a escrita — é o que permite
+// reconhecer o reenvio como sendo a mesma operação.
+const novaChave = () =>
+  `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+export const escrever = {
+  // Enfileirar em vez de escrever direto: a app continua a funcionar sem rede.
+  async inserir(tabela, linha) {
+    const dados = COM_IDEM.has(tabela) && !linha.idem_key
+      ? { ...linha, idem_key: novaChave() }
+      : linha;
+    const fila = await lerFila();
+    fila.push({ op: 'insert', tabela, dados, em: Date.now() });
+    await gravarFila(fila);
+    return this.esvaziar();
   },
 
-  // Write queue: deferred writes that sync on reconnect
-  enqueueWrite: async (table, operation, data) => {
-    // operation: 'INSERT' | 'UPDATE' | 'DELETE'
-    // Stored locally with timestamp + idempotency key
+  async atualizar(tabela, id, campos) {
+    const fila = await lerFila();
+    fila.push({ op: 'update', tabela, id, dados: campos, em: Date.now() });
+    await gravarFila(fila);
+    return this.esvaziar();
   },
 
-  flushQueue: async () => {
-    // Send all queued writes to server, retry with exponential backoff
+  // Envia por ordem e para na primeira falha, para não trocar a sequência.
+  // O que falhou fica na fila para a tentativa seguinte.
+  async esvaziar() {
+    if (!ligado) return { enviadas: 0, pendentes: (await lerFila()).length };
+    let fila = await lerFila();
+    let enviadas = 0;
+    while (fila.length) {
+      const w = fila[0];
+      const q = w.op === 'insert'
+        ? supabase.from(w.tabela).insert(w.dados)
+        : supabase.from(w.tabela).update(w.dados).eq('id', w.id);
+      const { error } = await q;
+      // 23505 = violação de unicidade. Numa escrita com chave de idempotência
+      // isso significa «já lá está», que é sucesso e não erro.
+      if (error && !(error.code === '23505' && w.dados && w.dados.idem_key)) break;
+      fila.shift();
+      enviadas++;
+      await gravarFila(fila);
+    }
+    return { enviadas, pendentes: fila.length };
   },
 
-  // Real-time subscription (shopping list only, for now)
-  subscribeToItems: (houseId, onUpdate) => {
-    // Listen for item changes via Realtime channel
-    // onUpdate({ type: 'INSERT'|'UPDATE'|'DELETE', data: item })
-  },
+  pendentes: async () => (await lerFila()).length,
+};
 
-  // File storage: invoices, health exams
-  uploadFile: async (houseId, filePath, file) => {
-    // Upload to storage bucket, return signed URL
-  },
+// ─── Tempo real ──────────────────────────────────────────────────────────────
+//
+// Só a lista de compras. É a única área onde dois telefones estão na mesma
+// coisa ao mesmo tempo — dois adultos na loja. Subscrever tudo gasta bateria e
+// não resolve problema nenhum. A publicação está em db/01-esquema.sql:733.
 
-  downloadFile: async (signedUrl) => {
-    // Fetch file from storage (already authenticated via signed URL)
-  },
-
-  signOut: async () => {
-    // Clear session + local queue
+export const tempoReal = {
+  compras(aoMudar) {
+    if (!ligado) return () => {};
+    const canal = supabase.channel('compras')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'artigos' },
+          p => aoMudar('artigos', p))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'listas_compras' },
+          p => aoMudar('listas_compras', p))
+      .subscribe();
+    return () => supabase.removeChannel(canal);
   },
 };
 
-// Sync orchestrator
-export const syncManager = {
-  startSync: async (store, setState) => {
-    // 1. Fetch initial snapshot via fetchHouse()
-    // 2. Merge remote into local store (no conflicts for first sync)
-    // 3. Flush any pending writes
-    // 4. Subscribe to real-time channels
-    // 5. Set up periodic sync (every 5-10 min if not realtime)
-  },
-
-  stopSync: () => {
-    // Unsubscribe from channels, cancel timers
-  },
-};
-
-// Políticas de visibilidade — a implementar no servidor, uma por tabela.
-// docs/seguranca.html é a fonte; isto é um resumo e não substitui a leitura.
-//
-// ⚠ Nada disto está implementado. Este ficheiro é um esqueleto: todos os
-// corpos das funções acima estão comentados e nenhum ecrã o importa. Enquanto
-// assim for, a autorização da app vive no dispositivo — e o papel e o PIN
-// podem ser reescritos no armazenamento local, que é a escalada descrita na
-// secção 4 do documento.
+// ─── Políticas, para quem lê este ficheiro ───────────────────────────────────
+// A tabela completa está em db/01-esquema.sql, imposta em SQL. Isto é um mapa,
+// não a regra — e a regra é a única que conta.
 export const RLS_RULES = {
-  casa: 'Administração',
-  membros: 'O próprio; papéis só por administração',
-  events: 'Adultos; privado = apenas o autor',
-  tasks: 'Adultos definem; todos concluem',
-  items: 'Todos os membros',
-  envelopes: 'Adultos; limites por administração',
-  // O saldo é a soma dos movimentos, nunca um campo escrito (INVARIANTE #2).
-  // A tabela é de inserções: adultos inserem, crianças lêem. Sem UPDATE.
-  vault_moves: 'Adultos inserem; crianças lêem; sem UPDATE nem DELETE',
-  health: 'Adulto vê a própria; adultos vêem as das crianças; criança não vê a sua',
-  equipments: 'Adultos',
-  files: 'Quem carregou + administração',
+  casas: 'Leitura: a casa do membro. Escrita: administração.',
+  membros: 'Leitura: a casa. Papéis e PIN: administração.',
+  eventos: 'Leitura: partilhado, ou o autor é quem pede.',
+  tarefas: 'Adultos definem; qualquer membro conclui a sua.',
+  artigos: 'Todos os membros da casa.',
+  envelopes: 'Adultos. Ausentes da resposta a um perfil de criança.',
+  despesas: 'Adultos. Corrigir é anular e recriar, nunca editar o valor.',
+  cofre_movimentos: 'Adultos inserem; a criança lê o seu. Saldo é v_cofre_saldo.',
+  equipamentos: 'Adultos.',
+  episodios_saude: 'FORA desta camada — ver o cabeçalho do ficheiro.',
 };

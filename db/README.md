@@ -3,10 +3,20 @@
 Três ficheiros, por ordem. Correm em **PostgreSQL 15+** ou **Supabase** sem alteração.
 
 ```
-db/01-esquema.sql   tipos, 22 tabelas, índices, 5 vistas, funções, RLS
-db/02-storage.sql   bucket de anexos e as suas políticas
-db/03-demo.sql      a família Bengui — os mesmos dados do protótipo
+db/01-esquema.sql        tipos, 22 tabelas, índices, 5 vistas, funções, RLS
+db/02-storage.sql        bucket de anexos e as suas políticas
+db/03-demo.sql           a família Bengui — os mesmos dados do protótipo
+db/04-idempotencia.sql   chaves de idempotência nas operações de dinheiro
 ```
+
+O `04` corrige uma lacuna entre este esquema e `docs/seguranca.html`: a §6 exige chave de
+idempotência em cada operação de dinheiro e a §9 lista aceitá-las sem chave entre as coisas
+que nunca devem acontecer, mas o `01` não as tinha. Com uma fila de escritas que reenvia
+após reconexão, isso é uma semanada paga duas vezes.
+
+A camada de cliente é `src/supabase.js`. Lê estas tabelas e as cinco vistas, enfileira as
+escritas para funcionar sem rede, e subscreve o tempo real só em `artigos` e
+`listas_compras`. **Não toca em `episodios_saude` nem em `anexos`** — ver a última secção.
 
 ## Correr
 
