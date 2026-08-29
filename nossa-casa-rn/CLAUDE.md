@@ -78,6 +78,13 @@ ou diálogos abertos. Isto quebrou **três vezes** no protótipo; o padrão do e
 
 Depois de mexer na árvore de um ecrã, **meça**: o rodapé tem de ficar visível no fundo do ecrã.
 
+### 0. A base de dados está escrita
+
+`db/01-esquema.sql` é o esquema completo — 22 tabelas, 5 vistas, as funções do PIN e
+todas as políticas de acesso. `db/README.md` explica cada decisão e traz o mapeamento
+das chaves locais do protótipo para as tabelas. **Leia-o antes de ligar ao servidor**; as
+regras abaixo estão lá impostas em SQL, não por convenção.
+
 ### 2. Saldos nunca são campos escritos
 
 Cofres das crianças, envelopes, pontos e o acerto de contas são **somas de movimentos aditivos**.

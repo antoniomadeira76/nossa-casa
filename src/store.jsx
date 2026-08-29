@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES, HEALTH, HEALTH_DOCS } from './data';
+import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES, HEALTH, HEALTH_DOCS, VAULT } from './data';
 import { TODAY_KEY, dueInfo } from './format';
 
 const KEY = 'nossa-casa/v1';
@@ -17,32 +17,39 @@ const DATA_KEYS = [
   'googleCalendarImported', // Google Calendar imports
 ];
 
-// INVARIANTE #2: o cofre é a soma dos seus movimentos, nunca um campo escrito.
-// Dois telefones que acrescentam movimentos somam; dois que escrevem um saldo
-// anulam-se. Por isso não existe `vault` — existe `vaultMoves`.
-const VAULT_SEED = () => [
-  { id: 'vm-l0', kid: 'Léo', delta: 8.30, kind: 'semanada', day: 'd2026-08-02',
-    label: 'Semanadas anteriores', sub: 'até 2 de agosto' },
-  { id: 'vm-l1', kid: 'Léo', delta: -2.50, kind: 'retirada', day: 'd2026-08-09',
-    label: 'Retirada — cromos', sub: 'autorizado pelo Tomás' },
-  { id: 'vm-l2', kid: 'Léo', delta: 5.00, kind: 'bonus', day: 'd2026-08-14',
-    label: 'Bónus — boletim escolar', sub: 'Rita' },
-  { id: 'vm-l3', kid: 'Léo', delta: 1.60, kind: 'semanada', day: 'd2026-08-17',
-    label: 'Semanada de 10 a 16 de agosto', sub: '16 pt · pago a 17/08' },
-  { id: 'vm-m0', kid: 'Mia', delta: 7.40, kind: 'semanada', day: 'd2026-08-02',
-    label: 'Semanadas anteriores', sub: 'até 2 de agosto' },
-  { id: 'vm-m1', kid: 'Mia', delta: -1.00, kind: 'retirada', day: 'd2026-08-11',
-    label: 'Retirada — gelado', sub: 'autorizado pela Rita' },
-  { id: 'vm-m2', kid: 'Mia', delta: 1.40, kind: 'bonus', day: 'd2026-08-13',
-    label: 'Bónus — arrumou o quarto', sub: 'Tomás' },
-  { id: 'vm-m3', kid: 'Mia', delta: 1.10, kind: 'semanada', day: 'd2026-08-17',
-    label: 'Semanada de 10 a 16 de agosto', sub: '11 pt · pago a 17/08' },
-];
+// Versão do formato gravado. Sobe sempre que a forma de um campo persistido
+// muda, e MIGRATIONS ganha a entrada correspondente. Sem isto, dados antigos
+// eram lidos com a forma nova e ganhavam silenciosamente ao código.
+const SCHEMA = 2;
+
+// Uma migração por salto de versão: recebe o objeto lido e devolve-o corrigido.
+const MIGRATIONS = {
+  // v1 → v2: o cofre deixou de ser um saldo escrito e as sementes deixaram de
+  // ser gravadas. Se o saldo antigo divergir das sementes, a diferença fica
+  // como movimento de acerto — dinheiro nunca desaparece numa migração.
+  2: (o) => {
+    const seedOf = (kid) => VAULT.reduce((n, m) => (m.kid === kid ? n + m.delta : n), 0);
+    const seedIds = new Set(VAULT.map(m => m.id));
+    // as sementes que estavam gravadas saem; ficam só os movimentos do utilizador
+    const mine = (o.vaultMoves || []).filter(m => !seedIds.has(m.id));
+    const acertos = [];
+    for (const [kid, saldo] of Object.entries(o.vault || {})) {
+      const diff = Math.round((saldo - seedOf(kid)) * 100) / 100;
+      if (diff !== 0) acertos.push({
+        id: `vm-acerto-${kid}`, kid, delta: diff, kind: 'semanada',
+        day: TODAY_KEY, label: 'Acerto de saldo anterior',
+        sub: 'da versão anterior da app',
+      });
+    }
+    const { vault, ...resto } = o;
+    return { ...resto, vaultMoves: [...mine, ...acertos] };
+  },
+};
 
 export const DEMO = () => ({
   done: TASKS.reduce((a, t) => (a[t.id] = !!t.done, a), {}),
   pending: {}, status: {}, registered: 0, settled: false,
-  vaultMoves: VAULT_SEED(), paidPts: { 'Léo': 0, 'Mia': 0 }, extraLog: {},
+  vaultMoves: [], paidPts: { 'Léo': 0, 'Mia': 0 }, extraLog: {},
   envMove: {}, added: [], newTasks: [], taskEdits: {}, taskGone: {},
   newItems: [], itemGone: {}, newEquip: [], equipGone: {},
   schemeByUser: {}, themeByUser: {}, importDone: {},
@@ -88,8 +95,14 @@ export function StoreProvider({ children }) {
       try {
         const raw = await AsyncStorage.getItem(KEY);
         if (raw) {
-          const saved = JSON.parse(raw);
-          if (saved && saved.v === 1) {
+          let saved = JSON.parse(raw);
+          const v = saved && typeof saved.v === 'number' ? saved.v : 0;
+          // Gravado por uma versão mais recente: não sabemos ler, e ler mal é
+          // pior do que não ler. Fica-se pelas predefinições.
+          if (saved && v <= SCHEMA) {
+            for (let n = v + 1; n <= SCHEMA; n++) {
+              if (MIGRATIONS[n]) saved = MIGRATIONS[n](saved);
+            }
             const patch = {};
             DATA_KEYS.forEach(k => { if (saved[k] !== undefined) patch[k] = saved[k]; });
             set(patch);
@@ -103,7 +116,7 @@ export function StoreProvider({ children }) {
   // gravar a cada alteração, sem escrever igual duas vezes
   useEffect(() => {
     if (!ready.current) return;
-    const out = { v: 1, savedAt: new Date().toISOString() };
+    const out = { v: SCHEMA, savedAt: new Date().toISOString() };
     DATA_KEYS.forEach(k => { out[k] = state[k]; });
     const payload = JSON.stringify(out);
     const s = payload.replace(/"savedAt":"[^"]*",?/, '');
@@ -182,10 +195,12 @@ function build(s, set) {
     .sort((a, b) => a.day.localeCompare(b.day))[0] || null;
 
   // Saldo do cofre: soma, nunca leitura de um campo (INVARIANTE #2).
-  const vaultMoves = (kid) => (s.vaultMoves || [])
+  // Sementes do código + o que o utilizador acrescentou, como em allTasks.
+  const allVaultMoves = () => [...(s.clearedSeeds ? [] : VAULT), ...(s.vaultMoves || [])];
+  const vaultMoves = (kid) => allVaultMoves()
     .filter(m => m.kid === kid)
     .sort((a, b) => (b.day || '').localeCompare(a.day || ''));
-  const vaultOf = (kid) => (s.vaultMoves || [])
+  const vaultOf = (kid) => allVaultMoves()
     .reduce((n, m) => (m.kid === kid ? n + m.delta : n), 0);
   // Acrescenta um movimento. Nunca substitui o saldo.
   const vaultAdd = (kid, delta, kind, label, sub, day = TODAY_KEY) => set(x => ({

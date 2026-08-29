@@ -80,14 +80,53 @@ describe('INVARIANTE #2 — saldos são somas de movimentos', () => {
   });
 
   test('os movimentos semeados somam os saldos da demonstração', () => {
-    const store = read('src/store.jsx');
-    const seed = store.slice(store.indexOf('const VAULT_SEED'), store.indexOf('export const DEMO'));
-    const sums = {};
-    for (const [, kid, delta] of seed.matchAll(/kid: '([^']+)', delta: (-?[\d.]+)/g)) {
-      sums[kid] = (sums[kid] || 0) + parseFloat(delta);
-    }
-    expect(+sums['Léo'].toFixed(2)).toBe(12.40);
-    expect(+sums['Mia'].toFixed(2)).toBe(8.90);
+    const { VAULT } = require('../src/data.js');
+    const soma = (kid) => Math.round(
+      VAULT.reduce((n, m) => (m.kid === kid ? n + m.delta : n), 0) * 100) / 100;
+    expect(soma('Léo')).toBe(12.40);
+    expect(soma('Mia')).toBe(8.90);
+  });
+});
+
+describe('Armazenamento local — versão e migração', () => {
+  const store = read('src/store.jsx');
+
+  test('o formato gravado tem versão e uma cadeia de migrações', () => {
+    expect(store).toMatch(/const SCHEMA = \d+/);
+    expect(store).toMatch(/const MIGRATIONS = \{/);
+    // grava a versão do código, não um literal preso no 1
+    expect(store).toMatch(/\{ v: SCHEMA, savedAt/);
+    // e recusa ler um formato mais recente do que sabe interpretar
+    expect(store).toMatch(/v <= SCHEMA/);
+  });
+
+  // As sementes eram gravadas, por isso mudá-las não tinha efeito em quem já
+  // tinha a app aberta — vi ícones errados no cofre por causa disto.
+  test('as sementes do cofre vivem no código, não no estado gravado', () => {
+    expect(read('src/data.js')).toMatch(/export const VAULT = \[/);
+    expect(store).toMatch(/vaultMoves: \[\], paidPts/);        // DEMO não semeia
+    expect(store).toMatch(/s\.clearedSeeds \? \[\] : VAULT/);  // a derivação junta-as
+  });
+
+  // A migração corre aqui, contra o mesmo código que a app usa.
+  test('v1 → v2 preserva o dinheiro e deixa de gravar as sementes', () => {
+    const { VAULT } = require('../src/data.js');
+    const body = store.slice(store.indexOf('  2: (o) =>'), store.indexOf('export const DEMO'));
+    const mig = new Function('VAULT', 'TODAY_KEY', `return (${body.replace(/^\s*2:\s*/, '').replace(/,\s*};?\s*$/, '')})`)
+      (VAULT, 'd2026-08-20');
+    const soma = (mv, kid) => Math.round(
+      [...VAULT, ...mv].reduce((n, m) => (m.kid === kid ? n + m.delta : n), 0) * 100) / 100;
+
+    // saldo antigo diferente das sementes: a diferença tem de sobreviver
+    const a = mig({ v: 1, vault: { 'Léo': 20.00, 'Mia': 8.90 } });
+    expect('vault' in a).toBe(false);
+    expect(soma(a.vaultMoves, 'Léo')).toBe(20.00);
+    expect(soma(a.vaultMoves, 'Mia')).toBe(8.90);
+
+    // estado intermédio: sementes gravadas + um movimento do utilizador
+    const b = mig({ v: 1, vaultMoves: [...VAULT, { id: 'vm-x', kid: 'Léo', delta: 1 }] });
+    expect(b.vaultMoves).toHaveLength(1);          // as sementes saíram
+    expect(soma(b.vaultMoves, 'Léo')).toBe(13.40); // 12,40 + 1,00
   });
 });
 

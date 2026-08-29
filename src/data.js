@@ -85,3 +85,26 @@ export const HEALTH_DOCS = [
   { id: 'd1', member: 'Mia', healthId: 'h1', title: 'Plano ortodôntico', kind: 'Relatório' },
   { id: 'd2', member: 'Léo', healthId: 'h2', title: 'Análises ao sangue', kind: 'Resultado' },
 ];
+
+// Movimentos iniciais dos cofres. Vivem aqui, como as tarefas e os
+// equipamentos: as sementes são código, e só o que o utilizador acrescenta é
+// que se grava. Persistir as sementes fazia com que mudá-las não tivesse
+// efeito em quem já tinha a app aberta.
+export const VAULT = [
+  { id: 'vm-l0', kid: 'Léo', delta: 8.30, kind: 'semanada', day: dkey(2026, 7, 2),
+    label: 'Semanadas anteriores', sub: 'até 2 de agosto' },
+  { id: 'vm-l1', kid: 'Léo', delta: -2.50, kind: 'retirada', day: dkey(2026, 7, 9),
+    label: 'Retirada — cromos', sub: 'autorizado pelo Tomás' },
+  { id: 'vm-l2', kid: 'Léo', delta: 5.00, kind: 'bonus', day: dkey(2026, 7, 14),
+    label: 'Bónus — boletim escolar', sub: 'Rita' },
+  { id: 'vm-l3', kid: 'Léo', delta: 1.60, kind: 'semanada', day: dkey(2026, 7, 17),
+    label: 'Semanada de 10 a 16 de agosto', sub: '16 pt · pago a 17/08' },
+  { id: 'vm-m0', kid: 'Mia', delta: 7.40, kind: 'semanada', day: dkey(2026, 7, 2),
+    label: 'Semanadas anteriores', sub: 'até 2 de agosto' },
+  { id: 'vm-m1', kid: 'Mia', delta: -1.00, kind: 'retirada', day: dkey(2026, 7, 11),
+    label: 'Retirada — gelado', sub: 'autorizado pela Rita' },
+  { id: 'vm-m2', kid: 'Mia', delta: 1.40, kind: 'bonus', day: dkey(2026, 7, 13),
+    label: 'Bónus — arrumou o quarto', sub: 'Tomás' },
+  { id: 'vm-m3', kid: 'Mia', delta: 1.10, kind: 'semanada', day: dkey(2026, 7, 17),
+    label: 'Semanada de 10 a 16 de agosto', sub: '11 pt · pago a 17/08' },
+];

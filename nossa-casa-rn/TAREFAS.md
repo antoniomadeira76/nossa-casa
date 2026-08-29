@@ -111,13 +111,25 @@ episódio marcado aparece na Agenda e no Início.
 
 ## 7. Ligar ao Supabase
 
-Só depois de a app funcionar com dados locais. `docs/sincronizacao.html` tem o modelo de dados
-tabela a tabela, com quem escreve e a regra de conflito de cada uma.
+**O esquema está escrito.** `db/01-esquema.sql`, `db/02-storage.sql` e `db/03-demo.sql`
+correm por essa ordem, em Supabase ou PostgreSQL puro. `db/README.md` explica cada decisão.
 
-**Ordem:** contas e casa → leitura remota com cópia local → fila de escrita → tempo real na
-lista de compras → ficheiros (faturas e exames).
+Só depois de a app funcionar com dados locais.
 
-**Feito quando:** a Rita altera no telefone dela e o Tomás vê no dele.
+**Ordem:**
+1. Correr os três ficheiros SQL. Confirmar que `03-demo.sql` cria a família Bengui.
+2. Autenticação Google, e ligar `membros.conta_id` à conta que entrou.
+3. Trocar a leitura inicial do `localStorage` por consulta remota, mantendo a cópia local.
+4. Fila de escrita: escrever local e enfileirar; enviar a alteração, não o estado inteiro.
+5. Tempo real em `artigos` e `listas_compras` — já estão na publicação.
+6. Storage para faturas, fotografias e exames.
+
+**Cuidado com os saldos.** No protótipo `vault` é um número; no servidor é
+`v_cofre_saldo`. Não recriar a coluna — é a única diferença estrutural entre os dois,
+e é deliberada.
+
+**Feito quando:** a Rita altera no telefone dela e o Tomás vê no dele, e um evento
+privado dela não aparece no dele.
 
 ---
 
