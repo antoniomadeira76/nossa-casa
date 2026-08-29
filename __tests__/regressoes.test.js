@@ -297,11 +297,19 @@ describe('Camada de ligação ao servidor — PocketBase', () => {
     expect(cliente).toMatch(/COM_IDEM = new Set\(\['despesas', 'cofre_movimentos'\]\)/);
   });
 
-  // A decisão desta sessão: a saúde fica fora até a conformidade estar tratada.
-  test('a saúde está fora da camada de ligação e das coleções', () => {
-    const semComentarios = cliente.replace(/\/\/.*$/gm, '');
-    expect(semComentarios).not.toMatch(/episodios_saude|'anexos'/);
-    expect(colecoes).not.toMatch(/name: 'episodios_saude'|name: 'anexos'/);
+  // §5 chama-lhe «a regra mais restritiva do sistema». Aqui só se guarda que a
+  // condição existe com a forma certa; que ela FUNCIONA prova-se a correr, em
+  // provar-saude.mjs — incluindo a transição de papel retroativa.
+  test('a ficha de um adulto exclui os outros adultos, na própria regra', () => {
+    expect(colecoes).toMatch(/const SAUDE_VISIVEL =/);
+    // ou o registo é meu, ou eu sou adulto E o dono é criança — nunca outro adulto
+    expect(colecoes).toContain('membro = @request.auth.id || (${ADULTO} && membro.papel = "crianca")');
+  });
+
+  test('a saúde não vem na leitura em massa — pede-se ficha a ficha', () => {
+    const bloco = cliente.slice(cliente.indexOf('const COLECOES'), cliente.indexOf('export const ler'));
+    expect(bloco).not.toMatch(/episodios_saude|anexos/);
+    expect(cliente).toMatch(/async saude\(membroId\)/);
   });
 
   test('nenhum segredo ficou no código', () => {
@@ -311,7 +319,8 @@ describe('Camada de ligação ao servidor — PocketBase', () => {
   });
 
   test('as provas do servidor existem e são executáveis', () => {
-    for (const f of ['db/pocketbase/provar-regras.mjs', 'db/pocketbase/provar-hooks.mjs']) {
+    for (const f of ['db/pocketbase/provar-regras.mjs', 'db/pocketbase/provar-hooks.mjs',
+                     'db/pocketbase/provar-saude.mjs', 'db/pocketbase/provar-cliente.mjs']) {
       expect(read(f)).toMatch(/process\.exit\(mau \? 1 : 0\)/);
     }
   });

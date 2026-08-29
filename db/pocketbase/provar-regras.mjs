@@ -137,5 +137,27 @@ await prova('uma despesa não se edita — anula-se', () =>
     await cRita.collection('despesas').update(d.id, { valor: 1 });
   }));
 
+console.log('\n── as vistas: o saldo é uma soma do servidor ──');
+await prova('o cofre soma os movimentos, e não há campo que o escreva', async () => {
+  const antes = (await cRita.collection('v_cofre_saldo').getFullList()).find(v => v.membro === leo.id);
+  await cRita.collection('cofre_movimentos').create({
+    casa: casa.id, membro: leo.id, tipo: 'bonus', valor: 2.5, idem_key: 'v' + Date.now() });
+  const depois = (await cRita.collection('v_cofre_saldo').getFullList()).find(v => v.membro === leo.id);
+  igual(Math.round((depois.saldo - antes.saldo) * 100) / 100, 2.5, 'a soma não acompanhou o movimento');
+});
+await prova('uma vista não tem escrita — nem para a administração', () =>
+  recusado(null, () => cRita.collection('v_cofre_saldo').create({ membro: leo.id, saldo: 9999 })));
+await prova('a criança vê o SEU saldo e mais nenhum', async () => {
+  const v = await cLeo.collection('v_cofre_saldo').getFullList();
+  igual(v.length, 1);
+  igual(v[0].membro, leo.id);
+});
+await prova('o gasto por envelope vem calculado', async () => {
+  const g = (await cRita.collection('v_envelope_gasto').getFullList())[0];
+  if (typeof g.gasto !== 'number') throw new Error('a vista não devolveu um número');
+});
+await prova('as contas entre adultos são invisíveis à criança', async () =>
+  igual((await cLeo.collection('v_acerto_saldo').getFullList()).length, 0));
+
 console.log(`\n${ok} provas passaram, ${mau} falharam.`);
 process.exit(mau ? 1 : 0);

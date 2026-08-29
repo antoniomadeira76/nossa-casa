@@ -16,8 +16,13 @@ const ids = {};
 
 // Recriar do zero é o que torna isto repetível. Apagar pela ordem inversa,
 // porque as relações impedem apagar uma coleção que outra ainda refere.
-const NOSSAS = ['equipamentos', 'cofre_movimentos', 'despesas', 'envelopes',
-  'tarefas_feitas', 'tarefas', 'eventos', 'membros', 'casas'];
+const NOSSAS = [
+  // vistas primeiro: dependem das coleções de base
+  'v_cofre_saldo', 'v_envelope_gasto', 'v_acerto_saldo', 'v_pontos_por_pagar',
+  'anexos', 'episodios_saude', 'especialidades', 'manutencoes', 'categorias_equip',
+  'metas', 'acertos', 'transferencias', 'artigos', 'listas_compras', 'lojas',
+  'meses', 'preferencias', 'equipamentos', 'cofre_movimentos', 'despesas',
+  'envelopes', 'tarefas_feitas', 'tarefas', 'eventos', 'membros', 'casas'];
 const existentes = await pb.collections.getFullList();
 for (const nome of NOSSAS) {
   const c = existentes.find(x => x.name === nome);
@@ -247,3 +252,229 @@ await criar({
 });
 
 console.log('criadas:', Object.keys(ids).join(', '));
+
+// ── Preferências ─────────────────────────────────────────────────────────────
+// Por membro: a Rita pode ter violeta e o Tomás cião ao mesmo tempo.
+await criar({
+  name: 'preferencias', type: 'base',
+  fields: [
+    rel('membro', ids.membros, { required: true, cascadeDelete: true }),
+    num('esquema_cor', { min: 0, max: 5, onlyInt: true }),
+    sel('aspeto', ['claro', 'escuro', 'sistema']),
+    bool('resumo_ativo'),
+    txt('resumo_hora'),
+    num('aviso_prazo_dias', { min: 0, max: 7, onlyInt: true }),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_pref_membro ON preferencias (membro)'],
+  // As preferências são de cada um e de mais ninguém.
+  listRule: 'membro = @request.auth.id',
+  viewRule: 'membro = @request.auth.id',
+  createRule: 'membro = @request.auth.id',
+  updateRule: 'membro = @request.auth.id',
+  deleteRule: 'membro = @request.auth.id',
+});
+
+// ── Compras ──────────────────────────────────────────────────────────────────
+await criar({
+  name: 'lojas', type: 'base',
+  fields: [rel('casa', ids.casas, { required: true, cascadeDelete: true }), txt('nome', { required: true })],
+  listRule: DA_CASA, viewRule: DA_CASA,
+  createRule: `${DA_CASA} && ${ADULTO}`, updateRule: `${DA_CASA} && ${ADULTO}`, deleteRule: `${DA_CASA} && ${ADULTO}`,
+});
+
+await criar({
+  name: 'listas_compras', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('loja', ids.lojas), rel('comprador', ids.membros),
+    data('planeada_para'), data('fechada_em'),
+  ],
+  // A lista é de todos: as crianças também pedem artigos.
+  listRule: DA_CASA, viewRule: DA_CASA,
+  createRule: `${DA_CASA} && ${ADULTO}`, updateRule: `${DA_CASA} && ${ADULTO}`, deleteRule: `${DA_CASA} && ${ADULTO}`,
+});
+
+await criar({
+  name: 'artigos', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('lista', ids.listas_compras, { required: true, cascadeDelete: true }),
+    txt('rotulo', { required: true }),
+    num('seccao', { min: 0, max: 3, onlyInt: true }),
+    rel('pedido_por', ids.membros),
+    sel('estado', ['por_comprar', 'confirmado', 'sem_stock']),
+    num('estimativa', { min: 0 }), num('preco_real', { min: 0 }),
+    bool('habitual'),
+  ],
+  // O estado vive na linha do artigo. Se fosse uma lista de identificadores
+  // confirmados, dois telefones na mesma loja anulavam-se; assim, fundem-se.
+  listRule: DA_CASA, viewRule: DA_CASA,
+  createRule: DA_CASA, updateRule: DA_CASA, deleteRule: `${DA_CASA} && ${ADULTO}`,
+});
+
+// ── Dinheiro, o resto ────────────────────────────────────────────────────────
+await criar({
+  name: 'meses', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    data('mes', { required: true }), num('rendimento', { min: 0 }),
+    { name: 'limites', type: 'json', maxSize: 20000 },
+    data('fechado_em'),
+  ],
+  listRule: `${DA_CASA} && ${ADULTO}`, viewRule: `${DA_CASA} && ${ADULTO}`,
+  createRule: `${DA_CASA} && ${ADMIN}`, updateRule: `${DA_CASA} && ${ADMIN}`, deleteRule: null,
+});
+
+// ADITIVA: valor sempre positivo, o sinal vem da direção.
+await criar({
+  name: 'transferencias', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('de_envelope', ids.envelopes, { required: true }),
+    rel('para_envelope', ids.envelopes, { required: true }),
+    num('valor', { min: 0.01, required: true }), data('mes'),
+    rel('por', ids.membros, { required: true }), txt('idem_key'),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_transf_idem ON transferencias (casa, idem_key)'],
+  listRule: `${DA_CASA} && ${ADULTO}`, viewRule: `${DA_CASA} && ${ADULTO}`,
+  createRule: `${DA_CASA} && ${ADMIN} && por = @request.auth.id`,
+  updateRule: null, deleteRule: null,
+});
+
+// ADITIVA: pagamento parcial é permitido, o resto continua em dívida.
+await criar({
+  name: 'acertos', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('de_membro', ids.membros, { required: true }),
+    rel('para_membro', ids.membros, { required: true }),
+    num('valor', { min: 0.01, required: true }), data('data'), txt('idem_key'),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_acerto_idem ON acertos (casa, idem_key)'],
+  listRule: `${DA_CASA} && ${ADULTO}`, viewRule: `${DA_CASA} && ${ADULTO}`,
+  createRule: `${DA_CASA} && ${ADULTO} && de_membro.papel != "crianca" && para_membro.papel != "crianca"`,
+  updateRule: null, deleteRule: null,
+});
+
+await criar({
+  name: 'metas', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    txt('nome', { required: true }), num('alvo', { min: 0 }), num('atual', { min: 0 }), txt('quando'),
+  ],
+  listRule: `${DA_CASA} && ${ADULTO}`, viewRule: `${DA_CASA} && ${ADULTO}`,
+  createRule: `${DA_CASA} && ${ADMIN}`, updateRule: `${DA_CASA} && ${ADMIN}`, deleteRule: `${DA_CASA} && ${ADMIN}`,
+});
+
+// ── Listas da casa ───────────────────────────────────────────────────────────
+for (const nome of ['categorias_equip', 'especialidades']) {
+  await criar({
+    name: nome, type: 'base',
+    fields: [rel('casa', ids.casas, { required: true, cascadeDelete: true }), txt('nome', { required: true })],
+    listRule: `${DA_CASA} && ${ADULTO}`, viewRule: `${DA_CASA} && ${ADULTO}`,
+    createRule: `${DA_CASA} && ${ADMIN}`, updateRule: `${DA_CASA} && ${ADMIN}`, deleteRule: `${DA_CASA} && ${ADMIN}`,
+  });
+}
+
+await criar({
+  name: 'manutencoes', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('equipamento', ids.equipamentos, { required: true, cascadeDelete: true }),
+    txt('descricao', { required: true }), data('a_fazer_ate'), data('feita_em'),
+  ],
+  listRule: `${DA_CASA} && ${ADULTO}`, viewRule: `${DA_CASA} && ${ADULTO}`,
+  createRule: `${DA_CASA} && ${ADULTO}`, updateRule: `${DA_CASA} && ${ADULTO}`, deleteRule: `${DA_CASA} && ${ADULTO}`,
+});
+
+// ── Saúde ────────────────────────────────────────────────────────────────────
+//
+// §5 chama a esta «a regra mais restritiva do sistema, e a que mais tem de ser
+// testada». São duas regras, não uma:
+//
+//   ficha de ADULTO   → só o próprio. Nem o companheiro, nem a administração.
+//   ficha de CRIANÇA  → os adultos da casa; a criança lê a sua.
+//
+// A condição abaixo diz exatamente isso: ou o registo é meu, ou eu sou adulto
+// E o dono é uma criança. Um adulto nunca cai no segundo ramo por outro adulto.
+//
+// §5 acrescenta que «a transição de papel tem de reavaliar a visibilidade
+// retroativamente». Isto fá-lo sem migrar nada: a regra lê `membro.papel` a
+// cada consulta, portanto uma criança que passe a adulta deixa de ter a ficha
+// visível aos pais no instante seguinte.
+//
+// ⚠ Isto NÃO dispensa a conformidade. Ver db/README.md: são dados clínicos de
+// menores, e há cinco pontos por resolver antes da primeira linha real.
+const SAUDE_VISIVEL =
+  `${DA_CASA} && (membro = @request.auth.id || (${ADULTO} && membro.papel = "crianca"))`;
+
+await criar({
+  name: 'episodios_saude', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('membro', ids.membros, { required: true, cascadeDelete: true }),
+    txt('especialidade', { required: true }),
+    txt('medico'),
+    data('dia', { required: true }),
+    txt('hora'),
+    txt('notas'),
+  ],
+  listRule: SAUDE_VISIVEL,
+  viewRule: SAUDE_VISIVEL,
+  // Escrever é mais apertado do que ler: a criança lê a sua ficha, mas não a
+  // escreve. Quem regista consultas são os adultos.
+  createRule: `${DA_CASA} && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
+  updateRule: `${DA_CASA} && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
+  deleteRule: `${DA_CASA} && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
+});
+
+// Anexos: exames, receitas e relatórios. Herdam a visibilidade do episódio a
+// que pertencem — nunca soltos, para não haver um caminho por onde escapem.
+await criar({
+  name: 'anexos', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('episodio', ids.episodios_saude, { required: true, cascadeDelete: true }),
+    sel('tipo', ['exame', 'receita', 'relatorio']),
+    txt('titulo', { required: true }),
+    fich('ficheiro'),
+  ],
+  listRule: `${DA_CASA} && (episodio.membro = @request.auth.id || (${ADULTO} && episodio.membro.papel = "crianca"))`,
+  viewRule: `${DA_CASA} && (episodio.membro = @request.auth.id || (${ADULTO} && episodio.membro.papel = "crianca"))`,
+  createRule: `${DA_CASA} && ${ADULTO} && (episodio.membro = @request.auth.id || episodio.membro.papel = "crianca")`,
+  updateRule: `${DA_CASA} && ${ADULTO} && (episodio.membro = @request.auth.id || episodio.membro.papel = "crianca")`,
+  deleteRule: `${DA_CASA} && ${ADULTO} && (episodio.membro = @request.auth.id || episodio.membro.papel = "crianca")`,
+});
+
+// ── Vistas: os saldos ────────────────────────────────────────────────────────
+// INVARIANTE #2 posto em estrutura. O saldo é uma SOMA calculada pelo servidor,
+// não uma coluna que alguém escreve. Uma vista não tem escrita nenhuma, portanto
+// não há sequer como a escrever por engano.
+const vista = (name, viewQuery, regra) => criar({
+  name, type: 'view', fields: [], viewQuery, listRule: regra, viewRule: regra,
+});
+
+// O analisador de vistas do PocketBase estropia quebras de linha dentro de
+// subconsultas — descobri-o com um erro que substituía o WHERE por
+// «__pb_discard__». Por isso cada consulta vai numa linha só, por feia que fique.
+
+// O adulto vê os cofres das crianças; a criança vê o seu.
+await vista('v_cofre_saldo',
+  "SELECT m.id AS id, m.id AS membro, m.casa AS casa, COALESCE((SELECT SUM(cm.valor) FROM cofre_movimentos cm WHERE cm.membro = m.id), 0) AS saldo FROM membros m WHERE m.papel = 'crianca'",
+  `${DA_CASA} && (${ADULTO} || membro = @request.auth.id)`);
+
+// Gasto por envelope, excluindo as despesas anuladas.
+await vista('v_envelope_gasto',
+  "SELECT e.id AS id, e.id AS envelope, e.casa AS casa, e.nome AS nome, COALESCE((SELECT SUM(d.valor) FROM despesas d WHERE d.envelope = e.id AND (d.anula_id IS NULL OR d.anula_id = '')), 0) AS gasto FROM envelopes e",
+  `${DA_CASA} && ${ADULTO}`);
+
+// Positivo = tem a receber. Negativo = deve.
+await vista('v_acerto_saldo',
+  "SELECT m.id AS id, m.id AS membro, m.casa AS casa, (COALESCE((SELECT SUM(d.valor / 2) FROM despesas d WHERE d.pagador = m.id AND d.divide_meias = TRUE AND (d.anula_id IS NULL OR d.anula_id = '')), 0) + COALESCE((SELECT SUM(a.valor) FROM acertos a WHERE a.de_membro = m.id), 0) - COALESCE((SELECT SUM(a2.valor) FROM acertos a2 WHERE a2.para_membro = m.id), 0)) AS saldo FROM membros m WHERE m.papel != 'crianca'",
+  `${DA_CASA} && ${ADULTO}`);
+
+// Pontos confirmados que ainda não entraram numa semanada posterior.
+await vista('v_pontos_por_pagar',
+  "SELECT m.id AS id, m.id AS membro, m.casa AS casa, COALESCE((SELECT SUM(t.pontos) FROM tarefas_feitas tf JOIN tarefas t ON t.id = tf.tarefa WHERE tf.marcada_por = m.id AND tf.confirmada_em IS NOT NULL AND NOT EXISTS (SELECT 1 FROM cofre_movimentos cm WHERE cm.membro = m.id AND cm.tipo = 'semanada' AND cm.data > tf.confirmada_em)), 0) AS pontos FROM membros m WHERE m.papel = 'crianca'",
+  `${DA_CASA} && (${ADULTO} || membro = @request.auth.id)`);
+console.log('vistas:', ['v_cofre_saldo','v_envelope_gasto','v_acerto_saldo','v_pontos_por_pagar'].join(', '));
