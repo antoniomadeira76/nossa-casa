@@ -234,6 +234,58 @@ describe('O dinheiro gasto é uma soma, não um número escrito', () => {
   });
 });
 
+describe('Equipamentos e Dinheiro — o que a referência mostra e faltava', () => {
+  // Os dados estavam lá desde sempre: price, maint, maintDate. O ecrã é que
+  // não os mostrava, e agrupava por estado de garantia em três secções onde a
+  // referência 11 tem uma lista só com o estado na pastilha.
+  const equip = read('src/screens/Equipamentos.jsx');
+  const { EQUIP } = require('../src/data.js');
+
+  it('o resumo mostra os cinco números da referência', () => {
+    for (const rot of ['Equipamentos', 'Valor registado', 'Garantias a expirar',
+      'Garantias expiradas', 'Próxima manutenção']) {
+      expect(equip).toContain(rot);
+    }
+  });
+
+  it('é uma lista só, não três secções por garantia', () => {
+    expect(equip).toContain('Registados');
+    expect(semComentarios(equip)).not.toMatch(/title="A Expirar \(90 dias\)"/);
+  });
+
+  it('cada linha mostra preço e manutenção', () => {
+    expect(equip).toMatch(/EUR\(e\.price\)/);
+    expect(equip).toMatch(/\{e\.maint\}/);
+  });
+
+  it('o valor registado é o das sementes', () => {
+    expect(EQUIP.reduce((a, e) => a + e.price, 0)).toBe(3797);
+  });
+
+  const dinheiro = read('src/screens/Dinheiro.jsx');
+
+  it('o cartão do saldo mostra o gasto, não só o orçamento', () => {
+    expect(dinheiro).toMatch(/EUR\(spent\)\} gastos/);
+  });
+
+  it('registar despesa e abrir o mês são linhas próprias', () => {
+    expect(dinheiro).toContain('Registar Despesa');
+    expect(dinheiro).toMatch(/Abrir \$\{proximoMes\}/);
+  });
+
+  it('o envelope no limite oferece o passo seguinte', () => {
+    expect(dinheiro).toContain('neste envelope');
+    expect(dinheiro).toContain('Reforçar');
+  });
+
+  // Nem só «tu»: «vocês» também é tratamento de segunda pessoa, e o registo
+  // desta app é a terceira.
+  it('não há tratamento por «vocês»', () => {
+    const re = /(?<![\p{L}])(voc[êe]s?)(?![\p{L}])/iu;
+    expect(jsxFiles().filter(f => re.test(semComentarios(read(f))))).toEqual([]);
+  });
+});
+
 describe('INVARIANTE #3 — a visibilidade da saúde não é do ecrã', () => {
   // O «Precisa de Si» passou a mostrar receitas e consultas. São dados de
   // saúde, e uma linha dessas no Início do membro errado é a fuga exacta que
@@ -480,13 +532,16 @@ describe('Equipamentos', () => {
   test('o ecrã lê os campos que as sementes carregam', () => {
     const src = read('src/screens/Equipamentos.jsx');
     expect(src).not.toMatch(/e\.category|e\.purchase\b|e\.warrantyDays|e\.purchaseAt/);
-    expect(src).toMatch(/e\.cat/);
     expect(src).toMatch(/e\.bought/);
+    expect(src).toMatch(/e\.price/);
+    // A categoria saiu da linha: a referência 11 mostra «Comprado a … · preço»,
+    // não a categoria. Continua a existir no formulário de registo.
+    expect(src).toMatch(/cat: CATS\[0\]/);
   });
 
   test('gravar um equipamento produz a forma das sementes', () => {
     const src = read('src/screens/Equipamentos.jsx');
-    const save = src.slice(src.indexOf('const handleSave'), src.indexOf('const Section'));
+    const save = src.slice(src.indexOf('const handleSave'), src.indexOf('const estadoDe'));
     for (const field of ['cat:', 'bought:', 'warrantyEnd:']) expect(save).toContain(field);
   });
 

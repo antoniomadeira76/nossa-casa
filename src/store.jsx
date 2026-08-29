@@ -40,7 +40,7 @@ const DATA_KEYS = [
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'importDone', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pointValue', 'payDay', 'splitHalf',
-  'stores', 'shopPlan', 'shopHistory', 'health', 'specialities', 'equipCats', 'registo',
+  'rendimento', 'stores', 'shopPlan', 'shopHistory', 'health', 'specialities', 'equipCats', 'registo',
   'recurringReset', 'healthNotes', 'healthRecipes', 'healthDecisions', 'healthDocs', 'healthGone',
   'googleCalendarImported', // Google Calendar imports
 ];
@@ -103,6 +103,7 @@ export const DEMO = () => ({
   roles: { ...ROLES },
   pins: {},                       // sem PIN de fábrica — o adulto define
   pointValue: 0.10, payDay: 0, splitHalf: true,
+  rendimento: 3200,              // o que entra por mês; os envelopes saem daqui
   stores: ['Continente de Belém', 'Pingo Doce da Ajuda', 'Mercado de Alcântara'],
   shopPlan: { who: 'Tomás', day: 'd2026-08-23', time: '10:30', store: 0 },  // domingo
   shopHistory: [], health: [], specialities: ['Medicina geral', 'Dentista', 'Pediatria', 'Oftalmologia'],

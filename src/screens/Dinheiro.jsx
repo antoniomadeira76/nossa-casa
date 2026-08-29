@@ -59,6 +59,13 @@ export default function Dinheiro({ t, user, onEquip }) {
   const admin = isAdmin(user);
   const pct = Math.round((spent / budget) * 100);
   const settleBase = s.clearedSeeds ? 0 : 86.5;
+  // O que sobra do rendimento depois de atribuir os envelopes — a segunda
+  // metade da frase da referência 05.
+  const semEnvelope = Math.max(0, (s.rendimento || 0) - budget);
+  const MESES_SEG = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho',
+    'Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const proximoMes = MESES_SEG[(MESES_SEG.indexOf(s.monthName) + 1) % 12];
+
   const eq = allEquip();
   const eqWarn = eq.filter(x => { const d = warrantyDaysLeft(x); return d >= 0 && d <= 90; }).length;
   const eqOut = eq.filter(x => warrantyDaysLeft(x) < 0).length;
@@ -116,25 +123,45 @@ export default function Dinheiro({ t, user, onEquip }) {
 
   return (
     <>
-      <View>
-        <SectionTitle t={t}>Orçamento de {s.monthName}</SectionTitle>
-        <Card t={t} style={{ gap: S.md }}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Label t={t}>Disponível</Label>
-              <Text style={{ fontFamily: FONT.display, fontSize: 28, color: t.text2 }}>{EUR(remaining)}</Text>
-            </View>
-            <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3, textAlign: 'right' }}>de {EUR(budget)}</Text>
+      {/* Sem título de secção — na referência 05 este cartão abre o ecrã. A
+          linha da direita dizia só «de 1770,00 €»; falta-lhe o gasto, que é o
+          número que explica o disponível. */}
+      <Card t={t} style={{ gap: S.md }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Label t={t}>Disponível</Label>
+            <Text style={{ fontFamily: FONT.display, fontSize: 28,
+              color: remaining >= 0 ? t.state.okDeep : t.state.errDeep }}>{EUR(remaining)}</Text>
           </View>
-          <Bar t={t} pct={pct} color={t.accent} />
-          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-            {pct} % do orçamento de {s.monthName} usado até agora.
+          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3, textAlign: 'right' }}>
+            {EUR(spent)} gastos{'\n'}de {EUR(budget)}
           </Text>
-        </Card>
-      </View>
+        </View>
+        <Bar t={t} pct={pct} color={t.accent} />
+        <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 18, color: t.text3 }}>
+          {pct} % dos {EUR(budget)} atribuídos aos envelopes.
+          {semEnvelope > 0 ? ` Sobram ${EUR(semEnvelope)} sem envelope.` : ''}
+        </Text>
+      </Card>
+
+      {/* Registar despesa é a acção mais frequente deste ecrã e estava no fim
+          do cartão dos envelopes, como um «+ registar despesa» pequeno. Na
+          referência é a primeira linha depois do saldo. */}
+      <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+        <Row t={t} icon="plus" title="Registar Despesa"
+          sub="Combustível, farmácia, restaurante…"
+          onPress={() => setSheet('despesa')} last />
+      </Card>
 
       <View>
         <SectionTitle t={t}>Envelopes</SectionTitle>
+        {admin ? (
+          <Card t={t} pad={false} style={{ paddingHorizontal: 16, marginBottom: S.md }}>
+            <Row t={t} icon="fileAdd" title={`Abrir ${proximoMes}`}
+              sub="Distribuir o rendimento e reiniciar os envelopes"
+              onPress={() => setSheet('openMonth')} last />
+          </Card>
+        ) : null}
         <Card t={t} style={{ gap: S.lg }}>
           {envPg.slice.map((e, i) => {
             const tight = e.used / e.limit >= 0.94;
@@ -150,8 +177,17 @@ export default function Dinheiro({ t, user, onEquip }) {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
                     <Icon name="warning" size={16} color={t.state.warn} />
                     <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 11.5, color: t.state.warnDeep }}>
-                      Restam {EUR(e.limit - e.used)}
+                      Restam {EUR(e.limit - e.used)} neste envelope.
                     </Text>
+                    {/* «Reforçar» leva à folha de mover dinheiro — o passo
+                        seguinte óbvio quando um envelope está no limite. */}
+                    <Pressable onPress={() => setSheet('mover')} accessibilityRole="button"
+                      accessibilityLabel={`Reforçar o envelope ${e.name}`}
+                      style={{ minHeight: 44, justifyContent: 'center' }}>
+                      <Text style={{ fontFamily: FONT.display, fontSize: 13, fontWeight: '700', color: t.accent }}>
+                        Reforçar
+                      </Text>
+                    </Pressable>
                   </View>
                 ) : null}
               </View>
@@ -160,7 +196,6 @@ export default function Dinheiro({ t, user, onEquip }) {
           <Pager t={t} pg={envPg} />
           <View style={{ height: 1, backgroundColor: t.divider }} />
           <AddButton t={t} label="mover dinheiro entre envelopes" onPress={() => setSheet('mover')} />
-          <AddButton t={t} label="registar despesa" onPress={() => setSheet('despesa')} />
         </Card>
       </View>
 
@@ -173,7 +208,7 @@ export default function Dinheiro({ t, user, onEquip }) {
                 {s.settled || settleBase === 0 ? 'Está tudo acertado' : `O Tomás deve à Rita ${EUR(settleBase)}`}
               </Text>
               <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
-                {s.clearedSeeds ? 'Sem valores pendentes entre vocês.'
+                {s.clearedSeeds ? 'Sem valores pendentes entre os dois.'
                   : s.settled ? 'Último acerto hoje' : '14 despesas partilhadas este mês'}
               </Text>
             </View>
@@ -412,7 +447,7 @@ export default function Dinheiro({ t, user, onEquip }) {
 
       {/* Register Expense Sheet */}
       {sheet === 'despesa' ? (
-        <Sheet t={t} title="Registar Despesa" sub="Entra no envelope e na conta entre vocês"
+        <Sheet t={t} title="Registar Despesa" sub="Entra no envelope e na conta entre os dois"
           onClose={() => setSheet(null)}
           action={<Primary t={t} disabled={exp.amount <= 0} label="Registar Despesa"
             onPress={() => {
@@ -455,7 +490,7 @@ export default function Dinheiro({ t, user, onEquip }) {
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>Dividir a meias</Text>
               <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
-                {exp.split ? `Metade (${EUR(exp.amount / 2)}) entra na conta entre vocês.` : 'A despesa fica a cargo de quem pagou.'}
+                {exp.split ? `Metade (${EUR(exp.amount / 2)}) entra na conta entre os dois.` : 'A despesa fica a cargo de quem pagou.'}
               </Text>
             </View>
             <Toggle t={t} on={exp.split} label="Dividir a meias"

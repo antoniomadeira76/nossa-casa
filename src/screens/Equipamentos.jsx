@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { TODAY, pad2, plural, warrantyDaysLeft } from '../format';
-import { Card, SectionTitle, Empty, AddButton, Label, Choice, Primary } from '../ui';
+import { TODAY, pad2, plural, warrantyDaysLeft, daysUntil, EUR } from '../format';
+import { Card, SectionTitle, Empty, AddButton, Label, Choice, Primary, Pill } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import FichaEquipamento from '../sheets/FichaEquipamento';
@@ -61,46 +61,91 @@ export default function Equipamentos({ t }) {
     setForm({ name: '', bought: '', warranty: 365, cat: CATS[0] });
   };
 
-  const Section = ({ title, items, color, text }) => (
-    items.length ? (
-      <View>
-        <SectionTitle t={t}>{title}</SectionTitle>
-        <View style={{ gap: S.md }}>
-          {items.map(e => (
-            <Card key={e.id} t={t} style={{ borderLeftWidth: 4, borderLeftColor: color }}>
-              <Pressable onPress={() => setFicha(e.id)} accessibilityRole="button"
-                accessibilityLabel={e.name}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52 }}>
-                <View style={{ flex: 1, gap: S.sm }}>
-                  <Text style={{ fontFamily: FONT.body, fontSize: 15, fontWeight: '600', color: t.text2 }}>
-                    {e.name}
-                  </Text>
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-                    {[e.cat, e.bought && `comprado a ${e.bought}`].filter(Boolean).join(' · ')}
-                  </Text>
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: text }}>
-                    {warrantyLabel(byWarranty(e))}
-                  </Text>
-                </View>
-                <Icon name="caretRight" size={18} color={t.text3} />
-              </Pressable>
-            </Card>
-          ))}
-        </View>
-      </View>
-    ) : null
-  );
+  // Uma lista só, «Registados», como na referência 11 — não três secções por
+  // estado de garantia. O estado vai na pastilha à direita e na borda, que é
+  // onde se lê sem ter de perceber em que secção se está.
+  const estadoDe = (e) => {
+    const d = byWarranty(e);
+    if (d < 0) return { label: 'Fora de Garantia', cor: t.state.err, fundo: t.state.errBg, texto: t.state.errDeep };
+    if (d <= 90) return { label: 'Garantia a Expirar', cor: t.state.warn, fundo: t.state.warnBg, texto: t.state.warnDeep };
+    return { label: 'Em Garantia', cor: t.state.ok, fundo: t.state.okBg, texto: t.state.okDeep };
+  };
+
+  const valor = eq.reduce((a, e) => a + (e.price || 0), 0);
+  const aExpirar = eq.filter(e => { const d = byWarranty(e); return d >= 0 && d <= 90; }).length;
+  const expiradas = eq.filter(e => byWarranty(e) < 0).length;
+  // A manutenção mais próxima que ainda não passou.
+  const proxima = eq.map(e => e.maintDate).filter(Boolean)
+    .map(v => ({ v, dias: daysUntil(v) }))
+    .filter(x => x.dias !== null && x.dias >= 0)
+    .sort((a, b) => a.dias - b.dias)[0];
 
   return (
     <>
-      {/* Barra na cor viva, texto no tom profundo — o vivo não contrasta sobre cartão claro */}
-      <Section title="Em Garantia" items={inWarranty} color={t.state.ok} text={t.state.okDeep} />
-      <Section title="A Expirar (90 dias)" items={expiring} color={t.state.warn} text={t.state.warnDeep} />
-      <Section title="Fora de Garantia" items={expired} color={t.state.err} text={t.state.errDeep} />
+      {/* O resumo que a referência tem no topo e faltava por inteiro. */}
+      <Card t={t} style={{ gap: S.lg }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: S.lg }}>
+          {[['Equipamentos', String(eq.length), t.text2],
+            ['Valor registado', EUR(valor), t.text2],
+            ['Garantias a expirar', String(aExpirar), aExpirar ? t.state.warnDeep : t.text2],
+            ['Garantias expiradas', String(expiradas), expiradas ? t.state.errDeep : t.text2]].map(([rot, val, cor]) => (
+            <View key={rot} style={{ width: '50%', gap: 2 }}>
+              <Label t={t}>{rot}</Label>
+              <Text style={{ fontFamily: FONT.display, fontSize: 21, color: cor }}>{val}</Text>
+            </View>
+          ))}
+        </View>
+        {proxima ? (
+          <View style={{ gap: 2 }}>
+            <Label t={t}>Próxima manutenção</Label>
+            <Text style={{ fontFamily: FONT.display, fontSize: 21, color: t.text2 }}>{proxima.v}</Text>
+          </View>
+        ) : null}
+      </Card>
 
-      {eq.length === 0 ? (
+      {eq.length ? (
+        <View>
+          <SectionTitle t={t}>Registados</SectionTitle>
+          <View style={{ gap: S.md }}>
+            {eq.map(e => {
+              const est = estadoDe(e);
+              return (
+                <Card key={e.id} t={t} style={{ borderWidth: 1, borderColor: est.cor }}>
+                  <Pressable onPress={() => setFicha(e.id)} accessibilityRole="button"
+                    accessibilityLabel={e.name}
+                    style={{ gap: S.md, minHeight: 52, justifyContent: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                      <View style={{ flex: 1, gap: 3 }}>
+                        <Text style={{ fontFamily: FONT.body, fontSize: 15, fontWeight: '600', color: t.text2 }}>
+                          {e.name}
+                        </Text>
+                        <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
+                          {[e.bought && `Comprado a ${e.bought}`, e.price && EUR(e.price)]
+                            .filter(Boolean).join(' · ')}
+                        </Text>
+                      </View>
+                      <Pill label={est.label} fg={est.texto} bg={est.fundo} border={est.cor} />
+                    </View>
+                    {/* A manutenção seguinte, com relógio, como na referência.
+                        Estava nos dados desde sempre e não aparecia. */}
+                    {e.maint ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
+                        borderTopWidth: 1, borderTopColor: t.divider, paddingTop: S.md }}>
+                        <Icon name="clock" size={16} color={t.text3} />
+                        <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
+                          {e.maint}{e.maintDate ? ` · ${e.maintDate}` : ''}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </Pressable>
+                </Card>
+              );
+            })}
+          </View>
+        </View>
+      ) : (
         <Empty t={t} icon="houseGear" title="Sem equipamentos registados." hint="Comece a registar os aparelhos da casa." />
-      ) : null}
+      )}
 
       <AddButton t={t} label="registar equipamento" onPress={() => setSheet('novo')} />
 

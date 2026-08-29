@@ -28,7 +28,9 @@ export const STATE = {
   info: '#1890FF', infoBg: '#E8F4FF',
   ok: '#52C41A', okBorder: '#BAE7A3', okBg: 'rgba(220,243,209,0.2)', okDeep: '#389E0D',
   warn: '#FAAD14', warnBg: '#FEFFD0', warnDeep: '#AD8B00',
-  err: '#FF4D4F', errDeep: '#CE0002',
+  // errBg faltava — havia okBg e warnBg, e uma pastilha de erro ficava sem
+  // fundo. O valor é o do protótipo (`rgba(255,77,79,.08)` em hExpiry).
+  err: '#FF4D4F', errBg: 'rgba(255,77,79,0.08)', errDeep: '#CE0002',
   violet: '#722ED1', cyan: '#08979C',
 };
 
