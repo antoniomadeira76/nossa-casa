@@ -60,6 +60,24 @@ export const dueInfo = (dueKey, dueTime) => {
 
 export const plural = (n, sing, plur) => `${n} ${n === 1 ? sing : plur}`;
 
+// Dias até uma data, contra o TODAY da app — nunca contra o relógio.
+// Aceita as duas formas que a app usa: a chave interna (`d2026-09-10`) e o que
+// o utilizador escreve (`10/09/2026`). São dois formatos porque as sementes
+// são código e os formulários são texto; ter duas funções para isso foi o que
+// deixou a Saúde com `new Date(2026, 7, 27)` escrito à mão — uma terceira
+// ideia de «hoje», sete dias à frente do resto da app, que mostrava uma
+// receita a expirar como válida durante uma semana.
+export const daysUntil = (v) => {
+  const s = String(v || '');
+  const o = parseKey(s);
+  const dmy = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(s);
+  const alvo = o ? [o.y, o.m, o.d] : dmy ? [+dmy[3], +dmy[2] - 1, +dmy[1]] : null;
+  if (!alvo) return null;
+  return Math.round(
+    (Date.UTC(alvo[0], alvo[1], alvo[2]) - Date.UTC(TODAY.y, TODAY.m, TODAY.d)) / 86400000
+  );
+};
+
 // Dias até ao fim da garantia, contra o TODAY da app — não contra o relógio.
 // Vive aqui porque os Equipamentos e o Dinheiro contam as mesmas garantias;
 // duplicá-lo fez com que só um dos dois visse os equipamentos novos.

@@ -1,7 +1,35 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES, HEALTH, HEALTH_DOCS, VAULT } from './data';
-import { TODAY_KEY, dueInfo } from './format';
+import { TODAY_KEY, dueInfo, daysUntil, warrantyDaysLeft } from './format';
+
+// ── Visibilidade da saúde (INVARIANTE #3) ───────────────────────────────────
+// Puras e exportadas de propósito: uma regra de visibilidade que só se
+// verifica a olho, no ecrã, não é uma regra — é uma esperança. Assim há uma
+// prova em __tests__ que corre sem React e sem interface, e que falha se
+// alguém alargar o filtro sem dar por isso.
+//
+// A ficha de um adulto é só dele; as das crianças são visíveis aos adultos e
+// invisíveis às próprias. Esta é a regra do cliente — a do servidor está em
+// docs/seguranca.html, tem 15 provas, e é a que conta.
+export const podeVerSaude = (member, viewer) =>
+  MEMBERS[member] && MEMBERS[member].kid
+    ? !!(MEMBERS[viewer] && !MEMBERS[viewer].kid)
+    : member === viewer;
+
+// As receitas com prazo a acabar que este membro pode ver.
+export const receitasAExpirarDe = (docs, viewer, limite = 30) => (docs || [])
+  .filter(d => d.kind === 'Receita' && d.expires && podeVerSaude(d.member, viewer))
+  .map(d => ({ ...d, dias: daysUntil(d.expires) }))
+  .filter(d => d.dias !== null && d.dias <= limite)
+  .sort((a, b) => a.dias - b.dias);
+
+// As consultas já marcadas para os próximos dias que este membro pode ver.
+export const consultasProximasDe = (consultas, viewer, limite = 7) => (consultas || [])
+  .filter(h => podeVerSaude(h.member, viewer))
+  .map(h => ({ ...h, dias: daysUntil(h.day) }))
+  .filter(h => h.dias !== null && h.dias >= 0 && h.dias <= limite)
+  .sort((a, b) => a.dias - b.dias);
 
 const KEY = 'nossa-casa/v1';
 
@@ -180,13 +208,7 @@ function build(s, set) {
     limit: (s.monthLimits ? s.monthLimits[e.name] : e.limit) + (s.envMove[e.name] || 0),
   }));
 
-  // Saúde. A ficha de um adulto é só dele; as das crianças são visíveis aos
-  // adultos e invisíveis às próprias. Isto é a regra do cliente — a do
-  // servidor está em docs/seguranca.html e é a que conta (INVARIANTE #3).
-  const canSeeHealth = (member, viewer) =>
-    MEMBERS[member] && MEMBERS[member].kid
-      ? !!(MEMBERS[viewer] && !MEMBERS[viewer].kid)
-      : member === viewer;
+  const canSeeHealth = podeVerSaude;
 
   const allHealth = () => [...(s.clearedSeeds ? [] : HEALTH), ...(s.health || [])]
     .filter(h => !(s.healthGone || {})[h.id]);
@@ -201,6 +223,19 @@ function build(s, set) {
   const nextHealth = (member, viewer) => healthOf(member, viewer)
     .filter(h => h.day >= TODAY_KEY)
     .sort((a, b) => a.day.localeCompare(b.day))[0] || null;
+
+  // ── O que precisa de atenção no Início ───────────────────────────────────
+  // As três listas que faltavam ao «Precisa de Si». As duas de saúde passam
+  // por canSeeHealth como todo o resto: a Rita não vê as receitas nem as
+  // consultas do Tomás no ecrã dela (INVARIANTE #3). Não é uma decisão de
+  // interface — a lista nem sequer as contém.
+  const garantiasAExpirar = () => allEquip()
+    .map(e => ({ ...e, dias: warrantyDaysLeft(e) }))
+    .filter(e => e.dias >= 0 && e.dias <= 90)
+    .sort((a, b) => a.dias - b.dias);
+
+  const receitasAExpirar = (viewer) => receitasAExpirarDe(allHealthDocs(), viewer);
+  const consultasProximas = (viewer) => consultasProximasDe(allHealth(), viewer);
 
   // Saldo do cofre: soma, nunca leitura de um campo (INVARIANTE #2).
   // Sementes do código + o que o utilizador acrescentou, como em allTasks.
@@ -398,6 +433,7 @@ function build(s, set) {
     budget, spent, remaining: budget - spent, envelopes, kidPts,
     vaultOf, vaultMoves, vaultAdd,
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
+    garantiasAExpirar, receitasAExpirar, consultasProximas,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),
     resetDemo: () => { AsyncStorage.removeItem(KEY).catch(() => {}); set(DEMO()); },

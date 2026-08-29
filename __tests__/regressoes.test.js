@@ -170,6 +170,66 @@ describe('Nenhum ecrã fica sem entrada', () => {
   });
 });
 
+describe('INVARIANTE #3 — a visibilidade da saúde não é do ecrã', () => {
+  // O «Precisa de Si» passou a mostrar receitas e consultas. São dados de
+  // saúde, e uma linha dessas no Início do membro errado é a fuga exacta que
+  // o INVARIANTE #3 existe para impedir. Estas provas correm sem React: as
+  // funções são puras precisamente para poderem ser provadas.
+  //
+  // A regra do servidor é a que conta (db/pocketbase/provar-saude.mjs, 15
+  // provas). Esta é a do cliente, e tem de concordar com ela.
+  const { podeVerSaude, receitasAExpirarDe, consultasProximasDe } = require('../src/store.jsx');
+
+  const receita = (member, expires) => ({
+    id: `r-${member}`, member, kind: 'Receita', title: 'Prova', expires,
+  });
+  const consulta = (member, day) => ({ id: `c-${member}`, member, day, specialty: 'Prova' });
+
+  test('um adulto vê a sua própria ficha e nenhuma outra de adulto', () => {
+    expect(podeVerSaude('Rita', 'Rita')).toBe(true);
+    expect(podeVerSaude('Tomás', 'Rita')).toBe(false);
+    expect(podeVerSaude('Rita', 'Tomás')).toBe(false);
+  });
+
+  test('as fichas das crianças são dos adultos, e não das próprias', () => {
+    expect(podeVerSaude('Léo', 'Rita')).toBe(true);
+    expect(podeVerSaude('Léo', 'Tomás')).toBe(true);
+    expect(podeVerSaude('Léo', 'Léo')).toBe(false);
+    expect(podeVerSaude('Mia', 'Léo')).toBe(false);
+  });
+
+  // O que a prova do browser não conseguiu mostrar por causa das fibras
+  // velhas do React: a receita de um adulto não entra na lista do outro.
+  test('a receita da Rita não chega à lista do Tomás', () => {
+    const docs = [receita('Rita', 'd2026-08-25'), receita('Léo', 'd2026-09-10')];
+    expect(receitasAExpirarDe(docs, 'Rita').map(d => d.member)).toEqual(['Rita', 'Léo']);
+    expect(receitasAExpirarDe(docs, 'Tomás').map(d => d.member)).toEqual(['Léo']);
+    expect(receitasAExpirarDe(docs, 'Léo')).toEqual([]);
+  });
+
+  test('a consulta de um adulto não chega ao outro nem às crianças', () => {
+    const cs = [consulta('Tomás', 'd2026-08-22'), consulta('Mia', 'd2026-08-23')];
+    expect(consultasProximasDe(cs, 'Tomás').map(c => c.member)).toEqual(['Tomás', 'Mia']);
+    expect(consultasProximasDe(cs, 'Rita').map(c => c.member)).toEqual(['Mia']);
+    expect(consultasProximasDe(cs, 'Mia')).toEqual([]);
+  });
+
+  // Contra o TODAY da app (20/08/2026), não contra o relógio da máquina.
+  test('as janelas de tempo contam a partir do TODAY da app', () => {
+    const docs = [receita('Léo', 'd2026-09-10'), receita('Mia', 'd2027-01-01')];
+    expect(receitasAExpirarDe(docs, 'Rita').map(d => d.dias)).toEqual([21]);
+
+    const cs = [consulta('Léo', 'd2026-08-22'), consulta('Mia', 'd2026-08-28'),
+                consulta('Léo', 'd2026-08-10')];
+    expect(consultasProximasDe(cs, 'Rita').map(c => c.dias)).toEqual([2]);  // 28/08 são 8 dias; 10/08 já passou
+  });
+
+  test('uma receita já expirada continua a aparecer — deixar de a mostrar é escondê-la', () => {
+    const docs = [receita('Léo', 'd2026-08-01')];
+    expect(receitasAExpirarDe(docs, 'Rita').map(d => d.dias)).toEqual([-19]);
+  });
+});
+
 describe('INVARIANTE #2 — saldos são somas de movimentos', () => {
   test('o cofre não é um campo escrito', () => {
     const store = read('src/store.jsx');
@@ -340,18 +400,40 @@ describe('Português europeu', () => {
     [/\bplanejar\b/i, 'planejar → planear'],
     [/\busuário/i, 'usuário → utilizador'],
     [/\bdeletar\b/i, 'deletar → eliminar'],
+    // Este estava no ecrã de entrada, e está também no protótipo. O protótipo
+    // ganha nas medidas; no registo da língua ganha o CLAUDE.md.
+    [/\bacess(ar|ando|e)\b/i, 'acessar → aceder'],
+    [/\bsalvar\b/i, 'salvar → guardar'],
+    [/\bcadastr(o|ar|e)\b/i, 'cadastrar → registar'],
+    [/\bregistr(o|ar|ado)\b/i, 'registro → registo (registar)'],
+    [/\baplicativo\b/i, 'aplicativo → aplicação'],
+    [/\bsenha\b/i, 'senha → palavra-passe'],
+    [/\bcelular\b/i, 'celular → telemóvel'],
+    [/\btela\b/i, 'tela → ecrã'],
   ];
 
+  // Sem comentários: o que conta é o que o membro lê. Um comentário que
+  // explica o brasileirismo corrigido não é um brasileirismo — e sem isto o
+  // teste dava-se por falhado a si próprio.
   test.each(BR)('nenhum ficheiro usa %s', (re, hint) => {
-    const offenders = jsxFiles().filter(f => re.test(read(f)));
+    const offenders = jsxFiles().filter(f => re.test(semComentarios(read(f))));
     expect({ hint, offenders }).toEqual({ hint, offenders: [] });
+  });
+
+  // O gerúndio de acção contínua é brasileiro: «está carregando» em vez de
+  // «está a carregar». Não aparece em nenhum ficheiro hoje e é a construção
+  // mais fácil de deixar entrar sem dar por isso.
+  test('não há gerúndio de acção contínua', () => {
+    const re = /\b(está|estão|estamos|estou|continua|vai)\s+[a-zà-ÿ]+ndo\b/iu;
+    const offenders = jsxFiles().filter(f => re.test(semComentarios(read(f))));
+    expect(offenders).toEqual([]);
   });
 
   // Fronteiras em Unicode: \b parte-se nos acentos, e /\bvocê\b/ casava dentro
   // de «vocês». As fronteiras aqui são «não é letra».
   test('não há tratamento por «tu»', () => {
     const re = /(?<![\p{L}])(tu|teu|teus|tua|tuas|contigo|ti)(?![\p{L}])/iu;
-    const offenders = jsxFiles().filter(f => re.test(read(f)));
+    const offenders = jsxFiles().filter(f => re.test(semComentarios(read(f))));
     expect(offenders).toEqual([]);
   });
 });

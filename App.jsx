@@ -214,7 +214,8 @@ function Shell() {
         <ScrollView style={{ flex: 1, minHeight: 0 }}
           contentContainerStyle={{ padding: 16, gap: S.xl, paddingBottom: S.xl }}>
           {tab === 'inicio'
-            ? <Inicio t={t} user={user} go={setTab} />
+            ? <Inicio t={t} user={user} go={setTab}
+                onSaude={() => setSaude(true)} onEquip={() => setEquip(true)} />
             : <Screen t={t} user={user} go={setTab} onEquip={() => setEquip(true)} />}
         </ScrollView>
 

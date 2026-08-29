@@ -7,9 +7,10 @@ import { MEMBERS } from '../data';
 import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager } from '../ui';
 import Icon from '../Icon';
 
-export default function Inicio({ t, user, go }) {
+export default function Inicio({ t, user, go, onSaude, onEquip }) {
   const st = useStore();
-  const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring } = st;
+  const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring,
+          garantiasAExpirar, receitasAExpirar, consultasProximas } = st;
 
   const hour = 9;
   const greet = hour < 13 ? 'Bom dia' : hour < 20 ? 'Boa tarde' : 'Boa noite';
@@ -20,15 +21,37 @@ export default function Inicio({ t, user, go }) {
   const tight = envelopes.filter(e => e.used / e.limit >= 0.94);
   const settleBase = s.clearedSeeds ? 0 : 86.5;
 
-  // Precisa de si — só o que exige decisão, por ordem de urgência
+  // Precisa de si — só o que exige decisão, por ordem de urgência.
+  //
+  // A ordem e os ícones vêm do protótipo (`design/Nossa Casa App.dc.html`,
+  // onde a lista se monta). Faltavam três entradas: garantias, receitas e
+  // consultas próximas. O ecrã tinha três linhas onde a referência tem cinco,
+  // e um equipamento a sair da garantia não aparecia em lado nenhum até
+  // alguém abrir os Equipamentos de propósito.
+  //
+  // `idcard` é o ícone das duas primeiras: neste sistema quer dizer «papel com
+  // prazo» — a garantia e a receita. Não é reutilização com outro sentido.
   const needs = [];
-  if (toConfirm.length) needs.push({ icon: 'clock', color: t.state.info,
+  if (toConfirm.length) needs.push({ icon: 'clock', color: t.text3,
     title: plural(toConfirm.length, 'tarefa a confirmar', 'tarefas a confirmar'),
     sub: [...new Set(toConfirm.map(x => x.who))].join(', '), go: () => go('tarefas') });
-  if (!s.settled && settleBase > 0) needs.push({ icon: 'wallet', color: t.accent,
+  if (!s.settled && settleBase > 0) needs.push({ icon: 'wallet', color: t.text3,
     title: 'Contas por acertar', sub: `O Tomás deve ${EUR(settleBase)}`, go: () => go('dinheiro') });
-  tight.forEach(e => needs.push({ icon: 'warning', color: t.state.warn,
+  tight.forEach(e => needs.push({ icon: 'warning', color: t.state.err,
     title: `Envelope ${e.name} no limite`, sub: `${EUR(Math.max(0, e.limit - e.used))} disponíveis`, go: () => go('dinheiro') }));
+  garantiasAExpirar().forEach(e => needs.push({ icon: 'idcard', color: t.state.warn,
+    title: `Garantia a expirar · ${String(e.name).split(' ').slice(0, 2).join(' ')}`,
+    sub: e.dias === 0 ? 'termina hoje' : `${e.dias === 1 ? 'Falta' : 'Faltam'} ${plural(e.dias, 'dia', 'dias')}`,
+    go: onEquip }));
+  receitasAExpirar(user).forEach(d => needs.push({ icon: 'idcard', color: t.state.warn,
+    title: `Receita a expirar · ${d.member}`,
+    sub: `${d.title} · ${d.dias < 0 ? `Expirou há ${plural(-d.dias, 'dia', 'dias')}`
+      : d.dias === 0 ? 'Expira hoje'
+      : `${d.dias === 1 ? 'Falta' : 'Faltam'} ${plural(d.dias, 'dia', 'dias')}`}`,
+    go: onSaude }));
+  consultasProximas(user).forEach(c => needs.push({ icon: 'heartPulse', color: t.state.info,
+    title: `Consulta · ${c.member}`,
+    sub: `${c.specialty} · ${dayLabel(c.day)} às ${c.time}`, go: onSaude }));
   if (overdue.length) needs.push({ icon: 'checkSquare', color: t.text3,
     title: plural(overdue.length, 'tarefa por fazer hoje', 'tarefas por fazer hoje'),
     sub: [...new Set(overdue.map(x => x.who))].join(', '), go: () => go('tarefas') });
@@ -68,7 +91,8 @@ export default function Inicio({ t, user, go }) {
             {needsPg.slice.map((n, i) => (
               <Card key={i} t={t} style={{ borderLeftWidth: 4, borderLeftColor: n.color }}>
                 <Row t={t} title={n.title} sub={n.sub} onPress={n.go} last
-                  icon={undefined} right={<Icon name="caretRight" size={18} color={t.text3} />} />
+                  icon={n.icon} iconColor={n.color}
+                  right={<Icon name="caretRight" size={18} color={t.text3} />} />
               </Card>
             ))}
             <Pager t={t} pg={needsPg} />

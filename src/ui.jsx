@@ -61,7 +61,9 @@ export const Tap = ({ onPress, label, children, style, size = 44 }) => (
 );
 
 // Linha de definição: o padrão da app — valor à direita, chevron
-export const Row = ({ t, icon, title, sub, value, onPress, last, right }) => (
+// `iconColor` é opcional e cai em t.slate — o «Precisa de Si» colore o ícone
+// pela urgência da linha, o resto da app quer sempre a mesma cor.
+export const Row = ({ t, icon, iconColor, title, sub, value, onPress, last, right }) => (
   <Pressable onPress={onPress} accessibilityRole={onPress ? 'button' : undefined}
     accessibilityLabel={onPress ? title : undefined}
     style={({ pressed }) => ({
@@ -69,7 +71,7 @@ export const Row = ({ t, icon, title, sub, value, onPress, last, right }) => (
       borderBottomWidth: last ? 0 : 1, borderBottomColor: t.divider,
       opacity: pressed ? 0.7 : 1,
     })}>
-    {icon ? <Icon name={icon} size={20} color={t.slate} /> : null}
+    {icon ? <Icon name={icon} size={20} color={iconColor || t.slate} /> : null}
     <View style={{ flex: 1, gap: 2 }}>
       <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{title}</Text>
       {sub ? <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{sub}</Text> : null}

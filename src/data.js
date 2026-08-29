@@ -84,6 +84,10 @@ export const HEALTH = [
 export const HEALTH_DOCS = [
   { id: 'd1', member: 'Mia', healthId: 'h1', title: 'Plano ortodôntico', kind: 'Relatório' },
   { id: 'd2', member: 'Léo', healthId: 'h2', title: 'Análises ao sangue', kind: 'Resultado' },
+  // Uma receita tem prazo, e é isso que a põe no «Precisa de Si» do Início.
+  // Sem esta semente, a linha da referência não tinha dados por trás.
+  { id: 'd3', member: 'Léo', healthId: 'h2', title: 'Ferro — 3 meses', kind: 'Receita',
+    expires: dkey(2026, 8, 10) },   // 10/09 — faltam 21 dias
 ];
 
 // Movimentos iniciais dos cofres. Vivem aqui, como as tarefas e os

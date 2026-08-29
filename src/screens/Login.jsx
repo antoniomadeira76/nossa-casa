@@ -51,7 +51,11 @@ export default function Login({ t, onEnter }) {
           <View style={glass}>
             <Text style={{ fontFamily: FONT.display, fontSize: 24, fontWeight: '500', color: '#FFFFFF' }}>Bem-vindo</Text>
             <Text style={{ fontFamily: FONT.body, fontSize: 15, lineHeight: 22, color: 'rgba(255,255,255,0.8)' }}>
-              Entre com a sua Conta Google para acessar a casa partilhada.
+              {/* «acessar» é do Brasil — em Portugal é «aceder». O protótipo
+                  tem o mesmo erro (docs/referencia/01-entrar.png), mas o
+                  registo da língua é invariante do CLAUDE.md, não uma medida
+                  de desenho onde o protótipo ganha. */}
+              Entre com a sua Conta Google para aceder à casa partilhada.
             </Text>
             <Pressable onPress={() => setStep('contas')} accessibilityRole="button" accessibilityLabel="Continuar com Google"
               style={({ pressed }) => ({ minHeight: 56, borderRadius: R.pill, backgroundColor: pressed ? '#FAFAFA' : '#FFFFFF',

@@ -6,7 +6,7 @@ import { MEMBERS } from '../data';
 import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Avatar } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
-import { pad2, plural, dayLabel } from '../format';
+import { pad2, plural, dayLabel, daysUntil } from '../format';
 import FichaSaude from './FichaSaude';
 
 export default function Saude({ t, user, onClose }) {
@@ -79,13 +79,11 @@ export default function Saude({ t, user, onClose }) {
     setRecipeForm({ name: '', dosage: '', quantity: '', unit: '', expiresAt: '' });
   };
 
-  const getRecipeExpiration = (expiresAt) => {
-    const [d, m, y] = expiresAt.split('/');
-    const expDate = new Date(y, m - 1, d);
-    const today = new Date(2026, 7, 27);
-    const daysLeft = Math.floor((expDate - today) / 86400000);
-    return daysLeft;
-  };
+  // Era um cálculo próprio, com `new Date(2026, 7, 27)` escrito à mão: uma
+  // terceira ideia de «hoje», sete dias à frente do TODAY da app. Uma receita
+  // a expirar passava por válida durante essa semana. Agora conta como tudo
+  // o resto — ver daysUntil em format.js.
+  const getRecipeExpiration = (expiresAt) => daysUntil(expiresAt) ?? 0;
 
   const RecordCard = ({ record }) => {
     const expanded = expandedRecord === record.id;
@@ -120,7 +118,7 @@ export default function Saude({ t, user, onClose }) {
             {needsDec && (
               <Pill label="Ação" bg={STATE.warnBg} fg={STATE.warn} border={STATE.warn} />
             )}
-            <Icon name={expanded ? 'chevronUp' : 'chevronDown'} size={20} color={t.text3} />
+            <Icon name={expanded ? 'caretUp' : 'caretDown'} size={20} color={t.text3} />
           </View>
 
           {/* Conteúdo expandido */}
