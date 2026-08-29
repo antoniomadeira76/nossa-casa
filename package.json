@@ -7,7 +7,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "test": "jest",
-    "test:smoke": "jest __tests__/smoke.test.js"
+    "test:smoke": "jest __tests__/smoke.test.js",
+    "referencias": "node scripts/recapturar-referencias.mjs docs/referencia && node scripts/folha-de-contacto.mjs docs/referencia docs/referencia/todos-os-ecras.png"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -27,6 +28,7 @@
   },
   "private": true,
   "devDependencies": {
-    "jest-expo": "^57.0.4"
+    "jest-expo": "^57.0.4",
+    "puppeteer-core": "^25.9.0"
   }
 }

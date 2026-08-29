@@ -8,6 +8,12 @@
       "port": 8082
     },
     {
+      "name": "Protótipo",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", "C:/Users/amadeira/AppData/Local/Temp/claude/C--Users-amadeira-Claude-Projects-Nossa-Casa/c754d258-c865-41b4-9895-24b007f0e27b/scratchpad/proto", "-p", "8090", "-c-1", "--silent"],
+      "port": 8090
+    },
+    {
       "name": "Expo iOS",
       "runtimeExecutable": "npx",
       "runtimeArgs": ["expo", "start"],

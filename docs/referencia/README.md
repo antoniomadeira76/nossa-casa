@@ -1,7 +1,16 @@
-# Capturas de referência — 33 ecrãs
+# Capturas de referência — 29 ecrãs
 
 Tiradas do protótipo atual, **402 × 874** (iPhone lógico), uma por ecrã. É contra estas imagens
 que se verifica a implementação.
+
+**Não as tire à mão.** `npm run referencias` regenera as 29 e a folha de contacto, conduzindo
+o protótipo no Chrome já instalado. Demora cerca de dois minutos.
+
+> Este conjunto teve 34 ficheiros para 16 imagens: metade eram cópias com nomes trocados —
+> `12-ficha-equipamento` era o ecrã do Dinheiro, os cinco ficheiros de `25` a `29` eram todos o
+> mesmo diálogo — e havia dois esquemas de numeração sobrepostos (`25-entrar-crianca` ao lado de
+> `25-terminar-sessao`). Não se via, porque uma captura errada parece uma captura. Daí o script:
+> a única defesa é regenerar o conjunto todo de uma vez.
 
 `todos-os-ecras.png` é a folha de contacto com todos lado a lado — útil para uma passagem
 rápida de coerência (espaçamentos, pesos de tipo, altura de cabeçalho e rodapé).
@@ -49,4 +58,5 @@ Ponha a captura ao lado do simulador, no mesmo tamanho. Compare por esta ordem:
 4. **Pesos e tamanhos de tipo** — títulos de secção em slate, não preto.
 5. **Alvos de toque** — nada abaixo de 44 px; 64 px nas linhas da loja.
 
-Recapture-as quando o desenho mudar: `docs/medir.md` explica como.
+Recapture-as quando o desenho mudar: `npm run referencias`. O `docs/medir.md` explica o
+método manual, para quando precisar de medidas exatas de um elemento e não de uma imagem.
