@@ -213,13 +213,19 @@ function build(s, set) {
   const budget = s.monthLimits
     ? Object.values(s.monthLimits).reduce((a, b) => a + b, 0)
     : ENV_BASE.reduce((a, e) => a + e.limit, 0);
-  const spent = (s.monthZero ? 0 : 1687.4) + s.registered;
-
   const envelopes = ENV_BASE.map(e => ({
     ...e,
     used: (s.monthZero ? 0 : e.used) + (e.name === 'Mercearia' ? s.registered : 0),
     limit: (s.monthLimits ? s.monthLimits[e.name] : e.limit) + (s.envMove[e.name] || 0),
   }));
+
+  // O gasto é a soma dos envelopes, nunca um número à parte. Estava escrito à
+  // mão como 1687,40, e os envelopes somam 1387,00 — 300,40 € de diferença.
+  // O «Disponível» dava 82,60 € onde a referência mostra 383,00 €, e como o
+  // cabeçalho do Início mostra esse número, a app dizia-o errado em todo o
+  // lado. É o INVARIANTE #2 noutra roupagem: um total que devia ser uma soma
+  // foi escrito, e divergiu da coisa que devia resumir.
+  const spent = envelopes.reduce((a, e) => a + e.used, 0);
 
   const canSeeHealth = podeVerSaude;
 

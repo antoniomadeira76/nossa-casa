@@ -328,7 +328,7 @@ export default function Gestao({ t, user, onClose }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.page }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: S.xl }}>
+      <View style={{ gap: S.xl }}>
         <View style={{ flexDirection: 'row', gap: S.md, borderBottomWidth: 1, borderBottomColor: t.border, paddingBottom: S.md }}>
           {[
             { key: 'orcamento', label: 'Orçamento' },
@@ -357,7 +357,7 @@ export default function Gestao({ t, user, onClose }) {
             Fechar
           </Text>
         </Pressable>
-      </ScrollView>
+      </View>
 
       {sheetOpen === 'editPin' && (
         <Sheet t={t} title="Alterar PIN" sub={`PIN de ${selectedMember}`}

@@ -170,6 +170,70 @@ describe('Nenhum ecrã fica sem entrada', () => {
   });
 });
 
+describe('Vistas de ecrã inteiro — cabeçalho próprio, rodapé intacto', () => {
+  const app = semComentarios(read('App.jsx'));
+
+  // Abriam como cartão centrado com véu por cima da área de conteúdo, e o
+  // cabeçalho da app ficava cortado a meio por trás. As referências 11, 13,
+  // 15 e 17 mostram-nas com cabeçalho próprio e o rodapé da app por baixo.
+  it('não sobrou nenhum cartão centrado com véu', () => {
+    expect(app).not.toMatch(/rgba\(0,0,0,0\.3\)/);
+    expect(app).not.toMatch(/maxHeight: '85vh'/);
+  });
+
+  it('as cinco vistas declaram ícone, título e legenda', () => {
+    for (const v of ['saude', 'equip', 'gestao', 'doc', 'loja']) {
+      expect(app).toMatch(new RegExp(`\\n    ${v}: \\{`));
+    }
+    const decls = app.match(/icon: '[a-zA-Z]+', titulo: '[^']+', fechar:/g) || [];
+    expect(decls.length).toBe(5);
+  });
+
+  it('a raiz continua a ter três filhos, com o rodapé em último', () => {
+    const raiz = app.slice(app.indexOf('backgroundColor: t.page'));
+    expect(raiz.indexOf('minHeight: 60')).toBeGreaterThan(raiz.indexOf('<ScrollView'));
+  });
+
+  // O modo de loja era um <Modal>, que no react-native-web escapa à raiz da
+  // app: elementFromPoint no meio do rodapé devolvia o painel, portanto os
+  // separadores não se conseguiam tocar. É o INVARIANTE #1, e o CLAUDE.md
+  // nomeia este ecrã.
+  it('o modo de loja não usa Modal', () => {
+    const modo = semComentarios(read('src/screens/ModoCompras.jsx'));
+    expect(modo).not.toMatch(/<Modal/);
+    expect(read('src/screens/Compras.jsx')).not.toMatch(/setShop/);
+  });
+
+  it('o modo de loja tem as duas acções por linha e a barra da loja', () => {
+    const modo = read('src/screens/ModoCompras.jsx');
+    expect(modo).toContain('Sem stock');
+    expect(modo).toContain('ordem do corredor');
+    expect((modo.match(/minHeight: 44/g) || []).length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('O dinheiro gasto é uma soma, não um número escrito', () => {
+  // Estava `1687.4` à mão e os envelopes somam 1387,00 — 300,40 € a mais. O
+  // «Disponível» dava 82,60 € onde a referência 05-dinheiro.png mostra
+  // 383,00 €, e o cabeçalho do Início repetia o erro em todos os ecrãs.
+  const { ENV_BASE } = require('../src/data.js');
+
+  it('não sobrou nenhum total de despesa escrito à mão', () => {
+    expect(semComentarios(read('src/store.jsx'))).not.toMatch(/1687\.4/);
+  });
+
+  it('o gasto deriva dos envelopes', () => {
+    expect(read('src/store.jsx')).toMatch(/const spent = envelopes\.reduce/);
+  });
+
+  it('as sementes somam o que a referência mostra', () => {
+    expect(ENV_BASE.reduce((a, e) => a + e.used, 0)).toBe(1387);
+    expect(ENV_BASE.reduce((a, e) => a + e.limit, 0)).toBe(1770);
+    // 1770 − 1387 = 383,00 €, o «Disponível» da referência
+    expect(ENV_BASE.reduce((a, e) => a + e.limit - e.used, 0)).toBe(383);
+  });
+});
+
 describe('INVARIANTE #3 — a visibilidade da saúde não é do ecrã', () => {
   // O «Precisa de Si» passou a mostrar receitas e consultas. São dados de
   // saúde, e uma linha dessas no Início do membro errado é a fuga exacta que

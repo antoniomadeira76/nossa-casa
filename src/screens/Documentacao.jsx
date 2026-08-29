@@ -22,7 +22,7 @@ export default function Documentacao({ t, onClose }) {
   });
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: S.xl }}>
+    <>
       <View style={{ gap: S.md }}>
         <Text style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: '500', color: t.text2 }}>
           Registo de Alterações
@@ -60,11 +60,6 @@ export default function Documentacao({ t, onClose }) {
           ))
       )}
 
-      <Pressable onPress={onClose} style={{ padding: S.md }}>
-        <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.accent, textAlign: 'center' }}>
-          Fechar
-        </Text>
-      </Pressable>
-    </ScrollView>
+    </>
   );
 }

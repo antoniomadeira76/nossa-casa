@@ -8,12 +8,13 @@ import { StoreProvider, useStore } from './src/store';
 import { buildTheme, onChrome, chromeLine, S, R, FONT, elev } from './src/theme';
 import Icon, { Marca } from './src/Icon';
 import { MEMBERS } from './src/data';
-import { EUR, dayLabel, TODAY_KEY } from './src/format';
+import { EUR, dayLabel, TODAY_KEY, warrantyDaysLeft } from './src/format';
 import Login from './src/screens/Login';
 import Inicio from './src/screens/Inicio';
 import Dinheiro from './src/screens/Dinheiro';
 import Tarefas from './src/screens/Tarefas';
 import Compras from './src/screens/Compras';
+import ModoCompras from './src/screens/ModoCompras';
 import Agenda from './src/screens/Agenda';
 import Equipamentos from './src/screens/Equipamentos';
 import Saude from './src/screens/Saude';
@@ -33,7 +34,8 @@ const TABS = [
 ];
 
 function Shell() {
-  const { s, set, importGoogleEvents, remaining, allEvents, allTasks } = useStore();
+  const { s, set, importGoogleEvents, remaining, allEvents, allTasks,
+          canSeeHealth, healthOf, docsOf, allEquip } = useStore();
   const sysDark = useColorScheme() === 'dark';
   const [user, setUser] = useState(null);      // nome do membro ligado
   const [tab, setTab] = useState('inicio');
@@ -44,6 +46,7 @@ function Shell() {
   const [equip, setEquip] = useState(false);
   const [gestao, setGestao] = useState(false);
   const [doc, setDoc] = useState(false);
+  const [loja, setLoja] = useState(false);   // modo de compras na loja
   const [googleImport, setGoogleImport] = useState(false);
   const [booting, setBooting] = useState(true);
   const [fontsReady, setFontsReady] = useState(false);
@@ -124,6 +127,56 @@ function Shell() {
     .filter(e => e.day === TODAY_KEY && (e.shared || e.owner === user)).length;
   const tarefasHoje = allTasks().filter(x => x.today).length;
 
+  // ── Vistas de ecrã inteiro ───────────────────────────────────────────────
+  // Saúde, Equipamentos, Gestão e Documentação abriam como cartões centrados
+  // com véu, e o cabeçalho da app ficava cortado a meio por trás — via-se
+  // «82,60 €» partido ao meio. Nas referências (11, 13, 15, 17) são vistas de
+  // ecrã inteiro com cabeçalho PRÓPRIO — seta de voltar, ícone, título e
+  // contagem — e o rodapé da app por baixo, intacto, com o separador aceso.
+  //
+  // Não é uma excepção ao INVARIANTE #1: continua a haver cabeçalho e rodapé
+  // em todas as janelas. O que muda é o conteúdo do cabeçalho.
+  const contas = (n, s1, s2) => `${n} ${n === 1 ? s1 : s2}`;
+  const vistas = {
+    saude: {
+      icon: 'heartPulse', titulo: 'Saúde da Família', fechar: () => setSaude(false),
+      sub: () => {
+        const membros = Object.keys(MEMBERS).filter(m => canSeeHealth(m, user));
+        const c = membros.reduce((a, m) => a + healthOf(m, user).length, 0);
+        const d = membros.reduce((a, m) => a + docsOf(m, user).length, 0);
+        return `${contas(c, 'consulta', 'consultas')} · ${contas(d, 'documento', 'documentos')}`;
+      },
+      render: () => <Saude t={t} user={user} onClose={() => setSaude(false)} />,
+    },
+    equip: {
+      icon: 'houseGear', titulo: 'Equipamentos da Casa', fechar: () => setEquip(false),
+      sub: () => {
+        const eq = allEquip();
+        const emGarantia = eq.filter(e => warrantyDaysLeft(e) >= 0).length;
+        return `${contas(eq.length, 'equipamento', 'equipamentos')} · ${emGarantia} em garantia`;
+      },
+      render: () => <Equipamentos t={t} user={user} onClose={() => setEquip(false)} />,
+    },
+    gestao: {
+      icon: 'sliders', titulo: 'Gestão da Casa', fechar: () => setGestao(false),
+      sub: () => `${user} · ${s.roles[user] === 'admin' ? 'administração' : 'adulto'}`,
+      render: () => <Gestao t={t} user={user} onClose={() => setGestao(false)} />,
+    },
+    doc: {
+      icon: 'fileText', titulo: 'Documentação', fechar: () => setDoc(false),
+      sub: () => 'O que a app faz, versão a versão',
+      render: () => <Documentacao t={t} onClose={() => setDoc(false)} />,
+    },
+    loja: {
+      icon: 'fileDone', titulo: 'Modo Compras', fechar: () => setLoja(false),
+      sub: () => `${s.shopPlan.who} · ${s.stores[s.shopPlan.store]} · ${s.shopPlan.time}`,
+      render: () => <ModoCompras t={t} user={user} onClose={() => setLoja(false)} />,
+    },
+  };
+  const vistaAberta = saude ? 'saude' : equip ? 'equip' : gestao ? 'gestao'
+    : doc ? 'doc' : loja ? 'loja' : null;
+  const V = vistaAberta ? vistas[vistaAberta] : null;
+
   // ⚠ INVARIANTE — ver CLAUDE.md
   // Cabeçalho e rodapé aparecem em TODAS as janelas. A raiz é uma coluna flex
   // com três filhos e a condição do rodapé não leva nada além de "estar na app":
@@ -150,7 +203,24 @@ function Shell() {
         <Marca size={120} mono opacity={0.10}
           style={{ position: 'absolute', top: insets.top + 4, right: -24 }} />
 
-        {isHome ? (
+        {V ? (
+          // Vista de ecrã inteiro: o cabeçalho passa a ser o dela.
+          <>
+            <Pressable onPress={V.fechar} accessibilityRole="button" accessibilityLabel="Voltar"
+              style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center',
+                marginLeft: -10 }}>
+              <Icon name="arrowLeft" size={24} color="#FFFFFF" />
+            </Pressable>
+            <Icon name={V.icon} size={26} color="#FFFFFF" />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 20,
+                fontWeight: '500', color: '#FFFFFF', letterSpacing: 0.25 }}>{V.titulo}</Text>
+              <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 12, color: onC }}>
+                {V.sub()}
+              </Text>
+            </View>
+          </>
+        ) : isHome ? (
           // Início: saudação, data, e os três números — dentro do cabeçalho,
           // como em docs/referencia/04-inicio.png. Estavam no conteúdo, numa
           // linha de texto, e a saudação aparecia duas vezes.
@@ -209,53 +279,19 @@ function Shell() {
         </Pressable>
       </View>
 
-      {/* área de scroll com modals overlay */}
-      <View style={{ flex: 1, position: 'relative' }}>
+      {/* área de scroll — o mesmo sítio para os separadores e para as vistas
+          de ecrã inteiro. Antes as vistas eram um cartão centrado com véu por
+          cima disto, e o cabeçalho ficava cortado a meio por trás. */}
+      <View style={{ flex: 1, minHeight: 0 }}>
         <ScrollView style={{ flex: 1, minHeight: 0 }}
           contentContainerStyle={{ padding: 16, gap: S.xl, paddingBottom: S.xl }}>
-          {tab === 'inicio'
-            ? <Inicio t={t} user={user} go={setTab}
-                onSaude={() => setSaude(true)} onEquip={() => setEquip(true)} />
-            : <Screen t={t} user={user} go={setTab} onEquip={() => setEquip(true)} />}
+          {V ? V.render()
+            : tab === 'inicio'
+              ? <Inicio t={t} user={user} go={setTab}
+                  onSaude={() => setSaude(true)} onEquip={() => setEquip(true)} />
+              : <Screen t={t} user={user} go={setTab} onEquip={() => setEquip(true)}
+                  onModoCompras={() => setLoja(true)} />}
         </ScrollView>
-
-        {/* Modals como overlay com scrim semi-transparente */}
-        {(saude || equip || gestao || doc) && (
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
-            {saude && (
-              <View style={{ maxHeight: '85vh', width: '100%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden', position: 'relative' }}>
-                <Pressable onPress={() => setSaude(false)} style={{ position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: t.chrome, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-                  <Icon name="close" size={20} color="#FFFFFF" />
-                </Pressable>
-                <Saude t={t} user={user} onClose={() => setSaude(false)} />
-              </View>
-            )}
-            {equip && (
-              <View style={{ maxHeight: '85vh', width: '100%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden', position: 'relative' }}>
-                <Pressable onPress={() => setEquip(false)} style={{ position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: t.chrome, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-                  <Icon name="close" size={20} color="#FFFFFF" />
-                </Pressable>
-                <Equipamentos t={t} user={user} onClose={() => setEquip(false)} />
-              </View>
-            )}
-            {gestao && (
-              <View style={{ maxHeight: '85vh', width: '100%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden', position: 'relative' }}>
-                <Pressable onPress={() => setGestao(false)} style={{ position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: t.chrome, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-                  <Icon name="close" size={20} color="#FFFFFF" />
-                </Pressable>
-                <Gestao t={t} user={user} onClose={() => setGestao(false)} />
-              </View>
-            )}
-            {doc && (
-              <View style={{ maxHeight: '85vh', width: '100%', maxWidth: 500, backgroundColor: t.page, borderRadius: 12, overflow: 'hidden', position: 'relative' }}>
-                <Pressable onPress={() => setDoc(false)} style={{ position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: t.chrome, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-                  <Icon name="close" size={20} color="#FFFFFF" />
-                </Pressable>
-                <Documentacao t={t} onClose={() => setDoc(false)} />
-              </View>
-            )}
-          </View>
-        )}
       </View>
 
       {/* rodapé — último filho da raiz, sempre (INVARIANTE #1) */}
