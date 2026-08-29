@@ -95,6 +95,33 @@ await criar({
   });
 }
 
+// ── Entrar com Google ────────────────────────────────────────────────────────
+// O PocketBase trata do OAuth2; nós só lhe damos as credenciais. Elas vêm do
+// ambiente e nunca do código — ver .env.example e docs/GOOGLE_CALENDAR_SETUP.md.
+//
+// Repare no que NÃO se ativa: `createRule` de `membros` continua nulo, portanto
+// entrar com Google não cria conta. Num app familiar não há inscrição livre —
+// um administrador acrescenta o membro com o e-mail, e o Google só confirma que
+// é mesmo essa pessoa. Quem chegar sem convite é recusado, e é o que se quer.
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  const c = (await pb.collections.getFullList()).find(x => x.name === 'membros');
+  await pb.collections.update(c.id, {
+    oauth2: {
+      enabled: true,
+      providers: [{
+        name: 'google',
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      }],
+      // O nome vem do perfil Google; o resto é da casa e não se deixa mapear.
+      mappedFields: { name: 'nome' },
+    },
+  });
+  console.log('OAuth do Google: ativado');
+} else {
+  console.log('OAuth do Google: sem credenciais no ambiente — fica desativado');
+}
+
 await pb.collections.update(ids.casas, {
   listRule: 'id = @request.auth.casa',
   viewRule: 'id = @request.auth.casa',

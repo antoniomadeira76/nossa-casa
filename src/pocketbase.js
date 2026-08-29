@@ -60,6 +60,9 @@ export const pb = new Proxy({}, { get: (_, p) => { const c = obter(); return c ?
 
 const semLigacao = () => Promise.reject(new Error('Servidor não configurado.'));
 
+// Token de acesso da Google, só em memória — ver auth.entrarComGoogle.
+let tokenGoogle = null;
+
 // ─── Sessão ──────────────────────────────────────────────────────────────────
 
 export const auth = {
@@ -82,7 +85,30 @@ export const auth = {
     ? pb.collection('membros').update(membroId, { password: pin, passwordConfirm: pin })
     : semLigacao()),
 
-  sair: () => { if (estaLigado()) pb.authStore.clear(); },
+  // Entrar com Google. O PocketBase abre a janela, troca o código e devolve a
+  // sessão — nada disto passa por aqui, e a chave secreta nunca sai do servidor.
+  //
+  // Não cria conta: `membros` não tem regra de criação, portanto quem não
+  // tiver sido acrescentado à casa por um administrador é recusado. Numa app
+  // familiar é essa a porta certa.
+  //
+  // Os scopes do Calendar pedem-se AQUI e não depois: o token que a Google
+  // devolve traz as permissões que foram pedidas no momento do consentimento.
+  async entrarComGoogle({ calendario = false } = {}) {
+    if (!estaLigado()) return semLigacao();
+    const r = await pb.collection('membros').authWithOAuth2({
+      provider: 'google',
+      scopes: calendario
+        ? ['https://www.googleapis.com/auth/calendar.readonly']
+        : [],
+    });
+    // O token da Google só vem nesta resposta. Guarda-se em memória, não em
+    // disco: é credencial de terceiro e não tem de sobreviver ao fecho da app.
+    tokenGoogle = r.meta && r.meta.accessToken ? r.meta.accessToken : null;
+    return r;
+  },
+
+  sair: () => { if (estaLigado()) { pb.authStore.clear(); tokenGoogle = null; } },
   membro: () => (estaLigado() ? pb.authStore.record : null),
   valida: () => Boolean(estaLigado() && pb.authStore.isValid),
 };
@@ -123,6 +149,62 @@ export const ler = {
   // Ficheiros: o URL é assinado pelo servidor, não construído aqui.
   ficheiro: (registo, campo) => (estaLigado() && registo && registo[campo]
     ? pb.files.getURL(registo, registo[campo]) : null),
+};
+
+// ─── Google Calendar ─────────────────────────────────────────────────────────
+//
+// Lê os eventos reais da agenda de quem entrou. Fala diretamente com a API da
+// Google usando o token que veio no login — o PocketBase não serve de
+// intermediário aqui, e portanto os eventos nunca passam pelo nosso servidor
+// enquanto não forem importados de propósito.
+//
+// ⚠ Só funciona se `entrarComGoogle({ calendario: true })` tiver sido usado:
+// o token traz as permissões pedidas no consentimento, não as que se queiram
+// mais tarde.
+
+const CAL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
+
+export const google = {
+  disponivel: () => Boolean(tokenGoogle),
+
+  // Os eventos dos próximos `dias`, já na forma que a app usa.
+  async eventos({ dias = 30, max = 50 } = {}) {
+    if (!tokenGoogle) throw new Error('Entre com o Google e autorize a agenda.');
+    const agora = new Date();
+    const ate = new Date(agora.getTime() + dias * 86400000);
+    const q = new URLSearchParams({
+      timeMin: agora.toISOString(), timeMax: ate.toISOString(),
+      singleEvents: 'true', orderBy: 'startTime', maxResults: String(max),
+    });
+    const r = await fetch(`${CAL}?${q}`, { headers: { Authorization: `Bearer ${tokenGoogle}` } });
+    if (!r.ok) {
+      // 401 é o token expirado ou sem o scope da agenda — dizer isso, e não
+      // «algo correu mal», é a diferença entre o utilizador saber o que fazer.
+      if (r.status === 401 || r.status === 403) {
+        throw new Error('A autorização da agenda expirou. Entre com o Google outra vez.');
+      }
+      throw new Error(`A Google respondeu ${r.status}.`);
+    }
+    const { items = [] } = await r.json();
+    return items.filter(e => e.status !== 'cancelled').map(traduzirEvento);
+  },
+};
+
+// Um evento da Google na forma que os ecrãs esperam. `recorrente` importa: o
+// desenho mostra-os na lista mas desmarcados por omissão.
+const traduzirEvento = (e) => {
+  const inicio = e.start || {};
+  const dia = inicio.dateTime ? inicio.dateTime.slice(0, 10) : inicio.date;
+  const hora = inicio.dateTime ? inicio.dateTime.slice(11, 16) : null;
+  return {
+    id: e.id,
+    origem: 'google_calendar',
+    titulo: e.summary || '(sem título)',
+    dia, hora,
+    local: e.location || '',
+    // recurringEventId aparece nas ocorrências de uma série
+    recorrente: Boolean(e.recurringEventId),
+  };
 };
 
 // ─── Fila de escritas ────────────────────────────────────────────────────────

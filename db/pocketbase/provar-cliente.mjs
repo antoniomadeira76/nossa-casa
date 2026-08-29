@@ -2,7 +2,7 @@
 // É a diferença entre «o cliente está escrito» e «o cliente funciona».
 //   node db/pocketbase/provar-cliente.mjs
 import PocketBase from 'pocketbase';
-import { configurar, estaLigado, auth, ler, escrever } from '../../src/pocketbase.js';
+import { configurar, estaLigado, auth, ler, escrever, google } from '../../src/pocketbase.js';
 
 const URL = process.env.PB_URL || 'http://127.0.0.1:8095';
 
@@ -129,6 +129,28 @@ await prova('o adulto lê a ficha da criança', async () => {
   igual(f.anexos.length, 1);
 });
 await prova('e a sua própria', async () => igual((await ler.saude(rita.id)).episodios.length, 1));
+
+console.log('\n── Google: o que se pode provar sem credenciais ──');
+// O que precisa da Google a sério fica por verificar até haver um projeto no
+// Google Cloud. O que NÃO precisa é o comportamento quando ela falta — e é aí
+// que uma app costuma rebentar em vez de explicar.
+await prova('o servidor anuncia se o OAuth está ligado', async () => {
+  const m = await admin.collection('membros').listAuthMethods();
+  igual(typeof m.oauth2.enabled, 'boolean');
+  if (m.oauth2.enabled && !m.oauth2.providers.some(p => p.name === 'google')) {
+    throw new Error('oauth2 ligado mas sem o provedor google');
+  }
+});
+await prova('sem autorização da agenda, google.disponivel() é falso', () =>
+  igual(google.disponivel(), false));
+await prova('e pedir eventos explica o que fazer, em vez de rebentar', async () => {
+  try { await google.eventos(); throw new Error('devia ter recusado'); }
+  catch (e) { igual(e.message, 'Entre com o Google e autorize a agenda.'); }
+});
+await prova('entrar com Google sem provedor configurado dá erro claro', async () => {
+  try { await auth.entrarComGoogle(); throw new Error('devia ter recusado'); }
+  catch (e) { if (/devia ter recusado/.test(e.message)) throw e; }
+});
 
 console.log(`\n${ok} provas passaram, ${mau} falharam.`);
 process.exit(mau ? 1 : 0);
