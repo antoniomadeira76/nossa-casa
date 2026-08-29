@@ -58,9 +58,14 @@ caminho `{casa_id}/{tipo}/{uuid}.{ext}`.
 
 ## As três regras que o esquema impõe
 
-**1. Toda a tabela tem `casa_id`.** Sem exceção. É o primeiro termo de todas as
-políticas, e a razão pela qual uma consulta sem filtro devolve zero linhas em vez
-das de outra família.
+**1. Nenhuma tabela é legível sem um vínculo à sessão.** É a razão pela qual uma
+consulta sem filtro devolve zero linhas em vez das de outra família.
+
+Quase sempre esse vínculo é `casa_id`, e é o primeiro termo da política. Mas
+dizer «toda a tabela tem `casa_id`, sem exceção» era falso em dois sítios: a
+tabela `casas` **é** a casa, e as preferências prendem-se ao membro — que é mais
+apertado, não menos. Um invariante com exceções por explicar convida à seguinte;
+formulado assim cobre tudo, e é verificável por máquina.
 
 **2. Saldos são vistas, não colunas.** `v_cofre_saldo`, `v_envelope_limite`,
 `v_envelope_gasto`, `v_acerto_saldo`, `v_pontos_por_pagar`. Se escrever um saldo

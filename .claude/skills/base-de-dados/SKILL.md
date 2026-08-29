@@ -46,8 +46,15 @@ esperança.
    reconstrói. Uma migração que nunca foi reproduzida não é uma migração.
 5. Corra as provas.
 
-Toda a coleção leva `casa` e a regra começa por `casa = @request.auth.casa`. Sem
-isso, uma consulta sem filtro devolve as linhas de outra família.
+**A regra tem de se prender a `@request.auth`.** É o que impede uma consulta sem
+filtro de devolver as linhas de outra família, e há duas provas que o verificam
+em todas as coleções — nenhuma regra aberta, nenhuma solta.
+
+Quase sempre o vínculo é `casa = @request.auth.casa`. Mas nem sempre: `casas` é
+a própria casa (`id = @request.auth.casa`) e `preferencias` prende-se ao membro
+(`membro = @request.auth.id`), que é mais apertado. Não force um `casa`
+redundante só para a coleção parecer com as outras — o que conta é o vínculo
+existir, não ter um nome em particular.
 
 ## Três coisas que custaram tempo a descobrir
 

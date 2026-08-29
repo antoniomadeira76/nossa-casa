@@ -137,6 +137,33 @@ await prova('uma despesa não se edita — anula-se', () =>
     await cRita.collection('despesas').update(d.id, { valor: 1 });
   }));
 
+console.log('\n── nenhuma coleção fica sem vínculo à sessão ──');
+// O db/postgres/README.md dizia «toda a tabela tem casa_id, sem exceção». Não
+// era verdade — `casas` é a própria casa, e `preferencias` prende-se ao membro,
+// que é mais apertado. O que se verifica sem exceção é isto: nenhuma regra está
+// aberta, e cada uma prende-se a alguma coisa que vem da sessão.
+await prova('nenhuma regra aberta a quem não tem sessão', async () => {
+  const cs = (await admin.collections.getFullList())
+    .filter(c => !c.name.startsWith('_') && c.name !== 'users');
+  const abertas = [];
+  for (const c of cs) {
+    for (const [k, v] of Object.entries({
+      list: c.listRule, view: c.viewRule, create: c.createRule,
+      update: c.updateRule, delete: c.deleteRule,
+    })) {
+      // '' = qualquer um, mesmo sem autenticação. null = só superutilizador.
+      if (v === '') abertas.push(`${c.name}.${k}`);
+    }
+  }
+  igual(abertas.length, 0, abertas.join(', '));
+});
+await prova('toda a coleção legível se prende a @request.auth', async () => {
+  const cs = (await admin.collections.getFullList())
+    .filter(c => !c.name.startsWith('_') && c.name !== 'users');
+  const soltas = cs.filter(c => c.listRule !== null && !c.listRule.includes('@request.auth'));
+  igual(soltas.length, 0, soltas.map(c => c.name).join(', '));
+});
+
 console.log('\n── as vistas: o saldo é uma soma do servidor ──');
 await prova('o cofre soma os movimentos, e não há campo que o escreva', async () => {
   const antes = (await cRita.collection('v_cofre_saldo').getFullList()).find(v => v.membro === leo.id);
