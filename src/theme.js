@@ -76,3 +76,15 @@ export const onChrome = (chromeHex, target = 0.65) => {
   const a = Math.min(0.92, Math.max(target, 0.55 + L * 1.6));
   return `rgba(255,255,255,${a.toFixed(2)})`;
 };
+
+// O mesmo princípio para um traço sobre o cabeçalho — separadores, réguas.
+// onChrome não serve: tem um piso de 0,55 porque é para texto, e um traço a
+// 55 % de branco é uma barra, não um separador. Mas o alfa continua a ter de
+// subir com a luminância, senão some-se nos esquemas claros.
+export const chromeLine = (chromeHex) => {
+  const h = (i) => parseInt(chromeHex.slice(i, i + 2), 16) / 255;
+  const lin = (v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+  const L = 0.2126 * lin(h(1)) + 0.7152 * lin(h(3)) + 0.0722 * lin(h(5));
+  const a = Math.min(0.55, 0.18 + L * 1.1);
+  return `rgba(255,255,255,${a.toFixed(2)})`;
+};

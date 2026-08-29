@@ -14,126 +14,13 @@ const ROLE_LABEL = (r, name) => {
   return r === 'admin' ? (fem ? 'administradora' : 'administrador') : r === 'adulto' ? 'adulto' : 'criança';
 };
 
-export default function Perfil({ t, user, onClose, onSignOut }) {
+export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, onGestao }) {
   const st = useStore();
-  const { s, set, isAdmin, canChangeRole, setRole, setPin, resetDemo, startBlank } = st;
-  const [tab, setTab] = useState(null);         // null | gestao | membro
-  const [member, setMember] = useState(null);
-  const [pin, setPin_] = useState('');
-  const [pinErr, setPinErr] = useState(null);
+  const { s, set, isAdmin, resetDemo, startBlank } = st;
 
   const admin = isAdmin(user);
   const mode = s.themeByUser[user] || 'claro';
   const scheme = s.schemeByUser[user] ?? 0;
-
-  if (tab === 'membro' && member) {
-    const r = s.roles[member];
-    const hasPin = !!s.pins[member];
-    return (
-      <Sheet t={t} title={member} sub={`${ROLE_LABEL(r, member)}${MEMBERS[member].email ? ' · ' + MEMBERS[member].email : ''}`}
-        onClose={() => { setTab('gestao'); setMember(null); setPin_(''); setPinErr(null); }}>
-        <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
-          <Row t={t} title="Papel na casa" sub={ROLE_LABEL(r, member)} last={!MEMBERS[member].kid}
-            right={<Pill label={ROLE_LABEL(r, member)} fg={t.text3} bg={t.subtle} border={t.border} />} />
-          {MEMBERS[member].kid ? (
-            <Row t={t} title="PIN de entrada" last
-              sub={hasPin ? 'PIN definido' : 'Ainda sem PIN — não consegue entrar'} />
-          ) : null}
-        </Card>
-
-        {admin && r === 'crianca' ? (
-          <View style={{ gap: S.md }}>
-            <Label t={t}>Definir PIN de 4 dígitos</Label>
-            <TextInput value={pin} onChangeText={(v) => { setPin_(v.replace(/\D/g, '').slice(0, 4)); setPinErr(null); }}
-              keyboardType="number-pad" maxLength={4} secureTextEntry
-              accessibilityLabel="PIN de 4 dígitos"
-              style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, borderColor: pinErr ? t.state.err : t.border,
-                paddingHorizontal: 14, fontFamily: FONT.display, fontSize: 18, color: t.text1, letterSpacing: 8 }} />
-            {pinErr ? <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.errDeep }}>{pinErr}</Text> : null}
-            <Primary t={t} label={hasPin ? 'Alterar PIN' : 'Definir PIN'} disabled={pin.length !== 4}
-              onPress={() => { const e = setPin(member, pin); if (e) setPinErr(e); else { setPin_(''); setPinErr(null); } }} />
-            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
-              Não pode ter os quatro dígitos iguais, ser uma sequência, nem repetir o PIN de outro membro.
-            </Text>
-          </View>
-        ) : null}
-
-        {admin && r !== 'crianca' ? (
-          <View style={{ gap: S.md }}>
-            <Label t={t}>Papel</Label>
-            <Segmented t={t} small value={r}
-              options={[{ value: 'adulto', label: 'Adulto' }, { value: 'admin', label: 'Administração' }]}
-              onChange={(v) => canChangeRole(r, v) && setRole(member, v)} />
-            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
-              Um adulto não pode voltar a ser criança, e a casa não pode ficar sem administração.
-            </Text>
-          </View>
-        ) : null}
-      </Sheet>
-    );
-  }
-
-  if (tab === 'gestao') {
-    return (
-      <Sheet t={t} title="Gestão da Casa" sub={`${user} · ${ROLE_LABEL(s.roles[user], user)}`}
-        onClose={() => setTab(null)}>
-        <View style={{ gap: S.md }}>
-          <Label t={t}>Semanada</Label>
-          <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>Quanto vale um ponto</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-            <Tap label="Menos 0,05 €" onPress={() => set(x => ({ pointValue: Math.max(0.01, +(x.pointValue - 0.05).toFixed(2)) }))}
-              style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row }}>
-              <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.accent }}>−</Text>
-            </Tap>
-            <Text style={{ flex: 1, textAlign: 'center', fontFamily: FONT.display, fontSize: 18, color: t.text2 }}>
-              {EUR(s.pointValue)}
-            </Text>
-            <Tap label="Mais 0,05 €" onPress={() => set(x => ({ pointValue: Math.min(5, +(x.pointValue + 0.05).toFixed(2)) }))}
-              style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row }}>
-              <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.accent }}>+</Text>
-            </Tap>
-          </View>
-          <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
-            Os {st.kidPts['Léo'] - s.paidPts['Léo']} pontos por pagar do Léo valem {EUR((st.kidPts['Léo'] - s.paidPts['Léo']) * s.pointValue)}.
-          </Text>
-
-          <Label t={t}>Pagar às</Label>
-          <Segmented t={t} small value={s.payDay}
-            options={['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map((d, i) => ({ value: i, label: d }))}
-            onChange={(v) => set({ payDay: v })} />
-        </View>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: t.subtle,
-          borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14 }}>
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>Dividir a meias</Text>
-            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
-              {s.splitHalf ? 'Cada despesa partilhada divide-se a meias entre os dois adultos.'
-                : 'Cada despesa fica a cargo de quem paga.'}
-            </Text>
-          </View>
-          <Toggle t={t} on={s.splitHalf} label="Dividir a meias"
-            onPress={() => set(x => ({ splitHalf: !x.splitHalf }))} />
-        </View>
-
-        <View style={{ gap: S.md }}>
-          <Label t={t}>Membros e PIN</Label>
-          <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
-            {Object.keys(MEMBERS).map((n, i, arr) => (
-              <Row key={n} t={t} last={i === arr.length - 1}
-                title={n}
-                sub={MEMBERS[n].kid ? (s.pins[n] ? 'PIN definido' : 'sem PIN') : MEMBERS[n].email}
-                onPress={() => { setMember(n); setTab('membro'); }}
-                right={<View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-                  <Pill label={ROLE_LABEL(s.roles[n], n)} fg={t.text3} bg={t.subtle} border={t.border} />
-                  <Icon name="caretRight" size={18} color={t.text3} />
-                </View>} />
-            ))}
-          </Card>
-        </View>
-      </Sheet>
-    );
-  }
 
   return (
     <Sheet t={t} title={`${user} Bengui`} sub={MEMBERS[user].email || ROLE_LABEL(s.roles[user], user)}
@@ -186,13 +73,16 @@ export default function Perfil({ t, user, onClose, onSignOut }) {
       <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
         {admin ? (
           <Row t={t} icon="houseGear" title="Gestão da Casa"
-            sub="Rendimento, envelopes, semanada, membros" onPress={() => setTab('gestao')} />
+            sub="Rendimento, envelopes, semanada, membros"
+            onPress={() => { onClose(); onGestao?.(); }} />
         ) : null}
         <Row t={t} icon="heartPulse" title="Saúde"
-          sub="Consultas, exames e receitas de cada membro" onPress={() => {}} />
+          sub="Consultas, exames e receitas de cada membro"
+          onPress={() => { onClose(); onSaude?.(); }} />
         <Row t={t} icon="lock" title="Guardado neste dispositivo"
           sub="Os dados desta casa não saem daqui" />
-        <Row t={t} icon="fileText" title="Documentação" sub="O que a app faz, versão a versão" onPress={() => {}} last />
+        <Row t={t} icon="fileText" title="Documentação" sub="O que a app faz, versão a versão"
+          onPress={() => { onClose(); onDoc?.(); }} last />
       </Card>
 
       {admin ? (

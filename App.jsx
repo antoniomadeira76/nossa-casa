@@ -5,9 +5,10 @@ import * as Font from 'expo-font';
 import { Roboto_500Medium, Roboto_400Regular } from '@expo-google-fonts/roboto';
 import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { StoreProvider, useStore } from './src/store';
-import { buildTheme, onChrome, S, R, FONT, elev } from './src/theme';
+import { buildTheme, onChrome, chromeLine, S, R, FONT, elev } from './src/theme';
 import Icon, { Marca } from './src/Icon';
 import { MEMBERS } from './src/data';
+import { EUR, dayLabel, TODAY_KEY } from './src/format';
 import Login from './src/screens/Login';
 import Inicio from './src/screens/Inicio';
 import Dinheiro from './src/screens/Dinheiro';
@@ -32,7 +33,7 @@ const TABS = [
 ];
 
 function Shell() {
-  const { s, set, importGoogleEvents } = useStore();
+  const { s, set, importGoogleEvents, remaining, allEvents, allTasks } = useStore();
   const sysDark = useColorScheme() === 'dark';
   const [user, setUser] = useState(null);      // nome do membro ligado
   const [tab, setTab] = useState('inicio');
@@ -111,12 +112,17 @@ function Shell() {
   const meta = TABS.find(x => x.key === tab);
   const Screen = { dinheiro: Dinheiro, tarefas: Tarefas, compras: Compras, agenda: Agenda }[tab];
 
-  // Header dinâmico para Início; fixo para outros ecrãs
+  // Header dinâmico para Início; fixo para outros ecrãs.
+  //
+  // A data vem do TODAY da app, não do relógio. O cabeçalho lia `new Date()` e
+  // o conteúdo lia TODAY, portanto a app dizia «Sábado, 29/08» em cima e
+  // «Quinta, 20/08» duas linhas abaixo — contradizia-se sobre que dia era.
   const isHome = tab === 'inicio';
-  const hour = new Date().getHours();
-  const greet = hour < 13 ? 'Bom dia' : hour < 20 ? 'Boa tarde' : 'Boa noite';
-  const today = new Date().toLocaleDateString('pt-PT', { weekday: 'short', day: '2-digit', month: '2-digit' })
-    .replace(/^\w/, c => c.toUpperCase());
+  const greet = 'Bom dia';
+  const today = dayLabel(TODAY_KEY).replace('Hoje · ', '');
+  const eventosHoje = allEvents()
+    .filter(e => e.day === TODAY_KEY && (e.shared || e.owner === user)).length;
+  const tarefasHoje = allTasks().filter(x => x.today).length;
 
   // ⚠ INVARIANTE — ver CLAUDE.md
   // Cabeçalho e rodapé aparecem em TODAS as janelas. A raiz é uma coluna flex
@@ -129,9 +135,15 @@ function Shell() {
     <View style={{ flex: 1, backgroundColor: t.page }}>
       <StatusBar barStyle="light-content" />
 
-      {/* cabeçalho — minHeight garante que nunca colapsa (INVARIANTE #1) */}
+      {/* cabeçalho — minHeight garante que nunca colapsa (INVARIANTE #1)
+          `flex: 0` NÃO serve aqui: o react-native-web traduz isso para
+          `0 1 0%`, ou seja base zero e encolhível, e a caixa fica com a altura
+          do minHeight seja qual for o conteúdo. Com os três números do Início
+          isso cortava 44 px em silêncio, porque há `overflow: hidden`.
+          flexGrow 0 + flexShrink 0 + basis auto é o que se quer dizer. */}
       <View style={{
-        flex: 0, minHeight: 80, backgroundColor: t.chrome, overflow: 'hidden',
+        flexGrow: 0, flexShrink: 0, flexBasis: 'auto',
+        minHeight: 80, backgroundColor: t.chrome, overflow: 'hidden',
         paddingTop: insets.top + 10, paddingBottom: 24, paddingHorizontal: 16,
         flexDirection: 'row', alignItems: 'center', gap: 12, ...elev(3),
       }}>
@@ -139,18 +151,41 @@ function Shell() {
           style={{ position: 'absolute', top: insets.top + 4, right: -24 }} />
 
         {isHome ? (
-          // Header dinâmico para Início — exatamente como no mockup do iPhone
-          <>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={{ fontFamily: FONT.display, fontSize: 24, fontWeight: '600',
-                color: '#FFFFFF', letterSpacing: 0.3 }}>{greet}, {user}</Text>
-              <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '400', color: onC }}>{today}</Text>
+          // Início: saudação, data, e os três números — dentro do cabeçalho,
+          // como em docs/referencia/04-inicio.png. Estavam no conteúdo, numa
+          // linha de texto, e a saudação aparecia duas vezes.
+          <View style={{ flex: 1, gap: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={{ fontFamily: FONT.display, fontSize: 24, fontWeight: '600',
+                  color: '#FFFFFF', letterSpacing: 0.3 }}>{greet}, {user}</Text>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: onC }}>{today}</Text>
+              </View>
+              <Pressable accessibilityRole="button" accessibilityLabel="Pesquisar"
+                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="search" size={24} color="#FFFFFF" />
+              </Pressable>
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Pesquisar"
-              style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginRight: 4 }}>
-              <Icon name="search" size={24} color="#FFFFFF" />
-            </Pressable>
-          </>
+
+            <View style={{ flexDirection: 'row', alignItems: 'stretch' }}>
+              {[['Disponível', EUR(remaining)],
+                ['Tarefas hoje', String(tarefasHoje)],
+                ['Eventos', String(eventosHoje)]].map(([rot, val], i) => (
+                <View key={rot} style={{ flex: 1, flexDirection: 'row' }}>
+                  {/* O separador segue a luminância do cabeçalho, como o
+                      subtítulo. Um alfa fixo desaparecia nos esquemas claros —
+                      é o erro nº 4 da lista do CLAUDE.md. */}
+                  {i > 0 ? <View style={{ width: 1, backgroundColor: chromeLine(t.chrome),
+                    marginRight: 14 }} /> : null}
+                  <View style={{ gap: 3 }}>
+                    <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: onC }}>{rot}</Text>
+                    <Text style={{ fontFamily: FONT.display, fontSize: 19, fontWeight: '500',
+                      color: '#FFFFFF' }}>{val}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
         ) : (
           // Header fixo para outros ecrãs
           <>
@@ -178,7 +213,9 @@ function Shell() {
       <View style={{ flex: 1, position: 'relative' }}>
         <ScrollView style={{ flex: 1, minHeight: 0 }}
           contentContainerStyle={{ padding: 16, gap: S.xl, paddingBottom: S.xl }}>
-          {tab === 'inicio' ? <Inicio t={t} user={user} go={setTab} onSaude={() => setSaude(true)} onEquip={() => setEquip(true)} onGestao={() => setGestao(true)} onDoc={() => setDoc(true)} /> : <Screen t={t} user={user} go={setTab} />}
+          {tab === 'inicio'
+            ? <Inicio t={t} user={user} go={setTab} />
+            : <Screen t={t} user={user} go={setTab} onEquip={() => setEquip(true)} />}
         </ScrollView>
 
         {/* Modals como overlay com scrim semi-transparente */}
@@ -222,7 +259,8 @@ function Shell() {
 
       {/* rodapé — último filho da raiz, sempre (INVARIANTE #1) */}
       <View style={{
-        flex: 0, minHeight: 60, backgroundColor: t.chrome, flexDirection: 'row',
+        flexGrow: 0, flexShrink: 0, flexBasis: 'auto',
+        minHeight: 60, backgroundColor: t.chrome, flexDirection: 'row',
         paddingTop: 6, paddingBottom: Math.max(insets.bottom, 10), paddingHorizontal: 4,
         zIndex: 100,
       }}>
@@ -245,7 +283,9 @@ function Shell() {
       {/* Terminar sessão pede confirmação — é uma ação que não se desfaz
           com um toque, e o perfil fica visível por trás para dar contexto. */}
       {perfil ? <Perfil t={t} user={user} onClose={() => setPerfil(false)}
-        onSignOut={() => setSignOut(true)} /> : null}
+        onSignOut={() => setSignOut(true)}
+        onSaude={() => setSaude(true)} onDoc={() => setDoc(true)}
+        onGestao={() => setGestao(true)} /> : null}
 
       {signOut ? (
         <Confirm t={t} destructive icon="warning"

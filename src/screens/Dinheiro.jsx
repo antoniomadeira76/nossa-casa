@@ -47,7 +47,7 @@ export function NumField({ t, value, onChange, step = 5, min = 0, max = 99999, s
   );
 }
 
-export default function Dinheiro({ t, user }) {
+export default function Dinheiro({ t, user, onEquip }) {
   const st = useStore();
   const { s, set, envelopes, budget, spent, remaining, allEquip, isAdmin } = st;
   const [sheet, setSheet] = useState(null);
@@ -193,7 +193,7 @@ export default function Dinheiro({ t, user }) {
         <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
           <Row t={t} icon="camera" title="Equipamentos registados"
             sub={`${eq.length} equipamentos · ${eqWarn} garantia a expirar · ${eqOut} fora de garantia`}
-            onPress={() => {}} last />
+            onPress={onEquip} last />
         </Card>
       </View>
 

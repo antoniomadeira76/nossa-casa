@@ -3,13 +3,13 @@ import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-nativ
 import { useStore } from '../store';
 import { S, R, FONT, MEMBER_COLOR } from '../theme';
 import { EUR } from '../format';
-import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile } from '../ui';
+import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import { MEMBERS, ENV_BASE } from '../data';
 
 export default function Gestao({ t, user, onClose }) {
-  const { s, set, isAdmin, budget, spent, envelopes, pinError, setPin, canChangeRole, setRole } = useStore();
+  const { s, set, isAdmin, budget, spent, envelopes, pinError, setPin, canChangeRole, setRole, kidPts } = useStore();
   const [tab, setTab] = useState('orcamento');
   const [sheetOpen, setSheetOpen] = useState(null);
   const [modal, setModal] = useState(null);
@@ -64,6 +64,57 @@ export default function Gestao({ t, user, onClose }) {
           </View>
         </View>
       </Card>
+
+      {/* Semanada e divisão das despesas — em docs/referencia/13-gestao-casa.png
+          vivem aqui, não no Perfil. Estavam numa folha separada dentro do Perfil,
+          e a linha «Rendimento, envelopes, semanada, membros» abria só metade
+          disso. Uma casa, um sítio onde se muda as suas regras. */}
+      <View style={{ gap: S.md }}>
+        <SectionTitle t={t}>Semanada</SectionTitle>
+        <Label t={t}>Quanto vale um ponto</Label>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+          <Tap label="Menos 0,05 €" onPress={() => set(x => ({ pointValue: Math.max(0.01, +(x.pointValue - 0.05).toFixed(2)) }))}
+            style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row }}>
+            <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.accent }}>−</Text>
+          </Tap>
+          <Text style={{ flex: 1, textAlign: 'center', fontFamily: FONT.display, fontSize: 18, color: t.text2 }}>
+            {EUR(s.pointValue)}
+          </Text>
+          <Tap label="Mais 0,05 €" onPress={() => set(x => ({ pointValue: Math.min(5, +(x.pointValue + 0.05).toFixed(2)) }))}
+            style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row }}>
+            <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.accent }}>+</Text>
+          </Tap>
+        </View>
+        <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
+          {(() => {
+            const porPagar = Object.keys(MEMBERS)
+              .filter(n => MEMBERS[n].kid)
+              .reduce((a, n) => a + ((kidPts?.[n] || 0) - (s.paidPts?.[n] || 0)), 0);
+            return `Os ${porPagar} pontos por pagar valem ${EUR(porPagar * s.pointValue)}.`;
+          })()}
+        </Text>
+
+        <Label t={t}>Pagar às</Label>
+        <Segmented t={t} small value={s.payDay}
+          options={['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((d, i) => ({ value: i, label: d }))}
+          onChange={(v) => set({ payDay: v })} />
+      </View>
+
+      <View style={{ gap: S.md }}>
+        <SectionTitle t={t}>Divisão das despesas</SectionTitle>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: t.subtle,
+          borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14 }}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>Dividir a meias</Text>
+            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+              {s.splitHalf ? 'Cada despesa partilhada divide-se a meias entre os dois adultos.'
+                : 'Cada despesa fica a cargo de quem paga.'}
+            </Text>
+          </View>
+          <Toggle t={t} on={s.splitHalf} label="Dividir a meias"
+            onPress={() => set(x => ({ splitHalf: !x.splitHalf }))} />
+        </View>
+      </View>
 
       <View style={{ gap: S.md }}>
         <Primary t={t} label="Abrir Mês" icon="calendar" onPress={() => setModal('openMonth')} />

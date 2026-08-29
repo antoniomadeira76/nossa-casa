@@ -12,6 +12,11 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
+// Estes testes descrevem os defeitos pelo nome. Sem isto, a busca por
+// `flex: 0` ou `new Date()` apanhava a própria explicação do erro.
+const semComentarios = (s) => s
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/^\s*\/\/.*$/gm, '');
 const jsxFiles = () => {
   const out = [];
   const walk = (dir) => {
@@ -64,6 +69,104 @@ describe('Contratos dos componentes partilhados', () => {
     expect(choice).toMatch(/minHeight: 44/);
     expect(choice).toMatch(/t\.accent/);          // cor de ação lida do tema
     expect(choice).not.toMatch(/#[0-9a-fA-F]{6}(?!')/); // sem literais de cor de ação
+  });
+});
+
+describe('INVARIANTE #1 — o cabeçalho e o rodapé cabem no que mostram', () => {
+  // O CLAUDE.md conta três quebras deste invariante, todas por o rodapé sair
+  // da coluna flex. Esta é a quarta variante, e é silenciosa: o cabeçalho
+  // continuou no sítio mas encolheu.
+  //
+  // `flex: 0` parece dizer «não cresces nem encolhes». O react-native-web
+  // traduz para `0 1 0%` — base zero e ENCOLHÍVEL — portanto a caixa fica com
+  // a altura do minHeight independentemente do conteúdo. Com os três números
+  // do Início, o cabeçalho precisava de 135 px, tinha 80, e havia
+  // `overflow: 'hidden'` a esconder a diferença. Ninguém via um erro; via-se
+  // uma saudação cortada ao meio.
+  const app = semComentarios(read('App.jsx'));
+
+  it('nem o cabeçalho nem o rodapé usam o atalho `flex: 0`', () => {
+    const linhas = app.split('\n')
+      .map((l, i) => [i + 1, l])
+      .filter(([, l]) => /\bflex:\s*0\b/.test(l));
+    expect(linhas.map(([n, l]) => `${n}: ${l.trim()}`)).toEqual([]);
+  });
+
+  it('as duas caixas fixas declaram flexShrink 0, para caberem no conteúdo', () => {
+    const fixas = app.match(/flexGrow:\s*0,\s*flexShrink:\s*0,\s*flexBasis:\s*'auto'/g) || [];
+    expect(fixas.length).toBe(2);   // cabeçalho e rodapé
+  });
+
+  it('o rodapé continua a ser o último filho da raiz', () => {
+    const raiz = app.slice(app.indexOf('backgroundColor: t.page'));
+    const rodape = raiz.indexOf('minHeight: 60');
+    const scroll = raiz.indexOf('<ScrollView');
+    expect(scroll).toBeGreaterThan(-1);
+    expect(rodape).toBeGreaterThan(scroll);
+  });
+});
+
+describe('Início — alinhado com 04-inicio.png', () => {
+  const inicio = read('src/screens/Inicio.jsx');
+  const app = semComentarios(read('App.jsx'));
+
+  // A saudação estava nos dois sítios: o cabeçalho do App.jsx e o conteúdo do
+  // Inicio.jsx. A app cumprimentava duas vezes, e os números («2 eventos e 3
+  // tarefas por concluir») eram uma linha de texto no conteúdo em vez das três
+  // caixas do cabeçalho.
+  it('a saudação existe uma vez só, no cabeçalho', () => {
+    expect(app).toMatch(/\{greet\}, \{user\}/);
+    expect(inicio).not.toMatch(/\{greet\}/);
+  });
+
+  it('os três números estão no cabeçalho', () => {
+    for (const rot of ['Disponível', 'Tarefas hoje', 'Eventos']) {
+      expect(app).toContain(rot);
+    }
+  });
+
+  // O cabeçalho lia `new Date()` e o conteúdo lia TODAY_KEY, portanto a app
+  // dizia «Sábado, 29/08» em cima e «Quinta, 20/08» duas linhas abaixo.
+  it('a data vem do TODAY da app, não do relógio da máquina', () => {
+    expect(app).not.toMatch(/new Date\(\)/);
+    expect(app).toMatch(/dayLabel\(TODAY_KEY\)/);
+  });
+});
+
+describe('Nenhum ecrã fica sem entrada', () => {
+  // Os quatro botões do Início (Saúde/Equip./Gestão/Docs) não estão na
+  // referência e saíram. Mas as linhas do Perfil que os deviam substituir
+  // tinham `onPress={() => {}}` — não faziam nada. Removê-los sem ligar isto
+  // teria deixado três ecrãs inteiros inalcançáveis, sem erro nenhum.
+  const perfil = read('src/screens/Perfil.jsx');
+  const dinheiro = read('src/screens/Dinheiro.jsx');
+
+  it('nenhuma linha do Perfil tem um handler vazio', () => {
+    expect(perfil).not.toMatch(/onPress=\{\(\)\s*=>\s*\{\}\}/);
+  });
+
+  it('a linha de equipamentos do Dinheiro leva a algum lado', () => {
+    expect(dinheiro).not.toMatch(/onPress=\{\(\)\s*=>\s*\{\}\}/);
+    expect(dinheiro).toMatch(/onPress=\{onEquip\}/);
+  });
+
+  it('o Perfil recebe as três saídas do App', () => {
+    const app = read('App.jsx');
+    for (const p of ['onSaude', 'onDoc', 'onGestao']) {
+      expect(app).toMatch(new RegExp(`${p}=\\{\\(\\) => set`));
+      expect(perfil).toContain(p);
+    }
+  });
+
+  // A Gestão vivia em dois sítios: uma folha dentro do Perfil (valor do ponto,
+  // dia de pagamento, dividir a meias) e o Gestao.jsx (rendimento, envelopes,
+  // membros). A linha prometia as quatro coisas e abria só metade.
+  it('as definições da casa estão todas no Gestao.jsx', () => {
+    const gestao = read('src/screens/Gestao.jsx');
+    for (const chave of ['pointValue', 'payDay', 'splitHalf']) {
+      expect(gestao).toContain(chave);
+      expect(perfil).not.toContain(chave);
+    }
   });
 });
 

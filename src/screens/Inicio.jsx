@@ -7,7 +7,7 @@ import { MEMBERS } from '../data';
 import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager } from '../ui';
 import Icon from '../Icon';
 
-export default function Inicio({ t, user, go, onSaude, onEquip, onGestao, onDoc }) {
+export default function Inicio({ t, user, go }) {
   const st = useStore();
   const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring } = st;
 
@@ -41,13 +41,24 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onGestao, onDoc 
 
   return (
     <>
-      <View style={{ gap: S.md }}>
-        <Text style={{ fontFamily: FONT.display, fontSize: 28, fontWeight: '500', color: t.text1 }}>
-          {greet}, {user}
-        </Text>
-        <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-          {dayLabel(TODAY_KEY).replace('Hoje · ', '')} · {today.length} eventos e {overdue.length} tarefas por concluir
-        </Text>
+      {/* A saudação, a data e os três números vivem no cabeçalho — ver
+          docs/referencia/04-inicio.png. Estavam aqui também, e a app cumprimentava
+          duas vezes. Aqui ficam os dois atalhos que a referência mostra. */}
+      <View style={{ flexDirection: 'row', gap: S.md }}>
+        {[['compras', 'Compras', 'fileDone'], ['tarefas', 'Tarefas', 'checkSquare']].map(([alvo, rotulo, icone]) => (
+          <Pressable key={alvo} onPress={() => go(alvo)}
+            accessibilityRole="button" accessibilityLabel={rotulo}
+            style={({ pressed }) => ({
+              flex: 1, minHeight: 52, borderRadius: R.card, borderWidth: 1,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.md,
+              backgroundColor: pressed ? t.card : t.subtle, borderColor: t.border,
+            })}>
+            <Icon name={icone} size={20} color={t.accent} />
+            <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '600', color: t.accent }}>
+              {rotulo}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       {needs.length ? (
@@ -148,35 +159,6 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onGestao, onDoc 
           : `O Tomás deve à Rita ${EUR(settleBase)} de despesas partilhadas.`}
       </Tile>
 
-      <View style={{ flexDirection: 'row', gap: S.md, flexWrap: 'wrap' }}>
-        <Pressable onPress={onSaude}
-          style={{ flex: 1, minWidth: 140, minHeight: 48, backgroundColor: t.card, borderRadius: R.row,
-            borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center', gap: S.sm }}>
-          <Icon name="heartPulse" size={18} color={t.text2} />
-          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text2, textAlign: 'center' }}>Saúde</Text>
-        </Pressable>
-
-        <Pressable onPress={onEquip}
-          style={{ flex: 1, minWidth: 140, minHeight: 48, backgroundColor: t.card, borderRadius: R.row,
-            borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center', gap: S.sm }}>
-          <Icon name="houseGear" size={18} color={t.text2} />
-          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text2, textAlign: 'center' }}>Equip.</Text>
-        </Pressable>
-
-        <Pressable onPress={onGestao}
-          style={{ flex: 1, minWidth: 140, minHeight: 48, backgroundColor: t.card, borderRadius: R.row,
-            borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center', gap: S.sm }}>
-          <Icon name="sliders" size={18} color={t.text2} />
-          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text2, textAlign: 'center' }}>Gestão</Text>
-        </Pressable>
-
-        <Pressable onPress={onDoc}
-          style={{ flex: 1, minWidth: 140, minHeight: 48, backgroundColor: t.card, borderRadius: R.row,
-            borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center', gap: S.sm }}>
-          <Icon name="fileText" size={18} color={t.text2} />
-          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text2, textAlign: 'center' }}>Docs</Text>
-        </Pressable>
-      </View>
     </>
   );
 }
