@@ -9,7 +9,7 @@ const KEY = 'nossa-casa/v1';
 const DATA_KEYS = [
   'done', 'pending', 'status', 'registered', 'settled', 'vaultMoves', 'paidPts', 'extraLog',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'newItems', 'itemGone',
-  'newEquip', 'equipGone', 'schemeByUser', 'themeByUser', 'importDone', 'notif',
+  'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'importDone', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pointValue', 'payDay', 'splitHalf',
   'stores', 'shopPlan', 'shopHistory', 'health', 'specialities', 'equipCats', 'registo',
@@ -51,7 +51,7 @@ export const DEMO = () => ({
   pending: {}, status: {}, registered: 0, settled: false,
   vaultMoves: [], paidPts: { 'Léo': 0, 'Mia': 0 }, extraLog: {},
   envMove: {}, added: [], newTasks: [], taskEdits: {}, taskGone: {},
-  newItems: [], itemGone: {}, newEquip: [], equipGone: {},
+  newItems: [], itemGone: {}, newEquip: [], equipGone: {}, equipEdits: {},
   schemeByUser: {}, themeByUser: {}, importDone: {},
   notif: { digest: true, hour: '20:00', lead: 1 },
   rotate: {},
@@ -159,7 +159,15 @@ function build(s, set) {
   const allEvents = () => [...(s.clearedSeeds ? [] : EVENTS), ...s.added, ...s.health.map(h => h.event).filter(Boolean)]
     .filter(e => e && !s.eventGone[e.id])
     .map(e => ({ ...e, ...(s.eventEdits[e.id] || {}) }));
-  const allEquip = () => [...(s.clearedSeeds ? [] : EQUIP), ...s.newEquip].filter(e => !s.equipGone[e.id]);
+  // Como allTasks: sementes do código, sobrepostas pelas edições do utilizador.
+  // As sementes são só de leitura, por isso editar é gravar um remendo.
+  const allEquip = () => [...(s.clearedSeeds ? [] : EQUIP), ...s.newEquip]
+    .filter(e => !s.equipGone[e.id])
+    .map(e => ({ ...e, ...((s.equipEdits || {})[e.id] || {}) }));
+  const editEquip = (id, campos) => set(x => ({
+    equipEdits: { ...(x.equipEdits || {}), [id]: { ...((x.equipEdits || {})[id] || {}), ...campos } },
+  }));
+  const removeEquip = (id) => set(x => ({ equipGone: { ...x.equipGone, [id]: true } }));
 
   const budget = s.monthLimits
     ? Object.values(s.monthLimits).reduce((a, b) => a + b, 0)
@@ -386,7 +394,7 @@ function build(s, set) {
 
   return {
     s, set,
-    allTasks, allItems, allEvents, allEquip,
+    allTasks, allItems, allEvents, allEquip, editEquip, removeEquip,
     budget, spent, remaining: budget - spent, envelopes, kidPts,
     vaultOf, vaultMoves, vaultAdd,
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,

@@ -187,6 +187,48 @@ describe('Equipamentos', () => {
   });
 });
 
+describe('Ficha do equipamento — alinhada com 12-ficha-equipamento.png', () => {
+  const ficha = read('src/sheets/FichaEquipamento.jsx');
+
+  test('tem as secções que a referência mostra', () => {
+    for (const s of ['Garantia', 'Fotografias', 'Preço de compra', 'Data de compra']) {
+      expect(ficha).toContain(s);
+    }
+  });
+
+  test('tem as três ações, com os ícones que a referência usa', () => {
+    for (const [rotulo, icone] of [['Agendar Manutenção', 'calendar'],
+                                   ['Exportar Fatura', 'printer'],
+                                   ['Remover Equipamento', 'trash']]) {
+      expect(ficha).toContain(rotulo);
+      expect(ficha).toContain(`"${icone}"`);
+    }
+  });
+
+  // O defeito que esta sessão passou a corrigir: controlos que não fazem nada.
+  // Cada ação ou está ligada, ou está desativada com o motivo à vista.
+  test('nenhuma ação é um botão morto', () => {
+    expect(ficha).toMatch(/removeEquip\(equip\.id\)/);        // remover liga
+    expect(ficha).toMatch(/editEquip\(equip\.id, manut\)/);   // manutenção liga
+    expect(ficha).toMatch(/launchImageLibraryAsync/);         // fotografias ligam
+    // exportar não é possível sem fatura, e diz porquê em vez de não fazer nada
+    expect(ficha).toMatch(/desativado=\{!equip\.fatura\}/);
+    expect(ficha).toMatch(/Ainda não há fatura para exportar/);
+  });
+
+  test('remover pede confirmação — não se desfaz', () => {
+    expect(ficha).toMatch(/<Confirm[\s\S]*?destructive/);
+    expect(ficha).toContain('Remover equipamento?');
+  });
+
+  test('as edições não escrevem sobre as sementes', () => {
+    const store = read('src/store.jsx');
+    expect(store).toMatch(/equipEdits/);
+    expect(store).toMatch(/\.\.\.\(\(s\.equipEdits \|\| \{\}\)\[e\.id\] \|\| \{\}\)/);
+    expect(read('src/data.js')).toMatch(/export const EQUIP = \[/);   // sementes intactas
+  });
+});
+
 describe('Português europeu', () => {
   const BR = [
     [/\bCompartilh/i, 'compartilhar → partilhar'],
