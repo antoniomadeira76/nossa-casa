@@ -67,17 +67,24 @@ export default function Inicio({ t, user, go, onSaude, onEquip }) {
       {/* A saudação, a data e os três números vivem no cabeçalho — ver
           docs/referencia/04-inicio.png. Estavam aqui também, e a app cumprimentava
           duas vezes. Aqui ficam os dois atalhos que a referência mostra. */}
+      {/* Os dois atalhos não são iguais: nas referências 04 e 22 — claro e
+          escuro — o «Compras» está destacado e o «Tarefas» é neutro. Tinha-os
+          pintado os dois com a cor de ação por assumir simetria; as duas
+          referências mostram que a ênfase é deliberada. */}
       <View style={{ flexDirection: 'row', gap: S.md }}>
-        {[['compras', 'Compras', 'fileDone'], ['tarefas', 'Tarefas', 'checkSquare']].map(([alvo, rotulo, icone]) => (
+        {[['compras', 'Compras', 'fileDone', true],
+          ['tarefas', 'Tarefas', 'checkSquare', false]].map(([alvo, rotulo, icone, destaque]) => (
           <Pressable key={alvo} onPress={() => go(alvo)}
             accessibilityRole="button" accessibilityLabel={rotulo}
             style={({ pressed }) => ({
               flex: 1, minHeight: 52, borderRadius: R.card, borderWidth: 1,
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.md,
-              backgroundColor: pressed ? t.card : t.subtle, borderColor: t.border,
+              backgroundColor: pressed ? t.card : destaque ? t.subtle : t.card,
+              borderColor: destaque ? t.accent : t.border,
             })}>
-            <Icon name={icone} size={20} color={t.accent} />
-            <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '600', color: t.accent }}>
+            <Icon name={icone} size={20} color={destaque ? t.accent : t.text3} />
+            <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '600',
+              color: destaque ? t.accent : t.text2 }}>
               {rotulo}
             </Text>
           </Pressable>

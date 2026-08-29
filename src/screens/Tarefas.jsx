@@ -96,12 +96,17 @@ export default function Tarefas({ t, user }) {
               const u = URG[x.urgency] || URG[1];
               const d = dueOf(x);
               const rec = isRecurring(x);
+              // A urgência vive no distintivo do número — cor E forma —, não
+              // também na borda do cartão. Na referência 06 os cartões são
+              // lisos e só o distintivo muda; com a urgência nos dois sítios a
+              // lista fica às riscas e o distintivo deixa de ser o sinal,
+              // passa a ser redundante. A borda diz só o estado: feita, ou à
+              // espera de confirmação.
               return (
                 <Card key={x.id} t={t} style={{
                   borderWidth: done ? 2 : 1,
-                  borderColor: done ? t.state.okBorder : pend ? t.state.info : u.color,
+                  borderColor: done ? t.state.okBorder : pend ? t.state.info : t.border,
                   backgroundColor: done ? t.state.okBg : t.card,
-                  borderStyle: u.dash ? 'dashed' : 'solid',
                 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <Pressable onPress={() => st.tapTask(x.id, false)} accessibilityRole="button"
@@ -115,6 +120,11 @@ export default function Tarefas({ t, user }) {
                         <Text style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '700',
                           color: u.fill ? '#FFFFFF' : t.text2 }}>{idx}</Text>
                       </View>
+                      {/* Ícone de estado, como na referência: entre o número
+                          e o avatar. Faltava — a linha não dizia se estava
+                          feita, à espera, ou por fazer, sem ler a legenda. */}
+                      <Icon name={done ? 'checkCircle' : pend ? 'clock' : 'infoCircle'} size={20}
+                        color={done ? t.state.ok : pend ? t.state.info : t.text3} />
                       <Avatar initial={(MEMBERS[x.who] || { initial: '?' }).initial} color={MEMBER_COLOR[x.who] || t.text3} />
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{x.title}</Text>
@@ -125,7 +135,9 @@ export default function Tarefas({ t, user }) {
                             : d ? `${x.who} · ${d.text}` : `${x.who} · ${x.meta}`}
                         </Text>
                       </View>
-                      {x.pts > 0 && !done ? <Pill label={`${x.pts} pt`} fg={t.state.warnDeep} bg={t.state.warnBg} border={t.state.warn} /> : null}
+                      {/* Pastilha contornada, como na referência: o amarelo
+                          cheio competia com o distintivo da urgência. */}
+                      {x.pts > 0 && !done ? <Pill label={`${x.pts} pt`} fg={t.text2} bg={t.card} border={t.border} /> : null}
                     </Pressable>
                     <Tap onPress={() => setManage(x.id)} label={`Gerir ${x.title}`} size={44}>
                       <Icon name="edit" size={20} color={t.text3} />

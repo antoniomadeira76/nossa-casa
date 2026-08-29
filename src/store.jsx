@@ -104,7 +104,7 @@ export const DEMO = () => ({
   pins: {},                       // sem PIN de fábrica — o adulto define
   pointValue: 0.10, payDay: 0, splitHalf: true,
   stores: ['Continente de Belém', 'Pingo Doce da Ajuda', 'Mercado de Alcântara'],
-  shopPlan: { who: 'Tomás', day: null, time: '10:30', store: 0 },
+  shopPlan: { who: 'Tomás', day: 'd2026-08-23', time: '10:30', store: 0 },  // domingo
   shopHistory: [], health: [], specialities: ['Medicina geral', 'Dentista', 'Pediatria', 'Oftalmologia'],
   equipCats: ['Eletrodomésticos', 'Aquecimento', 'Informática', 'Outros'],
   registo: [],

@@ -48,6 +48,7 @@ export default function Login({ t, onEnter }) {
 
       <View style={{ flex: 1, justifyContent: 'flex-end', paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 14) }}>
         {step === 'login' ? (
+          <>
           <View style={glass}>
             <Text style={{ fontFamily: FONT.display, fontSize: 24, fontWeight: '500', color: '#FFFFFF' }}>Bem-vindo</Text>
             <Text style={{ fontFamily: FONT.body, fontSize: 15, lineHeight: 22, color: 'rgba(255,255,255,0.8)' }}>
@@ -74,6 +75,15 @@ export default function Login({ t, onEnter }) {
               <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '500', color: '#FFFFFF', letterSpacing: 0.4 }}>Entrar como Criança</Text>
             </Pressable>
           </View>
+
+          {/* A referência 01 tem esta linha por baixo do cartão, e faltava.
+              É o que diz a alguém que abriu a app sem convite o que fazer a
+              seguir — sem ela o ecrã é uma porta fechada sem indicação. */}
+          <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 19,
+            color: 'rgba(255,255,255,0.62)', paddingHorizontal: 4 }}>
+            Ainda não faz parte desta casa? Peça o convite ao administrador da família.
+          </Text>
+          </>
         ) : step === 'contas' ? (
           <View style={glass}>
             <Text style={{ fontFamily: FONT.display, fontSize: 18, fontWeight: '500', color: '#FFFFFF' }}>Escolher uma conta</Text>

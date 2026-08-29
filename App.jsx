@@ -243,10 +243,11 @@ function Shell() {
                   color: '#FFFFFF', letterSpacing: 0.3 }}>{greet}, {user}</Text>
                 <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: onC }}>{today}</Text>
               </View>
-              <Pressable accessibilityRole="button" accessibilityLabel="Pesquisar"
-                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name="search" size={24} color="#FFFFFF" />
-              </Pressable>
+              {/* A referência tem aqui uma lupa, e em todos os cabeçalhos.
+                  Não a ponho enquanto não houver pesquisa: eu próprio a tinha
+                  posto neste ecrã sem `onPress`, e um controlo que parece
+                  tocável e não faz nada é o defeito que passei o dia a tirar
+                  do Perfil e do Dinheiro. Fica por fazer, não por esquecer. */}
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'stretch' }}>

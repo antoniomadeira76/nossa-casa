@@ -2,16 +2,22 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../store';
-import { S, R, FONT, elev } from '../theme';
-import { EUR } from '../format';
-import { SECTIONS } from '../data';
-import { Card, SectionTitle, Label, Pill, Bar, Primary, AddButton, Empty, usePaged, Pager, Tap, Tile } from '../ui';
+import { S, R, FONT, elev, MEMBER_COLOR } from '../theme';
+import { EUR, dayLabel, parseKey, WD } from '../format';
+import { SECTIONS, MEMBERS } from '../data';
+import { Card, SectionTitle, Label, Pill, Bar, Primary, AddButton, Empty, usePaged, Pager, Tap, Tile, Avatar } from '../ui';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
 import NovoArtigo from '../sheets/NovoArtigo';
 
 // A lista partilhada. O modo de loja saiu daqui para ModoCompras.jsx: era um
 // <Modal>, que no react-native-web escapa à raiz da app e tapava o rodapé.
+// «Compras de domingo» — o dia por extenso, minúsculo, como na referência.
+const diaDaSemana = (k) => {
+  const o = parseKey(k);
+  return o ? WD[(new Date(o.y, o.m, o.d).getDay() + 6) % 7].toLowerCase() : '';
+};
+
 export default function Compras({ t, user, onModoCompras }) {
   const st = useStore();
   const { s, set, allItems } = st;
@@ -47,12 +53,14 @@ export default function Compras({ t, user, onModoCompras }) {
         </View>
         <View style={{ height: 1, backgroundColor: t.divider }} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Avatar initial={(MEMBERS[s.shopPlan.who] || { initial: '?' }).initial}
+            color={MEMBER_COLOR[s.shopPlan.who] || t.text3} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>
-              Compras · {s.shopPlan.who}
+              {s.shopPlan.day ? `Compras de ${diaDaSemana(s.shopPlan.day)}` : 'Compras'} · {s.shopPlan.who}
             </Text>
             <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
-              {s.shopPlan.time} · {s.stores[s.shopPlan.store]}
+              {s.shopPlan.day ? `${dayLabel(s.shopPlan.day)} · ` : ''}{s.shopPlan.time} · {s.stores[s.shopPlan.store]}
             </Text>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel="Alterar quem vai às compras"
