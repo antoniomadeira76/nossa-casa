@@ -4,13 +4,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../store';
 import { SCHEMES, S, R, FONT, elev, MEMBER_COLOR } from '../theme';
 import { EUR } from '../format';
-import { MEMBERS } from '../data';
+import { MEMBERS, FEM } from '../data';
 import { Card, Label, Row, Pill, Primary, Toggle, Segmented, Tap } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 
 const ROLE_LABEL = (r, name) => {
-  const fem = name === 'Rita' || name === 'Mia';
+  const fem = FEM(name);
   return r === 'admin' ? (fem ? 'administradora' : 'administrador') : r === 'adulto' ? 'adulto' : 'criança';
 };
 

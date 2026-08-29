@@ -230,6 +230,62 @@ describe('INVARIANTE #3 — a visibilidade da saúde não é do ecrã', () => {
   });
 });
 
+describe('Saúde — o ecrã e a loja contam a mesma coisa', () => {
+  const saude = read('src/screens/Saude.jsx');
+
+  // O ecrã lia `s.health` — só o gravado. As sementes são código, portanto
+  // dizia «Sem registos de saúde.» enquanto o cartão do membro logo acima,
+  // que lê pela loja, dizia «1 consulta». O mesmo ecrã contradizia-se.
+  it('lê pela loja, não pelo estado gravado', () => {
+    expect(saude).toMatch(/st\.allHealth\(\)/);
+    expect(semComentarios(saude)).not.toMatch(/\bs\.health\b\s*\|\|/);
+  });
+
+  // Havia aqui uma cópia do canSeeHealth, e mais permissiva: devolvia true
+  // para qualquer criança sem verificar se quem vê é adulto.
+  it('não tem uma cópia própria da regra de visibilidade', () => {
+    expect(saude).toMatch(/st\.canSeeHealth\(member, user\)/);
+    expect(semComentarios(saude)).not.toMatch(/const canSeeHealth\s*=/);
+  });
+
+  // Ordenava com `new Date('28/08/2026')`, que é Invalid Date.
+  it('ordena pelas chaves, não por new Date de um texto', () => {
+    expect(semComentarios(saude)).not.toMatch(/new Date\([ab]\.date\)/);
+    expect(saude).toMatch(/localeCompare\(String\(a\.day/);
+  });
+
+  // O «marcar consulta» abria com o membro por omissão, viesse de onde viesse.
+  it('o marcar consulta recebe o membro por prop', () => {
+    expect(saude).toMatch(/<MarcarConsulta[^>]*membro=\{ficha\}/s);
+    expect(saude).toMatch(/member: membro \|\| 'Léo'/);
+  });
+
+  // A folha vivia só no ramo de baixo, e o ramo da ficha devolve cedo: tocar
+  // em «marcar consulta» dentro de uma ficha punha o estado e não abria nada.
+  it('a folha de marcar consulta está nos dois ramos', () => {
+    const corpo = semComentarios(saude);
+    expect(corpo).toMatch(/const folha = sheet === 'consulta'/);
+    expect((corpo.match(/\{folha\}/g) || []).length).toBe(2);
+  });
+
+  // Um nome de ícone que não existe devolve um SVG vazio, sem erro nenhum.
+  it('todos os nomes de ícone usados existem no Icon.jsx', () => {
+    const icones = read('src/Icon.jsx');
+    const conhecidos = new Set([
+      ...[...icones.matchAll(/^\s{2}([a-zA-Z]+):\s*'/gm)].map(m => m[1]),
+      ...[...icones.matchAll(/name === '([a-zA-Z]+)'/g)].map(m => m[1]),
+    ]);
+    const usados = new Set();
+    for (const f of jsxFiles()) {
+      for (const m of semComentarios(read(f)).matchAll(/(?:<Icon\s+name|\bicon)=["']([a-zA-Z]+)["']/g)) {
+        usados.add(m[1]);
+      }
+    }
+    const desconhecidos = [...usados].filter(n => !conhecidos.has(n));
+    expect(desconhecidos).toEqual([]);
+  });
+});
+
 describe('INVARIANTE #2 — saldos são somas de movimentos', () => {
   test('o cofre não é um campo escrito', () => {
     const store = read('src/store.jsx');
@@ -271,12 +327,20 @@ describe('Armazenamento local — versão e migração', () => {
     expect(store).toMatch(/s\.clearedSeeds \? \[\] : VAULT/);  // a derivação junta-as
   });
 
-  // A migração corre aqui, contra o mesmo código que a app usa.
+  // As migrações correm aqui, importadas — não recortadas do ficheiro por
+  // texto. A versão anterior deste teste fatiava o código-fonte de `2: (o) =>`
+  // até `export const DEMO`, e ao acrescentar a migração 3 a fatia passou a
+  // apanhar as duas: o teste partiu-se por a app ter crescido, que é o pior
+  // motivo possível para um teste falhar.
+  const { MIGRATIONS, SCHEMA } = require('../src/store.jsx');
+
+  test('há uma migração para cada salto até à versão actual', () => {
+    for (let n = 2; n <= SCHEMA; n++) expect(typeof MIGRATIONS[n]).toBe('function');
+  });
+
   test('v1 → v2 preserva o dinheiro e deixa de gravar as sementes', () => {
     const { VAULT } = require('../src/data.js');
-    const body = store.slice(store.indexOf('  2: (o) =>'), store.indexOf('export const DEMO'));
-    const mig = new Function('VAULT', 'TODAY_KEY', `return (${body.replace(/^\s*2:\s*/, '').replace(/,\s*};?\s*$/, '')})`)
-      (VAULT, 'd2026-08-20');
+    const mig = MIGRATIONS[2];
     const soma = (mv, kid) => Math.round(
       [...VAULT, ...mv].reduce((n, m) => (m.kid === kid ? n + m.delta : n), 0) * 100) / 100;
 
@@ -290,6 +354,31 @@ describe('Armazenamento local — versão e migração', () => {
     const b = mig({ v: 1, vaultMoves: [...VAULT, { id: 'vm-x', kid: 'Léo', delta: 1 }] });
     expect(b.vaultMoves).toHaveLength(1);          // as sementes saíram
     expect(soma(b.vaultMoves, 'Léo')).toBe(13.40); // 12,40 + 1,00
+  });
+
+  // v2 → v3: os registos de saúde tinham duas formas — `date` com o texto do
+  // formulário nos gravados, `day` em chave nas sementes. O ecrã lia `date` e
+  // por isso estava apontado só aos gravados, que estavam sempre vazios.
+  test('v2 → v3 põe os registos de saúde todos na mesma forma', () => {
+    const r = MIGRATIONS[3]({
+      v: 2,
+      health: [
+        { id: 'a', member: 'Léo', date: '28/08/2026', specialty: 'Dentista' },
+        { id: 'b', member: 'Mia', day: 'd2026-09-01', time: '10:00', specialty: 'Pediatria' },
+        { id: 'c', member: 'Léo', date: 'para a semana', specialty: 'Ilegível' },
+      ],
+    });
+    // o texto do formulário passa a chave
+    expect(r.health[0]).toEqual({ id: 'a', member: 'Léo', day: 'd2026-08-28', time: '', specialty: 'Dentista' });
+    // quem já tinha a forma certa fica como estava
+    expect(r.health[1]).toEqual({ id: 'b', member: 'Mia', day: 'd2026-09-01', time: '10:00', specialty: 'Pediatria' });
+    // uma data que não se consegue ler não faz o registo desaparecer
+    expect(r.health[2].day).toBe('para a semana');
+    expect(r.health.every(h => !('date' in h))).toBe(true);
+  });
+
+  test('v2 → v3 aguenta um estado sem registos de saúde nenhuns', () => {
+    expect(MIGRATIONS[3]({ v: 2 }).health).toEqual([]);
   });
 });
 
@@ -427,6 +516,22 @@ describe('Português europeu', () => {
     const re = /\b(está|estão|estamos|estou|continua|vai)\s+[a-zà-ÿ]+ndo\b/iu;
     const offenders = jsxFiles().filter(f => re.test(semComentarios(read(f))));
     expect(offenders).toEqual([]);
+  });
+
+  // O género gramatical é dado da pessoa, não coisa que se adivinhe do nome.
+  // Três sítios adivinhavam-no com `nome === 'Rita' || nome === 'Mia'`, e um
+  // esquecia-se: a ficha da Mia dizia «Saúde do Mia».
+  test('o género vem dos dados, e nenhum ecrã o adivinha pelo nome', () => {
+    const { MEMBERS, DE, FEM } = require('../src/data.js');
+    for (const [nome, m] of Object.entries(MEMBERS)) {
+      expect(typeof m.fem).toBe('boolean');
+      expect(DE(nome)).toBe(m.fem ? 'da' : 'do');
+      expect(FEM(nome)).toBe(m.fem);
+    }
+    const adivinhas = jsxFiles().filter(f => /=== '(Rita|Mia)'\s*\|\|/.test(semComentarios(read(f))));
+    expect(adivinhas).toEqual([]);
+    const artigoFixo = jsxFiles().filter(f => /Saúde d[oa] \$\{/.test(semComentarios(read(f))));
+    expect(artigoFixo).toEqual([]);
   });
 
   // Fronteiras em Unicode: \b parte-se nos acentos, e /\bvocê\b/ casava dentro

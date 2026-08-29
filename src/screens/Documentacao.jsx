@@ -45,7 +45,7 @@ export default function Documentacao({ t, onClose }) {
                 {byDate[date].map((entry, i) => (
                   <Card key={i} t={t}>
                     <View style={{ gap: S.sm, minHeight: 44, flexDirection: 'row', alignItems: 'center' }}>
-                      <Icon name="info" size={20} color={t.text3} />
+                      <Icon name="infoCircle" size={20} color={t.text3} />
                       <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13, color: t.text2 }}>
                         {entry.t || 'Alteração'}
                       </Text>

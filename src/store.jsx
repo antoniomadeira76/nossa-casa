@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES, HEALTH, HEALTH_DOCS, VAULT } from './data';
-import { TODAY_KEY, dueInfo, daysUntil, warrantyDaysLeft } from './format';
+import { TODAY_KEY, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY } from './format';
 
 // ── Visibilidade da saúde (INVARIANTE #3) ───────────────────────────────────
 // Puras e exportadas de propósito: uma regra de visibilidade que só se
@@ -48,10 +48,10 @@ const DATA_KEYS = [
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
 // muda, e MIGRATIONS ganha a entrada correspondente. Sem isto, dados antigos
 // eram lidos com a forma nova e ganhavam silenciosamente ao código.
-const SCHEMA = 2;
+export const SCHEMA = 3;
 
 // Uma migração por salto de versão: recebe o objeto lido e devolve-o corrigido.
-const MIGRATIONS = {
+export const MIGRATIONS = {
   // v1 → v2: o cofre deixou de ser um saldo escrito e as sementes deixaram de
   // ser gravadas. Se o saldo antigo divergir das sementes, a diferença fica
   // como movimento de acerto — dinheiro nunca desaparece numa migração.
@@ -72,6 +72,19 @@ const MIGRATIONS = {
     const { vault, ...resto } = o;
     return { ...resto, vaultMoves: [...mine, ...acertos] };
   },
+
+  // v2 → v3: os registos de saúde gravados tinham `date` com o texto do
+  // formulário; as sementes têm `day` em chave. Passam todos a `day`. Um
+  // registo cuja data não se consiga ler mantém o texto no sítio da chave —
+  // fica visível e mal ordenado, o que é melhor do que desaparecer.
+  3: (o) => ({
+    ...o,
+    health: (o.health || []).map((h) => {
+      const { date, ...resto } = h;
+      if (resto.day) return resto;
+      return { ...resto, day: chaveDeDMY(date) || date, time: resto.time || '' };
+    }),
+  }),
 };
 
 export const DEMO = () => ({
@@ -323,11 +336,18 @@ function build(s, set) {
   };
 
   // Health: agregar métodos para gestão de saúde
-  const addHealthRecord = (member, date, specialty) => {
+  // Um registo de saúde tem a forma das sementes: `day` em chave e `time`.
+  // Escrevia `date` com o texto cru do formulário, e como o ecrã lia `date` e
+  // as sementes têm `day`, o ecrã acabou apontado só aos registos gravados —
+  // que estavam sempre vazios. Daí dizer «1 consulta» num cartão e «Sem
+  // registos de saúde.» duas linhas abaixo. Uma forma só, e o problema não
+  // volta a poder existir.
+  const addHealthRecord = (member, data, specialty, time) => {
     const id = 'hlth-' + Date.now();
+    const day = chaveDeDMY(data) || data;
     set(x => ({
       health: [...(x.health || []), {
-        id, member, date, specialty,
+        id, member, day, specialty, time: time || '',
         createdAt: new Date().toISOString(),
       }],
     }));

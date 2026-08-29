@@ -21,6 +21,18 @@ export const parseKey = (k) => {
   return m ? { y: +m[1], m: +m[2] - 1, d: +m[3] } : null;
 };
 
+// O que o utilizador escreve (`10/09/2026`) para a chave interna. Havia três
+// sítios a fazer isto com `.split('/')` à mão, e um deles não fazia de todo —
+// gravava o texto cru e o ecrã ficava com dois formatos de registo.
+// Devolve null se não for uma data válida, para quem chama poder recusar.
+export const chaveDeDMY = (v) => {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(v || '').trim());
+  if (!m) return null;
+  const [d, mes, a] = [+m[1], +m[2], +m[3]];
+  if (mes < 1 || mes > 12 || d < 1 || d > 31) return null;
+  return dkey(a, mes - 1, d);
+};
+
 export const TODAY = { y: 2026, m: 7, d: 20 };
 export const TODAY_KEY = dkey(TODAY.y, TODAY.m, TODAY.d);
 export const TOMORROW_KEY = dkey(TODAY.y, TODAY.m, TODAY.d + 1);

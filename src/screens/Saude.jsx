@@ -2,33 +2,37 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, FlatList } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, MEMBER_COLOR, STATE } from '../theme';
-import { MEMBERS } from '../data';
+import { MEMBERS, DE } from '../data';
 import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Avatar } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
-import { pad2, plural, dayLabel, daysUntil } from '../format';
+import { pad2, plural, dayLabel, daysUntil, chaveDeDMY } from '../format';
 import FichaSaude from './FichaSaude';
 
 export default function Saude({ t, user, onClose }) {
   const st = useStore();
-  const { s, set, addHealthRecord, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, renameSpecialty } = st;
+  const { s, set, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, renameSpecialty } = st;
   const [ficha, setFicha] = useState(null);   // membro cuja ficha está aberta
   const [sheet, setSheet] = useState(null);
   const [expandedRecord, setExpandedRecord] = useState(null);
   const [expandedNote, setExpandedNote] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [memberFilter, setMemberFilter] = useState(null);
-  const [form, setForm] = useState({ member: 'Léo', date: '', specialty: '', note: '' });
   const [newNoteForm, setNewNoteForm] = useState({ text: '' });
   const [recipeForm, setRecipeForm] = useState({ name: '', dosage: '', quantity: '', unit: '', expiresAt: '' });
 
-  const canSeeHealth = (member) => {
-    const isAdult = !MEMBERS[member]?.kid;
-    return isAdult ? member === user : true; // Adults see only their own; children's records visible to all adults
-  };
+  // A visibilidade vem da loja. Havia aqui uma cópia própria, e era mais
+  // permissiva: devolvia true para qualquer criança sem verificar se quem vê é
+  // adulto. Hoje não dava fuga porque só adultos chegam a este ecrã, mas é o
+  // INVARIANTE #3 escrito duas vezes, e a segunda mais fraca. Agora há uma
+  // regra só, pura e com seis provas em __tests__.
+  const podeVer = (member) => st.canSeeHealth(member, user);
 
-  const health = s.health || [];
-  const visibleRecords = health.filter(h => canSeeHealth(h.member));
+  // allHealth(), não s.health: as sementes são código e só o que o utilizador
+  // acrescenta é que se grava. Ler só o gravado deixava este ecrã a dizer «Sem
+  // registos de saúde.» enquanto o cartão do membro, que lê pela loja, dizia
+  // «1 consulta» duas linhas acima.
+  const visibleRecords = st.allHealth().filter(h => podeVer(h.member));
 
   // Determina o que precisa de decisão (topo do acordeão)
   const needsDecision = visibleRecords.filter(h => {
@@ -36,9 +40,13 @@ export default function Saude({ t, user, onClose }) {
     return !decision || decision.status !== 'resolvido';
   });
 
+  // Por data descendente. Ordenava com `new Date(h.date)` sobre o texto do
+  // formulário — «28/08/2026» dá Invalid Date, e a ordenação era o acaso.
+  // As chaves comparam-se como texto e ficam por ordem.
+  const porData = (a, b) => String(b.day || '').localeCompare(String(a.day || ''));
   const decisionsSorted = [
-    ...needsDecision.sort((a, b) => new Date(b.date) - new Date(a.date)),
-    ...visibleRecords.filter(h => !needsDecision.includes(h)).sort((a, b) => new Date(b.date) - new Date(a.date)),
+    ...needsDecision.sort(porData),
+    ...visibleRecords.filter(h => !needsDecision.includes(h)).sort(porData),
   ];
 
   // Filtrar com base em search e member
@@ -58,13 +66,6 @@ export default function Saude({ t, user, onClose }) {
 
   // Mostrar archive quando > 5 registos
   const showArchive = visibleRecords.length > 5;
-
-  const handleSaveRecord = () => {
-    if (!form.date || !form.specialty.trim()) return;
-    addHealthRecord(form.member, form.date, form.specialty);
-    setSheet(null);
-    setForm({ member: 'Léo', date: '', specialty: '', note: '' });
-  };
 
   const handleAddNote = (healthId) => {
     if (!newNoteForm.text.trim()) return;
@@ -112,7 +113,7 @@ export default function Saude({ t, user, onClose }) {
                 {record.specialty}
               </Text>
               <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-                {record.member} · {record.date}
+                {record.member} · {dayLabel(record.day)}{record.time ? ` às ${record.time}` : ''}
               </Text>
             </View>
             {needsDec && (
@@ -368,9 +369,21 @@ export default function Saude({ t, user, onClose }) {
   // store; a lista só mostra as que o utilizador pode ver.
   const fichas = Object.keys(MEMBERS).filter(m => st.canSeeHealth(m, user));
 
+  // A folha tem de estar nos dois ramos. Estava só no de baixo, e este
+  // devolve cedo — portanto «marcar consulta» dentro de uma ficha punha o
+  // estado e não abria nada. Um botão morto que não dá erro nenhum.
+  const folha = sheet === 'consulta'
+    ? <MarcarConsulta t={t} user={user} membro={ficha} onClose={() => setSheet(null)} />
+    : null;
+
   if (ficha) {
-    return <FichaSaude t={t} member={ficha} user={user} onBack={() => setFicha(null)}
-      onMarcar={() => { setForm(f => ({ ...f, member: ficha })); setSheet("consulta"); }} />;
+    return (
+      <>
+        <FichaSaude t={t} member={ficha} user={user} onBack={() => setFicha(null)}
+          onMarcar={() => setSheet('consulta')} />
+        {folha}
+      </>
+    );
   }
 
   return (
@@ -391,7 +404,7 @@ export default function Saude({ t, user, onClose }) {
               return (
                 <Card key={m} t={t} style={{ borderLeftWidth: 3, borderLeftColor: MEMBER_COLOR[m] }}>
                   <Pressable onPress={() => setFicha(m)} accessibilityRole="button"
-                    accessibilityLabel={m === user ? 'A minha ficha' : `Saúde do ${m}`}
+                    accessibilityLabel={m === user ? 'A minha ficha' : `Saúde ${DE(m)} ${m}`}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52 }}>
                     <Avatar initial={MEMBERS[m].initial} color={MEMBER_COLOR[m]} size={40} />
                     <View style={{ flex: 1, gap: 2 }}>
@@ -501,27 +514,29 @@ export default function Saude({ t, user, onClose }) {
       </View>
 
       {/* Sheet: Marcar Consulta */}
-      {sheet === 'consulta' ? (
-        <MarcarConsulta t={t} user={user} onClose={() => setSheet(null)} />
-      ) : null}
+      {folha}
     </>
   );
 }
 
-function MarcarConsulta({ t, user, onClose }) {
+// `membro` é quem estava aberto quando se tocou em «marcar consulta». Vinha
+// por um setForm num estado que esta folha não lê — tem o seu próprio form —
+// portanto abrir a partir da ficha da Mia propunha o Léo, que é o valor por
+// omissão. Agora vem por prop.
+function MarcarConsulta({ t, user, membro, onClose }) {
   const { s, set, addSpecialty, removeSpecialty, renameSpecialty } = useStore();
   const [tab, setTab] = useState('nova');
-  const [form, setForm] = useState({ member: 'Léo', date: '', time: '', specialty: '' });
+  const [form, setForm] = useState({ member: membro || 'Léo', date: '', time: '', specialty: '' });
   const [newSpecialty, setNewSpecialty] = useState('');
   const [editingSpecialty, setEditingSpecialty] = useState(null);
 
   const handleSaveConsultation = () => {
-    if (!form.date || !form.specialty) return;
+    if (!chaveDeDMY(form.date) || !form.specialty) return;
     // Criar evento na agenda com tag "Saúde"
     set(s => ({
       added: [...(s.added || []), {
         id: 'ev-' + Date.now(),
-        day: `d${form.date.split('/')[2]}-${form.date.split('/')[1]}-${form.date.split('/')[0]}`,
+        day: chaveDeDMY(form.date),
         time: form.time || '10:00',
         title: `Consulta ${form.specialty}`,
         who: `${form.member} · Consulta de saúde`,

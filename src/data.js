@@ -1,11 +1,20 @@
 import { dkey, TODAY, TODAY_KEY, TOMORROW_KEY } from './format';
 
+// `fem` é o género gramatical, e está aqui porque é uma propriedade da pessoa
+// — não uma coisa que se adivinhe do nome. Havia três sítios a fazer
+// `nome === 'Rita' || nome === 'Mia'` e um deles esquecia-se: a ficha da Mia
+// dizia «Saúde do Mia».
 export const MEMBERS = {
-  'Rita':  { initial: 'R', email: 'rita.bengui@gmail.com', kid: false },
-  'Tomás': { initial: 'T', email: 'tomas.bengui@gmail.com', kid: false },
-  'Léo':   { initial: 'L', email: null, kid: true },
-  'Mia':   { initial: 'M', email: null, kid: true },
+  'Rita':  { initial: 'R', email: 'rita.bengui@gmail.com', kid: false, fem: true },
+  'Tomás': { initial: 'T', email: 'tomas.bengui@gmail.com', kid: false, fem: false },
+  'Léo':   { initial: 'L', email: null, kid: true, fem: false },
+  'Mia':   { initial: 'M', email: null, kid: true, fem: true },
 };
+
+// «de» contraído com o artigo: «Saúde da Mia», «Saúde do Léo».
+export const DE = (nome) => (MEMBERS[nome] && MEMBERS[nome].fem ? 'da' : 'do');
+// Concordância de adjetivo: administradora / administrador.
+export const FEM = (nome) => !!(MEMBERS[nome] && MEMBERS[nome].fem);
 
 export const ROLES = { 'Rita': 'admin', 'Tomás': 'adulto', 'Léo': 'crianca', 'Mia': 'crianca' };
 

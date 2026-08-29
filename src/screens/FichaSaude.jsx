@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { dayLabel, plural, TODAY_KEY, parseKey } from '../format';
-import { MEMBERS } from '../data';
+import { MEMBERS, DE } from '../data';
 import { Card, SectionTitle, Empty, Pill } from '../ui';
 import Icon from '../Icon';
 
@@ -42,7 +42,7 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
         <View style={{ flex: 1, gap: 2 }}>
           <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 19,
             fontWeight: '500', color: '#FFFFFF' }}>
-            {propria ? 'A minha ficha' : `Saúde do ${member}`}
+            {propria ? 'A minha ficha' : `Saúde ${DE(member)} ${member}`}
           </Text>
           <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: 'rgba(255,255,255,0.75)' }}>
             {propria ? 'Privada — mais ninguém a vê' : 'Visível aos adultos da casa'}

@@ -28,6 +28,11 @@ const P = {
   printer: 'M7 9V4h10v5M7 18H5v-7h14v7h-2M7 14h10v6H7z',
   camera: 'M4 8h3l1.5-2h7L17 8h3v12H4z|',
   bank: 'M3 10l9-6 9 6M5 10v9h14v-9M9 19v-5h6v5',
+  // Loja. A Gestão pedia-o pelo nome e ele não existia — um nome desconhecido
+  // devolve um SVG vazio, sem erro, portanto a lista de lojas tinha um espaço
+  // em branco onde devia ter um ícone. Mesmo idioma do `bank`: toldo, corpo,
+  // porta.
+  storefront: 'M3.5 4.5h17l1.5 5H2z|M5 9.5V20h14V9.5|M10 20v-6h4v6',
   idcard: 'M3 6h18v12H3z|M7 10h3M7 14h6M14 10h3',
   smile: 'M8.5 14s1.2 1.5 3.5 1.5S15.5 14 15.5 14|',
   sun: 'M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M17.7 6.3l-1.4 1.4M7.7 16.3l-1.4 1.4|',
