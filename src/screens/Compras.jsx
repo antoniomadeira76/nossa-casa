@@ -84,7 +84,7 @@ export default function Compras({ t, user, onModoCompras }) {
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
                       <Icon name={done ? 'checkCircle' : 'infoCircle'} size={24} color={done ? t.state.ok : t.text3} />
                       <View style={{ flex: 1, gap: 2 }}>
-                        <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{i.label}</Text>
+                        <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{i.label}</Text>
                         <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{i.by}</Text>
                       </View>
                       <Text style={{ fontFamily: FONT.ui, fontSize: 13,

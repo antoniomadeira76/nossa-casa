@@ -25,6 +25,22 @@ export default function Agenda({ t, user }) {
   const keys = [...new Set([TODAY_KEY, ...mine.map(e => e.day)])].filter(k => k >= TODAY_KEY).sort();
   const pg = usePaged(keys, 5);
 
+  // A semana de hoje, de segunda a domingo. É o estado fechado do cartão do
+  // calendário — em docs/referencia/08-agenda.png são sete colunas com a
+  // contagem de eventos por dia e hoje realçado. Fechado não mostrava nada:
+  // havia grelha do mês e mais nada, portanto a tira nunca chegou a existir.
+  const semana = (() => {
+    const hoje = new Date(TODAY.y, TODAY.m, TODAY.d);
+    const segunda = new Date(hoje);
+    segunda.setDate(hoje.getDate() - ((hoje.getDay() + 6) % 7));
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(segunda);
+      d.setDate(segunda.getDate() + i);
+      const key = dkey(d.getFullYear(), d.getMonth(), d.getDate());
+      return { key, dia: d.getDate(), wd: WD_SHORT[i], n: mine.filter(e => e.day === key).length };
+    });
+  })();
+
   const grid = (() => {
     const first = new Date(ym.y, ym.m, 1);
     const shift = (first.getDay() + 6) % 7;
@@ -62,6 +78,37 @@ export default function Agenda({ t, user }) {
           </Text>
           <Icon name={open ? 'caretUp' : 'caretDown'} size={20} color={t.text3} />
         </Pressable>
+
+        {!open ? (
+          <View style={{ flexDirection: 'row', gap: S.sm }}>
+            {semana.map(d => {
+              const hoje = d.key === TODAY_KEY;
+              const escolhido = sel === d.key;
+              return (
+                <Pressable key={d.key} onPress={() => setSel(escolhido ? null : d.key)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${d.wd} ${d.dia}${d.n ? ` · ${d.n} eventos` : ''}`}
+                  accessibilityState={{ selected: hoje || escolhido }}
+                  style={{ flex: 1, minHeight: 64, borderRadius: R.row, paddingVertical: 6,
+                    alignItems: 'center', justifyContent: 'center', gap: 2,
+                    backgroundColor: hoje || escolhido ? t.subtle : 'transparent',
+                    borderWidth: escolhido ? 1 : 0, borderColor: t.accent }}>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 10.5, fontWeight: '600', color: t.text3 }}>
+                    {d.wd}
+                  </Text>
+                  <Text style={{ fontFamily: FONT.display, fontSize: 17,
+                    fontWeight: hoje ? '700' : '400', color: hoje ? t.text1 : t.text2 }}>
+                    {d.dia}
+                  </Text>
+                  {/* Um travessão quando não há nada: uma coluna vazia lê-se
+                      como «não carregou», um travessão lê-se como «nada». */}
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 11,
+                    color: d.n ? t.accent : t.text3 }}>{d.n || '—'}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
 
         {open ? (
           <View style={{ gap: S.md }}>
@@ -157,7 +204,7 @@ export default function Agenda({ t, user }) {
             <View key={e.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
               <Text style={{ width: 42, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3 }}>{evTime(e.time)}</Text>
               <Avatar initial={(MEMBERS[e.owner] || { initial: '?' }).initial} color={MEMBER_COLOR[e.owner] || t.text3} />
-              <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{e.title}</Text>
+              <Text numberOfLines={2} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{e.title}</Text>
             </View>
           ))}
           <AddButton t={t} label={`agendar em ${sel.slice(9)}/${sel.slice(6, 8)}`} onPress={() => {}} />
@@ -191,7 +238,7 @@ export default function Agenda({ t, user }) {
                       <Text style={{ width: 42, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3 }}>{evTime(e.time)}</Text>
                       <Avatar initial={(MEMBERS[e.owner] || { initial: '?' }).initial} color={MEMBER_COLOR[e.owner] || t.text3} />
                       <View style={{ flex: 1, gap: 2 }}>
-                        <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{e.title}</Text>
+                        <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{e.title}</Text>
                         <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{e.who}</Text>
                       </View>
                       <Pill label={e.shared ? 'Família' : 'Só eu'}

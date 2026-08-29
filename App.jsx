@@ -8,7 +8,9 @@ import { StoreProvider, useStore } from './src/store';
 import { buildTheme, onChrome, chromeLine, S, R, FONT, elev } from './src/theme';
 import Icon, { Marca } from './src/Icon';
 import { MEMBERS } from './src/data';
-import { EUR, dayLabel, TODAY_KEY, warrantyDaysLeft } from './src/format';
+import { EUR, dayLabel, TODAY, TODAY_KEY, warrantyDaysLeft, semanaDeHoje } from './src/format';
+
+const TODAY_ANO = TODAY.y;
 import Login from './src/screens/Login';
 import Inicio from './src/screens/Inicio';
 import Dinheiro from './src/screens/Dinheiro';
@@ -25,12 +27,21 @@ import KidApp from './src/KidApp';
 import GoogleCalendarImportModal from './src/modals/GoogleCalendarImportModal';
 import Confirm from './src/Confirm';
 
+// Os subtítulos vêm da semana e do mês da app, não escritos à mão. O da
+// Agenda dizia «20 – 26 de agosto» — a semana a começar em hoje — onde a
+// referência 08 diz «17 – 23»; o do Dinheiro não existia; os das Tarefas e
+// das Compras não começavam por «Semana de 17/08» como nas referências 06 e 07.
 const TABS = [
-  { key: 'inicio',   label: 'Início',   icon: 'home',        title: 'Nossa Casa',        sub: 'Família Bengui · 4 membros' },
-  { key: 'dinheiro', label: 'Dinheiro', icon: 'wallet',      title: 'Dinheiro',          sub: null },
-  { key: 'tarefas',  label: 'Tarefas',  icon: 'checkSquare', title: 'Tarefas',           sub: 'Rotinas e tarefas da casa' },
-  { key: 'compras',  label: 'Compras',  icon: 'fileDone',    title: 'Lista de Compras',  sub: 'Partilhada com 2 adultos' },
-  { key: 'agenda',   label: 'Agenda',   icon: 'calendar',    title: 'Agenda',            sub: '20 – 26 de agosto de 2026' },
+  { key: 'inicio',   label: 'Início',   icon: 'home',        title: 'Nossa Casa',
+    sub: () => 'Família Bengui · 4 membros' },
+  { key: 'dinheiro', label: 'Dinheiro', icon: 'wallet',      title: 'Dinheiro',
+    sub: (ctx) => `Conta conjunta · ${ctx.mes} de ${TODAY_ANO}` },
+  { key: 'tarefas',  label: 'Tarefas',  icon: 'checkSquare', title: 'Tarefas',
+    sub: (ctx) => `${ctx.semana.curta} · rotinas e tarefas` },
+  { key: 'compras',  label: 'Compras',  icon: 'fileDone',    title: 'Lista de Compras',
+    sub: (ctx) => `${ctx.semana.curta} · partilhada com 2 adultos` },
+  { key: 'agenda',   label: 'Agenda',   icon: 'calendar',    title: 'Agenda',
+    sub: (ctx) => ctx.semana.intervalo },
 ];
 
 function Shell() {
@@ -113,6 +124,7 @@ function Shell() {
   }
 
   const meta = TABS.find(x => x.key === tab);
+  const ctxSub = { semana: semanaDeHoje(), mes: s.monthName };
   const Screen = { dinheiro: Dinheiro, tarefas: Tarefas, compras: Compras, agenda: Agenda }[tab];
 
   // Header dinâmico para Início; fixo para outros ecrãs.
@@ -263,7 +275,7 @@ function Shell() {
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: '500',
                 color: '#FFFFFF', letterSpacing: 0.25 }}>{meta.title}</Text>
-              {meta.sub ? <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 12, color: onC }}>{meta.sub}</Text> : null}
+              <Text numberOfLines={2} style={{ fontFamily: FONT.ui, fontSize: 12, color: onC }}>{meta.sub(ctxSub)}</Text>
             </View>
           </>
         )}

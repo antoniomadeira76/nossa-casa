@@ -117,7 +117,7 @@ export default function Tarefas({ t, user }) {
                       </View>
                       <Avatar initial={(MEMBERS[x.who] || { initial: '?' }).initial} color={MEMBER_COLOR[x.who] || t.text3} />
                       <View style={{ flex: 1, gap: 2 }}>
-                        <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{x.title}</Text>
+                        <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{x.title}</Text>
                         <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5,
                           color: d && d.late ? t.state.errDeep : d && d.soon ? t.state.warnDeep : t.text3 }}>
                           {done && rec ? 'feita hoje · volta amanhã'

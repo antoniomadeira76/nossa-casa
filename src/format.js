@@ -21,6 +21,28 @@ export const parseKey = (k) => {
   return m ? { y: +m[1], m: +m[2] - 1, d: +m[3] } : null;
 };
 
+// A semana de hoje, de segunda a domingo. Três cabeçalhos falam dela — a
+// Agenda, as Tarefas e as Compras — e a tira de dias da Agenda também.
+// Estava escrita à mão em cada sítio, e não coincidiam: a Agenda dizia
+// «20 – 26» (a semana a começar em hoje) onde a referência diz «17 – 23».
+export const semanaDeHoje = () => {
+  const hoje = new Date(TODAY.y, TODAY.m, TODAY.d);
+  const seg = new Date(hoje);
+  seg.setDate(hoje.getDate() - ((hoje.getDay() + 6) % 7));
+  const dom = new Date(seg);
+  dom.setDate(seg.getDate() + 6);
+  const mesmoMes = seg.getMonth() === dom.getMonth();
+  return {
+    seg, dom,
+    // «17 – 23 de agosto de 2026»
+    intervalo: mesmoMes
+      ? `${seg.getDate()} – ${dom.getDate()} de ${MONTHS[seg.getMonth()].toLowerCase()} de ${dom.getFullYear()}`
+      : `${seg.getDate()} de ${MONTHS[seg.getMonth()].toLowerCase()} – ${dom.getDate()} de ${MONTHS[dom.getMonth()].toLowerCase()} de ${dom.getFullYear()}`,
+    // «Semana de 17/08»
+    curta: `Semana de ${pad2(seg.getDate())}/${pad2(seg.getMonth() + 1)}`,
+  };
+};
+
 // O que o utilizador escreve (`10/09/2026`) para a chave interna. Havia três
 // sítios a fazer isto com `.split('/')` à mão, e um deles não fazia de todo —
 // gravava o texto cru e o ecrã ficava com dois formatos de registo.
