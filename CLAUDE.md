@@ -37,20 +37,28 @@ testada. Quando este ficheiro e o protótipo discordarem, o protótipo ganha.
 
 ## Invariantes — não negociáveis
 
-### 0. A base de dados está escrita
+### 0. A base de dados está escrita — e provada
 
-`db/01-esquema.sql` é o esquema completo — 22 tabelas, 5 vistas, as funções do PIN e
-todas as políticas de acesso. `db/README.md` explica cada decisão e traz o mapeamento
-das chaves locais do protótipo para as tabelas. **Leia-o antes de ligar ao servidor**;
-as regras abaixo estão lá impostas em SQL, não por convenção.
+O alvo é o **PocketBase**: `db/pocketbase/`. As regras que impõem os invariantes abaixo
+não estão escritas e esperadas — estão **provadas a correr**:
 
-`src/supabase.js` é a camada de ligação. Sem `EXPO_PUBLIC_SUPABASE_URL` definido, a app
-corre local como sempre correu — a ligação é opcional, não um pré-requisito. Copie o
-`.env.example` para `.env.local` para a ativar.
+```
+npm run db:provar     # 19 provas das regras + 12 dos hooks
+```
 
-**A saúde está deliberadamente fora dessa camada.** As tabelas existem no esquema, mas
-`episodios_saude` e `anexos` não são lidas nem escritas até os cinco pontos do
-`db/README.md` estarem resolvidos. São dados clínicos de menores.
+Cada prova tenta o que a `docs/seguranca.html` diz que não pode acontecer e falha se
+**passar**. Antes de mexer nas coleções, corra-as; depois de mexer, corra-as outra vez.
+`db/README.md` explica cada decisão.
+
+`src/pocketbase.js` é a camada de ligação. Sem `EXPO_PUBLIC_PB_URL` definido, a app corre
+local como sempre correu — a ligação é opcional, não um pré-requisito.
+
+`db/postgres/` é o esquema PostgreSQL anterior, guardado como referência: é onde as
+políticas estão pensadas ao pormenor.
+
+**A saúde está deliberadamente fora.** `episodios_saude` e `anexos` não existem nas
+coleções nem na camada de cliente, até os cinco pontos do `db/postgres/README.md`
+estarem resolvidos. São dados clínicos de menores.
 
 ### 1. Cabeçalho e rodapé aparecem em TODAS as janelas
 

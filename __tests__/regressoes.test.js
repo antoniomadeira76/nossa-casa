@@ -253,59 +253,67 @@ describe('Português europeu', () => {
   });
 });
 
-describe('Camada de ligação ao servidor', () => {
-  const cliente = read('src/supabase.js');
-  const esquema = read('db/01-esquema.sql');
+describe('Camada de ligação ao servidor — PocketBase', () => {
+  const cliente = read('src/pocketbase.js');
+  const colecoes = read('db/pocketbase/criar-colecoes.mjs');
 
-  // O ficheiro era um esqueleto com todos os corpos comentados.
-  test('deixou de ser um esqueleto', () => {
-    expect(cliente).toMatch(/from '@supabase\/supabase-js'/);
-    expect(cliente).not.toMatch(/Supabase not configured yet/);
-    expect(cliente).toMatch(/export const ligado/);   // sem config, corre local
+  // Estes testes leem código. As regras do servidor não se verificam assim —
+  // verificam-se a correr, em db/pocketbase/provar-regras.mjs (19 provas) e
+  // provar-hooks.mjs (12). Aqui só se guarda o que o cliente não pode fazer.
+  test('a ligação é opcional: sem URL, a app corre local', () => {
+    expect(cliente).toMatch(/export const ligado = Boolean\(URL\)/);
+    expect(cliente).toMatch(/process\.env\.EXPO_PUBLIC_PB_URL/);
   });
 
   // INVARIANTE #3: quem decide o que existe é o servidor.
   test('o PIN é verificado no servidor, nunca comparado aqui', () => {
-    expect(cliente).toMatch(/rpc\('verificar_pin'/);
-    expect(esquema).toMatch(/crypt\(/);
-    // nada que pareça uma comparação de PIN no cliente
+    expect(cliente).toMatch(/authWithPassword\(login, pin\)/);
     expect(cliente).not.toMatch(/pin\s*===|===\s*pin\b/);
+    // e a coleção de membros é de autenticação, que é o que faz o hash
+    expect(colecoes).toMatch(/name: 'membros', type: 'auth'/);
   });
 
-  // INVARIANTE #2: o cliente insere movimentos e lê vistas; nunca escreve somas.
-  test('os saldos vêm de vistas, e o cliente não os escreve', () => {
-    for (const v of ['v_cofre_saldo', 'v_envelope_limite', 'v_acerto_saldo']) {
-      expect(esquema).toMatch(new RegExp(`create view ${v}`));
-      expect(cliente).toContain(v);
-    }
+  // INVARIANTE #2: sem regra de update nem de delete, o servidor recusa-os.
+  test('o cofre é uma coleção de inserções', () => {
+    const bloco = colecoes.slice(colecoes.indexOf("name: 'cofre_movimentos'"),
+                                 colecoes.indexOf("name: 'equipamentos'"));
+    expect(bloco).toMatch(/updateRule: null/);
+    expect(bloco).toMatch(/deleteRule: null/);
     expect(cliente).not.toMatch(/update\([^)]*saldo/i);
   });
 
-  // §6 e §9 de docs/seguranca.html: nenhuma operação de dinheiro sem chave.
+  // §5: ausentes da resposta, não escondidos na interface.
+  test('o orçamento exclui perfis de criança na própria regra', () => {
+    const bloco = colecoes.slice(colecoes.indexOf("name: 'envelopes'"),
+                                 colecoes.indexOf("name: 'despesas'"));
+    expect(bloco).toMatch(/listRule: `\$\{DA_CASA\} && \$\{ADULTO\}`/);
+  });
+
+  // §6 e §9: nenhuma operação de dinheiro sem chave.
   test('as operações de dinheiro levam chave de idempotência', () => {
-    const idem = read('db/04-idempotencia.sql');
-    for (const t of ['despesas', 'acertos', 'cofre_movimentos', 'transferencias']) {
-      expect(idem).toMatch(new RegExp(`alter table ${t}\\s+add column if not exists idem_key`));
-      expect(idem).toMatch(new RegExp(`create unique index if not exists ${t}_idem`));
-      expect(cliente).toContain(`'${t}'`);
+    for (const c of ['despesas', 'cofre_movimentos']) {
+      expect(colecoes).toMatch(new RegExp(`CREATE UNIQUE INDEX \\w+ ON ${c} \\(casa, idem_key\\)`));
     }
-    expect(cliente).toMatch(/COM_IDEM = new Set/);
+    expect(cliente).toMatch(/COM_IDEM = new Set\(\['despesas', 'cofre_movimentos'\]\)/);
   });
 
   // A decisão desta sessão: a saúde fica fora até a conformidade estar tratada.
-  test('a saúde está fora da camada de ligação', () => {
-    // as tabelas existem no esquema…
-    expect(esquema).toMatch(/create table episodios_saude/);
-    // …mas não são lidas nem escritas pelo cliente
+  test('a saúde está fora da camada de ligação e das coleções', () => {
     const semComentarios = cliente.replace(/\/\/.*$/gm, '');
-    expect(semComentarios).not.toMatch(/from\(['"]episodios_saude|from\(['"]anexos/);
-    expect(semComentarios).not.toMatch(/'episodios_saude'|'anexos'/);
+    expect(semComentarios).not.toMatch(/episodios_saude|'anexos'/);
+    expect(colecoes).not.toMatch(/name: 'episodios_saude'|name: 'anexos'/);
   });
 
-  test('nenhuma chave real ficou no código', () => {
-    expect(cliente).toMatch(/process\.env\.EXPO_PUBLIC_SUPABASE/);
-    expect(cliente).not.toMatch(/supabase\.co['"]|eyJ[A-Za-z0-9_-]{20}/);
-    expect(cliente).not.toMatch(/service_role/);
+  test('nenhum segredo ficou no código', () => {
+    expect(cliente).not.toMatch(/eyJ[A-Za-z0-9_-]{20}|service_role/);
+    // a palavra-passe de superutilizador só existe nos scripts de prova locais
+    expect(cliente).not.toMatch(/casa-de-testes/);
+  });
+
+  test('as provas do servidor existem e são executáveis', () => {
+    for (const f of ['db/pocketbase/provar-regras.mjs', 'db/pocketbase/provar-hooks.mjs']) {
+      expect(read(f)).toMatch(/process\.exit\(mau \? 1 : 0\)/);
+    }
   });
 });
 

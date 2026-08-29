@@ -15,3 +15,9 @@ ios/
 .env
 .env.*
 !.env.example
+
+# PocketBase — o binário e os dados não pertencem ao repositório.
+# Ancorados à raiz: sem a barra, `pocketbase` apanhava db/pocketbase/ inteira.
+pb_data/
+/pocketbase
+/pocketbase.exe
