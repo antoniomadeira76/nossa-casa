@@ -472,10 +472,10 @@ export default function Saude({ t, user, onClose }) {
           </View>
         )}
 
-        {/* Records */}
-        {filtered.length === 0 ? (
-          <Empty t={t} icon="heartPulse" title="Sem registos de saúde." hint="Comece a registar consultas e exames." />
-        ) : (
+        {/* Registos acrescentados aqui. As consultas vivem nas fichas acima —
+            mostrar «sem registos» por baixo de fichas que contam consultas
+            era o ecrã a contradizer-se. */}
+        {filtered.length === 0 ? null : (
           <View style={{ gap: S.md }}>
             {needsDecision.length > 0 && (
               <View>
