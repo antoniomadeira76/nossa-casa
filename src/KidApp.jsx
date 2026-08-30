@@ -134,7 +134,13 @@ function KidTabs({ t, active, onPress, kid }) {
 // Vista de Tarefas
 function KidTasksView({ t, kid, tasks }) {
   const st = useStore();
-  const { done, s } = st;
+  // `done` vive dentro de `s`, não à cabeça da loja. Desestruturado assim
+  // ficava undefined e `done[x.id]` rebentava no primeiro id — «Cannot read
+  // properties of undefined (reading 'lixo')». O modo criança inteiro era um
+  // ecrã branco, e nada no ecrã dizia porquê: o erro fica só na consola.
+  // As outras três leituras neste ficheiro já usavam `s.done`.
+  const { s } = st;
+  const done = s.done;
 
   const tasksByKid = tasks.filter(x => x.who === kid);
   const todayTasks = tasksByKid.filter(x => !done[x.id]);
@@ -299,7 +305,8 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
 
       {/* Cabeçalho */}
       <View style={{
-        flex: 0, backgroundColor: kidColor, overflow: 'hidden',
+        flexGrow: 0, flexShrink: 0, flexBasis: 'auto',
+        backgroundColor: kidColor, overflow: 'hidden',
         paddingTop: insets.top + 10, paddingBottom: 14, paddingHorizontal: 16,
         flexDirection: 'row', alignItems: 'center', gap: 12, ...elev(3),
       }}>
@@ -351,7 +358,8 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
 
       {/* Rodapé — dois separadores */}
       <View style={{
-        flex: 0, backgroundColor: kidColor, flexDirection: 'row',
+        flexGrow: 0, flexShrink: 0, flexBasis: 'auto',
+        backgroundColor: kidColor, flexDirection: 'row',
         paddingTop: 6, paddingBottom: Math.max(insets.bottom, 10), paddingHorizontal: 4,
       }}>
         {[
