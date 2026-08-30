@@ -54,10 +54,21 @@ export default function Login({ t, onEnter }) {
       //
       // A mensagem é nossa, não a do SDK: o PocketBase responde «Something
       // went wrong», em inglês, e isso não entra num ecrã desta app.
-      const semProvedor = /oauth|provider|missing|something went wrong/i.test(e.message || '');
-      setErroGoogle(semProvedor
-        ? 'A entrada pela Google ainda não está configurada neste servidor. A abrir as contas desta casa.'
-        : 'Não foi possível entrar com a Google. A abrir as contas desta casa.');
+      //
+      // E a razão PERGUNTA-SE ao servidor, não se adivinha pela frase do erro.
+      // O teste era `/oauth|provider|missing/`, e «Failed to fetch OAuth2
+      // user» tem lá «OAuth»: com tudo configurado, o ecrã afirmava que a
+      // Google não estava configurada. Mandou-nos à consola da Google duas
+      // vezes à procura de um problema que estava aqui.
+      const provedores = await servidor.auth.provedores();
+      const cancelado = /cancel|closed|aborted/i.test(e.message || '');
+      setErroGoogle(
+        !provedores.includes('google')
+          ? 'A entrada pela Google ainda não está configurada neste servidor. A abrir as contas desta casa.'
+        : cancelado
+          ? 'Entrada cancelada. A abrir as contas desta casa.'
+          : 'A Google autorizou, mas o servidor não conseguiu concluir a entrada. '
+            + 'A abrir as contas desta casa.');
       setStep('contas');
     }
   };

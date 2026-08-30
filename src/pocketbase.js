@@ -94,18 +94,49 @@ export const auth = {
   //
   // Os scopes do Calendar pedem-se AQUI e não depois: o token que a Google
   // devolve traz as permissões que foram pedidas no momento do consentimento.
+  //
+  // ⚠ `scopes` SUBSTITUI os que o PocketBase pede por omissão — não acrescenta.
+  // Isto passava só `calendar.readonly`, e a entrada partia-se inteira: a troca
+  // do token corria bem, e o passo seguinte — ir buscar o nome e o e-mail a
+  // `oauth2/v3/userinfo` — respondia 401 «Invalid Credentials», porque o token
+  // dava acesso à agenda e a identidade nenhuma.
+  //
+  // O erro que chega ao ecrã é «Failed to fetch OAuth2 user», que soa a
+  // credencial errada e manda quem o vê para a consola da Google à procura de
+  // um problema que não existe. Custou duas voltas: o segredo estava certo e o
+  // redirecionamento também.
+  //
+  // A identidade vai SEMPRE. A agenda é que é opcional.
   async entrarComGoogle({ calendario = false } = {}) {
     if (!estaLigado()) return semLigacao();
+    const IDENTIDADE = [
+      'openid',
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile',
+    ];
     const r = await pb.collection('membros').authWithOAuth2({
       provider: 'google',
       scopes: calendario
-        ? ['https://www.googleapis.com/auth/calendar.readonly']
-        : [],
+        ? [...IDENTIDADE, 'https://www.googleapis.com/auth/calendar.readonly']
+        : IDENTIDADE,
     });
     // O token da Google só vem nesta resposta. Guarda-se em memória, não em
     // disco: é credencial de terceiro e não tem de sobreviver ao fecho da app.
     tokenGoogle = r.meta && r.meta.accessToken ? r.meta.accessToken : null;
     return r;
+  },
+
+  // Que provedores é que o servidor tem mesmo configurados. Serve para o ecrã
+  // de entrada poder DIZER se a Google está configurada em vez de o deduzir da
+  // frase do erro — que foi o que o pôs a afirmar «ainda não está configurada»
+  // com tudo configurado, porque «Failed to fetch OAuth2 user» também tem a
+  // palavra «OAuth» lá dentro.
+  provedores: async () => {
+    if (!estaLigado()) return [];
+    try {
+      const m = await pb.collection('membros').listAuthMethods();
+      return (m.oauth2?.providers || []).map(p => p.name);
+    } catch { return []; }
   },
 
   sair: () => { if (estaLigado()) { pb.authStore.clear(); tokenGoogle = null; } },

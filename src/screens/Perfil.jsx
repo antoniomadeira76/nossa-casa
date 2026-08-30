@@ -33,9 +33,9 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
   const scheme = s.schemeByUser[user] ?? 0;
 
   return (
-    <Sheet t={t} title={`${user} ${nomeDaCasa}`} sub={MEMBERS[user].email || ROLE_LABEL(s.roles[user], user)}
+    <Sheet t={t} title={`${user} ${nomeDaCasa}`} sub={MEMBERS[user]?.email || ROLE_LABEL(s.roles[user], user)}
       onClose={onClose}
-      leading={<Avatar initial={MEMBERS[user].initial} color={corDoMembro(user)} size={40} />}
+      leading={<Avatar initial={MEMBERS[user]?.initial || '?'} color={corDoMembro(user)} size={40} />}
       headerRight={
         <Tap onPress={onSignOut} label="Terminar sessão">
           <Icon name="logout" size={22} color={t.text3} />

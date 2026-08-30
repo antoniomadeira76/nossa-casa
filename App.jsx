@@ -57,7 +57,8 @@ const TABS = [
 
 function Shell() {
   const { s, set, importGoogleEvents, remaining, allEvents, allTasks,
-          canSeeHealth, healthOf, docsOf, allEquip, membros: MEMBERS, nomeDaCasa } = useStore();
+          canSeeHealth, healthOf, docsOf, allEquip, membros: MEMBERS, nomeDaCasa,
+          lerDoServidor } = useStore();
   const sysDark = useColorScheme() === 'dark';
   const [user, setUser] = useState(null);      // nome do membro ligado
   const [tab, setTab] = useState('inicio');
@@ -105,7 +106,7 @@ function Shell() {
   // agenda a sério; sem ele fica a lista de demonstração, para a app continuar
   // a mostrar o ecrã sem credenciais nenhumas.
   useEffect(() => {
-    if (!user || MEMBERS[user].kid) return;
+    if (!user || !MEMBERS[user] || MEMBERS[user].kid) return;
     const jaViu = s.googleCalendarImported && Object.keys(s.googleCalendarImported).length > 0;
     if (jaViu) return;
 
@@ -121,6 +122,21 @@ function Shell() {
     })();
     return () => { vivo = false; };
   }, [user, s.googleCalendarImported]);
+
+  // Quem entrou, tal como o quadro da casa o conhece. Pode ser `undefined`
+  // durante um instante: quem entra pela Google chega com um nome que a loja
+  // ainda não tem, porque no arranque não havia sessão e a leitura da casa
+  // voltou vazia. Ler `MEMBERS[user].kid` sem guarda rebentava a app inteira
+  // aí — ecrã branco, «Cannot read properties of undefined (reading 'kid')».
+  const euNaCasa = user ? MEMBERS[user] : null;
+
+  // Entrar relê a casa: é a seguir à sessão que o servidor responde com os
+  // membros a sério. Sem isto, quem entrava ficava com o seu nome e a família
+  // de demonstração ao lado.
+  const entrar = async (nome) => {
+    setUser(nome);
+    await lerDoServidor();
+  };
 
   const mode = (user && s.themeByUser[user]) || 'claro';
   const dark = mode === 'escuro' || (mode === 'sistema' && sysDark);
@@ -139,10 +155,42 @@ function Shell() {
     );
   }
 
-  if (!user) return <Login t={t} onEnter={setUser} />;
+  if (!user) return <Login t={t} onEnter={entrar} />;
+
+  // Entrou, mas não vive nesta casa.
+  //
+  // Acontece de verdade: alguém entra com uma conta Google cujo membro foi
+  // tirado da casa entretanto, ou o servidor deixou de responder e a app ficou
+  // com a família de demonstração ao lado de um nome que não é dela. Antes
+  // disto a app rebentava aqui — ecrã branco, sem uma palavra sobre porquê.
+  if (!euNaCasa) {
+    return (
+      <View style={{ flex: 1, backgroundColor: t.chrome, alignItems: 'center',
+        justifyContent: 'center', paddingHorizontal: 32, gap: S.lg }}>
+        <StatusBar barStyle="light-content" />
+        <Icon name="lock" size={44} color="#FFFFFF" />
+        <Text style={{ fontFamily: FONT.display, fontSize: 20, color: '#FFFFFF', textAlign: 'center' }}>
+          {user} não faz parte desta casa
+        </Text>
+        <Text style={{ fontFamily: FONT.ui, fontSize: 13.5, lineHeight: 21,
+          color: 'rgba(255,255,255,0.75)', textAlign: 'center' }}>
+          A conta entrou, mas não está entre os membros de {nomeDaCasa}. Peça a
+          quem administra a casa que a acrescente, e entre outra vez.
+        </Text>
+        <Pressable onPress={() => { servidor.auth.sair(); setUser(null); }}
+          accessibilityRole="button" accessibilityLabel="Voltar à entrada"
+          style={{ minHeight: 44, paddingHorizontal: S.xl, borderRadius: R.pill, borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.45)', alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontFamily: FONT.display, fontSize: 14.5, color: '#FFFFFF' }}>
+            Voltar à entrada
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   // Renderizar KidApp se o utilizador for uma criança
-  if (MEMBERS[user].kid) {
+  if (euNaCasa?.kid) {
     return <KidApp kid={user} kidTab={kidTab} setKidTab={setKidTab} onLogout={() => setUser(null)} />;
   }
 
@@ -330,7 +378,7 @@ function Shell() {
             borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
             alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '500', color: t.chrome }}>
-              {MEMBERS[user].initial}
+              {euNaCasa.initial}
             </Text>
           </View>
         </Pressable>
@@ -391,7 +439,7 @@ function Shell() {
       ) : null}
 
       {/* Google Calendar Import Modal */}
-      {googleImport && user && !MEMBERS[user].kid && (
+      {googleImport && user && euNaCasa && !euNaCasa.kid && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center',
           paddingHorizontal: 24, paddingTop: 24, paddingBottom: 90 }}>

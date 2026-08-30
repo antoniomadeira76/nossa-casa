@@ -966,3 +966,73 @@ describe('A casa não são quatro nomes escritos à mão', () => {
     expect(MIGRATIONS[5]({ settled: false }).acertoMovs).toEqual([]);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// A entrada pela Google partiu-se por causa de uma linha: `scopes` no
+// PocketBase SUBSTITUI os pedidos por omissão em vez de acrescentar. Pedindo
+// só `calendar.readonly`, a troca do token corria bem e o passo seguinte —
+// ir buscar o nome e o e-mail — respondia 401. O erro que chegava ao ecrã era
+// «Failed to fetch OAuth2 user», que soa a credencial errada e manda quem o vê
+// procurar na consola da Google um problema que não existe.
+describe('A entrada pela Google pede sempre a identidade', () => {
+  const fonte = semComentarios(read('src/pocketbase.js'));
+
+  test('os scopes de identidade vão em todos os caminhos', () => {
+    for (const s of ['openid', 'userinfo.email', 'userinfo.profile']) {
+      expect(fonte).toContain(s);
+    }
+  });
+
+  test('a agenda acrescenta-se à identidade, nunca a substitui', () => {
+    // O ramo do calendário tem de espalhar a identidade lá para dentro.
+    expect(fonte).toMatch(/\.\.\.IDENTIDADE[\s\S]{0,120}calendar\.readonly/);
+    // e nenhum ramo pede uma lista vazia, que é o que devolvia o token sem
+    // identidade nenhuma
+    expect(fonte).not.toMatch(/scopes:[\s\S]{0,120}\[\s*\]/);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Entrar pela Google dava ecrã branco: `Cannot read properties of undefined
+// (reading 'kid')`. A loja lê a casa uma vez, no arranque, quando ainda não há
+// sessão — as regras recusam e a leitura volta vazia. Quem entrava ficava com
+// o seu nome e o quadro da família de demonstração, e a app lia
+// `MEMBERS[user].kid` de um membro que não estava lá.
+//
+// São dois defeitos, e são precisos os dois: reler a casa depois de entrar, e
+// não rebentar quando o membro não está no quadro.
+describe('Entrar não pode dar ecrã branco', () => {
+  const app = semComentarios(read('App.jsx'));
+
+  test('entrar relê a casa do servidor', () => {
+    expect(app).toMatch(/const entrar = async[\s\S]{0,160}lerDoServidor\(\)/);
+    expect(app).toMatch(/<Login[^>]*onEnter=\{entrar\}/);
+  });
+
+  test('a loja expõe a releitura, em vez de a ter presa no arranque', () => {
+    const loja = semComentarios(read('src/store.jsx'));
+    expect(loja).toMatch(/const lerDoServidor = async \(\) =>/);
+    expect(loja.slice(loja.lastIndexOf('  return {'))).toContain('lerDoServidor');
+  });
+
+  // Nenhuma leitura do membro ligado pode assumir que ele está no quadro.
+  test('ninguém lê o membro ligado sem guarda', () => {
+    const culpados = [];
+    for (const f of ['App.jsx', ...jsxFiles()]) {
+      semComentarios(read(f)).split('\n').forEach((linha, i) => {
+        // `MEMBERS[user].campo` sem `?.` e sem um `MEMBERS[user] &&` antes
+        if (/MEMBERS\[(user|kid)\]\.[a-z]/i.test(linha)
+            && !/\?\./.test(linha)
+            && !/MEMBERS\[(user|kid)\]\s*(&&|\|\|)/.test(linha)) {
+          culpados.push(`${f}:${i + 1}`);
+        }
+      });
+    }
+    expect(culpados).toEqual([]);
+  });
+
+  test('e quem entrou sem estar na casa vê uma explicação, não um ecrã em branco', () => {
+    expect(app).toMatch(/if \(!euNaCasa\)/);
+    expect(app).toContain('não faz parte desta casa');
+  });
+});

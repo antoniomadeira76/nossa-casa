@@ -297,6 +297,42 @@ export function StoreProvider({ children }) {
   // local, que é o caso quando não há EXPO_PUBLIC_PB_URL.
   const mapaServidor = useRef({ casa: null, membros: {}, envelopes: {} });
 
+  // Ler a casa do servidor. Corre no arranque E outra vez depois de alguém
+  // entrar — que é o que faltava.
+  //
+  // No arranque não há sessão ainda: as regras das coleções recusam, a leitura
+  // volta vazia, e a app fica com a casa de demonstração. Se isto não voltasse
+  // a correr depois da entrada, quem entrasse pela Google ficava com o seu
+  // nome de utilizador e o quadro da família de demonstração — e a app
+  // rebentava em `MEMBERS[user].kid`, porque esse utilizador não está lá.
+  // Foi exatamente o que aconteceu: ecrã branco, `Cannot read properties of
+  // undefined (reading 'kid')`.
+  const lerDoServidor = async () => {
+    try {
+      const s = await carregarSync();
+      const casa = s && await s.puxarCasa();
+      if (!casa) return false;
+      mapaServidor.current = {
+        casa: casa.casaId,
+        membros: Object.fromEntries((casa._servidor.membros || []).map(m => [m.nome, m.id])),
+        envelopes: Object.fromEntries((casa._servidor.envelopes || []).map(e => [e.nome, e.id])),
+      };
+      // O servidor manda: se respondeu com membros, são estes e mais nenhuns.
+      // Sem servidor, a app fica com a família de demonstração — e o Perfil
+      // di-lo, para ninguém confundir uma com a outra.
+      if (Object.keys(casa.membros || {}).length) {
+        set({ membros: casa.membros, nomeDaCasa: casa.nomeDaCasa, deDemonstracao: false });
+      }
+      // Os movimentos de cofre do servidor substituem os locais: são a mesma
+      // coisa vista de outro sítio, e o servidor tem os dos dois telemóveis.
+      // Um saldo nunca é escrito — continua a ser a soma.
+      if (casa.vaultMoves.length) set({ vaultMoves: casa.vaultMoves });
+      return true;
+    } catch (e) {
+      return false;     // servidor indisponível — a app fica local
+    }
+  };
+
   // ler ao arrancar
   useEffect(() => {
     (async () => {
@@ -323,27 +359,7 @@ export function StoreProvider({ children }) {
       // desenhar já com o que tem em disco, e a rede é um extra que chega
       // quando chegar. Sem ligação, isto não faz nada e a app corre como
       // sempre correu.
-      try {
-        const s = await carregarSync();
-        const casa = s && await s.puxarCasa();
-        if (casa) {
-          mapaServidor.current = {
-            casa: casa.casaId,
-            membros: Object.fromEntries((casa._servidor.membros || []).map(m => [m.nome, m.id])),
-            envelopes: Object.fromEntries((casa._servidor.envelopes || []).map(e => [e.nome, e.id])),
-          };
-          // O servidor manda: se respondeu com membros, são estes e mais
-          // nenhuns. Sem servidor, a app fica com a família de demonstração
-          // — e o Perfil di-lo, para ninguém confundir uma com a outra.
-          if (Object.keys(casa.membros || {}).length) {
-            set({ membros: casa.membros, nomeDaCasa: casa.nomeDaCasa, deDemonstracao: false });
-          }
-          // Os movimentos de cofre do servidor substituem os locais: são a
-          // mesma coisa vista de outro sítio, e o servidor tem os dos dois
-          // telemóveis. Um saldo nunca é escrito — continua a ser a soma.
-          if (casa.vaultMoves.length) set({ vaultMoves: casa.vaultMoves });
-        }
-      } catch (e) { /* servidor indisponível — a app fica local */ }
+      await lerDoServidor();
     })();
   }, []);
 
@@ -359,7 +375,7 @@ export function StoreProvider({ children }) {
     AsyncStorage.setItem(KEY, payload).catch(() => {});
   }, [state]);
 
-  const api = useMemo(() => build(state, set, mapaServidor), [state]);
+  const api = useMemo(() => build(state, set, mapaServidor, lerDoServidor), [state]);
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }
 
@@ -370,7 +386,11 @@ export const useStore = () => {
 };
 
 // ─── derivações. Tudo o que a interface lê passa por aqui.
-function build(s, set, mapaServidor = { current: { casa: null, membros: {}, envelopes: {} } }) {
+// `lerDoServidor` vem de fora porque vive no fornecedor, onde estão os efeitos
+// e a referência ao mapa do servidor. Passá-lo é mais honesto do que duplicá-lo
+// aqui — havia duas cópias a divergir à espera de acontecer.
+function build(s, set, mapaServidor = { current: { casa: null, membros: {}, envelopes: {} } },
+               lerDoServidor = async () => false) {
   // Quem vive nesta casa. Vinha de listas escritas à mão — `['Léo', 'Mia']` em
   // seis sítios, `['Rita', 'Tomás', 'Léo', 'Mia']` noutros seis. Acrescentar
   // alguém à casa dava-lhe um avatar e mais nada: não aparecia no filtro das
@@ -958,6 +978,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     garantiasAExpirar, receitasAExpirar, consultasProximas,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
+    lerDoServidor,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),
     resetDemo: () => { AsyncStorage.removeItem(KEY).catch(() => {}); set(DEMO()); },
     startBlank: () => set(BLANK()),
