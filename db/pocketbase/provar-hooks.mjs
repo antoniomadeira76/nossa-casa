@@ -2,20 +2,11 @@
 // minimização e as guardas de papel. Um hook por testar é um hook que não existe.
 //   node db/pocketbase/provar-hooks.mjs
 import PocketBase from 'pocketbase';
+import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
 
-const pb = new PocketBase(process.env.PB_URL || 'http://127.0.0.1:8095');
-// As credenciais do superutilizador vêm do ambiente. Os valores por omissão
-// são os do servidor de desenvolvimento e estão aqui para estes scripts
-// correrem sem preparação nenhuma — mas num servidor a sério o administrador é
-// outro, e a palavra-passe não deve estar escrita num ficheiro versionado.
-//   PB_ADMIN=... PB_ADMIN_PASS=... node <este ficheiro>
-const ADMIN = process.env.PB_ADMIN || 'admin@nossacasa.local';
-const ADMIN_PASS = process.env.PB_ADMIN_PASS || 'casa-de-testes-123';
-await pb.collection('_superusers').authWithPassword(ADMIN, ADMIN_PASS);
-
-for (const c of ['cofre_movimentos', 'despesas', 'eventos', 'membros', 'casas']) {
-  for (const r of await pb.collection(c).getFullList()) await pb.collection(c).delete(r.id).catch(() => {});
-}
+// Casa de provas, limpa. Só o que é das provas é apagado — o que estiver
+// noutra casa fica onde está.
+const { pb } = await comecar();
 
 let ok = 0, mau = 0;
 const prova = async (n, f) => {
@@ -27,7 +18,7 @@ const recusado = async (f) => {
   catch (e) { if (/PASSOU/.test(e.message)) throw e; }
 };
 
-const casa = await pb.collection('casas').create({ nome: 'Prova', valor_ponto: 0.1 });
+const casa = await pb.collection('casas').create({ nome: PREFIXO + 'Prova', valor_ponto: 0.1 });
 const mk = (nome, papel, extra) => pb.collection('membros').create({
   nome, login: `${casa.id}_${nome}`, casa: casa.id, papel, ...extra,
 });

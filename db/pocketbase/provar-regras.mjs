@@ -2,29 +2,18 @@
 // Cada teste tenta o que NÃO deve ser possível e espera uma recusa.
 //   node db/pocketbase/provar-regras.mjs
 import PocketBase from 'pocketbase';
+import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
 
-const URL = process.env.PB_URL || 'http://127.0.0.1:8095';
-const admin = new PocketBase(URL);
-// As credenciais do superutilizador vêm do ambiente. Os valores por omissão
-// são os do servidor de desenvolvimento e estão aqui para estes scripts
-// correrem sem preparação nenhuma — mas num servidor a sério o administrador é
-// outro, e a palavra-passe não deve estar escrita num ficheiro versionado.
-//   PB_ADMIN=... PB_ADMIN_PASS=... node <este ficheiro>
-const ADMIN = process.env.PB_ADMIN || 'admin@nossacasa.local';
-const ADMIN_PASS = process.env.PB_ADMIN_PASS || 'casa-de-testes-123';
-await admin.collection('_superusers').authWithPassword(ADMIN, ADMIN_PASS);
+// Casa de provas, limpa. Só o que é das provas é apagado — o que estiver
+// noutra casa fica onde está.
+const { pb: admin } = await comecar();
 
 // ── Dados de prova ───────────────────────────────────────────────────────────
-for (const c of ['cofre_movimentos', 'despesas', 'eventos', 'membros', 'casas']) {
-  for (const r of await admin.collection(c).getFullList()) {
-    await admin.collection(c).delete(r.id).catch(() => {});
-  }
-}
 
 const casa = await admin.collection('casas').create({
-  nome: 'Bengui', rendimento_mensal: 3200, valor_ponto: 0.10, dia_pagamento: 0, divide_meias: true,
+  nome: PREFIXO + 'Bengui', rendimento_mensal: 3200, valor_ponto: 0.10, dia_pagamento: 0, divide_meias: true,
 });
-const outraCasa = await admin.collection('casas').create({ nome: 'Vizinhos', valor_ponto: 0.10 });
+const outraCasa = await admin.collection('casas').create({ nome: PREFIXO + 'Vizinhos', valor_ponto: 0.10 });
 
 const membro = (nome, papel, extra) => admin.collection('membros').create({
   nome, login: `${casa.id}_${nome.toLowerCase()}`, casa: casa.id, papel, ...extra,
