@@ -118,6 +118,42 @@ await prova('a mesma chave duas vezes não duplica', async () => {
     casa: casa.id, membro: leo.id, tipo: 'bonus', valor: 5, idem_key: k }));
 });
 
+console.log('\n── quem acrescenta e tira membros da casa ──');
+// A regra de criação era `null` — só superutilizador. Isso impedia a app de
+// ter um ecrã de membros: quem administra a casa não conseguia acrescentar
+// nem a própria filha. Passou a admin-da-mesma-casa, e estas provas são o que
+// impede que «admin da mesma casa» se transforme em «qualquer um» sem se dar
+// por isso.
+await prova('a administração acrescenta um membro à sua casa', async () => {
+  const m = await cRita.collection('membros').create({
+    nome: 'Mia', login: `${casa.id}_mia`, casa: casa.id, papel: 'crianca',
+    password: '2470', passwordConfirm: '2470', fem: true,
+  });
+  igual(m.nome, 'Mia');
+  await admin.collection('membros').delete(m.id);
+});
+await prova('um adulto que não administra NÃO acrescenta', () =>
+  recusado(null, () => cTomas.collection('membros').create({
+    nome: 'Intruso', login: `${casa.id}_intruso`, casa: casa.id, papel: 'adulto',
+    email: 'intruso@exemplo.pt', password: 'palavra-longa-9', passwordConfirm: 'palavra-longa-9' })));
+await prova('uma criança NÃO acrescenta', () =>
+  recusado(null, () => cLeo.collection('membros').create({
+    nome: 'Amigo', login: `${casa.id}_amigo`, casa: casa.id, papel: 'crianca',
+    password: '9753', passwordConfirm: '9753' })));
+await prova('a administração de outra casa NÃO acrescenta a esta', () =>
+  recusado(null, () => cVizinho.collection('membros').create({
+    nome: 'Cavalo', login: `${casa.id}_cavalo`, casa: casa.id, papel: 'adulto',
+    email: 'cavalo@exemplo.pt', password: 'palavra-longa-8', passwordConfirm: 'palavra-longa-8' })));
+await prova('o género gramatical é do membro, e vem do servidor', async () => {
+  const m = await cRita.collection('membros').create({
+    nome: 'Ana', login: `${casa.id}_ana`, casa: casa.id, papel: 'crianca',
+    password: '8642', passwordConfirm: '8642', fem: true,
+  });
+  const lido = await cRita.collection('membros').getOne(m.id);
+  igual(lido.fem, true, 'o campo não voltou como foi gravado');
+  await admin.collection('membros').delete(m.id);
+});
+
 console.log('\n── §4: autorização por operação ──');
 await prova('só a administração mexe nos envelopes', () =>
   recusado(null, () => cTomas.collection('envelopes').update(envelope.id, { limite_base: 9999 })));

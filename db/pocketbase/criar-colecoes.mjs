@@ -79,11 +79,21 @@ await criar({
     rel('casa', ids.casas, { required: true, cascadeDelete: true }),
     sel('papel', ['admin', 'adulto', 'crianca'], { required: true }),
     txt('cor'),
+    // O género gramatical é uma propriedade da pessoa, não coisa que se
+    // adivinhe do nome — a app tinha três sítios a fazer `nome === 'Rita'` e
+    // um deles escrevia «Saúde do Mia». Fica ao lado do nome, no servidor,
+    // porque é a casa que sabe como cada membro quer ser tratado.
+    bool('fem'),
   ],
   indexes: ['CREATE UNIQUE INDEX idx_membro_login ON membros (login)'],
   listRule: 'casa = @request.auth.casa',
   viewRule: 'casa = @request.auth.casa',
-  createRule: null,                                   // só superuser/admin por hook
+  // Um administrador acrescenta membros à SUA casa, e mais ninguém. Estava
+  // `null` — só superutilizador —, o que impedia a app de ter um ecrã de
+  // membros: quem administra a casa não conseguia acrescentar nem a própria
+  // filha. As guardas do que se pode criar continuam nos hooks (qualidade do
+  // PIN, palavra-passe de adulto, e-mail só para adultos).
+  createRule: '@request.auth.papel = "admin" && casa = @request.auth.casa',
   updateRule: '@request.auth.papel = "admin" && casa = @request.auth.casa',
   deleteRule: '@request.auth.papel = "admin" && casa = @request.auth.casa',
 });
