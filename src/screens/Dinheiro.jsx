@@ -47,6 +47,34 @@ export function NumField({ t, value, onChange, step = 5, min = 0, max = 99999, s
   );
 }
 
+// Envelopes em grelha de dois, com o valor livre por baixo do nome — é assim
+// nas duas listas da referência 19. Eram oito linhas de largura total, 48 px
+// cada: a folha não cabia e o campo do valor ficava cortado a meio pelo botão.
+// A lista de reforçar também não dizia quanto havia livre em cada um.
+function GrelhaEnvelopes({ t, envelopes, livre, escolhido, onEscolher }) {
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
+      {envelopes.map((e, i) => {
+        const on = escolhido === i;
+        return (
+          <Pressable key={e.name} onPress={() => onEscolher(i)}
+            accessibilityRole="button" accessibilityLabel={`${e.name} · livre ${EUR(livre(i))}`}
+            accessibilityState={{ selected: on }}
+            style={{ width: '47%', minHeight: 56, borderRadius: R.row, borderWidth: 1,
+              paddingHorizontal: 12, justifyContent: 'center', gap: 2,
+              borderColor: on ? t.chrome : t.border,
+              backgroundColor: on ? t.chrome : t.subtle }}>
+            <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
+              color: on ? '#FFFFFF' : t.text2 }}>{e.name}</Text>
+            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5,
+              color: on ? 'rgba(255,255,255,0.7)' : t.text3 }}>livre {EUR(livre(i))}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export default function Dinheiro({ t, user, onEquip }) {
   const st = useStore();
   const { s, set, envelopes, budget, spent, remaining, allEquip, isAdmin } = st;
@@ -387,7 +415,7 @@ export default function Dinheiro({ t, user, onEquip }) {
           <Sheet t={t} title="Mover Dinheiro" sub="Redistribuir o orçamento, sem sair dinheiro da conta"
             onClose={() => setSheet(null)}
             action={<Primary t={t} disabled={over || mv.amount <= 0}
-              label={over ? 'Valor Indisponível' : 'Confirmar Movimento'}
+              label={over ? 'Valor Indisponível' : mv.amount <= 0 ? 'Escreva um valor' : 'Confirmar Movimento'}
               onPress={() => {
                 set(x => ({ envMove: {
                   ...x.envMove,
@@ -398,33 +426,13 @@ export default function Dinheiro({ t, user, onEquip }) {
               }} />}>
             <View style={{ gap: S.md }}>
               <Label t={t}>Retirar de</Label>
-              {ENV_BASE.map((e, i) => (
-                <Pressable key={e.name} onPress={() => setMv(m => ({ ...m, from: i, to: m.to === i ? m.from : m.to }))}
-                  accessibilityRole="button" accessibilityLabel={e.name} accessibilityState={{ selected: mv.from === i }}
-                  style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: 14,
-                    borderColor: mv.from === i ? t.chrome : t.border,
-                    backgroundColor: mv.from === i ? t.chrome : t.subtle,
-                    flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-                  <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
-                    color: mv.from === i ? '#FFFFFF' : t.text2 }}>{e.name}</Text>
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 11.5,
-                    color: mv.from === i ? 'rgba(255,255,255,0.7)' : t.text3 }}>livre {EUR(freeOf(i))}</Text>
-                </Pressable>
-              ))}
+              <GrelhaEnvelopes t={t} envelopes={ENV_BASE} livre={freeOf} escolhido={mv.from}
+                onEscolher={(i) => setMv(m => ({ ...m, from: i, to: m.to === i ? m.from : m.to }))} />
             </View>
             <View style={{ gap: S.md }}>
               <Label t={t}>Reforçar</Label>
-              {ENV_BASE.map((e, i) => (
-                <Pressable key={e.name} onPress={() => setMv(m => ({ ...m, to: i, from: m.from === i ? m.to : m.from }))}
-                  accessibilityRole="button" accessibilityLabel={e.name} accessibilityState={{ selected: mv.to === i }}
-                  style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: 14,
-                    borderColor: mv.to === i ? t.chrome : t.border,
-                    backgroundColor: mv.to === i ? t.chrome : t.subtle,
-                    flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-                  <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
-                    color: mv.to === i ? '#FFFFFF' : t.text2 }}>{e.name}</Text>
-                </Pressable>
-              ))}
+              <GrelhaEnvelopes t={t} envelopes={ENV_BASE} livre={freeOf} escolhido={mv.to}
+                onEscolher={(i) => setMv(m => ({ ...m, to: i, from: m.from === i ? m.to : m.from }))} />
             </View>
             <View style={{ gap: S.md }}>
               <Label t={t}>Valor a mover</Label>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { S, R, elev, FONT } from './theme';
+import { S, R, elev, FONT, MEMBER_COLOR } from './theme';
 import Icon from './Icon';
 
 // Cartão: um enchimento só, 14/16, herdado do protótipo
@@ -48,6 +48,34 @@ export const Choice = ({ t, label, selected, onPress }) => (
     <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
       color: selected ? '#FFFFFF' : t.text2 }}>{label}</Text>
   </Pressable>
+);
+
+// Escolher um membro: grelha de dois por linha, com o ponto de cor de cada
+// um — é assim nas referências 18, 19 e 20. Estava uma fila de quatro
+// pastilhas sem ponto: os nomes cabiam à justa e nada dizia de quem era a
+// cor que a linha do evento ou da tarefa depois mostra.
+export const EscolherMembro = ({ t, valor, onEscolher, membros }) => (
+  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
+    {membros.map(nome => {
+      const on = valor === nome;
+      return (
+        <Pressable key={nome} onPress={() => onEscolher(nome)}
+          accessibilityRole="button" accessibilityLabel={nome}
+          accessibilityState={{ selected: on }}
+          style={({ pressed }) => ({
+            width: '47%', minHeight: 48, borderRadius: R.row, borderWidth: 1,
+            paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10,
+            borderColor: on ? t.chrome : t.border,
+            backgroundColor: on ? t.chrome : pressed ? t.subtle : 'transparent',
+          })}>
+          <View style={{ width: 9, height: 9, borderRadius: R.pill,
+            backgroundColor: MEMBER_COLOR[nome] || t.text3 }} />
+          <Text style={{ fontFamily: FONT.body, fontSize: 15,
+            color: on ? '#FFFFFF' : t.text2 }}>{nome}</Text>
+        </Pressable>
+      );
+    })}
+  </View>
 );
 
 // Alvo de toque nunca abaixo de 44

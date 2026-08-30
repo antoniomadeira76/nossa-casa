@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, Choice, Segmented, Primary } from '../ui';
+import { Label, Choice, Segmented, Primary, EscolherMembro } from '../ui';
 import { TODAY_KEY, dkey, pad2 } from '../format';
 import Icon from '../Icon';
 
@@ -65,18 +65,9 @@ export default function NovaTarefa({ t, user, onClose }) {
       </View>
 
       <View style={{ gap: S.sm }}>
-        <Label t={t}>Responsável</Label>
-        <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-          {['Rita', 'Tomás', 'Léo', 'Mia'].map(name => (
-            <Choice
-              key={name}
-              t={t}
-              label={name}
-              selected={form.who === name}
-              onPress={() => setForm(f => ({ ...f, who: name }))}
-            />
-          ))}
-        </View>
+        <Label t={t}>Atribuir a</Label>
+        <EscolherMembro t={t} membros={['Rita', 'Tomás', 'Léo', 'Mia']}
+          valor={form.who} onEscolher={(name) => setForm(f => ({ ...f, who: name }))} />
       </View>
 
       <View style={{ gap: S.sm }}>

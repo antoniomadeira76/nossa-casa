@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, Choice, Toggle, Primary } from '../ui';
+import { Label, Choice, Toggle, Primary, EscolherMembro } from '../ui';
 import Icon from '../Icon';
 import ConfirmShare from '../ConfirmShare';
 import { parseKey } from '../format';
@@ -107,28 +107,29 @@ export default function NovoEvento({ t, user, onClose, preFillDay }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Responsável</Label>
-        <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-          {['Rita', 'Tomás', 'Léo', 'Mia'].map(name => (
-            <Choice
-              key={name}
-              t={t}
-              label={name}
-              selected={form.responsible === name}
-              onPress={() => setForm(f => ({ ...f, responsible: name }))}
-            />
-          ))}
-        </View>
+        <EscolherMembro t={t} membros={['Rita', 'Tomás', 'Léo', 'Mia']}
+          valor={form.responsible}
+          onEscolher={(name) => setForm(f => ({ ...f, responsible: name }))} />
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12,
+      {/* «Partilhar com a família», ligado — como na referência 18. Estava
+          rotulado «Privado» com a legenda «Visível para toda a família»: o
+          rótulo nomeia um estado e a legenda descreve o oposto, e quem lê tem
+          de adivinhar qual dos dois o interruptor liga. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14,
         borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14 }}>
+        <Icon name="home" size={22} color={t.slate} />
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>Privado</Text>
+          <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>
+            Partilhar com a família
+          </Text>
           <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
-            {form.private ? 'Só o próprio vê este evento.' : 'Visível para toda a família.'}
+            {form.private
+              ? 'Fica só para si — mais ninguém o vê na Agenda.'
+              : 'Fica visível para os 4 membros da casa e entra na Agenda de todos.'}
           </Text>
         </View>
-        <Toggle t={t} on={form.private} label="Privado"
+        <Toggle t={t} on={!form.private} label="Partilhar com a família"
           onPress={() => setForm(f => ({ ...f, private: !f.private }))} />
       </View>
 
