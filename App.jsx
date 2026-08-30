@@ -7,10 +7,8 @@ import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { StoreProvider, useStore } from './src/store';
 import { buildTheme, onChrome, chromeLine, S, R, FONT, elev } from './src/theme';
 import Icon, { Marca } from './src/Icon';
-import { MEMBERS } from './src/data';
+import { MEMBERS, FEM } from './src/data';
 import { EUR, dayLabel, TODAY, TODAY_KEY, warrantyDaysLeft, semanaDeHoje } from './src/format';
-
-const TODAY_ANO = TODAY.y;
 import Login from './src/screens/Login';
 import Inicio from './src/screens/Inicio';
 import Dinheiro from './src/screens/Dinheiro';
@@ -26,6 +24,8 @@ import Perfil from './src/screens/Perfil';
 import KidApp from './src/KidApp';
 import GoogleCalendarImportModal from './src/modals/GoogleCalendarImportModal';
 import Confirm from './src/Confirm';
+
+const TODAY_ANO = TODAY.y;
 
 // Os subtítulos vêm da semana e do mês da app, não escritos à mão. O da
 // Agenda dizia «20 – 26 de agosto» — a semana a começar em hoje — onde a
@@ -171,7 +171,7 @@ function Shell() {
     },
     gestao: {
       icon: 'sliders', titulo: 'Gestão da Casa', fechar: () => setGestao(false),
-      sub: () => `${user} · ${s.roles[user] === 'admin' ? 'administração' : 'adulto'}`,
+      sub: () => `${user} · ${s.roles[user] === 'admin' ? (FEM(user) ? 'administradora' : 'administrador') : 'adulto'}`,
       render: () => <Gestao t={t} user={user} onClose={() => setGestao(false)} />,
     },
     doc: {

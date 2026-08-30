@@ -6,7 +6,7 @@ import { EUR } from '../format';
 import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
-import { MEMBERS, ENV_BASE } from '../data';
+import { MEMBERS, ENV_BASE, FEM } from '../data';
 
 export default function Gestao({ t, user, onClose }) {
   const { s, set, isAdmin, budget, spent, envelopes, pinError, setPin, canChangeRole, setRole, kidPts } = useStore();
@@ -227,7 +227,7 @@ export default function Gestao({ t, user, onClose }) {
                         <View style={{ gap: 2 }}>
                           <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>Papel</Text>
                           <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>
-                            {role === 'admin' ? 'Administrador' : 'Adulto'}
+                            {role === 'admin' ? (FEM(name) ? 'Administradora' : 'Administrador') : 'Adulto'}
                           </Text>
                         </View>
                       </View>
@@ -622,7 +622,7 @@ export default function Gestao({ t, user, onClose }) {
 
               <View style={{ gap: S.md }}>
                 {['adulto', 'admin'].map(role => {
-                  const label = role === 'admin' ? 'Administrador' : 'Adulto';
+                  const label = role === 'admin' ? (FEM(name) ? 'Administradora' : 'Administrador') : 'Adulto';
                   const current = s.roles[selectedMember] === role;
                   return (
                     <Pressable key={role} onPress={() => {
