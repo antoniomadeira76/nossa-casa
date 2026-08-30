@@ -24,6 +24,7 @@ import Perfil from './src/screens/Perfil';
 import KidApp from './src/KidApp';
 import GoogleCalendarImportModal from './src/modals/GoogleCalendarImportModal';
 import Confirm from './src/Confirm';
+import { APP_VERSION } from './src/registo-app';
 
 const TODAY_ANO = TODAY.y;
 
@@ -176,7 +177,7 @@ function Shell() {
     },
     doc: {
       icon: 'fileText', titulo: 'Documentação', fechar: () => setDoc(false),
-      sub: () => 'O que a app faz, versão a versão',
+      sub: () => `Versão ${APP_VERSION}`,
       render: () => <Documentacao t={t} onClose={() => setDoc(false)} />,
     },
     loja: {
