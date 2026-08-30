@@ -26,8 +26,17 @@ import KidApp from './src/KidApp';
 import GoogleCalendarImportModal from './src/modals/GoogleCalendarImportModal';
 import Confirm from './src/Confirm';
 import { APP_VERSION } from './src/registo-app';
+import * as servidor from './src/pocketbase';
 
 const TODAY_ANO = TODAY.y;
+
+// A lista que o ecrã mostra quando não há agenda da Google ligada. Está aqui,
+// e não dentro do JSX, para ser óbvio que é demonstração e não dados.
+const EVENTOS_DE_DEMONSTRACAO = [
+  { id: 'gcal-1', title: 'Reunião de equipa', date: 'd2026-08-28', time: '14:00', isRecurring: false, description: '' },
+  { id: 'gcal-2', title: 'Almoço com a mãe', date: 'd2026-08-29', time: '12:30', isRecurring: false, description: 'Restaurante Taberna' },
+  { id: 'gcal-3', title: 'Chamada com o cliente', date: 'd2026-08-30', time: '10:00', isRecurring: true, description: 'Reunião semanal' },
+];
 
 // Os subtítulos vêm da semana e do mês da app, não escritos à mão. O da
 // Agenda dizia «20 – 26 de agosto» — a semana a começar em hoje — onde a
@@ -63,6 +72,9 @@ function Shell() {
   const [ficha, setFicha] = useState(null); // membro cuja ficha de saúde está aberta
   const [marcarPara, setMarcarPara] = useState(null); // membro a pré-seleccionar ao marcar
   const [googleImport, setGoogleImport] = useState(false);
+  // Os eventos da agenda da Google. Vazio até haver token — e havendo, vêm da
+  // API a sério, não de uma lista escrita no código.
+  const [eventosGoogle, setEventosGoogle] = useState(EVENTOS_DE_DEMONSTRACAO);
   const [booting, setBooting] = useState(true);
   const [fontsReady, setFontsReady] = useState(false);
   const insets = useSafeAreaInsets();
@@ -89,18 +101,25 @@ function Shell() {
     return () => clearTimeout(id);
   }, [fontsReady]);
 
-  // Mostrar modal de importação do Google Calendar quando o utilizador faz login
-  // por primeira vez ou quando existem novos eventos para importar
+  // A importação da agenda, ao entrar. Com token da Google, os eventos vêm da
+  // agenda a sério; sem ele fica a lista de demonstração, para a app continuar
+  // a mostrar o ecrã sem credenciais nenhumas.
   useEffect(() => {
     if (!user || MEMBERS[user].kid) return;
+    const jaViu = s.googleCalendarImported && Object.keys(s.googleCalendarImported).length > 0;
+    if (jaViu) return;
 
-    // Mock events para demonstração — substituir por autenticação real do Google Calendar
-    const hasSeenImport = s.googleCalendarImported && Object.keys(s.googleCalendarImported).length > 0;
-    if (!hasSeenImport) {
-      // Mostrar modal com sample events na primeira vez
-      // Em produção, estes viriam de uma autenticação real do Google Calendar
-      setGoogleImport(true);
-    }
+    let vivo = true;
+    (async () => {
+      if (servidor.google.disponivel()) {
+        try {
+          const reais = await servidor.google.eventos({ dias: 30, max: 50 });
+          if (vivo && reais.length) setEventosGoogle(reais);
+        } catch (e) { /* sem autorização da agenda — fica a demonstração */ }
+      }
+      if (vivo) setGoogleImport(true);
+    })();
+    return () => { vivo = false; };
   }, [user, s.googleCalendarImported]);
 
   const mode = (user && s.themeByUser[user]) || 'claro';
@@ -372,11 +391,7 @@ function Shell() {
           paddingHorizontal: 24, paddingTop: 24, paddingBottom: 90 }}>
           <GoogleCalendarImportModal
             t={t}
-            events={[
-              { id: 'gcal-1', title: 'Reunião de equipa', date: 'd2026-08-28', time: '14:00', isRecurring: false, description: '' },
-              { id: 'gcal-2', title: 'Almoço com a mãe', date: 'd2026-08-29', time: '12:30', isRecurring: false, description: 'Restaurante Taberna' },
-              { id: 'gcal-3', title: 'Chamada com o cliente', date: 'd2026-08-30', time: '10:00', isRecurring: true, description: 'Reunião semanal' },
-            ]}
+            events={eventosGoogle}
             user={user}
             onImportAll={(events) => {
               importGoogleEvents(events, user, true);
@@ -387,13 +402,13 @@ function Shell() {
               setGoogleImport(false);
             }}
             onIgnore={() => {
-              // Marcar como ignorado para não mostrar novamente
+              // Marca os que estão à frente, não três identificadores escritos
+              // à mão: com eventos reais da agenda, `gcal-1..3` não existem e
+              // o «Agora não» deixava de ter efeito — o ecrã voltaria a abrir.
               set(x => ({
                 googleCalendarImported: {
                   ...x.googleCalendarImported,
-                  'gcal-1': true,
-                  'gcal-2': true,
-                  'gcal-3': true,
+                  ...Object.fromEntries(eventosGoogle.map(e => [e.id, true])),
                 },
               }));
               setGoogleImport(false);

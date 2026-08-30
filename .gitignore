@@ -21,3 +21,6 @@ ios/
 pb_data/
 /pocketbase
 /pocketbase.exe
+
+# Binário do PocketBase: descarregado por quem corre o servidor, não versionado.
+/pocketbase.exe

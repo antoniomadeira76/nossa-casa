@@ -2,6 +2,18 @@ import React, { createContext, useContext, useEffect, useMemo, useReducer, useRe
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES, HEALTH, HEALTH_DOCS, VAULT, DE } from './data';
 import { TODAY_KEY, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY } from './format';
+// A camada do servidor entra por importação dinâmica, não estática. Duas
+// razões: o SDK do PocketBase é ESM e uma importação estática arrastava-o
+// para dentro dos testes — a suite de regressões deixou de carregar inteira,
+// de 119 testes para 18, assim que a loja passou a falar com o servidor. E
+// numa app que corre local, carregar um cliente de rede que nunca é usado é
+// peso a mais no arranque.
+let sync = null;
+const carregarSync = async () => {
+  if (sync) return sync;
+  try { sync = await import('./sync'); } catch { sync = null; }
+  return sync;
+};
 
 // ── Visibilidade da saúde (INVARIANTE #3) ───────────────────────────────────
 // Puras e exportadas de propósito: uma regra de visibilidade que só se
@@ -157,6 +169,9 @@ export function StoreProvider({ children }) {
   const [state, set] = useReducer(reducer, null, DEMO);
   const ready = useRef(false);
   const sig = useRef('');
+  // Nome local → identificador do servidor. Vazio enquanto a app correr só
+  // local, que é o caso quando não há EXPO_PUBLIC_PB_URL.
+  const mapaServidor = useRef({ casa: null, membros: {}, envelopes: {} });
 
   // ler ao arrancar
   useEffect(() => {
@@ -179,6 +194,26 @@ export function StoreProvider({ children }) {
         }
       } catch (e) { /* armazenamento indisponível — segue em memória */ }
       ready.current = true;
+
+      // Depois do local, o servidor — nesta ordem de propósito: a app tem de
+      // desenhar já com o que tem em disco, e a rede é um extra que chega
+      // quando chegar. Sem ligação, isto não faz nada e a app corre como
+      // sempre correu.
+      try {
+        const s = await carregarSync();
+        const casa = s && await s.puxarCasa();
+        if (casa) {
+          mapaServidor.current = {
+            casa: (casa._servidor.casas || [])[0]?.id || null,
+            membros: Object.fromEntries((casa._servidor.membros || []).map(m => [m.nome, m.id])),
+            envelopes: Object.fromEntries((casa._servidor.envelopes || []).map(e => [e.nome, e.id])),
+          };
+          // Os movimentos de cofre do servidor substituem os locais: são a
+          // mesma coisa vista de outro sítio, e o servidor tem os dos dois
+          // telemóveis. Um saldo nunca é escrito — continua a ser a soma.
+          if (casa.vaultMoves.length) set({ vaultMoves: casa.vaultMoves });
+        }
+      } catch (e) { /* servidor indisponível — a app fica local */ }
     })();
   }, []);
 
@@ -194,7 +229,7 @@ export function StoreProvider({ children }) {
     AsyncStorage.setItem(KEY, payload).catch(() => {});
   }, [state]);
 
-  const api = useMemo(() => build(state, set), [state]);
+  const api = useMemo(() => build(state, set, mapaServidor), [state]);
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }
 
@@ -205,7 +240,12 @@ export const useStore = () => {
 };
 
 // ─── derivações. Tudo o que a interface lê passa por aqui.
-function build(s, set) {
+function build(s, set, mapaServidor = { current: { casa: null, membros: {}, envelopes: {} } }) {
+  // Traduzir um nome local para o identificador do servidor. Devolve null
+  // quando a app corre local — e é isso que faz as escritas não acontecerem
+  // em vez de rebentarem.
+  const idDoMembro = (nome) => mapaServidor.current.membros[nome] || null;
+  const idDoEnvelope = (nome) => mapaServidor.current.envelopes[nome] || null;
   const isRecurring = (t) => t.recur === 'Todos os dias' || t.recur === 'Dias de semana';
 
   const allTasks = () => {
@@ -293,12 +333,31 @@ function build(s, set) {
   const vaultOf = (kid) => allVaultMoves()
     .reduce((n, m) => (m.kid === kid ? n + m.delta : n), 0);
   // Acrescenta um movimento. Nunca substitui o saldo.
-  const vaultAdd = (kid, delta, kind, label, sub, day = TODAY_KEY) => set(x => ({
-    vaultMoves: [...(x.vaultMoves || []), {
-      id: 'vm-' + Date.now() + '-' + Math.round(Math.random() * 1e6),
-      kid, delta, kind, label, sub, day,
-    }],
-  }));
+  //
+  // Vai também para o servidor, como inserção com chave de idempotência. É
+  // aqui que o INVARIANTE #2 deixa de ser uma regra local e passa a valer
+  // entre telemóveis: se cada um gravasse «saldo = X», dois créditos de 5 €
+  // dariam 5. Assim dão 10. A escrita passa por uma fila, portanto sem rede
+  // fica pendente em vez de se perder, e a chave impede que reenviar a fila
+  // pague a semanada duas vezes.
+  const vaultAdd = (kid, delta, kind, label, sub, day = TODAY_KEY) => {
+    set(x => ({
+      vaultMoves: [...(x.vaultMoves || []), {
+        id: 'vm-' + Date.now() + '-' + Math.round(Math.random() * 1e6),
+        kid, delta, kind, label, sub, day,
+      }],
+    }));
+    // A fila guarda a escrita; falhar aqui não pode estragar o ecrã, que já
+    // tem o movimento. Sem servidor, `sync` é null e isto não faz nada.
+    if (sync) {
+      const ses = sync.sessao();
+      if (ses) sync.movimentoDeCofre({
+        casa: ses.casa, membro: idDoMembro(kid), tipo: kind,
+        valor: delta, motivo: label, data: day.replace(/^d/, ''),
+        autorizadoPor: ses.membro,
+      }).catch(() => {});
+    }
+  };
 
   const kidPts = ['Léo', 'Mia'].reduce((a, k) => {
     const base = s.clearedSeeds ? 0 : (k === 'Léo' ? 14 : 11);

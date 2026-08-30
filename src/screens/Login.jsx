@@ -5,6 +5,8 @@ import { S, R, FONT, elev, MEMBER_COLOR } from '../theme';
 import Icon, { Marca, GoogleG as G } from '../Icon';
 import { MEMBERS, FEM } from '../data';
 import { useStore } from '../store';
+import * as sync from '../sync';
+import * as servidor from '../pocketbase';
 import { Pill } from '../ui';
 
 export default function Login({ t, onEnter }) {
@@ -15,6 +17,7 @@ export default function Login({ t, onEnter }) {
   const [pin, setPin] = useState('');
   const [tries, setTries] = useState(0);
   const [blocked, setBlocked] = useState(0);
+  const [erroGoogle, setErroGoogle] = useState(null);
 
   const glass = {
     backgroundColor: 'rgba(0,21,41,0.55)', borderRadius: R.card,
@@ -32,6 +35,24 @@ export default function Login({ t, onEnter }) {
   // Com a tecla OK, o PIN só é submetido quando a criança o diz. Submetia-se
   // sozinho ao quarto dígito: um engano no último algarismo gastava uma
   // tentativa das cinco sem hipótese de o corrigir.
+  // Entrar com a Google a sério quando há servidor; a lista de contas fixa é
+  // o caminho local, para a app continuar a correr sem rede nem credenciais.
+  //
+  // Os scopes da agenda pedem-se AQUI: o token traz as permissões dadas no
+  // consentimento, não as que se queiram mais tarde.
+  const entrarComGoogle = async () => {
+    if (!sync.ligado()) return setStep('contas');
+    setErroGoogle(null);
+    try {
+      const r = await servidor.auth.entrarComGoogle({ calendario: true });
+      onEnter(r.record.nome);
+    } catch (e) {
+      // Sem provedor configurado, o PocketBase diz-o. Melhor mostrar a razão
+      // do que cair calado para a lista local.
+      setErroGoogle(e.message || 'Não foi possível entrar com a Google.');
+    }
+  };
+
   const press = (k) => {
     if (k === '←') return setPin(p => p.slice(0, -1));
     if (k === 'OK') return pin.length === 4 && submitPin(pin);
@@ -61,12 +82,17 @@ export default function Login({ t, onEnter }) {
                   de desenho onde o protótipo ganha. */}
               Entre com a sua Conta Google para aceder à casa partilhada.
             </Text>
-            <Pressable onPress={() => setStep('contas')} accessibilityRole="button" accessibilityLabel="Continuar com Google"
+            <Pressable onPress={entrarComGoogle} accessibilityRole="button" accessibilityLabel="Continuar com Google"
               style={({ pressed }) => ({ minHeight: 56, borderRadius: R.pill, backgroundColor: pressed ? '#FAFAFA' : '#FFFFFF',
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, ...elev(3) })}>
               <G />
               <Text style={{ fontFamily: FONT.display, fontSize: 16, fontWeight: '700', color: '#262626', letterSpacing: 0.4 }}>Continuar com Google</Text>
             </Pressable>
+            {erroGoogle ? (
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 19, color: '#FFB27A' }}>
+                {erroGoogle}
+              </Text>
+            ) : null}
             <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 19, color: 'rgba(255,255,255,0.62)' }}>
               Ao continuar, a Nossa Casa recebe o seu nome e endereço de e-mail. Nenhum dado bancário é partilhado com a Google.
             </Text>
