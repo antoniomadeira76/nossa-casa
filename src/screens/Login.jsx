@@ -47,9 +47,18 @@ export default function Login({ t, onEnter }) {
       const r = await servidor.auth.entrarComGoogle({ calendario: true });
       onEnter(r.record.nome);
     } catch (e) {
-      // Sem provedor configurado, o PocketBase diz-o. Melhor mostrar a razão
-      // do que cair calado para a lista local.
-      setErroGoogle(e.message || 'Não foi possível entrar com a Google.');
+      // Falhar a entrada pela Google não pode fechar a porta: sem provedor
+      // configurado no servidor, isto deixava a app inacessível assim que
+      // houvesse um URL de servidor definido. Diz-se a razão E abre-se a
+      // lista local, que é a que funciona sem credenciais nenhumas.
+      //
+      // A mensagem é nossa, não a do SDK: o PocketBase responde «Something
+      // went wrong», em inglês, e isso não entra num ecrã desta app.
+      const semProvedor = /oauth|provider|missing|something went wrong/i.test(e.message || '');
+      setErroGoogle(semProvedor
+        ? 'A entrada pela Google ainda não está configurada neste servidor. A abrir as contas desta casa.'
+        : 'Não foi possível entrar com a Google. A abrir as contas desta casa.');
+      setStep('contas');
     }
   };
 
@@ -119,6 +128,14 @@ export default function Login({ t, onEnter }) {
               <G size={20} />
               <Text style={{ fontFamily: FONT.display, fontSize: 18, fontWeight: '500', color: '#FFFFFF' }}>Escolher uma conta</Text>
             </View>
+            {/* O aviso aparece AQUI, que é onde se aterra quando a entrada
+                pela Google falha. Estava só no ecrã anterior: era escrito e
+                nunca visto. */}
+            {erroGoogle ? (
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 19, color: '#FFB27A' }}>
+                {erroGoogle}
+              </Text>
+            ) : null}
             {['Rita', 'Tomás'].map(n => (
               <Pressable key={n} onPress={() => onEnter(n)} accessibilityRole="button" accessibilityLabel={n}
                 style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: R.card, padding: 14,

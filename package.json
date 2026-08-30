@@ -10,7 +10,8 @@
     "test:smoke": "jest __tests__/smoke.test.js",
     "referencias": "node scripts/recapturar-referencias.mjs docs/referencia && node scripts/folha-de-contacto.mjs docs/referencia docs/referencia/todos-os-ecras.png",
     "db:provar": "node db/pocketbase/provar-regras.mjs && node db/pocketbase/provar-hooks.mjs && node db/pocketbase/provar-saude.mjs && node db/pocketbase/provar-cliente.mjs && node db/pocketbase/provar-dois-telemoveis.mjs",
-    "db:colecoes": "node db/pocketbase/criar-colecoes.mjs"
+    "db:colecoes": "node db/pocketbase/criar-colecoes.mjs",
+    "db:google": "node db/pocketbase/configurar-google.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
