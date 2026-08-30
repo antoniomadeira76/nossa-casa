@@ -109,6 +109,49 @@ describe('INVARIANTE #1 — o cabeçalho e o rodapé cabem no que mostram', () =
 
   // `done` vive dentro de `s`. Desestruturá-lo à cabeça da loja dava
   // undefined, e o modo criança inteiro ficava em branco.
+  // Um componente usado e não importado é um ReferenceError no render: ecrã
+  // branco, e o erro só na consola. Aconteceu duas vezes ao extrair ficheiros
+  // nesta sessão — o `Label` do Carrinho e o `Pill` da Gestão.
+  it('todo o componente usado em JSX está importado ou definido no ficheiro', () => {
+    const problemas = [];
+    for (const f of ['App.jsx', ...jsxFiles()]) {
+      const src = semComentarios(read(f));
+      const usados = new Set([...src.matchAll(/<([A-Z][A-Za-z0-9_]*)[\s/>]/g)].map(m => m[1]));
+      const conhecidos = new Set();
+      for (const m of src.matchAll(/import\s+(?:([A-Za-z0-9_$]+)\s*,?\s*)?(?:\{([^}]*)\})?\s*from/g)) {
+        if (m[1]) conhecidos.add(m[1]);
+        if (m[2]) for (const x of m[2].split(',')) {
+          const n = x.trim().split(/\s+as\s+/).pop().trim();
+          if (n) conhecidos.add(n);
+        }
+      }
+      for (const m of src.matchAll(/(?:function|const)\s+([A-Z][A-Za-z0-9_]*)/g)) conhecidos.add(m[1]);
+      for (const u of usados) if (!conhecidos.has(u)) problemas.push(`${f} → <${u}>`);
+    }
+    expect(problemas).toEqual([]);
+  });
+
+  // O KidApp pedia `done` à loja e a loja só tem `s.done`: ecrã branco. O
+  // Login pediu `verificarPin` antes de a loja o expor: entrada de criança
+  // partida. As duas vezes o defeito só aparece a correr, porque desestruturar
+  // o que não existe dá undefined em silêncio.
+  it('tudo o que os ecrãs pedem à loja existe na loja', () => {
+    const store = read('src/store.jsx');
+    const devolve = store.slice(store.lastIndexOf('  return {'));
+    const expostos = new Set([...devolve.matchAll(/\b([a-zA-Z_$][\w$]*)\b\s*[,:]/g)].map(m => m[1]));
+    expostos.add('s'); expostos.add('set');
+    const emFalta = [];
+    for (const f of jsxFiles().concat('App.jsx')) {
+      for (const m of semComentarios(read(f)).matchAll(/const \{([^}]*)\} = (?:st|useStore\(\))/g)) {
+        for (const bruto of m[1].split(',')) {
+          const nome = bruto.trim().split(':')[0].trim();
+          if (nome && !expostos.has(nome)) emFalta.push(`${f} → ${nome}`);
+        }
+      }
+    }
+    expect(emFalta).toEqual([]);
+  });
+
   it('ninguém desestrutura campos de estado à cabeça da loja', () => {
     const campos = ['done', 'pending', 'status', 'pins', 'roles', 'urg', 'due'];
     const culpados = [];
@@ -313,6 +356,58 @@ describe('Equipamentos e Dinheiro — o que a referência mostra e faltava', () 
   it('não há tratamento por «vocês»', () => {
     const re = /(?<![\p{L}])(voc[êe]s?)(?![\p{L}])/iu;
     expect(jsxFiles().filter(f => re.test(semComentarios(read(f))))).toEqual([]);
+  });
+});
+
+describe('O PIN não fica gravado em claro', () => {
+  // O armazenamento local tinha `{"Léo": "2470"}`, legível por qualquer coisa
+  // com acesso à página. O db/README.md diz «resumo, não o valor», e é isso
+  // que o servidor faz — o cliente não fazia.
+  const { resumoPin, MIGRATIONS } = require('../src/store.jsx');
+
+  it('o resumo não contém o PIN', () => {
+    const r = resumoPin('Léo', '2470');
+    expect(r).not.toContain('2470');
+    expect(r).toMatch(/^h[a-z0-9]+$/);
+  });
+
+  it('o mesmo PIN em dois membros dá resumos diferentes', () => {
+    expect(resumoPin('Léo', '2470')).not.toBe(resumoPin('Mia', '2470'));
+  });
+
+  it('o mesmo par dá sempre o mesmo resumo', () => {
+    expect(resumoPin('Léo', '2470')).toBe(resumoPin('Léo', '2470'));
+    expect(resumoPin('Léo', '2470')).not.toBe(resumoPin('Léo', '2471'));
+  });
+
+  it('v3 → v4 converte os PIN já gravados', () => {
+    const r = MIGRATIONS[4]({ v: 3, pins: { 'Léo': '2470', 'Mia': 'hjaja' } });
+    expect(r.pins['Léo']).toBe(resumoPin('Léo', '2470'));
+    expect(r.pins['Mia']).toBe('hjaja');           // já era resumo, fica
+    expect(JSON.stringify(r.pins)).not.toContain('2470');
+  });
+
+  it('v3 → v4 aguenta um estado sem PIN nenhum', () => {
+    expect(MIGRATIONS[4]({ v: 3 }).pins).toEqual({});
+  });
+
+  it('a entrada compara resumos, não o valor', () => {
+    const login = semComentarios(read('src/screens/Login.jsx'));
+    expect(login).not.toMatch(/p === s\.pins\[kid\]/);
+    expect(login).toMatch(/verificarPin\(kid, p\)/);
+  });
+
+  // A única comparação legítima é resumo com resumo, e vive na loja. O que
+  // não pode existir é alguém comparar `s.pins[x]` com o que o utilizador
+  // escreveu.
+  it('só se compara s.pins contra um resumo', () => {
+    const culpados = [];
+    for (const f of jsxFiles()) {
+      for (const m of semComentarios(read(f)).matchAll(/s\.pins\[[^\]]+\]\s*===\s*([^;)\n]+)/g)) {
+        if (!/resumoPin\(/.test(m[1])) culpados.push(`${f} → ${m[1].trim()}`);
+      }
+    }
+    expect(culpados).toEqual([]);
   });
 });
 

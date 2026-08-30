@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ImageBackground } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { S, R, FONT, elev } from '../theme';
+import { S, R, FONT, elev, MEMBER_COLOR } from '../theme';
 import Icon, { Marca, GoogleG as G } from '../Icon';
-import { MEMBERS } from '../data';
+import { MEMBERS, FEM } from '../data';
 import { useStore } from '../store';
+import { Pill } from '../ui';
 
 export default function Login({ t, onEnter }) {
-  const { s, pinError } = useStore();
+  const { s, pinError, verificarPin } = useStore();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState('login');   // login | contas | criancas | pin
   const [kid, setKid] = useState(null);
@@ -22,18 +23,20 @@ export default function Login({ t, onEnter }) {
 
   const submitPin = (p) => {
     if (blocked > Date.now()) return;
-    if (s.pins[kid] && p === s.pins[kid]) { setTries(0); onEnter(kid); return; }
+    if (verificarPin(kid, p)) { setTries(0); onEnter(kid); return; }
     const n = tries + 1;
     setTries(n); setPin('');
     if (n >= 5) { setBlocked(Date.now() + 60000); setTries(0); }
   };
 
+  // Com a tecla OK, o PIN só é submetido quando a criança o diz. Submetia-se
+  // sozinho ao quarto dígito: um engano no último algarismo gastava uma
+  // tentativa das cinco sem hipótese de o corrigir.
   const press = (k) => {
     if (k === '←') return setPin(p => p.slice(0, -1));
+    if (k === 'OK') return pin.length === 4 && submitPin(pin);
     if (pin.length >= 4) return;
-    const next = pin + k;
-    setPin(next);
-    if (next.length === 4) setTimeout(() => submitPin(next), 120);
+    setPin(pin + k);
   };
 
   return (
@@ -86,7 +89,10 @@ export default function Login({ t, onEnter }) {
           </>
         ) : step === 'contas' ? (
           <View style={glass}>
-            <Text style={{ fontFamily: FONT.display, fontSize: 18, fontWeight: '500', color: '#FFFFFF' }}>Escolher uma conta</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <G size={20} />
+              <Text style={{ fontFamily: FONT.display, fontSize: 18, fontWeight: '500', color: '#FFFFFF' }}>Escolher uma conta</Text>
+            </View>
             {['Rita', 'Tomás'].map(n => (
               <Pressable key={n} onPress={() => onEnter(n)} accessibilityRole="button" accessibilityLabel={n}
                 style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: R.card, padding: 14,
@@ -96,13 +102,30 @@ export default function Login({ t, onEnter }) {
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={{ fontFamily: FONT.body, fontSize: 16, color: '#262626' }}>{n} Bengui</Text>
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: '#6A7282' }}>{MEMBERS[n].email}</Text>
+                  <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 12, color: '#6A7282' }}>{MEMBERS[n].email}</Text>
                 </View>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '600', color: '#6A7282' }}>
-                  {s.roles[n] === 'admin' ? 'Administração' : 'Adulto'}
-                </Text>
+                {/* Pastilha contornada, como na referência 02 — e com a
+                    concordância certa: dizia «Administração» para a Rita. */}
+                <Pill label={s.roles[n] === 'admin' ? (FEM(n) ? 'Administradora' : 'Administrador') : 'Adulto'}
+                  fg="#6A7282" bg="transparent" border="#D6DBE4" />
               </Pressable>
             ))}
+            {/* A referência 02 tem esta entrada: quem chega com outra conta
+                não fica sem saída no ecrã das duas que já existem. */}
+            <Pressable onPress={() => setStep('login')} accessibilityRole="button"
+              accessibilityLabel="Usar outra conta Google"
+              style={{ minHeight: 56, borderRadius: R.card, borderWidth: 1, borderStyle: 'dashed',
+                borderColor: 'rgba(255,255,255,0.4)', flexDirection: 'row', alignItems: 'center',
+                paddingHorizontal: 14, gap: 14 }}>
+              <View style={{ width: 40, height: 40, borderRadius: R.pill, borderWidth: 1,
+                borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.5)',
+                alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="plus" size={18} color="#FFFFFF" />
+              </View>
+              <Text style={{ fontFamily: FONT.body, fontSize: 15, color: '#FFFFFF' }}>
+                Usar outra conta Google
+              </Text>
+            </Pressable>
             <Pressable onPress={() => setStep('login')} accessibilityRole="button" accessibilityLabel="Voltar"
               style={{ minHeight: 44, borderRadius: R.pill, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)', alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: '#FFFFFF' }}>Voltar</Text>
@@ -142,7 +165,19 @@ export default function Login({ t, onEnter }) {
           </View>
         ) : (
           <View style={glass}>
-            <Text style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: '500', color: '#FFFFFF' }}>Olá, {kid}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+              <View style={{ width: 44, height: 44, borderRadius: R.pill,
+                backgroundColor: MEMBER_COLOR[kid] || t.chrome,
+                alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontFamily: FONT.display, fontSize: 18, fontWeight: '500', color: '#FFFFFF' }}>
+                  {(MEMBERS[kid] || { initial: '?' }).initial}
+                </Text>
+              </View>
+              <View style={{ gap: 2 }}>
+                <Text style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: '500', color: '#FFFFFF' }}>Olá, {kid}</Text>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, color: 'rgba(255,255,255,0.7)' }}>PIN de 4 dígitos</Text>
+              </View>
+            </View>
             <View style={{ flexDirection: 'row', gap: 14, justifyContent: 'center' }}>
               {[0, 1, 2, 3].map(i => (
                 <View key={i} style={{ width: 16, height: 16, borderRadius: R.pill, borderWidth: 2,
@@ -159,12 +194,16 @@ export default function Login({ t, onEnter }) {
               </Text>
             ) : null}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-              {['1','2','3','4','5','6','7','8','9','←','0',''].map((k, i) => k === '' ? <View key={i} style={{ width: '30%' }} /> : (
+              {/* A tecla OK existe na referência 27. Sem ela o PIN submete-se
+                  sozinho ao quarto dígito, e um engano no último algarismo
+                  gasta uma tentativa das cinco sem hipótese de o corrigir. */}
+              {['1','2','3','4','5','6','7','8','9','←','0','OK'].map((k, i) => (
                 <Pressable key={i} onPress={() => press(k)} accessibilityRole="button" accessibilityLabel={k === '←' ? 'Apagar' : k}
                   style={{ width: '30%', minHeight: 52, borderRadius: R.row, borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.35)', backgroundColor: 'rgba(255,255,255,0.16)',
+                    borderColor: 'rgba(255,255,255,0.28)', backgroundColor: 'rgba(12,22,38,0.75)',
                     alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: '500', color: '#FFFFFF' }}>{k}</Text>
+                  <Text style={{ fontFamily: FONT.display, fontSize: k === 'OK' ? 16 : 20,
+                    fontWeight: '500', color: '#FFFFFF' }}>{k}</Text>
                 </Pressable>
               ))}
             </View>

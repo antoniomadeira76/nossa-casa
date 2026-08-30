@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
 import { S, R, FONT, elev } from '../theme';
 import { EUR } from '../format';
-import { Card, Primary, Tile } from '../ui';
+import { Card, Label, Primary, Tile } from '../ui';
 import Icon from '../Icon';
 
 // Validação antes de fechar a conta. Vivia dentro do Compras.jsx, ao lado do

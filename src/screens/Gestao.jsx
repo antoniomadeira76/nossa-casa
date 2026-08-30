@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-nativ
 import { useStore } from '../store';
 import { S, R, FONT, MEMBER_COLOR } from '../theme';
 import { EUR } from '../format';
-import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle } from '../ui';
+import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import { MEMBERS, ENV_BASE, FEM } from '../data';
@@ -180,66 +180,48 @@ export default function Gestao({ t, user, onClose }) {
     </View>
   );
 
+  // Uma linha por membro, como na referência 14: avatar, nome, o que se muda
+  // por baixo, e a pastilha do papel à direita. Eram cartões de três linhas
+  // com PIN e Papel empilhados — quatro membros enchiam o ecrã, e a linha de
+  // cima tinha `onPress={() => {}}`, mais um controlo morto.
   const renderMembersTab = () => (
     <View style={{ gap: S.md }}>
-      <SectionTitle t={t}>Membros da casa</SectionTitle>
-      {Object.entries(MEMBERS).map(([name, info]) => {
-        const role = s.roles[name] || 'crianca';
-        const hasPin = s.pins[name];
-        return (
-          <Card key={name} t={t} pad={false}>
-            <View style={{ gap: S.md }}>
-              <Row t={t} icon="user" title={name} sub={info.email || ''} last
-                onPress={() => {}}
-                right={<View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-                  <Avatar initial={info.initial} color={MEMBER_COLOR[name]} size={32} />
-                  <Icon name="caretRight" size={18} color={t.text3} />
-                </View>}
-              />
-              <View style={{ paddingHorizontal: 16, gap: S.sm }}>
-                <Tap label={`Alterar PIN de ${name}`} onPress={() => {
-                  setSelectedMember(name);
-                  setInput('');
-                  setSheetOpen('editPin');
-                }} style={{ paddingVertical: S.md, borderTopWidth: 1, borderTopColor: t.divider }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-                      <Icon name="lock" size={18} color={t.text3} />
-                      <View style={{ gap: 2 }}>
-                        <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>PIN</Text>
-                        <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>
-                          {hasPin ? 'Alterado' : 'Sem PIN'}
-                        </Text>
-                      </View>
-                    </View>
-                    <Icon name="caretRight" size={16} color={t.text3} />
-                  </View>
-                </Tap>
+      <SectionTitle t={t}>Membros e PIN</SectionTitle>
+      <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+        {Object.entries(MEMBERS).map(([name, info], i, arr) => {
+          const role = s.roles[name] || 'crianca';
+          const hasPin = !!s.pins[name];
+          const crianca = role === 'crianca';
+          const papel = crianca ? 'Criança'
+            : role === 'admin' ? (FEM(name) ? 'Administradora' : 'Administrador') : 'Adulto';
+          return (
+            <Row key={name} t={t} last={i === arr.length - 1}
+              title={name}
+              sub={crianca ? (hasPin ? 'Perfil de criança · PIN definido'
+                                    : 'Perfil de criança · ainda sem PIN')
+                           : info.email}
+              onPress={() => {
+                setSelectedMember(name);
+                if (crianca) { setInput(''); setSheetOpen('editPin'); }
+                else setModal('changeRole');
+              }}
+              right={<View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+                <Pill label={papel} fg={t.text3} bg="transparent" border={t.border} />
+                <Icon name="caretRight" size={18} color={t.text3} />
+              </View>}
+              icon={undefined} />
+          );
+        })}
+      </Card>
 
-                {role !== 'crianca' && (
-                  <Tap label={`Alterar papel de ${name}`} onPress={() => {
-                    setSelectedMember(name);
-                    setModal('changeRole');
-                  }} style={{ paddingVertical: S.md, borderTopWidth: 1, borderTopColor: t.divider }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-                        <Icon name="idcard" size={18} color={t.text3} />
-                        <View style={{ gap: 2 }}>
-                          <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>Papel</Text>
-                          <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>
-                            {role === 'admin' ? (FEM(name) ? 'Administradora' : 'Administrador') : 'Adulto'}
-                          </Text>
-                        </View>
-                      </View>
-                      <Icon name="caretRight" size={16} color={t.text3} />
-                    </View>
-                  </Tap>
-                )}
-              </View>
-            </View>
-          </Card>
-        );
-      })}
+      {/* O que cada toque faz, e o que cada mudança de papel implica — a
+          referência 14 explica-o aqui, e sem isso «Criança» parece um rótulo
+          e não um botão. */}
+      <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+        Toque numa criança para lhe definir o PIN, ou num adulto para lhe mudar o
+        papel. Um adulto que passe a criança perde o acesso ao dinheiro e ganha um
+        PIN; a casa nunca pode ficar sem administração.
+      </Text>
     </View>
   );
 

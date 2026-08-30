@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES, HEALTH, HEALTH_DOCS, VAULT } from './data';
+import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES, HEALTH, HEALTH_DOCS, VAULT, DE } from './data';
 import { TODAY_KEY, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY } from './format';
 
 // ── Visibilidade da saúde (INVARIANTE #3) ───────────────────────────────────
@@ -31,6 +31,25 @@ export const consultasProximasDe = (consultas, viewer, limite = 7) => (consultas
   .filter(h => h.dias !== null && h.dias >= 0 && h.dias <= limite)
   .sort((a, b) => a.dias - b.dias);
 
+// ── PIN ─────────────────────────────────────────────────────────────────────
+// O PIN era gravado em claro: o armazenamento local tinha `{"Léo": "2470"}`,
+// legível por qualquer coisa com acesso à página. O db/README.md diz «resumo,
+// não o valor», e o servidor faz isso; o cliente não fazia.
+//
+// Isto não é criptografia — é uma app local, e não há segredo a guardar do
+// dono do dispositivo. É para o PIN de uma criança não ficar à vista de quem
+// abra as ferramentas do navegador. O nome entra no resumo para que o mesmo
+// PIN em dois membros dê resumos diferentes.
+export const resumoPin = (nome, pin) => {
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  const texto = `nossa-casa/pin/${nome}/${pin}`;
+  for (let i = 0; i < texto.length; i++) {
+    h1 = Math.imul(h1 ^ texto.charCodeAt(i), 0x01000193) >>> 0;
+    h2 = Math.imul(h2 + texto.charCodeAt(i) + i, 0x85ebca6b) >>> 0;
+  }
+  return `h${h1.toString(36)}${h2.toString(36)}`;
+};
+
 const KEY = 'nossa-casa/v1';
 
 // Só isto é gravado. O resto — separador ativo, folha aberta, rascunhos — é UI.
@@ -48,7 +67,7 @@ const DATA_KEYS = [
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
 // muda, e MIGRATIONS ganha a entrada correspondente. Sem isto, dados antigos
 // eram lidos com a forma nova e ganhavam silenciosamente ao código.
-export const SCHEMA = 3;
+export const SCHEMA = 4;
 
 // Uma migração por salto de versão: recebe o objeto lido e devolve-o corrigido.
 export const MIGRATIONS = {
@@ -84,6 +103,14 @@ export const MIGRATIONS = {
       if (resto.day) return resto;
       return { ...resto, day: chaveDeDMY(date) || date, time: resto.time || '' };
     }),
+  }),
+
+  // v3 → v4: os PIN estavam gravados em claro. Quem já tinha um passa a
+  // resumo; o valor antigo deixa de existir em disco a seguir a isto.
+  4: (o) => ({
+    ...o,
+    pins: Object.fromEntries(Object.entries(o.pins || {})
+      .map(([n, p]) => [n, /^[0-9]{4}$/.test(String(p)) ? resumoPin(n, p) : p])),
   }),
 };
 
@@ -330,17 +357,24 @@ function build(s, set) {
     if (/^(\d)\1{3}$/.test(pin)) return 'Não pode ter os quatro dígitos iguais.';
     const seq = '0123456789';
     if (seq.includes(pin) || seq.split('').reverse().join('').includes(pin)) return 'Não pode ser uma sequência.';
-    const used = Object.entries(s.pins).find(([n, p]) => n !== name && p === pin);
-    if (used) return `Já é o PIN do ${used[0]}.`;
+    // Os PIN gravados são resumos, portanto compara-se resumo com resumo —
+    // cada um calculado com o nome do dono, que é o que os torna distintos.
+    const repetido = Object.entries(s.pins)
+      .find(([n, p]) => n !== name && p === resumoPin(n, pin));
+    if (repetido) return `Já é o PIN ${DE(repetido[0])} ${repetido[0]}.`;
     return null;
   };
 
   const setPin = (name, pin) => {
     const err = pinError(name, pin);
     if (err) return err;
-    set(x => ({ pins: { ...x.pins, [name]: pin } }));
+    set(x => ({ pins: { ...x.pins, [name]: resumoPin(name, pin) } }));
     return null;
   };
+
+  // Verificar é comparar resumos, nunca o valor. O ecrã de entrada fazia
+  // `p === s.pins[kid]`, contra o PIN em claro.
+  const verificarPin = (name, pin) => !!s.pins[name] && s.pins[name] === resumoPin(name, pin);
 
   // Health: agregar métodos para gestão de saúde
   // Um registo de saúde tem a forma das sementes: `day` em chave e `time`.
@@ -459,6 +493,7 @@ function build(s, set) {
     allTasks, allItems, allEvents, allEquip, editEquip, removeEquip,
     budget, spent, remaining: budget - spent, envelopes, kidPts,
     vaultOf, vaultMoves, vaultAdd,
+    verificarPin,
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
     garantiasAExpirar, receitasAExpirar, consultasProximas,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring,
