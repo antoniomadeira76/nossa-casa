@@ -9,15 +9,13 @@
 // nada escrito neste código. O segredo do cliente é uma credencial da sua
 // conta Google: quem o põe é quem o tem.
 //
-//   Windows (PowerShell):
-//     $env:GOOGLE_CLIENT_ID  = "...apps.googleusercontent.com"
-//     $env:GOOGLE_CLIENT_SECRET = "..."
-//     node db/pocketbase/configurar-google.mjs
+// A forma mais simples: pôr as duas linhas no `.env.local`, que o .gitignore
+// exclui, e correr `npm run db:google`. O segredo fica num ficheiro seu, e não
+// no histórico da consola.
 //
-//   Linux/macOS:
-//     GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... node db/pocketbase/configurar-google.mjs
-//
-// Ou ponha-as em `.env.local`, que o .gitignore já exclui, e carregue-as antes.
+// Também funciona pelo ambiente, que ganha ao ficheiro:
+//   $env:GOOGLE_CLIENT_SECRET = "..."      (PowerShell)
+//   GOOGLE_CLIENT_SECRET=... node ...      (Linux/macOS)
 //
 // ── Antes de correr ──────────────────────────────────────────────────────────
 //
@@ -31,10 +29,28 @@
 //      indicar à mão conseguem entrar (até 100). Publicar exige verificação da
 //      Google por causa do scope do Calendar, e isso demora semanas.
 import PocketBase from 'pocketbase';
+import fs from 'node:fs';
 
-const URL = process.env.PB_URL || 'http://127.0.0.1:8095';
-const ID = process.env.GOOGLE_CLIENT_ID;
-const SEGREDO = process.env.GOOGLE_CLIENT_SECRET;
+// Lê o .env.local se existir, para o segredo poder viver num ficheiro do
+// disco de quem o tem em vez de ser escrito num comando — que fica no
+// histórico da consola. O .gitignore já exclui .env.*, portanto não sai daqui.
+// O ambiente ganha ao ficheiro: quem exporta a variável está a ser explícito.
+const doFicheiro = (() => {
+  try {
+    return Object.fromEntries(fs.readFileSync('.env.local', 'utf8')
+      .split(/\r?\n/)
+      .filter(l => /^[A-Z_]+=/.test(l.trim()))
+      .map(l => {
+        const i = l.indexOf('=');
+        return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^["']|["']$/g, '')];
+      }));
+  } catch { return {}; }
+})();
+const doAmbiente = (n) => process.env[n] || doFicheiro[n] || '';
+
+const URL = doAmbiente('PB_URL') || 'http://127.0.0.1:8095';
+const ID = doAmbiente('GOOGLE_CLIENT_ID');
+const SEGREDO = doAmbiente('GOOGLE_CLIENT_SECRET');
 
 if (!ID || !SEGREDO) {
   console.error(
@@ -49,8 +65,8 @@ if (!ID || !SEGREDO) {
 // são os do servidor de desenvolvimento e estão aqui para este script correr
 // sem preparação nenhuma — mas num servidor a sério o administrador é outro, e
 // a palavra-passe não deve estar escrita num ficheiro versionado.
-const ADMIN = process.env.PB_ADMIN || 'admin@nossacasa.local';
-const ADMIN_PASS = process.env.PB_ADMIN_PASS || 'casa-de-testes-123';
+const ADMIN = doAmbiente('PB_ADMIN') || 'admin@nossacasa.local';
+const ADMIN_PASS = doAmbiente('PB_ADMIN_PASS') || 'casa-de-testes-123';
 
 const pb = new PocketBase(URL);
 await pb.collection('_superusers').authWithPassword(ADMIN, ADMIN_PASS);
