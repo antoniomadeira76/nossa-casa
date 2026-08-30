@@ -85,11 +85,41 @@ describe('INVARIANTE #1 — o cabeçalho e o rodapé cabem no que mostram', () =
   // uma saudação cortada ao meio.
   const app = semComentarios(read('App.jsx'));
 
-  it('nem o cabeçalho nem o rodapé usam o atalho `flex: 0`', () => {
-    const linhas = app.split('\n')
-      .map((l, i) => [i + 1, l])
-      .filter(([, l]) => /\bflex:\s*0\b/.test(l));
-    expect(linhas.map(([n, l]) => `${n}: ${l.trim()}`)).toEqual([]);
+  // Este teste olhava só para o App.jsx, e por isso não apanhou a mesma
+  // quebra no KidApp: o modo criança tinha o cabeçalho com 24 px onde
+  // precisava de 46 e o rodapé com 16 onde precisava de 54. Uma regressão
+  // que cobre um ficheiro não cobre um invariante.
+  it('nenhum ficheiro usa o atalho `flex: 0`', () => {
+    const culpados = [];
+    for (const f of ['App.jsx', ...jsxFiles()]) {
+      semComentarios(read(f)).split('\n').forEach((l, i) => {
+        // `\b` sozinho casava dentro de `flex: 0.6` — a fronteira de palavra
+        // fica entre o zero e o ponto. É preciso excluir o que vem a seguir.
+        if (/\bflex:\s*0(?![.\d])/.test(l)) culpados.push(`${f}:${i + 1}`);
+      });
+    }
+    expect(culpados).toEqual([]);
+  });
+
+  it('o KidApp tem a raiz de três caixas, como a app dos adultos', () => {
+    const kid = semComentarios(read('src/KidApp.jsx'));
+    const fixas = kid.match(/flexGrow:\s*0,\s*flexShrink:\s*0,\s*flexBasis:\s*'auto'/g) || [];
+    expect(fixas.length).toBe(2);   // cabeçalho e rodapé
+  });
+
+  // `done` vive dentro de `s`. Desestruturá-lo à cabeça da loja dava
+  // undefined, e o modo criança inteiro ficava em branco.
+  it('ninguém desestrutura campos de estado à cabeça da loja', () => {
+    const campos = ['done', 'pending', 'status', 'pins', 'roles', 'urg', 'due'];
+    const culpados = [];
+    for (const f of jsxFiles()) {
+      for (const m of semComentarios(read(f)).matchAll(/const \{([^}]*)\} = (?:st|useStore\(\))/g)) {
+        for (const nome of m[1].split(',').map(x => x.trim().split(':')[0].trim())) {
+          if (campos.includes(nome)) culpados.push(`${f} → ${nome}`);
+        }
+      }
+    }
+    expect(culpados).toEqual([]);
   });
 
   it('as duas caixas fixas declaram flexShrink 0, para caberem no conteúdo', () => {
