@@ -401,17 +401,24 @@ describe('Saúde — o ecrã e a loja contam a mesma coisa', () => {
   });
 
   // O «marcar consulta» abria com o membro por omissão, viesse de onde viesse.
-  it('o marcar consulta recebe o membro por prop', () => {
-    expect(saude).toMatch(/<MarcarConsulta[^>]*membro=\{ficha\}/s);
+  // Depois de a ficha passar a vista do App, o membro faz a viagem
+  // ficha → App → Saúde; sem isso voltava a abrir no predefinido, e foi o
+  // que aconteceu ao fazer esse refactor.
+  it('o marcar consulta recebe o membro de onde foi aberto', () => {
+    expect(saude).toMatch(/<MarcarConsulta[^>]*membro=\{membroDaFolha\}/s);
     expect(saude).toMatch(/member: membro \|\| 'Léo'/);
+    expect(read('App.jsx')).toMatch(/setMarcarPara\(ficha\)/);
+    expect(saude).toMatch(/setMembroDaFolha\(marcarPara\)/);
   });
 
-  // A folha vivia só no ramo de baixo, e o ramo da ficha devolve cedo: tocar
-  // em «marcar consulta» dentro de uma ficha punha o estado e não abria nada.
-  it('a folha de marcar consulta está nos dois ramos', () => {
-    const corpo = semComentarios(saude);
-    expect(corpo).toMatch(/const folha = sheet === 'consulta'/);
-    expect((corpo.match(/\{folha\}/g) || []).length).toBe(2);
+  // A ficha de um membro desenhava um cabeçalho próprio dentro do conteúdo, e
+  // ficavam dois empilhados: o «Saúde da Família» da vista e o «Saúde do Léo»
+  // dela. Passou a vista do App, como as outras.
+  it('a ficha é uma vista do App, não um ramo da Saúde', () => {
+    expect(semComentarios(saude)).not.toMatch(/<FichaSaude/);
+    expect(semComentarios(read('App.jsx'))).toMatch(/\n    ficha: \{/);
+    expect(semComentarios(read('src/screens/FichaSaude.jsx')))
+      .not.toMatch(/backgroundColor: t\.chrome/);
   });
 
   // Um nome de ícone que não existe devolve um SVG vazio, sem erro nenhum.

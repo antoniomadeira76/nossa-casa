@@ -30,28 +30,8 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
   const propria = member === user;
 
   return (
-    <View style={{ flex: 1, minHeight: 0 }}>
-      {/* Cabeçalho da ficha */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12,
-        paddingHorizontal: 16, paddingVertical: 14, backgroundColor: t.chrome }}>
-        <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel="Voltar"
-          hitSlop={8} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="arrowLeft" size={22} color="#FFFFFF" />
-        </Pressable>
-        <Icon name="heartPulse" size={24} color="#FFFFFF" />
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 19,
-            fontWeight: '500', color: '#FFFFFF' }}>
-            {propria ? 'A minha ficha' : `Saúde ${DE(member)} ${member}`}
-          </Text>
-          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: 'rgba(255,255,255,0.75)' }}>
-            {propria ? 'Privada — mais ninguém a vê' : 'Visível aos adultos da casa'}
-          </Text>
-        </View>
-      </View>
-
-      <ScrollView style={{ flex: 1, minHeight: 0 }}
-        contentContainerStyle={{ padding: 16, gap: S.lg, paddingBottom: S.empty }}>
+    <>
+      <View style={{ gap: S.lg }}>
 
         {/* Próxima consulta */}
         {proxima ? (
@@ -153,7 +133,7 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
             </View>
           )}
         </View>
-      </ScrollView>
-    </View>
+      </View>
+    </>
   );
 }

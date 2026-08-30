@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, FlatList } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, MEMBER_COLOR, STATE } from '../theme';
@@ -7,12 +7,21 @@ import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Avata
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import { pad2, plural, dayLabel, daysUntil, chaveDeDMY } from '../format';
-import FichaSaude from './FichaSaude';
 
-export default function Saude({ t, user, onClose }) {
+export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMarcado }) {
   const st = useStore();
   const { s, set, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, renameSpecialty } = st;
-  const [ficha, setFicha] = useState(null);   // membro cuja ficha está aberta
+  const [membroDaFolha, setMembroDaFolha] = useState(null);  // pré-selecção ao marcar
+
+  // Quem toca em «marcar consulta» dentro de uma ficha volta para aqui com o
+  // membro em mão. Sem isto a folha abria no valor por omissão, e vir da
+  // ficha da Mia propunha o Léo.
+  useEffect(() => {
+    if (!marcarPara) return;
+    setMembroDaFolha(marcarPara);
+    setSheet('consulta');
+    onMarcado?.();
+  }, [marcarPara]);
   const [sheet, setSheet] = useState(null);
   const [expandedRecord, setExpandedRecord] = useState(null);
   const [expandedNote, setExpandedNote] = useState(null);
@@ -369,22 +378,10 @@ export default function Saude({ t, user, onClose }) {
   // store; a lista só mostra as que o utilizador pode ver.
   const fichas = Object.keys(MEMBERS).filter(m => st.canSeeHealth(m, user));
 
-  // A folha tem de estar nos dois ramos. Estava só no de baixo, e este
-  // devolve cedo — portanto «marcar consulta» dentro de uma ficha punha o
-  // estado e não abria nada. Um botão morto que não dá erro nenhum.
   const folha = sheet === 'consulta'
-    ? <MarcarConsulta t={t} user={user} membro={ficha} onClose={() => setSheet(null)} />
+    ? <MarcarConsulta t={t} user={user} membro={membroDaFolha} onClose={() => setSheet(null)} />
     : null;
 
-  if (ficha) {
-    return (
-      <>
-        <FichaSaude t={t} member={ficha} user={user} onBack={() => setFicha(null)}
-          onMarcar={() => setSheet('consulta')} />
-        {folha}
-      </>
-    );
-  }
 
   return (
     <>
@@ -403,7 +400,7 @@ export default function Saude({ t, user, onClose }) {
               const prox = st.nextHealth(m, user);
               return (
                 <Card key={m} t={t} style={{ borderLeftWidth: 3, borderLeftColor: MEMBER_COLOR[m] }}>
-                  <Pressable onPress={() => setFicha(m)} accessibilityRole="button"
+                  <Pressable onPress={() => onAbrirFicha(m)} accessibilityRole="button"
                     accessibilityLabel={m === user ? 'A minha ficha' : `Saúde ${DE(m)} ${m}`}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52 }}>
                     <Avatar initial={MEMBERS[m].initial} color={MEMBER_COLOR[m]} size={40} />
@@ -431,7 +428,7 @@ export default function Saude({ t, user, onClose }) {
         </View>
 
         {/* Botão Marcar Consulta */}
-        <AddButton t={t} label="marcar consulta" onPress={() => setSheet('consulta')} />
+        <AddButton t={t} label="marcar consulta" onPress={() => { setMembroDaFolha(null); setSheet('consulta'); }} />
 
         {/* Searchbar */}
         {showArchive && (

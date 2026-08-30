@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, useColorScheme } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from './store';
 import { buildTheme, onChrome, S, R, FONT, MEMBER_COLOR, elev } from './theme';
-import { EUR, parseKey, pad2 } from './format';
+import { EUR, parseKey, pad2, plural } from './format';
 import Icon from './Icon';
 import { Card, SectionTitle, Label, Pill, Empty, Primary } from './ui';
 
@@ -94,43 +94,6 @@ function VaultTransaction({ t, entry }) {
   );
 }
 
-// Abas de navegação
-function KidTabs({ t, active, onPress, kid }) {
-  const tabs = [
-    { key: 'tarefas', label: 'Tarefas', icon: 'checkSquare' },
-    { key: 'cofre', label: 'O Meu Cofre', icon: 'wallet' },
-  ];
-
-  return (
-    <View style={{
-      flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: t.divider,
-      backgroundColor: t.card,
-    }}>
-      {tabs.map((tab) => {
-        const on = active === tab.key;
-        return (
-          <Pressable key={tab.key} onPress={() => onPress(tab.key)}
-            accessibilityRole="tab" accessibilityLabel={tab.label}
-            accessibilityState={{ selected: on }}
-            style={{
-              flex: 1, minHeight: 48, flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center', gap: 4,
-              borderBottomWidth: on ? 2 : 0,
-              borderBottomColor: on ? t.accent : 'transparent',
-              backgroundColor: on ? t.surface : 'transparent',
-            }}>
-            <Icon name={tab.icon} size={22} color={on ? t.accent : t.text3} />
-            <Text style={{
-              fontFamily: FONT.ui, fontSize: 12, fontWeight: on ? '600' : '500',
-              color: on ? t.accent : t.text3,
-            }}>{tab.label}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
 // Vista de Tarefas
 function KidTasksView({ t, kid, tasks }) {
   const st = useStore();
@@ -144,7 +107,11 @@ function KidTasksView({ t, kid, tasks }) {
 
   const tasksByKid = tasks.filter(x => x.who === kid);
   const todayTasks = tasksByKid.filter(x => !done[x.id]);
-  const weekPts = tasksByKid.reduce((sum, x) => sum + (done[x.id] ? 0 : x.pts), 0);
+  // Os pontos ganhos na semana, que é o mesmo número que o cabeçalho mostra
+  // como «por pagar». Contava a soma das tarefas ainda por fazer: dava 5 onde
+  // a referência 28 mostra 14, e descia à medida que a criança trabalhava —
+  // exactamente ao contrário do que um contador de pontos deve fazer.
+  const weekPts = st.kidPts[kid] || 0;
 
   return (
     <ScrollView style={{ flex: 1, minHeight: 0 }}
@@ -184,7 +151,10 @@ function KidTasksView({ t, kid, tasks }) {
       </View>
 
       {/* Lista de tarefas */}
-      <View style={{ marginTop: S.xl }}>
+      <View style={{ marginTop: S.xl, gap: S.md }}>
+        <View style={{ paddingHorizontal: 16 }}>
+          <SectionTitle t={t}>As Minhas Tarefas</SectionTitle>
+        </View>
         {tasksByKid.length > 0 ? (
           <Card t={t} pad={false} style={{ marginHorizontal: 16 }}>
             {tasksByKid.map((task, idx) => (
@@ -222,19 +192,23 @@ function KidVaultView({ t, kid }) {
     <ScrollView style={{ flex: 1, minHeight: 0 }}
       contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16, gap: S.lg, paddingBottom: S.xl }}>
 
-      {/* Saldo */}
-      <Card t={t} style={{ gap: S.lg, alignItems: 'center' }}>
+      {/* Saldo. Na referência 29 é um cartão verde com o número em texto
+          normal, alinhado à esquerda — não um número verde centrado num
+          cartão branco. O verde é do cartão, não do algarismo: assim o
+          dinheiro lê-se como dinheiro e não como um estado de sucesso. */}
+      <Card t={t} style={{ gap: S.sm, backgroundColor: t.state.okBg,
+        borderColor: t.state.okBorder }}>
         <Text style={{
           fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3,
-        }}>Saldo no Cofre</Text>
+        }}>O meu cofre</Text>
         <Text style={{
-          fontFamily: FONT.display, fontSize: 38, fontWeight: '600',
-          color: t.state.okDeep, lineHeight: 46,
+          fontFamily: FONT.display, fontSize: 38, fontWeight: '400',
+          color: t.text1, lineHeight: 46,
         }}>{EUR(balance)}</Text>
         {pending > 0 ? (
           <Text style={{
-            fontFamily: FONT.ui, fontSize: 12, color: t.text3,
-          }}>{EUR(pendingEur)} por receber</Text>
+            fontFamily: FONT.ui, fontSize: 12.5, color: t.text3,
+          }}>Mais {EUR(pendingEur)} quando a semanada for paga.</Text>
         ) : null}
       </Card>
 
@@ -257,7 +231,20 @@ function KidVaultView({ t, kid }) {
       {/* Botão de pedido */}
       <View style={{ gap: S.md }}>
         {!requested ? (
-          <Primary t={t} label="Pedir para Usar o Dinheiro" onPress={() => setRequested(true)} />
+          /* Contornado com o smile, como na referência: é um pedido a um
+             adulto, não a ação principal do ecrã — o cheio disputava a
+             atenção com o próprio saldo. */
+          <Pressable onPress={() => setRequested(true)} accessibilityRole="button"
+            accessibilityLabel="Pedir para usar o dinheiro"
+            style={({ pressed }) => ({
+              minHeight: 52, borderRadius: R.pill, borderWidth: 1.5, borderColor: t.accent,
+              backgroundColor: pressed ? t.subtle : 'transparent',
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+            })}>
+            <Icon name="smile" size={20} color={t.accent} />
+            <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700',
+              color: t.accent, letterSpacing: 0.3 }}>Pedir para Usar o Dinheiro</Text>
+          </Pressable>
         ) : (
           <>
             <Pressable disabled style={{
@@ -332,7 +319,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
           }}>
             {(() => {
               const p = (st.kidPts[kid] ?? 0) - (s.paidPts[kid] ?? 0);
-              return `${p} pt${p !== 1 ? 's' : ''} por pagar · ${EUR(st.vaultOf(kid))} no cofre`;
+              return `${plural(p, 'ponto', 'pontos')} por pagar · ${EUR(st.vaultOf(kid))} no cofre`;
             })()}
           </Text>
         </View>
@@ -343,9 +330,6 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
           <Icon name="logout" size={20} color="#FFFFFF" />
         </Pressable>
       </View>
-
-      {/* Abas */}
-      <KidTabs t={t} active={kidTab} onPress={setKidTab} kid={kid} />
 
       {/* Conteúdo */}
       <View style={{ flex: 1, minHeight: 0 }}>
@@ -364,7 +348,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
       }}>
         {[
           { key: 'tarefas', label: 'Tarefas', icon: 'checkSquare' },
-          { key: 'cofre', label: 'O Meu Cofre', icon: 'wallet' },
+          { key: 'cofre', label: 'O Meu Cofre', icon: 'bank' },
         ].map(x => {
           const on = kidTab === x.key;
           return (

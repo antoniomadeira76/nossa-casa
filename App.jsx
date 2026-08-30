@@ -7,7 +7,7 @@ import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { StoreProvider, useStore } from './src/store';
 import { buildTheme, onChrome, chromeLine, S, R, FONT, elev } from './src/theme';
 import Icon, { Marca } from './src/Icon';
-import { MEMBERS, FEM } from './src/data';
+import { MEMBERS, FEM, DE } from './src/data';
 import { EUR, dayLabel, TODAY, TODAY_KEY, warrantyDaysLeft, semanaDeHoje } from './src/format';
 import Login from './src/screens/Login';
 import Inicio from './src/screens/Inicio';
@@ -20,6 +20,7 @@ import Equipamentos from './src/screens/Equipamentos';
 import Saude from './src/screens/Saude';
 import Gestao from './src/screens/Gestao';
 import Documentacao from './src/screens/Documentacao';
+import FichaSaude from './src/screens/FichaSaude';
 import Perfil from './src/screens/Perfil';
 import KidApp from './src/KidApp';
 import GoogleCalendarImportModal from './src/modals/GoogleCalendarImportModal';
@@ -59,6 +60,8 @@ function Shell() {
   const [gestao, setGestao] = useState(false);
   const [doc, setDoc] = useState(false);
   const [loja, setLoja] = useState(false);   // modo de compras na loja
+  const [ficha, setFicha] = useState(null); // membro cuja ficha de saúde está aberta
+  const [marcarPara, setMarcarPara] = useState(null); // membro a pré-seleccionar ao marcar
   const [googleImport, setGoogleImport] = useState(false);
   const [booting, setBooting] = useState(true);
   const [fontsReady, setFontsReady] = useState(false);
@@ -159,7 +162,20 @@ function Shell() {
         const d = membros.reduce((a, m) => a + docsOf(m, user).length, 0);
         return `${contas(c, 'consulta', 'consultas')} · ${contas(d, 'documento', 'documentos')}`;
       },
-      render: () => <Saude t={t} user={user} onClose={() => setSaude(false)} />,
+      render: () => <Saude t={t} user={user} onClose={() => setSaude(false)}
+        onAbrirFicha={setFicha}
+        marcarPara={marcarPara} onMarcado={() => setMarcarPara(null)} />,
+    },
+    // A ficha de um membro é uma vista como as outras. Desenhava um cabeçalho
+    // próprio dentro do conteúdo e ficavam dois empilhados: o «Saúde da
+    // Família» da vista e o «Saúde do Léo» dela. A referência 16 substitui.
+    ficha: {
+      icon: 'heartPulse', fechar: () => setFicha(null),
+      titulo: ficha === user ? 'A minha ficha' : `Saúde ${ficha ? DE(ficha) : 'do'} ${ficha}`,
+      sub: () => (ficha === user ? 'Privada — mais ninguém a vê' : 'Visível aos adultos da casa'),
+      render: () => <FichaSaude t={t} member={ficha} user={user}
+        onBack={() => setFicha(null)}
+        onMarcar={() => { setMarcarPara(ficha); setFicha(null); setSaude(true); }} />,
     },
     equip: {
       icon: 'houseGear', titulo: 'Equipamentos da Casa', fechar: () => setEquip(false),
@@ -186,8 +202,10 @@ function Shell() {
       render: () => <ModoCompras t={t} user={user} onClose={() => setLoja(false)} />,
     },
   };
-  const vistaAberta = saude ? 'saude' : equip ? 'equip' : gestao ? 'gestao'
-    : doc ? 'doc' : loja ? 'loja' : null;
+  // A ficha vem primeiro: abre-se de dentro da Saúde e é ela que manda no
+  // cabeçalho enquanto estiver aberta.
+  const vistaAberta = ficha ? 'ficha' : saude ? 'saude' : equip ? 'equip'
+    : gestao ? 'gestao' : doc ? 'doc' : loja ? 'loja' : null;
   const V = vistaAberta ? vistas[vistaAberta] : null;
 
   // ⚠ INVARIANTE — ver CLAUDE.md
