@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../store';
-import { S, R, FONT, elev, MEMBER_COLOR } from '../theme';
+import { S, R, FONT, elev, corDoMembro } from '../theme';
 import { EUR, dayLabel, parseKey, WD } from '../format';
 import { SECTIONS } from '../data';
 import { Card, SectionTitle, Label, Pill, Bar, Primary, AddButton, Empty, usePaged, Pager, Tap, Tile, Avatar } from '../ui';
@@ -53,7 +53,7 @@ export default function Compras({ t, user, onModoCompras }) {
         <View style={{ height: 1, backgroundColor: t.divider }} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Avatar initial={(MEMBERS[s.shopPlan.who] || { initial: '?' }).initial}
-            color={MEMBER_COLOR[s.shopPlan.who] || t.text3} />
+            color={corDoMembro(s.shopPlan.who) || t.text3} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>
               {s.shopPlan.day ? `Compras de ${diaDaSemana(s.shopPlan.day)}` : 'Compras'} · {s.shopPlan.who}

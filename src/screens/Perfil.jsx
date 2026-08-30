@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput, ScrollView, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../store';
-import { SCHEMES, S, R, FONT, elev, MEMBER_COLOR } from '../theme';
+import { SCHEMES, S, R, FONT, elev, corDoMembro } from '../theme';
 import { EUR, plural } from '../format';
 import { FEM } from '../data';
 import { Card, SectionTitle, Label, Row, Pill, Primary, Toggle, Segmented, Tap, Avatar } from '../ui';
@@ -19,7 +19,7 @@ const ROLE_LABEL = (r, name) => {
 
 export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, onGestao }) {
   const st = useStore();
-  const { s, set, isAdmin, resetDemo, startBlank, canSeeHealth, healthOf, receitasAExpirar, membros: MEMBERS, deDemonstracao } = st;
+  const { s, set, isAdmin, resetDemo, startBlank, canSeeHealth, healthOf, receitasAExpirar, membros: MEMBERS, deDemonstracao, nomeDaCasa } = st;
 
   // A referência 09 mostra a contagem de consultas e um aviso das receitas na
   // própria linha da Saúde. Passa pelo canSeeHealth como tudo o resto.
@@ -33,9 +33,9 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
   const scheme = s.schemeByUser[user] ?? 0;
 
   return (
-    <Sheet t={t} title={`${user} Bengui`} sub={MEMBERS[user].email || ROLE_LABEL(s.roles[user], user)}
+    <Sheet t={t} title={`${user} ${nomeDaCasa}`} sub={MEMBERS[user].email || ROLE_LABEL(s.roles[user], user)}
       onClose={onClose}
-      leading={<Avatar initial={MEMBERS[user].initial} color={MEMBER_COLOR[user]} size={40} />}
+      leading={<Avatar initial={MEMBERS[user].initial} color={corDoMembro(user)} size={40} />}
       headerRight={
         <Tap onPress={onSignOut} label="Terminar sessão">
           <Icon name="logout" size={22} color={t.text3} />

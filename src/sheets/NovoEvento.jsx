@@ -8,7 +8,7 @@ import ConfirmShare from '../ConfirmShare';
 import { parseKey } from '../format';
 
 export default function NovoEvento({ t, user, onClose, preFillDay }) {
-  const { set, s } = useStore();
+  const { set, s, membrosDaCasa } = useStore();
   const [form, setForm] = useState({
     title: '',
     date: null,
@@ -107,7 +107,7 @@ export default function NovoEvento({ t, user, onClose, preFillDay }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Responsável</Label>
-        <EscolherMembro t={t} membros={['Rita', 'Tomás', 'Léo', 'Mia']}
+        <EscolherMembro t={t} membros={membrosDaCasa}
           valor={form.responsible}
           onEscolher={(name) => setForm(f => ({ ...f, responsible: name }))} />
       </View>

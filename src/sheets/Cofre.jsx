@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT, MEMBER_COLOR } from '../theme';
+import { S, R, FONT, corDoMembro } from '../theme';
 import { EUR, WD, plural } from '../format';
 import { SectionTitle, Avatar, Empty } from '../ui';
 import Icon from '../Icon';
@@ -76,7 +76,7 @@ export default function Cofre({ t, kid, onClose }) {
     <Sheet t={t} onClose={onClose}
       title={`Cofre do ${kid}`}
       sub={`1 pt = ${EUR(s.pointValue)} · pago ${WD[s.payDay].toLowerCase()}s`}
-      leading={<Avatar initial={kid[0]} color={MEMBER_COLOR[kid]} size={40} />}
+      leading={<Avatar initial={kid[0]} color={corDoMembro(kid)} size={40} />}
       action={
         <View style={{ gap: S.md }}>
           <Acao filled label={`Pagar Semanada · ${EUR(porPagar)}`}

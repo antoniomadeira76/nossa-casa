@@ -34,9 +34,31 @@ export const STATE = {
   violet: '#722ED1', cyan: '#08979C',
 };
 
-// Cor por membro — nenhuma é a cor de ação
-export const MEMBER_COLOR = {
+// Cor por membro — nenhuma é a cor de ação.
+//
+// Era um objeto com quatro nomes lá dentro, indexado por nome. Um membro
+// acrescentado à casa não estava lá: o avatar saía cinzento, o ponto do filtro
+// desaparecia e a barra lateral da ficha de saúde ficava sem cor. A paleta é
+// que é fixa; a atribuição não pode ser.
+export const PALETA_MEMBROS = ['#722ED1', '#08979C', '#1890FF', '#011B58',
+  '#D4380D', '#389E0D', '#C41D7F', '#AD8B00'];
+
+// As cores da casa de demonstração. Ficam para que quem já usa a app não veja
+// os avatares trocarem de cor de um dia para o outro.
+const SEMENTES_DE_COR = {
   'Rita': '#722ED1', 'Tomás': '#08979C', 'Léo': '#1890FF', 'Mia': '#011B58',
+};
+
+// A cor escolhida pelo membro ganha sempre — a casa é que sabe quem quer ser
+// de que cor, e essa escolha vem do servidor. Sem ela, o nome escolhe: a mesma
+// pessoa recebe a mesma cor em todos os telefones, sem nada para guardar.
+export const corDoMembro = (nome, cor) => {
+  if (cor) return cor;
+  if (SEMENTES_DE_COR[nome]) return SEMENTES_DE_COR[nome];
+  if (!nome) return PALETA_MEMBROS[0];
+  let h = 0;
+  for (let i = 0; i < String(nome).length; i++) h = (h * 31 + String(nome).charCodeAt(i)) >>> 0;
+  return PALETA_MEMBROS[h % PALETA_MEMBROS.length];
 };
 
 // Escala de espaçamento: cinco valores, mais nada

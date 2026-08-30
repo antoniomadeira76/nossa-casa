@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { S, R, elev, FONT, MEMBER_COLOR } from './theme';
+import { S, R, elev, FONT, corDoMembro } from './theme';
 import Icon from './Icon';
 
 // Cartão: um enchimento só, 14/16, herdado do protótipo
@@ -69,7 +69,7 @@ export const EscolherMembro = ({ t, valor, onEscolher, membros }) => (
             backgroundColor: on ? t.chrome : pressed ? t.subtle : 'transparent',
           })}>
           <View style={{ width: 9, height: 9, borderRadius: R.pill,
-            backgroundColor: MEMBER_COLOR[nome] || t.text3 }} />
+            backgroundColor: corDoMembro(nome) || t.text3 }} />
           <Text style={{ fontFamily: FONT.body, fontSize: 15,
             color: on ? '#FFFFFF' : t.text2 }}>{nome}</Text>
         </Pressable>

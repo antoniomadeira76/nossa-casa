@@ -175,7 +175,7 @@ export default function ModoCompras({ t, user, onClose }) {
           onConfirm={() => {
             set(x => ({
               registered: x.registered + cart,
-              settled: false,
+              acertoMovs: [],
               shopHistory: [{
                 at: Date.now(), store: x.stores[x.shopPlan.store], who: x.shopPlan.who,
                 total: cart, items: doneItems.length,

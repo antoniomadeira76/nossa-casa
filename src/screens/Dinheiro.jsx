@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT, MEMBER_COLOR } from '../theme';
+import { S, R, FONT, corDoMembro } from '../theme';
 import { EUR, warrantyDaysLeft } from '../format';
 import { ENV_BASE, GOALS, EQUIP } from '../data';
 import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Tap } from '../ui';
@@ -77,7 +77,7 @@ function GrelhaEnvelopes({ t, envelopes, livre, escolhido, onEscolher }) {
 
 export default function Dinheiro({ t, user, onEquip }) {
   const st = useStore();
-  const { s, set, envelopes, budget, spent, remaining, allEquip, isAdmin, membros: MEMBERS } = st;
+  const { s, set, envelopes, budget, spent, remaining, allEquip, isAdmin, membros: MEMBERS, adultos, criancas, acerto, acertado, pagarAcerto, oNome, aoNome } = st;
   const [sheet, setSheet] = useState(null);
   const [mv, setMv] = useState({ from: 0, to: 3, amount: 0 });
   const [exp, setExp] = useState({ amount: 0, env: 0, payer: user, split: true });
@@ -86,7 +86,9 @@ export default function Dinheiro({ t, user, onEquip }) {
 
   const admin = isAdmin(user);
   const pct = Math.round((spent / budget) * 100);
-  const settleBase = s.clearedSeeds ? 0 : 86.5;
+  // Quanto falta acertar, e entre quem. Vem da loja: era 86,5 escrito aqui e
+  // outra vez no Início, com os nomes «Tomás» e «Rita» no meio do texto.
+  const settleBase = acerto ? acerto.valor : 0;
   // O que sobra do rendimento depois de atribuir os envelopes — a segunda
   // metade da frase da referência 05.
   const semEnvelope = Math.max(0, (s.rendimento || 0) - budget);
@@ -109,13 +111,8 @@ export default function Dinheiro({ t, user, onEquip }) {
       amount = settle.customAmount;
     }
 
-    set(x => ({
-      paidPts: {
-        ...x.paidPts,
-        'Tomás': (x.paidPts['Tomás'] || 0) + amount,
-      },
-      settled: true,
-    }));
+    pagarAcerto(amount, settle.mode === 'all' ? 'Acerto total'
+      : settle.mode === 'half' ? 'Metade' : 'Valor à escolha');
     setSheet(null);
     setSettle({ mode: 'all', customAmount: 0 });
   };
@@ -142,8 +139,8 @@ export default function Dinheiro({ t, user, onEquip }) {
   const handleCloseMonth = () => {
     set(x => ({
       registered: 0,
-      settled: false,
-      paidPts: { 'Léo': 0, 'Mia': 0 },
+      acertoMovs: [],
+      paidPts: Object.fromEntries(criancas.map(n => [n, 0])),
       envMove: {},
     }));
     setSheet(null);
@@ -233,20 +230,21 @@ export default function Dinheiro({ t, user, onEquip }) {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={{ fontFamily: FONT.body, fontSize: 16, color: t.text1 }}>
-                {s.settled || settleBase === 0 ? 'Está tudo acertado' : `O Tomás deve à Rita ${EUR(settleBase)}`}
+                {acertado ? 'Está tudo acertado'
+                  : `${oNome(acerto.devedor)} deve ${aoNome(acerto.credor)} ${EUR(settleBase)}`}
               </Text>
               <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
                 {s.clearedSeeds ? 'Sem valores pendentes entre os dois.'
-                  : s.settled ? 'Último acerto hoje' : '14 despesas partilhadas este mês'}
+                  : acerto && acerto.pago > 0 ? 'Último acerto hoje' : '14 despesas partilhadas este mês'}
               </Text>
             </View>
-            <Pill label={s.settled || settleBase === 0 ? 'Concluído' : 'A Decorrer'}
-              fg={s.settled || settleBase === 0 ? t.state.okDeep : t.state.info}
-              bg={s.settled || settleBase === 0 ? t.state.okBg : t.state.infoBg}
-              border={s.settled || settleBase === 0 ? t.state.okBorder : t.state.info} />
+            <Pill label={acertado ? 'Concluído' : 'A Decorrer'}
+              fg={acertado ? t.state.okDeep : t.state.info}
+              bg={acertado ? t.state.okBg : t.state.infoBg}
+              border={acertado ? t.state.okBorder : t.state.info} />
           </View>
-          <Primary t={t} disabled={s.settled || settleBase === 0}
-            label={s.settled || settleBase === 0 ? 'Contas Acertadas' : 'Acertar Contas'}
+          <Primary t={t} disabled={acertado}
+            label={acertado ? 'Contas Acertadas' : 'Acertar Contas'}
             onPress={() => { setSettle({ mode: 'all', customAmount: 0 }); setSheet('settle'); }} />
         </Card>
       </View>
@@ -326,7 +324,7 @@ export default function Dinheiro({ t, user, onEquip }) {
                   {EUR(settleBase)}
                 </Text>
                 <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-                  O Tomás deve à Rita este valor.
+                  {acerto ? `${oNome(acerto.devedor)} deve ${aoNome(acerto.credor)} este valor.` : ''}
                 </Text>
               </View>
 
@@ -462,7 +460,7 @@ export default function Dinheiro({ t, user, onEquip }) {
               set(x => ({
                 registered: x.registered + (envelopes[exp.env].name === 'Mercearia' ? exp.amount : 0),
                 envMove: x.envMove,
-                settled: false,
+                acertoMovs: [],
               }));
               setSheet(null); setExp(e => ({ ...e, amount: 0 }));
             }} />}>
@@ -490,7 +488,7 @@ export default function Dinheiro({ t, user, onEquip }) {
           <View style={{ gap: S.md }}>
             <Label t={t}>Quem pagou</Label>
             <Segmented t={t} small value={exp.payer}
-              options={['Rita', 'Tomás'].map(n => ({ value: n, label: n }))}
+              options={adultos.map(n => ({ value: n, label: n }))}
               onChange={(v) => setExp(x => ({ ...x, payer: v }))} />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: t.subtle,

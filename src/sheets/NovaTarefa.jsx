@@ -14,7 +14,7 @@ const URG_OPTS = [
 ];
 
 export default function NovaTarefa({ t, user, onClose }) {
-  const { set } = useStore();
+  const { set, membrosDaCasa } = useStore();
   const [form, setForm] = useState({
     title: '',
     who: user,
@@ -66,7 +66,7 @@ export default function NovaTarefa({ t, user, onClose }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Atribuir a</Label>
-        <EscolherMembro t={t} membros={['Rita', 'Tomás', 'Léo', 'Mia']}
+        <EscolherMembro t={t} membros={membrosDaCasa}
           valor={form.who} onEscolher={(name) => setForm(f => ({ ...f, who: name }))} />
       </View>
 

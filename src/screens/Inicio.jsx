@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT, MEMBER_COLOR } from '../theme';
+import { S, R, FONT, corDoMembro } from '../theme';
 import { EUR, plural, evTime, TODAY_KEY, dayLabel } from '../format';
 
 import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager } from '../ui';
@@ -10,7 +10,8 @@ import Icon from '../Icon';
 export default function Inicio({ t, user, go, onSaude, onEquip }) {
   const st = useStore();
   const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring,
-          garantiasAExpirar, receitasAExpirar, consultasProximas, membros: MEMBERS } = st;
+          garantiasAExpirar, receitasAExpirar, consultasProximas, membros: MEMBERS,
+          acerto, acertado, artigo, oNome, aoNome } = st;
 
   const hour = 9;
   const greet = hour < 13 ? 'Bom dia' : hour < 20 ? 'Boa tarde' : 'Boa noite';
@@ -19,7 +20,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip }) {
   const toConfirm = tasks.filter(x => s.pending[x.id]);
   const overdue = tasks.filter(x => x.today && !s.done[x.id] && !s.pending[x.id]);
   const tight = envelopes.filter(e => e.used / e.limit >= 0.94);
-  const settleBase = s.clearedSeeds ? 0 : 86.5;
+  const settleBase = acerto ? acerto.valor : 0;
 
   // Precisa de si — só o que exige decisão, por ordem de urgência.
   //
@@ -35,8 +36,8 @@ export default function Inicio({ t, user, go, onSaude, onEquip }) {
   if (toConfirm.length) needs.push({ icon: 'clock', color: t.text3,
     title: plural(toConfirm.length, 'tarefa a confirmar', 'tarefas a confirmar'),
     sub: [...new Set(toConfirm.map(x => x.who))].join(', '), go: () => go('tarefas') });
-  if (!s.settled && settleBase > 0) needs.push({ icon: 'wallet', color: t.text3,
-    title: 'Contas por acertar', sub: `O Tomás deve ${EUR(settleBase)}`, go: () => go('dinheiro') });
+  if (!acertado) needs.push({ icon: 'wallet', color: t.text3,
+    title: 'Contas por acertar', sub: `${oNome(acerto.devedor)} deve ${EUR(settleBase)}`, go: () => go('dinheiro') });
   tight.forEach(e => needs.push({ icon: 'warning', color: t.state.err,
     title: `Envelope ${e.name} no limite`, sub: `${EUR(Math.max(0, e.limit - e.used))} disponíveis`, go: () => go('dinheiro') }));
   garantiasAExpirar().forEach(e => needs.push({ icon: 'idcard', color: t.state.warn,
@@ -120,7 +121,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip }) {
                   <Text style={{ width: 42, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3 }}>
                     {evTime(e.time)}
                   </Text>
-                  <Avatar initial={(MEMBERS[e.owner] || { initial: '?' }).initial} color={MEMBER_COLOR[e.owner] || t.text3} />
+                  <Avatar initial={(MEMBERS[e.owner] || { initial: '?' }).initial} color={corDoMembro(e.owner) || t.text3} />
                   <View style={{ flex: 1, gap: 2 }}>
                     <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{e.title}</Text>
                     <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{e.who}</Text>
@@ -184,10 +185,11 @@ export default function Inicio({ t, user, go, onSaude, onEquip }) {
         </Card>
       </View>
 
-      <Tile t={t} kind={s.settled || settleBase === 0 ? 'info' : 'warn'}>
-        {s.settled || settleBase === 0
-          ? 'As contas entre a Rita e o Tomás estão acertadas.'
-          : `O Tomás deve à Rita ${EUR(settleBase)} de despesas partilhadas.`}
+      <Tile t={t} kind={acertado ? 'info' : 'warn'}>
+        {acertado
+          ? acerto ? `As contas entre ${artigo(acerto.credor)} ${acerto.credor} e ${artigo(acerto.devedor)} ${acerto.devedor} estão acertadas.`
+            : 'Não há contas a acertar nesta casa.'
+          : `${oNome(acerto.devedor)} deve ${aoNome(acerto.credor)} ${EUR(settleBase)} de despesas partilhadas.`}
       </Tile>
 
     </>

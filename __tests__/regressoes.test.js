@@ -501,7 +501,11 @@ describe('Saúde — o ecrã e a loja contam a mesma coisa', () => {
   // que aconteceu ao fazer esse refactor.
   it('o marcar consulta recebe o membro de onde foi aberto', () => {
     expect(saude).toMatch(/<MarcarConsulta[^>]*membro=\{membroDaFolha\}/s);
-    expect(saude).toMatch(/member: membro \|\| 'Léo'/);
+    // O que interessa é a precedência: o membro por onde a folha foi aberta
+    // ganha ao valor por omissão. Este teste exigia o nome literal `'Léo'` e
+    // partiu-se quando o valor por omissão passou a ser a primeira criança da
+    // casa — que é o mesmo em Bengui, mas já não é um nome escrito à mão.
+    expect(saude).toMatch(/member: membro \|\|/);
     expect(read('App.jsx')).toMatch(/setMarcarPara\(ficha\)/);
     expect(saude).toMatch(/setMembroDaFolha\(marcarPara\)/);
   });
@@ -571,7 +575,11 @@ describe('Armazenamento local — versão e migração', () => {
   // tinha a app aberta — vi ícones errados no cofre por causa disto.
   test('as sementes do cofre vivem no código, não no estado gravado', () => {
     expect(read('src/data.js')).toMatch(/export const VAULT = \[/);
-    expect(store).toMatch(/vaultMoves: \[\], paidPts/);        // DEMO não semeia
+    // O DEMO não semeia: `vaultMoves` arranca vazio. A versão anterior desta
+    // linha exigia `vaultMoves: [], paidPts` na mesma linha e partiu-se quando
+    // o `paidPts` deixou de ser dois nomes escritos à mão; olhava para a
+    // formatação, não para o invariante.
+    expect(semComentarios(store)).toMatch(/vaultMoves: \[\]\s*,/);
     expect(store).toMatch(/s\.clearedSeeds \? \[\] : VAULT/);  // a derivação junta-as
   });
 
@@ -881,5 +889,80 @@ describe('O que a interface promete, o código faz', () => {
 
   test('não sobra o cálculo morto dos 30 %', () => {
     expect(read('src/screens/Dinheiro.jsx')).not.toMatch(/toGoals/);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// A casa pode ter outros membros além dos quatro da demonstração. Enquanto os
+// nomes estiveram escritos à mão, acrescentar uma Ana dava-lhe um avatar e
+// mais nada: não aparecia no filtro das tarefas, não tinha cofre, não podia
+// ficar responsável por um evento, e o texto do acerto chamava-lhe «o Ana».
+describe('A casa não são quatro nomes escritos à mão', () => {
+  const semComs = (src) => src.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+
+  // Os quatro nomes da demonstração só podem viver onde são dados: as
+  // sementes (data.js) e as duas constantes de demonstração da loja.
+  const PODEM_TER_NOMES = new Set(['src/data.js']);
+  const ECRAS = [
+    'src/screens/Inicio.jsx', 'src/screens/Tarefas.jsx', 'src/screens/Agenda.jsx',
+    'src/screens/Dinheiro.jsx', 'src/screens/Saude.jsx', 'src/screens/Login.jsx',
+    'src/screens/Compras.jsx', 'src/screens/Perfil.jsx', 'src/screens/Gestao.jsx',
+    'src/screens/ModoCompras.jsx', 'src/sheets/NovoEvento.jsx', 'src/sheets/NovaTarefa.jsx',
+    'src/sheets/Cofre.jsx', 'src/KidApp.jsx', 'src/ui.jsx',
+  ];
+
+  test.each(ECRAS)('%s não decide nada a partir de um nome', (f) => {
+    if (PODEM_TER_NOMES.has(f)) return;
+    const src = semComs(read(f));
+    // Um nome dentro de uma lista, de uma comparação ou de uma indexação é
+    // uma decisão tomada sobre quem vive na casa — e essa não é do ecrã.
+    for (const nome of ['Rita', 'Tomás', 'Léo', 'Mia']) {
+      expect(src).not.toMatch(new RegExp(`['"\`]${nome}['"\`]`));
+    }
+  });
+
+  test('as listas de membros vêm da loja, e são expostas', () => {
+    const loja = read('src/store.jsx');
+    const devolve = loja.slice(loja.lastIndexOf('  return {'));
+    for (const nome of ['membrosDaCasa', 'criancas', 'adultos']) {
+      expect(loja).toMatch(new RegExp(`const ${nome} = `));
+      expect(devolve).toContain(nome);      // não basta derivar; tem de sair
+    }
+    // e são derivadas do quadro da casa, não da constante das sementes
+    expect(loja).toMatch(/const quadro = s\.membros \|\| MEMBERS/);
+    expect(loja).toMatch(/const criancas = membrosDaCasa\.filter/);
+    expect(loja).toMatch(/const adultos = membrosDaCasa\.filter/);
+  });
+
+  test('a cor de um membro responde a qualquer nome', () => {
+    const { corDoMembro, PALETA_MEMBROS } = require('../src/theme');
+    expect(corDoMembro('Rita')).toBe('#722ED1');       // as sementes não mudam
+    const ana = corDoMembro('Ana');
+    expect(PALETA_MEMBROS).toContain(ana);
+    expect(corDoMembro('Ana')).toBe(ana);              // estável entre chamadas
+    expect(corDoMembro('Ana', '#123456')).toBe('#123456');  // a do servidor ganha
+  });
+
+  // INVARIANTE #2: o acerto entre adultos era `settled: true` mais o montante
+  // somado ao livro dos pontos das crianças. Dois telefones a acertar metade
+  // cada um davam a conta fechada com metade paga.
+  test('o acerto entre adultos é uma soma de movimentos', () => {
+    const loja = semComs(read('src/store.jsx'));
+    expect(loja).toMatch(/acertoMovs \|\| \[\]\)\.reduce/);
+    expect(loja).toMatch(/acertoMovs: \[\.\.\.\(x\.acertoMovs \|\| \[\]\)/);
+    // e ninguém escreve o booleano de volta
+    for (const f of ['src/store.jsx', ...ECRAS]) {
+      expect(semComs(read(f))).not.toMatch(/settled:\s*true/);
+    }
+  });
+
+  test('a migração 5 não faz a dívida ressuscitar a quem já acertou', () => {
+    const { MIGRATIONS, SCHEMA } = require('../src/store');
+    expect(SCHEMA).toBeGreaterThanOrEqual(5);
+    const antes = MIGRATIONS[5]({ settled: true });
+    expect(antes.settled).toBeUndefined();
+    expect(antes.acertoMovs.reduce((a, m) => a + m.valor, 0)).toBeCloseTo(86.5);
+    // e quem não tinha acertado continua a dever
+    expect(MIGRATIONS[5]({ settled: false }).acertoMovs).toEqual([]);
   });
 });

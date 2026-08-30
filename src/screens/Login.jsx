@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ImageBackground } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { S, R, FONT, elev, MEMBER_COLOR } from '../theme';
+import { S, R, FONT, elev, corDoMembro } from '../theme';
 import Icon, { Marca, GoogleG as G } from '../Icon';
 import { FEM } from '../data';
 import { useStore } from '../store';
@@ -10,7 +10,7 @@ import * as servidor from '../pocketbase';
 import { Pill } from '../ui';
 
 export default function Login({ t, onEnter }) {
-  const { s, pinError, verificarPin, membros: MEMBERS, nomeDaCasa } = useStore();
+  const { s, pinError, verificarPin, membros: MEMBERS, nomeDaCasa, criancas, adultos } = useStore();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState('login');   // login | contas | criancas | pin
   const [kid, setKid] = useState(null);
@@ -136,7 +136,7 @@ export default function Login({ t, onEnter }) {
                 {erroGoogle}
               </Text>
             ) : null}
-            {['Rita', 'Tomás'].map(n => (
+            {adultos.map(n => (
               <Pressable key={n} onPress={() => onEnter(n)} accessibilityRole="button" accessibilityLabel={n}
                 style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: R.card, padding: 14,
                   minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
@@ -144,7 +144,7 @@ export default function Login({ t, onEnter }) {
                   <Text style={{ fontFamily: FONT.display, fontSize: 17, fontWeight: '500', color: '#FFFFFF' }}>{MEMBERS[n].initial}</Text>
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={{ fontFamily: FONT.body, fontSize: 16, color: '#262626' }}>{n} Bengui</Text>
+                  <Text style={{ fontFamily: FONT.body, fontSize: 16, color: '#262626' }}>{n} {nomeDaCasa}</Text>
                   <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 12, color: '#6A7282' }}>{MEMBERS[n].email}</Text>
                 </View>
                 {/* Pastilha contornada, como na referência 02 — e com a
@@ -180,7 +180,7 @@ export default function Login({ t, onEnter }) {
             <Text style={{ fontFamily: FONT.body, fontSize: 15, lineHeight: 22, color: 'rgba(255,255,255,0.8)' }}>
               Escolha o seu nome e introduza o PIN de 4 dígitos.
             </Text>
-            {['Léo', 'Mia'].map(n => {
+            {criancas.map(n => {
               const hasPin = !!s.pins[n];
               return (
                 <Pressable key={n} onPress={() => { if (hasPin) { setKid(n); setPin(''); setStep('pin'); } }}
@@ -188,7 +188,7 @@ export default function Login({ t, onEnter }) {
                   style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: R.card, padding: 14,
                     minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 14, opacity: hasPin ? 1 : 0.55 }}>
                   <View style={{ width: 40, height: 40, borderRadius: R.pill,
-                    backgroundColor: n === 'Léo' ? '#1890FF' : '#011B58', alignItems: 'center', justifyContent: 'center' }}>
+                    backgroundColor: corDoMembro(n), alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ fontFamily: FONT.display, fontSize: 17, fontWeight: '500', color: '#FFFFFF' }}>{MEMBERS[n].initial}</Text>
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
@@ -210,7 +210,7 @@ export default function Login({ t, onEnter }) {
           <View style={glass}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
               <View style={{ width: 44, height: 44, borderRadius: R.pill,
-                backgroundColor: MEMBER_COLOR[kid] || t.chrome,
+                backgroundColor: corDoMembro(kid) || t.chrome,
                 alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontFamily: FONT.display, fontSize: 18, fontWeight: '500', color: '#FFFFFF' }}>
                   {(MEMBERS[kid] || { initial: '?' }).initial}

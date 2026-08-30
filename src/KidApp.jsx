@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from './store';
-import { buildTheme, onChrome, S, R, FONT, MEMBER_COLOR, elev } from './theme';
+import { buildTheme, onChrome, S, R, FONT, corDoMembro, elev } from './theme';
 import { EUR, parseKey, pad2, plural } from './format';
 import Icon from './Icon';
 import { Card, SectionTitle, Label, Pill, Empty, Primary } from './ui';
@@ -278,7 +278,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
   const insets = useSafeAreaInsets();
 
   // Cor da criança
-  const kidColor = MEMBER_COLOR[kid];
+  const kidColor = corDoMembro(kid);
 
   // Tema: versão escura do tema geral, com fundo na cor da criança
   const mode = (s.themeByUser[kid]) || 'claro';

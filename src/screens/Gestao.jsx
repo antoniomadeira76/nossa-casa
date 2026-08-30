@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT, MEMBER_COLOR } from '../theme';
+import { S, R, FONT, corDoMembro } from '../theme';
 import { EUR } from '../format';
 import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill } from '../ui';
 import Icon from '../Icon';

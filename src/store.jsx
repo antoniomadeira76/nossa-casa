@@ -62,11 +62,19 @@ export const resumoPin = (nome, pin) => {
   return `h${h1.toString(36)}${h2.toString(36)}`;
 };
 
+// Pontos de partida da demonstração. Uma criança acrescentada à casa começa a
+// zero — não herda o histórico de ninguém.
+const PONTOS_INICIAIS = { 'Léo': 14, 'Mia': 11 };
+
+// Despesas partilhadas por acertar, na demonstração. As 14 despesas do mês
+// estão nos dados; o valor está aqui até o cálculo real das partilhas existir.
+const ACERTO_INICIAL = 86.5;
+
 const KEY = 'nossa-casa/v1';
 
 // Só isto é gravado. O resto — separador ativo, folha aberta, rascunhos — é UI.
 const DATA_KEYS = [
-  'done', 'pending', 'status', 'registered', 'settled', 'vaultMoves', 'paidPts', 'extraLog',
+  'done', 'pending', 'status', 'registered', 'acertoMovs', 'vaultMoves', 'paidPts', 'extraLog',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'newItems', 'itemGone',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'importDone', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
@@ -80,7 +88,7 @@ const DATA_KEYS = [
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
 // muda, e MIGRATIONS ganha a entrada correspondente. Sem isto, dados antigos
 // eram lidos com a forma nova e ganhavam silenciosamente ao código.
-export const SCHEMA = 4;
+export const SCHEMA = 5;
 
 // Uma migração por salto de versão: recebe o objeto lido e devolve-o corrigido.
 export const MIGRATIONS = {
@@ -125,12 +133,27 @@ export const MIGRATIONS = {
     pins: Object.fromEntries(Object.entries(o.pins || {})
       .map(([n, p]) => [n, /^[0-9]{4}$/.test(String(p)) ? resumoPin(n, p) : p])),
   }),
+
+  // v4 → v5: o acerto entre adultos era um booleano `settled` mais o montante
+  // somado ao livro dos pontos das crianças. Passa a ser uma lista de
+  // movimentos, como o cofre e os envelopes. Quem já tinha acertado leva um
+  // movimento pelo valor todo, para não ver a dívida ressuscitar.
+  5: (o) => {
+    const { settled, ...resto } = o;
+    return {
+      ...resto,
+      acertoMovs: o.acertoMovs
+        || (settled ? [{ valor: ACERTO_INICIAL, data: null, nota: 'acerto anterior' }] : []),
+    };
+  },
 };
 
 export const DEMO = () => ({
   done: TASKS.reduce((a, t) => (a[t.id] = !!t.done, a), {}),
-  pending: {}, status: {}, registered: 0, settled: false,
-  vaultMoves: [], paidPts: { 'Léo': 0, 'Mia': 0 }, extraLog: {},
+  pending: {}, status: {}, registered: 0, acertoMovs: [],
+  vaultMoves: [],
+  paidPts: Object.fromEntries(Object.keys(MEMBERS).filter(n => MEMBERS[n].kid).map(n => [n, 0])),
+  extraLog: {},
   envMove: {}, added: [], newTasks: [], taskEdits: {}, taskGone: {},
   newItems: [], itemGone: {}, newEquip: [], equipGone: {}, equipEdits: {},
   schemeByUser: {}, themeByUser: {}, importDone: {},
@@ -145,7 +168,10 @@ export const DEMO = () => ({
   pointValue: 0.10, payDay: 0, splitHalf: true,
   rendimento: 3200,              // o que entra por mês; os envelopes saem daqui
   stores: ['Continente de Belém', 'Pingo Doce da Ajuda', 'Mercado de Alcântara'],
-  shopPlan: { who: 'Tomás', day: 'd2026-08-23', time: '10:30', store: 0 },  // domingo
+  shopPlan: {
+    who: Object.keys(MEMBERS).filter(n => !MEMBERS[n].kid)[1] || Object.keys(MEMBERS)[0],
+    day: 'd2026-08-23', time: '10:30', store: 0,   // domingo
+  },
   shopHistory: [], health: [], specialities: ['Medicina geral', 'Dentista', 'Pediatria', 'Oftalmologia'],
   equipCats: ['Eletrodomésticos', 'Aquecimento', 'Informática', 'Outros'],
   registo: [],
@@ -256,6 +282,41 @@ export const useStore = () => {
 
 // ─── derivações. Tudo o que a interface lê passa por aqui.
 function build(s, set, mapaServidor = { current: { casa: null, membros: {}, envelopes: {} } }) {
+  // Quem vive nesta casa. Vinha de listas escritas à mão — `['Léo', 'Mia']` em
+  // seis sítios, `['Rita', 'Tomás', 'Léo', 'Mia']` noutros seis. Acrescentar
+  // alguém à casa dava-lhe um avatar e mais nada: não aparecia no filtro das
+  // tarefas, não tinha cofre, não podia ser responsável por um evento.
+  const quadro = s.membros || MEMBERS;
+  const membrosDaCasa = Object.keys(quadro);
+  const criancas = membrosDaCasa.filter(n => quadro[n]?.kid);
+  const adultos = membrosDaCasa.filter(n => !quadro[n]?.kid);
+
+  // Concordância de género a partir do quadro da casa. O `DE` do data.js lê a
+  // constante dos quatro membros e devolve «do» para toda a gente que não
+  // esteja lá — uma Ana acrescentada à casa ficava «do Ana».
+  const artigo = (n) => (quadro[n]?.fem ? 'a' : 'o');
+  const oNome = (n) => `${quadro[n]?.fem ? 'A' : 'O'} ${n}`;
+  const aoNome = (n) => `${quadro[n]?.fem ? 'à' : 'ao'} ${n}`;
+  const deNome = (n) => (quadro[n]?.fem ? 'da' : 'do');
+
+  // O acerto de contas entre os adultos da casa. O valor devido é uma soma de
+  // movimentos, como manda o invariante 2: o que estava escrito era
+  // `settled: true` mais o montante somado a `paidPts['Tomás']` — um campo
+  // booleano que dois telefones se anulavam a escrever, e euros arrumados no
+  // livro dos pontos das crianças, que o fecho do mês limpava.
+  //
+  // Quem deve a quem sai da ordem dos adultos da casa e não de dois nomes.
+  // Numa casa de um adulto não há nada a acertar, e a secção não aparece.
+  const acertoPago = (s.acertoMovs || []).reduce((a, m) => a + (m.valor || 0), 0);
+  const acerto = adultos.length < 2 ? null : {
+    devedor: adultos[1],
+    credor: adultos[0],
+    base: s.clearedSeeds ? 0 : ACERTO_INICIAL,
+    pago: acertoPago,
+    valor: Math.max(0, (s.clearedSeeds ? 0 : ACERTO_INICIAL) - acertoPago),
+  };
+  const acertado = !acerto || acerto.valor === 0;
+
   // Traduzir um nome local para o identificador do servidor. Devolve null
   // quando a app corre local — e é isso que faz as escritas não acontecerem
   // em vez de rebentarem.
@@ -269,8 +330,10 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       .map(t => ({ ...t, ...(s.taskEdits[t.id] || {}) }))
       .map(t => ({
         ...t,
-        who: s.rotate[t.id] && ['Léo', 'Mia'].includes(t.who)
-          ? (34 % 2 === 0 ? 'Léo' : 'Mia') : t.who,
+        // A rotação passa a tarefa à criança seguinte da casa, seja qual for
+        // o tamanho da família. Estava a escolher entre dois nomes fixos.
+        who: s.rotate[t.id] && criancas.includes(t.who)
+          ? criancas[(criancas.indexOf(t.who) + 1) % criancas.length] : t.who,
         urgency: s.urg[t.id] ?? 1,
         dueKey: (s.due[t.id] || {}).key,
         dueTime: (s.due[t.id] || {}).time,
@@ -355,6 +418,15 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // dariam 5. Assim dão 10. A escrita passa por uma fila, portanto sem rede
   // fica pendente em vez de se perder, e a chave impede que reenviar a fila
   // pague a semanada duas vezes.
+  // Pagar parte ou a totalidade do acerto. Um movimento, somado — nunca
+  // `settled = true`. Dois telefones a acertar metade cada um dão a conta
+  // saldada; a escrita de um booleano dava metade paga e a dívida fechada.
+  const pagarAcerto = (valor, nota) => {
+    const v = Math.round(Number(valor) * 100) / 100;
+    if (!(v > 0)) return;
+    set(x => ({ acertoMovs: [...(x.acertoMovs || []), { valor: v, data: TODAY_KEY, nota: nota || '' }] }));
+  };
+
   const vaultAdd = (kid, delta, kind, label, sub, day = TODAY_KEY) => {
     set(x => ({
       vaultMoves: [...(x.vaultMoves || []), {
@@ -374,8 +446,10 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     }
   };
 
-  const kidPts = ['Léo', 'Mia'].reduce((a, k) => {
-    const base = s.clearedSeeds ? 0 : (k === 'Léo' ? 14 : 11);
+  const kidPts = criancas.reduce((a, k) => {
+    // Os pontos de partida são semente da demonstração; uma criança nova
+    // começa a zero, que é o correto — não herda o histórico de ninguém.
+    const base = s.clearedSeeds ? 0 : (PONTOS_INICIAIS[k] || 0);
     a[k] = base + allTasks().filter(t => t.who === k && s.done[t.id] && !TASKS.some(x => x.id === t.id && x.done)).reduce((n, t) => n + (t.pts || 0), 0);
     return a;
   }, {});
@@ -572,6 +646,8 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // data.js: essas são as sementes da demonstração, não a casa de quem está
     // a usar a app.
     membros: s.membros || MEMBERS,
+    membrosDaCasa, criancas, adultos, acerto, acertado, pagarAcerto,
+    artigo, oNome, aoNome, deNome,
     nomeDaCasa: s.nomeDaCasa || 'Bengui',
     deDemonstracao: s.deDemonstracao !== false,
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
