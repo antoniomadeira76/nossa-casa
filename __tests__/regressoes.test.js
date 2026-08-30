@@ -1036,3 +1036,44 @@ describe('Entrar não pode dar ecrã branco', () => {
     expect(app).toContain('não faz parte desta casa');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// O servidor mandava os membros e a loja ficava com os PAPÉIS da demonstração.
+// O efeito era o contrário do esperado: o servidor dizia que o António
+// administra a casa, `s.roles` continuava a ser `{Rita: admin, …}` — onde não
+// há nenhum António — e `isAdmin` respondia que não. Quem administra a casa
+// entrava e não via a Gestão, que é o único sítio onde a podia gerir.
+describe('O que o servidor manda chega inteiro à loja', () => {
+  const loja = semComentarios(read('src/store.jsx'));
+  // A região é só a função da leitura. O corte anterior ia até
+  // `// ler ao arrancar` — um COMENTÁRIO, que o `semComentarios` já tinha
+  // apagado: o `indexOf` dava −1, a região era o ficheiro quase todo, e o
+  // teste passava com a linha que devia exigir apagada. Uma prova que não
+  // morde é pior do que nenhuma, porque dá a impressão de que morde.
+  const inicio = loja.indexOf('const lerDoServidor');
+  const leitura = loja.slice(inicio, loja.indexOf('useEffect(', inicio));
+
+  test('a região medida é mesmo a da leitura, e não meio ficheiro', () => {
+    expect(inicio).toBeGreaterThan(0);
+    expect(leitura.length).toBeGreaterThan(200);
+    expect(leitura.length).toBeLessThan(2500);
+  });
+
+  test('a leitura da casa traz os membros, os papéis e o nome', () => {
+    for (const campo of ['membros:', 'roles:', 'nomeDaCasa:', 'deDemonstracao:']) {
+      expect(leitura).toContain(campo);
+    }
+  });
+
+  test('os papéis derivam do que o servidor diz, não de uma constante', () => {
+    expect(leitura).toMatch(/m\.papel/);
+    expect(leitura).not.toMatch(/\bROLES\b/);
+  });
+
+  // `isAdmin` lê `s.roles`. Se o servidor mandar um administrador que não
+  // esteja lá, a casa fica sem quem a gira — e sem forma de o corrigir pela
+  // app, porque o que corrige isso é ser administrador.
+  test('isAdmin lê os papéis, e os papéis vêm do servidor', () => {
+    expect(loja).toMatch(/const isAdmin = \(name\) => s\.roles\[name\] === 'admin'/);
+  });
+});

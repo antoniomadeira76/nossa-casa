@@ -320,8 +320,21 @@ export function StoreProvider({ children }) {
       // O servidor manda: se respondeu com membros, são estes e mais nenhuns.
       // Sem servidor, a app fica com a família de demonstração — e o Perfil
       // di-lo, para ninguém confundir uma com a outra.
+      //
+      // Os PAPÉIS vêm com eles. Isto faltava, e o efeito era exatamente o
+      // contrário do esperado: o servidor dizia que o António administra a
+      // casa, `s.roles` continuava a ser o da demonstração — onde não há
+      // nenhum António — e `isAdmin` respondia que não. Quem administra a casa
+      // entrava e não via a Gestão, que é o único sítio onde a podia gerir.
       if (Object.keys(casa.membros || {}).length) {
-        set({ membros: casa.membros, nomeDaCasa: casa.nomeDaCasa, deDemonstracao: false });
+        const papeis = Object.fromEntries(Object.entries(casa.membros)
+          .map(([nome, m]) => [nome, m.papel || (m.kid ? 'crianca' : 'adulto')]));
+        set({
+          membros: casa.membros,
+          roles: papeis,
+          nomeDaCasa: casa.nomeDaCasa,
+          deDemonstracao: false,
+        });
       }
       // Os movimentos de cofre do servidor substituem os locais: são a mesma
       // coisa vista de outro sítio, e o servidor tem os dos dois telemóveis.

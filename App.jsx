@@ -102,6 +102,25 @@ function Shell() {
     return () => clearTimeout(id);
   }, [fontsReady]);
 
+  // Retomar a sessão que já existe.
+  //
+  // O PocketBase guarda-a em disco e ela sobrevive a fechar a app — mas o
+  // `user` é estado do React e arranca a null, portanto a app mandava toda a
+  // gente para o ecrã de entrada a cada recarga. Com a Google isso é uma
+  // janela de consentimento de cada vez que se abre a app, para uma sessão
+  // que já estava válida ali ao lado.
+  useEffect(() => {
+    if (user) return;
+    let vivo = true;
+    (async () => {
+      const m = servidor.auth.valida() ? servidor.auth.membro() : null;
+      if (!m || !vivo) return;
+      await lerDoServidor();          // a casa antes do nome, para o quadro já o ter
+      if (vivo) setUser(m.nome);
+    })();
+    return () => { vivo = false; };
+  }, []);
+
   // A importação da agenda, ao entrar. Com token da Google, os eventos vêm da
   // agenda a sério; sem ele fica a lista de demonstração, para a app continuar
   // a mostrar o ecrã sem credenciais nenhumas.
