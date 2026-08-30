@@ -11,6 +11,13 @@ const TestRenderer = require('react-test-renderer');
 const { StoreProvider, useStore } = require('../src/store');
 
 const { buildTheme } = require('../src/theme');
+// As folhas leem as margens seguras, como na app a sério. Sem o fornecedor
+// por cima, abrir uma folha rebenta com «No safe area value available» — e a
+// app tem-no na raiz, portanto o teste também.
+const { SafeAreaProvider } = require('react-native-safe-area-context');
+const comMargens = (filho) => React.createElement(SafeAreaProvider,
+  { initialMetrics: { frame: { x: 0, y: 0, width: 402, height: 874 },
+                      insets: { top: 47, left: 0, right: 0, bottom: 34 } } }, filho);
 
 const Inicio = require('../src/screens/Inicio').default;
 const Tarefas = require('../src/screens/Tarefas').default;
@@ -74,8 +81,8 @@ describe('A Gestão põe as quatro operações no ecrã', () => {
     let r = null;
     const t = buildTheme('violet', false);
     TestRenderer.act(() => {
-      r = TestRenderer.create(React.createElement(StoreProvider, null,
-        React.createElement(Ecra, { t, user: 'Rita', onClose: () => {}, ...props })));
+      r = TestRenderer.create(comMargens(React.createElement(StoreProvider, null,
+        React.createElement(Ecra, { t, user: 'Rita', onClose: () => {}, ...props }))));
     });
     return r;
   };
@@ -115,6 +122,66 @@ describe('A Gestão põe as quatro operações no ecrã', () => {
   test('sem servidor, a Gestão explica que a casa é de demonstração', () => {
     const texto = abrirMembros(arvoreDe(Gestao));
     expect(texto).toContain('casa de demonstração');
+  });
+
+  // A folha do membro tem de trazer o nome já preenchido — se abrisse vazia,
+  // tocar em Guardar renomeava para nada.
+  test('a folha do membro abre com o nome, e o botão de renomear só aparece a mudar', () => {
+    const r = arvoreDe(Gestao);
+    abrirMembros(r);
+    const linha = r.root.findAll(n => n.props
+      && n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === 'Léo')[0];
+    TestRenderer.act(() => { linha.props.onPress(); });
+    const campoNome = r.root.findAll(n => n.props && n.props.maxLength === 30
+      && typeof n.props.onChangeText === 'function')[0];
+    expect(campoNome.props.value).toBe('Léo');
+
+    const junta = (n) => {
+      if (n === null || n === undefined || n === false) return '';
+      if (typeof n === 'string' || typeof n === 'number') return String(n);
+      if (Array.isArray(n)) return n.map(junta).join(' ');
+      return junta(n.children || (n.props && n.props.children) || null);
+    };
+    // Com o nome por mudar, não há botão: renomear para o mesmo nome não é
+    // uma operação, e um botão que não faz nada é pior do que nenhum.
+    expect(junta(r.toJSON())).not.toContain('Guardar nome');
+    TestRenderer.act(() => { campoNome.props.onChangeText('Leonardo'); });
+    expect(junta(r.toJSON())).toContain('Guardar nome');
+
+    // O Léo da demonstração ainda não tem PIN, por isso não há PIN a perder e
+    // o aviso não aparece. Avisar de uma perda que não acontece é ruído.
+    expect(junta(r.toJSON())).not.toContain('O PIN é apagado');
+  });
+
+  // E com PIN definido, o aviso aparece ANTES de se guardar. Um PIN apagado
+  // sem avisar é uma criança que não entra e não percebe porquê.
+  test('quem tem PIN é avisado de que o perde, antes de guardar', () => {
+    const r = arvoreDe(Gestao);
+    abrirMembros(r);
+    // define-se um PIN ao Léo pela própria loja, como um adulto faria
+    const loja = r.root.findAll(n => n.props && n.props.accessibilityLabel === 'Léo')[0];
+    TestRenderer.act(() => { loja.props.onPress(); });
+    const campoPin = r.root.findAll(n => n.props && n.props.maxLength === 4)[0];
+    TestRenderer.act(() => { campoPin.props.onChangeText('2470'); });
+    const guardar = r.root.findAll(n => n.props
+      && n.props.accessibilityLabel === 'Guardar PIN')[0];
+    TestRenderer.act(() => { guardar.props.onPress(); });
+
+    // reabre-se e muda-se o nome
+    TestRenderer.act(() => {
+      r.root.findAll(n => n.props && n.props.accessibilityLabel === 'Léo')[0].props.onPress();
+    });
+    const campoNome = r.root.findAll(n => n.props && n.props.maxLength === 30
+      && typeof n.props.onChangeText === 'function')[0];
+    TestRenderer.act(() => { campoNome.props.onChangeText('Leonardo'); });
+
+    const junta = (n) => {
+      if (n === null || n === undefined || n === false) return '';
+      if (typeof n === 'string' || typeof n === 'number') return String(n);
+      if (Array.isArray(n)) return n.map(junta).join(' ');
+      return junta(n.children || (n.props && n.props.children) || null);
+    };
+    expect(junta(r.toJSON())).toContain('O PIN é apagado quando o nome muda');
   });
 
   // O papel muda-se dentro da folha do membro. O diálogo antigo escolhia o

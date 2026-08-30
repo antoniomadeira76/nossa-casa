@@ -126,6 +126,27 @@ await prova('editarMembro grava o papel e a concordância', async () => {
   igual(lida.fem, true);
 });
 
+// O renomear é a operação mais invasiva: no servidor são dois campos, e na
+// loja local é uma migração de todo o estado gravado. A parte local está
+// provada em __tests__/renomear-membro.test.js, com uma sonda que anda pelo
+// estado todo; aqui prova-se que os dois campos chegam ao servidor.
+await prova('renomear muda o nome E o login, pela camada da app', async () => {
+  await sync.editarMembro(dina.id, {
+    nome: 'Diana', login: `${casa.id}_diana`,
+  });
+  const lida = await admin.collection('membros').getOne(dina.id);
+  igual(lida.nome, 'Diana');
+  igual(lida.login, `${casa.id}_diana`);
+  igual(lida.id, dina.id, 'o identificador não muda com o nome');
+});
+
+await prova('e a criança renomeada entra com o login novo', async () => {
+  const c = await import('pocketbase');
+  const cliente = new (c.default)(URL);
+  await cliente.collection('membros').authWithPassword(`${casa.id}_diana`, '3691');
+  igual(cliente.authStore.record.nome, 'Diana');
+});
+
 await prova('removerMembro tira da casa quem não tem histórico', async () => {
   await sync.removerMembro(dina.id);
   await recusa('ler quem já saiu', () => admin.collection('membros').getOne(dina.id));

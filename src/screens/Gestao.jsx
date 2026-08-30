@@ -27,7 +27,7 @@ const campo = (t) => ({
 export default function Gestao({ t, user, onClose }) {
   const { s, set, isAdmin, budget, spent, envelopes, pinError, setPin, canChangeRole, setRole,
           kidPts, membros: MEMBERS, nomeDaCasa, podeGerirCasa,
-          renomearCasa, acrescentarMembro, editarMembro, removerMembro } = useStore();
+          renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro } = useStore();
   const [tab, setTab] = useState('orcamento');
   const [sheetOpen, setSheetOpen] = useState(null);
   const [modal, setModal] = useState(null);
@@ -565,6 +565,34 @@ export default function Gestao({ t, user, onClose }) {
             </View>
           }>
           <View style={{ gap: S.lg }}>
+            {/* O nome é a primeira coisa da folha porque é a que se vem cá
+                mudar mais vezes — um engano de escrita, ou um nome próprio
+                que a família não usa. */}
+            <View>
+              <Label t={t}>Nome</Label>
+              <TextInput value={form.nome} maxLength={30}
+                onChangeText={(v) => setForm(f => ({ ...f, nome: v }))} style={campo(t)} />
+              {form.nome.trim() !== selectedMember ? (
+                <View style={{ gap: S.md, marginTop: S.md }}>
+                  {/* O aviso aparece ANTES de se guardar, não depois. Um PIN
+                      apagado sem avisar é uma criança que não entra e não
+                      percebe porquê. */}
+                  {s.pins[selectedMember] ? (
+                    <Tile t={t} kind="warn">
+                      O PIN é apagado quando o nome muda, e terá de ser definido
+                      outra vez aqui. O que está feito — tarefas, cofre, ficha de
+                      saúde — acompanha o nome novo.
+                    </Tile>
+                  ) : null}
+                  <Primary t={t} label={aGuardar ? 'A guardar…' : 'Guardar nome'}
+                    disabled={aGuardar || !form.nome.trim()}
+                    onPress={() => executar(
+                      () => renomearMembro(selectedMember, form.nome),
+                      () => setSelectedMember(form.nome.trim()))} />
+                </View>
+              ) : null}
+            </View>
+
             <View style={{ gap: S.md }}>
               <Label t={t}>Papel</Label>
               <View style={{ flexDirection: 'row', gap: S.md }}>

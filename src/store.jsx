@@ -62,6 +62,95 @@ export const resumoPin = (nome, pin) => {
   return `h${h1.toString(36)}${h2.toString(36)}`;
 };
 
+// ── Renomear um membro ───────────────────────────────────────────────────────
+//
+// Na loja local o nome NÃO é um rótulo: é a chave que liga tarefas, eventos,
+// cofres, fichas de saúde, PIN, papéis e esquemas de cor. Mudá-lo é uma
+// migração, e uma migração incompleta perde dados em silêncio — uma tarefa
+// atribuída a um nome que já não existe deixa de aparecer no filtro e não dá
+// erro nenhum.
+//
+// Por isso os sítios estão numa tabela, e não espalhados por um punhado de
+// `.replace`. As duas listas foram levantadas do estado a sério, com uma
+// sonda que anda pelo objeto todo — não de cabeça.
+//
+// O que NÃO se reescreve, de propósito: o texto que as pessoas escreveram.
+// Uma tarefa chamada «Levar o Léo à escola» fica com esse título, e o registo
+// da casa continua a dizer o que aconteceu na altura. Reescrever o que alguém
+// escreveu é presumir que todos os «Léo» daquele texto são este Léo.
+
+// Mapas cuja CHAVE é o nome do membro.
+export const MAPAS_POR_MEMBRO = [
+  'membros', 'roles', 'pins', 'paidPts', 'schemeByUser', 'themeByUser', 'importDone',
+];
+
+// Campos cujo VALOR é o nome de um membro. `lista` percorre um array, `mapa`
+// percorre os valores de um objeto, `mapaDeListas` percorre as listas dentro
+// de um objeto.
+export const CAMPOS_COM_MEMBRO = [
+  { chave: 'newTasks', forma: 'lista', campos: ['who'] },
+  { chave: 'taskEdits', forma: 'mapa', campos: ['who'] },
+  { chave: 'added', forma: 'lista', campos: ['owner', 'responsible'] },
+  { chave: 'eventEdits', forma: 'mapa', campos: ['owner', 'responsible'] },
+  { chave: 'vaultMoves', forma: 'lista', campos: ['kid'] },
+  { chave: 'health', forma: 'lista', campos: ['member'] },
+  { chave: 'healthDocs', forma: 'lista', campos: ['member'] },
+  { chave: 'healthNotes', forma: 'mapaDeListas', campos: ['author'] },
+  { chave: 'shopPlan', forma: 'objeto', campos: ['who'] },
+];
+
+// Devolve o estado com o membro renomeado. Pura de propósito: assim prova-se
+// sem React, e serve de migração se um dia for preciso.
+//
+// O PIN sai. O resumo é calculado com o nome lá dentro — é isso que faz o
+// mesmo PIN em dois membros dar resumos diferentes — portanto um PIN gravado
+// para «Léo» não valida para «Leonardo», e não há forma de o recalcular sem o
+// valor em claro, que ninguém tem. Sai, e o ecrã diz que sai.
+export const renomearNoEstado = (estado, antigo, novo) => {
+  // Sem isto, renomear para o mesmo nome apagava o PIN à mesma: a troca de
+  // chave era inofensiva, mas a linha que limpa o PIN não olhava para o nome
+  // antigo. A loja nunca chegava aqui — devolve cedo — e a prova chegou.
+  if (antigo === novo) return estado;
+  const fora = { ...estado };
+  const trocaChave = (obj) => {
+    if (!obj || typeof obj !== 'object' || !(antigo in obj)) return obj;
+    const { [antigo]: valor, ...resto } = obj;
+    return { ...resto, [novo]: valor };
+  };
+  const trocaValor = (registo, campos) => {
+    if (!registo || typeof registo !== 'object') return registo;
+    let mexido = null;
+    for (const c of campos) {
+      if (registo[c] === antigo) (mexido = mexido || { ...registo })[c] = novo;
+    }
+    return mexido || registo;
+  };
+
+  for (const chave of MAPAS_POR_MEMBRO) fora[chave] = trocaChave(fora[chave]);
+
+  // O PIN não sobrevive à mudança de nome, e a inicial acompanha-a.
+  if (fora.pins) { const { [novo]: _fora, ...resto } = fora.pins; fora.pins = resto; }
+  if (fora.membros && fora.membros[novo]) {
+    fora.membros = { ...fora.membros, [novo]: { ...fora.membros[novo],
+      initial: String(novo).trim().charAt(0).toUpperCase() } };
+  }
+
+  for (const { chave, forma, campos } of CAMPOS_COM_MEMBRO) {
+    const v = fora[chave];
+    if (!v) continue;
+    if (forma === 'lista') fora[chave] = v.map(r => trocaValor(r, campos));
+    else if (forma === 'objeto') fora[chave] = trocaValor(v, campos);
+    else if (forma === 'mapa') {
+      fora[chave] = Object.fromEntries(
+        Object.entries(v).map(([k, r]) => [k, trocaValor(r, campos)]));
+    } else if (forma === 'mapaDeListas') {
+      fora[chave] = Object.fromEntries(Object.entries(v)
+        .map(([k, lista]) => [k, (lista || []).map(r => trocaValor(r, campos))]));
+    }
+  }
+  return fora;
+};
+
 // Pontos de partida da demonstração. Uma criança acrescentada à casa começa a
 // zero — não herda o histórico de ninguém.
 const PONTOS_INICIAIS = { 'Léo': 14, 'Mia': 11 };
@@ -683,6 +772,40 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     return null;
   };
 
+  // Mudar o nome de um membro. É a operação mais invasiva das cinco: no
+  // servidor são dois campos, e aqui é uma migração de todo o estado gravado
+  // — ver `renomearNoEstado`, que é onde vive a tabela dos sítios.
+  //
+  // A ordem é servidor primeiro. Ao contrário, uma recusa do servidor deixava
+  // a app com um nome que a casa não tem, e todas as escritas seguintes desse
+  // membro iam para um identificador que já não lhe corresponde.
+  const renomearMembro = async (antigo, novo) => {
+    if (!quadro[antigo]) return 'Esse membro não existe nesta casa.';
+    const n = String(novo || '').trim();
+    if (!n) return 'O membro precisa de um nome.';
+    if (n === antigo) return null;                  // nada a fazer
+    if (n.length > 30) return 'O nome não pode passar de 30 caracteres.';
+    if (quadro[n]) return `Já existe ${quadro[n].fem ? 'uma' : 'um'} ${n} nesta casa.`;
+    if (!podeGerirCasa()) return SEM_SERVIDOR;
+    const id = mapaServidor.current.membros[antigo];
+    if (!id) return 'Esse membro ainda não existe no servidor.';
+    try {
+      // O `login` acompanha o nome: é derivado dele, e deixá-lo para trás
+      // punha a criança a entrar com um nome que já não é o dela.
+      await sync.editarMembro(id, {
+        nome: n,
+        login: `${mapaServidor.current.casa}_${n.toLowerCase().replace(/\s+/g, '-')}`,
+      });
+    } catch (e) { return emPortugues(e); }
+    delete mapaServidor.current.membros[antigo];
+    mapaServidor.current.membros[n] = id;
+    set(x => ({
+      ...renomearNoEstado(x, antigo, n),
+      registo: [{ t: `${antigo} passou a chamar-se ${n}`, at: Date.now() }, ...x.registo],
+    }));
+    return null;
+  };
+
   const removerMembro = async (nome) => {
     if (!quadro[nome]) return 'Esse membro não existe nesta casa.';
     if (deixaCasaSemAdmin(nome, null)) return SEM_ADMIN;
@@ -834,7 +957,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
     garantiasAExpirar, receitasAExpirar, consultasProximas,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring,
-    podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, removerMembro,
+    podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),
     resetDemo: () => { AsyncStorage.removeItem(KEY).catch(() => {}); set(DEMO()); },
     startBlank: () => set(BLANK()),

@@ -151,6 +151,59 @@ await prova('ninguém edita membros de outra casa', () =>
     daAna.collection('membros').update(vizinha.id, { papel: 'adulto' })));
 
 // ─────────────────────────────────────────────────────────────────────────────
+console.log('\n── renomear um membro ──');
+
+await prova('a administração muda o nome, e o login acompanha', async () => {
+  await daAna.collection('membros').update(dina.id, {
+    nome: 'Diana', login: `${casa.id}_diana`,
+  });
+  const lida = await daAna.collection('membros').getOne(dina.id);
+  igual(lida.nome, 'Diana');
+  igual(lida.login, `${casa.id}_diana`);
+});
+
+await prova('a criança entra com o login novo, e não com o antigo', async () => {
+  const c = new PocketBase(URL);
+  await c.collection('membros').authWithPassword(`${casa.id}_diana`, '3691');
+  igual(c.authStore.record.nome, 'Diana');
+  await recusa('entrar com o login antigo', () =>
+    new PocketBase(URL).collection('membros').authWithPassword(`${casa.id}_dina`, '3691'));
+});
+
+// O nome muda; o identificador não. É isso que faz o histórico continuar a
+// apontar para a mesma pessoa em vez de ficar órfão — do lado do servidor as
+// relações são por id, ao contrário da loja local, onde são por nome.
+await prova('o identificador não muda com o nome, e o histórico segue-o', async () => {
+  igual((await daAna.collection('membros').getOne(dina.id)).id, dina.id);
+  await daAna.collection('cofre_movimentos').create({
+    casa: casa.id, membro: dina.id, tipo: 'semanada', valor: 3,
+    motivo: 'depois de renomear', data: '2026-08-30', autorizado_por: ana.id,
+    idem_key: 'prova-renomear-1',
+  });
+  const meus = (await daAna.collection('cofre_movimentos').getFullList())
+    .filter(m => m.membro === dina.id);
+  igual(meus.length, 1);
+});
+
+await prova('um adulto que não administra NÃO renomeia ninguém', async () => {
+  // O Bruno foi promovido na secção anterior; volta a adulto, senão isto
+  // testava um administrador e passava por engano. Foi o que aconteceu à
+  // primeira: a prova dizia «PASSOU, e não devia» e a culpa era da ordem.
+  await daAna.collection('membros').update(bruno.id, { papel: 'adulto' });
+  const comoAdulto = await comoMembro('bruno@exemplo.pt', 'palavra-longa-2');
+  await recusa('renomear sendo adulto', () =>
+    comoAdulto.collection('membros').update(dina.id, { nome: 'Doroteia' }));
+});
+
+await prova('dois membros não ficam com o mesmo login por renomear', () =>
+  recusa('renomear para um login que já existe', () =>
+    daAna.collection('membros').update(dina.id, { login: `${casa.id}_ana` })));
+
+await prova('a administração de outra casa NÃO renomeia ninguém desta', () =>
+  recusa('renomear noutra casa', () =>
+    daZita.collection('membros').update(dina.id, { nome: 'Zulmira' })));
+
+// ─────────────────────────────────────────────────────────────────────────────
 console.log('\n── tirar da casa ──');
 
 await prova('a administração tira da casa quem não tem histórico', async () => {
@@ -164,6 +217,7 @@ await prova('quem tem histórico NÃO sai — o histórico da casa fica', async 
   await daAna.collection('cofre_movimentos').create({
     casa: casa.id, membro: carlos.id, tipo: 'semanada', valor: 5,
     motivo: 'semanada da semana', data: '2026-08-30', autorizado_por: ana.id,
+    idem_key: 'prova-historico-1',
   });
   await recusa('remover quem tem movimentos', () =>
     daAna.collection('membros').delete(carlos.id));
@@ -172,11 +226,9 @@ await prova('quem tem histórico NÃO sai — o histórico da casa fica', async 
 });
 
 await prova('um adulto que não administra NÃO tira ninguém da casa', async () => {
-  // O Bruno passou a admin acima; volta a adulto para esta prova
-  await daAna.collection('membros').update(bruno.id, { papel: 'adulto' });
-  const outraVez = await comoMembro('bruno@exemplo.pt', 'palavra-longa-2');
+  const comoAdulto = await comoMembro('bruno@exemplo.pt', 'palavra-longa-2');
   await recusa('remover sendo adulto', () =>
-    outraVez.collection('membros').delete(dina.id));
+    comoAdulto.collection('membros').delete(dina.id));
 });
 
 await prova('a casa não fica sem administração', async () => {
