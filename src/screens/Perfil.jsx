@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../store';
 import { SCHEMES, S, R, FONT, elev, MEMBER_COLOR } from '../theme';
 import { EUR, plural } from '../format';
-import { MEMBERS, FEM } from '../data';
+import { FEM } from '../data';
 import { Card, SectionTitle, Label, Row, Pill, Primary, Toggle, Segmented, Tap, Avatar } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
@@ -19,7 +19,7 @@ const ROLE_LABEL = (r, name) => {
 
 export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, onGestao }) {
   const st = useStore();
-  const { s, set, isAdmin, resetDemo, startBlank, canSeeHealth, healthOf, receitasAExpirar } = st;
+  const { s, set, isAdmin, resetDemo, startBlank, canSeeHealth, healthOf, receitasAExpirar, membros: MEMBERS, deDemonstracao } = st;
 
   // A referência 09 mostra a contagem de consultas e um aviso das receitas na
   // própria linha da Saúde. Passa pelo canSeeHealth como tudo o resto.

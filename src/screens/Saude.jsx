@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, FlatList } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, MEMBER_COLOR, STATE } from '../theme';
-import { MEMBERS, DE } from '../data';
+import { DE } from '../data';
 import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Avatar } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
@@ -10,7 +10,7 @@ import { pad2, plural, dayLabel, daysUntil, chaveDeDMY } from '../format';
 
 export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMarcado }) {
   const st = useStore();
-  const { s, set, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, renameSpecialty } = st;
+  const { s, set, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, renameSpecialty, membros: MEMBERS } = st;
   const [membroDaFolha, setMembroDaFolha] = useState(null);  // pré-selecção ao marcar
 
   // Quem toca em «marcar consulta» dentro de uma ficha volta para aqui com o
@@ -381,7 +381,6 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   const folha = sheet === 'consulta'
     ? <MarcarConsulta t={t} user={user} membro={membroDaFolha} onClose={() => setSheet(null)} />
     : null;
-
 
   return (
     <>

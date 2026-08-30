@@ -3,7 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, MEMBER_COLOR } from '../theme';
 import { MONTHS, WD_SHORT, TODAY, TODAY_KEY, dkey, dayLabel, evTime, pad2 } from '../format';
-import { MEMBERS } from '../data';
+
 import { Card, SectionTitle, Pill, Avatar, Empty, AddButton, Tap, usePaged, Pager } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
@@ -11,7 +11,7 @@ import NovoEvento from '../sheets/NovoEvento';
 import ImportarGoogle from '../sheets/ImportarGoogle';
 
 export default function Agenda({ t, user }) {
-  const { s, allEvents } = useStore();
+  const { s, allEvents, membros: MEMBERS } = useStore();
   const [open, setOpen] = useState(false);
   const [ym, setYm] = useState({ y: TODAY.y, m: TODAY.m });
   const [sel, setSel] = useState(null);

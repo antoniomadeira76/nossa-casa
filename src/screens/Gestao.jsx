@@ -6,10 +6,10 @@ import { EUR } from '../format';
 import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
-import { MEMBERS, ENV_BASE, FEM } from '../data';
+import { ENV_BASE, FEM } from '../data';
 
 export default function Gestao({ t, user, onClose }) {
-  const { s, set, isAdmin, budget, spent, envelopes, pinError, setPin, canChangeRole, setRole, kidPts } = useStore();
+  const { s, set, isAdmin, budget, spent, envelopes, pinError, setPin, canChangeRole, setRole, kidPts, membros: MEMBERS } = useStore();
   const [tab, setTab] = useState('orcamento');
   const [sheetOpen, setSheetOpen] = useState(null);
   const [modal, setModal] = useState(null);

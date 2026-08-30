@@ -7,8 +7,8 @@ import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { StoreProvider, useStore } from './src/store';
 import { buildTheme, onChrome, chromeLine, S, R, FONT, elev } from './src/theme';
 import Icon, { Marca } from './src/Icon';
-import { MEMBERS, FEM, DE } from './src/data';
-import { EUR, dayLabel, TODAY, TODAY_KEY, warrantyDaysLeft, semanaDeHoje } from './src/format';
+import { FEM, DE } from './src/data';
+import { EUR, dayLabel, TODAY, TODAY_KEY, warrantyDaysLeft, semanaDeHoje, plural } from './src/format';
 import Login from './src/screens/Login';
 import Inicio from './src/screens/Inicio';
 import Dinheiro from './src/screens/Dinheiro';
@@ -44,7 +44,7 @@ const EVENTOS_DE_DEMONSTRACAO = [
 // das Compras não começavam por «Semana de 17/08» como nas referências 06 e 07.
 const TABS = [
   { key: 'inicio',   label: 'Início',   icon: 'home',        title: 'Nossa Casa',
-    sub: () => 'Família Bengui · 4 membros' },
+    sub: (ctx) => `Família ${ctx.casa} · ${plural(ctx.nMembros, 'membro', 'membros')}` },
   { key: 'dinheiro', label: 'Dinheiro', icon: 'wallet',      title: 'Dinheiro',
     sub: (ctx) => `Conta conjunta · ${ctx.mes} de ${TODAY_ANO}` },
   { key: 'tarefas',  label: 'Tarefas',  icon: 'checkSquare', title: 'Tarefas',
@@ -57,7 +57,7 @@ const TABS = [
 
 function Shell() {
   const { s, set, importGoogleEvents, remaining, allEvents, allTasks,
-          canSeeHealth, healthOf, docsOf, allEquip } = useStore();
+          canSeeHealth, healthOf, docsOf, allEquip, membros: MEMBERS, nomeDaCasa } = useStore();
   const sysDark = useColorScheme() === 'dark';
   const [user, setUser] = useState(null);      // nome do membro ligado
   const [tab, setTab] = useState('inicio');
@@ -147,7 +147,8 @@ function Shell() {
   }
 
   const meta = TABS.find(x => x.key === tab);
-  const ctxSub = { semana: semanaDeHoje(), mes: s.monthName };
+  const ctxSub = { semana: semanaDeHoje(), mes: s.monthName,
+    casa: nomeDaCasa, nMembros: Object.keys(MEMBERS).length };
   const Screen = { dinheiro: Dinheiro, tarefas: Tarefas, compras: Compras, agenda: Agenda }[tab];
 
   // Header dinâmico para Início; fixo para outros ecrãs.

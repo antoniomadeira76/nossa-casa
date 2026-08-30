@@ -3,14 +3,14 @@ import { View, Text, Pressable, ImageBackground } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { S, R, FONT, elev, MEMBER_COLOR } from '../theme';
 import Icon, { Marca, GoogleG as G } from '../Icon';
-import { MEMBERS, FEM } from '../data';
+import { FEM } from '../data';
 import { useStore } from '../store';
 import * as sync from '../sync';
 import * as servidor from '../pocketbase';
 import { Pill } from '../ui';
 
 export default function Login({ t, onEnter }) {
-  const { s, pinError, verificarPin } = useStore();
+  const { s, pinError, verificarPin, membros: MEMBERS, nomeDaCasa } = useStore();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState('login');   // login | contas | criancas | pin
   const [kid, setKid] = useState(null);
@@ -76,7 +76,7 @@ export default function Login({ t, onEnter }) {
 
       <View style={{ position: 'absolute', top: insets.top + 30, left: 16, gap: 4 }}>
         <Text style={{ fontFamily: FONT.display, fontSize: 32, fontWeight: '500', color: '#FFFFFF', letterSpacing: 0.25 }}>Nossa Casa</Text>
-        <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Família Bengui · agenda, tarefas e dinheiro</Text>
+        <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Família {nomeDaCasa} · agenda, tarefas e dinheiro</Text>
       </View>
 
       <View style={{ flex: 1, justifyContent: 'flex-end', paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 14) }}>

@@ -3,14 +3,14 @@ import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, MEMBER_COLOR } from '../theme';
 import { EUR, plural, evTime, TODAY_KEY, dayLabel } from '../format';
-import { MEMBERS } from '../data';
+
 import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager } from '../ui';
 import Icon from '../Icon';
 
 export default function Inicio({ t, user, go, onSaude, onEquip }) {
   const st = useStore();
   const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring,
-          garantiasAExpirar, receitasAExpirar, consultasProximas } = st;
+          garantiasAExpirar, receitasAExpirar, consultasProximas, membros: MEMBERS } = st;
 
   const hour = 9;
   const greet = hour < 13 ? 'Bom dia' : hour < 20 ? 'Boa tarde' : 'Boa noite';

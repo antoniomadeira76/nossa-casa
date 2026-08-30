@@ -3,7 +3,7 @@ import { View, Text, Pressable, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, MEMBER_COLOR } from '../theme';
 import { EUR } from '../format';
-import { MEMBERS } from '../data';
+
 import { Card, SectionTitle, Label, Pill, Row, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
@@ -20,7 +20,7 @@ const URG = [
 
 export default function Tarefas({ t, user }) {
   const st = useStore();
-  const { s, set, allTasks, kidPts, dueOf, isRecurring } = st;
+  const { s, set, allTasks, kidPts, dueOf, isRecurring, membros: MEMBERS } = st;
   const [filter, setFilter] = useState('Todos');
   const [manage, setManage] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);

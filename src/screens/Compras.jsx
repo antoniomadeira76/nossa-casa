@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../store';
 import { S, R, FONT, elev, MEMBER_COLOR } from '../theme';
 import { EUR, dayLabel, parseKey, WD } from '../format';
-import { SECTIONS, MEMBERS } from '../data';
+import { SECTIONS } from '../data';
 import { Card, SectionTitle, Label, Pill, Bar, Primary, AddButton, Empty, usePaged, Pager, Tap, Tile, Avatar } from '../ui';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
@@ -20,7 +20,7 @@ const diaDaSemana = (k) => {
 
 export default function Compras({ t, user, onModoCompras }) {
   const st = useStore();
-  const { s, set, allItems } = st;
+  const { s, set, allItems, membros: MEMBERS } = st;
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const items = allItems();
@@ -34,7 +34,6 @@ export default function Compras({ t, user, onModoCompras }) {
   const toggle = (id) => set(x => ({
     status: { ...x.status, [id]: (x.status[id] || 'open') === 'done' ? 'open' : 'done' },
   }));
-
 
   return (
     <>

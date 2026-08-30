@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, MEMBER_COLOR } from '../theme';
 import { EUR, warrantyDaysLeft } from '../format';
-import { ENV_BASE, GOALS, EQUIP, MEMBERS } from '../data';
+import { ENV_BASE, GOALS, EQUIP } from '../data';
 import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Tap } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
@@ -77,7 +77,7 @@ function GrelhaEnvelopes({ t, envelopes, livre, escolhido, onEscolher }) {
 
 export default function Dinheiro({ t, user, onEquip }) {
   const st = useStore();
-  const { s, set, envelopes, budget, spent, remaining, allEquip, isAdmin } = st;
+  const { s, set, envelopes, budget, spent, remaining, allEquip, isAdmin, membros: MEMBERS } = st;
   const [sheet, setSheet] = useState(null);
   const [mv, setMv] = useState({ from: 0, to: 3, amount: 0 });
   const [exp, setExp] = useState({ amount: 0, env: 0, payer: user, split: true });

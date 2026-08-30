@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { dayLabel, plural, TODAY_KEY, parseKey } from '../format';
-import { MEMBERS, DE } from '../data';
+import { DE } from '../data';
 import { Card, SectionTitle, Empty, Pill } from '../ui';
 import Icon from '../Icon';
 
@@ -22,7 +22,7 @@ const whenLabel = (h) => {
 // A ficha de um membro: a próxima consulta em destaque, as consultas todas,
 // e o arquivo clínico. Quem pode ver isto decide-se no store, não aqui.
 export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
-  const { healthOf, docsOf, nextHealth } = useStore();
+  const { healthOf, docsOf, nextHealth, membros: MEMBERS } = useStore();
 
   const consultas = healthOf(member, user);
   const docs = docsOf(member, user);

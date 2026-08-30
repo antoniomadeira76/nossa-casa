@@ -49,6 +49,22 @@ export const sessao = () => {
 // Traz a casa e devolve-a já na forma que a loja usa. Não filtra nada por
 // visibilidade: quem decide o que existe para quem pergunta são as regras das
 // coleções. Se este código filtrasse, o dado já teria chegado ao dispositivo.
+// Os membros do servidor, na forma que a app usa. O servidor guarda `papel` e
+// `fem`; a app pensa em `kid` e usa a inicial para o avatar.
+//
+// A inicial deriva do nome em vez de ser um campo: um campo separado é uma
+// segunda verdade sobre a mesma coisa, e mais cedo ou mais tarde discordam.
+export const membrosDoServidor = (linhas) => Object.fromEntries(
+  (linhas || []).map(m => [m.nome, {
+    id: m.id,
+    initial: String(m.nome || '?').trim().charAt(0).toUpperCase(),
+    email: m.email || null,
+    kid: m.papel === 'crianca',
+    papel: m.papel,
+    fem: !!m.fem,
+    cor: m.cor || null,
+  }]));
+
 export async function puxarCasa() {
   if (!ligado()) return null;
   const casa = await servidor.ler.casa();
@@ -73,7 +89,18 @@ export async function puxarCasa() {
     .filter(d => !d.anula_id)
     .reduce((n, d) => n + (Number(d.valor) || 0), 0);
 
-  return { vaultMoves, registered, _servidor: casa };
+  const aCasa = (casa.casas || [])[0] || null;
+
+  return {
+    vaultMoves,
+    registered,
+    // O servidor manda: se responder, é esta a casa e são estes os membros.
+    // Sem servidor, a app fica com a família de demonstração — e diz-o.
+    membros: membrosDoServidor(casa.membros),
+    nomeDaCasa: aCasa ? aCasa.nome : null,
+    casaId: aCasa ? aCasa.id : null,
+    _servidor: casa,
+  };
 }
 
 // ─── Escrever ────────────────────────────────────────────────────────────────
@@ -116,6 +143,51 @@ export async function acerto({ casa, de, para, valor, data }) {
   return servidor.escrever.criar('acertos', {
     casa, de_membro: de, para_membro: para, valor, data,
   });
+}
+
+// ─── A casa e quem lá vive ───────────────────────────────────────────────────
+//
+// Ao contrário do dinheiro, isto NÃO passa pela fila: são operações que a
+// pessoa está a fazer e cujo resultado tem de ver já — se falharem, deve
+// saber porquê em vez de ficarem pendentes em silêncio. Por isso escrevem
+// direto e deixam o erro subir.
+//
+// Quem pode o quê é decidido pelo servidor, não aqui: `casas.updateRule` e
+// `membros.createRule` exigem administração da mesma casa, e há cinco provas
+// em provar-regras.mjs. Repetir a verificação neste ficheiro daria a impressão
+// errada de que é o cliente que protege.
+
+export async function renomearCasa(casaId, nome) {
+  if (!ligado()) throw new Error('Sem ligação ao servidor.');
+  return servidor.pb.collection('casas').update(casaId, { nome });
+}
+
+export async function acrescentarMembro({ casa, nome, papel, email, pin, palavraPasse, fem, cor }) {
+  if (!ligado()) throw new Error('Sem ligação ao servidor.');
+  // O `login` leva o id da casa: `nome` não serve de identificador porque duas
+  // casas podem ter um Léo, e o campo é único em toda a coleção.
+  const segredo = papel === 'crianca' ? pin : palavraPasse;
+  return servidor.pb.collection('membros').create({
+    casa, nome, papel, fem: !!fem, cor: cor || null,
+    login: `${casa}_${String(nome).toLowerCase().replace(/\s+/g, '-')}`,
+    ...(papel === 'crianca' ? {} : { email }),
+    password: segredo, passwordConfirm: segredo,
+    verified: true,
+  });
+}
+
+export async function editarMembro(id, campos) {
+  if (!ligado()) throw new Error('Sem ligação ao servidor.');
+  return servidor.pb.collection('membros').update(id, campos);
+}
+
+// Remover é o que mais pode correr mal, e o servidor é que sabe: recusa se a
+// casa ficar sem administração (hook), e recusa se houver linhas obrigatórias
+// a apontar para o membro — tarefas feitas, movimentos, despesas. Essa segunda
+// recusa é uma feature: o histórico da casa não se apaga por alguém sair.
+export async function removerMembro(id) {
+  if (!ligado()) throw new Error('Sem ligação ao servidor.');
+  return servidor.pb.collection('membros').delete(id);
 }
 
 // O que está à espera de rede. O ecrã pode mostrá-lo; o importante é que

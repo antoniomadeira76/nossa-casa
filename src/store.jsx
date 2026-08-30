@@ -74,6 +74,7 @@ const DATA_KEYS = [
   'rendimento', 'stores', 'shopPlan', 'shopHistory', 'health', 'specialities', 'equipCats', 'registo',
   'recurringReset', 'healthNotes', 'healthRecipes', 'healthDecisions', 'healthDocs', 'healthGone',
   'googleCalendarImported', // Google Calendar imports
+  'membros', 'nomeDaCasa', 'deDemonstracao',
 ];
 
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
@@ -153,6 +154,14 @@ export const DEMO = () => ({
   healthRecipes: {}, // healthId -> [{ id, name, dosage, quantity, unit, expiresAt, decision }]
   healthDecisions: {}, // healthId -> { type, status, note }
   googleCalendarImported: {}, // eventId -> true (track which Google Calendar events were imported)
+
+  // Quem vive nesta casa. Era uma constante importada de data.js, e a app
+  // inteira assumia estas quatro pessoas — 40 leituras diretas e 57 sítios com
+  // os nomes escritos à mão. Com servidor vêm de lá; sem ele, ficam estas e a
+  // casa fica marcada como demonstração.
+  membros: { ...MEMBERS },
+  nomeDaCasa: 'Bengui',
+  deDemonstracao: true,
 });
 
 // Casa nova: os mesmos campos, todos vazios
@@ -204,10 +213,16 @@ export function StoreProvider({ children }) {
         const casa = s && await s.puxarCasa();
         if (casa) {
           mapaServidor.current = {
-            casa: (casa._servidor.casas || [])[0]?.id || null,
+            casa: casa.casaId,
             membros: Object.fromEntries((casa._servidor.membros || []).map(m => [m.nome, m.id])),
             envelopes: Object.fromEntries((casa._servidor.envelopes || []).map(e => [e.nome, e.id])),
           };
+          // O servidor manda: se respondeu com membros, são estes e mais
+          // nenhuns. Sem servidor, a app fica com a família de demonstração
+          // — e o Perfil di-lo, para ninguém confundir uma com a outra.
+          if (Object.keys(casa.membros || {}).length) {
+            set({ membros: casa.membros, nomeDaCasa: casa.nomeDaCasa, deDemonstracao: false });
+          }
           // Os movimentos de cofre do servidor substituem os locais: são a
           // mesma coisa vista de outro sítio, e o servidor tem os dos dois
           // telemóveis. Um saldo nunca é escrito — continua a ser a soma.
@@ -553,6 +568,12 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     budget, spent, remaining: budget - spent, envelopes, kidPts,
     vaultOf, vaultMoves, vaultAdd,
     verificarPin,
+    // Os membros da casa. Quem consome isto NUNCA deve importar MEMBERS de
+    // data.js: essas são as sementes da demonstração, não a casa de quem está
+    // a usar a app.
+    membros: s.membros || MEMBERS,
+    nomeDaCasa: s.nomeDaCasa || 'Bengui',
+    deDemonstracao: s.deDemonstracao !== false,
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
     garantiasAExpirar, receitasAExpirar, consultasProximas,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring,
