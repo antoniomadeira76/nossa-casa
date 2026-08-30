@@ -410,14 +410,6 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     .sort((a, b) => (b.day || '').localeCompare(a.day || ''));
   const vaultOf = (kid) => allVaultMoves()
     .reduce((n, m) => (m.kid === kid ? n + m.delta : n), 0);
-  // Acrescenta um movimento. Nunca substitui o saldo.
-  //
-  // Vai também para o servidor, como inserção com chave de idempotência. É
-  // aqui que o INVARIANTE #2 deixa de ser uma regra local e passa a valer
-  // entre telemóveis: se cada um gravasse «saldo = X», dois créditos de 5 €
-  // dariam 5. Assim dão 10. A escrita passa por uma fila, portanto sem rede
-  // fica pendente em vez de se perder, e a chave impede que reenviar a fila
-  // pague a semanada duas vezes.
   // Pagar parte ou a totalidade do acerto. Um movimento, somado — nunca
   // `settled = true`. Dois telefones a acertar metade cada um dão a conta
   // saldada; a escrita de um booleano dava metade paga e a dívida fechada.
@@ -427,6 +419,14 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     set(x => ({ acertoMovs: [...(x.acertoMovs || []), { valor: v, data: TODAY_KEY, nota: nota || '' }] }));
   };
 
+  // Acrescenta um movimento. Nunca substitui o saldo.
+  //
+  // Vai também para o servidor, como inserção com chave de idempotência. É
+  // aqui que o INVARIANTE #2 deixa de ser uma regra local e passa a valer
+  // entre telemóveis: se cada um gravasse «saldo = X», dois créditos de 5 €
+  // dariam 5. Assim dão 10. A escrita passa por uma fila, portanto sem rede
+  // fica pendente em vez de se perder, e a chave impede que reenviar a fila
+  // pague a semanada duas vezes.
   const vaultAdd = (kid, delta, kind, label, sub, day = TODAY_KEY) => {
     set(x => ({
       vaultMoves: [...(x.vaultMoves || []), {
@@ -523,6 +523,187 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // Verificar é comparar resumos, nunca o valor. O ecrã de entrada fazia
   // `p === s.pins[kid]`, contra o PIN em claro.
   const verificarPin = (name, pin) => !!s.pins[name] && s.pins[name] === resumoPin(name, pin);
+
+  // ─── Gerir a casa: nome, e quem lá vive ────────────────────────────────────
+  //
+  // Estas quatro escrevem no SERVIDOR primeiro e na loja só depois — ao
+  // contrário de tudo o resto aqui, e de propósito. O resto da app são
+  // remendos sobre sementes locais; isto é a composição da casa. Se o servidor
+  // recusar — a casa a ficar sem administração, um nome repetido, histórico a
+  // apontar para quem sai — o ecrã tem de dizer porquê, e não mostrar uma casa
+  // que o servidor não tem.
+  //
+  // Sem servidor não fazem nada: a casa que se vê é a de demonstração, e
+  // configurar uma amostra não configura nada. Cada uma devolve uma frase de
+  // erro ou `null`, como o `setPin` já fazia.
+  const podeGerirCasa = () => !!(sync && !s.deDemonstracao && mapaServidor.current.casa);
+
+  const SEM_SERVIDOR = 'Esta é a casa de demonstração. Ligue-se ao servidor da '
+    + 'família para acrescentar ou remover membros.';
+
+  // O PocketBase responde em inglês e com o vocabulário das coleções. Quem
+  // está a tentar tirar alguém da casa não precisa de saber o que é uma
+  // «required relation reference» — precisa de saber que o histórico fica.
+  const RECUSAS = [
+    [/required relation reference|relation reference/i,
+      'Não é possível remover: a casa tem registos em nome deste membro — tarefas, '
+      + 'movimentos ou despesas. O histórico da casa não se apaga por alguém sair.'],
+    [/last admin|sem administra|administrador/i,
+      'A casa não pode ficar sem administração. Dê a administração a outro adulto primeiro.'],
+    [/value must be unique|already exists|unique/i,
+      'Já existe alguém com esse nome nesta casa.'],
+    [/failed to authenticate|not allowed|forbidden|403/i,
+      'O servidor recusou: só a administração da casa pode fazer esta alteração.'],
+  ];
+  const emPortugues = (e) => {
+    const bruto = [e?.message, JSON.stringify(e?.data || e?.response || {})].join(' ');
+    for (const [padrao, frase] of RECUSAS) if (padrao.test(bruto)) return frase;
+    return e?.message ? `O servidor recusou: ${e.message}` : 'O servidor recusou a alteração.';
+  };
+
+  const SEM_ADMIN = 'A casa não pode ficar sem administração. Dê a administração '
+    + 'a outro adulto primeiro.';
+
+  // Verdade com ou sem rede, e por isso verificada antes da guarda do
+  // servidor. `novoPapel` a null quer dizer «este membro sai da casa».
+  const deixaCasaSemAdmin = (nome, novoPapel) => {
+    if ((s.roles[nome] || 'crianca') !== 'admin') return false;
+    if (novoPapel === 'admin') return false;
+    return Object.entries(s.roles).filter(([n, r]) => r === 'admin' && n !== nome).length === 0;
+  };
+
+  const nomeDeCasaInvalido = (nome) => {
+    const n = String(nome || '').trim();
+    if (!n) return 'A casa precisa de um nome.';
+    if (n.length > 40) return 'O nome da casa não pode passar de 40 caracteres.';
+    return null;
+  };
+
+  const renomearCasa = async (nome) => {
+    const err = nomeDeCasaInvalido(nome);
+    if (err) return err;
+    if (!podeGerirCasa()) return SEM_SERVIDOR;
+    const n = String(nome).trim();
+    try {
+      await sync.renomearCasa(mapaServidor.current.casa, n);
+    } catch (e) { return emPortugues(e); }
+    set(x => ({
+      nomeDaCasa: n,
+      registo: [{ t: `A casa passou a chamar-se ${n}`, at: Date.now() }, ...x.registo],
+    }));
+    return null;
+  };
+
+  // Validação local antes de incomodar o servidor. O servidor volta a validar
+  // — é ele que protege — mas uma recusa que se vê sem rede vê-se mais depressa.
+  const membroInvalido = ({ nome, papel, email, segredo }, aExcluir = null) => {
+    const n = String(nome || '').trim();
+    if (!n) return 'O membro precisa de um nome.';
+    if (n.length > 30) return 'O nome não pode passar de 30 caracteres.';
+    if (quadro[n] && n !== aExcluir) return `Já existe ${DE(n) === 'da' ? 'uma' : 'um'} ${n} nesta casa.`;
+    if (!['crianca', 'adulto', 'admin'].includes(papel)) return 'Escolha o papel do membro.';
+    if (papel === 'crianca') {
+      const errPin = pinError(n, String(segredo || ''));
+      if (errPin) return errPin;
+    } else {
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(email || '').trim()))
+        return 'Um adulto entra com a conta Google, e precisa do endereço de e-mail.';
+      if (String(segredo || '').length < 8)
+        return 'A palavra-passe do servidor tem de ter pelo menos 8 caracteres.';
+    }
+    return null;
+  };
+
+  const acrescentarMembro = async ({ nome, papel, email, fem, segredo }) => {
+    const err = membroInvalido({ nome, papel, email, segredo });
+    if (err) return err;
+    if (!podeGerirCasa()) return SEM_SERVIDOR;
+    const n = String(nome).trim();
+    let criado;
+    try {
+      criado = await sync.acrescentarMembro({
+        casa: mapaServidor.current.casa, nome: n, papel,
+        email: papel === 'crianca' ? null : String(email).trim(),
+        fem: !!fem, cor: null,
+        pin: papel === 'crianca' ? segredo : undefined,
+        palavraPasse: papel === 'crianca' ? undefined : segredo,
+      });
+    } catch (e) { return emPortugues(e); }
+    // O id vem do servidor; sem ele, a próxima escrita de dinheiro deste
+    // membro não sabia para onde ir.
+    if (criado?.id) mapaServidor.current.membros[n] = criado.id;
+    set(x => ({
+      membros: { ...x.membros, [n]: {
+        id: criado?.id || null,
+        initial: n.charAt(0).toUpperCase(),
+        email: papel === 'crianca' ? null : String(email).trim(),
+        kid: papel === 'crianca', papel, fem: !!fem, cor: null,
+      } },
+      roles: { ...x.roles, [n]: papel },
+      // O PIN local é um resumo, como o de toda a gente. O servidor guarda o
+      // seu; são dois segredos do mesmo valor, não um copiado do outro.
+      pins: papel === 'crianca' ? { ...x.pins, [n]: resumoPin(n, String(segredo)) } : x.pins,
+      registo: [{ t: `${n} entrou na casa`, at: Date.now() }, ...x.registo],
+    }));
+    return null;
+  };
+
+  // Muda o que se pode mudar sem partir nada: papel, concordância, e-mail,
+  // cor. O NOME não está aqui de propósito — na loja local o nome é a chave
+  // que liga tarefas, eventos, cofres e fichas de saúde, e mudá-lo é uma
+  // migração, não uma edição.
+  const editarMembro = async (nome, campos) => {
+    if (!quadro[nome]) return 'Esse membro não existe nesta casa.';
+    if (campos.papel && campos.papel !== (s.roles[nome] || 'crianca')) {
+      if (!canChangeRole(s.roles[nome] || 'crianca', campos.papel))
+        return 'Essa mudança de papel não é permitida.';
+      if (deixaCasaSemAdmin(nome, campos.papel)) return SEM_ADMIN;
+    }
+    if (!podeGerirCasa()) return SEM_SERVIDOR;
+    const id = mapaServidor.current.membros[nome];
+    if (!id) return 'Esse membro ainda não existe no servidor.';
+    try {
+      await sync.editarMembro(id, {
+        ...(campos.papel ? { papel: campos.papel } : {}),
+        ...(campos.fem !== undefined ? { fem: !!campos.fem } : {}),
+        ...(campos.email !== undefined ? { email: campos.email } : {}),
+        ...(campos.cor !== undefined ? { cor: campos.cor } : {}),
+      });
+    } catch (e) { return emPortugues(e); }
+    set(x => ({
+      membros: { ...x.membros, [nome]: { ...x.membros[nome],
+        ...(campos.papel ? { papel: campos.papel, kid: campos.papel === 'crianca' } : {}),
+        ...(campos.fem !== undefined ? { fem: !!campos.fem } : {}),
+        ...(campos.email !== undefined ? { email: campos.email } : {}),
+        ...(campos.cor !== undefined ? { cor: campos.cor } : {}),
+      } },
+      ...(campos.papel ? { roles: { ...x.roles, [nome]: campos.papel } } : {}),
+      registo: [{ t: `${nome}: dados alterados`, at: Date.now() }, ...x.registo],
+    }));
+    return null;
+  };
+
+  const removerMembro = async (nome) => {
+    if (!quadro[nome]) return 'Esse membro não existe nesta casa.';
+    if (deixaCasaSemAdmin(nome, null)) return SEM_ADMIN;
+    if (!podeGerirCasa()) return SEM_SERVIDOR;
+    const id = mapaServidor.current.membros[nome];
+    if (!id) return 'Esse membro ainda não existe no servidor.';
+    try {
+      await sync.removerMembro(id);
+    } catch (e) { return emPortugues(e); }
+    delete mapaServidor.current.membros[nome];
+    set(x => {
+      const { [nome]: _fora, ...restantes } = x.membros;
+      const { [nome]: _semPapel, ...papeis } = x.roles;
+      const { [nome]: _semPin, ...pinsRestantes } = x.pins;
+      return {
+        membros: restantes, roles: papeis, pins: pinsRestantes,
+        registo: [{ t: `${nome} saiu da casa`, at: Date.now() }, ...x.registo],
+      };
+    });
+    return null;
+  };
 
   // Health: agregar métodos para gestão de saúde
   // Um registo de saúde tem a forma das sementes: `day` em chave e `time`.
@@ -653,6 +834,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
     garantiasAExpirar, receitasAExpirar, consultasProximas,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring,
+    podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, removerMembro,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),
     resetDemo: () => { AsyncStorage.removeItem(KEY).catch(() => {}); set(DEMO()); },
     startBlank: () => set(BLANK()),

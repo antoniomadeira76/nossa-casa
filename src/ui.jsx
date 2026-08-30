@@ -91,7 +91,10 @@ export const Tap = ({ onPress, label, children, style, size = 44 }) => (
 // Linha de definição: o padrão da app — valor à direita, chevron
 // `iconColor` é opcional e cai em t.slate — o «Precisa de Si» colore o ícone
 // pela urgência da linha, o resto da app quer sempre a mesma cor.
-export const Row = ({ t, icon, iconColor, title, sub, value, onPress, last, right }) => (
+// `leading` é para quando o que vem à esquerda não é um ícone — um avatar, na
+// lista de membros da referência 14. Sem isto a linha aceitava a prop e
+// ignorava-a em silêncio, que é como um avatar desaparece sem erro nenhum.
+export const Row = ({ t, icon, iconColor, leading, title, sub, value, onPress, last, right }) => (
   <Pressable onPress={onPress} accessibilityRole={onPress ? 'button' : undefined}
     accessibilityLabel={onPress ? title : undefined}
     style={({ pressed }) => ({
@@ -99,6 +102,7 @@ export const Row = ({ t, icon, iconColor, title, sub, value, onPress, last, righ
       borderBottomWidth: last ? 0 : 1, borderBottomColor: t.divider,
       opacity: pressed ? 0.7 : 1,
     })}>
+    {leading || null}
     {icon ? <Icon name={icon} size={20} color={iconColor || t.slate} /> : null}
     <View style={{ flex: 1, gap: 2 }}>
       <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{title}</Text>

@@ -176,3 +176,92 @@ describe('Uma casa diferente da de demonstração', () => {
     expect(api.acertado).toBe(true);      // nada por acertar é acertado
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// As quatro operações da casa. Aqui prova-se o que acontece SEM servidor —
+// que é o caso de quem abre a app pela primeira vez. O que acontece COM
+// servidor está provado a correr contra o PocketBase, em
+// db/pocketbase/provar-gerir-casa.mjs.
+describe('Gerir a casa sem servidor', () => {
+  const nova = () => {
+    let api = null;
+    const Sonda = () => { api = useStore(); return null; };
+    TestRenderer.act(() => {
+      TestRenderer.create(React.createElement(StoreProvider, null, React.createElement(Sonda)));
+    });
+    return () => api;   // devolve um leitor, porque a api muda a cada alteração
+  };
+
+  test('a casa de demonstração não se gere', () => {
+    const ler = nova();
+    expect(ler().podeGerirCasa()).toBe(false);
+  });
+
+  test('cada operação recusa, e diz porquê — nenhuma rebenta', async () => {
+    const ler = nova();
+    const respostas = [];
+    await TestRenderer.act(async () => {
+      respostas.push(await ler().renomearCasa('Ferreira'));
+      respostas.push(await ler().acrescentarMembro({
+        nome: 'Ana', papel: 'adulto', email: 'ana@exemplo.pt', segredo: 'palavra-passe' }));
+      respostas.push(await ler().editarMembro('Léo', { papel: 'adulto' }));
+      respostas.push(await ler().removerMembro('Mia'));
+    });
+    for (const r of respostas) {
+      expect(typeof r).toBe('string');
+      expect(r).toContain('demonstração');
+    }
+  });
+
+  test('e a casa fica exatamente como estava', async () => {
+    const ler = nova();
+    const antes = ler().membrosDaCasa.slice();
+    await TestRenderer.act(async () => {
+      await ler().acrescentarMembro({ nome: 'Ana', papel: 'crianca', segredo: '2470' });
+      await ler().removerMembro('Mia');
+    });
+    expect(ler().membrosDaCasa).toEqual(antes);
+    expect(ler().nomeDaCasa).toBe('Bengui');
+  });
+
+  // A validação corre ANTES da guarda do servidor: quem escreve um PIN
+  // inválido tem de o saber sem depender de haver rede.
+  test('o que está mal preenchido é recusado antes de se falar com o servidor', async () => {
+    const ler = nova();
+    const dizer = async (campos) => {
+      let r;
+      await TestRenderer.act(async () => { r = await ler().acrescentarMembro(campos); });
+      return r;
+    };
+    expect(await dizer({ nome: '  ', papel: 'crianca', segredo: '2470' }))
+      .toBe('O membro precisa de um nome.');
+    expect(await dizer({ nome: 'Léo', papel: 'crianca', segredo: '2470' }))
+      .toMatch(/Já existe/);
+    expect(await dizer({ nome: 'Ana', papel: 'crianca', segredo: '1111' }))
+      .toMatch(/quatro dígitos iguais/);
+    expect(await dizer({ nome: 'Ana', papel: 'crianca', segredo: '1234' }))
+      .toMatch(/sequência/);
+    expect(await dizer({ nome: 'Ana', papel: 'adulto', email: 'não-é-email', segredo: 'palavra-passe' }))
+      .toMatch(/endereço de e-mail/);
+    expect(await dizer({ nome: 'Ana', papel: 'adulto', email: 'ana@exemplo.pt', segredo: 'curta' }))
+      .toMatch(/8 caracteres/);
+    // e o nome da casa também
+    let r;
+    await TestRenderer.act(async () => { r = await ler().renomearCasa('   '); });
+    expect(r).toBe('A casa precisa de um nome.');
+  });
+
+  // A casa nunca pode ficar sem administração. O servidor tem um hook para
+  // isto, mas quem está a tocar no botão merece a recusa antes da viagem.
+  test('a última administração não sai nem se despromove', async () => {
+    const ler = nova();
+    let semAdmin, foraDeCasa;
+    await TestRenderer.act(async () => {
+      // Só a Rita administra a casa de demonstração
+      semAdmin = await ler().editarMembro('Rita', { papel: 'adulto' });
+      foraDeCasa = await ler().removerMembro('Rita');
+    });
+    expect(semAdmin).toMatch(/sem administração/);
+    expect(foraDeCasa).toMatch(/sem administração/);
+  });
+});

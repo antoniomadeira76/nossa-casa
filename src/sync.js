@@ -167,12 +167,19 @@ export async function acrescentarMembro({ casa, nome, papel, email, pin, palavra
   // O `login` leva o id da casa: `nome` não serve de identificador porque duas
   // casas podem ter um Léo, e o campo é único em toda a coleção.
   const segredo = papel === 'crianca' ? pin : palavraPasse;
+  // `verified` NÃO vai aqui. Só um superutilizador o pode escrever, e mandá-lo
+  // fazia a criação inteira falhar com «Values don't match» — um erro que não
+  // diz uma palavra sobre o campo que o causou. A prova contra o servidor
+  // apanhou-o; nenhuma leitura de código o veria.
+  //
+  // Não faz falta: a `authRule` da coleção é vazia, portanto entrar não exige
+  // verificação. Se um dia exigir, o que resolve é um convite por e-mail — e
+  // isso é outro trabalho, não um campo a mais nesta chamada.
   return servidor.pb.collection('membros').create({
     casa, nome, papel, fem: !!fem, cor: cor || null,
     login: `${casa}_${String(nome).toLowerCase().replace(/\s+/g, '-')}`,
     ...(papel === 'crianca' ? {} : { email }),
     password: segredo, passwordConfirm: segredo,
-    verified: true,
   });
 }
 

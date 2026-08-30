@@ -3,13 +3,31 @@ import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-nativ
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
 import { EUR } from '../format';
-import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill } from '../ui';
+import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
-import { ENV_BASE, FEM } from '../data';
+import { ENV_BASE } from '../data';
+
+// O estilo dos campos de texto estava copiado onze vezes neste ficheiro, cada
+// uma com onze linhas iguais. Um sítio só: se o desenho do campo mudar, muda
+// em todos — que era o que já devia acontecer.
+const campo = (t) => ({
+  marginTop: S.sm,
+  paddingHorizontal: S.md,
+  paddingVertical: S.md,
+  minHeight: 44,                 // INVARIANTE #5
+  borderRadius: R.row,
+  borderWidth: 1,
+  borderColor: t.border,
+  fontFamily: FONT.body,
+  fontSize: 16,
+  color: t.text1,
+});
 
 export default function Gestao({ t, user, onClose }) {
-  const { s, set, isAdmin, budget, spent, envelopes, pinError, setPin, canChangeRole, setRole, kidPts, membros: MEMBERS } = useStore();
+  const { s, set, isAdmin, budget, spent, envelopes, pinError, setPin, canChangeRole, setRole,
+          kidPts, membros: MEMBERS, nomeDaCasa, podeGerirCasa,
+          renomearCasa, acrescentarMembro, editarMembro, removerMembro } = useStore();
   const [tab, setTab] = useState('orcamento');
   const [sheetOpen, setSheetOpen] = useState(null);
   const [modal, setModal] = useState(null);
@@ -18,10 +36,42 @@ export default function Gestao({ t, user, onClose }) {
   const [selectedMember, setSelectedMember] = useState(null);
   const [selectedEnvelope, setSelectedEnvelope] = useState(null);
   const [selectedSpecialty, setSelectedSpecialty] = useState(null);
+  // O formulário do membro, e a recusa que vier do servidor. O erro é estado
+  // do ecrã, não um alerta: quem tenta tirar alguém da casa e não pode tem de
+  // ler porquê no sítio onde tentou.
+  const [form, setForm] = useState({ nome: '', papel: 'crianca', email: '', fem: false, segredo: '' });
+  const [erro, setErro] = useState(null);
+  const [aGuardar, setAGuardar] = useState(false);
 
   // Validar com pinError, que só lê. setPin grava — chamá-lo aqui comprometia
   // o PIN a meio da escrita, antes de se tocar em Guardar.
   const pinMsg = input ? pinError(selectedMember, input) : null;
+
+  // Estas quatro vão ao servidor e devolvem uma frase de recusa ou null. O
+  // ecrã só fecha quando passou — fechar antes de saber mostrava a alteração
+  // feita e deixava a casa como estava.
+  const executar = async (accao, aoPassar) => {
+    setAGuardar(true);
+    setErro(null);
+    const msg = await accao();
+    setAGuardar(false);
+    if (msg) { setErro(msg); return; }
+    aoPassar();
+  };
+
+  const fecharMembro = () => {
+    setSheetOpen(null); setModal(null); setSelectedMember(null);
+    setInput(''); setErro(null);
+  };
+
+  const abrirMembro = (nome) => {
+    const papel = s.roles[nome] || 'crianca';
+    setSelectedMember(nome);
+    setForm({ nome, papel, email: MEMBERS[nome]?.email || '', fem: !!MEMBERS[nome]?.fem, segredo: '' });
+    setInput('');
+    setErro(null);
+    setSheetOpen('membro');
+  };
 
   if (!isAdmin(user)) {
     return (
@@ -184,8 +234,33 @@ export default function Gestao({ t, user, onClose }) {
   // por baixo, e a pastilha do papel à direita. Eram cartões de três linhas
   // com PIN e Papel empilhados — quatro membros enchiam o ecrã, e a linha de
   // cima tinha `onPress={() => {}}`, mais um controlo morto.
+  //
+  // A referência diz «toque no papel para o mudar», com a pastilha como alvo.
+  // Não segui essa parte: o erro nº 6 do CLAUDE.md é exatamente uma pílula
+  // tocável dentro de uma linha tocável, e obriga a adivinhar onde se tocou.
+  // Uma linha, um destino — e o destino tem lá dentro tudo o que se muda
+  // naquele membro, incluindo o papel.
   const renderMembersTab = () => (
     <View style={{ gap: S.md }}>
+      <SectionTitle t={t}>A Casa</SectionTitle>
+      <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+        <Row t={t} last icon="houseGear"
+          title="Nome da família"
+          sub={nomeDaCasa}
+          onPress={() => { setInput(nomeDaCasa); setErro(null); setSheetOpen('nomeDaCasa'); }}
+          right={<Icon name="caretRight" size={18} color={t.text3} />} />
+      </Card>
+
+      {/* Sem servidor a casa que se vê é a de demonstração, e configurar uma
+          amostra não configura nada. Dizê-lo aqui, uma vez, é melhor do que
+          quatro botões que não fazem nada e não explicam porquê. */}
+      {!podeGerirCasa() ? (
+        <Tile t={t} kind="info">
+          Esta é a casa de demonstração. Ligue-se ao servidor da família para
+          mudar o nome da casa ou acrescentar e remover membros.
+        </Tile>
+      ) : null}
+
       <SectionTitle t={t}>Membros e PIN</SectionTitle>
       <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
         {Object.entries(MEMBERS).map(([name, info], i, arr) => {
@@ -193,20 +268,21 @@ export default function Gestao({ t, user, onClose }) {
           const hasPin = !!s.pins[name];
           const crianca = role === 'crianca';
           const papel = crianca ? 'Criança'
-            : role === 'admin' ? (FEM(name) ? 'Administradora' : 'Administrador') : 'Adulto';
+            : role === 'admin' ? (info.fem ? 'Administradora' : 'Administrador') : 'Adulto';
           return (
             <Row key={name} t={t} last={i === arr.length - 1}
+              leading={<Avatar initial={info.initial} color={corDoMembro(name, info.cor)} size={40} />}
               title={name}
               sub={crianca ? (hasPin ? 'Perfil de criança · PIN definido'
                                     : 'Perfil de criança · ainda sem PIN')
                            : info.email}
-              onPress={() => {
-                setSelectedMember(name);
-                if (crianca) { setInput(''); setSheetOpen('editPin'); }
-                else setModal('changeRole');
-              }}
+              onPress={() => { abrirMembro(name); }}
               right={<View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-                <Pill label={papel} fg={t.text3} bg="transparent" border={t.border} />
+                {/* Contornada e na cor do papel, como na referência: um adulto
+                    lê-se de relance sem se ler a palavra. */}
+                <Pill label={papel} bg="transparent"
+                  fg={crianca ? t.text3 : t.state.info}
+                  border={crianca ? t.border : t.state.info} />
                 <Icon name="caretRight" size={18} color={t.text3} />
               </View>}
               icon={undefined} />
@@ -214,13 +290,19 @@ export default function Gestao({ t, user, onClose }) {
         })}
       </Card>
 
+      <AddButton t={t} label="acrescentar membro" onPress={() => {
+        setForm({ nome: '', papel: 'crianca', email: '', fem: false, segredo: '' });
+        setErro(null);
+        setSheetOpen('novoMembro');
+      }} />
+
       {/* O que cada toque faz, e o que cada mudança de papel implica — a
           referência 14 explica-o aqui, e sem isso «Criança» parece um rótulo
           e não um botão. */}
       <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
-        Toque numa criança para lhe definir o PIN, ou num adulto para lhe mudar o
-        papel. Um adulto que passe a criança perde o acesso ao dinheiro e ganha um
-        PIN; a casa nunca pode ficar sem administração.
+        Toque num membro para lhe mudar o papel, o PIN, ou para o tirar da casa.
+        Uma criança que passe a adulto precisa de conta Google própria. A casa
+        nunca pode ficar sem administração, e o histórico de quem sai fica.
       </Text>
     </View>
   );
@@ -320,7 +402,10 @@ export default function Gestao({ t, user, onClose }) {
             { key: 'especialidades', label: 'Especialidades' },
           ].map(({ key, label }) => (
             <Pressable key={key} onPress={() => setTab(key)}
-              style={{ paddingBottom: S.sm, borderBottomWidth: tab === key ? 2 : 0, borderBottomColor: tab === key ? t.accent : 'transparent' }}>
+              accessibilityRole="tab" accessibilityLabel={label}
+              accessibilityState={{ selected: tab === key }}
+              style={{ minHeight: 44, justifyContent: 'flex-end',
+                paddingBottom: S.sm, borderBottomWidth: tab === key ? 2 : 0, borderBottomColor: tab === key ? t.accent : 'transparent' }}>
               <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: tab === key ? t.accent : t.text3 }}>
                 {label}
               </Text>
@@ -341,48 +426,219 @@ export default function Gestao({ t, user, onClose }) {
         </Pressable>
       </View>
 
-      {sheetOpen === 'editPin' && (
-        <Sheet t={t} title="Alterar PIN" sub={`PIN de ${selectedMember}`}
-          onClose={() => {
-            setSheetOpen(null);
-            setSelectedMember(null);
-            setInput('');
-          }}
+      {/* ── O nome da família ────────────────────────────────────────────── */}
+      {sheetOpen === 'nomeDaCasa' && (
+        <Sheet t={t} title="Nome da família" sub={`Agora: ${nomeDaCasa}`}
+          onClose={() => { setSheetOpen(null); setInput(''); setErro(null); }}
           action={
-            <Primary t={t} label="Guardar" disabled={!input || !!pinMsg}
-              onPress={() => {
-                if (setPin(selectedMember, input)) return;
-                setSheetOpen(null);
-                setSelectedMember(null);
-                setInput('');
-              }} />
+            <Primary t={t} label={aGuardar ? 'A guardar…' : 'Guardar'}
+              disabled={aGuardar || !input.trim() || input.trim() === nomeDaCasa}
+              onPress={() => executar(
+                () => renomearCasa(input),
+                () => { setSheetOpen(null); setInput(''); })} />
           }>
           <View style={{ gap: S.md }}>
             <View>
-              <Label t={t}>PIN de 4 dígitos</Label>
+              <Label t={t}>Como se chama esta casa</Label>
               <TextInput
-                placeholder="0000"
-                keyboardType="numeric"
-                maxLength={4}
-                secureTextEntry
+                placeholder="Ex: Bengui"
                 value={input}
                 onChangeText={setInput}
-                style={{
-                  marginTop: S.sm,
-                  paddingHorizontal: S.md,
-                  paddingVertical: S.md,
-                  borderRadius: R.row,
-                  borderWidth: 1,
-                  borderColor: t.border,
-                  fontFamily: FONT.body,
-                  fontSize: 16,
-                  color: t.text1,
-                }}
+                maxLength={40}
+                style={campo(t)}
               />
             </View>
-            {pinMsg ? <Tile t={t} kind="warn">{pinMsg}</Tile> : null}
+            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+              É o nome que aparece na entrada e ao lado de cada membro.
+            </Text>
+            {erro ? <Tile t={t} kind="warn">{erro}</Tile> : null}
           </View>
         </Sheet>
+      )}
+
+      {/* ── Acrescentar um membro ────────────────────────────────────────── */}
+      {sheetOpen === 'novoMembro' && (
+        <Sheet t={t} title="Acrescentar membro" sub={`À casa ${nomeDaCasa}`}
+          onClose={() => { setSheetOpen(null); setErro(null); }}
+          action={
+            <Primary t={t} label={aGuardar ? 'A acrescentar…' : 'Acrescentar'}
+              disabled={aGuardar || !form.nome.trim()}
+              onPress={() => executar(
+                () => acrescentarMembro(form),
+                () => setSheetOpen(null))} />
+          }>
+          <View style={{ gap: S.lg }}>
+            <View style={{ gap: S.md }}>
+              <Label t={t}>Papel</Label>
+              <View style={{ flexDirection: 'row', gap: S.md }}>
+                {[['crianca', 'Criança'], ['adulto', 'Adulto'], ['admin', 'Administração']].map(([v, r]) => (
+                  <View key={v} style={{ flex: 1 }}>
+                    <Choice t={t} label={r} selected={form.papel === v}
+                      onPress={() => setForm(f => ({ ...f, papel: v, segredo: '' }))} />
+                  </View>
+                ))}
+              </View>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+                {form.papel === 'crianca'
+                  ? 'Uma criança entra com um PIN de 4 dígitos e não vê o orçamento da casa.'
+                  : 'Um adulto entra com a conta Google e vê o dinheiro da casa.'}
+              </Text>
+            </View>
+
+            <View>
+              <Label t={t}>Nome</Label>
+              <TextInput placeholder="Ex: Ana" value={form.nome} maxLength={30}
+                onChangeText={(v) => setForm(f => ({ ...f, nome: v }))} style={campo(t)} />
+            </View>
+
+            {/* A concordância não é um pormenor: é o que faz a app dizer «a
+                Ana deve» e não «o Ana deve» em cada frase que a nomeia. */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: t.subtle,
+              borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14 }}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>Tratar no feminino</Text>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+                  {form.fem ? `«a ${form.nome.trim() || 'Ana'}», «à ${form.nome.trim() || 'Ana'}»`
+                            : `«o ${form.nome.trim() || 'Bruno'}», «ao ${form.nome.trim() || 'Bruno'}»`}
+                </Text>
+              </View>
+              <Toggle t={t} on={form.fem} label="Tratar no feminino"
+                onPress={() => setForm(f => ({ ...f, fem: !f.fem }))} />
+            </View>
+
+            {form.papel === 'crianca' ? (
+              <View>
+                <Label t={t}>PIN de 4 dígitos</Label>
+                <TextInput placeholder="0000" keyboardType="numeric" maxLength={4} secureTextEntry
+                  value={form.segredo} onChangeText={(v) => setForm(f => ({ ...f, segredo: v }))}
+                  style={campo(t)} />
+              </View>
+            ) : (
+              <>
+                <View>
+                  <Label t={t}>Endereço de e-mail</Label>
+                  <TextInput placeholder="nome@gmail.com" keyboardType="email-address"
+                    autoCapitalize="none" value={form.email}
+                    onChangeText={(v) => setForm(f => ({ ...f, email: v }))} style={campo(t)} />
+                </View>
+                <View>
+                  <Label t={t}>Palavra-passe do servidor</Label>
+                  <TextInput placeholder="Pelo menos 8 caracteres" secureTextEntry
+                    value={form.segredo} onChangeText={(v) => setForm(f => ({ ...f, segredo: v }))}
+                    style={campo(t)} />
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3, marginTop: S.sm }}>
+                    É a palavra-passe da conta na casa, não a da Google. Combine-a
+                    com a pessoa; ela pode mudá-la depois no Perfil.
+                  </Text>
+                </View>
+              </>
+            )}
+
+            {erro ? <Tile t={t} kind="warn">{erro}</Tile> : null}
+          </View>
+        </Sheet>
+      )}
+
+      {/* ── Um membro: papel, PIN, e a saída ─────────────────────────────── */}
+      {/* Era uma folha só para o PIN mais um diálogo só para o papel, e a
+          linha do membro tinha de escolher qual abrir. Uma linha, um destino:
+          o que se muda num membro está tudo aqui. */}
+      {sheetOpen === 'membro' && selectedMember && (
+        <Sheet t={t} title={selectedMember}
+          sub={MEMBERS[selectedMember]?.email || 'Perfil de criança'}
+          leading={<Avatar initial={MEMBERS[selectedMember]?.initial}
+            color={corDoMembro(selectedMember, MEMBERS[selectedMember]?.cor)} size={40} />}
+          onClose={fecharMembro}
+          action={
+            <View style={{ gap: S.md }}>
+              {(s.roles[selectedMember] || 'crianca') === 'crianca' ? (
+                <Primary t={t} label="Guardar PIN" disabled={!input || !!pinMsg}
+                  onPress={() => { if (setPin(selectedMember, input)) return; fecharMembro(); }} />
+              ) : null}
+              <Pressable onPress={() => { setErro(null); setModal('confirmarRemocao'); }}
+                accessibilityRole="button" accessibilityLabel={`Tirar ${selectedMember} da casa`}
+                style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.state.err }}>
+                  Tirar da casa
+                </Text>
+              </Pressable>
+            </View>
+          }>
+          <View style={{ gap: S.lg }}>
+            <View style={{ gap: S.md }}>
+              <Label t={t}>Papel</Label>
+              <View style={{ flexDirection: 'row', gap: S.md }}>
+                {[['crianca', 'Criança'], ['adulto', 'Adulto'], ['admin', 'Administração']].map(([v, r]) => {
+                  const actual = (s.roles[selectedMember] || 'crianca');
+                  const pode = v === actual || canChangeRole(actual, v);
+                  return (
+                    <View key={v} style={{ flex: 1, opacity: pode ? 1 : 0.4 }}>
+                      <Choice t={t} label={r} selected={actual === v}
+                        onPress={() => { if (pode && v !== actual) executar(
+                          () => editarMembro(selectedMember, { papel: v }), () => {}); }} />
+                    </View>
+                  );
+                })}
+              </View>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+                Uma criança pode passar a adulto — e passa a precisar de conta
+                Google própria. Um adulto não volta a criança, e a casa nunca
+                pode ficar sem administração.
+              </Text>
+            </View>
+
+            {(s.roles[selectedMember] || 'crianca') === 'crianca' ? (
+              <View>
+                <Label t={t}>{s.pins[selectedMember] ? 'Alterar o PIN' : 'Definir o PIN'}</Label>
+                <TextInput placeholder="0000" keyboardType="numeric" maxLength={4} secureTextEntry
+                  value={input} onChangeText={setInput} style={campo(t)} />
+                {pinMsg ? <View style={{ marginTop: S.md }}><Tile t={t} kind="warn">{pinMsg}</Tile></View> : null}
+              </View>
+            ) : null}
+
+            {erro ? <Tile t={t} kind="warn">{erro}</Tile> : null}
+          </View>
+        </Sheet>
+      )}
+
+      {/* ── Tirar da casa ────────────────────────────────────────────────── */}
+      {modal === 'confirmarRemocao' && selectedMember && (
+        <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
+          <Pressable onPress={() => setModal(null)}
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <Pressable style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 320 }}>
+              <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
+                Tirar {selectedMember} da casa?
+              </Text>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.text2, textAlign: 'center' }}>
+                Deixa de entrar nesta casa e de aparecer nas tarefas, na agenda e
+                no dinheiro. O que já lá está — tarefas feitas, movimentos,
+                despesas — fica no histórico da casa.
+              </Text>
+              {erro ? <Tile t={t} kind="warn">{erro}</Tile> : null}
+              <View style={{ flexDirection: 'row', gap: S.md }}>
+                <Pressable onPress={() => setModal(null)} accessibilityRole="button"
+                  accessibilityLabel="Cancelar" style={{ flex: 1 }}>
+                  <View style={{ minHeight: 44, justifyContent: 'center', borderRadius: R.row, borderWidth: 1, borderColor: t.border }}>
+                    <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.text2, textAlign: 'center' }}>
+                      Cancelar
+                    </Text>
+                  </View>
+                </Pressable>
+                <Pressable disabled={aGuardar} accessibilityRole="button"
+                  accessibilityLabel={`Confirmar tirar ${selectedMember} da casa`}
+                  onPress={() => executar(() => removerMembro(selectedMember), fecharMembro)}
+                  style={{ flex: 1 }}>
+                  <View style={{ minHeight: 44, justifyContent: 'center', borderRadius: R.row, backgroundColor: t.state.err }}>
+                    <Text style={{ fontFamily: FONT.display, fontSize: 14, color: '#FFFFFF', textAlign: 'center' }}>
+                      {aGuardar ? 'A tirar…' : 'Tirar'}
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
       )}
 
       {sheetOpen === 'editEnvelope' && (
@@ -590,58 +846,11 @@ export default function Gestao({ t, user, onClose }) {
         </Sheet>
       )}
 
-      {modal === 'changeRole' && (
-        <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
-          <Pressable onPress={() => setModal(null)}
-            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <Pressable style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg }}>
-              <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
-                Alterar papel
-              </Text>
-              <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2, textAlign: 'center' }}>
-                {selectedMember}
-              </Text>
-
-              <View style={{ gap: S.md }}>
-                {['adulto', 'admin'].map(role => {
-                  const label = role === 'admin' ? (FEM(name) ? 'Administradora' : 'Administrador') : 'Adulto';
-                  const current = s.roles[selectedMember] === role;
-                  return (
-                    <Pressable key={role} onPress={() => {
-                      if (canChangeRole(s.roles[selectedMember], role)) {
-                        setRole(selectedMember, role);
-                      }
-                      setModal(null);
-                    }}
-                      style={({ pressed }) => ({
-                        padding: S.md,
-                        borderRadius: R.row,
-                        borderWidth: 2,
-                        borderColor: current ? t.accent : t.border,
-                        backgroundColor: current ? t.chrome : 'transparent',
-                        opacity: pressed ? 0.8 : 1,
-                      })}>
-                      <Text style={{ fontFamily: FONT.body, fontSize: 15, color: current ? '#FFFFFF' : t.text2, textAlign: 'center' }}>
-                        {label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              <Pressable onPress={() => setModal(null)}
-                style={({ pressed }) => ({
-                  padding: S.md,
-                  opacity: pressed ? 0.7 : 1,
-                })}>
-                <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.accent, textAlign: 'center' }}>
-                  Fechar
-                </Text>
-              </Pressable>
-            </Pressable>
-          </Pressable>
-        </Modal>
-      )}
+      {/* O diálogo «Alterar papel» vivia aqui, e escolher o rótulo fazia
+          `FEM(name)` — `name` não existe neste âmbito. No navegador resolvia
+          para o `window.name`, string vazia, e dizia sempre «Administrador»;
+          em React Native seria um ReferenceError. O papel mudou-se para
+          dentro da folha do membro, onde o nome está em mão. */}
 
       {modal === 'deleteSpecialty' && (
         <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
@@ -656,7 +865,8 @@ export default function Gestao({ t, user, onClose }) {
               </Text>
 
               <View style={{ flexDirection: 'row', gap: S.md }}>
-                <Pressable onPress={() => setModal(null)} style={{ flex: 1 }}>
+                <Pressable onPress={() => setModal(null)} accessibilityRole="button"
+                  accessibilityLabel="Cancelar" style={{ flex: 1 }}>
                   <View style={{ padding: S.md, borderRadius: R.row, borderWidth: 1, borderColor: t.border }}>
                     <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.text2, textAlign: 'center' }}>
                       Cancelar
@@ -695,7 +905,8 @@ export default function Gestao({ t, user, onClose }) {
               </Text>
 
               <View style={{ flexDirection: 'row', gap: S.md }}>
-                <Pressable onPress={() => setModal(null)} style={{ flex: 1 }}>
+                <Pressable onPress={() => setModal(null)} accessibilityRole="button"
+                  accessibilityLabel="Cancelar" style={{ flex: 1 }}>
                   <View style={{ padding: S.md, borderRadius: R.row, borderWidth: 1, borderColor: t.border }}>
                     <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.text2, textAlign: 'center' }}>
                       Cancelar
@@ -734,7 +945,8 @@ export default function Gestao({ t, user, onClose }) {
               </Text>
 
               <View style={{ flexDirection: 'row', gap: S.md }}>
-                <Pressable onPress={() => setModal(null)} style={{ flex: 1 }}>
+                <Pressable onPress={() => setModal(null)} accessibilityRole="button"
+                  accessibilityLabel="Cancelar" style={{ flex: 1 }}>
                   <View style={{ padding: S.md, borderRadius: R.row, borderWidth: 1, borderColor: t.border }}>
                     <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.text2, textAlign: 'center' }}>
                       Cancelar

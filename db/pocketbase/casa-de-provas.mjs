@@ -81,8 +81,26 @@ export async function criarMembro(pb, casa, nome, papel, extra = {}) {
 }
 
 // O arranque comum: liga, limpa o que é das provas, e devolve o cliente.
+//
+// A limpeza também fica agendada para o FIM. Limpar só ao arranque bastava
+// para as provas serem fiáveis, mas deixava a última corrida no servidor: a
+// seguir a um `npm run db:provar`, quem abrisse o painel do PocketBase via
+// uma casa «[provas] …» e três membros inventados ao lado da casa a sério.
+// Arrumar atrás de si é mais barato do que explicar o que aquilo é.
 export async function comecar() {
   const pb = await ligarComoAdmin();
   const limpo = await limparCasasDeProvas(pb);
-  return { pb, limpo };
+  let arrumado = false;
+  const arrumar = async () => {
+    if (arrumado) return;
+    arrumado = true;
+    try { await limparCasasDeProvas(pb); } catch { /* o servidor caiu; fica para a próxima */ }
+  };
+  // `beforeExit` não corre depois de um `process.exit()`, que é como as provas
+  // acabam para devolver o código de saída. `exit` corre, mas é síncrono e não
+  // espera por promessas — por isso a limpeza entra no `process.exit`, antes.
+  const sairOriginal = process.exit.bind(process);
+  process.exit = (codigo) => { arrumar().finally(() => sairOriginal(codigo)); };
+  process.on('beforeExit', arrumar);
+  return { pb, limpo, arrumar };
 }

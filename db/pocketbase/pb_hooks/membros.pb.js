@@ -70,3 +70,27 @@ onRecordUpdateRequest((e) => {
   }
   e.next();
 }, 'membros');
+
+// A mesma regra, pelo outro caminho.
+//
+// Este faltava: despromover o último administrador era recusado, e APAGÁ-LO
+// passava. A casa ficava sem ninguém que pudesse acrescentar membros, mudar o
+// nome ou tocar nas regras — e sem forma de voltar atrás pela app, porque o
+// que resolve isso é ser administrador. Só apareceu quando a prova tentou as
+// duas portas em vez de uma.
+onRecordDeleteRequest((e) => {
+  if (e.record.get('papel') === 'admin') {
+    const outros = e.app.findRecordsByFilter('membros',
+      'casa = {:casa} && papel = "admin" && id != {:id}', '', 0, 0,
+      { casa: e.record.get('casa'), id: e.record.id });
+    if (outros.length === 0) {
+      throw new BadRequestError('A casa ficaria sem administração.');
+    }
+  }
+  e.next();
+}, 'membros');
+
+// O `login` já é único — `idx_membro_login`, em criar-colecoes.mjs. Cheguei a
+// escrever um hook a repetir a verificação e tirei-o: uma segunda guarda sobre
+// a mesma coisa é mais um sítio para as duas discordarem. A recusa do índice é
+// traduzida no cliente, em `emPortugues`.

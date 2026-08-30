@@ -320,14 +320,19 @@ function Shell() {
           </>
         )}
 
+        {/* INVARIANTE #5: o círculo tem 36, como na referência 04, mas o alvo
+            tem 44 — o desenho é o do protótipo e o toque é o da regra. Estava
+            a ser um alvo de 36, medido no navegador. */}
         <Pressable onPress={() => setPerfil(true)} accessibilityRole="button"
           accessibilityLabel="Perfil e ajustes"
-          style={{ width: 36, height: 36, borderRadius: R.pill, backgroundColor: '#FFFFFF',
+          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 36, height: 36, borderRadius: R.pill, backgroundColor: '#FFFFFF',
             borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
             alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '500', color: t.chrome }}>
-            {MEMBERS[user].initial}
-          </Text>
+            <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '500', color: t.chrome }}>
+              {MEMBERS[user].initial}
+            </Text>
+          </View>
         </Pressable>
       </View>
 
