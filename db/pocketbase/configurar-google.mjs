@@ -45,10 +45,15 @@ if (!ID || !SEGREDO) {
   process.exit(1);
 }
 
+// As credenciais do superutilizador vêm do ambiente. Os valores por omissão
+// são os do servidor de desenvolvimento e estão aqui para este script correr
+// sem preparação nenhuma — mas num servidor a sério o administrador é outro, e
+// a palavra-passe não deve estar escrita num ficheiro versionado.
+const ADMIN = process.env.PB_ADMIN || 'admin@nossacasa.local';
+const ADMIN_PASS = process.env.PB_ADMIN_PASS || 'casa-de-testes-123';
+
 const pb = new PocketBase(URL);
-await pb.collection('_superusers').authWithPassword(
-  process.env.PB_ADMIN || 'admin@nossacasa.local',
-  process.env.PB_ADMIN_PASS || 'casa-de-testes-123');
+await pb.collection('_superusers').authWithPassword(ADMIN, ADMIN_PASS);
 
 const membros = (await pb.collections.getFullList()).find(c => c.name === 'membros');
 if (!membros) {

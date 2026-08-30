@@ -4,7 +4,14 @@
 import PocketBase from 'pocketbase';
 
 const pb = new PocketBase(process.env.PB_URL || 'http://127.0.0.1:8095');
-await pb.collection('_superusers').authWithPassword('admin@nossacasa.local', 'casa-de-testes-123');
+// As credenciais do superutilizador vêm do ambiente. Os valores por omissão
+// são os do servidor de desenvolvimento e estão aqui para estes scripts
+// correrem sem preparação nenhuma — mas num servidor a sério o administrador é
+// outro, e a palavra-passe não deve estar escrita num ficheiro versionado.
+//   PB_ADMIN=... PB_ADMIN_PASS=... node <este ficheiro>
+const ADMIN = process.env.PB_ADMIN || 'admin@nossacasa.local';
+const ADMIN_PASS = process.env.PB_ADMIN_PASS || 'casa-de-testes-123';
+await pb.collection('_superusers').authWithPassword(ADMIN, ADMIN_PASS);
 
 for (const c of ['cofre_movimentos', 'despesas', 'eventos', 'membros', 'casas']) {
   for (const r of await pb.collection(c).getFullList()) await pb.collection(c).delete(r.id).catch(() => {});
