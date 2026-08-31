@@ -124,26 +124,45 @@ function Shell() {
     return () => { vivo = false; };
   }, []);
 
-  // A importação da agenda, ao entrar. Com token da Google, os eventos vêm da
-  // agenda a sério; sem ele fica a lista de demonstração, para a app continuar
-  // a mostrar o ecrã sem credenciais nenhumas.
+  // A importação da agenda, ao entrar.
+  //
+  // ── Corria UMA VEZ na vida da casa ────────────────────────────────────────
+  //
+  // A guarda era «já importou alguma coisa? então não voltes a olhar», e com
+  // isso o sentido Google → Nossa Casa funcionava no primeiro dia e nunca
+  // mais. Um evento marcado na agenda da Google na semana seguinte não
+  // aparecia aqui, e nada no ecrã dizia porquê.
+  //
+  // Agora olha sempre que se entra, e o que decide se o aviso abre é haver
+  // eventos AINDA NÃO VISTOS — não o histórico da casa. Os dispensados ficam
+  // marcados em `googleCalendarImported`, por isso o «Agora não» continua a
+  // valer para aqueles e não para os que vierem depois.
   useEffect(() => {
     if (!user || !MEMBERS[user] || MEMBERS[user].kid) return;
-    const jaViu = s.googleCalendarImported && Object.keys(s.googleCalendarImported).length > 0;
-    if (jaViu) return;
 
     let vivo = true;
     (async () => {
+      const jaVistos = s.googleCalendarImported || {};
+
       if (servidor.google.disponivel()) {
         try {
           const reais = await servidor.google.eventos({ dias: 30, max: 50 });
-          if (vivo && reais.length) setEventosGoogle(reais);
-        } catch (e) { /* sem autorização da agenda — fica a demonstração */ }
+          if (!vivo) return;
+          const novos = reais.filter(e => !jaVistos[e.id]);
+          if (novos.length) { setEventosGoogle(novos); setGoogleImport(true); }
+        } catch (e) { /* autorização caducada — o botão da Agenda explica */ }
+        return;
       }
-      if (vivo) setGoogleImport(true);
+
+      // Sem agenda ligada. Numa casa a sério não há nada para oferecer e o
+      // aviso não abre: abrir uma lista de eventos inventados numa casa de
+      // verdade seria pior do que não abrir nada.
+      if (s.clearedSeeds) return;
+      const novos = EVENTOS_DE_DEMONSTRACAO.filter(e => !jaVistos[e.id]);
+      if (vivo && novos.length) { setEventosGoogle(novos); setGoogleImport(true); }
     })();
     return () => { vivo = false; };
-  }, [user, s.googleCalendarImported]);
+  }, [user, s.googleCalendarImported, s.clearedSeeds]);
 
   // Quem entrou, tal como o quadro da casa o conhece. Pode ser `undefined`
   // durante um instante: quem entra pela Google chega com um nome que a loja
@@ -163,6 +182,17 @@ function Shell() {
   const mode = (user && s.themeByUser[user]) || 'claro';
   const dark = mode === 'escuro' || (mode === 'sistema' && sysDark);
   const t = buildTheme(user ? (s.schemeByUser[user] ?? 0) : 0, dark);
+
+  // O que fica ao lado da coluna, no monitor.
+  //
+  // O `public/index.html` pinta o body de #001529 fixo, porque nasceu antes
+  // de haver coluna limitada: não se via. Agora vê-se, e um azul quase preto
+  // ao lado de um esquema claro é uma moldura que ninguém escolheu. Passa a
+  // ser a cor do cabeçalho do esquema — a mesma que a app já usa em cima.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.style.backgroundColor = t.chrome;
+  }, [t.chrome]);
   const onC = onChrome(t.chrome);
 
   if (booting || !fontsReady) {
@@ -299,6 +329,19 @@ function Shell() {
     : gestao ? 'gestao' : doc ? 'doc' : loja ? 'loja' : null;
   const V = vistaAberta ? vistas[vistaAberta] : null;
 
+  // No monitor, a coluna da app não se estica.
+  //
+  // Medido a 1440 px: o cartão de um evento tinha 1393 px de largura, com a
+  // hora encostada à esquerda e a pastilha de visibilidade a mais de um metro
+  // dela, e o rodapé de cinco separadores atravessava a janela toda. Não é um
+  // desenho web — é o desenho de telemóvel esticado.
+  //
+  // O limite é 460: um telemóvel do tamanho do alvo (402) não nota nada, e no
+  // monitor a app fica com a forma para que foi desenhada e medida. Faz-se com
+  // maxWidth e margens automáticas na PRÓPRIA raiz, sem envolver nada: a raiz
+  // é a coluna flex do INVARIANTE #1 e um <View> a mais em volta dela é
+  // exactamente o erro #1 da lista do CLAUDE.md.
+  const LARGURA_MAX = 460;
   // ⚠ INVARIANTE — ver CLAUDE.md
   // Cabeçalho e rodapé aparecem em TODAS as janelas. A raiz é uma coluna flex
   // com três filhos e a condição do rodapé não leva nada além de "estar na app":
@@ -307,7 +350,8 @@ function Shell() {
   //   footer  flex: none   ← último filho da raiz, sempre
   // Se um ecrã precisar de mais espaço, encolhe o conteúdo, não o rodapé.
   return (
-    <View style={{ flex: 1, backgroundColor: t.page }}>
+    <View style={{ flex: 1, backgroundColor: t.page,
+      width: '100%', maxWidth: LARGURA_MAX, marginHorizontal: 'auto' }}>
       <StatusBar barStyle="light-content" />
 
       {/* cabeçalho — minHeight garante que nunca colapsa (INVARIANTE #1)

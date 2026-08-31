@@ -229,6 +229,20 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
           O texto diz que CONVIDA e que isso manda e-mail, antes de acontecer.
           Não se escreve na agenda de outra pessoa: a agenda de cada um é dela,
           e o que a app pode fazer é convidar. Quem aceita, fica com o evento. */}
+      {/* Sem autorização da agenda, isto era `null` — a linha desaparecia do
+          ecrã sem uma palavra, e quem tinha entrado com a Google agendava a
+          pensar que estava a marcar nos dois sítios. O token da Google morre
+          com o separador do navegador; a sessão da app não. Um interruptor
+          que não pode fazer nada é pior do que a sua ausência, mas uma
+          ausência silenciosa é pior do que as duas. */}
+      {!servidor.google.disponivel() && servidor.google.porLigar() ? (
+        <Tile t={t} kind="warn" icon="calendar">
+          Este evento fica só na Nossa Casa. Para marcar também na agenda da
+          Google, saia e entre outra vez com o Google — a autorização da agenda
+          dura o tempo da sessão.
+        </Tile>
+      ) : null}
+
       {servidor.google.disponivel() ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14,
           borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14 }}>

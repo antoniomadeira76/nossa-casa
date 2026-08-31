@@ -60,8 +60,35 @@ export const pb = new Proxy({}, { get: (_, p) => { const c = obter(); return c ?
 
 const semLigacao = () => Promise.reject(new Error('Servidor não configurado.'));
 
-// Token de acesso da Google, só em memória — ver auth.entrarComGoogle.
-let tokenGoogle = null;
+// Token de acesso da Google.
+//
+// NÃO vai para disco: é credencial de terceiro e não tem de sobreviver ao
+// fecho da app. Mas tinha de sobreviver a RECARREGAR a página, e não
+// sobrevivia — e essa era a diferença entre a app escrever na agenda ou não
+// escrever, em silêncio:
+//
+//   a sessão do PocketBase persiste (localStorage), o token da Google não.
+//   Quem recarregava ficava dentro da app, com o interruptor «marcar também
+//   na agenda da Google» a DESAPARECER do ecrã de agendar, sem uma palavra.
+//   O evento gravava-se só na Nossa Casa e ninguém percebia porquê.
+//
+// `sessionStorage` é o meio certo: aguenta o recarregar e morre com o
+// separador. Em nativo não existe e o token fica em memória, como estava.
+const GUARDA = (() => {
+  try { return typeof sessionStorage !== 'undefined' ? sessionStorage : null; }
+  catch { return null; }        // navegador com dados de site bloqueados
+})();
+const CHAVE_TOKEN = 'nossa-casa.token-google';
+
+let tokenGoogle = (() => { try { return GUARDA ? GUARDA.getItem(CHAVE_TOKEN) : null; } catch { return null; } })();
+
+const guardarToken = (v) => {
+  tokenGoogle = v || null;
+  try {
+    if (!GUARDA) return;
+    if (v) GUARDA.setItem(CHAVE_TOKEN, v); else GUARDA.removeItem(CHAVE_TOKEN);
+  } catch { /* sem armazenamento: fica só em memória */ }
+};
 
 // ─── Sessão ──────────────────────────────────────────────────────────────────
 
@@ -129,7 +156,7 @@ export const auth = {
     });
     // O token da Google só vem nesta resposta. Guarda-se em memória, não em
     // disco: é credencial de terceiro e não tem de sobreviver ao fecho da app.
-    tokenGoogle = r.meta && r.meta.accessToken ? r.meta.accessToken : null;
+    guardarToken(r.meta && r.meta.accessToken ? r.meta.accessToken : null);
     return r;
   },
 
@@ -146,7 +173,7 @@ export const auth = {
     } catch { return []; }
   },
 
-  sair: () => { if (estaLigado()) { pb.authStore.clear(); tokenGoogle = null; } },
+  sair: () => { if (estaLigado()) { pb.authStore.clear(); guardarToken(null); } },
   membro: () => (estaLigado() ? pb.authStore.record : null),
   valida: () => Boolean(estaLigado() && pb.authStore.isValid),
 };
@@ -205,6 +232,11 @@ const CAL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
 export const google = {
   disponivel: () => Boolean(tokenGoogle),
 
+  // Há sessão, mas a agenda não está autorizada — é uma situação a
+  // EXPLICAR, e não a esconder. Numa app sem servidor devolve falso: aí
+  // não há nada a ligar e o assunto não existe.
+  porLigar: () => Boolean(estaLigado() && pb.authStore && pb.authStore.isValid && !tokenGoogle),
+
   // Os eventos dos próximos `dias`, já na forma que a app usa.
   async eventos({ dias = 30, max = 50 } = {}) {
     if (!tokenGoogle) throw new Error('Entre com o Google e autorize a agenda.');
@@ -219,6 +251,7 @@ export const google = {
       // 401 é o token expirado ou sem o scope da agenda — dizer isso, e não
       // «algo correu mal», é a diferença entre o utilizador saber o que fazer.
       if (r.status === 401 || r.status === 403) {
+        guardarToken(null);
         throw new Error('A autorização da agenda expirou. Entre com o Google outra vez.');
       }
       throw new Error(`A Google respondeu ${r.status}.`);
