@@ -20,13 +20,25 @@ const diaDaSemana = (k) => {
 
 export default function Compras({ t, user, onModoCompras }) {
   const st = useStore();
-  const { s, set, allItems, envelopes, membros: MEMBERS } = st;
+  const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas } = st;
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const items = allItems();
   const stateOf = (i) => s.status[i.id] || (i.real ? 'done' : 'open');
   const doneItems = items.filter(i => stateOf(i) === 'done');
-  const estimate = items.reduce((a, i) => a + i.est, 0);
+  const loja = s.stores[s.shopPlan.store];
+
+  // A estimativa passa a usar o que a casa PAGOU nesta loja, e cai no que
+  // está escrito só para o que ainda não se comprou. É o ganho de todos os
+  // dias: um número que se aproxima da conta em vez de ser um palpite fixo.
+  const estimate = items.reduce((a, i) => a + precoDe(i, loja).valor, 0);
+  // Quantos artigos é que a estimativa já conhece — sem isto, um total baixo
+  // porque se conhece pouco lê-se como uma lista barata.
+  const conhecidos = items.filter(i => precoDe(i, loja).origem !== 'escrito').length;
+
+  // A comparação entre lojas. Devolve `null` enquanto não houver o que dizer,
+  // e é isso que a faz não aparecer no primeiro dia.
+  const comparacao = compararLojas(items);
   const mercearia = envelopes.find(e => e.name === 'Mercearia');
   const merc = mercearia ? mercearia.limit - mercearia.used : 0;
 
@@ -57,6 +69,15 @@ export default function Compras({ t, user, onModoCompras }) {
             </View>
           ))}
         </View>
+        {/* Quantos artigos a estimativa já conhece. Um total baixo porque se
+            conhece pouco lê-se como uma lista barata, e não é. */}
+        {conhecidos > 0 ? (
+          <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3, marginTop: -S.md }}>
+            {plural(conhecidos, 'artigo com preço', 'artigos com preço')} de {items.length},
+            {' '}do que já se comprou {loja ? `no ${loja}` : ''}.
+          </Text>
+        ) : null}
+
         <View style={{ height: 1, backgroundColor: t.divider }} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Avatar initial={(MEMBERS[planoDe] || { initial: '?' }).initial}
@@ -75,6 +96,47 @@ export default function Compras({ t, user, onModoCompras }) {
           </Pressable>
         </View>
       </Card>
+
+      {/* Onde a lista sai mais barata.
+          Só aparece quando há o que dizer: a comparação faz-se sobre os
+          artigos conhecidos em AMBAS as lojas, e abaixo de três cala-se. Nas
+          primeiras semanas não se vê nada, e é o correto — um conselho errado
+          sobre onde ir ao sábado custa uma viagem.
+
+          E leva uma ação: um conselho que não se pode seguir é meio conselho.
+          Trocar a loja do plano é o passo que se dá a seguir a ler isto. */}
+      {comparacao ? (
+        <Card t={t} style={{ gap: S.md, borderLeftWidth: 4, borderLeftColor: t.state.ok }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Icon name="storefront" size={22} color={t.state.okDeep} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>
+                Esta lista sai {EUR(comparacao.poupanca)} mais barata no {comparacao.loja}
+              </Text>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+                Contra o {comparacao.contra}, sobre{' '}
+                {plural(comparacao.sobre, 'artigo que já comprou', 'artigos que já comprou')} nas
+                duas — de {comparacao.deQuantos} na lista.
+              </Text>
+            </View>
+          </View>
+          {comparacao.loja !== loja ? (
+            <Pressable
+              onPress={() => set(x => ({
+                shopPlan: { ...x.shopPlan, store: x.stores.indexOf(comparacao.loja) },
+              }))}
+              accessibilityRole="button"
+              accessibilityLabel={`Passar as compras para o ${comparacao.loja}`}
+              style={({ pressed }) => ({ minHeight: 44, borderRadius: R.row, borderWidth: 1,
+                borderColor: t.border, alignItems: 'center', justifyContent: 'center',
+                backgroundColor: pressed ? t.subtle : 'transparent' })}>
+              <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '600', color: t.accent }}>
+                Passar as compras para o {comparacao.loja}
+              </Text>
+            </Pressable>
+          ) : null}
+        </Card>
+      ) : null}
 
       {SECTIONS.map((sec, si) => {
         const rows = items.filter(i => i.s === si);

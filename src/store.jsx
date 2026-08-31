@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useReducer, useRe
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES, HEALTH, HEALTH_DOCS, VAULT, DE } from './data';
 import { TODAY_KEY, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY } from './format';
-import { observacao, precosDe, estimativaDe } from './precos';
+import { observacao, precosDe, estimativaDe, compararLojas } from './precos';
 // A camada do servidor entra por importação dinâmica, não estática. Duas
 // razões: o SDK do PocketBase é ESM e uma importação estática arrastava-o
 // para dentro dos testes — a suite de regressões deixou de carregar inteira,
@@ -1216,6 +1216,9 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // O que se sabe do preço deste artigo, na loja onde se vai comprar.
     precoDe: (artigo, loja) => estimativaDe(s.precos || [], artigo, loja),
     precosDeArtigo: (rotulo) => precosDe(s.precos || [], rotulo),
+    // Qual das lojas sai mais barata para esta lista — ou `null`, que é a
+    // resposta certa enquanto não houver o que comparar.
+    compararLojas: (artigos) => compararLojas(s.precos || [], artigos, s.stores || []),
     podeVerEvento: (e, viewer) => podeVerEvento(e, viewer, quadro),
     podeEditarEvento: (e, viewer) => podeEditarEvento(e, viewer, quadro),
     editarEvento, removerEvento,
