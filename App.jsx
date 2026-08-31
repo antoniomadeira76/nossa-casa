@@ -474,12 +474,8 @@ function Shell() {
             t={t}
             events={eventosGoogle}
             user={user}
-            onImportAll={(events) => {
-              importGoogleEvents(events, user, true);
-              setGoogleImport(false);
-            }}
-            onImportPrivate={(events) => {
-              importGoogleEvents(events, user, false);
+            onImportar={(events, visibilidade) => {
+              importGoogleEvents(events, user, visibilidade);
               setGoogleImport(false);
             }}
             onIgnore={() => {

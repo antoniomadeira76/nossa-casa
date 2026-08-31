@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { S, R, elev, FONT, corDoMembro } from './theme';
 import Icon from './Icon';
+import { visibilidadeDe } from './store';
 
 // Cartão: um enchimento só, 14/16, herdado do protótipo
 export const Card = ({ t, children, style, pad = true }) => (
@@ -41,27 +42,35 @@ export const Pill = ({ label, fg, bg, border }) => (
 // linha. Uma escolha com frases dentro não cabe numa pastilha, e empilhar
 // pastilhas de largura inteira faz três botões primários a competirem entre si
 // — foi o que fiz na folha de exportação à primeira.
+// É a bola que marca a escolha, não a linha. A linha inteira pintada de
+// `chrome` fazia a opção escolhida gritar mais alto do que a pergunta, e três
+// delas empilhadas — uma cheia, duas vazias — liam-se como um bloco a competir
+// com o resto da folha. O contorno muda de cor, o fundo fica quieto, e o texto
+// não tem de trocar de cor com ele.
 export const Opcao = ({ t, titulo, detalhe, selected, onPress, disabled }) => (
   <Pressable onPress={disabled ? undefined : onPress}
     accessibilityRole="button" accessibilityLabel={titulo}
     accessibilityState={{ selected: !!selected, disabled: !!disabled }}
     style={({ pressed }) => ({
-      minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: 14,
-      paddingVertical: S.md,
-      borderColor: selected ? t.chrome : t.border,
-      backgroundColor: selected ? t.chrome : t.subtle,
+      minHeight: 48, borderRadius: R.row, paddingHorizontal: 14, paddingVertical: S.md,
+      borderWidth: 1, borderColor: selected ? t.accent : t.border,
+      backgroundColor: pressed ? t.subtle : t.card,
       flexDirection: 'row', alignItems: 'center', gap: S.md,
-      opacity: disabled ? 0.4 : (pressed ? 0.85 : 1),
+      opacity: disabled ? 0.4 : 1,
     })}>
+    {/* Anel por fora, disco por dentro — a bola de rádio de sempre. */}
     <View style={{ width: 20, height: 20, borderRadius: R.pill, borderWidth: 2,
-      borderColor: selected ? '#FFFFFF' : t.border,
-      backgroundColor: selected ? '#FFFFFF' : 'transparent' }} />
+      borderColor: selected ? t.accent : t.border,
+      alignItems: 'center', justifyContent: 'center' }}>
+      {selected ? (
+        <View style={{ width: 10, height: 10, borderRadius: R.pill, backgroundColor: t.accent }} />
+      ) : null}
+    </View>
     <View style={{ flex: 1, gap: 2 }}>
-      <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
-        color: selected ? '#FFFFFF' : t.text2 }}>{titulo}</Text>
+      <Text style={{ fontFamily: FONT.ui, fontSize: 13,
+        fontWeight: selected ? '600' : '400', color: t.text2 }}>{titulo}</Text>
       {detalhe ? (
-        <Text style={{ fontFamily: FONT.ui, fontSize: 11.5,
-          color: selected ? 'rgba(255,255,255,0.7)' : t.text3 }}>{detalhe}</Text>
+        <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{detalhe}</Text>
       ) : null}
     </View>
   </Pressable>
@@ -111,6 +120,18 @@ export const EscolherMembro = ({ t, valor, onEscolher, membros }) => (
     })}
   </View>
 );
+
+// A visibilidade de um evento, em pastilha. Estava escrita à mão em dois
+// ecrãs — com dois estados, e a cor a repetir-se em quatro props de cada vez.
+// Três estados agora, e a cor diz o alcance: família em info, adultos em
+// aviso, só eu em cinzento.
+export const PastilhaVisibilidade = ({ t, evento }) => {
+  const v = visibilidadeDe(evento);
+  const cfg = v === 'familia' ? { rotulo: 'Família', fg: t.state.info, bg: t.state.infoBg, bd: t.state.info }
+    : v === 'adultos' ? { rotulo: 'Adultos', fg: t.state.warnDeep, bg: t.state.warnBg, bd: t.state.warn }
+    : { rotulo: 'Só eu', fg: t.text3, bg: t.subtle, bd: t.border };
+  return <Pill label={cfg.rotulo} fg={cfg.fg} bg={cfg.bg} border={cfg.bd} />;
+};
 
 // Alvo de toque nunca abaixo de 44
 export const Tap = ({ onPress, label, children, style, size = 44 }) => (

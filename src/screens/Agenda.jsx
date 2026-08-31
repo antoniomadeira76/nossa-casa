@@ -4,14 +4,14 @@ import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
 import { MONTHS, WD_SHORT, TODAY, TODAY_KEY, dkey, dayLabel, evTime, pad2 } from '../format';
 
-import { Card, SectionTitle, Pill, Avatar, Empty, AddButton, Tap, usePaged, Pager } from '../ui';
+import { Card, SectionTitle, Pill, Avatar, Empty, AddButton, Tap, usePaged, Pager, PastilhaVisibilidade } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import NovoEvento from '../sheets/NovoEvento';
 import ImportarGoogle from '../sheets/ImportarGoogle';
 
 export default function Agenda({ t, user }) {
-  const { s, allEvents, membros: MEMBERS } = useStore();
+  const { s, allEvents, membros: MEMBERS, podeVerEvento } = useStore();
   const [open, setOpen] = useState(false);
   const [ym, setYm] = useState({ y: TODAY.y, m: TODAY.m });
   const [sel, setSel] = useState(null);
@@ -19,7 +19,10 @@ export default function Agenda({ t, user }) {
   const [googleSheetOpen, setGoogleSheetOpen] = useState(false);
   const [preFillDay, setPreFillDay] = useState(null);
 
-  const mine = allEvents().filter(e => e.shared || e.owner === user);
+  // A regra vive na loja, não aqui: dois ecrãs a escreverem o mesmo filtro
+  // divergem, e um filtro de visibilidade que diverge mostra a alguém o que
+  // não devia.
+  const mine = allEvents().filter(e => podeVerEvento(e, user));
 
   // A Agenda começa em hoje — o passado vive na ficha de cada membro
   const keys = [...new Set([TODAY_KEY, ...mine.map(e => e.day)])].filter(k => k >= TODAY_KEY).sort();
@@ -241,10 +244,7 @@ export default function Agenda({ t, user }) {
                         <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{e.title}</Text>
                         <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{e.who}</Text>
                       </View>
-                      <Pill label={e.shared ? 'Família' : 'Só eu'}
-                        fg={e.shared ? t.state.info : t.text3}
-                        bg={e.shared ? t.state.infoBg : t.subtle}
-                        border={e.shared ? t.state.info : t.border} />
+                      <PastilhaVisibilidade t={t} evento={e} />
                     </View>
                   </Card>
                 ))}

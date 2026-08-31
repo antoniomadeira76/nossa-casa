@@ -43,6 +43,49 @@ export const consultasProximasDe = (consultas, viewer, limite = 7) => (consultas
   .filter(h => h.dias !== null && h.dias >= 0 && h.dias <= limite)
   .sort((a, b) => a.dias - b.dias);
 
+// ── Visibilidade de um evento (INVARIANTE #3) ───────────────────────────────
+//
+// Três níveis, e não dois. Havia `shared: true/false` — ou a casa toda, ou
+// mais ninguém — e faltava o do meio, que é o que uma família precisa mais
+// vezes: uma consulta, uma reunião na escola, uma conta a pagar. Coisas que os
+// dois adultos têm de saber e que não têm de aparecer na agenda de uma criança
+// de sete anos.
+//
+// Puras e exportadas de propósito, como o `podeVerSaude`: uma regra de
+// visibilidade que só se verifica a olho, no ecrã, não é uma regra — é uma
+// esperança.
+//
+// ⚠ Esta é a regra do CLIENTE. O INVARIANTE #3 diz que a que conta é a do
+// servidor: um evento que este filtro esconde continua a chegar ao
+// dispositivo. Quando os eventos passarem para o PocketBase, a coleção
+// `eventos` precisa da regra equivalente — está por fazer, e está dito.
+export const VISIBILIDADES = [
+  { chave: 'familia', rotulo: 'Toda a família',
+    detalhe: 'Aparece na agenda de todos, incluindo as crianças.' },
+  { chave: 'adultos', rotulo: 'Só os adultos',
+    detalhe: 'Os adultos da casa veem; as crianças não.' },
+  { chave: 'so-eu', rotulo: 'Só eu',
+    detalhe: 'Mais ninguém o vê, nem o outro adulto.' },
+];
+
+// A forma antiga era um booleano. Um evento gravado antes disto não tem
+// `visibilidade`, e ler `undefined` como «só eu» esconderia metade da agenda
+// da casa de um dia para o outro.
+export const visibilidadeDe = (evento) => {
+  if (!evento) return 'so-eu';
+  if (evento.visibilidade) return evento.visibilidade;
+  return evento.shared ? 'familia' : 'so-eu';
+};
+
+export const podeVerEvento = (evento, viewer, quadro = MEMBERS) => {
+  if (!evento) return false;
+  if (evento.owner === viewer) return true;             // o dono vê sempre o seu
+  const v = visibilidadeDe(evento);
+  if (v === 'familia') return true;
+  if (v === 'adultos') return !!(quadro[viewer] && !quadro[viewer].kid);
+  return false;
+};
+
 // ── PIN ─────────────────────────────────────────────────────────────────────
 // O PIN era gravado em claro: o armazenamento local tinha `{"Léo": "2470"}`,
 // legível por qualquer coisa com acesso à página. O db/README.md diz «resumo,
@@ -177,7 +220,7 @@ const DATA_KEYS = [
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
 // muda, e MIGRATIONS ganha a entrada correspondente. Sem isto, dados antigos
 // eram lidos com a forma nova e ganhavam silenciosamente ao código.
-export const SCHEMA = 6;
+export const SCHEMA = 7;
 
 // Uma migração por salto de versão: recebe o objeto lido e devolve-o corrigido.
 export const MIGRATIONS = {
@@ -248,6 +291,29 @@ export const MIGRATIONS = {
   6: (o) => (o.clearedSeeds && !o.monthLimits
     ? { ...o, ...SEM_DINHEIRO_SEMEADO() }
     : o),
+
+  // v6 → v7: a visibilidade de um evento era `shared: true/false` e passa a
+  // três níveis. A tradução é direta e não muda o que ninguém vê: o que era
+  // partilhado passa a «toda a família», o que não era passa a «só eu». O
+  // nível do meio é novo e ninguém o tem ainda.
+  7: (o) => ({
+    ...o,
+    added: (o.added || []).map(e => {
+      // Os eventos que o «Guardar evento» gravou no campo errado. Existem, têm
+      // título e data, e nunca apareceram em lado nenhum porque a app lê
+      // `day` e eles tinham `date`. Recuperam-se em vez de ficarem órfãos —
+      // alguém os escreveu de propósito.
+      const { date, ...resto } = e;
+      const comDia = e.day ? resto
+        : date ? { ...resto, day: /^d/.test(String(date)) ? date : `d${date}` }
+        : resto;
+      return comDia.visibilidade ? comDia
+        : { ...comDia, visibilidade: comDia.shared ? 'familia' : 'so-eu' };
+    }),
+    eventEdits: Object.fromEntries(Object.entries(o.eventEdits || {})
+      .map(([k, e]) => [k, e && e.shared !== undefined && !e.visibilidade
+        ? { ...e, visibilidade: e.shared ? 'familia' : 'so-eu' } : e])),
+  }),
 };
 
 export const DEMO = () => ({
@@ -997,17 +1063,22 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
 
   // Google Calendar: importar eventos
   // events: array de { id, title, date, time, description, isRecurring }
-  // shared: true para "Adicionar", false para "Adicionar Só para Mim"
-  const importGoogleEvents = (events, user, shared = true) => {
+  // `visibilidade`: um dos três níveis, como em qualquer outro evento. Era um
+  // booleano, e por isso a importação era o único sítio da app onde não se
+  // podia dizer «só os adultos».
+  const importGoogleEvents = (events, user, visibilidade = 'familia') => {
     set(x => {
       const newAdded = events.map(ev => ({
         id: `gcal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        day: ev.date, // dd/mm/yyyy → 2026-08-27
+        // O mesmo defeito que o «Guardar evento» tinha: a app lê chaves
+        // (`d2026-08-27`) e isto punha `2026-08-27`. Os eventos importados
+        // gravavam-se e não apareciam.
+        day: /^d/.test(String(ev.date)) ? ev.date : `d${ev.date}`,
         time: ev.time || '',
         title: ev.title,
         who: user,
         owner: user,
-        shared: shared,
+        visibilidade,
         source: 'Google Calendar',
         isRecurring: ev.isRecurring || false,
       }));
@@ -1033,6 +1104,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // a usar a app.
     membros: s.membros || MEMBERS,
     membrosDaCasa, criancas, adultos, acerto, acertado, pagarAcerto,
+    podeVerEvento: (e, viewer) => podeVerEvento(e, viewer, quadro),
     artigo, oNome, aoNome, deNome,
     nomeDaCasa: s.nomeDaCasa || 'Bengui',
     deDemonstracao: s.deDemonstracao !== false,

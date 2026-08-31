@@ -3,6 +3,8 @@ import { View, Text, Pressable, ScrollView, Switch } from 'react-native';
 import { S, R, FONT, elev } from '../theme';
 import Icon, { GoogleG } from '../Icon';
 import { pad2, parseKey } from '../format';
+import { Label, Opcao } from '../ui';
+import { VISIBILIDADES } from '../store';
 
 // Helper para formatar data para display (dd/mm)
 const formatDateForDisplay = (dateKey) => {
@@ -21,14 +23,14 @@ const formatEventDescription = (event) => {
   return parts.join(' · ');
 };
 
-export default function GoogleCalendarImportModal({ t, events, onImportAll, onImportPrivate, onIgnore }) {
+export default function GoogleCalendarImportModal({ t, events, onImportar, onIgnore }) {
   // Os recorrentes aparecem na lista, mas por omissão ficam de fora.
   const [selected, setSelected] = useState(() => {
     const init = {};
     events.forEach(e => { init[e.id] = !e.isRecurring; });
     return init;
   });
-  const [shared, setShared] = useState(false);
+  const [visibilidade, setVisibilidade] = useState('familia');
 
   const toggleEvent = (id) => setSelected(prev => ({ ...prev, [id]: !prev[id] }));
 
@@ -37,7 +39,7 @@ export default function GoogleCalendarImportModal({ t, events, onImportAll, onIm
 
   const handleImport = () => {
     if (!n) return;
-    (shared ? onImportAll : onImportPrivate)(selectedEvents);
+    onImportar(selectedEvents, visibilidade);
   };
 
   return (
@@ -99,20 +101,16 @@ export default function GoogleCalendarImportModal({ t, events, onImportAll, onIm
 
       <View style={{ height: 1, backgroundColor: t.border, marginHorizontal: S.lg }} />
 
-      {/* Partilhar com a família */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12,
-        paddingHorizontal: S.lg, paddingVertical: S.lg }}>
-        <View style={{ flex: 1, gap: S.xs }}>
-          <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>
-            Partilhar com a família
-          </Text>
-          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-            {shared ? 'Visíveis para toda a família' : 'Ficam visíveis apenas para si'}
-          </Text>
-        </View>
-        <Switch value={shared} onValueChange={setShared}
-          accessibilityLabel="Partilhar com a família"
-          trackColor={{ false: t.border, true: t.accent }} thumbColor="#FFFFFF" />
+      {/* Os mesmos três níveis do «Agendar evento». A importação era o único
+          sítio da app onde não se podia dizer «só os adultos» — e é onde entram
+          de uma vez os eventos de trabalho de quem importa a agenda. */}
+      <View style={{ gap: S.md, paddingHorizontal: S.lg, paddingVertical: S.lg }}>
+        <Label t={t}>Quem vê</Label>
+        {VISIBILIDADES.map(v => (
+          <Opcao key={v.chave} t={t} titulo={v.rotulo} detalhe={v.detalhe}
+            selected={visibilidade === v.chave}
+            onPress={() => setVisibilidade(v.chave)} />
+        ))}
       </View>
 
       {/* Ações */}

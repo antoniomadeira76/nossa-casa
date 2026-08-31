@@ -1,27 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
-import { useStore } from '../store';
+import { useStore, VISIBILIDADES } from '../store';
 import CampoData from '../CampoData';
 import { S, R, FONT } from '../theme';
-import { Label, Choice, Toggle, Primary, EscolherMembro } from '../ui';
+import { Label, Primary, EscolherMembro, Opcao } from '../ui';
 import Icon from '../Icon';
 import ConfirmShare from '../ConfirmShare';
 import { parseKey } from '../format';
-
-// O evento guarda a data como `2026-09-15`; a app usa a chave `d2026-09-15`.
-// A tradução vive aqui e não no campo — o campo fala a língua da app, e é este
-// ecrã que tem um formato próprio.
-const chaveDaData = (d) => (d ? `d${d}` : null);
-const dataDaChave = (k) => (k ? String(k).replace(/^d/, '') : null);
 
 export default function NovoEvento({ t, user, onClose, preFillDay }) {
   const { set, s, membrosDaCasa } = useStore();
   const [form, setForm] = useState({
     title: '',
-    date: null,
+    day: null,
     time: '10:00',
     responsible: user,
-    private: false,
+    visibilidade: 'familia',
   });
   const [confirming, setConfirming] = useState(false);
 
@@ -30,27 +24,33 @@ export default function NovoEvento({ t, user, onClose, preFillDay }) {
     if (preFillDay) {
       const parsed = parseKey(preFillDay);
       if (parsed) {
-        const dateStr = `${parsed.y}-${String(parsed.m + 1).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`;
-        setForm(f => ({ ...f, date: dateStr }));
+        setForm(f => ({ ...f, day: preFillDay }));
       }
     }
   }, [preFillDay]);
 
   const handleSave = () => {
-    if (!form.title.trim() || !form.date) return;
+    if (!form.title.trim() || !form.day) return;
     setConfirming(true);
   };
 
   const handleConfirm = () => {
     const id = 'evt-' + Date.now();
+    // O campo é `day`, e a chave é `d2026-08-21`. Isto escrevia
+    // `date: '2026-08-21'` — nome diferente e formato diferente do que a app
+    // lê. O evento gravava-se e não aparecia em lado nenhum: nem na Agenda,
+    // nem no Início, nem na grelha do mês. Guardar parecia não fazer nada, e
+    // fazia — só que num campo que ninguém consulta.
     const event = {
       id,
       title: form.title,
-      date: form.date,
+      day: form.day,
       time: form.time,
+      // `who` é a linha que a Agenda mostra por baixo do título.
+      who: form.responsible,
       responsible: form.responsible,
       owner: user,
-      shared: !form.private,
+      visibilidade: form.visibilidade,
       manual: true,
     };
 
@@ -62,7 +62,7 @@ export default function NovoEvento({ t, user, onClose, preFillDay }) {
     onClose();
   };
 
-  const canSave = form.title.trim() && form.date;
+  const canSave = form.title.trim() && form.day;
 
   return (
     <View style={{ gap: S.lg }}>
@@ -88,8 +88,8 @@ export default function NovoEvento({ t, user, onClose, preFillDay }) {
             a prometer um calendário para mais tarde. Um controlo que parece
             tocável e não faz nada, a meio do caminho de marcar um evento.
             Agora escreve-se a data ou escolhe-se no calendário. */}
-        <CampoData t={t} valor={chaveDaData(form.date)}
-          onChange={(chave) => setForm(f => ({ ...f, date: dataDaChave(chave) }))} />
+        <CampoData t={t} valor={form.day}
+          onChange={(chave) => setForm(f => ({ ...f, day: chave }))} />
       </View>
 
       <View style={{ gap: S.sm }}>
@@ -114,25 +114,18 @@ export default function NovoEvento({ t, user, onClose, preFillDay }) {
           onEscolher={(name) => setForm(f => ({ ...f, responsible: name }))} />
       </View>
 
-      {/* «Partilhar com a família», ligado — como na referência 18. Estava
-          rotulado «Privado» com a legenda «Visível para toda a família»: o
-          rótulo nomeia um estado e a legenda descreve o oposto, e quem lê tem
-          de adivinhar qual dos dois o interruptor liga. */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14,
-        borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14 }}>
-        <Icon name="home" size={22} color={t.slate} />
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>
-            Partilhar com a família
-          </Text>
-          <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
-            {form.private
-              ? 'Fica só para si — mais ninguém o vê na Agenda.'
-              : 'Fica visível para os 4 membros da casa e entra na Agenda de todos.'}
-          </Text>
-        </View>
-        <Toggle t={t} on={!form.private} label="Partilhar com a família"
-          onPress={() => setForm(f => ({ ...f, private: !f.private }))} />
+      {/* Três níveis, e não um interruptor. «Partilhar» ligado ou desligado
+          eram a casa toda ou mais ninguém, e faltava o do meio — que é o que
+          uma família precisa mais vezes: uma consulta, uma reunião na escola,
+          uma conta a pagar. Coisas que os dois adultos têm de saber e que não
+          têm de aparecer na agenda de uma criança de sete anos. */}
+      <View style={{ gap: S.md }}>
+        <Label t={t}>Quem vê</Label>
+        {VISIBILIDADES.map(v => (
+          <Opcao key={v.chave} t={t} titulo={v.rotulo} detalhe={v.detalhe}
+            selected={form.visibilidade === v.chave}
+            onPress={() => setForm(f => ({ ...f, visibilidade: v.chave }))} />
+        ))}
       </View>
 
       <Primary
@@ -146,7 +139,7 @@ export default function NovoEvento({ t, user, onClose, preFillDay }) {
         <ConfirmShare
           t={t}
           type="evento"
-          isPrivate={form.private}
+          isPrivate={form.visibilidade === 'so-eu'}
           onConfirm={handleConfirm}
           onCancel={() => setConfirming(false)}
         />

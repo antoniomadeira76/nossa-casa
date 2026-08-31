@@ -20,14 +20,21 @@ const diaDaSemana = (k) => {
 
 export default function Compras({ t, user, onModoCompras }) {
   const st = useStore();
-  const { s, set, allItems, membros: MEMBERS } = st;
+  const { s, set, allItems, envelopes, membros: MEMBERS } = st;
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const items = allItems();
   const stateOf = (i) => s.status[i.id] || (i.real ? 'done' : 'open');
   const doneItems = items.filter(i => stateOf(i) === 'done');
   const estimate = items.reduce((a, i) => a + i.est, 0);
-  const merc = 550 + (s.envMove['Mercearia'] || 0) - (s.monthZero ? 0 : 412);
+  const mercearia = envelopes.find(e => e.name === 'Mercearia');
+  const merc = mercearia ? mercearia.limit - mercearia.used : 0;
+
+  // Quem faz as compras tem de viver na casa. O plano guardava «Tomás» das
+  // sementes, e continuava a nomeá-lo numa casa onde ele já não está — com o
+  // avatar a «?», que é a guarda a funcionar e a pergunta a ficar por
+  // responder. Sem ninguém válido, não se nomeia ninguém.
+  const planoDe = MEMBERS[s.shopPlan.who] ? s.shopPlan.who : null;
 
   const listPg = usePaged(items, 5);
 
@@ -52,11 +59,11 @@ export default function Compras({ t, user, onModoCompras }) {
         </View>
         <View style={{ height: 1, backgroundColor: t.divider }} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Avatar initial={(MEMBERS[s.shopPlan.who] || { initial: '?' }).initial}
-            color={corDoMembro(s.shopPlan.who) || t.text3} />
+          <Avatar initial={(MEMBERS[planoDe] || { initial: '?' }).initial}
+            color={corDoMembro(planoDe) || t.text3} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>
-              {s.shopPlan.day ? `Compras de ${diaDaSemana(s.shopPlan.day)}` : 'Compras'} · {s.shopPlan.who}
+              {s.shopPlan.day ? `Compras de ${diaDaSemana(s.shopPlan.day)}` : 'Compras'}{planoDe ? ` · ${planoDe}` : ''}
             </Text>
             <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
               {s.shopPlan.day ? `${dayLabel(s.shopPlan.day)} · ` : ''}{s.shopPlan.time} · {s.stores[s.shopPlan.store]}

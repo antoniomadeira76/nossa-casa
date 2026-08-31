@@ -4,14 +4,14 @@ import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
 import { EUR, plural, evTime, TODAY_KEY, dayLabel } from '../format';
 
-import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager } from '../ui';
+import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade } from '../ui';
 import Icon from '../Icon';
 
 export default function Inicio({ t, user, go, onSaude, onEquip }) {
   const st = useStore();
   const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring,
           garantiasAExpirar, receitasAExpirar, consultasProximas, membros: MEMBERS,
-          acerto, acertado, artigo, oNome, aoNome } = st;
+          acerto, acertado, artigo, oNome, aoNome, podeVerEvento } = st;
 
   const hour = 9;
   const greet = hour < 13 ? 'Bom dia' : hour < 20 ? 'Boa tarde' : 'Boa noite';
@@ -58,7 +58,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip }) {
     sub: [...new Set(overdue.map(x => x.who))].join(', '), go: () => go('tarefas') });
 
   const needsPg = usePaged(needs, 5);
-  const today = allEvents().filter(e => e.day === TODAY_KEY && (e.shared || e.owner === user))
+  const today = allEvents().filter(e => e.day === TODAY_KEY && podeVerEvento(e, user))
     .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
   const todayTasks = tasks.filter(x => x.today);
   // Sem orçamento definido, não há percentagem a mostrar. `0/0` é NaN, e NaN
@@ -128,10 +128,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip }) {
                     <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{e.title}</Text>
                     <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{e.who}</Text>
                   </View>
-                  <Pill label={e.shared ? 'Família' : 'Só eu'}
-                    fg={e.shared ? t.state.info : t.text3}
-                    bg={e.shared ? t.state.infoBg : t.subtle}
-                    border={e.shared ? t.state.info : t.border} />
+                  <PastilhaVisibilidade t={t} evento={e} />
                 </View>
               </Card>
             ))}
