@@ -55,6 +55,13 @@ export const chaveDeDMY = (v) => {
   return dkey(a, mes - 1, d);
 };
 
+// O inverso do `chaveDeDMY`. Faltava, e cada ecrã que guarda a data como texto
+// escrevia o seu — ou, pior, não escrevia nenhum e ficava sem calendário.
+export const dmyDeChave = (k) => {
+  const p = parseKey(k);
+  return p ? `${pad2(p.d)}/${pad2(p.m + 1)}/${p.y}` : '';
+};
+
 export const TODAY = { y: 2026, m: 7, d: 20 };
 export const TODAY_KEY = dkey(TODAY.y, TODAY.m, TODAY.d);
 export const TOMORROW_KEY = dkey(TODAY.y, TODAY.m, TODAY.d + 1);

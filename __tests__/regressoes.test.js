@@ -1124,3 +1124,30 @@ describe('A janela da entrada fecha-se', () => {
     expect(hook).not.toMatch(/unsafe-none/);   // não é um afrouxamento geral
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Um comentário JSX com `*/` lá dentro fecha-se a meio, e o resto do texto vai
+// PARAR AO ECRÃ. Aconteceu no «Agendar Evento»: por cima do campo da data
+// apareceu «}` — um controlo que parecia tocável e não fazia nada…».
+//
+// O código compila, o teste de tipos não diz nada, e só se vê a olhar. É
+// exatamente o tipo de defeito que uma prova apanha melhor do que uma pessoa.
+describe('Nenhum comentário JSX se fecha a meio', () => {
+  test('nenhum bloco {/* … */} tem um fecho lá dentro', () => {
+    const culpados = [];
+    for (const f of ['App.jsx', ...jsxFiles()]) {
+      const src = read(f);
+      // Cada `{/*` tem de chegar ao seu `*/` sem outro `*/` pelo meio.
+      let i = 0;
+      while ((i = src.indexOf('{/*', i)) !== -1) {
+        const fim = src.indexOf('*/', i + 3);
+        const dentro = src.slice(i + 3, fim);
+        if (dentro.includes('/*')) {
+          culpados.push(`${f}: ${src.slice(i, i + 60).replace(/\n/g, ' ')}`);
+        }
+        i = fim === -1 ? src.length : fim + 2;
+      }
+    }
+    expect(culpados).toEqual([]);
+  });
+});

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { plural, TODAY_KEY } from '../format';
+import { plural, dayLabel, TODAY_KEY } from '../format';
 import { Label, Primary, Choice, Opcao, EscolherMembro, Tile } from '../ui';
 import Sheet from '../Sheet';
 import Icon from '../Icon';
@@ -26,7 +26,6 @@ export default function ExportarSaude({
 }) {
   const { deNome, aoNome, adultos, membros: MEMBROS } = useStore();
   const [ambito, setAmbito] = useState(ambitoInicial);
-  const [alvo, setAlvo] = useState(alvoInicial);
   const [aGuardar, setAGuardar] = useState(false);
   const [erro, setErro] = useState(null);
   const [feito, setFeito] = useState(null);
@@ -47,18 +46,35 @@ export default function ExportarSaude({
   const especialidades = [...new Set(consultas.map(h => h.specialty))].sort();
   const aConsulta = consultas.find(h => h.id === alvoInicial);
 
-  // Ao trocar de âmbito, o alvo tem de o acompanhar: ficar com o id de uma
-  // consulta selecionado enquanto se pede «por especialidade» dava uma lista
-  // vazia sem explicação nenhuma.
+  // Cada âmbito tem o SEU alvo, e lembra-se dele. Um alvo só, partilhado,
+  // significava que escolher uma especialidade apagava a consulta escolhida
+  // antes — e voltar atrás não a trazia de volta.
+  const [alvos, setAlvos] = useState({
+    consulta: alvoInicial && consultas.some(h => h.id === alvoInicial) ? alvoInicial : null,
+    especialidade: null,
+  });
+  const alvoDe = (a) => alvos[a] || null;
+  const alvo = ambito === 'tudo' ? null : alvoDe(ambito);
+
   const escolher = (novo) => {
     setErro(null); setFeito(null);
     setAmbito(novo);
-    setAlvo(novo === 'consulta' ? alvoInicial
-      : novo === 'especialidade' ? (especialidades[0] || null)
-      : null);
+  };
+  const escolherAlvo = (a, v) => {
+    setErro(null); setFeito(null);
+    setAlvos(x => ({ ...x, [a]: x[a] === v ? null : v }));
+  };
+
+  const rotuloDaConsulta = (id) => {
+    const h = consultas.find(x => x.id === id);
+    if (!h) return '';
+    return `${h.specialty} · ${dayLabel(h.day).replace('Hoje · ', '')}`;
   };
 
   const resumo = resumoDoAmbito(consultas, docs, ambito, alvo);
+  // Duas coisas diferentes: não haver nada nesta ficha, e faltar dizer qual.
+  // A segunda não é um beco — é o passo seguinte.
+  const faltaEscolher = ambito !== 'tudo' && !alvo && consultas.length > 0;
   const nada = resumo.consultas === 0;
 
   const documento = () => ({
@@ -124,30 +140,46 @@ export default function ExportarSaude({
         <View style={{ gap: S.md }}>
           <Label t={t}>O que exportar</Label>
           <View style={{ gap: S.md }}>
+            {/* Os três escolhem-se sempre. «Só uma consulta» estava apagada
+                quando a folha abria pelo botão do topo — a opção existia, não
+                se podia tocar, e não havia como dizer QUAL. Agora cada âmbito
+                revela a sua escolha por baixo. */}
             {[
-              ['consulta', 'Só esta consulta',
-                aConsulta ? `${aConsulta.specialty} · ${aConsulta.doctor || 'sem médico indicado'}` : null,
-                !!aConsulta],
+              ['consulta', 'Só uma consulta',
+                alvoDe('consulta')
+                  ? `${rotuloDaConsulta(alvoDe('consulta'))}`
+                  : plural(consultas.length, 'consulta para escolher', 'consultas para escolher')],
               ['especialidade', 'Por especialidade',
-                especialidades.length ? `${plural(especialidades.length, 'especialidade', 'especialidades')} nesta ficha` : null,
-                especialidades.length > 0],
+                alvoDe('especialidade') || plural(especialidades.length, 'especialidade', 'especialidades')],
               ['tudo', 'Ficha completa',
-                plural(consultas.length, 'consulta', 'consultas'), true],
-            ].map(([chave, titulo, detalhe, pode]) => (
+                plural(consultas.length, 'consulta', 'consultas')],
+            ].map(([chave, titulo, detalhe]) => (
               <Opcao key={chave} t={t} titulo={titulo} detalhe={detalhe}
-                selected={ambito === chave} disabled={!pode}
+                selected={ambito === chave}
                 onPress={() => escolher(chave)} />
             ))}
           </View>
         </View>
 
+        {ambito === 'consulta' ? (
+          <View style={{ gap: S.md }}>
+            <Label t={t}>Qual consulta</Label>
+            {consultas.map(h => (
+              <Opcao key={h.id} t={t} titulo={h.specialty}
+                detalhe={[dayLabel(h.day).replace('Hoje · ', ''), h.doctor].filter(Boolean).join(' · ')}
+                selected={alvo === h.id}
+                onPress={() => escolherAlvo('consulta', h.id)} />
+            ))}
+          </View>
+        ) : null}
+
         {ambito === 'especialidade' ? (
           <View style={{ gap: S.md }}>
-            <Label t={t}>Qual</Label>
+            <Label t={t}>Qual especialidade</Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
               {especialidades.map(e => (
                 <Choice key={e} t={t} label={e} selected={alvo === e}
-                  onPress={() => { setAlvo(e); setErro(null); setFeito(null); }} />
+                  onPress={() => escolherAlvo('especialidade', e)} />
               ))}
             </View>
           </View>
@@ -157,11 +189,13 @@ export default function ExportarSaude({
         <View style={{ backgroundColor: t.subtle, borderWidth: 1, borderColor: t.border,
           borderRadius: R.card, padding: 14, gap: 4 }}>
           <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>
-            {nada ? 'Nada a exportar neste âmbito.'
+            {faltaEscolher ? (ambito === 'consulta' ? 'Escolha qual consulta.' : 'Escolha qual especialidade.')
+              : nada ? 'Nada a exportar neste âmbito.'
               : plural(resumo.consultas, 'consulta', 'consultas')}
           </Text>
           <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
-            {nada ? 'Escolha outro âmbito.'
+            {faltaEscolher ? 'A lista está aqui em cima.'
+              : nada ? 'Esta ficha não tem consultas.'
               : resumo.anexos
                 ? `${plural(resumo.anexos, 'documento do arquivo é nomeado', 'documentos do arquivo são nomeados')}, mas ${resumo.anexos === 1 ? 'o ficheiro fica' : 'os ficheiros ficam'} na aplicação.`
                 : 'Sem documentos de arquivo neste âmbito.'}

@@ -275,8 +275,8 @@ describe('A folha de exportar a saúde', () => {
 
   test('abre no âmbito por onde foi aberta, e diz o que vai sair', () => {
     const texto = junta(abrir({ user: 'Rita', ambitoInicial: 'consulta', alvoInicial: 'h1' }).toJSON());
-    expect(texto).toContain('Só esta consulta');
-    expect(texto).toContain('Dentista · Dr. Cardoso');   // o detalhe diz qual
+    expect(texto).toContain('Só uma consulta');
+    expect(texto).toContain('Dentista');                 // o detalhe diz qual
     expect(texto).toContain('1 consulta');
     expect(texto).toContain('Guardar como PDF');
   });
@@ -330,5 +330,96 @@ describe('A folha de exportar a saúde', () => {
   test('sem consultas, não há nada a exportar e diz-se', () => {
     const texto = junta(abrir({ user: 'Rita', consultas: [], ambitoInicial: 'tudo' }).toJSON());
     expect(texto).toContain('Nada a exportar neste âmbito.');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// «Só uma consulta» estava apagada quando a folha abria pelo botão do topo: a
+// opção existia, não se podia tocar, e não havia forma de dizer QUAL. O mesmo
+// para a especialidade, que escolhia a primeira sozinha.
+describe('Cada âmbito deixa escolher o seu alvo', () => {
+  const ExportarSaude = require('../src/sheets/ExportarSaude').default;
+
+  const CONSULTAS = [
+    { id: 'h1', specialty: 'Dentista', doctor: 'Dr. Cardoso', day: 'd2026-08-28', time: '10:00' },
+    { id: 'h2', specialty: 'Pediatria', doctor: 'Dra. Nunes', day: 'd2026-06-12', time: '09:30' },
+    { id: 'h3', specialty: 'Dentista', doctor: 'Dr. Cardoso', day: 'd2026-03-04', time: '' },
+  ];
+  const abrir = (props = {}) => {
+    let r = null;
+    const t = buildTheme('violet', false);
+    TestRenderer.act(() => {
+      r = TestRenderer.create(comMargens(React.createElement(StoreProvider, null,
+        React.createElement(ExportarSaude, {
+          t, membro: 'Léo', casa: 'Bengui', user: 'Rita', consultas: CONSULTAS,
+          docs: [], notas: {}, ambitoInicial: 'tudo', onClose: () => {}, ...props }))));
+    });
+    return r;
+  };
+  const junta = (n) => {
+    if (n === null || n === undefined || n === false) return '';
+    if (typeof n === 'string' || typeof n === 'number') return String(n);
+    if (Array.isArray(n)) return n.map(junta).join(' ');
+    return junta(n.children || (n.props && n.props.children) || null);
+  };
+  const tocar = (r, rot) => {
+    const n = r.root.findAll(x => x.props && x.props.accessibilityLabel === rot
+      && typeof x.props.onPress === 'function')[0];
+    expect(n).toBeTruthy();
+    TestRenderer.act(() => { n.props.onPress(); });
+  };
+
+  test('«Só uma consulta» já não está apagada quando se abre pelo topo', () => {
+    const r = abrir();
+    const opcao = r.root.findAll(n => n.props
+      && n.props.accessibilityLabel === 'Só uma consulta'
+      && typeof n.props.onPress === 'function')[0];
+    expect(opcao).toBeTruthy();
+    expect(opcao.props.accessibilityState.disabled).toBeFalsy();
+  });
+
+  test('escolher «uma consulta» mostra as consultas para escolher', () => {
+    const r = abrir();
+    expect(junta(r.toJSON())).not.toContain('Qual consulta');
+    tocar(r, 'Só uma consulta');
+    const texto = junta(r.toJSON());
+    expect(texto).toContain('Qual consulta');
+    expect(texto).toContain('Escolha qual consulta.');   // e diz que falta
+  });
+
+  test('e escolher uma delas conta uma só', () => {
+    const r = abrir();
+    tocar(r, 'Só uma consulta');
+    tocar(r, 'Pediatria');
+    const texto = junta(r.toJSON());
+    expect(texto).toContain('1 consulta');
+    expect(texto).not.toContain('Escolha qual consulta.');
+  });
+
+  test('escolher «por especialidade» mostra as especialidades, sem adivinhar', () => {
+    const r = abrir();
+    tocar(r, 'Por especialidade');
+    const texto = junta(r.toJSON());
+    expect(texto).toContain('Qual especialidade');
+    expect(texto).toContain('Escolha qual especialidade.');   // não escolhe por si
+    tocar(r, 'Dentista');
+    expect(junta(r.toJSON())).toContain('2 consultas');       // as duas de dentista
+  });
+
+  // Trocar de âmbito e voltar não pode apagar o que já se tinha escolhido.
+  test('cada âmbito lembra-se do seu alvo', () => {
+    const r = abrir();
+    tocar(r, 'Só uma consulta');
+    tocar(r, 'Pediatria');
+    tocar(r, 'Por especialidade');
+    tocar(r, 'Dentista');
+    tocar(r, 'Só uma consulta');
+    expect(junta(r.toJSON())).toContain('1 consulta');    // a Pediatria continua lá
+  });
+
+  test('abrir pelo ícone de uma consulta já traz essa escolhida', () => {
+    const r = abrir({ ambitoInicial: 'consulta', alvoInicial: 'h2' });
+    expect(junta(r.toJSON())).toContain('1 consulta');
+    expect(junta(r.toJSON())).not.toContain('Escolha qual consulta.');
   });
 });

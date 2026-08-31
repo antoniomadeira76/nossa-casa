@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { useStore } from '../store';
+import CampoData from '../CampoData';
 import { S, R, FONT } from '../theme';
 import { Label, Choice, Toggle, Primary, EscolherMembro } from '../ui';
 import Icon from '../Icon';
 import ConfirmShare from '../ConfirmShare';
 import { parseKey } from '../format';
+
+// O evento guarda a data como `2026-09-15`; a app usa a chave `d2026-09-15`.
+// A tradução vive aqui e não no campo — o campo fala a língua da app, e é este
+// ecrã que tem um formato próprio.
+const chaveDaData = (d) => (d ? `d${d}` : null);
+const dataDaChave = (k) => (k ? String(k).replace(/^d/, '') : null);
 
 export default function NovoEvento({ t, user, onClose, preFillDay }) {
   const { set, s, membrosDaCasa } = useStore();
@@ -77,17 +84,12 @@ export default function NovoEvento({ t, user, onClose, preFillDay }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Data</Label>
-        <Pressable
-          onPress={() => {/* será implementado com date picker */}}
-          style={{
-            minHeight: 44, paddingHorizontal: S.md, borderRadius: R.row,
-            borderWidth: 1, borderColor: t.border, backgroundColor: t.card,
-            justifyContent: 'center',
-          }}>
-          <Text style={{ fontFamily: FONT.body, fontSize: 15, color: form.date ? t.text2 : t.text3 }}>
-            {form.date ? new Date(form.date + 'T00:00').toLocaleDateString('pt-PT') : 'Escolher data'}
-          </Text>
-        </Pressable>
+        {/* Era um botão cujo manipulador não fazia nada e trazia um comentário
+            a prometer um calendário para mais tarde. Um controlo que parece
+            tocável e não faz nada, a meio do caminho de marcar um evento.
+            Agora escreve-se a data ou escolhe-se no calendário. */}
+        <CampoData t={t} valor={chaveDaData(form.date)}
+          onChange={(chave) => setForm(f => ({ ...f, date: dataDaChave(chave) }))} />
       </View>
 
       <View style={{ gap: S.sm }}>
