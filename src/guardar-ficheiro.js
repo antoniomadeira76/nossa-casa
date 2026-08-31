@@ -1,98 +1,134 @@
-// Fazer sair um ficheiro da app.
+// Fazer sair um documento da app: guardá-lo em PDF, ou entregá-lo ao correio.
 //
 // Está sozinho num ficheiro porque é a única parte de toda a exportação que
 // depende da plataforma. Tudo o que decide o que vai lá dentro é puro e está
 // em `exportar-saude.js`, provado contra o texto que produz.
 //
-// ── Guardar, não partilhar ──────────────────────────────────────────────────
+// ── Nunca envia nada ────────────────────────────────────────────────────────
 //
-// A folha de partilha do sistema põe a lista das aplicações instaladas à
-// frente de quem acabou de exportar a ficha clínica de uma criança, e um toque
-// distraído manda-a para qualquer uma delas. Guardar é um passo a mais, e é o
-// passo que impede esse engano — quem quiser mesmo enviá-la envia-a depois, de
-// propósito, a partir do ficheiro.
+// `enviarPorCorreio` ABRE a aplicação de correio com a mensagem preenchida e o
+// PDF anexado. Quem carrega em enviar é a pessoa, na aplicação dela. Esta app
+// não tem servidor de correio, não guarda destinatários, e não põe nada em
+// trânsito por iniciativa própria — e com uma ficha clínica de uma criança é
+// assim que tem de ser.
 //
-// No telemóvel isso tem um senão que não se pode ignorar: um ficheiro escrito
-// na área privada da aplicação não aparece em lado nenhum que a pessoa saiba
-// abrir. Guardá-lo e não o dizer seria pior do que não guardar. Por isso, aí,
-// o ficheiro é escrito E entregue ao seletor do sistema — que no telemóvel é a
-// única porta para «Ficheiros», e não uma lista de aplicações de mensagens
-// disfarçada. Está pedido como `Guardar em…`, não como `Partilhar`.
+// ── Duas plataformas, dois caminhos, e não por preferência ──────────────────
 //
-// ── Duas plataformas, dois caminhos ─────────────────────────────────────────
-//
-// O `expo-file-system` avisa «not supported on web» e não faz nada — a versão
-// web dele são classes vazias. Na web o caminho é um Blob e uma âncora, que é
-// o descarregamento normal do navegador. As duas metades estão separadas por
-// `Platform.OS` e não por tentativa e erro.
+// No telemóvel o `expo-print` faz um PDF a sério a partir do HTML. Na web faz
+// `window.print()` da página ATUAL e ignora o HTML que se lhe passa — li o
+// código do módulo antes de escrever isto. Portanto na web abre-se uma janela
+// com o documento e chama-se a impressão dela, que é como um navegador grava
+// PDF. O ficheiro fica onde a pessoa o mandar gravar.
 
 import { Platform } from 'react-native';
 
-const TIPO = 'text/html';
+// Devolvem sempre `{ ok, motivo }`. Nunca rebentam: quem chama está num toque
+// de botão e precisa de uma frase para mostrar, não de uma exceção.
 
-// Devolve `{ ok, motivo }`. Nunca rebenta: quem chama está num toque de botão
-// e precisa de uma frase para mostrar, não de uma exceção.
-export async function guardarHTML(nome, conteudo) {
-  return Platform.OS === 'web'
-    ? guardarNaWeb(nome, conteudo)
-    : guardarNoTelemovel(nome, conteudo);
+// ── PDF ──────────────────────────────────────────────────────────────────────
+
+export async function guardarPDF(nome, html) {
+  return Platform.OS === 'web' ? pdfNaWeb(nome, html) : pdfNoTelemovel(nome, html);
 }
 
-function guardarNaWeb(nome, conteudo) {
+function pdfNaWeb(nome, html) {
   try {
-    const blob = new Blob([conteudo], { type: `${TIPO};charset=utf-8` });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = nome;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    // Sem isto o blob fica em memória enquanto a página viver. O adiamento é
-    // porque revogar antes de o descarregamento arrancar cancela-o.
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-    return { ok: true, onde: 'transferências' };
+    const janela = window.open('', '_blank');
+    if (!janela) {
+      return { ok: false, motivo: 'O navegador bloqueou a janela de impressão. '
+        + 'Permita janelas para este endereço e tente outra vez.' };
+    }
+    janela.document.write(html);
+    janela.document.title = nome.replace(/\.[^.]+$/, '');   // o nome sugerido no diálogo
+    janela.document.close();
+    // Sem a espera, o diálogo abre antes de os estilos aplicarem e sai um
+    // documento sem formatação nenhuma.
+    janela.onload = () => { janela.focus(); janela.print(); };
+    setTimeout(() => { try { janela.focus(); janela.print(); } catch (e) {} }, 400);
+    return { ok: true, onde: 'no diálogo de impressão, escolha «Guardar como PDF».' };
   } catch (e) {
-    return { ok: false, motivo: 'Não foi possível guardar o ficheiro neste navegador.' };
+    return { ok: false, motivo: 'Não foi possível abrir a impressão neste navegador.' };
   }
 }
 
-async function guardarNoTelemovel(nome, conteudo) {
-  let ficheiro;
+// Faz o PDF e devolve onde ele ficou. Não o entrega a ninguém — quem decide
+// isso é quem chamou.
+async function fazerPDF(nome, html) {
+  const Print = await import('expo-print');
+  const { uri } = await Print.printToFileAsync({ html });
+  // O `printToFileAsync` devolve um nome aleatório na cache. Um ficheiro
+  // clínico chamado `a3f9c1.pdf` numa lista de anexos não diz a ninguém de
+  // quem é, e é exatamente aí que se anexa o errado.
   try {
-    // A importação é dinâmica de propósito: na web estes módulos não servem
-    // para nada, e não têm de ser carregados para a app arrancar. Também é o
-    // que faz os testes correrem sem um módulo nativo por perto.
     const { File, Paths } = await import('expo-file-system');
-    // Na cache, e não nos documentos: isto é um ficheiro de passagem, para ser
-    // entregue já a seguir. O sistema pode limpá-lo quando precisar de espaço,
-    // e é isso que se quer de dados clínicos que já foram guardados noutro
-    // sítio pela pessoa.
-    ficheiro = new File(Paths.cache, nome);
-    ficheiro.create({ overwrite: true });
-    ficheiro.write(conteudo);
+    const bom = new File(Paths.cache, nome);
+    if (bom.exists) bom.delete();
+    // `move` é assíncrono na definição nativa — `delete` e `exists` não são.
+    // Fui confirmar ao módulo em vez de assumir que a API era toda igual.
+    await new File(uri).move(bom);
+    return bom.uri;
   } catch (e) {
-    return { ok: false, motivo: 'Não foi possível escrever o ficheiro neste dispositivo.' };
+    return uri;              // com o nome feio, mas com o conteúdo certo
   }
+}
 
+async function pdfNoTelemovel(nome, html) {
+  let uri;
+  try {
+    uri = await fazerPDF(nome, html);
+  } catch (e) {
+    return { ok: false, motivo: 'Não foi possível criar o PDF neste dispositivo.' };
+  }
   try {
     const partilha = await import('expo-sharing');
     if (!(await partilha.isAvailableAsync())) {
-      // O ficheiro existe, mas não há como o entregar. Dizer as duas coisas:
-      // que ficou escrito, e que não se consegue chegar-lhe daqui.
       return { ok: false,
-        motivo: 'O ficheiro foi criado, mas este dispositivo não tem como o abrir ou guardar.' };
+        motivo: 'O PDF foi criado, mas este dispositivo não tem como o abrir ou guardar.' };
     }
-    await partilha.shareAsync(ficheiro.uri, {
-      mimeType: TIPO,
-      UTI: 'public.html',
+    await partilha.shareAsync(uri, {
+      mimeType: 'application/pdf', UTI: 'com.adobe.pdf',
       dialogTitle: 'Guardar a ficha de saúde',
     });
-    return { ok: true, onde: 'onde escolheu guardar' };
+    return { ok: true, onde: 'onde escolheu guardar.' };
   } catch (e) {
     // Fechar o seletor sem escolher nada cai aqui, e não é um erro: é uma
-    // pessoa a mudar de ideias. Tratá-lo como falha punha um aviso vermelho a
-    // dizer que correu mal quando não correu.
+    // pessoa a mudar de ideias.
     return { ok: true, cancelado: true };
+  }
+}
+
+// ── Correio ──────────────────────────────────────────────────────────────────
+
+export async function enviarPorCorreio({ nome, html, para, assunto, corpo }) {
+  if (Platform.OS === 'web') {
+    // Um `mailto:` não leva anexos — é uma limitação do protocolo, não desta
+    // app. Abrir o correio com a mensagem pronta e o ficheiro em falta era
+    // convidar a enviar uma ficha vazia a pensar que ia lá dentro.
+    return { ok: false,
+      motivo: 'Enviar com o ficheiro anexado só funciona na aplicação do telemóvel. '
+        + 'Aqui, guarde o PDF e anexe-o à mensagem.' };
+  }
+
+  let uri;
+  try {
+    uri = await fazerPDF(nome, html);
+  } catch (e) {
+    return { ok: false, motivo: 'Não foi possível criar o PDF para enviar.' };
+  }
+
+  try {
+    const correio = await import('expo-mail-composer');
+    if (!(await correio.isAvailableAsync())) {
+      return { ok: false,
+        motivo: 'Este dispositivo não tem uma aplicação de correio configurada.' };
+    }
+    // Abre a aplicação de correio com tudo pronto. Enviar é um gesto da
+    // pessoa, na aplicação dela — esta app não põe nada em trânsito.
+    const r = await correio.composeAsync({
+      recipients: para, subject: assunto, body: corpo, attachments: [uri],
+    });
+    return { ok: true, estado: r && r.status };
+  } catch (e) {
+    return { ok: false, motivo: 'Não foi possível abrir a aplicação de correio.' };
   }
 }

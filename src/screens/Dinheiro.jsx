@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
 import { EUR, warrantyDaysLeft } from '../format';
 import { ENV_BASE, GOALS, EQUIP } from '../data';
-import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Tap } from '../ui';
+import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Tap, Opcao } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 
@@ -330,66 +330,19 @@ export default function Dinheiro({ t, user, onEquip }) {
 
               <View style={{ gap: S.md }}>
                 <Label t={t}>Opções de Pagamento</Label>
+                {/* Era este bloco escrito à mão, três vezes seguidas, 60 linhas.
+                    O padrão é agora `Opcao` no ui.jsx — e é o mesmo que a folha
+                    de exportar a saúde usa, em vez de inventar outro. */}
                 <View style={{ flexDirection: 'column', gap: S.md }}>
-                  <Pressable
-                    onPress={() => setSettle({ ...settle, mode: 'all' })}
-                    accessibilityRole="button"
-                    accessibilityLabel="Pagar tudo"
-                    accessibilityState={{ selected: settle.mode === 'all' }}
-                    style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: 14,
-                      borderColor: settle.mode === 'all' ? t.chrome : t.border,
-                      backgroundColor: settle.mode === 'all' ? t.chrome : t.subtle,
-                      flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-                    <View style={{ width: 20, height: 20, borderRadius: R.pill,
-                      borderWidth: 2, borderColor: settle.mode === 'all' ? '#FFFFFF' : t.border,
-                      backgroundColor: settle.mode === 'all' ? '#FFFFFF' : 'transparent' }} />
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
-                        color: settle.mode === 'all' ? '#FFFFFF' : t.text2 }}>Tudo</Text>
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 11.5,
-                        color: settle.mode === 'all' ? 'rgba(255,255,255,0.7)' : t.text3 }}>
-                        {EUR(settleBase)}
-                      </Text>
-                    </View>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={() => setSettle({ ...settle, mode: 'half' })}
-                    accessibilityRole="button"
-                    accessibilityLabel="Pagar metade"
-                    accessibilityState={{ selected: settle.mode === 'half' }}
-                    style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: 14,
-                      borderColor: settle.mode === 'half' ? t.chrome : t.border,
-                      backgroundColor: settle.mode === 'half' ? t.chrome : t.subtle,
-                      flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-                    <View style={{ width: 20, height: 20, borderRadius: R.pill,
-                      borderWidth: 2, borderColor: settle.mode === 'half' ? '#FFFFFF' : t.border,
-                      backgroundColor: settle.mode === 'half' ? '#FFFFFF' : 'transparent' }} />
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
-                        color: settle.mode === 'half' ? '#FFFFFF' : t.text2 }}>Metade</Text>
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 11.5,
-                        color: settle.mode === 'half' ? 'rgba(255,255,255,0.7)' : t.text3 }}>
-                        {EUR(settleBase / 2)}
-                      </Text>
-                    </View>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={() => setSettle({ ...settle, mode: 'custom' })}
-                    accessibilityRole="button"
-                    accessibilityLabel="Valor personalizado"
-                    accessibilityState={{ selected: settle.mode === 'custom' }}
-                    style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: 14,
-                      borderColor: settle.mode === 'custom' ? t.chrome : t.border,
-                      backgroundColor: settle.mode === 'custom' ? t.chrome : t.subtle,
-                      flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-                    <View style={{ width: 20, height: 20, borderRadius: R.pill,
-                      borderWidth: 2, borderColor: settle.mode === 'custom' ? '#FFFFFF' : t.border,
-                      backgroundColor: settle.mode === 'custom' ? '#FFFFFF' : 'transparent' }} />
-                    <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
-                      color: settle.mode === 'custom' ? '#FFFFFF' : t.text2 }}>Valor Personalizado</Text>
-                  </Pressable>
+                  {[
+                    ['all', 'Tudo', EUR(settleBase)],
+                    ['half', 'Metade', EUR(settleBase / 2)],
+                    ['custom', 'Valor Personalizado', null],
+                  ].map(([modo, titulo, detalhe]) => (
+                    <Opcao key={modo} t={t} titulo={titulo} detalhe={detalhe}
+                      selected={settle.mode === modo}
+                      onPress={() => setSettle({ ...settle, mode: modo })} />
+                  ))}
                 </View>
               </View>
 

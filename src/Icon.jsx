@@ -26,6 +26,7 @@ const P = {
   user: 'M4 21c0-4 4-7 8-7s8 3 8 7|',
   eye: 'M2.5 12S6 6.5 12 6.5 21.5 12 21.5 12 18 17.5 12 17.5 2.5 12 2.5 12z|',
   printer: 'M7 9V4h10v5M7 18H5v-7h14v7h-2M7 14h10v6H7z',
+  mail: 'M3 6h18v12H3z|M3 7l9 6.5L21 7',
   camera: 'M4 8h3l1.5-2h7L17 8h3v12H4z|',
   bank: 'M3 10l9-6 9 6M5 10v9h14v-9M9 19v-5h6v5',
   // Loja. A Gestão pedia-o pelo nome e ele não existia — um nome desconhecido

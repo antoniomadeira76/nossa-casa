@@ -33,6 +33,40 @@ export const Pill = ({ label, fg, bg, border }) => (
   </View>
 );
 
+// Escolha vertical exclusiva: pastilha de rádio, título, e uma linha de
+// detalhe por baixo. É o idioma que o Dinheiro já usava nas «Opções de
+// Pagamento» — estava escrito à mão, três vezes seguidas, no meio do ecrã.
+//
+// Não confundir com `Choice`, que é a pastilha pequena para escolhas curtas em
+// linha. Uma escolha com frases dentro não cabe numa pastilha, e empilhar
+// pastilhas de largura inteira faz três botões primários a competirem entre si
+// — foi o que fiz na folha de exportação à primeira.
+export const Opcao = ({ t, titulo, detalhe, selected, onPress, disabled }) => (
+  <Pressable onPress={disabled ? undefined : onPress}
+    accessibilityRole="button" accessibilityLabel={titulo}
+    accessibilityState={{ selected: !!selected, disabled: !!disabled }}
+    style={({ pressed }) => ({
+      minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: 14,
+      paddingVertical: S.md,
+      borderColor: selected ? t.chrome : t.border,
+      backgroundColor: selected ? t.chrome : t.subtle,
+      flexDirection: 'row', alignItems: 'center', gap: S.md,
+      opacity: disabled ? 0.4 : (pressed ? 0.85 : 1),
+    })}>
+    <View style={{ width: 20, height: 20, borderRadius: R.pill, borderWidth: 2,
+      borderColor: selected ? '#FFFFFF' : t.border,
+      backgroundColor: selected ? '#FFFFFF' : 'transparent' }} />
+    <View style={{ flex: 1, gap: 2 }}>
+      <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
+        color: selected ? '#FFFFFF' : t.text2 }}>{titulo}</Text>
+      {detalhe ? (
+        <Text style={{ fontFamily: FONT.ui, fontSize: 11.5,
+          color: selected ? 'rgba(255,255,255,0.7)' : t.text3 }}>{detalhe}</Text>
+      ) : null}
+    </View>
+  </Pressable>
+);
+
 // Chip de escolha: tocável, 44 de alvo, cor de ação lida do tema.
 // Só fora de linhas tocáveis — uma linha, um destino.
 export const Choice = ({ t, label, selected, onPress }) => (

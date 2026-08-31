@@ -153,13 +153,63 @@ describe('O documento é seguro de abrir', () => {
 describe('O nome do ficheiro percebe-se numa pasta cheia', () => {
   test('leva o membro, o âmbito e a data, sem acentos nem espaços', () => {
     expect(nomeDoFicheiro({ membro: 'Mia', ambito: 'tudo', dia: 'd2026-08-30' }))
-      .toBe('saude-mia-ficha-completa-2026-08-30.html');
+      .toBe('saude-mia-ficha-completa-2026-08-30.pdf');
     expect(nomeDoFicheiro({ membro: 'Léo', ambito: 'especialidade', alvo: 'Otorrinolaringologia', dia: 'd2026-08-30' }))
-      .toBe('saude-leo-otorrinolaringologia-2026-08-30.html');
+      .toBe('saude-leo-otorrinolaringologia-2026-08-30.pdf');
   });
 
   test('nenhum caractere que um sistema de ficheiros recuse', () => {
     const n = nomeDoFicheiro({ membro: 'Ana/Maria', ambito: 'especialidade', alvo: 'Medicina Geral', dia: 'd2026-08-30' });
     expect(n).not.toMatch(/[\\/:*?"<>|\s]/);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enviar por correio uma ficha clínica de uma criança é a operação mais
+// arriscada de toda a app. Estas provas são sobre quem pode recebê-la e sobre
+// quem carrega em enviar — não sobre o correio funcionar.
+describe('O correio: para quem, e quem envia', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const semComs = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const ler = (p) => semComs(fs.readFileSync(path.join(__dirname, '..', p), 'utf8'));
+  const folha = ler('src/sheets/ExportarSaude.jsx');
+  const entrega = ler('src/guardar-ficheiro.js');
+
+  // Um endereço escrito à pressa é irreversível: o correio já saiu. A lista
+  // vem do quadro da casa, e quem não estiver lá não recebe.
+  test('os destinatários são os outros adultos da casa, e mais ninguém', () => {
+    expect(folha).toMatch(/adultos[\s\S]{0,80}\.filter\(n => n !== user/);
+    expect(folha).toMatch(/MEMBROS\[n\]\?\.email/);
+  });
+
+  test('não há caixa de texto para escrever um endereço', () => {
+    expect(folha).not.toMatch(/<TextInput/);
+    expect(folha).not.toMatch(/keyboardType=["']email/);
+  });
+
+  // A app abre o correio; enviar é um gesto da pessoa, na aplicação dela.
+  test('a app não envia — abre o correio com a mensagem pronta', () => {
+    expect(entrega).toMatch(/composeAsync\(/);
+    expect(entrega).not.toMatch(/sendAsync|smtp|nodemailer|fetch\(/i);
+  });
+
+  test('e o ecrã di-lo, em vez de deixar deduzir', () => {
+    expect(folha).toMatch(/não envia nada sozinha/);
+    expect(folha).toMatch(/adultos desta casa/);
+    expect(folha).toMatch(/não vai cifrado/);
+  });
+
+  // O texto dizia «não é enviado para lado nenhum». Deixou de ser verdade no
+  // momento em que o envio passou a existir, e um aviso de privacidade
+  // desatualizado é pior do que nenhum.
+  test('o aviso já não promete que nada sai', () => {
+    expect(folha).not.toMatch(/Não é enviado para lado nenhum/);
+  });
+
+  // Na web um `mailto:` não leva anexos. Abrir o correio com o ficheiro em
+  // falta seria convidar a enviar uma ficha vazia a pensar que ia lá dentro.
+  test('na web recusa, em vez de enviar uma mensagem sem o anexo', () => {
+    expect(entrega).toMatch(/Platform\.OS === 'web'[\s\S]{0,300}ok: false/);
   });
 });

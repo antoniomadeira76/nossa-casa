@@ -241,3 +241,94 @@ describe('Sem orçamento definido, nenhum ecrã escreve NaN', () => {
     expect(texto).not.toMatch(/NaN|Infinity/);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// A folha de exportação, a correr. A casa a sério tem um adulto só, portanto o
+// seletor de destinatário nunca aparece lá — é aqui que se prova que aparece
+// quando há a quem enviar, e que não aparece quando não há.
+describe('A folha de exportar a saúde', () => {
+  const ExportarSaude = require('../src/sheets/ExportarSaude').default;
+  const { StoreProvider: SP } = require('../src/store');
+
+  const CONSULTAS = [
+    { id: 'h1', member: 'Léo', specialty: 'Dentista', doctor: 'Dr. Cardoso', day: 'd2026-08-28', time: '10:00' },
+    { id: 'h2', member: 'Léo', specialty: 'Pediatria', doctor: 'Dra. Nunes', day: 'd2026-06-12', time: '09:30' },
+  ];
+
+  const abrir = (props) => {
+    let r = null;
+    const t = buildTheme('violet', false);
+    TestRenderer.act(() => {
+      r = TestRenderer.create(comMargens(React.createElement(SP, null,
+        React.createElement(ExportarSaude, {
+          t, membro: 'Léo', casa: 'Bengui', consultas: CONSULTAS, docs: [], notas: {},
+          onClose: () => {}, ...props }))));
+    });
+    return r;
+  };
+  const junta = (n) => {
+    if (n === null || n === undefined || n === false) return '';
+    if (typeof n === 'string' || typeof n === 'number') return String(n);
+    if (Array.isArray(n)) return n.map(junta).join(' ');
+    return junta(n.children || (n.props && n.props.children) || null);
+  };
+
+  test('abre no âmbito por onde foi aberta, e diz o que vai sair', () => {
+    const texto = junta(abrir({ user: 'Rita', ambitoInicial: 'consulta', alvoInicial: 'h1' }).toJSON());
+    expect(texto).toContain('Só esta consulta');
+    expect(texto).toContain('Dentista · Dr. Cardoso');   // o detalhe diz qual
+    expect(texto).toContain('1 consulta');
+    expect(texto).toContain('Guardar como PDF');
+  });
+
+  test('a ficha completa conta as duas', () => {
+    const texto = junta(abrir({ user: 'Rita', ambitoInicial: 'tudo' }).toJSON());
+    expect(texto).toContain('2 consultas');
+  });
+
+  // Um endereço escrito à pressa é irreversível. Só os adultos da casa.
+  test('oferece os outros adultos da casa, e o endereço só ao escolher', () => {
+    const r = abrir({ user: 'Rita', ambitoInicial: 'tudo' });
+    expect(junta(r.toJSON())).toContain('Enviar a');
+    expect(junta(r.toJSON())).toContain('Tomás');
+    // O endereço não está no ecrã até alguém ser escolhido.
+    expect(junta(r.toJSON())).not.toContain('tomas.bengui@gmail.com');
+    expect(junta(r.toJSON())).toContain('Escolha quem recebe');
+
+    // `findAll` devolve também os elementos anfitriões, que levam o rótulo mas
+    // não o manipulador. Escolhe-se o que tem mesmo um `onPress`.
+    const chip = r.root.findAll(n => n.props
+      && n.props.accessibilityLabel === 'Tomás'
+      && typeof n.props.onPress === 'function')[0];
+    expect(chip).toBeTruthy();
+    TestRenderer.act(() => { chip.props.onPress(); });
+
+    const depois = junta(r.toJSON());
+    expect(depois).toContain('tomas.bengui@gmail.com');
+    expect(depois).toContain('Enviar ao Tomás');   // concordância do quadro da casa
+  });
+
+  test('nenhuma criança da casa aparece como destinatário', () => {
+    const texto = junta(abrir({ user: 'Rita', ambitoInicial: 'tudo' }).toJSON());
+    const depoisDoEnviarA = texto.slice(texto.indexOf('Enviar a'));
+    for (const crianca of ['Léo', 'Mia']) expect(depoisDoEnviarA).not.toContain(crianca);
+  });
+
+  test('quem está a exportar não se oferece a si própria', () => {
+    const texto = junta(abrir({ user: 'Tomás', ambitoInicial: 'tudo' }).toJSON());
+    expect(texto).toContain('Rita');
+    expect(texto).not.toContain('tomas.bengui@gmail.com');
+  });
+
+  test('o aviso diz que a app não envia sozinha, e que o correio não vai cifrado', () => {
+    const texto = junta(abrir({ user: 'Rita', ambitoInicial: 'tudo' }).toJSON());
+    expect(texto).toContain('não envia nada sozinha');
+    expect(texto).toContain('não vai cifrado');
+    expect(texto).not.toContain('Não é enviado para lado nenhum');
+  });
+
+  test('sem consultas, não há nada a exportar e diz-se', () => {
+    const texto = junta(abrir({ user: 'Rita', consultas: [], ambitoInicial: 'tudo' }).toJSON());
+    expect(texto).toContain('Nada a exportar neste âmbito.');
+  });
+});

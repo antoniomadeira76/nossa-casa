@@ -25,11 +25,16 @@
 //      a mandar isto para qualquer aplicação instalada, com um toque distraído.
 //      Guardar é o toque a mais que impede esse engano.
 //
-// ── Porquê HTML ─────────────────────────────────────────────────────────────
+// ── HTML por dentro, PDF por fora ───────────────────────────────────────────
 //
-// PDF é o que um consultório aceita, e gerá-lo obrigava a uma biblioteca nova.
-// HTML imprime-se para PDF pelo diálogo do próprio sistema, com estilos de
-// impressão que já vão aqui dentro, e não acrescenta nada ao projeto.
+// O que sai é um PDF, que é o que um consultório aceita e o que se anexa a um
+// correio. O que se monta aqui é o HTML de onde ele sai: no telemóvel o
+// `expo-print` converte-o, e na web é o diálogo de impressão do navegador.
+//
+// A folha de estilos leva `@page` e uma regra de impressão porque o documento
+// nasce para papel — margens, quebras, e nada de cor de esquema. O sistema
+// visual da casa não se aplica a um papel clínico; o que se aplica é ler-se
+// bem impresso e em branco e preto.
 
 import { dayLabel } from './format';
 
@@ -71,7 +76,7 @@ export const nomeDoFicheiro = ({ membro, ambito, alvo, dia }) => {
   const meio = ambito === 'tudo' ? 'ficha-completa'
     : ambito === 'especialidade' ? limpo(alvo)
     : 'consulta';
-  return `saude-${limpo(membro)}-${meio}-${String(dia).replace(/^d/, '')}.html`;
+  return `saude-${limpo(membro)}-${meio}-${String(dia).replace(/^d/, '')}.pdf`;
 };
 
 const escapar = (x) => String(x == null ? '' : x)

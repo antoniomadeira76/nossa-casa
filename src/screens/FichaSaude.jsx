@@ -170,7 +170,7 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
       </View>
 
       {exportar ? (
-        <ExportarSaude t={t} membro={member} casa={nomeDaCasa}
+        <ExportarSaude t={t} membro={member} casa={nomeDaCasa} user={user}
           consultas={consultas} docs={docs} notas={s.healthNotes || {}}
           ambitoInicial={exportar.ambito} alvoInicial={exportar.alvo}
           onClose={() => setExportar(null)} />
