@@ -179,3 +179,168 @@ describe('A comparação só se mostra quando tem valor', () => {
     expect(compararLojas([], LISTA, ['Lidl', 'Continente'], 1)).toBeNull();
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// O ciclo inteiro, na loja: escreve-se o preço no corredor, fecha-se a conta, e
+// a ida seguinte já sabe. É aqui que o motor deixa de ser uma biblioteca e
+// passa a ser uma coisa que a casa usa.
+describe('Da prateleira ao histórico', () => {
+  const React = require('react');
+  const TestRenderer = require('react-test-renderer');
+  const { StoreProvider, useStore } = require('../src/store');
+
+  const loja = () => {
+    let api = null;
+    const Sonda = () => { api = useStore(); return null; };
+    TestRenderer.act(() => {
+      TestRenderer.create(React.createElement(StoreProvider, null, React.createElement(Sonda)));
+    });
+    return () => api;
+  };
+  const ARTIGOS = [{ id: 'ban', label: 'Banana · 1 kg', est: 2 },
+                   { id: 'pao', label: 'Pão de forma', est: 1.5 }];
+
+  test('escrever um preço guarda-o como rascunho, não como histórico', () => {
+    const o = loja();
+    TestRenderer.act(() => { o().definirPrecoPago('ban', '1,19'); });
+    expect(o().s.precoPago.ban).toBe(1.19);
+    expect(o().precos).toEqual([]);        // ainda não é histórico
+  });
+
+  test('a vírgula é aceite, que é como se escreve em português', () => {
+    const o = loja();
+    TestRenderer.act(() => { o().definirPrecoPago('ban', '1,19'); });
+    expect(o().s.precoPago.ban).toBe(1.19);
+  });
+
+  test('apagar o campo tira o rascunho, em vez de guardar zero', () => {
+    const o = loja();
+    TestRenderer.act(() => { o().definirPrecoPago('ban', '1,19'); });
+    TestRenderer.act(() => { o().definirPrecoPago('ban', ''); });
+    expect(o().s.precoPago.ban).toBeUndefined();
+  });
+
+  test('fechar a conta transforma o rascunho em observações, com loja e dia', () => {
+    const o = loja();
+    TestRenderer.act(() => {
+      o().definirPrecoPago('ban', '1,19');
+      o().definirPrecoPago('pao', '1,05');
+    });
+    TestRenderer.act(() => { o().registarPrecos(ARTIGOS, 'Lidl'); });
+    const p = o().precos;
+    expect(p.length).toBe(2);
+    expect(p.every(x => x.loja === 'Lidl')).toBe(true);
+    expect(p.every(x => x.dia)).toBe(true);
+    // e o rascunho limpa-se, senão a ida seguinte começava com os preços da anterior
+    expect(o().s.precoPago).toEqual({});
+  });
+
+  test('os artigos sem preço escrito não entram no histórico', () => {
+    const o = loja();
+    TestRenderer.act(() => { o().definirPrecoPago('ban', '1,19'); });
+    TestRenderer.act(() => { o().registarPrecos(ARTIGOS, 'Lidl'); });
+    expect(o().precos.map(x => x.rotulo)).toEqual(['Banana · 1 kg']);
+  });
+
+  // O ciclo fechado: é isto que a funcionalidade promete.
+  test('a ida seguinte sabe quanto custou, e onde', () => {
+    const o = loja();
+    TestRenderer.act(() => { o().definirPrecoPago('ban', '1,19'); });
+    TestRenderer.act(() => { o().registarPrecos(ARTIGOS, 'Lidl'); });
+
+    const noLidl = o().precoDe({ label: 'Banana · 1 kg', est: 2 }, 'Lidl');
+    expect(noLidl).toMatchObject({ valor: 1.19, origem: 'loja', loja: 'Lidl' });
+
+    // E noutra loja diz que ainda não sabe ali, mas sabe onde soube.
+    const noContinente = o().precoDe({ label: 'Banana · 1 kg', est: 2 }, 'Continente');
+    expect(noContinente).toMatchObject({ valor: 1.19, origem: 'outra-loja', loja: 'Lidl' });
+  });
+
+  // Fechar a conta duas vezes por engano não pode inventar uma segunda compra.
+  test('registar a mesma compra duas vezes não duplica o histórico', () => {
+    const o = loja();
+    TestRenderer.act(() => { o().definirPrecoPago('ban', '1,19'); });
+    TestRenderer.act(() => { o().registarPrecos(ARTIGOS, 'Lidl'); });
+    TestRenderer.act(() => { o().definirPrecoPago('ban', '1,19'); });
+    TestRenderer.act(() => { o().registarPrecos(ARTIGOS, 'Lidl'); });
+    expect(o().precos.length).toBe(1);
+  });
+
+  // Mas dois preços diferentes no mesmo dia são duas observações — pode ter-se
+  // comprado duas vezes, ou corrigido o valor.
+  test('e um preço diferente no mesmo dia é uma observação nova', () => {
+    const o = loja();
+    TestRenderer.act(() => { o().definirPrecoPago('ban', '1,19'); });
+    TestRenderer.act(() => { o().registarPrecos(ARTIGOS, 'Lidl'); });
+    TestRenderer.act(() => { o().definirPrecoPago('ban', '1,29'); });
+    TestRenderer.act(() => { o().registarPrecos(ARTIGOS, 'Lidl'); });
+    expect(o().precos.length).toBe(2);
+  });
+
+  // INVARIANTE #2: o histórico é aditivo. Duas idas ao supermercado no mesmo
+  // sábado, em dois telemóveis, não se podem apagar uma à outra.
+  test('o histórico só cresce — nunca se reescreve', () => {
+    const o = loja();
+    TestRenderer.act(() => { o().definirPrecoPago('ban', '1,19'); });
+    TestRenderer.act(() => { o().registarPrecos(ARTIGOS, 'Lidl'); });
+    const primeiro = o().precos[0];
+    TestRenderer.act(() => { o().definirPrecoPago('pao', '1,05'); });
+    TestRenderer.act(() => { o().registarPrecos(ARTIGOS, 'Continente'); });
+    expect(o().precos.length).toBe(2);
+    expect(o().precos[0]).toEqual(primeiro);   // o primeiro ficou intacto
+  });
+});
+
+describe('O campo vazio e o zero são coisas diferentes', () => {
+  const React = require('react');
+  const TestRenderer = require('react-test-renderer');
+  const { StoreProvider, useStore } = require('../src/store');
+  const loja = () => {
+    let api = null;
+    const Sonda = () => { api = useStore(); return null; };
+    TestRenderer.act(() => {
+      TestRenderer.create(React.createElement(StoreProvider, null, React.createElement(Sonda)));
+    });
+    return () => api;
+  };
+
+  // Um artigo oferecido custa mesmo zero, e isso é uma observação legítima.
+  test('um zero escrito guarda-se', () => {
+    const o = loja();
+    TestRenderer.act(() => { o().definirPrecoPago('ban', '0'); });
+    expect(o().s.precoPago.ban).toBe(0);
+  });
+
+  test('e o campo vazio apaga', () => {
+    const o = loja();
+    TestRenderer.act(() => { o().definirPrecoPago('ban', '2'); });
+    TestRenderer.act(() => { o().definirPrecoPago('ban', '   '); });
+    expect(o().s.precoPago.ban).toBeUndefined();
+  });
+
+  test('texto que não é número também apaga, em vez de gravar NaN', () => {
+    const o = loja();
+    TestRenderer.act(() => { o().definirPrecoPago('ban', '2'); });
+    TestRenderer.act(() => { o().definirPrecoPago('ban', 'abc'); });
+    expect(o().s.precoPago.ban).toBeUndefined();
+  });
+});
+
+describe('O talão bate certo', () => {
+  const fs2 = require('fs'), path2 = require('path');
+  const sem = (p) => fs2.readFileSync(path2.join(__dirname, '..', p), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+  // As linhas mostravam a estimativa e o total somava o pago: 2,10 + 1,60 numa
+  // conta de 2,24. Um talão cujas linhas não somam o total faz duvidar do
+  // total, que é a única coisa que ali interessa.
+  test('as linhas do carrinho mostram o que se pagou, não a estimativa', () => {
+    expect(sem('src/sheets/Carrinho.jsx')).toMatch(/pago \? pago\(i\)/);
+    expect(sem('src/screens/ModoCompras.jsx')).toMatch(/<Carrinho[\s\S]{0,120}pago=\{pago\}/);
+  });
+
+  test('e o total soma a mesma coisa que as linhas mostram', () => {
+    const src = sem('src/screens/ModoCompras.jsx');
+    expect(src).toMatch(/const cart = doneItems\.reduce\(\(a, i\) => a \+ pago\(i\), 0\)/);
+  });
+});

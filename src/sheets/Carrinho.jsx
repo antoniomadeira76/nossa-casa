@@ -7,7 +7,7 @@ import Icon from '../Icon';
 
 // Validação antes de fechar a conta. Vivia dentro do Compras.jsx, ao lado do
 // modo de loja; saiu com ele.
-export default function Carrinho({ t, doneItems, items, cart, user, store, who, onClose, onConfirm }) {
+export default function Carrinho({ t, doneItems, items, cart, pago, user, store, who, onClose, onConfirm }) {
   const noStock = items.filter(i => !doneItems.includes(i));
   const hasWarnings = noStock.length > 0;
 
@@ -46,7 +46,7 @@ export default function Carrinho({ t, doneItems, items, cart, user, store, who, 
                       <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>{i.label}</Text>
                     </View>
                     <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
-                      {EUR(i.real || i.est)}
+                      {EUR(pago ? pago(i) : (i.real !== undefined ? i.real : i.est))}
                     </Text>
                   </View>
                 ))}

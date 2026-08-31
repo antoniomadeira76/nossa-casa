@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, elev } from '../theme';
 import { EUR } from '../format';
@@ -19,7 +19,7 @@ import Carrinho from '../sheets/Carrinho';
 // Agora é uma vista de ecrã inteiro como as outras: o App põe o cabeçalho
 // (seta de voltar, título, loja) e o rodapé, e isto é só o conteúdo.
 export default function ModoCompras({ t, user, onClose }) {
-  const { s, set, allItems } = useStore();
+  const { s, set, allItems, envelopes, precoDe, definirPrecoPago, registarPrecos } = useStore();
   const [step, setStep] = useState(-1);            // -1 = Todos
   const [novoArtigo, setNovoArtigo] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -29,9 +29,29 @@ export default function ModoCompras({ t, user, onClose }) {
   const doneItems = items.filter(i => stateOf(i) === 'done');
   const semStock = items.filter(i => stateOf(i) === 'sem-stock');
   const porConfirmar = items.filter(i => stateOf(i) === 'open');
-  const cart = doneItems.reduce((a, i) => a + (i.real || i.est), 0);
+  const loja = s.stores[s.shopPlan.store];
+
+  // O que se paga por um artigo: o que se escreveu agora, senão o que se pagou
+  // da última vez nesta loja, senão o que está na lista.
+  const pago = (i) => (s.precoPago[i.id] !== undefined ? s.precoPago[i.id]
+    : (i.real !== undefined ? i.real : precoDe(i, loja).valor));
+
+  const legendaDoPreco = (i) => {
+    const escrito = s.precoPago[i.id];
+    if (escrito !== undefined) return `Confirmado · ${EUR(escrito)}`;
+    const p = precoDe(i, loja);
+    if (p.origem === 'loja') {
+      return [EUR(p.valor), 'da última vez aqui',
+        p.vezes > 1 ? `· ${p.vezes} compras` : null].filter(Boolean).join(' ');
+    }
+    if (p.origem === 'outra-loja') return `${EUR(p.valor)} no ${p.loja} — aqui ainda não se sabe`;
+    return `estimativa ${EUR(p.valor)}`;
+  };
+
+  const cart = doneItems.reduce((a, i) => a + pago(i), 0);
   const estimate = items.reduce((a, i) => a + i.est, 0);
-  const merc = 550 + (s.envMove['Mercearia'] || 0) - (s.monthZero ? 0 : 412);
+  const mercearia = envelopes.find(e => e.name === 'Mercearia');
+  const merc = mercearia ? mercearia.limit - mercearia.used : 0;
 
   const inStep = step === -1 ? items : items.filter(i => i.s === step);
   const pg = usePaged(inStep, 10);
@@ -105,19 +125,19 @@ export default function ModoCompras({ t, user, onClose }) {
           const sem = estado === 'sem-stock';
           return (
             <View key={i.id} style={{
-              minHeight: 64, borderRadius: R.card, padding: 16, flexDirection: 'row',
-              alignItems: 'center', gap: 14, borderWidth: feito ? 2 : 1,
+              minHeight: 64, borderRadius: R.card, padding: 16, gap: 12, borderWidth: feito ? 2 : 1,
               borderColor: feito ? t.state.okBorder : sem ? t.state.warn : t.border,
               backgroundColor: feito ? t.state.okBg : sem ? t.state.warnBg : t.card, ...elev(1),
             }}>
+             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
               <Icon name={feito ? 'checkCircle' : sem ? 'closeCircle' : 'infoCircle'} size={30}
                 color={feito ? t.state.ok : sem ? t.state.warnDeep : t.text3} />
               <View style={{ flex: 1, gap: 3 }}>
                 <Text style={{ fontFamily: FONT.body, fontSize: 16, color: t.text2 }}>{i.label}</Text>
+                {/* O que a app SABE, e de onde. Uma estimativa sem origem não
+                    ajuda a decidir se vale a pena verificar a prateleira. */}
                 <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
-                  {feito ? `Confirmado · ${EUR(i.real || i.est)}`
-                    : sem ? 'Sem stock na loja'
-                    : `estimativa ${EUR(i.est)}`}
+                  {sem ? 'Sem stock na loja' : legendaDoPreco(i)}
                 </Text>
               </View>
 
@@ -144,6 +164,34 @@ export default function ModoCompras({ t, user, onClose }) {
                   </Pressable>
                 ) : null}
               </View>
+             </View>
+
+             {/* O preço escreve-se AQUI, no corredor, com o artigo na mão e a
+                 prateleira à frente. É o único momento em que se sabe.
+
+                 Aparece ao confirmar e não antes: um campo por artigo numa
+                 lista de trinta é um formulário, e ninguém preenche um
+                 formulário a empurrar um carrinho. */}
+             {feito ? (
+               <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
+                 borderTopWidth: 1, borderTopColor: t.state.okBorder, paddingTop: 12 }}>
+                 <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, color: t.text2 }}>
+                   Preço pago
+                 </Text>
+                 <TextInput
+                   value={s.precoPago[i.id] !== undefined ? String(s.precoPago[i.id]).replace('.', ',') : ''}
+                   onChangeText={(v) => definirPrecoPago(i.id, v)}
+                   placeholder={String((precoDe(i, loja).valor || 0).toFixed(2)).replace('.', ',')}
+                   placeholderTextColor={t.text3}
+                   keyboardType="decimal-pad"
+                   accessibilityLabel={`Preço pago por ${i.label}`}
+                   style={{ flex: 1, minHeight: 44, paddingHorizontal: S.md, borderRadius: R.row,
+                     borderWidth: 1, borderColor: t.border, backgroundColor: t.card,
+                     fontFamily: FONT.body, fontSize: 16, color: t.text1 }}
+                 />
+                 <Text style={{ fontFamily: FONT.display, fontSize: 16, color: t.text3 }}>€</Text>
+               </View>
+             ) : null}
             </View>
           );
         })}
@@ -169,10 +217,13 @@ export default function ModoCompras({ t, user, onClose }) {
       ) : null}
 
       {cartOpen ? (
-        <Carrinho t={t} doneItems={doneItems} items={items} cart={cart}
+        <Carrinho t={t} doneItems={doneItems} items={items} cart={cart} pago={pago}
           user={user} store={s.stores[s.shopPlan.store]} who={s.shopPlan.who}
           onClose={() => setCartOpen(false)}
           onConfirm={() => {
+            // Os preços escritos no corredor viram histórico aqui, com a loja
+            // e o dia. É o que faz a próxima ida saber quanto custou a banana.
+            registarPrecos(doneItems, loja);
             set(x => ({
               registered: x.registered + cart,
               acertoMovs: [],

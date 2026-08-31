@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useReducer, useRe
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES, HEALTH, HEALTH_DOCS, VAULT, DE } from './data';
 import { TODAY_KEY, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY } from './format';
+import { observacao, precosDe, estimativaDe } from './precos';
 // A camada do servidor entra por importação dinâmica, não estática. Duas
 // razões: o SDK do PocketBase é ESM e uma importação estática arrastava-o
 // para dentro dos testes — a suite de regressões deixou de carregar inteira,
@@ -236,7 +237,7 @@ const DATA_KEYS = [
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'importDone', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pointValue', 'payDay', 'splitHalf',
-  'rendimento', 'stores', 'shopPlan', 'shopHistory', 'health', 'specialities', 'equipCats', 'registo',
+  'rendimento', 'stores', 'shopPlan', 'shopHistory', 'precos', 'precoPago', 'health', 'specialities', 'equipCats', 'registo',
   'recurringReset', 'healthNotes', 'healthRecipes', 'healthDecisions', 'healthDocs', 'healthGone',
   'googleCalendarImported', // Google Calendar imports
   'membros', 'nomeDaCasa', 'deDemonstracao',
@@ -387,7 +388,15 @@ export const DEMO = () => ({
     who: Object.keys(MEMBERS).filter(n => !MEMBERS[n].kid)[1] || Object.keys(MEMBERS)[0],
     day: 'd2026-08-23', time: '10:30', store: 0,   // domingo
   },
-  shopHistory: [], health: [], specialities: ['Medicina geral', 'Dentista', 'Pediatria', 'Oftalmologia'],
+  shopHistory: [],
+  // O histórico de preços da casa: uma observação por artigo, loja e dia.
+  // Aditivo, nunca reescrito — ver src/precos.js.
+  precos: [],
+  // O que se escreveu NESTA ida às compras, por artigo. É um rascunho: vira
+  // observações quando a conta se fecha, e limpa-se a seguir. Sem isto, o
+  // preço escrito no corredor dos frescos desaparecia ao mudar de secção.
+  precoPago: {},
+  health: [], specialities: ['Medicina geral', 'Dentista', 'Pediatria', 'Oftalmologia'],
   equipCats: ['Eletrodomésticos', 'Aquecimento', 'Informática', 'Outros'],
   registo: [],
   recurringReset: {}, // taskId -> TODAY_KEY when reset
@@ -784,6 +793,37 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     registo: [{ t: 'Um evento foi apagado da agenda', at: Date.now() }, ...x.registo],
   }));
 
+  // ── Preços ────────────────────────────────────────────────────────────────
+  const definirPrecoPago = (idArtigo, valor) => set(x => {
+    const texto = String(valor == null ? '' : valor).trim().replace(',', '.');
+    const v = Number(texto);
+    // `Number('')` é ZERO, e `Number.isFinite(0)` é verdadeiro: apagar o campo
+    // gravava «este artigo custou 0 €» em vez de tirar o rascunho. O campo
+    // vazio distingue-se do zero pelo TEXTO, não pelo número — e o zero
+    // escrito é legítimo, porque há artigos oferecidos.
+    if (texto === '' || !Number.isFinite(v) || v < 0) {
+      const { [idArtigo]: _fora, ...resto } = x.precoPago || {};
+      return { precoPago: resto };
+    }
+    return { precoPago: { ...(x.precoPago || {}), [idArtigo]: Math.round(v * 100) / 100 } };
+  });
+
+  // Fechar a conta transforma o rascunho em histórico. É aqui, e não a cada
+  // tecla: uma observação por dígito escrito enchia o histórico de preços que
+  // nunca existiram.
+  const registarPrecos = (artigos, loja, dia = TODAY_KEY) => set(x => {
+    const novas = (artigos || [])
+      .filter(a => (x.precoPago || {})[a.id] > 0)
+      .map(a => observacao({ rotulo: a.label, loja, valor: x.precoPago[a.id], dia }));
+    // A chave da observação leva o artigo, o dia e o valor: registar a mesma
+    // compra duas vezes não duplica o histórico.
+    const jaLa = new Set((x.precos || []).map(o => o.id));
+    return {
+      precos: [...(x.precos || []), ...novas.filter(o => !jaLa.has(o.id))],
+      precoPago: {},
+    };
+  });
+
   const isAdmin = (name) => s.roles[name] === 'admin';
 
   // Papéis: só criança→adulto e adulto↔admin. Nunca adulto→criança.
@@ -1171,6 +1211,11 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // a usar a app.
     membros: s.membros || MEMBERS,
     membrosDaCasa, criancas, adultos, acerto, acertado, pagarAcerto,
+    precos: s.precos || [],
+    definirPrecoPago, registarPrecos,
+    // O que se sabe do preço deste artigo, na loja onde se vai comprar.
+    precoDe: (artigo, loja) => estimativaDe(s.precos || [], artigo, loja),
+    precosDeArtigo: (rotulo) => precosDe(s.precos || [], rotulo),
     podeVerEvento: (e, viewer) => podeVerEvento(e, viewer, quadro),
     podeEditarEvento: (e, viewer) => podeEditarEvento(e, viewer, quadro),
     editarEvento, removerEvento,

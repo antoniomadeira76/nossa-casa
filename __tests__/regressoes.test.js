@@ -1160,3 +1160,32 @@ describe('Nenhum comentário JSX se fecha a meio', () => {
     expect(culpados).toEqual([]);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Os números da família de demonstração estavam ESCRITOS em três ecrãs — `550`
+// (o limite da Mercearia) e `412` (o que ela lá gastou). Corrigi o primeiro,
+// depois o segundo, e o terceiro só apareceu quando o vi no ecrã. Um valor que
+// devia ser derivado, escrito à mão em três sítios, diverge em três ritmos.
+describe('Nenhum ecrã tem números do orçamento escritos à mão', () => {
+  // 700 e 180 saíram da lista: são também espessura de tipo e graus de matiz,
+  // e uma prova que apanha `fontWeight: '700'` reprova o ecrã por um motivo
+  // que não é o dela. Ficam os que só podem ser dinheiro.
+  const DA_DEMONSTRACAO = [550, 412, 318, 486, 171, 1770, 1387, 3200];
+
+  test.each(jsxFiles().filter(f => /screens|sheets/.test(f)))('%s', (f) => {
+    const src = semComentarios(read(f));
+    const culpados = [];
+    for (const n of DA_DEMONSTRACAO) {
+      // O número sozinho, não como parte de outro (`1550`), nem numa cor, nem
+      // entre aspas (que é sempre tipografia, nunca um euro).
+      if (new RegExp(`(?<!['"\d.#])${n}(?!['"\d.])`).test(src)) culpados.push(n);
+    }
+    expect(culpados).toEqual([]);
+  });
+
+  test('e os que os mostram derivam-nos dos envelopes', () => {
+    for (const f of ['src/screens/Compras.jsx', 'src/screens/ModoCompras.jsx']) {
+      expect(semComentarios(read(f))).toMatch(/envelopes\.find\(e => e\.name === 'Mercearia'\)/);
+    }
+  });
+});
