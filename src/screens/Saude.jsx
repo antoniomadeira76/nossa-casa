@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, FlatList } from 'react-native';
+import CampoData from '../CampoData';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro, STATE } from '../theme';
 import { DE } from '../data';
 import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Avatar } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
-import { pad2, plural, dayLabel, daysUntil, chaveDeDMY } from '../format';
+import { pad2, plural, dayLabel, daysUntil, chaveDeDMY, dmyDeChave, TODAY_KEY } from '../format';
 
 export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMarcado }) {
   const st = useStore();
@@ -245,17 +246,9 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                           }}
                         />
                       </View>
-                      <TextInput
-                        value={recipeForm.expiresAt}
-                        onChangeText={(v) => setRecipeForm(f => ({ ...f, expiresAt: v }))}
-                        placeholder="Data de expiração (dd/mm/aaaa)"
-                        placeholderTextColor={t.text3}
-                        style={{
-                          minHeight: 40, paddingHorizontal: S.md, fontFamily: FONT.body,
-                          fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
-                          borderColor: t.border, backgroundColor: t.surface,
-                        }}
-                      />
+                      <CampoData t={t} valor={chaveDeDMY(recipeForm.expiresAt)}
+                        placeholder="Validade (dd/mm/aaaa)"
+                        onChange={(k) => setRecipeForm(f => ({ ...f, expiresAt: dmyDeChave(k) }))} />
                       <Pressable
                         onPress={() => handleAddRecipe(record.id)}
                         disabled={!recipeForm.name.trim() || !recipeForm.expiresAt.trim()}
@@ -609,16 +602,8 @@ function MarcarConsulta({ t, user, membro, onClose }) {
 
             <View style={{ gap: S.sm }}>
               <Label t={t}>Data</Label>
-              <TextInput
-                value={form.date}
-                onChangeText={(v) => setForm(f => ({ ...f, date: v }))}
-                placeholder="dd/mm/aaaa"
-                style={{
-                  minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
-                  fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
-                  borderColor: t.border, backgroundColor: t.card,
-                }}
-              />
+              <CampoData t={t} valor={chaveDeDMY(form.date)}
+                onChange={(k) => setForm(f => ({ ...f, date: dmyDeChave(k) }))} />
             </View>
 
             <View style={{ gap: S.sm }}>

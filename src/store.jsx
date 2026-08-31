@@ -77,6 +77,20 @@ export const visibilidadeDe = (evento) => {
   return evento.shared ? 'familia' : 'so-eu';
 };
 
+// Quem pode MUDAR um evento, que não é o mesmo que quem o vê.
+//
+// Um adulto muda o que vê: numa casa de dois, obrigar a Rita a pedir ao Tomás
+// para corrigir a hora de uma reunião de pais é atrito sem ganho — os dois já
+// veem o evento e os dois vão à reunião.
+//
+// Uma criança muda só o que é seu. A agenda da casa não é dela para arrumar,
+// e é a mesma linha que o resto da app já traça.
+export const podeEditarEvento = (evento, viewer, quadro = MEMBERS) => {
+  if (!podeVerEvento(evento, viewer, quadro)) return false;
+  if (evento.owner === viewer) return true;
+  return !!(quadro[viewer] && !quadro[viewer].kid);
+};
+
 export const podeVerEvento = (evento, viewer, quadro = MEMBERS) => {
   if (!evento) return false;
   if (evento.owner === viewer) return true;             // o dono vê sempre o seu
@@ -130,11 +144,16 @@ export const MAPAS_POR_MEMBRO = [
 // Campos cujo VALOR é o nome de um membro. `lista` percorre um array, `mapa`
 // percorre os valores de um objeto, `mapaDeListas` percorre as listas dentro
 // de um objeto.
+//
+// `listas` é para campos que guardam VÁRIOS nomes — os responsáveis de um
+// evento. Sem isto, renomear um membro deixava o nome antigo lá dentro e o
+// evento passava a nomear alguém que já não existe. É o mesmo defeito que a
+// tabela existe para evitar, uma forma abaixo.
 export const CAMPOS_COM_MEMBRO = [
   { chave: 'newTasks', forma: 'lista', campos: ['who'] },
   { chave: 'taskEdits', forma: 'mapa', campos: ['who'] },
-  { chave: 'added', forma: 'lista', campos: ['owner', 'responsible'] },
-  { chave: 'eventEdits', forma: 'mapa', campos: ['owner', 'responsible'] },
+  { chave: 'added', forma: 'lista', campos: ['owner'], listas: ['responsaveis'] },
+  { chave: 'eventEdits', forma: 'mapa', campos: ['owner'], listas: ['responsaveis'] },
   { chave: 'vaultMoves', forma: 'lista', campos: ['kid'] },
   { chave: 'health', forma: 'lista', campos: ['member'] },
   { chave: 'healthDocs', forma: 'lista', campos: ['member'] },
@@ -160,11 +179,17 @@ export const renomearNoEstado = (estado, antigo, novo) => {
     const { [antigo]: valor, ...resto } = obj;
     return { ...resto, [novo]: valor };
   };
-  const trocaValor = (registo, campos) => {
+  const trocaValor = (registo, campos, listas = []) => {
     if (!registo || typeof registo !== 'object') return registo;
     let mexido = null;
-    for (const c of campos) {
+    for (const c of campos || []) {
       if (registo[c] === antigo) (mexido = mexido || { ...registo })[c] = novo;
+    }
+    for (const c of listas) {
+      const xs = registo[c];
+      if (Array.isArray(xs) && xs.includes(antigo)) {
+        (mexido = mexido || { ...registo })[c] = xs.map(x => (x === antigo ? novo : x));
+      }
     }
     return mexido || registo;
   };
@@ -178,17 +203,17 @@ export const renomearNoEstado = (estado, antigo, novo) => {
       initial: String(novo).trim().charAt(0).toUpperCase() } };
   }
 
-  for (const { chave, forma, campos } of CAMPOS_COM_MEMBRO) {
+  for (const { chave, forma, campos, listas } of CAMPOS_COM_MEMBRO) {
     const v = fora[chave];
     if (!v) continue;
-    if (forma === 'lista') fora[chave] = v.map(r => trocaValor(r, campos));
-    else if (forma === 'objeto') fora[chave] = trocaValor(v, campos);
+    if (forma === 'lista') fora[chave] = v.map(r => trocaValor(r, campos, listas));
+    else if (forma === 'objeto') fora[chave] = trocaValor(v, campos, listas);
     else if (forma === 'mapa') {
       fora[chave] = Object.fromEntries(
-        Object.entries(v).map(([k, r]) => [k, trocaValor(r, campos)]));
+        Object.entries(v).map(([k, r]) => [k, trocaValor(r, campos, listas)]));
     } else if (forma === 'mapaDeListas') {
       fora[chave] = Object.fromEntries(Object.entries(v)
-        .map(([k, lista]) => [k, (lista || []).map(r => trocaValor(r, campos))]));
+        .map(([k, lista]) => [k, (lista || []).map(r => trocaValor(r, campos, listas))]));
     }
   }
   return fora;
@@ -220,7 +245,7 @@ const DATA_KEYS = [
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
 // muda, e MIGRATIONS ganha a entrada correspondente. Sem isto, dados antigos
 // eram lidos com a forma nova e ganhavam silenciosamente ao código.
-export const SCHEMA = 7;
+export const SCHEMA = 8;
 
 // Uma migração por salto de versão: recebe o objeto lido e devolve-o corrigido.
 export const MIGRATIONS = {
@@ -314,6 +339,28 @@ export const MIGRATIONS = {
       .map(([k, e]) => [k, e && e.shared !== undefined && !e.visibilidade
         ? { ...e, visibilidade: e.shared ? 'familia' : 'so-eu' } : e])),
   }),
+
+  // v7 → v8: o responsável de um evento era UM nome; passa a ser uma lista.
+  // Uma reunião de pais é dos dois, e as sementes já o diziam — em texto
+  // livre, porque a folha só deixava escolher um.
+  //
+  // Sem esta migração, os eventos já gravados ficavam com o nome no campo
+  // antigo: a tabela do renomear deixaria de o percorrer, e renomear um membro
+  // deixava o evento a nomear alguém que já não existe. Em silêncio, como
+  // sempre.
+  8: (o) => {
+    const converter = (e) => {
+      if (!e || typeof e !== 'object' || e.responsaveis) return e;
+      const { responsible, ...resto } = e;
+      return responsible ? { ...resto, responsaveis: [responsible] } : resto;
+    };
+    return {
+      ...o,
+      added: (o.added || []).map(converter),
+      eventEdits: Object.fromEntries(Object.entries(o.eventEdits || {})
+        .map(([k, e]) => [k, converter(e)])),
+    };
+  },
 };
 
 export const DEMO = () => ({
@@ -717,6 +764,26 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     };
   });
 
+  // Editar e apagar um evento.
+  //
+  // `eventGone` e `eventEdits` já eram aplicados na leitura desde sempre — e
+  // nenhum ecrã os escrevia. Infraestrutura sem porta: um evento com a hora
+  // errada ficava com a hora errada, e um evento a mais ficava para sempre.
+  //
+  // Os remendos vão para `eventEdits` em vez de reescreverem o evento: as
+  // sementes vivem no código e não se podem alterar, e um evento criado na app
+  // é tratado da mesma maneira para não haver dois caminhos.
+  const editarEvento = (id, campos) => set(x => ({
+    eventEdits: { ...x.eventEdits, [id]: { ...(x.eventEdits[id] || {}), ...campos } },
+  }));
+
+  // Apagar é marcar como ido, não tirar da lista. As sementes não se conseguem
+  // remover de outra maneira, e assim os dois casos comportam-se igual.
+  const removerEvento = (id) => set(x => ({
+    eventGone: { ...x.eventGone, [id]: true },
+    registo: [{ t: 'Um evento foi apagado da agenda', at: Date.now() }, ...x.registo],
+  }));
+
   const isAdmin = (name) => s.roles[name] === 'admin';
 
   // Papéis: só criança→adulto e adulto↔admin. Nunca adulto→criança.
@@ -1105,6 +1172,8 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     membros: s.membros || MEMBERS,
     membrosDaCasa, criancas, adultos, acerto, acertado, pagarAcerto,
     podeVerEvento: (e, viewer) => podeVerEvento(e, viewer, quadro),
+    podeEditarEvento: (e, viewer) => podeEditarEvento(e, viewer, quadro),
+    editarEvento, removerEvento,
     artigo, oNome, aoNome, deNome,
     nomeDaCasa: s.nomeDaCasa || 'Bengui',
     deDemonstracao: s.deDemonstracao !== false,

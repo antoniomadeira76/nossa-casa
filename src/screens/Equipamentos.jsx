@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
+import CampoData from '../CampoData';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { TODAY, pad2, plural, warrantyDaysLeft, daysUntil, EUR } from '../format';
+import { TODAY, pad2, plural, warrantyDaysLeft, daysUntil, EUR, chaveDeDMY, dmyDeChave, TODAY_KEY } from '../format';
 import { Card, SectionTitle, Empty, AddButton, Label, Choice, Primary, Pill } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
@@ -180,17 +181,9 @@ export default function Equipamentos({ t }) {
 
             <View style={{ gap: S.sm }}>
               <Label t={t}>Data de compra</Label>
-              <TextInput
-                value={form.bought}
-                onChangeText={(v) => setForm(f => ({ ...f, bought: v }))}
-                placeholder="dd/mm/aaaa"
-                placeholderTextColor={t.text3}
-                style={{
-                  minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
-                  fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
-                  borderColor: t.border, backgroundColor: t.card,
-                }}
-              />
+              {/* Uma compra não é no futuro. O limite poupa a correção. */}
+              <CampoData t={t} valor={chaveDeDMY(form.bought)} maximo={TODAY_KEY}
+                onChange={(k) => setForm(f => ({ ...f, bought: dmyDeChave(k) }))} />
             </View>
 
             <View style={{ gap: S.sm }}>

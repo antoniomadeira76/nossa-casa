@@ -117,7 +117,14 @@ export const auth = {
     const r = await pb.collection('membros').authWithOAuth2({
       provider: 'google',
       scopes: calendario
-        ? [...IDENTIDADE, 'https://www.googleapis.com/auth/calendar.readonly']
+        // `calendar.events` e não `calendar.readonly`: a app passou a criar
+        // eventos, não só a lê-los. É um scope MAIS LARGO, e quem já tinha
+        // autorizado tem de voltar a autorizar — a Google não alarga uma
+        // autorização em silêncio, e ainda bem.
+        //
+        // `calendar.events` dá acesso aos eventos e não ao resto da conta:
+        // não vê contactos, não vê correio, não vê outros calendários.
+        ? [...IDENTIDADE, 'https://www.googleapis.com/auth/calendar.events']
         : IDENTIDADE,
     });
     // O token da Google só vem nesta resposta. Guarda-se em memória, não em
@@ -219,6 +226,97 @@ export const google = {
     const { items = [] } = await r.json();
     return items.filter(e => e.status !== 'cancelled').map(traduzirEvento);
   },
+
+  // ── Escrever na agenda ────────────────────────────────────────────────────
+  //
+  // ⚠ NÃO SE ESCREVE NA AGENDA DE OUTRA PESSOA. Não é uma limitação desta app:
+  // a agenda de cada um é dela, e o único token que existe aqui é o de quem
+  // entrou. Escrever na agenda do outro adulto exigiria que ELE autorizasse
+  // esta aplicação na conta dele, e que essa autorização vivesse num servidor.
+  //
+  // O que se faz — e é como um calendário funciona — é CONVIDAR: o evento
+  // nasce na agenda de quem o cria, com os outros como participantes. A Google
+  // põe-no na agenda de cada um deles e manda-lhes um convite por e-mail.
+  //
+  // Isso quer dizer que criar um evento partilhado MANDA E-MAIL a quem for
+  // convidado. Não é um pormenor técnico — é correio que sai em nome de quem
+  // carrega no botão, e o ecrã tem de o dizer antes de acontecer.
+  async criarEvento({ titulo, dia, hora, duracaoMin = 60, convidados = [], descricao }) {
+    if (!tokenGoogle) throw new Error('Entre com o Google e autorize a agenda.');
+    const corpo = {
+      summary: titulo,
+      description: descricao || undefined,
+      ...intervalo(dia, hora, duracaoMin),
+      ...(convidados.length ? { attendees: convidados.map(email => ({ email })) } : {}),
+    };
+    // `sendUpdates=all` é o que faz os convites chegarem. Sem isto o evento
+    // aparece na agenda dos convidados sem eles saberem porquê.
+    const r = await fetch(`${CAL}?sendUpdates=${convidados.length ? 'all' : 'none'}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tokenGoogle}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(corpo),
+    });
+    if (!r.ok) throw new Error(await erroDaGoogle(r));
+    const { id } = await r.json();
+    return id;
+  },
+
+  async atualizarEvento(idGoogle, { titulo, dia, hora, duracaoMin = 60, convidados = [] }) {
+    if (!tokenGoogle) throw new Error('Entre com o Google e autorize a agenda.');
+    const r = await fetch(`${CAL}/${encodeURIComponent(idGoogle)}?sendUpdates=${convidados.length ? 'all' : 'none'}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${tokenGoogle}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        summary: titulo,
+        ...intervalo(dia, hora, duracaoMin),
+        ...(convidados.length ? { attendees: convidados.map(email => ({ email })) } : {}),
+      }),
+    });
+    if (!r.ok) throw new Error(await erroDaGoogle(r));
+  },
+
+  async apagarEvento(idGoogle) {
+    if (!tokenGoogle) throw new Error('Entre com o Google e autorize a agenda.');
+    const r = await fetch(`${CAL}/${encodeURIComponent(idGoogle)}?sendUpdates=all`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${tokenGoogle}` },
+    });
+    // 410 é «já lá não está», e isso é o resultado que se queria.
+    if (!r.ok && r.status !== 404 && r.status !== 410) throw new Error(await erroDaGoogle(r));
+  },
+};
+
+// A chave da app é `d2026-08-21`; a Google quer ISO com fuso. Sem hora, é um
+// evento de dia inteiro — que é o que faz sentido para uma garantia ou um
+// aniversário, e não um evento à meia-noite.
+const intervalo = (dia, hora, duracaoMin) => {
+  const d = String(dia || '').replace(/^d/, '');
+  if (!hora) {
+    const seguinte = new Date(`${d}T00:00:00Z`);
+    seguinte.setUTCDate(seguinte.getUTCDate() + 1);
+    return { start: { date: d }, end: { date: seguinte.toISOString().slice(0, 10) } };
+  }
+  const inicio = new Date(`${d}T${hora}:00`);
+  const fim = new Date(inicio.getTime() + duracaoMin * 60000);
+  const local = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}T${String(x.getHours()).padStart(2, '0')}:${String(x.getMinutes()).padStart(2, '0')}:00`;
+  const fuso = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return {
+    start: { dateTime: local(inicio), timeZone: fuso },
+    end: { dateTime: local(fim), timeZone: fuso },
+  };
+};
+
+// A Google devolve o motivo dentro de `error.message`. Dizê-lo é a diferença
+// entre a pessoa saber o que fazer e ver «algo correu mal».
+const erroDaGoogle = async (r) => {
+  if (r.status === 401 || r.status === 403) {
+    return 'A autorização da agenda expirou ou não chega para escrever. '
+      + 'Entre com o Google outra vez.';
+  }
+  try {
+    const j = await r.json();
+    return `A Google recusou: ${j.error?.message || r.status}.`;
+  } catch (e) { return `A Google respondeu ${r.status}.`; }
 };
 
 // Um evento da Google na forma que os ecrãs esperam. `recorrente` importa: o

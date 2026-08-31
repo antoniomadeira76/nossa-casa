@@ -65,7 +65,15 @@ describe('Contratos dos componentes partilhados', () => {
 
   test('Choice existe e o seu alvo de toque tem 44', () => {
     const ui = read('src/ui.jsx');
-    const choice = ui.slice(ui.indexOf('export const Choice'), ui.indexOf('export const Tap'));
+    // Fatiar até ao `export` SEGUINTE, e não até um nome fixo: pus dois
+    // componentes entre o Choice e o Tap e a fatia passou a incluí-los, com as
+    // cores deles a fazer a prova falhar por um motivo que não era o dela.
+    // A fatia é o componente e mais nada: até à linha em branco a seguir. O
+    // corte anterior ia até ao `export` seguinte e apanhava o que estivesse
+    // pelo meio — o `#FFFFFF` de outro componente fazia esta prova falhar por
+    // um motivo que não era o dela.
+    const i = ui.indexOf('export const Choice');
+    const choice = ui.slice(i, ui.indexOf('\n\n', i));
     expect(choice).toMatch(/minHeight: 44/);
     expect(choice).toMatch(/t\.accent/);          // cor de ação lida do tema
     expect(choice).not.toMatch(/#[0-9a-fA-F]{6}(?!')/); // sem literais de cor de ação
@@ -985,7 +993,8 @@ describe('A entrada pela Google pede sempre a identidade', () => {
 
   test('a agenda acrescenta-se à identidade, nunca a substitui', () => {
     // O ramo do calendário tem de espalhar a identidade lá para dentro.
-    expect(fonte).toMatch(/\.\.\.IDENTIDADE[\s\S]{0,120}calendar\.readonly/);
+    // `calendar.events`, e não `readonly`: a app passou a criar eventos.
+    expect(fonte).toMatch(/\.\.\.IDENTIDADE[\s\S]{0,400}calendar\.events/);
     // e nenhum ramo pede uma lista vazia, que é o que devolvia o token sem
     // identidade nenhuma
     expect(fonte).not.toMatch(/scopes:[\s\S]{0,120}\[\s*\]/);

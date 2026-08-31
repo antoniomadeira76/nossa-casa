@@ -99,6 +99,16 @@ export const dueInfo = (dueKey, dueTime) => {
   return { text: days === 1 ? `amanhã às ${dueTime}` : `${dayLabel(dueKey).split(' · ').pop()} às ${dueTime}` };
 };
 
+// «Rita e Tomás», não «Rita, Tomás». O último separador em português é «e», e
+// uma lista de responsáveis lê-se numa linha de evento — não é uma enumeração
+// de dados.
+export const listaEmPortugues = (nomes) => {
+  const xs = (nomes || []).filter(Boolean);
+  if (xs.length === 0) return '';
+  if (xs.length === 1) return xs[0];
+  return `${xs.slice(0, -1).join(', ')} e ${xs[xs.length - 1]}`;
+};
+
 export const plural = (n, sing, plur) => `${n} ${n === 1 ? sing : plur}`;
 
 // Dias até uma data, contra o TODAY da app — nunca contra o relógio.

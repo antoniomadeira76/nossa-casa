@@ -97,25 +97,61 @@ export const Choice = ({ t, label, selected, onPress }) => (
 // um — é assim nas referências 18, 19 e 20. Estava uma fila de quatro
 // pastilhas sem ponto: os nomes cabiam à justa e nada dizia de quem era a
 // cor que a linha do evento ou da tarefa depois mostra.
+// Uma pastilha de membro. O ponto de cor à esquerda é a identidade; a marca à
+// direita é a escolha. Duas coisas diferentes em dois sítios diferentes —
+// antes a escolha era a linha inteira pintada, e o ponto de cor desaparecia
+// contra o fundo escuro no preciso momento em que a pessoa estava escolhida.
+//
+// A FORMA da marca diz quantos se podem escolher, e é a única pista que o faz:
+// redonda quer dizer um, quadrada quer dizer vários. Sem isso, duas listas com
+// o mesmo aspeto comportam-se de maneiras diferentes e ninguém sabe porquê até
+// tentar.
+const PastilhaMembro = ({ t, nome, on, varios, onPress }) => (
+  <Pressable onPress={onPress}
+    accessibilityRole={varios ? 'checkbox' : 'button'} accessibilityLabel={nome}
+    accessibilityState={{ selected: on, checked: varios ? on : undefined }}
+    style={({ pressed }) => ({
+      width: '47%', minHeight: 48, borderRadius: R.row, borderWidth: 1,
+      paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10,
+      borderColor: on ? t.accent : t.border,
+      backgroundColor: pressed ? t.subtle : t.card,
+    })}>
+    <View style={{ width: 9, height: 9, borderRadius: R.pill,
+      backgroundColor: corDoMembro(nome) || t.text3 }} />
+    <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{nome}</Text>
+    <View style={{
+      width: 18, height: 18, borderRadius: varios ? R.sm : R.pill, borderWidth: 2,
+      alignItems: 'center', justifyContent: 'center',
+      borderColor: on ? t.accent : t.border,
+      backgroundColor: on && varios ? t.accent : 'transparent',
+    }}>
+      {on ? (varios
+        ? <Icon name="check" size={11} color="#FFFFFF" />
+        : <View style={{ width: 9, height: 9, borderRadius: R.pill, backgroundColor: t.accent }} />
+      ) : null}
+    </View>
+  </Pressable>
+);
+
 export const EscolherMembro = ({ t, valor, onEscolher, membros }) => (
   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
+    {membros.map(nome => (
+      <PastilhaMembro key={nome} t={t} nome={nome} on={valor === nome}
+        onPress={() => onEscolher(nome)} />
+    ))}
+  </View>
+);
+
+// O mesmo, para escolher mais do que um. `valor` é uma lista, e tocar numa
+// pastilha já escolhida tira-a — que é o que uma pessoa espera de uma marca
+// e o que não se consegue fazer com a de escolha única.
+export const EscolherMembros = ({ t, valor = [], onEscolher, membros }) => (
+  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
     {membros.map(nome => {
-      const on = valor === nome;
+      const on = valor.includes(nome);
       return (
-        <Pressable key={nome} onPress={() => onEscolher(nome)}
-          accessibilityRole="button" accessibilityLabel={nome}
-          accessibilityState={{ selected: on }}
-          style={({ pressed }) => ({
-            width: '47%', minHeight: 48, borderRadius: R.row, borderWidth: 1,
-            paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10,
-            borderColor: on ? t.chrome : t.border,
-            backgroundColor: on ? t.chrome : pressed ? t.subtle : 'transparent',
-          })}>
-          <View style={{ width: 9, height: 9, borderRadius: R.pill,
-            backgroundColor: corDoMembro(nome) || t.text3 }} />
-          <Text style={{ fontFamily: FONT.body, fontSize: 15,
-            color: on ? '#FFFFFF' : t.text2 }}>{nome}</Text>
-        </Pressable>
+        <PastilhaMembro key={nome} t={t} nome={nome} on={on} varios
+          onPress={() => onEscolher(on ? valor.filter(x => x !== nome) : [...valor, nome])} />
       );
     })}
   </View>

@@ -11,13 +11,14 @@ import NovoEvento from '../sheets/NovoEvento';
 import ImportarGoogle from '../sheets/ImportarGoogle';
 
 export default function Agenda({ t, user }) {
-  const { s, allEvents, membros: MEMBERS, podeVerEvento } = useStore();
+  const { s, allEvents, membros: MEMBERS, podeVerEvento, podeEditarEvento } = useStore();
   const [open, setOpen] = useState(false);
   const [ym, setYm] = useState({ y: TODAY.y, m: TODAY.m });
   const [sel, setSel] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [googleSheetOpen, setGoogleSheetOpen] = useState(false);
   const [preFillDay, setPreFillDay] = useState(null);
+  const [editar, setEditar] = useState(null);   // o evento a editar, ou null
 
   // A regra vive na loja, não aqui: dois ecrãs a escreverem o mesmo filtro
   // divergem, e um filtro de visibilidade que diverge mostra a alguém o que
@@ -236,8 +237,14 @@ export default function Agenda({ t, user }) {
             ) : (
               <View style={{ gap: S.md }}>
                 {evs.map(e => (
-                  <Card key={e.id} t={t}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
+                  <Card key={e.id} t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+                    <Pressable
+                      onPress={() => podeEditarEvento(e, user) && setEditar(e)}
+                      accessibilityRole={podeEditarEvento(e, user) ? 'button' : undefined}
+                      accessibilityLabel={podeEditarEvento(e, user) ? `Editar ${e.title}` : undefined}
+                      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center',
+                        gap: 12, minHeight: 52, paddingVertical: 14,
+                        opacity: pressed ? 0.7 : 1 })}>
                       <Text style={{ width: 42, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3 }}>{evTime(e.time)}</Text>
                       <Avatar initial={(MEMBERS[e.owner] || { initial: '?' }).initial} color={corDoMembro(e.owner) || t.text3} />
                       <View style={{ flex: 1, gap: 2 }}>
@@ -245,7 +252,10 @@ export default function Agenda({ t, user }) {
                         <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{e.who}</Text>
                       </View>
                       <PastilhaVisibilidade t={t} evento={e} />
-                    </View>
+                      {podeEditarEvento(e, user)
+                        ? <Icon name="caretRight" size={18} color={t.text3} />
+                        : null}
+                    </Pressable>
                   </Card>
                 ))}
               </View>
@@ -273,6 +283,13 @@ export default function Agenda({ t, user }) {
             setSheetOpen(false);
             setPreFillDay(null);
           }} preFillDay={preFillDay} />
+        </Sheet>
+      ) : null}
+
+      {editar ? (
+        <Sheet t={t} title="Editar Evento" sub={editar.title}
+          onClose={() => setEditar(null)}>
+          <NovoEvento t={t} user={user} evento={editar} onClose={() => setEditar(null)} />
         </Sheet>
       ) : null}
 

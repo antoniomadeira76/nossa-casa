@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Image, TextInput } from 'react-native';
+import CampoData from '../CampoData';
 import * as ImagePicker from 'expo-image-picker';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { EUR, plural, warrantyDaysLeft } from '../format';
+import { EUR, plural, warrantyDaysLeft, chaveDeDMY, dmyDeChave, TODAY_KEY } from '../format';
 import { Label, Primary } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
@@ -177,12 +178,9 @@ export default function FichaEquipamento({ t, equip, onClose }) {
           </View>
           <View style={{ gap: S.sm }}>
             <Label t={t}>A fazer até</Label>
-            <TextInput value={manut.maintDate}
-              onChangeText={(v) => setManut(m => ({ ...m, maintDate: v }))}
-              placeholder="dd/mm/aaaa" placeholderTextColor={t.text3}
-              style={{ minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body, fontSize: 15,
-                color: t.text2, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
-                backgroundColor: t.card }} />
+            {/* Uma manutenção é no futuro. */}
+            <CampoData t={t} valor={chaveDeDMY(manut.maintDate)} minimo={TODAY_KEY}
+              onChange={(k) => setManut(m => ({ ...m, maintDate: dmyDeChave(k) }))} />
           </View>
         </Sheet>
       ) : null}

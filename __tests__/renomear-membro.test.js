@@ -32,8 +32,8 @@ const cheio = () => ({
   importDone: { 'Léo': '2026-08-01' },
   newTasks: [{ id: 't1', who: 'Léo', title: 'Levar o Léo à escola' }],
   taskEdits: { lixo: { who: 'Léo' } },
-  added: [{ id: 'e1', owner: 'Léo', responsible: 'Léo', title: 'Consulta do Léo' }],
-  eventEdits: { e9: { owner: 'Léo', responsible: 'Rita' } },
+  added: [{ id: 'e1', owner: 'Léo', responsaveis: ['Léo', 'Rita'], title: 'Consulta do Léo' }],
+  eventEdits: { e9: { owner: 'Léo', responsaveis: ['Rita'] } },
   vaultMoves: [{ id: 'v1', kid: 'Léo', delta: 5, label: 'Semanada do Léo' }],
   health: [{ id: 'h1', member: 'Léo', specialty: 'Dentista' }],
   healthDocs: [{ id: 'd1', member: 'Léo', title: 'Receita' }],
@@ -94,7 +94,7 @@ describe('Renomear leva tudo atrás', () => {
     expect(d.newTasks[0].who).toBe('Leonardo');
     expect(d.taskEdits.lixo.who).toBe('Leonardo');
     expect(d.added[0].owner).toBe('Leonardo');
-    expect(d.added[0].responsible).toBe('Leonardo');
+    expect(d.added[0].responsaveis).toEqual(['Leonardo', 'Rita']);
     expect(d.eventEdits.e9.owner).toBe('Leonardo');
     expect(d.vaultMoves[0].kid).toBe('Leonardo');
     expect(d.health[0].member).toBe('Leonardo');
@@ -104,7 +104,7 @@ describe('Renomear leva tudo atrás', () => {
 
   test('e ninguém mais é tocado', () => {
     const d = renomearNoEstado(cheio(), 'Léo', 'Leonardo');
-    expect(d.eventEdits.e9.responsible).toBe('Rita');
+    expect(d.eventEdits.e9.responsaveis).toEqual(['Rita']);
     expect(d.healthNotes.h1[0].author).toBe('Rita');
     expect(d.roles['Rita']).toBe('admin');
     expect(d.pins['Rita']).toBe('x');

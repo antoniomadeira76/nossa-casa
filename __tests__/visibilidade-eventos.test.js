@@ -152,3 +152,91 @@ describe('Os eventos perdidos no campo errado voltam', () => {
     expect(d.added[0].day).toBeUndefined();
   });
 });
+
+describe('Responsáveis: entre os adultos, um ou mais', () => {
+  const { listaEmPortugues } = require('../src/format');
+  const fonte = fs.readFileSync(path.join(__dirname, '..', 'src/sheets/NovoEvento.jsx'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+  // Um evento é um compromisso, e um compromisso é de quem o pode cumprir.
+  test('a escolha é entre os adultos da casa, não entre todos', () => {
+    expect(fonte).toMatch(/<EscolherMembros[\s\S]{0,80}membros=\{adultos\}/);
+    expect(fonte).not.toMatch(/membros=\{membrosDaCasa\}/);
+  });
+
+  test('e são vários, não um', () => {
+    expect(fonte).toMatch(/responsaveis: form\.responsaveis/);
+    expect(fonte).not.toMatch(/responsible: form\./);
+  });
+
+  // Um evento sem ninguém encarregue não é um compromisso, é um lembrete que
+  // ninguém leu.
+  test('não se guarda sem pelo menos um', () => {
+    expect(fonte).toMatch(/canSave = form\.title\.trim\(\) && form\.day && form\.responsaveis\.length > 0/);
+  });
+
+  test('a linha do evento lê-se como se fala', () => {
+    expect(listaEmPortugues([])).toBe('');
+    expect(listaEmPortugues(['Rita'])).toBe('Rita');
+    expect(listaEmPortugues(['Rita', 'Tomás'])).toBe('Rita e Tomás');
+    expect(listaEmPortugues(['Rita', 'Tomás', 'Ana'])).toBe('Rita, Tomás e Ana');
+    expect(listaEmPortugues(['Rita', null, 'Ana'])).toBe('Rita e Ana');
+  });
+
+  test('e é ela que vai para o `who` do evento', () => {
+    expect(fonte).toMatch(/who: listaEmPortugues\(form\.responsaveis\)/);
+  });
+
+  // Renomear um membro tem de percorrer a LISTA, não só os campos de um nome.
+  // Sem isto o evento ficava a nomear alguém que já não existe, em silêncio.
+  test('renomear um membro chega aos responsáveis', () => {
+    const { renomearNoEstado } = require('../src/store');
+    const d = renomearNoEstado({
+      added: [{ id: 'a', owner: 'Rita', responsaveis: ['Rita', 'Tomás'] }],
+      eventEdits: { e1: { responsaveis: ['Tomás'] } },
+    }, 'Tomás', 'Tomé');
+    expect(d.added[0].responsaveis).toEqual(['Rita', 'Tomé']);
+    expect(d.eventEdits.e1.responsaveis).toEqual(['Tomé']);
+  });
+
+  // Os eventos já gravados tinham um nome só, no campo antigo.
+  test('a migração 8 converte o responsável único em lista', () => {
+    const d = MIGRATIONS[8]({
+      added: [{ id: 'a', responsible: 'Rita' },
+              { id: 'b', responsaveis: ['Rita', 'Tomás'] },
+              { id: 'c', title: 'sem responsável' }],
+      eventEdits: { e1: { responsible: 'Tomás' } },
+    });
+    expect(d.added[0].responsaveis).toEqual(['Rita']);
+    expect(d.added[0].responsible).toBeUndefined();
+    expect(d.added[1].responsaveis).toEqual(['Rita', 'Tomás']);   // já era lista
+    expect(d.added[2].responsaveis).toBeUndefined();              // não inventa
+    expect(d.eventEdits.e1.responsaveis).toEqual(['Tomás']);
+  });
+});
+
+describe('A marca diz quantos se podem escolher', () => {
+  const ui = fs.readFileSync(path.join(__dirname, '..', 'src/ui.jsx'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+  // Redonda quer dizer um, quadrada quer dizer vários. Sem essa pista, duas
+  // listas com o mesmo aspeto comportam-se de maneiras diferentes.
+  test('a forma da marca muda com a escolha ser única ou múltipla', () => {
+    expect(ui).toMatch(/borderRadius: varios \? R\.sm : R\.pill/);
+  });
+
+  test('e as duas listas partilham a mesma pastilha', () => {
+    expect(ui).toMatch(/const PastilhaMembro = /);
+    expect(ui).toMatch(/export const EscolherMembro = /);
+    expect(ui).toMatch(/export const EscolherMembros = /);
+  });
+
+  // A linha inteira pintada apagava o ponto de cor do membro no preciso
+  // momento em que ele estava escolhido.
+  test('a linha não se pinta — o ponto de cor tem de continuar a ver-se', () => {
+    const i = ui.indexOf('const PastilhaMembro');
+    const bloco = ui.slice(i, ui.indexOf('\n\n', i));
+    expect(bloco).not.toMatch(/backgroundColor: on \? t\.chrome/);
+    expect(bloco).toMatch(/borderColor: on \? t\.accent/);
+  });
+});
