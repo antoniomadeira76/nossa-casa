@@ -423,3 +423,92 @@ describe('Cada âmbito deixa escolher o seu alvo', () => {
     expect(junta(r.toJSON())).not.toContain('Escolha qual consulta.');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// O «Precisa de Si» desaparecia quando não havia nada. Uma secção que some faz
+// a app parecer meia carregada — e tira a única coisa que diz que se olhou e
+// está tudo em dia.
+describe('O «Precisa de Si» fica sempre, e leva ao sítio certo', () => {
+  const { SEM_DINHEIRO_SEMEADO, BLANK } = require('../src/store');
+
+  const comEstado = (patch, props = {}) => {
+    let arvore = null, api = null;
+    const t = buildTheme('violet', false);
+    const Sonda = () => { api = useStore(); return null; };
+    const Ecra = () => React.createElement(Inicio, { t, user: 'Rita', go: () => {},
+      onSaude: () => {}, onEquip: () => {}, onFicha: () => {}, ...props });
+    TestRenderer.act(() => {
+      arvore = TestRenderer.create(React.createElement(StoreProvider, null,
+        React.createElement(React.Fragment, null,
+          React.createElement(Sonda), React.createElement(Ecra))));
+    });
+    if (patch) TestRenderer.act(() => { api.set(patch); });
+    const junta = (n) => {
+      if (n === null || n === undefined || n === false) return '';
+      if (typeof n === 'string' || typeof n === 'number') return String(n);
+      if (Array.isArray(n)) return n.map(junta).join(' ');
+      return junta(n.children || (n.props && n.props.children) || null);
+    };
+    return { texto: junta(arvore.toJSON()), arvore };
+  };
+
+  test('com coisas a fazer, mostra-as', () => {
+    const { texto } = comEstado(null);
+    expect(texto).toContain('Precisa de Si');
+    expect(texto).toContain('Contas por acertar');
+  });
+
+  test('sem nada, o título fica e diz que está tudo em dia', () => {
+    // Uma casa sem sementes: nada por acertar, nada por fazer, nada a expirar.
+    const { texto } = comEstado({ ...BLANK(), ...SEM_DINHEIRO_SEMEADO() });
+    expect(texto).toContain('Precisa de Si');
+    expect(texto).toContain('Nada à sua espera');
+    expect(texto).not.toContain('Contas por acertar');
+  });
+
+  // Uma linha que diz «Frigorífico» e abre uma lista de doze obriga a fazer a
+  // busca outra vez, depois de a app já a ter feito.
+  test('a garantia abre o equipamento, e não a lista', () => {
+    let pedido = null;
+    const { arvore } = comEstado(null, { onEquip: (id) => { pedido = id; } });
+    const linha = arvore.root.findAll(n => n.props
+      && /Garantia a expirar/.test(n.props.accessibilityLabel || '')
+      && typeof n.props.onPress === 'function')[0];
+    expect(linha).toBeTruthy();
+    TestRenderer.act(() => { linha.props.onPress(); });
+    expect(pedido).toBeTruthy();
+    expect(typeof pedido).toBe('string');     // o id do equipamento, não `true`
+  });
+
+  test('a receita abre a ficha do membro a que pertence', () => {
+    let pedido = null;
+    const { arvore } = comEstado(null, { onFicha: (m) => { pedido = m; } });
+    const linha = arvore.root.findAll(n => n.props
+      && /Receita a expirar/.test(n.props.accessibilityLabel || '')
+      && typeof n.props.onPress === 'function')[0];
+    expect(linha).toBeTruthy();
+    TestRenderer.act(() => { linha.props.onPress(); });
+    expect(pedido).toBe('Léo');               // a receita das sementes é do Léo
+  });
+
+  // Toda a linha tem de levar a algum lado: uma linha sem destino num ecrã
+  // onde as vizinhas todas têm é a que faz duvidar de todas.
+  test('nenhuma linha fica sem destino', () => {
+    const { arvore } = comEstado(null);
+    // Cada rótulo tem de ter PELO MENOS um nó com manipulador. `findAll`
+    // devolve também os elementos anfitriões, que levam o rótulo e não o
+    // `onPress` — exigir a todos que o tenham reprova o ecrã por um motivo
+    // que não é dele.
+    const rotulos = [...new Set(arvore.root.findAll(n => n.props
+      && n.props.accessibilityRole === 'button'
+      && /Contas por acertar|Envelope|Garantia|Receita|Consulta|tarefas por fazer/
+        .test(n.props.accessibilityLabel || ''))
+      .map(n => n.props.accessibilityLabel))];
+    expect(rotulos.length).toBeGreaterThan(2);
+    for (const rot of rotulos) {
+      const comDestino = arvore.root.findAll(n => n.props
+        && n.props.accessibilityLabel === rot && typeof n.props.onPress === 'function');
+      expect(comDestino.length).toBeGreaterThan(0);
+    }
+  });
+});

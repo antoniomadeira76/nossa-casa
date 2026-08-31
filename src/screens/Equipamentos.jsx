@@ -27,10 +27,13 @@ const warrantyLabel = (days) => {
   return `Faltam ${plural(days, 'dia', 'dias')} de garantia`;
 };
 
-export default function Equipamentos({ t }) {
+// `abrir` é o id de um equipamento cuja ficha deve estar aberta à chegada. É o
+// que faz «Garantia a expirar · Frigorífico» levar ao frigorífico, e não a uma
+// lista onde é preciso voltar a procurá-lo.
+export default function Equipamentos({ t, abrir }) {
   const { set, allEquip } = useStore();
   const [sheet, setSheet] = useState(null);
-  const [ficha, setFicha] = useState(null);   // equipamento cuja ficha está aberta
+  const [ficha, setFicha] = useState(abrir || null);   // equipamento cuja ficha está aberta
   const [form, setForm] = useState({ name: '', bought: '', warranty: 365, cat: CATS[0] });
 
   const eq = allEquip();

@@ -7,7 +7,7 @@ import { EUR, plural, evTime, TODAY_KEY, dayLabel } from '../format';
 import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade } from '../ui';
 import Icon from '../Icon';
 
-export default function Inicio({ t, user, go, onSaude, onEquip }) {
+export default function Inicio({ t, user, go, onSaude, onEquip, onFicha }) {
   const st = useStore();
   const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring,
           garantiasAExpirar, receitasAExpirar, consultasProximas, membros: MEMBERS,
@@ -43,16 +43,20 @@ export default function Inicio({ t, user, go, onSaude, onEquip }) {
   garantiasAExpirar().forEach(e => needs.push({ icon: 'idcard', color: t.state.warn,
     title: `Garantia a expirar · ${String(e.name).split(' ').slice(0, 2).join(' ')}`,
     sub: e.dias === 0 ? 'termina hoje' : `${e.dias === 1 ? 'Falta' : 'Faltam'} ${plural(e.dias, 'dia', 'dias')}`,
-    go: onEquip }));
+    // A ficha DESTE equipamento, e não a lista onde é preciso voltar a
+    // procurá-lo. Uma linha que diz «Frigorífico» e abre uma lista de doze
+    // obriga a fazer a busca outra vez, depois de a app já a ter feito.
+    go: () => onEquip(e.id) }));
   receitasAExpirar(user).forEach(d => needs.push({ icon: 'idcard', color: t.state.warn,
     title: `Receita a expirar · ${d.member}`,
     sub: `${d.title} · ${d.dias < 0 ? `Expirou há ${plural(-d.dias, 'dia', 'dias')}`
       : d.dias === 0 ? 'Expira hoje'
       : `${d.dias === 1 ? 'Falta' : 'Faltam'} ${plural(d.dias, 'dia', 'dias')}`}`,
-    go: onSaude }));
+    go: () => (onFicha ? onFicha(d.member) : onSaude()) }));
   consultasProximas(user).forEach(c => needs.push({ icon: 'heartPulse', color: t.state.info,
     title: `Consulta · ${c.member}`,
-    sub: `${c.specialty} · ${dayLabel(c.day)} às ${c.time}`, go: onSaude }));
+    sub: `${c.specialty} · ${dayLabel(c.day)} às ${c.time}`,
+    go: () => (onFicha ? onFicha(c.member) : onSaude()) }));
   if (overdue.length) needs.push({ icon: 'checkSquare', color: t.text3,
     title: plural(overdue.length, 'tarefa por fazer hoje', 'tarefas por fazer hoje'),
     sub: [...new Set(overdue.map(x => x.who))].join(', '), go: () => go('tarefas') });
@@ -94,9 +98,17 @@ export default function Inicio({ t, user, go, onSaude, onEquip }) {
         ))}
       </View>
 
-      {needs.length ? (
-        <View>
-          <SectionTitle t={t}>Precisa de Si</SectionTitle>
+      {/* A secção fica SEMPRE. Desaparecer quando não há nada faz a app
+          parecer meia carregada — e tira a única coisa que diz que se olhou e
+          está tudo em ordem. É a mesma escolha que o acerto de contas já fazia
+          com «Não há contas a acertar nesta casa.». */}
+      <View>
+        <SectionTitle t={t}>Precisa de Si</SectionTitle>
+        {needs.length === 0 ? (
+          <Tile t={t} kind="info" icon="checkCircle">
+            Nada à sua espera. As tarefas de hoje, os prazos e as contas estão em dia.
+          </Tile>
+        ) : (
           <View style={{ gap: S.md }}>
             {needsPg.slice.map((n, i) => (
               <Card key={i} t={t} style={{ borderLeftWidth: 4, borderLeftColor: n.color }}>
@@ -107,8 +119,8 @@ export default function Inicio({ t, user, go, onSaude, onEquip }) {
             ))}
             <Pager t={t} pg={needsPg} />
           </View>
-        </View>
-      ) : null}
+        )}
+      </View>
 
       <View>
         <SectionTitle t={t}>Agenda de Hoje</SectionTitle>

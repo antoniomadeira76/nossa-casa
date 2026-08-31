@@ -66,7 +66,7 @@ function Shell() {
   const [perfil, setPerfil] = useState(false);
   const [signOut, setSignOut] = useState(false);
   const [saude, setSaude] = useState(false);
-  const [equip, setEquip] = useState(false);
+  const [equip, setEquip] = useState(false);   // true, ou o id do equipamento a abrir
   const [gestao, setGestao] = useState(false);
   const [doc, setDoc] = useState(false);
   const [loja, setLoja] = useState(false);   // modo de compras na loja
@@ -271,7 +271,8 @@ function Shell() {
         const emGarantia = eq.filter(e => warrantyDaysLeft(e) >= 0).length;
         return `${contas(eq.length, 'equipamento', 'equipamentos')} · ${emGarantia} em garantia`;
       },
-      render: () => <Equipamentos t={t} user={user} onClose={() => setEquip(false)} />,
+      render: () => <Equipamentos t={t} user={user} onClose={() => setEquip(false)}
+        abrir={typeof equip === 'string' ? equip : null} />,
     },
     gestao: {
       icon: 'sliders', titulo: 'Gestão da Casa', fechar: () => setGestao(false),
@@ -420,7 +421,9 @@ function Shell() {
           {V ? V.render()
             : tab === 'inicio'
               ? <Inicio t={t} user={user} go={setTab}
-                  onSaude={() => setSaude(true)} onEquip={() => setEquip(true)} />
+                  onSaude={() => setSaude(true)}
+                  onEquip={(id) => setEquip(id || true)}
+                  onFicha={(membro) => setFicha(membro)} />
               : <Screen t={t} user={user} go={setTab} onEquip={() => setEquip(true)}
                   onModoCompras={() => setLoja(true)} />}
         </ScrollView>
