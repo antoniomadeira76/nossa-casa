@@ -99,6 +99,39 @@ describe('o token da agenda sobrevive a recarregar a página', () => {
   });
 });
 
+describe('os três sentidos chegam à agenda da Google', () => {
+  const folha = semComentarios(ler('src/sheets/NovoEvento.jsx'));
+
+  it('criar', () => {
+    expect(folha).toMatch(/servidor\.google\.criarEvento\(/);
+    // O identificador que a Google devolve tem de ficar guardado: sem ele,
+    // editar e apagar não sabem em que evento mexer do lado de lá.
+    expect(folha).toMatch(/idGoogle/);
+  });
+
+  it('editar', () => {
+    expect(folha).toMatch(/servidor\.google\.atualizarEvento\(/);
+  });
+
+  it('apagar', () => {
+    // `google.apagarEvento` existia e NINGUÉM o chamava: o evento apagado na
+    // app continuava na agenda da Google, a apitar à hora marcada para uma
+    // coisa que já não existe. A app dizia «apagado» e mentia.
+    expect(folha).toMatch(/servidor\.google\.apagarEvento\(/);
+  });
+
+  it('apagar guarda o identificador antes de o tirar da app', () => {
+    // `removerEvento` corre primeiro, e a seguir já não há de onde ler o
+    // `idGoogle` — tem de ser lido ANTES.
+    const bloco = folha.slice(folha.indexOf('const apagar'), folha.indexOf('const apagar') + 700);
+    expect(bloco.indexOf('evento.idGoogle')).toBeLessThan(bloco.indexOf('removerEvento('));
+  });
+
+  it('se a Google falhar, a folha diz que ficou por apagar lá', () => {
+    expect(folha).toMatch(/continua na agenda da Google/);
+  });
+});
+
 describe('o aviso de importação não é uma vez na vida', () => {
   const app = ler('App.jsx');
   const efeito = app.slice(app.indexOf('// A importação da agenda'),

@@ -21,6 +21,34 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
   const [erroGoogle, setErroGoogle] = useState(null);
   const [aGuardar, setAGuardar] = useState(false);
 
+  // Apagar sai dos DOIS lados.
+  //
+  // `removerEvento` só marcava a app, e `google.apagarEvento` existia sem
+  // ninguém o chamar: um evento apagado aqui continuava na agenda da Google,
+  // a apitar à hora marcada para uma coisa que já não existe. É o defeito
+  // mais irritante dos três, porque a app diz «apagado» e mente.
+  //
+  // A app apaga primeiro, como no guardar: se a Google falhar, o evento fica
+  // apagado aqui e a folha DIZ que ficou por apagar lá — perder a decisão da
+  // pessoa por causa de uma rede é pior do que ter de a repetir do outro lado.
+  const apagar = async () => {
+    setAApagar(false);
+    const idGoogle = evento.idGoogle;
+    removerEvento(evento.id);
+
+    if (!idGoogle || !servidor.google.disponivel()) { onClose(); return; }
+    setAGuardar(true);
+    try {
+      await servidor.google.apagarEvento(idGoogle);
+    } catch (e) {
+      setErroGoogle(`Apagado na Nossa Casa, mas continua na agenda da Google: ${e.message}`);
+      setAGuardar(false);
+      return;
+    }
+    setAGuardar(false);
+    onClose();
+  };
+
   // Quem é convidado: os membros da casa que este evento alcança E têm e-mail.
   //
   // ⚠ Não se escreve na agenda de outra pessoa — nem esta app nem nenhuma. A
@@ -288,10 +316,12 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
       {aApagar ? (
         <Confirm t={t}
           title={`Apagar «${evento.title}»?`}
-          message="Sai da agenda de quem o via. Não se desfaz."
+          message={evento.idGoogle && servidor.google.disponivel()
+            ? 'Sai da agenda de quem o via e da agenda da Google. Não se desfaz.'
+            : 'Sai da agenda de quem o via. Não se desfaz.'}
           confirmLabel="Apagar"
           destructive
-          onConfirm={() => { removerEvento(evento.id); setAApagar(false); onClose(); }}
+          onConfirm={apagar}
           onCancel={() => setAApagar(false)} />
       ) : null}
 
