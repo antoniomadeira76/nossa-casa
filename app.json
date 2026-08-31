@@ -21,6 +21,18 @@
         "backgroundColor": "#001529"
       }
     },
+    "web": {
+      "favicon": "./assets/icon.png",
+      "themeColor": "#001529",
+      "backgroundColor": "#001529",
+      "display": "standalone",
+      "orientation": "portrait",
+      "shortName": "Nossa Casa",
+      "description": "Agenda, tarefas, compras e dinheiro da casa.",
+      "lang": "pt-PT",
+      "startUrl": "/",
+      "scope": "/"
+    },
     "icon": "./assets/icon.png",
     "plugins": [
       "expo-font",

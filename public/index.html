@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- `viewport-fit=cover` é o que faz o conteúdo chegar às bordas num
+         telemóvel com entalhe. Sem isso, a app instalada fica com duas barras
+         brancas em cima e em baixo e deixa de parecer uma app. -->
+    <meta name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
+
+    <title>Nossa Casa</title>
+
+    <!-- ── Instalar no telemóvel ──────────────────────────────────────────
+         O manifesto é o que faz o Android oferecer «Instalar aplicação». O
+         iOS ignora-o para esse efeito e lê as três `apple-` abaixo: sem elas,
+         o «Adicionar ao ecrã principal» dá um atalho com barra de endereço,
+         que é um site com um ícone e não uma app. -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#001529" />
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Nossa Casa" />
+    <link rel="apple-touch-icon" href="/icone-192.png" />
+
+    <link rel="icon" href="/icone-192.png" />
+
+    <style id="expo-reset">
+      /* O reset que o react-native-web recomenda, mais o que uma app
+         instalada precisa: nada de saltar ao arrastar, nada de seleção
+         acidental de texto num toque prolongado, e a cor de fundo a chegar
+         às áreas seguras para não haver branco por baixo do teclado. */
+      html, body { height: 100%; }
+      body {
+        overflow: hidden;
+        margin: 0;
+        background-color: #001529;
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
