@@ -137,7 +137,9 @@ describe('o servidor é que guarda a autorização', () => {
     // leva o refresh token de propósito — é o que se está a trocar. Uma
     // primeira versão deste teste proibia a expressão em todo o bloco e
     // acusava essa linha, que está certa.
-    const resposta = hook.slice(hook.lastIndexOf('return e.json(200, {'));
+    const rota = hook.slice(hook.indexOf("'/api/agenda/token'"));
+    const inicio = rota.indexOf('return e.json(200, {');
+    const resposta = rota.slice(inicio, rota.indexOf('});', inicio));
     expect(resposta).toMatch(/access_token:/);
     expect(resposta).not.toMatch(/refresh/);
   });
