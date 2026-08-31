@@ -246,7 +246,7 @@ const DATA_KEYS = [
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
 // muda, e MIGRATIONS ganha a entrada correspondente. Sem isto, dados antigos
 // eram lidos com a forma nova e ganhavam silenciosamente ao código.
-export const SCHEMA = 8;
+export const SCHEMA = 9;
 
 // Uma migração por salto de versão: recebe o objeto lido e devolve-o corrigido.
 export const MIGRATIONS = {
@@ -360,6 +360,32 @@ export const MIGRATIONS = {
       added: (o.added || []).map(converter),
       eventEdits: Object.fromEntries(Object.entries(o.eventEdits || {})
         .map(([k, e]) => [k, converter(e)])),
+    };
+  },
+
+  // v8 → v9: a recuperação do `date` outra vez, porque a primeira não chegou
+  // a correr onde era precisa.
+  //
+  // A migração 7 faz exactamente isto, e está certa. Só que foi escrita DEPOIS
+  // de a loja desta casa já estar estampada com 8 — e uma migração numerada
+  // abaixo da versão gravada nunca corre. Quatro eventos ficaram com
+  // `date: '2026-08-14'` e nenhum `day`, e portanto invisíveis em todos os
+  // ecrãs: existem, têm título e data, e a app não os mostra.
+  //
+  // Corrigir a 7 no lugar não serviria de nada, pela mesma razão. Tem de ser
+  // um número NOVO. A operação é idempotente: numa loja onde a 7 correu, não
+  // há `date` nenhum e isto não toca em nada.
+  9: (o) => {
+    const comDia = (e) => {
+      if (!e || typeof e !== 'object' || e.day || !e.date) return e;
+      const { date, ...resto } = e;
+      return { ...resto, day: /^d/.test(String(date)) ? date : `d${date}` };
+    };
+    return {
+      ...o,
+      added: (o.added || []).map(comDia),
+      eventEdits: Object.fromEntries(Object.entries(o.eventEdits || {})
+        .map(([k, e]) => [k, comDia(e)])),
     };
   },
 };
@@ -793,6 +819,24 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     registo: [{ t: 'Um evento foi apagado da agenda', at: Date.now() }, ...x.registo],
   }));
 
+  // Os eventos da Google que esta casa CRIOU.
+  //
+  // Sem isto o ciclo fechava-se em cima de si próprio: agenda-se na app, o
+  // evento vai para a agenda da Google, e da vez seguinte a importação lê-o de
+  // lá e oferece-o como novidade. Quem aceitasse ficava com o mesmo almoço
+  // duas vezes na agenda da casa, e sem maneira de perceber porquê.
+  //
+  // O identificador da Google já era guardado — em `eventEdits[id].idGoogle`,
+  // para editar e apagar do lado de lá. Só faltava alguém o LER na direcção
+  // contrária. É aqui, e não nas folhas, para a Agenda e o aviso automático
+  // usarem a mesma resposta.
+  const idsGoogleDaCasa = () => {
+    const ids = new Set();
+    for (const e of s.added || []) if (e && e.idGoogle) ids.add(e.idGoogle);
+    for (const e of Object.values(s.eventEdits || {})) if (e && e.idGoogle) ids.add(e.idGoogle);
+    return ids;
+  };
+
   // ── Preços ────────────────────────────────────────────────────────────────
   const definirPrecoPago = (idArtigo, valor) => set(x => {
     const texto = String(valor == null ? '' : valor).trim().replace(',', '.');
@@ -1221,7 +1265,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     compararLojas: (artigos) => compararLojas(s.precos || [], artigos, s.stores || []),
     podeVerEvento: (e, viewer) => podeVerEvento(e, viewer, quadro),
     podeEditarEvento: (e, viewer) => podeEditarEvento(e, viewer, quadro),
-    editarEvento, removerEvento,
+    editarEvento, removerEvento, idsGoogleDaCasa,
     artigo, oNome, aoNome, deNome,
     nomeDaCasa: s.nomeDaCasa || 'Bengui',
     deDemonstracao: s.deDemonstracao !== false,

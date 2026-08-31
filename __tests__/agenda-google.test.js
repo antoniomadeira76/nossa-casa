@@ -132,6 +132,54 @@ describe('os três sentidos chegam à agenda da Google', () => {
   });
 });
 
+describe('o que a app pôs na Google não volta como novidade', () => {
+  // O ciclo fechava-se em cima de si próprio: agenda-se na app, o evento vai
+  // para a agenda da Google, e da vez seguinte a importação lê-o de lá e
+  // oferece-o como novo. Quem aceitasse ficava com o mesmo almoço duas vezes.
+  // Observado na casa a sério: «teste 31/8», criado na app, com idGoogle
+  // guardado, a ser oferecido pela folha de importação.
+  const loja = semComentarios(ler('src/store.jsx'));
+
+  it('a loja sabe que eventos da Google são dela', () => {
+    expect(loja).toMatch(/const idsGoogleDaCasa/);
+    // Os dois sítios onde o identificador pode estar.
+    const bloco = loja.slice(loja.indexOf('const idsGoogleDaCasa'),
+                             loja.indexOf('const idsGoogleDaCasa') + 500);
+    expect(bloco).toMatch(/s\.added/);
+    expect(bloco).toMatch(/s\.eventEdits/);
+  });
+
+  it('a folha de importação consulta-a', () => {
+    expect(semComentarios(ler('src/sheets/ImportarGoogle.jsx')))
+      .toMatch(/nossos\.has\(e\.id\)/);
+  });
+
+  it('o aviso automático consulta-a também', () => {
+    expect(semComentarios(ler('App.jsx'))).toMatch(/nossos\.has\(e\.id\)/);
+  });
+});
+
+describe('a migração que não chegou a correr', () => {
+  const loja = ler('src/store.jsx');
+
+  it('há uma migração nova para o `date` órfão', () => {
+    // A migração 7 faz o trabalho certo e nunca correu nesta casa: foi escrita
+    // depois de a loja já estar estampada com 8, e uma migração numerada
+    // abaixo da versão gravada nunca corre. Quatro eventos ficaram com
+    // `date: '2026-08-14'` e nenhum `day` — invisíveis em todos os ecrãs.
+    expect(loja).toMatch(/export const SCHEMA = 9;/);
+    expect(loja).toMatch(/^ {2}9: \(o\) => \{/m);
+  });
+
+  it('a versão do esquema acompanha a última migração', () => {
+    const versao = Number(loja.match(/export const SCHEMA = (\d+);/)[1]);
+    const numeros = [...loja.matchAll(/^ {2}(\d+): \(o\)/gm)].map(m => Number(m[1]));
+    // Uma migração acima do SCHEMA nunca corre; o SCHEMA acima da última
+    // migração deixa passar dados por converter. Têm de bater certo.
+    expect(Math.max(...numeros)).toBe(versao);
+  });
+});
+
 describe('o aviso de importação não é uma vez na vida', () => {
   const app = ler('App.jsx');
   const efeito = app.slice(app.indexOf('// A importação da agenda'),

@@ -56,7 +56,7 @@ const TABS = [
 ];
 
 function Shell() {
-  const { s, set, importGoogleEvents, remaining, allEvents, allTasks,
+  const { s, set, importGoogleEvents, idsGoogleDaCasa, remaining, allEvents, allTasks,
           canSeeHealth, healthOf, docsOf, allEquip, membros: MEMBERS, nomeDaCasa,
           lerDoServidor } = useStore();
   const sysDark = useColorScheme() === 'dark';
@@ -148,7 +148,9 @@ function Shell() {
         try {
           const reais = await servidor.google.eventos({ dias: 30, max: 50 });
           if (!vivo) return;
-          const novos = reais.filter(e => !jaVistos[e.id]);
+          const nossos = idsGoogleDaCasa();
+          // O que a app pôs na agenda da Google não volta como novidade.
+          const novos = reais.filter(e => !jaVistos[e.id] && !nossos.has(e.id));
           if (novos.length) { setEventosGoogle(novos); setGoogleImport(true); }
         } catch (e) { /* autorização caducada — o botão da Agenda explica */ }
         return;

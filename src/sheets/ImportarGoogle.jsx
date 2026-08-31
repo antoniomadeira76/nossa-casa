@@ -27,7 +27,7 @@ import * as servidor from '../pocketbase';
 // Sem autorização da agenda não mostra uma lista vazia a fingir que procurou:
 // diz que falta autorizar e como se autoriza.
 export default function ImportarGoogle({ t, user, onClose }) {
-  const { set, s, importGoogleEvents } = useStore();
+  const { set, s, importGoogleEvents, idsGoogleDaCasa } = useStore();
   const [eventos, setEventos] = useState([]);
   const [aCarregar, setACarregar] = useState(true);
   const [erro, setErro] = useState(null);
@@ -46,9 +46,11 @@ export default function ImportarGoogle({ t, user, onClose }) {
         const vindos = await servidor.google.eventos({ dias: 30, max: 50 });
         if (!vivo) return;
         // O que já passou por aqui não volta a aparecer — importado ou
-        // dispensado, a resposta já foi dada.
+        // dispensado, a resposta já foi dada. E o que a app pôs LÁ também não:
+        // senão o evento agendado aqui voltava como novidade e ficava a dobrar.
         const jaVistos = s.googleCalendarImported || {};
-        const novos = vindos.filter(e => !jaVistos[e.id]);
+        const nossos = idsGoogleDaCasa();
+        const novos = vindos.filter(e => !jaVistos[e.id] && !nossos.has(e.id));
         setEventos(novos);
         // As séries vêm desligadas: importar uma reunião semanal como trinta
         // eventos soltos enche a agenda da casa e não se desfaz com um toque.
