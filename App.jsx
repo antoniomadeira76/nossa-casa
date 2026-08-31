@@ -356,21 +356,29 @@ function Shell() {
                   do Perfil e do Dinheiro. Fica por fazer, não por esquecer. */}
             </View>
 
+            {/* Os três números abrem o ecrã de onde vêm. Estavam a ser texto:
+                o número das tarefas de hoje é a resposta curta, e o sítio onde
+                se faz alguma coisa com ela é o ecrã das Tarefas. Tocar num
+                número e não acontecer nada é o mesmo defeito da lupa aqui ao
+                lado — a diferença é que este tem destino óbvio. */}
             <View style={{ flexDirection: 'row', alignItems: 'stretch' }}>
-              {[['Disponível', EUR(remaining)],
-                ['Tarefas hoje', String(tarefasHoje)],
-                ['Eventos', String(eventosHoje)]].map(([rot, val], i) => (
+              {[['Disponível', EUR(remaining), 'dinheiro'],
+                ['Tarefas hoje', String(tarefasHoje), 'tarefas'],
+                ['Eventos', String(eventosHoje), 'agenda']].map(([rot, val, destino], i) => (
                 <View key={rot} style={{ flex: 1, flexDirection: 'row' }}>
                   {/* O separador segue a luminância do cabeçalho, como o
                       subtítulo. Um alfa fixo desaparecia nos esquemas claros —
                       é o erro nº 4 da lista do CLAUDE.md. */}
                   {i > 0 ? <View style={{ width: 1, backgroundColor: chromeLine(t.chrome),
                     marginRight: 14 }} /> : null}
-                  <View style={{ gap: 3 }}>
+                  <Pressable onPress={() => setTab(destino)}
+                    accessibilityRole="button" accessibilityLabel={`${rot}: ${val}`}
+                    style={({ pressed }) => ({ flex: 1, minHeight: 44, justifyContent: 'center',
+                      gap: 3, opacity: pressed ? 0.6 : 1 })}>
                     <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: onC }}>{rot}</Text>
                     <Text style={{ fontFamily: FONT.display, fontSize: 19, fontWeight: '500',
                       color: '#FFFFFF' }}>{val}</Text>
-                  </View>
+                  </Pressable>
                 </View>
               ))}
             </View>

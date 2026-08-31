@@ -197,3 +197,47 @@ describe('A Gestão põe as quatro operações no ecrã', () => {
     expect(fonte).not.toMatch(/FEM\(name\)/);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// `0/0` é NaN, e NaN não rebenta: escreve «NaN %» no ecrã. Numa casa sem
+// orçamento definido — que é toda a casa nova — isso aparecia no Início e no
+// Dinheiro, que são os dois ecrãs mais lidos.
+describe('Sem orçamento definido, nenhum ecrã escreve NaN', () => {
+  const { SEM_DINHEIRO_SEMEADO } = require('../src/store');
+
+  const semOrcamento = (Ecra) => {
+    let arvore = null;
+    const t = buildTheme('violet', false);
+    let api = null;
+    const Sonda = () => { api = useStore(); return null; };
+    const Envolve = () => React.createElement(Ecra, { t, user: 'Rita', go: () => {},
+      onSaude: () => {}, onEquip: () => {}, onClose: () => {} });
+    TestRenderer.act(() => {
+      arvore = TestRenderer.create(React.createElement(StoreProvider, null,
+        React.createElement(React.Fragment, null,
+          React.createElement(Sonda), React.createElement(Envolve))));
+    });
+    TestRenderer.act(() => { api.set(SEM_DINHEIRO_SEMEADO()); });
+    const junta = (n) => {
+      if (n === null || n === undefined || n === false) return '';
+      if (typeof n === 'string' || typeof n === 'number') return String(n);
+      if (Array.isArray(n)) return n.map(junta).join(' ');
+      return junta(n.children || (n.props && n.props.children) || null);
+    };
+    return junta(arvore.toJSON());
+  };
+
+  test('o Início não escreve NaN nem Infinity', () => {
+    const texto = semOrcamento(Inicio);
+    expect(texto).not.toMatch(/NaN|Infinity/);
+    // INVARIANTE #4 de caminho: o zero também leva espaço inquebrável antes
+    // do €. Escrevi esta linha com um espaço normal à primeira e ela falhou —
+    // que é exatamente o que se quer de uma prova do formato.
+    expect(texto).toContain('0,00 €');
+  });
+
+  test('o Dinheiro não escreve NaN nem Infinity', () => {
+    const texto = semOrcamento(Dinheiro);
+    expect(texto).not.toMatch(/NaN|Infinity/);
+  });
+});

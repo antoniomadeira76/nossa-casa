@@ -19,7 +19,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip }) {
   const tasks = allTasks();
   const toConfirm = tasks.filter(x => s.pending[x.id]);
   const overdue = tasks.filter(x => x.today && !s.done[x.id] && !s.pending[x.id]);
-  const tight = envelopes.filter(e => e.used / e.limit >= 0.94);
+  const tight = envelopes.filter(e => e.limit > 0 && e.used / e.limit >= 0.94);
   const settleBase = acerto ? acerto.valor : 0;
 
   // Precisa de si — só o que exige decisão, por ordem de urgência.
@@ -61,7 +61,9 @@ export default function Inicio({ t, user, go, onSaude, onEquip }) {
   const today = allEvents().filter(e => e.day === TODAY_KEY && (e.shared || e.owner === user))
     .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
   const todayTasks = tasks.filter(x => x.today);
-  const pct = Math.round((spent / budget) * 100);
+  // Sem orçamento definido, não há percentagem a mostrar. `0/0` é NaN, e NaN
+  // não rebenta — escreve «NaN %» no ecrã, que é pior do que rebentar.
+  const pct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
 
   return (
     <>

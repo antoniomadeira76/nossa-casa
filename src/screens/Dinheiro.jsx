@@ -85,7 +85,7 @@ export default function Dinheiro({ t, user, onEquip }) {
   const [openMonth, setOpenMonth] = useState({ envelopes: {} });
 
   const admin = isAdmin(user);
-  const pct = Math.round((spent / budget) * 100);
+  const pct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
   // Quanto falta acertar, e entre quem. Vem da loja: era 86,5 escrito aqui e
   // outra vez no Início, com os nomes «Tomás» e «Rita» no meio do texto.
   const settleBase = acerto ? acerto.valor : 0;
@@ -189,7 +189,7 @@ export default function Dinheiro({ t, user, onEquip }) {
         ) : null}
         <Card t={t} style={{ gap: S.lg }}>
           {envPg.slice.map((e, i) => {
-            const tight = e.used / e.limit >= 0.94;
+            const tight = e.limit > 0 && e.used / e.limit >= 0.94;
             return (
               <View key={e.name} style={{ gap: S.md }}>
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: S.md }}>
@@ -197,7 +197,7 @@ export default function Dinheiro({ t, user, onEquip }) {
                   <Text style={{ fontFamily: FONT.ui, fontSize: 13,
                     color: tight ? t.state.errDeep : t.text3 }}>{EUR(e.used)} / {EUR(e.limit)}</Text>
                 </View>
-                <Bar t={t} pct={(e.used / e.limit) * 100} color={e.color} height={6} />
+                <Bar t={t} pct={e.limit > 0 ? (e.used / e.limit) * 100 : 0} color={e.color} height={6} />
                 {tight ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
                     <Icon name="warning" size={16} color={t.state.warn} />

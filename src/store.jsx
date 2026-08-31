@@ -279,11 +279,30 @@ export const DEMO = () => ({
   deDemonstracao: true,
 });
 
+// O dinheiro que uma casa sem sementes tem: nenhum.
+//
+// `clearedSeeds` limpava as tarefas, os eventos, as compras e a saúde, e
+// deixava o DINHEIRO — os gastos e os limites de `ENV_BASE` vivem lá e não
+// passam por essa bandeira. Uma casa acabada de ligar ao servidor mostrava
+// «Disponível 383,00 € de 1 770,00 €»: os 1 387 € gastos pela família de
+// demonstração contra os limites que ela tinha. Um número inventado no sítio
+// onde a app é mais lida.
+//
+// As CATEGORIAS ficam — Mercearia, Casa & contas — porque são um ponto de
+// partida razoável e mudam-se na Gestão. O que sai são os valores.
+export const SEM_DINHEIRO_SEMEADO = () => ({
+  monthZero: true,                                     // nada gasto ainda
+  monthLimits: Object.fromEntries(ENV_BASE.map(e => [e.name, 0])),
+  rendimento: 0,
+  registered: 0,
+});
+
 // Casa nova: os mesmos campos, todos vazios
 export const BLANK = () => ({
   ...DEMO(), done: {}, urg: {}, due: {}, vaultMoves: [],
-  clearedSeeds: true, monthZero: true, shopHistory: [], health: [],
+  clearedSeeds: true, shopHistory: [], health: [],
   healthNotes: {}, healthRecipes: {}, healthDecisions: {}, googleCalendarImported: {},
+  ...SEM_DINHEIRO_SEMEADO(),
 });
 
 const Ctx = createContext(null);
@@ -347,6 +366,7 @@ export function StoreProvider({ children }) {
           // demonstração de volta tem «Repor dados de demonstração» no Perfil.
           ...(x.clearedSeeds ? {} : {
             clearedSeeds: true,
+            ...SEM_DINHEIRO_SEMEADO(),
             registo: [{ t: 'A casa passou a ser a do servidor; os dados de demonstração saíram',
                         at: Date.now() }, ...x.registo],
           }),

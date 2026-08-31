@@ -265,3 +265,56 @@ describe('Gerir a casa sem servidor', () => {
     expect(foraDeCasa).toMatch(/sem administração/);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// `clearedSeeds` limpava as tarefas, os eventos, as compras e a saúde, e
+// deixava o DINHEIRO: os gastos e os limites vivem em ENV_BASE e não passavam
+// por essa bandeira. Uma casa acabada de ligar ao servidor mostrava
+// «Disponível 383,00 € de 1 770,00 €» — os 1 387 € gastos pela família de
+// demonstração contra os limites dela. Um número inventado no sítio onde a app
+// é mais lida.
+describe('Uma casa sem sementes não tem o dinheiro de outra família', () => {
+  const { BLANK, SEM_DINHEIRO_SEMEADO } = require('../src/store');
+
+  const comEstado = (patch) => {
+    let api = null;
+    const Sonda = () => { api = useStore(); return null; };
+    TestRenderer.act(() => {
+      TestRenderer.create(React.createElement(StoreProvider, null, React.createElement(Sonda)));
+    });
+    TestRenderer.act(() => { api.set(patch); });
+    return api;
+  };
+
+  test('a casa de demonstração tem o orçamento da demonstração', () => {
+    const st = comEstado({});
+    expect(st.budget).toBe(1770);
+    expect(st.spent).toBe(1387);
+    expect(st.remaining).toBe(383);
+  });
+
+  test('sem sementes, o orçamento é zero — e não o de outra família', () => {
+    const st = comEstado(SEM_DINHEIRO_SEMEADO());
+    expect(st.budget).toBe(0);
+    expect(st.spent).toBe(0);
+    expect(st.remaining).toBe(0);
+  });
+
+  test('«Começar de zero» também não herda o orçamento', () => {
+    const st = comEstado(BLANK());
+    expect(st.budget).toBe(0);
+    expect(st.spent).toBe(0);
+  });
+
+  // As categorias ficam: são um ponto de partida e mudam-se na Gestão. O que
+  // sai são os valores.
+  test('as categorias ficam, com os valores a zero', () => {
+    const st = comEstado(SEM_DINHEIRO_SEMEADO());
+    expect(st.envelopes.map(e => e.name))
+      .toEqual(['Mercearia', 'Crianças & escola', 'Casa & contas', 'Sair & lazer']);
+    for (const e of st.envelopes) {
+      expect(e.used).toBe(0);
+      expect(e.limit).toBe(0);
+    }
+  });
+});
