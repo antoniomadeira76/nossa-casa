@@ -49,20 +49,6 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
     onClose();
   };
 
-  // Quem é convidado: os membros da casa que este evento alcança E têm e-mail.
-  //
-  // ⚠ Não se escreve na agenda de outra pessoa — nem esta app nem nenhuma. A
-  // agenda de cada um é dela, e o único token que existe aqui é o de quem
-  // entrou. O que se faz é CONVIDAR: a Google põe o evento na agenda de quem
-  // aceitar, e manda-lhe um convite por correio.
-  //
-  // As crianças não têm e-mail (é uma decisão do §8, não um esquecimento),
-  // portanto não se convidam. Veem o evento na app, que é onde a agenda delas
-  // vive.
-  const convidados = Object.entries(MEMBROS)
-    .filter(([nome, m]) => nome !== user && m.email && !m.kid
-      && (form.visibilidade === 'familia' || form.visibilidade === 'adultos'))
-    .map(([, m]) => m.email);
   const [form, setForm] = useState(evento ? {
     title: evento.title || '',
     day: evento.day || null,
@@ -85,6 +71,35 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
     visibilidade: 'familia',
   });
   const [confirming, setConfirming] = useState(false);
+
+  // ⚠ Isto TEM de vir depois do `form`, e estava antes.
+  //
+  // Lê `form.visibilidade`, e estava declarado acima do `useState` que cria o
+  // `form`. Numa casa de UM adulto nunca rebentou, porque a condição é
+  //
+  //     nome !== user && m.email && !m.kid && (form.visibilidade === …)
+  //
+  // e com um adulto só o `nome !== user` é falso para ele: o `&&` corta antes
+  // de tocar no `form`. As crianças caem no `m.email`. Ninguém chegava à
+  // quarta condição.
+  //
+  // Bastava o SEGUNDO adulto com e-mail — a casa para que esta app foi feita —
+  // e a folha deixava de abrir: «Cannot read properties of undefined (reading
+  // 'visibilidade')», e a Agenda em branco.
+  // Quem é convidado: os membros da casa que este evento alcança E têm e-mail.
+  //
+  // ⚠ Não se escreve na agenda de outra pessoa — nem esta app nem nenhuma. A
+  // agenda de cada um é dela, e o único token que existe aqui é o de quem
+  // entrou. O que se faz é CONVIDAR: a Google põe o evento na agenda de quem
+  // aceitar, e manda-lhe um convite por correio.
+  //
+  // As crianças não têm e-mail (é uma decisão do §8, não um esquecimento),
+  // portanto não se convidam. Veem o evento na app, que é onde a agenda delas
+  // vive.
+  const convidados = Object.entries(MEMBROS)
+    .filter(([nome, m]) => nome !== user && m.email && !m.kid
+      && (form.visibilidade === 'familia' || form.visibilidade === 'adultos'))
+    .map(([, m]) => m.email);
 
   // Pre-fill date if provided
   useEffect(() => {
@@ -237,26 +252,15 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
         </Text>
       </View>
 
-      {/* Três níveis, e não um interruptor. «Partilhar» ligado ou desligado
-          eram a casa toda ou mais ninguém, e faltava o do meio — que é o que
-          uma família precisa mais vezes: uma consulta, uma reunião na escola,
-          uma conta a pagar. Coisas que os dois adultos têm de saber e que não
-          têm de aparecer na agenda de uma criança de sete anos. */}
-      <View style={{ gap: S.md }}>
-        <Label t={t}>Quem vê</Label>
-        {VISIBILIDADES.map(v => (
-          <Opcao key={v.chave} t={t} titulo={v.rotulo} detalhe={v.detalhe}
-            selected={form.visibilidade === v.chave}
-            onPress={() => setForm(f => ({ ...f, visibilidade: v.chave }))} />
-        ))}
-      </View>
+      {/* A agenda da Google vem ANTES do «Quem vê».
 
-      {/* A agenda da Google. Só aparece se houver autorização — um interruptor
-          que não pode fazer nada é pior do que a sua ausência.
+          Estava no fim, e no fim de uma folha que rola: medido a 375×812, a
+          linha ficava 215 px dentro da parte escondida e o «Guardar evento»
+          abaixo da dobra. Quem agendava não via se o evento ia — ou não ia —
+          para a agenda da Google, e só descobria depois de gravar.
 
-          O texto diz que CONVIDA e que isso manda e-mail, antes de acontecer.
-          Não se escreve na agenda de outra pessoa: a agenda de cada um é dela,
-          e o que a app pode fazer é convidar. Quem aceita, fica com o evento. */}
+          «Isto sai da app?» é uma pergunta do mesmo nível que a data:
+          decide-se antes de escolher quem vê, não a seguir. */}
       {/* Sem autorização da agenda, isto era `null` — a linha desaparecia do
           ecrã sem uma palavra, e quem tinha entrado com a Google agendava a
           pensar que estava a marcar nos dois sítios. O token da Google morre
@@ -290,6 +294,27 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
             onPress={() => { setNaGoogle(v => !v); setErroGoogle(null); }} />
         </View>
       ) : null}
+
+      {/* Três níveis, e não um interruptor. «Partilhar» ligado ou desligado
+          eram a casa toda ou mais ninguém, e faltava o do meio — que é o que
+          uma família precisa mais vezes: uma consulta, uma reunião na escola,
+          uma conta a pagar. Coisas que os dois adultos têm de saber e que não
+          têm de aparecer na agenda de uma criança de sete anos. */}
+      <View style={{ gap: S.md }}>
+        <Label t={t}>Quem vê</Label>
+        {VISIBILIDADES.map(v => (
+          <Opcao key={v.chave} t={t} titulo={v.rotulo} detalhe={v.detalhe}
+            selected={form.visibilidade === v.chave}
+            onPress={() => setForm(f => ({ ...f, visibilidade: v.chave }))} />
+        ))}
+      </View>
+
+      {/* A agenda da Google. Só aparece se houver autorização — um interruptor
+          que não pode fazer nada é pior do que a sua ausência.
+
+          O texto diz que CONVIDA e que isso manda e-mail, antes de acontecer.
+          Não se escreve na agenda de outra pessoa: a agenda de cada um é dela,
+          e o que a app pode fazer é convidar. Quem aceita, fica com o evento. */}
 
       {erroGoogle ? <Tile t={t} kind="warn">{erroGoogle}</Tile> : null}
 
