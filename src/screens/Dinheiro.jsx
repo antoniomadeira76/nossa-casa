@@ -187,6 +187,10 @@ export default function Dinheiro({ t, user, onEquip }) {
               onPress={() => setSheet('openMonth')} last />
           </Card>
         ) : null}
+        {envelopes.length === 0 ? (
+          <Empty t={t} icon="wallet" title="Sem envelopes."
+            hint="Crie-os na Gestão da Casa e abra o mês para os alimentar." />
+        ) : (
         <Card t={t} style={{ gap: S.lg }}>
           {envPg.slice.map((e, i) => {
             const tight = e.limit > 0 && e.used / e.limit >= 0.94;
@@ -222,6 +226,7 @@ export default function Dinheiro({ t, user, onEquip }) {
           <View style={{ height: 1, backgroundColor: t.divider }} />
           <AddButton t={t} label="mover dinheiro entre envelopes" onPress={() => setSheet('mover')} />
         </Card>
+        )}
       </View>
 
       <View>
@@ -260,12 +265,12 @@ export default function Dinheiro({ t, user, onEquip }) {
 
       <View>
         <SectionTitle t={t}>Metas da Família</SectionTitle>
+        {s.clearedSeeds ? (
+          <Empty t={t} icon="bank" title="Sem metas definidas."
+            hint="Uma meta é um objetivo com valor e prazo, alimentado pelo que sobra dos envelopes." />
+        ) : (
         <Card t={t} style={{ gap: S.lg }}>
-          {s.clearedSeeds ? (
-            <Text style={{ fontFamily: FONT.body, fontSize: 15, lineHeight: 22, color: t.text3 }}>
-              Sem metas definidas. Uma meta é um objetivo com valor e prazo, alimentado pelo que sobra dos envelopes.
-            </Text>
-          ) : GOALS.map(g => (
+          {GOALS.map(g => (
             <View key={g.name} style={{ gap: S.md }}>
               <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{g.name}</Text>
               <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
@@ -275,6 +280,7 @@ export default function Dinheiro({ t, user, onEquip }) {
             </View>
           ))}
         </Card>
+        )}
       </View>
 
       {admin ? (

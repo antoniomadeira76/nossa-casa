@@ -385,6 +385,10 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
 
         <View>
           <SectionTitle t={t}>Fichas</SectionTitle>
+          {fichas.length === 0 ? (
+            <Empty t={t} icon="heartPulse" title="Não há fichas que possa ver."
+              hint="A sua ficha é privada; as das crianças são visíveis aos adultos." />
+          ) : null}
           <View style={{ gap: S.md }}>
             {fichas.map(m => {
               const n = st.healthOf(m, user).length;

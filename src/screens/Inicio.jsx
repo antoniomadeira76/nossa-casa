@@ -7,7 +7,7 @@ import { EUR, plural, evTime, TODAY_KEY, dayLabel } from '../format';
 import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade } from '../ui';
 import Icon from '../Icon';
 
-export default function Inicio({ t, user, go, onSaude, onEquip, onFicha }) {
+export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir }) {
   const st = useStore();
   const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring,
           garantiasAExpirar, receitasAExpirar, consultasProximas, membros: MEMBERS,
@@ -105,9 +105,8 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha }) {
       <View>
         <SectionTitle t={t}>Precisa de Si</SectionTitle>
         {needs.length === 0 ? (
-          <Tile t={t} kind="info" icon="checkCircle">
-            Nada à sua espera. As tarefas de hoje, os prazos e as contas estão em dia.
-          </Tile>
+          <Empty t={t} icon="checkCircle" title="Nada à sua espera."
+            hint="As tarefas de hoje, os prazos e as contas estão em dia." />
         ) : (
           <View style={{ gap: S.md }}>
             {needsPg.slice.map((n, i) => (
@@ -131,7 +130,11 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha }) {
           <View style={{ gap: S.md }}>
             {today.map(e => (
               <Card key={e.id} t={t}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Pressable
+                  onPress={() => (onAbrir ? onAbrir('agenda', e.id) : go('agenda'))}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Abrir ${e.title}`}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
                   <Text style={{ width: 42, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3 }}>
                     {evTime(e.time)}
                   </Text>
@@ -141,7 +144,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha }) {
                     <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{e.who}</Text>
                   </View>
                   <PastilhaVisibilidade t={t} evento={e} />
-                </View>
+                </Pressable>
               </Card>
             ))}
           </View>
@@ -150,6 +153,10 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha }) {
 
       <View>
         <SectionTitle t={t}>Tarefas de Hoje</SectionTitle>
+        {todayTasks.length === 0 ? (
+          <Empty t={t} icon="checkSquare" title="Nada para hoje."
+            hint="As tarefas de hoje aparecem aqui. Use Nova Tarefa nas Tarefas." />
+        ) : (
         <View style={{ gap: S.md }}>
           {todayTasks.map((x, i) => {
             const done = !!s.done[x.id], pend = !!s.pending[x.id];
@@ -162,7 +169,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha }) {
                 backgroundColor: done ? t.state.okBg : t.card,
               }}>
                 <Row t={t} last
-                  onPress={() => st.tapTask(x.id, false)}
+                  onPress={() => (onAbrir ? onAbrir('tarefas', x.id) : go('tarefas'))}
                   title={x.title}
                   sub={done && rec ? 'feita hoje · volta amanhã'
                     : pend ? 'Feito — a aguardar confirmação'
@@ -175,6 +182,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha }) {
             );
           })}
         </View>
+        )}
       </View>
 
       <View>

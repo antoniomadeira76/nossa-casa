@@ -18,12 +18,15 @@ const URG = [
   { key: 2, label: 'Sem pressa', fill: false, color: '#D9D9D9', dash: false },
 ];
 
-export default function Tarefas({ t, user }) {
+// `abrir` é o id de uma tarefa cuja folha de gestão deve estar aberta à
+// chegada — é o que faz uma tarefa tocada no Início levar àquela tarefa.
+export default function Tarefas({ t, user, abrir }) {
   const st = useStore();
   const { s, set, allTasks, kidPts, dueOf, isRecurring, membros: MEMBERS,
           membrosDaCasa, criancas } = st;
   const [filter, setFilter] = useState('Todos');
-  const [manage, setManage] = useState(null);
+  const [manage, setManage] = useState(abrir || null);
+  React.useEffect(() => { if (abrir) setManage(abrir); }, [abrir]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [cofre, setCofre] = useState(null);   // criança cujo cofre está aberto
 
@@ -51,6 +54,7 @@ export default function Tarefas({ t, user }) {
         })}
       </View>
 
+      {criancas.length === 0 ? null : (
       <View>
         <SectionTitle t={t}>Semanada das Crianças</SectionTitle>
         <Card t={t} style={{ gap: S.lg }}>
@@ -81,6 +85,7 @@ export default function Tarefas({ t, user }) {
           </View>
         </Card>
       </View>
+      )}
 
       <View>
         <SectionTitle t={t} right={<Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>por urgência</Text>}>

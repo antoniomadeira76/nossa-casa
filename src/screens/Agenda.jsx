@@ -10,7 +10,9 @@ import Sheet from '../Sheet';
 import NovoEvento from '../sheets/NovoEvento';
 import ImportarGoogle from '../sheets/ImportarGoogle';
 
-export default function Agenda({ t, user }) {
+// `abrir` é o id de um evento cuja folha de edição deve estar aberta à
+// chegada.
+export default function Agenda({ t, user, abrir }) {
   const { s, allEvents, membros: MEMBERS, podeVerEvento, podeEditarEvento } = useStore();
   const [open, setOpen] = useState(false);
   const [ym, setYm] = useState({ y: TODAY.y, m: TODAY.m });
@@ -19,6 +21,13 @@ export default function Agenda({ t, user }) {
   const [googleSheetOpen, setGoogleSheetOpen] = useState(false);
   const [preFillDay, setPreFillDay] = useState(null);
   const [editar, setEditar] = useState(null);   // o evento a editar, ou null
+
+  // Chegar aqui a partir do Início, com um evento em mão.
+  React.useEffect(() => {
+    if (!abrir) return;
+    const e = allEvents().find(x => x.id === abrir);
+    if (e && podeEditarEvento(e, user)) setEditar(e);
+  }, [abrir]);
 
   // A regra vive na loja, não aqui: dois ecrãs a escreverem o mesmo filtro
   // divergem, e um filtro de visibilidade que diverge mostra a alguém o que

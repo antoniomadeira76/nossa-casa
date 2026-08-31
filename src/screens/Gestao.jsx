@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-nativ
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
 import { EUR } from '../format';
-import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice } from '../ui';
+import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import { ENV_BASE } from '../data';
@@ -211,6 +211,10 @@ export default function Gestao({ t, user, onClose }) {
   const renderShopsTab = () => (
     <View style={{ gap: S.md }}>
       <SectionTitle t={t}>Lojas</SectionTitle>
+      {!(s.stores || []).length ? (
+        <Empty t={t} icon="storefront" title="Sem lojas."
+          hint="Acrescente as lojas onde a casa costuma comprar." />
+      ) : null}
       {s.stores && s.stores.map((shop, i) => (
         <Card key={i} t={t} pad={false}>
           <Row t={t} icon="storefront" title={shop} last
@@ -310,6 +314,10 @@ export default function Gestao({ t, user, onClose }) {
   const renderEnvelopesTab = () => (
     <View style={{ gap: S.md }}>
       <SectionTitle t={t}>Envelopes orçamentais</SectionTitle>
+      {!(envelopes || []).length ? (
+        <Empty t={t} icon="wallet" title="Sem envelopes."
+          hint="Um envelope é uma categoria com um limite mensal." />
+      ) : null}
       {envelopes && envelopes.map((env) => (
         <Card key={env.name} t={t} pad={false}>
           <Tap label={`Editar ${env.name}`} onPress={() => {
@@ -360,6 +368,10 @@ export default function Gestao({ t, user, onClose }) {
   const renderSpecialtiesTab = () => (
     <View style={{ gap: S.md }}>
       <SectionTitle t={t}>Especialidades médicas</SectionTitle>
+      {!(s.specialities || []).length ? (
+        <Empty t={t} icon="heartPulse" title="Sem especialidades."
+          hint="São as que aparecem ao marcar uma consulta." />
+      ) : null}
       {s.specialities && s.specialities.map((spec) => (
         <Card key={spec} t={t} pad={false}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, padding: 14 }}>

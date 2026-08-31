@@ -62,6 +62,9 @@ function Shell() {
   const sysDark = useColorScheme() === 'dark';
   const [user, setUser] = useState(null);      // nome do membro ligado
   const [tab, setTab] = useState('inicio');
+  // O que abrir ao chegar a um separador, vindo do Início. Limpa-se ao chegar,
+  // senão voltar ao separador reabria a mesma folha para sempre.
+  const [abrirNoTab, setAbrirNoTab] = useState(null);
   const [kidTab, setKidTab] = useState('tarefas');  // aba na KidApp
   const [perfil, setPerfil] = useState(false);
   const [signOut, setSignOut] = useState(false);
@@ -423,9 +426,14 @@ function Shell() {
               ? <Inicio t={t} user={user} go={setTab}
                   onSaude={() => setSaude(true)}
                   onEquip={(id) => setEquip(id || true)}
-                  onFicha={(membro) => setFicha(membro)} />
+                  onFicha={(membro) => setFicha(membro)}
+                  // Ir a um separador COM uma coisa em mão. Sem isto, tocar num
+                  // evento do Início levava à Agenda e obrigava a procurá-lo
+                  // outra vez — a app já sabia qual era.
+                  onAbrir={(tabAlvo, id) => { setAbrirNoTab({ tab: tabAlvo, id }); setTab(tabAlvo); }} />
               : <Screen t={t} user={user} go={setTab} onEquip={() => setEquip(true)}
-                  onModoCompras={() => setLoja(true)} />}
+                  onModoCompras={() => setLoja(true)}
+                  abrir={abrirNoTab && abrirNoTab.tab === tab ? abrirNoTab.id : null} />}
         </ScrollView>
       </View>
 
@@ -439,7 +447,7 @@ function Shell() {
         {TABS.map(x => {
           const on = tab === x.key;
           return (
-            <Pressable key={x.key} onPress={() => setTab(x.key)}
+            <Pressable key={x.key} onPress={() => { setAbrirNoTab(null); setTab(x.key); }}
               accessibilityRole="tab" accessibilityLabel={x.label}
               accessibilityState={{ selected: on }}
               style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 4 }}>

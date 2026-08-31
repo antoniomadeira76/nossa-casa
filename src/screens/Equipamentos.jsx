@@ -110,6 +110,10 @@ export default function Equipamentos({ t, abrir }) {
       {eq.length ? (
         <View>
           <SectionTitle t={t}>Registados</SectionTitle>
+          {eq.length === 0 ? (
+            <Empty t={t} icon="houseGear" title="Sem equipamentos registados."
+              hint="Registe um para a app avisar antes de a garantia acabar." />
+          ) : null}
           <View style={{ gap: S.md }}>
             {eq.map(e => {
               const est = estadoDe(e);
