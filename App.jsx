@@ -167,6 +167,12 @@ function Shell() {
 
     let vivo = true;
     (async () => {
+      // Primeiro saber SE está ligada. `disponivel()` é síncrono para a
+      // interface o poder ler, e antes desta pergunta responde `null` — que é
+      // «ainda não se sabe», e não «não está».
+      if (servidor.google.porSaber()) await servidor.google.verificar();
+      if (!vivo) return;
+
       const jaVistos = s.googleCalendarImported || {};
 
       if (servidor.google.disponivel()) {

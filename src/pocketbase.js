@@ -60,34 +60,61 @@ export const pb = new Proxy({}, { get: (_, p) => { const c = obter(); return c ?
 
 const semLigacao = () => Promise.reject(new Error('Servidor não configurado.'));
 
-// Token de acesso da Google.
+// O token de acesso da Google — em memória, e mais nada.
 //
-// NÃO vai para disco: é credencial de terceiro e não tem de sobreviver ao
-// fecho da app. Mas tinha de sobreviver a RECARREGAR a página, e não
-// sobrevivia — e essa era a diferença entre a app escrever na agenda ou não
-// escrever, em silêncio:
+// ── Onde a autorização vive ─────────────────────────────────────────────────
 //
-//   a sessão do PocketBase persiste (localStorage), o token da Google não.
-//   Quem recarregava ficava dentro da app, com o interruptor «marcar também
-//   na agenda da Google» a DESAPARECER do ecrã de agendar, sem uma palavra.
-//   O evento gravava-se só na Nossa Casa e ninguém percebia porquê.
+// No SERVIDOR. Esta camada nunca vê o refresh token: pede um token de acesso
+// de uma hora ao `/api/agenda/token`, guarda-o numa variável, e volta a pedir
+// quando caducar. Se a app fechar, perde-se um token que já ia caducar de
+// qualquer maneira — e a autorização continua lá, sem pedir nada a ninguém.
 //
-// `sessionStorage` é o meio certo: aguenta o recarregar e morre com o
-// separador. Em nativo não existe e o token fica em memória, como estava.
-const GUARDA = (() => {
-  try { return typeof sessionStorage !== 'undefined' ? sessionStorage : null; }
-  catch { return null; }        // navegador com dados de site bloqueados
-})();
-const CHAVE_TOKEN = 'nossa-casa.token-google';
+// Houve duas tentativas antes desta:
+//
+//   memória só         morria ao recarregar a página, e o interruptor «marcar
+//                      também na agenda» DESAPARECIA do ecrã de agendar sem
+//                      uma palavra. O evento ficava só na Nossa Casa.
+//   sessionStorage     aguentava recarregar, morria com o separador. Numa app
+//                      instalada, que abre e fecha o dia todo, pedia a entrada
+//                      com o Google a cada sessão.
+//
+// A terceira não guarda nada porque não precisa: o que tem de durar está no
+// servidor, atrás de uma coleção cujas cinco regras são nulas.
+//
+// Ver `db/pocketbase/pb_hooks/agenda-google.pb.js`.
 
-let tokenGoogle = (() => { try { return GUARDA ? GUARDA.getItem(CHAVE_TOKEN) : null; } catch { return null; } })();
+let tokenGoogle = null;
+let tokenExpiraEm = 0;
 
-const guardarToken = (v) => {
-  tokenGoogle = v || null;
-  try {
-    if (!GUARDA) return;
-    if (v) GUARDA.setItem(CHAVE_TOKEN, v); else GUARDA.removeItem(CHAVE_TOKEN);
-  } catch { /* sem armazenamento: fica só em memória */ }
+// Se a agenda está ligada nesta conta. `null` = ainda não se perguntou.
+// A interface lê isto sem esperar, e o `verificarAgenda()` é que o preenche.
+let agendaLigada = null;
+
+const esquecerToken = () => { tokenGoogle = null; tokenExpiraEm = 0; };
+
+// Um token válido, pedido ao servidor se for preciso.
+//
+// A margem de sessenta segundos evita o caso em que o token é válido no
+// momento de o ler e já não é quando a Google o vê.
+const tokenDaAgenda = async () => {
+  if (tokenGoogle && Date.now() < tokenExpiraEm - 60000) return tokenGoogle;
+  if (!estaLigado()) throw new Error('Servidor não configurado.');
+
+  const r = await fetch(`${URL.replace(/\/+$/, '')}/api/agenda/token`, {
+    method: 'POST',
+    headers: { Authorization: pb.authStore.token },
+  });
+  if (!r.ok) {
+    esquecerToken();
+    agendaLigada = false;
+    const d = await r.json().catch(() => ({}));
+    throw new Error(d.message || 'A agenda não está ligada nesta conta.');
+  }
+  const d = await r.json();
+  tokenGoogle = d.access_token;
+  tokenExpiraEm = Date.now() + (d.expires_in || 3600) * 1000;
+  agendaLigada = true;
+  return tokenGoogle;
 };
 
 // ─── Sessão ──────────────────────────────────────────────────────────────────
@@ -156,7 +183,15 @@ export const auth = {
     });
     // O token da Google só vem nesta resposta. Guarda-se em memória, não em
     // disco: é credencial de terceiro e não tem de sobreviver ao fecho da app.
-    guardarToken(r.meta && r.meta.accessToken ? r.meta.accessToken : null);
+    // ⚠ O token que vem aqui NÃO se guarda.
+    //
+    // Dura uma hora e não é renovável: o PocketBase não pede
+    // `access_type=offline` à Google (verificado no binário do 0.40.1), e
+    // portanto não há refresh token nenhum atrás dele. Guardá-lo dava uma
+    // agenda que funciona durante uma hora e depois falha sem explicação.
+    //
+    // A autorização da agenda vem do fluxo próprio — `google.ligar()`.
+    agendaLigada = null;
     return r;
   },
 
@@ -173,7 +208,7 @@ export const auth = {
     } catch { return []; }
   },
 
-  sair: () => { if (estaLigado()) { pb.authStore.clear(); guardarToken(null); } },
+  sair: () => { if (estaLigado()) { pb.authStore.clear(); esquecerToken(); agendaLigada = null; } },
   membro: () => (estaLigado() ? pb.authStore.record : null),
   valida: () => Boolean(estaLigado() && pb.authStore.isValid),
 };
@@ -223,36 +258,98 @@ export const ler = {
 // intermediário aqui, e portanto os eventos nunca passam pelo nosso servidor
 // enquanto não forem importados de propósito.
 //
-// ⚠ Só funciona se `entrarComGoogle({ calendario: true })` tiver sido usado:
-// o token traz as permissões pedidas no consentimento, não as que se queiram
-// mais tarde.
+// ⚠ Só funciona depois de `google.ligar()`. A entrada com o Google dá
+// identidade e mais nada: o token que ela devolve dura uma hora e não é
+// renovável, porque o PocketBase não pede `access_type=offline` à Google.
+// A autorização da agenda é um consentimento à parte, e a chave de longa
+// duração fica no servidor.
 
 const CAL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
 
 export const google = {
-  disponivel: () => Boolean(tokenGoogle),
+  // A interface lê isto sem esperar, e por isso não pode ser uma promessa.
+  // `verificar()` é que vai ao servidor; até ele responder, `null` quer dizer
+  // «ainda não se sabe» — e um ecrã que não sabe não deve afirmar nada.
+  disponivel: () => agendaLigada === true,
+  porSaber: () => agendaLigada === null,
 
-  // Há sessão, mas a agenda não está autorizada — é uma situação a
-  // EXPLICAR, e não a esconder. Numa app sem servidor devolve falso: aí
-  // não há nada a ligar e o assunto não existe.
-  porLigar: () => Boolean(estaLigado() && pb.authStore && pb.authStore.isValid && !tokenGoogle),
+  // Há sessão, mas a agenda não está ligada — é uma situação a EXPLICAR, e não
+  // a esconder. Numa app sem servidor devolve falso: aí não há nada a ligar.
+  porLigar: () => Boolean(estaLigado() && pb.authStore && pb.authStore.isValid
+    && agendaLigada === false),
+
+  // Perguntar ao servidor, sem incomodar a Google.
+  async verificar() {
+    if (!estaLigado() || !pb.authStore || !pb.authStore.isValid) {
+      agendaLigada = false;
+      return false;
+    }
+    try {
+      const r = await fetch(`${URL.replace(/\/+$/, '')}/api/agenda/estado`, {
+        headers: { Authorization: pb.authStore.token },
+      });
+      agendaLigada = r.ok ? Boolean((await r.json()).ligada) : false;
+    } catch {
+      agendaLigada = false;
+    }
+    return agendaLigada;
+  },
+
+  // Ligar a agenda: pedir o endereço do consentimento e abrir a janela.
+  //
+  // O endereço vem numa chamada AUTENTICADA, e só depois se abre a janela. Uma
+  // janela do navegador não manda cabeçalhos, e a alternativa — pôr a sessão no
+  // endereço — deixava-a no histórico do navegador e nos registos de tudo o
+  // que estivesse pelo caminho.
+  async ligar() {
+    if (!estaLigado()) throw new Error('Servidor não configurado.');
+    const r = await fetch(`${URL.replace(/\/+$/, '')}/api/agenda/ligar`, {
+      method: 'POST',
+      headers: { Authorization: pb.authStore.token },
+    });
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      throw new Error(d.message || 'Não foi possível começar a ligação à agenda.');
+    }
+    const { url } = await r.json();
+    if (typeof window === 'undefined' || !window.open) {
+      throw new Error('Abra a app num navegador para autorizar a agenda.');
+    }
+    const janela = window.open(url, 'nossa-casa-agenda', 'width=520,height=680');
+    if (!janela) throw new Error('O navegador bloqueou a janela. Permita janelas para este sítio.');
+
+    // A janela fecha-se sozinha no fim. Enquanto ela viver, pergunta-se ao
+    // servidor de dois em dois segundos — o servidor é a única fonte fiável:
+    // a janela é de outro domínio e não se pode ler de fora.
+    return new Promise((resolve) => {
+      const fim = Date.now() + 5 * 60 * 1000;
+      const relogio = setInterval(async () => {
+        const acabou = janela.closed || Date.now() > fim;
+        if (await this.verificar()) { clearInterval(relogio); resolve(true); return; }
+        if (acabou) { clearInterval(relogio); resolve(false); }
+      }, 2000);
+    });
+  },
 
   // Os eventos dos próximos `dias`, já na forma que a app usa.
   async eventos({ dias = 30, max = 50 } = {}) {
-    if (!tokenGoogle) throw new Error('Entre com o Google e autorize a agenda.');
+    const bearer = await tokenDaAgenda();
     const agora = new Date();
     const ate = new Date(agora.getTime() + dias * 86400000);
     const q = new URLSearchParams({
       timeMin: agora.toISOString(), timeMax: ate.toISOString(),
       singleEvents: 'true', orderBy: 'startTime', maxResults: String(max),
     });
-    const r = await fetch(`${CAL}?${q}`, { headers: { Authorization: `Bearer ${tokenGoogle}` } });
+    const r = await fetch(`${CAL}?${q}`, { headers: { Authorization: `Bearer ${bearer}` } });
     if (!r.ok) {
       // 401 é o token expirado ou sem o scope da agenda — dizer isso, e não
       // «algo correu mal», é a diferença entre o utilizador saber o que fazer.
       if (r.status === 401 || r.status === 403) {
-        guardarToken(null);
-        throw new Error('A autorização da agenda expirou. Entre com o Google outra vez.');
+        // O token era válido quando saiu daqui e a Google recusou-o. Esquece-se
+        // para o próximo pedido ir buscar outro; não se tenta de novo aqui,
+        // porque um 403 pode ser falta de âmbito e aí insistir não resolve.
+        esquecerToken();
+        throw new Error('A autorização da agenda foi recusada. Ligue a agenda outra vez ao agendar.');
       }
       throw new Error(`A Google respondeu ${r.status}.`);
     }
@@ -275,7 +372,7 @@ export const google = {
   // convidado. Não é um pormenor técnico — é correio que sai em nome de quem
   // carrega no botão, e o ecrã tem de o dizer antes de acontecer.
   async criarEvento({ titulo, dia, hora, duracaoMin = 60, convidados = [], descricao }) {
-    if (!tokenGoogle) throw new Error('Entre com o Google e autorize a agenda.');
+    const bearer = await tokenDaAgenda();
     const corpo = {
       summary: titulo,
       description: descricao || undefined,
@@ -286,7 +383,7 @@ export const google = {
     // aparece na agenda dos convidados sem eles saberem porquê.
     const r = await fetch(`${CAL}?sendUpdates=${convidados.length ? 'all' : 'none'}`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${tokenGoogle}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${bearer}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(corpo),
     });
     if (!r.ok) throw new Error(await erroDaGoogle(r));
@@ -295,10 +392,10 @@ export const google = {
   },
 
   async atualizarEvento(idGoogle, { titulo, dia, hora, duracaoMin = 60, convidados = [] }) {
-    if (!tokenGoogle) throw new Error('Entre com o Google e autorize a agenda.');
+    const bearer = await tokenDaAgenda();
     const r = await fetch(`${CAL}/${encodeURIComponent(idGoogle)}?sendUpdates=${convidados.length ? 'all' : 'none'}`, {
       method: 'PATCH',
-      headers: { Authorization: `Bearer ${tokenGoogle}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${bearer}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         summary: titulo,
         ...intervalo(dia, hora, duracaoMin),
@@ -309,10 +406,10 @@ export const google = {
   },
 
   async apagarEvento(idGoogle) {
-    if (!tokenGoogle) throw new Error('Entre com o Google e autorize a agenda.');
+    const bearer = await tokenDaAgenda();
     const r = await fetch(`${CAL}/${encodeURIComponent(idGoogle)}?sendUpdates=all`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${tokenGoogle}` },
+      headers: { Authorization: `Bearer ${bearer}` },
     });
     // 410 é «já lá não está», e isso é o resultado que se queria.
     if (!r.ok && r.status !== 404 && r.status !== 410) throw new Error(await erroDaGoogle(r));

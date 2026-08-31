@@ -34,6 +34,33 @@ export default function ImportarGoogle({ t, user, onClose }) {
   const [semAutorizacao, setSemAutorizacao] = useState(false);
   const [visibilidade, setVisibilidade] = useState('familia');
   const [escolhidos, setEscolhidos] = useState({});
+  const [aLigar, setALigar] = useState(false);
+
+  // Ligar e, se correr bem, ler logo a agenda — quem carregou aqui veio para
+  // importar, não para ver um ecrã a dizer que agora já pode tentar.
+  const ligarAgenda = async () => {
+    setALigar(true);
+    setErro(null);
+    try {
+      if (await servidor.google.ligar()) {
+        setSemAutorizacao(false);
+        setACarregar(true);
+        const vindos = await servidor.google.eventos({ dias: 30, max: 50 });
+        const jaVistos = s.googleCalendarImported || {};
+        const nossos = idsGoogleDaCasa();
+        const novos = vindos.filter(e => !jaVistos[e.id] && !nossos.has(e.id));
+        setEventos(novos);
+        setEscolhidos(Object.fromEntries(novos.map(e => [e.id, !e.recorrente])));
+        setACarregar(false);
+      } else {
+        setErro('A ligação à agenda não ficou concluída.');
+      }
+    } catch (e) {
+      setErro(e.message);
+      setACarregar(false);
+    }
+    setALigar(false);
+  };
 
   useEffect(() => {
     let vivo = true;
@@ -107,13 +134,16 @@ export default function ImportarGoogle({ t, user, onClose }) {
     return (
       <View style={{ gap: S.lg }}>
         <Tile t={t} kind="warn" icon="warning">
-          A app não tem autorização para ler a sua agenda da Google.
+          A agenda da Google ainda não está ligada nesta conta.
         </Tile>
         <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.text3 }}>
-          A autorização vem no momento de entrar e dura o tempo da sessão. Saia
-          e entre outra vez com o Google: o consentimento aparece aí, e pede
-          apenas os eventos da agenda — não o correio, não os contactos.
+          Liga-se uma vez. O consentimento pede apenas os eventos da agenda —
+          não o correio, não os contactos — e a autorização fica no servidor da
+          casa, nunca neste aparelho.
         </Text>
+        {erro ? <Tile t={t} kind="err" icon="warning">{erro}</Tile> : null}
+        <Primary t={t} label={aLigar ? 'A ligar…' : 'Ligar a agenda da Google'}
+          icon="calendar" disabled={aLigar} onPress={ligarAgenda} />
         <Primary t={t} label="Fechar" onPress={onClose} />
       </View>
     );

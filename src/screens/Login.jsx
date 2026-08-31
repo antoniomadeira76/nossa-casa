@@ -44,7 +44,12 @@ export default function Login({ t, onEnter }) {
     if (!sync.ligado()) return setStep('contas');
     setErroGoogle(null);
     try {
-      const r = await servidor.auth.entrarComGoogle({ calendario: true });
+      // A agenda NÃO se pede aqui.
+      //
+      // Pedia-se, e o consentimento que aparecia não produzia autorização de
+      // longa duração: o PocketBase não pede `access_type=offline` à Google.
+      // A agenda liga-se no ecrã de agendar, com o fluxo próprio, e uma vez só.
+      const r = await servidor.auth.entrarComGoogle();
       onEnter(r.record.nome);
     } catch (e) {
       // Falhar a entrada pela Google não pode fechar a porta: sem provedor

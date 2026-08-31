@@ -20,6 +20,25 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
   const [naGoogle, setNaGoogle] = useState(servidor.google.disponivel());
   const [erroGoogle, setErroGoogle] = useState(null);
   const [aGuardar, setAGuardar] = useState(false);
+  const [aLigar, setALigar] = useState(false);
+
+  // Ligar a agenda, uma vez e para sempre.
+  //
+  // Abre a janela do consentimento da Google e espera. A autorização de longa
+  // duração fica no servidor — o telemóvel nunca a vê, e por isso não há nada
+  // aqui para guardar nem para perder quando a app fechar.
+  const ligarAgenda = async () => {
+    setALigar(true);
+    setErroGoogle(null);
+    try {
+      const ligou = await servidor.google.ligar();
+      if (ligou) setNaGoogle(true);
+      else setErroGoogle('A ligação à agenda não ficou concluída.');
+    } catch (e) {
+      setErroGoogle(e.message);
+    }
+    setALigar(false);
+  };
 
   // Apagar sai dos DOIS lados.
   //
@@ -268,11 +287,14 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
           que não pode fazer nada é pior do que a sua ausência, mas uma
           ausência silenciosa é pior do que as duas. */}
       {!servidor.google.disponivel() && servidor.google.porLigar() ? (
-        <Tile t={t} kind="warn" icon="calendar">
-          Este evento fica só na Nossa Casa. Para marcar também na agenda da
-          Google, saia e entre outra vez com o Google — a autorização da agenda
-          dura o tempo da sessão.
-        </Tile>
+        <View style={{ gap: S.md }}>
+          <Tile t={t} kind="warn" icon="calendar">
+            Este evento fica só na Nossa Casa. A agenda da Google ainda não está
+            ligada nesta conta.
+          </Tile>
+          <Primary t={t} label={aLigar ? 'A ligar…' : 'Ligar a agenda da Google'}
+            icon="calendar" disabled={aLigar} onPress={ligarAgenda} />
+        </View>
       ) : null}
 
       {servidor.google.disponivel() ? (

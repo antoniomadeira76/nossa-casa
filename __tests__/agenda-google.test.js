@@ -72,30 +72,74 @@ describe('a folha de importação fala com a Google a sério', () => {
   });
 });
 
-describe('o token da agenda sobrevive a recarregar a página', () => {
-  const pb = ler('src/pocketbase.js');
+describe('a autorização da agenda vive no servidor', () => {
+  // Terceira tentativa, e a última. As duas anteriores guardavam o token no
+  // aparelho — memória só (morria ao recarregar) e depois `sessionStorage`
+  // (morria com o separador, e uma app instalada pedia a entrada a cada
+  // sessão). Esta não guarda nada: o que tem de durar é o refresh token, e
+  // esse fica na coleção `credenciais_agenda`, cujas cinco regras são nulas.
+  const pb = semComentarios(ler('src/pocketbase.js'));
 
-  it('passa por sessionStorage, e não fica só em memória', () => {
-    // A sessão do PocketBase persiste; o token da Google não persistia. Quem
-    // recarregava ficava dentro da app e o interruptor «marcar também na
-    // agenda da Google» desaparecia do ecrã de agendar, sem uma palavra.
-    expect(pb).toMatch(/sessionStorage/);
-    expect(pb).toMatch(/const guardarToken/);
+  it('o aparelho não guarda o token em armazenamento nenhum', () => {
+    expect(pb).not.toMatch(/sessionStorage/);
+    expect(pb).not.toMatch(/localStorage/);
   });
 
-  it('não vai para disco — é credencial de terceiro', () => {
-    // sessionStorage aguenta o recarregar e morre com o separador. localStorage
-    // seria uma credencial da conta Google de alguém guardada no disco.
-    expect(pb).not.toMatch(/localStorage\.setItem\(\s*CHAVE_TOKEN/);
+  it('o token de acesso vem do servidor, e tem validade', () => {
+    expect(pb).toMatch(/\/api\/agenda\/token/);
+    expect(pb).toMatch(/tokenExpiraEm/);
   });
 
-  it('um token que a Google recusou deixa de ficar guardado', () => {
+  it('o refresh token nunca é nomeado nesta camada', () => {
+    // Se algum dia aparecer aqui, é porque saiu do servidor — e o desenho
+    // inteiro deixou de valer.
+    expect(pb).not.toMatch(/refresh_token|refreshToken/);
+  });
+
+  it('um token que a Google recusou é esquecido', () => {
     const bloco = pb.slice(pb.indexOf('async eventos'), pb.indexOf('async criarEvento'));
-    expect(bloco).toMatch(/401[\s\S]{0,120}guardarToken\(null\)/);
+    expect(bloco).toMatch(/401[\s\S]{0,200}esquecerToken\(\)/);
   });
 
   it('sair leva o token com ele', () => {
-    expect(pb).toMatch(/sair:[\s\S]{0,120}guardarToken\(null\)/);
+    expect(pb).toMatch(/sair:[\s\S]{0,160}esquecerToken\(\)/);
+  });
+
+  it('a entrada com o Google já não pede a agenda', () => {
+    // Pedia, e o consentimento não produzia autorização de longa duração
+    // nenhuma: o PocketBase não pede `access_type=offline`. Eram dois ecrãs
+    // de consentimento para o mesmo, e o primeiro inútil.
+    expect(semComentarios(ler('src/screens/Login.jsx')))
+      .not.toMatch(/calendario:\s*true/);
+  });
+});
+
+describe('o servidor é que guarda a autorização', () => {
+  const hook = semComentarios(ler('db/pocketbase/pb_hooks/agenda-google.pb.js'));
+  const comum = semComentarios(ler('db/pocketbase/pb_hooks/agenda-google-comum.js'));
+
+  it('pede à Google uma autorização de longa duração', () => {
+    // Sem estes dois, a Google não emite refresh token e o desenho todo cai.
+    // Foi exactamente o que faltava ao fluxo do PocketBase.
+    expect(hook).toMatch(/access_type=offline/);
+    expect(hook).toMatch(/prompt=consent/);
+  });
+
+  it('o segredo do cliente não está escrito em lado nenhum', () => {
+    // Vem da configuração OAuth2 que já existe na coleção `membros`. Um
+    // segredo com duas cópias é um segredo com o dobro das maneiras de escapar.
+    expect(comum).toMatch(/getProviderConfig\('google'\)/);
+    expect(hook + comum).not.toMatch(/GOCSPX/);
+  });
+
+  it('a rota do token devolve só o token de acesso', () => {
+    // O que importa é a RESPOSTA, e não o ficheiro todo: o pedido à Google
+    // leva o refresh token de propósito — é o que se está a trocar. Uma
+    // primeira versão deste teste proibia a expressão em todo o bloco e
+    // acusava essa linha, que está certa.
+    const resposta = hook.slice(hook.lastIndexOf('return e.json(200, {'));
+    expect(resposta).toMatch(/access_token:/);
+    expect(resposta).not.toMatch(/refresh/);
   });
 });
 
