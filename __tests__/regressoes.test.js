@@ -1077,3 +1077,50 @@ describe('O que o servidor manda chega inteiro à loja', () => {
     expect(loja).toMatch(/const isAdmin = \(name\) => s\.roles\[name\] === 'admin'/);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// A casa vinha do servidor e as tarefas das sementes: o Início mostrava
+// tarefas do Léo e do Tomás, e eventos com o avatar a «?», numa casa onde
+// nenhum deles vive. Duas casas ao mesmo tempo, no mesmo ecrã.
+describe('Uma casa a sério não mostra a família de demonstração', () => {
+  const loja = semComentarios(read('src/store.jsx'));
+  const inicio = loja.indexOf('const lerDoServidor');
+  const leitura = loja.slice(inicio, loja.indexOf('useEffect(', inicio));
+
+  test('a leitura da casa desliga as sementes', () => {
+    expect(leitura).toMatch(/clearedSeeds: true/);
+  });
+
+  test('e só uma vez — quem já limpou não volta a ser mexido', () => {
+    expect(leitura).toMatch(/x\.clearedSeeds \? \{\} :/);
+  });
+
+  test('o que a pessoa criou não é semente, e não sai', () => {
+    // As derivações juntam sementes com o que foi criado; `clearedSeeds` só
+    // tira a primeira metade.
+    for (const par of ['clearedSeeds ? [] : TASKS', 'clearedSeeds ? [] : EVENTS',
+                       'clearedSeeds ? [] : ITEMS', 'clearedSeeds ? [] : VAULT']) {
+      expect(loja).toContain(par);
+    }
+    expect(loja).toMatch(/clearedSeeds \? \[\] : TASKS\), \.\.\.s\.newTasks/);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// A janela da Google ficava aberta depois de entrar: o PocketBase serve
+// /api/oauth2-redirect com COOP «same-origin», o que a põe num grupo de
+// contextos diferente do da app e faz o Chrome recusar o window.close() que
+// essa página faz no fim.
+describe('A janela da entrada fecha-se', () => {
+  // Sem comentários: o cabeçalho do ficheiro EXPLICA a correção e nomeia
+  // `same-origin-allow-popups` mais do que uma vez. Ler o ficheiro inteiro
+  // fazia o teste passar com a linha trocada, porque casava com a própria
+  // explicação — é o erro que o CLAUDE.md já descreve.
+  const hook = semComentarios(read('db/pocketbase/pb_hooks/oauth-redirect.pb.js'));
+
+  test('o cabeçalho é ajustado, e só na rota do redirecionamento', () => {
+    expect(hook).toContain('/api/oauth2-redirect');
+    expect(hook).toContain('same-origin-allow-popups');
+    expect(hook).not.toMatch(/unsafe-none/);   // não é um afrouxamento geral
+  });
+});

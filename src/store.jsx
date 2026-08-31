@@ -329,12 +329,28 @@ export function StoreProvider({ children }) {
       if (Object.keys(casa.membros || {}).length) {
         const papeis = Object.fromEntries(Object.entries(casa.membros)
           .map(([nome, m]) => [nome, m.papel || (m.kid ? 'crianca' : 'adulto')]));
-        set({
+        set(x => ({
           membros: casa.membros,
           roles: papeis,
           nomeDaCasa: casa.nomeDaCasa,
           deDemonstracao: false,
-        });
+
+          // Quando o servidor responde com uma casa a sério, a demonstração
+          // acaba. As sementes ficavam: o Início mostrava tarefas do Léo e do
+          // Tomás, e eventos com o avatar a `?`, numa casa onde nenhum deles
+          // vive. Os membros vinham do servidor e as tarefas de uma família
+          // inventada — duas casas ao mesmo tempo, no mesmo ecrã.
+          //
+          // Só as SEMENTES saem. O que a pessoa criou — `newTasks`, `added`,
+          // `newItems`, o cofre — não é semente e fica. E isto acontece uma
+          // vez: quem já tinha limpado continua limpo, e quem quiser a
+          // demonstração de volta tem «Repor dados de demonstração» no Perfil.
+          ...(x.clearedSeeds ? {} : {
+            clearedSeeds: true,
+            registo: [{ t: 'A casa passou a ser a do servidor; os dados de demonstração saíram',
+                        at: Date.now() }, ...x.registo],
+          }),
+        }));
       }
       // Os movimentos de cofre do servidor substituem os locais: são a mesma
       // coisa vista de outro sítio, e o servidor tem os dos dois telemóveis.
