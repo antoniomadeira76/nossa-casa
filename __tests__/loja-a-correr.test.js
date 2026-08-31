@@ -318,3 +318,35 @@ describe('Uma casa sem sementes não tem o dinheiro de outra família', () => {
     }
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// A limpeza do dinheiro corre uma vez, na transição para casa a sério. Quem já
+// tinha transitado antes de ela existir ficou com o orçamento da demonstração
+// e nunca mais o perdia — «Disponível 383,00 € de 1 770,00 €» numa casa nova.
+describe('A migração 6 tira o dinheiro da demonstração a quem já tinha limpado', () => {
+  const { MIGRATIONS, SCHEMA } = require('../src/store');
+
+  test('existe, e a versão acompanha', () => {
+    expect(SCHEMA).toBeGreaterThanOrEqual(6);
+    expect(typeof MIGRATIONS[6]).toBe('function');
+  });
+
+  test('quem limpou as sementes e nunca definiu limites fica a zero', () => {
+    const d = MIGRATIONS[6]({ clearedSeeds: true });
+    expect(d.rendimento).toBe(0);
+    expect(d.monthZero).toBe(true);
+    expect(Object.values(d.monthLimits).every(v => v === 0)).toBe(true);
+  });
+
+  // A condição é estreita de propósito: apagar o orçamento de alguém para
+  // corrigir um defeito meu seria trocar um erro por outro pior.
+  test('quem definiu os seus limites não é tocado', () => {
+    const meus = { clearedSeeds: true, monthLimits: { Mercearia: 400 }, rendimento: 2000 };
+    expect(MIGRATIONS[6](meus)).toEqual(meus);
+  });
+
+  test('e quem ainda está na demonstração também não', () => {
+    const demo = { clearedSeeds: false, rendimento: 3200 };
+    expect(MIGRATIONS[6](demo)).toEqual(demo);
+  });
+});

@@ -177,7 +177,7 @@ const DATA_KEYS = [
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
 // muda, e MIGRATIONS ganha a entrada correspondente. Sem isto, dados antigos
 // eram lidos com a forma nova e ganhavam silenciosamente ao código.
-export const SCHEMA = 5;
+export const SCHEMA = 6;
 
 // Uma migração por salto de versão: recebe o objeto lido e devolve-o corrigido.
 export const MIGRATIONS = {
@@ -235,6 +235,19 @@ export const MIGRATIONS = {
         || (settled ? [{ valor: ACERTO_INICIAL, data: null, nota: 'acerto anterior' }] : []),
     };
   },
+
+  // v5 → v6: quem já tinha limpado as sementes ficou com o DINHEIRO da
+  // demonstração. A limpeza corre uma vez, na transição, e essas casas já
+  // tinham transitado — continuavam a mostrar «Disponível 383,00 € de
+  // 1 770,00 €», que são os gastos e os limites da família inventada.
+  //
+  // A condição é estreita de propósito: só quem limpou as sementes E nunca
+  // definiu limites próprios. Quem tem `monthLimits` escolheu-os, e isso não
+  // se toca — apagar o orçamento de alguém para corrigir um defeito meu seria
+  // trocar um erro por outro pior.
+  6: (o) => (o.clearedSeeds && !o.monthLimits
+    ? { ...o, ...SEM_DINHEIRO_SEMEADO() }
+    : o),
 };
 
 export const DEMO = () => ({
