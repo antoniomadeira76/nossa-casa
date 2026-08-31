@@ -32,6 +32,31 @@ const TODAY_ANO = TODAY.y;
 
 // A lista que o ecrã mostra quando não há agenda da Google ligada. Está aqui,
 // e não dentro do JSX, para ser óbvio que é demonstração e não dados.
+// Um evento da Google, na forma que o resto da app fala.
+//
+// A camada da Google devolve `titulo/dia/hora/recorrente/local` — nomes em
+// português, como tudo em `src/pocketbase.js`. O aviso de importação e o
+// `importGoogleEvents` falam `title/date/time/isRecurring/location`, que é a
+// forma dos eventos de demonstração abaixo.
+//
+// Enquanto o aviso só via a demonstração, ninguém notou. Com a agenda ligada,
+// o modal lia `e.title` num objecto que tinha `titulo` e mostrava uma LINHA EM
+// BRANCO: uma caixa com uma marca de seleção, sem nome, sem data, a perguntar
+// se a pessoa a quer na casa. Traduz-se aqui, na fronteira, para haver uma
+// forma só a partir deste ponto.
+const daGoogle = (e) => ({
+  id: e.id,
+  title: e.titulo,
+  // `dia` vem sem prefixo e a app lê chaves com `d`. O `importGoogleEvents`
+  // aceita as duas, mas o modal formata a data e precisa da chave.
+  date: /^d/.test(String(e.dia)) ? e.dia : `d${e.dia}`,
+  time: e.hora || '',
+  isRecurring: !!e.recorrente,
+  // `description` e não `location`: é o nome que o aviso lê para a terceira
+  // parte da linha «data · hora · local». Um nome quase certo não mostra nada.
+  description: e.local || '',
+});
+
 const EVENTOS_DE_DEMONSTRACAO = [
   { id: 'gcal-1', title: 'Reunião de equipa', date: 'd2026-08-28', time: '14:00', isRecurring: false, description: '' },
   { id: 'gcal-2', title: 'Almoço com a mãe', date: 'd2026-08-29', time: '12:30', isRecurring: false, description: 'Restaurante Taberna' },
@@ -151,7 +176,7 @@ function Shell() {
           const nossos = idsGoogleDaCasa();
           // O que a app pôs na agenda da Google não volta como novidade.
           const novos = reais.filter(e => !jaVistos[e.id] && !nossos.has(e.id));
-          if (novos.length) { setEventosGoogle(novos); setGoogleImport(true); }
+          if (novos.length) { setEventosGoogle(novos.map(daGoogle)); setGoogleImport(true); }
         } catch (e) { /* autorização caducada — o botão da Agenda explica */ }
         return;
       }

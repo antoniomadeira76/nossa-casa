@@ -132,6 +132,38 @@ describe('os três sentidos chegam à agenda da Google', () => {
   });
 });
 
+describe('o aviso de importação identifica o evento', () => {
+  // Observado com a agenda ligada: o aviso mostrava uma caixa com uma marca de
+  // seleção e NADA — sem nome, sem data — a perguntar se a pessoa a queria na
+  // casa. A camada da Google fala `titulo/dia/hora`; o aviso lê
+  // `title/date/time`. Enquanto o aviso só via os eventos de demonstração,
+  // que já vinham na forma dele, ninguém notou.
+  const app = semComentarios(ler('App.jsx'));
+  const modal = semComentarios(ler('src/modals/GoogleCalendarImportModal.jsx'));
+
+  // Os campos que o aviso lê de cada evento, tirados do próprio aviso: assim
+  // este teste acompanha-o em vez de guardar uma lista que envelhece.
+  const lidos = [...new Set([...modal.matchAll(/\b(?:e|event)\.([a-zA-Z]+)/g)]
+    .map(m => m[1]))].filter(k => k !== 'id');
+
+  it('o aviso lê campos, e sabe-se quais', () => {
+    expect(lidos.length).toBeGreaterThan(2);
+  });
+
+  const conversor = app.slice(app.indexOf('const daGoogle'), app.indexOf('const EVENTOS_DE_DEMONSTRACAO'));
+
+  it('há um conversor da forma da Google para a forma do aviso', () => {
+    expect(conversor).toMatch(/title:/);
+    expect(app).toMatch(/novos\.map\(daGoogle\)/);
+  });
+
+  for (const campo of lidos) {
+    it(`o conversor dá \`${campo}\``, () => {
+      expect(conversor).toMatch(new RegExp(`\\b${campo}:`));
+    });
+  }
+});
+
 describe('o que a app pôs na Google não volta como novidade', () => {
   // O ciclo fechava-se em cima de si próprio: agenda-se na app, o evento vai
   // para a agenda da Google, e da vez seguinte a importação lê-o de lá e
