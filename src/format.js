@@ -62,9 +62,51 @@ export const dmyDeChave = (k) => {
   return p ? `${pad2(p.d)}/${pad2(p.m + 1)}/${p.y}` : '';
 };
 
-export const TODAY = { y: 2026, m: 7, d: 20 };
+// O «hoje» da app.
+//
+// ── Era 20 de agosto de 2026, escrito à mão ──────────────────────────────────
+//
+// Vinha do protótipo, para as capturas de `docs/referencia` baterem sempre
+// certo. Serviu enquanto a app não saía do computador; deixou de servir no dia
+// em que alguém a usou: o cabeçalho dizia «Quinta, 20/08» a 1 de setembro, as
+// tarefas de hoje eram as de há duas semanas, e uma garantia a expirar em três
+// dias aparecia com doze.
+//
+// Agora vem do relógio. `EXPO_PUBLIC_HOJE=aaaa-mm-dd` fixa-o, e é isso que as
+// provas e as capturas de referência usam — um teste que dependa do dia em que
+// corre falha sozinho a certa altura, e ninguém sabe porquê.
+//
+// ⚠ É lido UMA vez, ao carregar o módulo. Uma app deixada aberta a passar a
+// meia-noite continua no dia anterior até recarregar. É o comportamento que
+// já existia e não se resolve com uma constante — resolve-se com um relógio
+// que avisa, e isso é outra tarefa.
+const HOJE_FIXO = (typeof process !== 'undefined' && process.env
+  && process.env.EXPO_PUBLIC_HOJE) || null;
+
+const agora = (() => {
+  if (HOJE_FIXO) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(HOJE_FIXO);
+    // Meio-dia, e não meia-noite: à meia-noite, um fuso a oeste de Greenwich
+    // atira a data para o dia anterior.
+    if (m) return new Date(+m[1], +m[2] - 1, +m[3], 12, 0, 0);
+  }
+  return new Date();
+})();
+
+export const TODAY = { y: agora.getFullYear(), m: agora.getMonth(), d: agora.getDate() };
 export const TODAY_KEY = dkey(TODAY.y, TODAY.m, TODAY.d);
-export const TOMORROW_KEY = dkey(TODAY.y, TODAY.m, TODAY.d + 1);
+
+// ⚠ Amanhã conta-se com um `Date`, não com `d + 1`.
+//
+// Era `dkey(TODAY.y, TODAY.m, TODAY.d + 1)`, e a 31 de agosto dava
+// `d2026-08-32` — uma chave que o `parseKey` aceita pelo formato e que não
+// corresponde a dia nenhum. Nunca se viu porque o «hoje» estava preso a 20 de
+// agosto; passou a ser alcançável quatro vezes por ano no momento em que a
+// data passou a ser real.
+export const TOMORROW_KEY = (() => {
+  const d = new Date(TODAY.y, TODAY.m, TODAY.d + 1);
+  return dkey(d.getFullYear(), d.getMonth(), d.getDate());
+})();
 
 const wdIndex = (o) => (new Date(o.y, o.m, o.d).getDay() + 6) % 7;
 

@@ -576,7 +576,25 @@ describe('Armazenamento local — versão e migração', () => {
     // grava a versão do código, não um literal preso no 1
     expect(store).toMatch(/\{ v: SCHEMA, savedAt/);
     // e recusa ler um formato mais recente do que sabe interpretar
-    expect(store).toMatch(/v <= SCHEMA/);
+    expect(store).toMatch(/v > SCHEMA/);
+  });
+
+  test('ler mal nunca leva a gravar por cima', () => {
+    // Era um `try` só a envolver a leitura E as migrações, com o `ready` fora
+    // dele. Uma migração que atirasse ficava engolida por um `catch` que dizia
+    // «armazenamento indisponível», o estado ficava o INICIAL, e a gravação
+    // seguinte escrevia-o por cima de tudo com `v: SCHEMA` — eventos, cofre,
+    // preços, em silêncio, e a migração nunca voltava a correr.
+    //
+    // As provas do comportamento estão em `__tests__/migracoes.test.js`, com
+    // um disco a sério e uma migração que atira de propósito. Isto guarda as
+    // duas peças de que elas dependem.
+    expect(store).toMatch(/gravavelRef/);
+    // a guarda tem de estar no efeito de gravação, não só declarada
+    const gravar = store.slice(store.indexOf('// gravar a cada alteração'));
+    expect(gravar).toMatch(/if \(!gravavelRef\.current\) return;/);
+    // e uma cópia do disco antes de lhe mexer
+    expect(store).toMatch(/antes-de-v/);
   });
 
   // As sementes eram gravadas, por isso mudá-las não tinha efeito em quem já

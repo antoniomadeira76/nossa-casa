@@ -493,6 +493,11 @@ const reducer = (s, patch) => ({ ...s, ...(typeof patch === 'function' ? patch(s
 export function StoreProvider({ children }) {
   const [state, set] = useReducer(reducer, null, DEMO);
   const ready = useRef(false);
+  // Se se pode escrever no disco. Fica falso quando ler os dados correu mal:
+  // gravar por cima do que não se conseguiu ler é como se apaga uma casa.
+  const gravavelRef = useRef(true);
+  // O que falhou, para poder ser dito em vez de adivinhado.
+  const falhaAoMigrarRef = useRef(null);
   const sig = useRef('');
   // Nome local → identificador do servidor. Vazio enquanto a app correr só
   // local, que é o caso quando não há EXPO_PUBLIC_PB_URL.
@@ -567,23 +572,66 @@ export function StoreProvider({ children }) {
   // ler ao arrancar
   useEffect(() => {
     (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(KEY);
-        if (raw) {
-          let saved = JSON.parse(raw);
-          const v = saved && typeof saved.v === 'number' ? saved.v : 0;
-          // Gravado por uma versão mais recente: não sabemos ler, e ler mal é
-          // pior do que não ler. Fica-se pelas predefinições.
-          if (saved && v <= SCHEMA) {
+      // ⚠ Uma migração que atire NÃO pode apagar a casa.
+      //
+      // Isto era um `try` só, com `catch` a dizer «armazenamento indisponível»,
+      // e o `ready.current = true` logo abaixo, fora dele. O caminho que isso
+      // abria:
+      //
+      //   1. uma migração atira (um campo com forma inesperada, um descuido)
+      //   2. o catch engole o erro — e a mensagem manda olhar para o disco
+      //   3. o `set(patch)` nunca corre: a app fica com o estado INICIAL
+      //   4. `ready` fica verdadeiro
+      //   5. o efeito de gravação escreve o estado inicial por cima de tudo,
+      //      já com `v: SCHEMA` — e a migração nunca volta a correr
+      //
+      // Eventos, movimentos do cofre, histórico de preços: tudo, em silêncio,
+      // sem uma linha no ecrã. Uma casa não se perde por um `catch` genérico.
+      //
+      // Agora são três passos separados, e o único que pode seguir em frente
+      // sem dados é a leitura do disco falhar — aí não havia nada para perder.
+      let raw = null;
+      try { raw = await AsyncStorage.getItem(KEY); }
+      catch (e) { /* armazenamento indisponível — segue em memória */ }
+
+      if (raw) {
+        let saved = null;
+        try { saved = JSON.parse(raw); } catch (e) { saved = null; }
+        const v = saved && typeof saved.v === 'number' ? saved.v : 0;
+
+        // Gravado por uma versão mais recente: não sabemos ler, e ler mal é
+        // pior do que não ler. Fica-se pelas predefinições — mas também não
+        // se grava por cima, senão uma abertura na versão antiga estragava a
+        // casa de quem já anda na nova.
+        if (saved && v > SCHEMA) {
+          gravavelRef.current = false;
+        } else if (saved) {
+          // A cópia do que está no disco, ANTES de lhe mexer. É baratíssima e
+          // é a diferença entre um erro de migração ser um susto ou uma perda.
+          if (v < SCHEMA) {
+            try { await AsyncStorage.setItem(`${KEY}.antes-de-v${v}`, raw); }
+            catch (e) { /* sem espaço: segue, o resto já protege */ }
+          }
+          try {
             for (let n = v + 1; n <= SCHEMA; n++) {
               if (MIGRATIONS[n]) saved = MIGRATIONS[n](saved);
             }
             const patch = {};
             DATA_KEYS.forEach(k => { if (saved[k] !== undefined) patch[k] = saved[k]; });
             set(patch);
+          } catch (e) {
+            // NÃO se grava. O disco fica como está, com a cópia ao lado, e a
+            // app corre em memória até alguém corrigir a migração.
+            gravavelRef.current = false;
+            falhaAoMigrarRef.current = { deVersao: v, paraVersao: SCHEMA, erro: String(e && e.message || e) };
+            if (typeof console !== 'undefined' && console.error) {
+              console.error(`[Nossa Casa] A migração de v${v} para v${SCHEMA} falhou. `
+                + `Os dados no disco NÃO foram tocados e há uma cópia em `
+                + `«${KEY}.antes-de-v${v}». A app corre em memória até isto ser corrigido.`, e);
+            }
           }
         }
-      } catch (e) { /* armazenamento indisponível — segue em memória */ }
+      }
       ready.current = true;
 
       // Depois do local, o servidor — nesta ordem de propósito: a app tem de
@@ -597,6 +645,9 @@ export function StoreProvider({ children }) {
   // gravar a cada alteração, sem escrever igual duas vezes
   useEffect(() => {
     if (!ready.current) return;
+    // ⚠ A guarda que faltava. Sem ela, uma migração falhada era seguida por
+    // uma gravação do estado INICIAL por cima dos dados.
+    if (!gravavelRef.current) return;
     const out = { v: SCHEMA, savedAt: new Date().toISOString() };
     DATA_KEYS.forEach(k => { out[k] = state[k]; });
     const payload = JSON.stringify(out);
