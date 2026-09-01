@@ -1,5 +1,6 @@
 // Tokens do sistema +Cliente. Único sítio onde vivem cores, escala e tipo.
-// Regra herdada do protótipo: títulos de secção são slate, nunca preto.
+// Regra herdada do protótipo: títulos de secção nunca em preto. Eram slate
+// fixo; hoje seguem o esquema do membro — ver `titulo` no `buildTheme`.
 
 // Os seis esquemas. Cada um são DUAS cores: a de ação e a do cabeçalho.
 //
@@ -134,9 +135,33 @@ export const elev = (level = 1) => {
 };
 
 export const buildTheme = (schemeIdx = 0, dark = false) => {
-  const s = SCHEMES[Math.min(SCHEMES.length - 1, Math.max(0, schemeIdx))];
+  // ⚠ Um índice que não seja um número dá o PRIMEIRO esquema, e não `undefined`.
+  //
+  // Era `SCHEMES[Math.min(5, Math.max(0, schemeIdx))]`, e com `schemeIdx` a
+  // valer uma string — `buildTheme('violet', false)`, que é o que meia dúzia de
+  // testes passavam — as contas davam `NaN` e o resultado era `undefined`.
+  // Isso passava despercebido porque espalhar `undefined` num objeto não faz
+  // nada: o tema saía sem acento, sem cabeçalho, e ninguém reparava.
+  //
+  // Deixou de passar no momento em que o título passou a LER `s.hover`. O erro
+  // não era esse — era o índice inválido a ser aceite em silêncio há muito.
+  const i = Number(schemeIdx);
+  const s = SCHEMES[Number.isFinite(i) ? Math.min(SCHEMES.length - 1, Math.max(0, Math.trunc(i))) : 0];
   const c = dark ? DARK : LIGHT;
-  return { ...c, ...s, dark, state: STATE };
+  // O título de secção segue o esquema — e no escuro é o `hover`, não o acento.
+  //
+  // Os títulos eram slate fixo (#67769B). A cor passa a ser a do esquema, mas o
+  // acento não serve nos dois aspetos: medido contra a página escura, o Cinza
+  // dá 2,55:1, o Violeta 2,77 e o Céu 2,98 — abaixo dos 3:1 que um título de
+  // 20 px a 700 precisa. O `hover` é a versão clara de cada acento e existe
+  // exactamente para isto: no escuro vai de 3,51 a 7,02.
+  //
+  // ⚠ As ETIQUETAS (`Label`, 12 px a 600) continuam em slate, e é uma decisão:
+  // texto pequeno precisa de 4,5:1, e aí o Cião falha no claro (3,16) e o Cinza
+  // no escuro (3,51). Uma etiqueta ilegível não fica mais bonita por ser da cor
+  // do esquema.
+  const titulo = dark ? s.hover : s.accent;
+  return { ...c, ...s, dark, titulo, state: STATE };
 };
 
 // Alfa do branco sobre o cabeçalho, calculado da luminância real da cor —

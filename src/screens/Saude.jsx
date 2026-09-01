@@ -371,6 +371,15 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   // store; a lista só mostra as que o utilizador pode ver.
   const fichas = Object.keys(MEMBERS).filter(m => st.canSeeHealth(m, user));
 
+  // Nenhuma das fichas visíveis tem NADA lá dentro.
+  //
+  // Numa casa nova a secção mostrava uma linha por membro a dizer «0 consultas
+  // · 0 documentos» — uma lista de nadas, com avatares e setas, a ocupar o
+  // ecrã para dizer o que uma linha diz. Havendo uma consulta que seja, a
+  // lista volta inteira: é a lista que espera por ter o que mostrar.
+  const semNada = fichas.length > 0 && fichas.every(m =>
+    st.healthOf(m, user).length === 0 && st.docsOf(m, user).length === 0);
+
   const folha = sheet === 'consulta'
     ? <MarcarConsulta t={t} user={user} membro={membroDaFolha} onClose={() => setSheet(null)} />
     : null;
@@ -389,8 +398,12 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
             <Empty t={t} icon="heartPulse" title="Não há fichas que possa ver."
               hint="A sua ficha é privada; as das crianças são visíveis aos adultos." />
           ) : null}
+          {semNada ? (
+            <Empty t={t} icon="heartPulse" title="Ainda não há nada nas fichas desta casa."
+              hint="Use Marcar Consulta para a primeira. A sua ficha é privada; as das crianças são visíveis aos adultos." />
+          ) : null}
           <View style={{ gap: S.md }}>
-            {fichas.map(m => {
+            {(semNada ? [] : fichas).map(m => {
               const n = st.healthOf(m, user).length;
               const d = st.docsOf(m, user).length;
               const prox = st.nextHealth(m, user);

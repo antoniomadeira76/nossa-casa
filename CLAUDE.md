@@ -130,8 +130,13 @@ Sobrecarregar as duas com o mesmo valor apagou metade da interface uma vez.
 transparência; o alfa depende da luminosidade do cabeçalho do esquema, senão os esquemas claros
 falham o contraste. Ver `chromeSub` em `src/theme.js`.
 
-**Títulos de secção em slate** (`#67769B`), não em preto. É a regra de tipo mais distintiva do
-sistema.
+**Títulos de secção seguem o esquema do membro** — nunca preto. Eram slate fixo (`#67769B`);
+passaram a ser o acento do esquema no modo claro e o `hover` no escuro, porque o acento não
+chega aos 3:1 contra a página escura em três dos seis esquemas (Cinza 2,55, Violeta 2,77,
+Céu 2,98). Ver `titulo` em `src/theme.js`.
+
+**As etiquetas pequenas (`Label`) continuam em slate**, e é uma decisão: 12 px precisam de
+4,5:1, e aí o Cião falha no claro e o Cinza no escuro.
 
 **Espaçamento: 2 / 4 / 8 / 16 / 24.** Cinco valores, mais nada. Enchimento dos cartões 14/16.
 

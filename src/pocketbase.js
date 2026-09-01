@@ -290,6 +290,29 @@ export const auth = {
     }
   },
 
+  // Apagar os dados da casa no SERVIDOR.
+  //
+  // O «Começar de Zero» só limpava o `AsyncStorage`: a casa no servidor ficava
+  // intacta e voltava na entrada seguinte. O botão prometia mais do que fazia.
+  //
+  // Ficam a casa, os membros e os papéis — recomeçar a vida da família não é
+  // dissolver a família. Quem verifica isso é o servidor, e há nove provas em
+  // `db/pocketbase/provar-limpar-casa.mjs`: um adulto não pode, uma criança não
+  // pode, e o administrador de outra casa não toca nesta.
+  //
+  // Devolve o que apagou, coleção a coleção. Uma operação destas não responde
+  // «pronto»: quem a pediu tem de poder ver que o que saiu foi o que esperava.
+  async limparCasaNoServidor() {
+    if (!estaLigado()) throw new Error('Servidor não configurado.');
+    const r = await fetch(`${URL.replace(/\/+$/, '')}/api/casa/limpar`, {
+      method: 'POST',
+      headers: { Authorization: pb.authStore.token },
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.message || 'O servidor recusou a limpeza.');
+    return d;
+  },
+
   sair: () => { if (estaLigado()) { pb.authStore.clear(); esquecerToken(); agendaLigada = null; } },
   membro: () => (estaLigado() ? pb.authStore.record : null),
   valida: () => Boolean(estaLigado() && pb.authStore.isValid),

@@ -17,7 +17,7 @@ export const Card = ({ t, children, style, pad = true }) => (
 export const SectionTitle = ({ t, children, right }) => (
   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: S.md, marginBottom: S.md }}>
     <Text style={{ flex: 1, fontFamily: FONT.display, fontSize: 20, fontWeight: '700',
-      color: t.slate, letterSpacing: 0.1 }}>{children}</Text>
+      color: t.titulo || t.slate, letterSpacing: 0.1 }}>{children}</Text>
     {right}
   </View>
 );
