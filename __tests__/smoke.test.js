@@ -9,6 +9,31 @@
  * - Dados críticos são acessíveis
  */
 
+// A camada do servidor é substituída. Não é conveniência: o pacote
+// `pocketbase` é ESM e o Jest não o parseia, portanto qualquer ecrã que o
+// arraste — a Agenda, pela folha de agendar — nem chega a montar.
+//
+// `disponivel: false` é o estado mais exigente: é o que faz a folha desenhar o
+// aviso em vez do interruptor, e o que um ecrã sem agenda ligada mostra.
+jest.mock('../src/pocketbase', () => ({
+  estaLigado: () => false,
+  ligado: false,
+  auth: { valida: () => false, membro: () => null, provedores: async () => ({ alcancavel: false, semServidor: true, lista: [] }) },
+  ler: {},
+  escrever: {},
+  google: {
+    disponivel: () => false,
+    porLigar: () => false,
+    verificar: async () => false,
+    eventos: async () => [],
+    criarEvento: async () => 'id-falso',
+    atualizarEvento: async () => {},
+    apagarEvento: async () => {},
+    ligar: async () => false,
+  },
+  sessaoPronta: async () => false,
+}));
+
 describe('🔥 Smoke Tests — Nossa Casa', () => {
 
   describe('1️⃣ State & Store', () => {
@@ -229,24 +254,37 @@ describe('🔥 Smoke Tests — Nossa Casa', () => {
   });
 
   describe('7️⃣ Design System Compliance', () => {
-    test('Color schemes are defined (invariant #4)', () => {
-      const schemes = [
-        'Azul Sóbrio',
-        'Violeta',
-        'Cião',
-        'Verde',
-        'Grafite',
-        'Céu',
-      ];
-
-      expect(schemes).toHaveLength(6);
+    // ⚠ Estes três liam listas escritas à mão dentro do próprio teste.
+    //
+    // O dos esquemas afirmava que uma lista de seis nomes tinha seis nomes, e
+    // essa lista trazia «Azul Sóbrio», «Verde» e «Grafite» — três esquemas que
+    // deixaram de existir. Passava a verde a descrever uma app que já não era
+    // esta. Um teste que não lê o código não protege o código; dá confiança,
+    // que é pior do que não dar nada.
+    test('Os esquemas de cor vêm do tema, e são seis', () => {
+      const { SCHEMES } = require('../src/theme');
+      expect(SCHEMES).toHaveLength(6);
+      for (const s of SCHEMES) {
+        expect(typeof s.name).toBe('string');
+        expect(s.accent).toMatch(/^#[0-9A-F]{6}$/i);
+        expect(s.chrome).toMatch(/^#[0-9A-F]{6}$/i);
+      }
+      // Sem nomes repetidos: dois esquemas com o mesmo nome no Perfil são
+      // duas bolas indistinguíveis.
+      expect(new Set(SCHEMES.map(s => s.name)).size).toBe(6);
     });
 
-    test('Section titles use slate color', () => {
-      // In CSS, section titles should be #67769B
-      const slateColor = '#67769B';
-      expect(slateColor).toBeDefined();
-      expect(slateColor).toMatch(/^#[0-9A-F]{6}$/i);
+    test('Os títulos de secção são slate, e vêm do tema', () => {
+      const { buildTheme } = require('../src/theme');
+      // Nos dois aspetos: o slate do modo escuro é outro, e ambos têm de
+      // existir — o título nunca é preto (é a regra de tipo mais distintiva
+      // do sistema, no CLAUDE.md).
+      for (const escuro of [false, true]) {
+        const t = buildTheme(0, escuro);
+        expect(t.slate).toMatch(/^#[0-9A-F]{6}$/i);
+        expect(t.slate.toLowerCase()).not.toBe('#000000');
+      }
+      expect(buildTheme(0, false).slate).toBe('#67769B');
     });
   });
 
@@ -267,23 +305,73 @@ describe('🔥 Smoke Tests — Nossa Casa', () => {
     });
   });
 
-  describe('9️⃣ Web Testing Verification', () => {
-    test('App loads on http://localhost:8081 without errors', () => {
-      // This is verified by the browser test that just passed
-      const appUrl = 'http://localhost:8081';
-      const expectedScreens = ['Login', 'ChildSelect', 'Dashboard'];
+  // ⚠ Este bloco chamava-se «Web Testing Verification» e não testava web
+  // nenhuma.
+  //
+  // Um teste dizia «App loads on http://localhost:8081 without errors» e o que
+  // fazia era escrever essa string e verificar que ela existia. O outro
+  // escrevia um par de objetos e contava dois. Nenhum montava nada, nenhum
+  // abria nada — e a porta estava errada, que é o detalhe que revela que
+  // ninguém os leu depois de os escrever.
+  //
+  // Um ecrã montado a sério é o que um teste de fumo deve fazer: se a árvore
+  // rebentar, rebenta aqui. O que precisa de um navegador — o rodapé visível,
+  // os alvos de toque, o desenho — mede-se no navegador, e não se finge aqui.
+  describe('9️⃣ Ecrãs montam sem rebentar', () => {
+    const React = require('react');
+    const TestRenderer = require('react-test-renderer');
+    const { SafeAreaProvider } = require('react-native-safe-area-context');
+    const { StoreProvider } = require('../src/store');
+    const { buildTheme } = require('../src/theme');
 
-      expect(appUrl).toBeDefined();
-      expect(expectedScreens.length).toBeGreaterThan(0);
+    const texto = (n) => {
+      if (n === null || n === undefined || n === false) return '';
+      if (typeof n === 'string' || typeof n === 'number') return String(n);
+      if (Array.isArray(n)) return n.map(texto).join(' ');
+      return texto(n.children || (n.props && n.props.children) || null);
+    };
+
+    const montar = (Ecra, props = {}) => {
+      let arvore = null;
+      TestRenderer.act(() => {
+        arvore = TestRenderer.create(
+          React.createElement(SafeAreaProvider, {
+            initialMetrics: { frame: { x: 0, y: 0, width: 402, height: 874 },
+                              insets: { top: 47, left: 0, right: 0, bottom: 34 } },
+          }, React.createElement(StoreProvider, null,
+            React.createElement(Ecra, {
+              t: buildTheme(0, false), user: 'Rita', go: () => {},
+              onSaude: () => {}, onEquip: () => {}, onFicha: () => {},
+              onClose: () => {}, onEntrar: () => {}, ...props,
+            }))));
+      });
+      return texto(arvore.toJSON());
+    };
+
+    test('O Início monta e diz alguma coisa', () => {
+      const t = montar(require('../src/screens/Inicio').default);
+      expect(t).toContain('Precisa de Si');
+      expect(t.length).toBeGreaterThan(120);
     });
 
-    test('Navigation between screens works (web)', () => {
-      const navigationPaths = [
-        { from: 'Login', to: 'ChildSelect', action: 'clickChildMode' },
-        { from: 'ChildSelect', to: 'Login', action: 'clickBack' },
-      ];
+    test('As Tarefas montam', () => {
+      expect(montar(require('../src/screens/Tarefas').default))
+        .toContain('Rotinas e Tarefas');
+    });
 
-      expect(navigationPaths).toHaveLength(2);
+    test('O Dinheiro monta', () => {
+      expect(montar(require('../src/screens/Dinheiro').default))
+        .toContain('Envelopes');
+    });
+
+    test('A Agenda monta', () => {
+      expect(montar(require('../src/screens/Agenda').default))
+        .toContain('agendar evento');
+    });
+
+    test('As Compras montam', () => {
+      expect(montar(require('../src/screens/Compras').default).length)
+        .toBeGreaterThan(120);
     });
   });
 });
