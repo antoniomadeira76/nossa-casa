@@ -315,3 +315,40 @@ describe('um evento trazido da Google fica ligado a ela', () => {
     expect(ids).toMatch(/e\.idGoogle/);
   });
 });
+
+describe('a janela de eventos inclui o dia de hoje inteiro', () => {
+  // Era `timeMin: new Date().toISOString()` — o instante do pedido. Um evento
+  // de dia inteiro conta como tendo começado à meia-noite, portanto às nove da
+  // manhã já estava fora da janela e a importação não o via.
+  //
+  // Medido contra a agenda a sério: com `timeMin` no instante, quatro eventos
+  // de hoje devolviam ZERO; com `timeMin` de ontem, devolviam os quatro.
+  //
+  // Para uma casa isso é ao contrário: a consulta das nove é precisamente a
+  // que interessa ter na agenda da família, e o ecrã da Agenda mostra o dia
+  // todo. A app e a Google tinham noções diferentes de «hoje».
+  const pb = semComentarios(ler('src/pocketbase.js'));
+  const bloco = pb.slice(pb.indexOf('async eventos'), pb.indexOf('async criarEvento'));
+
+  it('o início da janela é a meia-noite de hoje', () => {
+    expect(bloco).toMatch(/inicioDeHoje/);
+    expect(bloco).toMatch(/timeMin: inicioDeHoje\.toISOString\(\)/);
+  });
+
+  it('e não o instante do pedido', () => {
+    expect(bloco).not.toMatch(/timeMin: agora\.toISOString\(\)/);
+  });
+
+  it('a meia-noite é LOCAL, e não UTC', () => {
+    // `new Date(a, m, d)` dá a meia-noite do fuso de quem está a usar a app.
+    // Com `Date.UTC` a janela abriria uma hora depois em Lisboa no verão, e o
+    // evento de dia inteiro de hoje voltava a cair fora dela.
+    expect(bloco).toMatch(/new Date\(agora\.getFullYear\(\), agora\.getMonth\(\), agora\.getDate\(\)\)/);
+  });
+
+  it('a janela conta os dias a partir desse início', () => {
+    // Contá-los a partir do instante encurtava o último dia — pedir «30 dias»
+    // devolvia 29 dias e um resto.
+    expect(bloco).toMatch(/inicioDeHoje\.getTime\(\) \+ dias \* 86400000/);
+  });
+});

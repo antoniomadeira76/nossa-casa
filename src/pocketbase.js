@@ -384,10 +384,25 @@ export const google = {
   // Os eventos dos próximos `dias`, já na forma que a app usa.
   async eventos({ dias = 30, max = 50 } = {}) {
     const bearer = await tokenDaAgenda();
+
+    // ⚠ A janela começa no INÍCIO DE HOJE, e não no instante em que se pede.
+    //
+    // Era `timeMin: new Date().toISOString()`, e com isso a app nunca via os
+    // eventos de hoje que já tinham começado. Verificado contra a agenda a
+    // sério: com `timeMin` no instante, quatro eventos de hoje devolviam ZERO;
+    // com `timeMin` de ontem, devolviam os quatro. Um evento de dia inteiro
+    // conta como tendo começado à meia-noite, portanto às nove da manhã já
+    // estava fora da janela.
+    //
+    // Para uma casa isso é o contrário do que se quer: a consulta das nove é
+    // precisamente a que interessa ter na agenda da família, e o ecrã da
+    // Agenda mostra o dia todo. A app e a Google tinham noções diferentes de
+    // «hoje», e a importação não oferecia nada sem dizer porquê.
     const agora = new Date();
-    const ate = new Date(agora.getTime() + dias * 86400000);
+    const inicioDeHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    const ate = new Date(inicioDeHoje.getTime() + dias * 86400000);
     const q = new URLSearchParams({
-      timeMin: agora.toISOString(), timeMax: ate.toISOString(),
+      timeMin: inicioDeHoje.toISOString(), timeMax: ate.toISOString(),
       singleEvents: 'true', orderBy: 'startTime', maxResults: String(max),
     });
     const r = await fetch(`${CAL}?${q}`, { headers: { Authorization: `Bearer ${bearer}` } });
