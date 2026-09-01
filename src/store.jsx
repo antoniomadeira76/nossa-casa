@@ -242,7 +242,8 @@ const BACKUPS_ANTIGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(n => `${KEY}.ant
 // Só isto é gravado. O resto — separador ativo, folha aberta, rascunhos — é UI.
 const DATA_KEYS = [
   'done', 'pending', 'status', 'registered', 'acertoMovs', 'vaultMoves', 'paidPts', 'extraLog',
-  'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'newItems', 'itemGone',
+  'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'pontosDeTarefasApagadas',
+  'newItems', 'itemGone',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'importDone', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pointValue', 'payDay', 'splitHalf',
@@ -516,6 +517,7 @@ export const DEMO = () => ({
   paidPts: Object.fromEntries(Object.keys(MEMBERS).filter(n => MEMBERS[n].kid).map(n => [n, 0])),
   extraLog: {},
   envMove: {}, added: [], newTasks: [], taskEdits: {}, taskGone: {},
+  pontosDeTarefasApagadas: [],
   newItems: [], itemGone: {}, newEquip: [], equipGone: {}, equipEdits: {},
   schemeByUser: {}, themeByUser: {}, importDone: {},
   notif: { digest: true, hour: '20:00', lead: 1 },
@@ -964,9 +966,61 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // Os pontos de partida são semente da demonstração; uma criança nova
     // começa a zero, que é o correto — não herda o histórico de ninguém.
     const base = s.clearedSeeds ? 0 : (PONTOS_INICIAIS[k] || 0);
-    a[k] = base + allTasks().filter(t => t.who === k && s.done[t.id] && !TASKS.some(x => x.id === t.id && x.done)).reduce((n, t) => n + (t.pts || 0), 0);
+    // ⚠ Os pontos de tarefas APAGADAS somam-se à parte, e é o INVARIANTE #2.
+    //
+    // Isto soma sobre `allTasks()`, que filtra as apagadas. Apagar uma tarefa
+    // já FEITA tirava à criança pontos que ela ganhou — e se já tivessem sido
+    // pagos, o `kidPts - paidPts` ficava NEGATIVO e a criança passava a dever
+    // pontos à casa por causa de uma arrumação de um adulto.
+    //
+    // Um ponto ganho não se desfaz porque a tarefa deixou de interessar. O
+    // livro é aditivo: apagar escreve um movimento, não reescreve uma soma.
+    const guardados = (s.pontosDeTarefasApagadas || [])
+      .filter(m => m.quem === k).reduce((n, m) => n + (m.pts || 0), 0);
+    a[k] = base + guardados
+      + allTasks().filter(t => t.who === k && s.done[t.id] && !TASKS.some(x => x.id === t.id && x.done)).reduce((n, t) => n + (t.pts || 0), 0);
     return a;
   }, {});
+
+  // Apagar uma tarefa.
+  //
+  // Havia `taskGone` no estado e no filtro do `allTasks` desde sempre, e NADA
+  // o escrevia: uma tarefa criada por engano ficava na casa para sempre, e a
+  // folha de gestão só oferecia urgência, prazo e responsável.
+  //
+  // ── O que sai, e o que fica ────────────────────────────────────────────
+  //
+  // Sai a tarefa e os mapas que só lhe dizem respeito — urgência, prazo,
+  // edições, rotação, estado de feita. Ficam OS PONTOS que ela já rendeu, num
+  // movimento aditivo (INVARIANTE #2): um ponto ganho não se desfaz porque a
+  // tarefa deixou de interessar.
+  //
+  // As criadas na app saem de `newTasks`; as da semente não podem sair de lá —
+  // vêm de um ficheiro — e por isso ficam marcadas no `taskGone`. Duas formas
+  // de desaparecer porque há duas formas de existir.
+  const removerTarefa = (id) => set(x => {
+    const t = allTasks().find(y => y.id === id);
+    if (!t) return {};
+
+    const daApp = (x.newTasks || []).some(y => y.id === id);
+    const fora = (m) => { const { [id]: _, ...resto } = m || {}; return resto; };
+
+    // O ponto ganho é da criança, não da tarefa.
+    const rende = x.done[id] && (t.pts || 0) > 0 && criancas.includes(t.who)
+      && !TASKS.some(y => y.id === id && y.done);
+
+    return {
+      newTasks: daApp ? x.newTasks.filter(y => y.id !== id) : x.newTasks,
+      taskGone: daApp ? x.taskGone : { ...x.taskGone, [id]: true },
+      urg: fora(x.urg), due: fora(x.due), taskEdits: fora(x.taskEdits),
+      rotate: fora(x.rotate), done: fora(x.done), pending: fora(x.pending),
+      pontosDeTarefasApagadas: rende
+        ? [...(x.pontosDeTarefasApagadas || []),
+           { id, quem: t.who, pts: t.pts, titulo: t.title, at: Date.now() }]
+        : (x.pontosDeTarefasApagadas || []),
+      registo: [{ t: `A tarefa «${t.title}» foi apagada`, at: Date.now() }, ...x.registo],
+    };
+  });
 
   // Tarefa: por fazer → (criança) a confirmar → (adulto) concluída
   // Recorrentes: rastrear quando foram resetadas hoje para reassumir amanhã
@@ -1608,6 +1662,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
     garantiasAExpirar, receitasAExpirar, consultasProximas,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring, definirAvatar, trazerFotografia,
+    removerTarefa,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
     lerDoServidor,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),

@@ -7,6 +7,7 @@ import { EUR, subtituloDaTarefa } from '../format';
 import { Card, SectionTitle, Label, Pill, Row, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
+import Confirm from '../Confirm';
 import NovaTarefa from '../sheets/NovaTarefa';
 import Cofre from '../sheets/Cofre';
 
@@ -22,18 +23,27 @@ const URG = [
 // chegada — é o que faz uma tarefa tocada no Início levar àquela tarefa.
 export default function Tarefas({ t, user, abrir }) {
   const st = useStore();
-  const { s, set, allTasks, kidPts, dueOf, isRecurring, membros: MEMBERS,
+  const { s, set, allTasks, kidPts, dueOf, isRecurring, removerTarefa, membros: MEMBERS,
           membrosDaCasa, criancas } = st;
   const [filter, setFilter] = useState('Todos');
   const [manage, setManage] = useState(abrir || null);
   React.useEffect(() => { if (abrir) setManage(abrir); }, [abrir]);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [aApagar, setAApagar] = useState(null);
   const [cofre, setCofre] = useState(null);   // criança cujo cofre está aberto
 
   const all = allTasks();
   const shown = filter === 'Todos' ? all : all.filter(x => x.who === filter);
   const pg = usePaged(shown, 5);
   const task = all.find(x => x.id === manage);
+
+  // A tarefa que está a ser apagada, e o que ela já rendeu.
+  //
+  // ⚠ Lê-se do `all` e não do `task`: a folha de gestão fecha quando se
+  // confirma, e a pergunta tem de continuar a saber de que tarefa fala.
+  const aApagarTarefa = all.find(x => x.id === aApagar);
+  const pontosQueFicam = aApagarTarefa && s.done[aApagarTarefa.id]
+    && criancas.includes(aApagarTarefa.who) ? (aApagarTarefa.pts || 0) : 0;
 
   return (
     <>
@@ -244,7 +254,43 @@ export default function Tarefas({ t, user, abrir }) {
             <Toggle t={t} on={!!s.rotate[task.id]} label="Alternar entre as crianças"
               onPress={() => set(x => ({ rotate: { ...x.rotate, [task.id]: !x.rotate[task.id] } }))} />
           </View>
+
+          {/* ── Apagar ──────────────────────────────────────────────────────
+              Não havia. Havia `taskGone` no estado e no filtro do `allTasks`
+              desde sempre, e nada o escrevia: uma tarefa criada por engano
+              ficava na casa para sempre, e esta folha só oferecia urgência,
+              prazo e responsável.
+
+              Fica em baixo, depois de tudo o que se pode ajustar, e separado
+              por uma linha: quem vem aqui para mudar a urgência não passa pelo
+              apagar a caminho. */}
+          <View style={{ height: 1, backgroundColor: t.divider }} />
+          <Pressable onPress={() => setAApagar(task.id)}
+            accessibilityRole="button" accessibilityLabel={`Apagar ${task.title}`}
+            style={{ minHeight: 44, borderRadius: R.pill, borderWidth: 1, borderColor: t.state.err,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <Icon name="trash" size={18} color={t.state.errDeep} />
+            <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.state.errDeep }}>
+              Apagar Tarefa
+            </Text>
+          </Pressable>
         </Sheet>
+      ) : null}
+
+      {/* ⚠ A pergunta diz o que a tarefa RENDEU, quando rendeu.
+          Apagar uma tarefa feita não tira pontos a ninguém — ficam guardados
+          num movimento aditivo (INVARIANTE #2) — e quem apaga tem de saber
+          isso ANTES de decidir, senão hesita por uma razão que não existe. */}
+      {aApagar && aApagarTarefa ? (
+        <Confirm t={t} destructive icon="trash"
+          title={`Apagar «${aApagarTarefa.title}»?`}
+          message={pontosQueFicam
+            ? `A tarefa sai da lista. Os ${pontosQueFicam} pontos que já rendeu ficam `
+              + `com ${aApagarTarefa.who} — um ponto ganho não se desfaz. Não se desfaz.`
+            : 'A tarefa sai da lista e não volta. Não se desfaz.'}
+          confirmLabel="Apagar"
+          onConfirm={() => { removerTarefa(aApagar); setAApagar(null); setManage(null); }}
+          onCancel={() => setAApagar(null)} />
       ) : null}
 
       {cofre ? <Cofre t={t} kid={cofre} onClose={() => setCofre(null)} /> : null}
