@@ -36,7 +36,7 @@ import * as servidor from '../pocketbase';
 // `db/pocketbase/provar-limpar-casa.mjs`. Esta folha é a porta; o servidor é a
 // fechadura.
 export default function ConfirmarAdministradores({
-  t, user, titulo, aviso, rotuloAcao, onConfirmado, onCancelar,
+  t, user, titulo, aviso, rotuloAcao, erro: erroDeFora, onConfirmado, onCancelar,
 }) {
   const { s, membros: MEMBROS } = useStore();
 
@@ -170,6 +170,8 @@ export default function ConfirmarAdministradores({
         icon="trash"
         disabled={(!podeAvancar && !semServidor) || aExecutar}
         onPress={executar} />
+
+      {erroDeFora ? <Tile t={t} kind="err">{erroDeFora}</Tile> : null}
 
       {!podeAvancar && !semServidor ? (
         <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>

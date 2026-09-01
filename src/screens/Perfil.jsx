@@ -8,6 +8,8 @@ import { FEM } from '../data';
 import { Card, SectionTitle, Label, Row, Pill, Primary, Toggle, Segmented, Tap, Avatar } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
+import ConfirmarAdministradores from '../sheets/ConfirmarAdministradores';
+import * as servidor from '../pocketbase';
 
 // O aspeto por extenso, para a frase que diz o que está escolhido.
 const MODO_LABEL = { claro: 'Claro', escuro: 'Escuro', sistema: 'Segue o dispositivo' };
@@ -40,6 +42,45 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
   const admin = isAdmin(user);
   const mode = s.themeByUser[user] || 'claro';
   const scheme = s.schemeByUser[user] ?? 0;
+
+  // Qual das duas acções destrutivas está à espera de confirmação.
+  //
+  // As duas apagavam a casa AO TOQUE — `onPress={resetDemo}`, sem uma pergunta,
+  // e lado a lado. Duas acções irreversíveis à distância de um dedo enganado.
+  //
+  // Agora abrem uma folha que exige a confirmação de TODOS os administradores,
+  // cada um com a sua palavra-passe, verificada pelo servidor. Ver
+  // `sheets/ConfirmarAdministradores.jsx`.
+  const [aApagar, setAApagar] = useState(null);   // 'repor' | 'zero' | null
+  const [erroAoApagar, setErroAoApagar] = useState(null);
+
+  const APAGAR = {
+    repor: {
+      titulo: 'Repor Dados de Demonstração',
+      aviso: 'Esta acção substitui a casa pelos dados de demonstração. '
+        + 'O que esta família escreveu — eventos, tarefas, despesas, cofres — sai. Não se desfaz.',
+      rotulo: 'Repor a demonstração',
+      fazer: async () => { resetDemo(); },
+    },
+    zero: {
+      titulo: 'Começar de Zero',
+      aviso: 'Esta acção apaga os dados desta casa — eventos, tarefas, despesas, '
+        + 'cofres, equipamentos e preços — NESTE APARELHO E NO SERVIDOR. '
+        + 'Os membros e os papéis ficam. Não se desfaz.',
+      rotulo: 'Apagar os dados da casa',
+      // O servidor PRIMEIRO, e a loja local só depois.
+      //
+      // Ao contrário de tudo o resto nesta app, que é local-primeiro: se o
+      // servidor recusar — sessão caducada, papel mudado entretanto — a casa
+      // local fica intacta e a folha diz porquê. Limpar aqui e falhar lá
+      // deixava as duas metades a discordar, e a seguinte leitura do servidor
+      // trazia tudo de volta sem ninguém perceber.
+      fazer: async () => {
+        if (servidor.estaLigado()) await servidor.auth.limparCasaNoServidor();
+        startBlank();
+      },
+    },
+  };
 
   return (
     <Sheet t={t} title={`${user} ${nomeDaCasa}`} sub={MEMBERS[user]?.email || ROLE_LABEL(s.roles[user], user)}
@@ -167,7 +208,7 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
 
       {admin ? (
         <View style={{ gap: S.md }}>
-          <Pressable onPress={resetDemo} accessibilityRole="button" accessibilityLabel="Repor dados de demonstração"
+          <Pressable onPress={() => { setErroAoApagar(null); setAApagar('repor'); }} accessibilityRole="button" accessibilityLabel="Repor dados de demonstração"
             style={{ minHeight: 44, borderRadius: R.pill, borderWidth: 2, borderColor: t.accent,
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <Icon name="refresh" size={18} color={t.accent} />
@@ -175,7 +216,7 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
               Repor Dados de Demonstração
             </Text>
           </Pressable>
-          <Pressable onPress={startBlank} accessibilityRole="button" accessibilityLabel="Começar de zero"
+          <Pressable onPress={() => { setErroAoApagar(null); setAApagar('zero'); }} accessibilityRole="button" accessibilityLabel="Começar de zero"
             style={{ minHeight: 44, borderRadius: R.pill, borderWidth: 1, borderColor: t.border,
               alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.text2 }}>
@@ -183,6 +224,34 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
             </Text>
           </Pressable>
         </View>
+      ) : null}
+
+      {/* A confirmação dos administradores. Vive dentro da folha do Perfil, e
+          não fora dela: o INVARIANTE #1 quer o rodapé como último filho da raiz
+          da app, e uma folha aberta fora da árvore levava-o com ela. */}
+      {aApagar ? (
+        <Sheet t={t} title={APAGAR[aApagar].titulo}
+          sub="Precisa de todos os administradores"
+          onClose={() => setAApagar(null)}>
+          <ConfirmarAdministradores
+            t={t} user={user}
+            titulo={APAGAR[aApagar].titulo}
+            aviso={APAGAR[aApagar].aviso}
+            rotuloAcao={APAGAR[aApagar].rotulo}
+            erro={erroAoApagar}
+            onCancelar={() => setAApagar(null)}
+            onConfirmado={async () => {
+              try {
+                await APAGAR[aApagar].fazer();
+                setAApagar(null);
+                onClose();
+              } catch (e) {
+                // A folha fica aberta com o erro à vista. Fechá-la aqui era
+                // deixar quem carregou sem saber se a casa foi ou ficou.
+                setErroAoApagar(e.message || 'Não foi possível apagar.');
+              }
+            }} />
+        </Sheet>
       ) : null}
     </Sheet>
   );

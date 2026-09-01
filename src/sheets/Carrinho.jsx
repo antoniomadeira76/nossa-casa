@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
-import { S, R, FONT, elev } from '../theme';
+import { S, R, FONT, elev , LARGURA_APP } from '../theme';
 import { EUR } from '../format';
 import { Card, Label, Primary, Tile } from '../ui';
 import Icon from '../Icon';
@@ -13,7 +13,9 @@ export default function Carrinho({ t, doneItems, items, cart, pago, user, store,
 
   return (
     <Modal transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+      {/* Dentro da coluna da app — ver o comentário no `Sheet.jsx`. */}
+      <View style={{ flex: 1, justifyContent: 'flex-end',
+        width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto' }}>
         <Pressable onPress={onClose} accessibilityLabel="Fechar"
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' }} />
         <View style={{

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, Modal } from 'react-native';
-import { S, R, FONT, elev } from './theme';
+import { S, R, FONT, elev, LARGURA_APP } from './theme';
 import Icon from './Icon';
 
 // Diálogo de confirmação. `destructive` pinta a ação de vermelho e deixa-a
@@ -13,8 +13,10 @@ export default function Confirm({
   const tone = destructive ? t.state.err : t.accent;
   return (
     <Modal transparent animationType="fade" onRequestClose={onCancel} statusBarTranslucent>
+      {/* Dentro da coluna da app: o <Modal> escapa à raiz no
+          react-native-web, e o escurecido apanhava a janela toda. */}
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
-        alignItems: 'center', justifyContent: 'center', padding: S.xl }}>
+        width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: S.xl }}>
         <View style={{ width: '100%', maxWidth: 360, backgroundColor: t.surface,
           borderRadius: R.card, padding: S.xl, gap: S.lg, ...elev(3) }}>
 

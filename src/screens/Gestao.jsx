@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT, corDoMembro } from '../theme';
+import { S, R, FONT, corDoMembro, LARGURA_APP } from '../theme';
 import { EUR } from '../format';
 import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty } from '../ui';
 import Icon from '../Icon';
@@ -645,7 +645,7 @@ export default function Gestao({ t, user, onClose }) {
       {modal === 'confirmarRemocao' && selectedMember && (
         <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
           <Pressable onPress={() => setModal(null)}
-            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
             <Pressable style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 320 }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
                 Tirar {selectedMember} da casa?
@@ -895,7 +895,7 @@ export default function Gestao({ t, user, onClose }) {
       {modal === 'deleteSpecialty' && (
         <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
           <Pressable onPress={() => setModal(null)}
-            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
             <Pressable style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
                 Apagar especialidade?
@@ -935,7 +935,7 @@ export default function Gestao({ t, user, onClose }) {
       {modal === 'openMonth' && (
         <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
           <Pressable onPress={() => setModal(null)}
-            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
             <Pressable style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 320 }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
                 Abrir novo mês?
@@ -975,7 +975,7 @@ export default function Gestao({ t, user, onClose }) {
       {modal === 'closeMonth' && (
         <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
           <Pressable onPress={() => setModal(null)}
-            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
             <Pressable style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 320 }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
                 Fechar mês?
@@ -1105,7 +1105,7 @@ export default function Gestao({ t, user, onClose }) {
       {modal === 'confirmDeleteShop' && (
         <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
           <Pressable onPress={() => setModal(null)}
-            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
             <Pressable style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 300 }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
                 Apagar loja?

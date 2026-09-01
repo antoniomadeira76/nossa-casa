@@ -99,6 +99,15 @@ export const corDoMembro = (nome, cor) => {
   return PALETA_MEMBROS[h % PALETA_MEMBROS.length];
 };
 
+// A largura da coluna da app.
+//
+// Estava só no App.jsx, e as modais não a viam: no monitor, uma folha abria de
+// ponta a ponta da janela enquanto a app vivia numa coluna de 460 no meio. A
+// folha do Perfil chegava a 909 px sobre uma app de 460.
+//
+// Aqui, quem precisa lê. Um telemóvel do tamanho do alvo (402) não nota nada.
+export const LARGURA_APP = 460;
+
 // Escala de espaçamento: cinco valores, mais nada
 export const S = { xs: 2, sm: 4, md: 8, lg: 16, xl: 24, empty: 48 };
 

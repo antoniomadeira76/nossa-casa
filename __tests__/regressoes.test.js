@@ -1294,3 +1294,37 @@ describe('O fundo à volta da coluna, no monitor', () => {
     expect(bloco).toMatch(/typeof document === 'undefined'/);
   });
 });
+
+describe('As modais correm dentro da coluna da app', () => {
+  // O `<Modal>` do react-native-web sai da raiz e vai para o topo do DOM — é
+  // isso que o faz escapar ao `maxWidth` da coluna. No monitor, a folha do
+  // Perfil abria com 909 px sobre uma app de 460, e o escurecido apanhava a
+  // fotografia à volta, que não é da app.
+  const fs = require('fs');
+  const path = require('path');
+  const raiz = path.join(__dirname, '..');
+
+  const COM_MODAL = ['src/Sheet.jsx', 'src/Confirm.jsx', 'src/ConfirmShare.jsx',
+    'src/sheets/Carrinho.jsx', 'src/screens/Gestao.jsx'];
+
+  test('a largura vive no tema, e não repetida em cada ficheiro', () => {
+    // Dois 460 em sítios diferentes divergem no dia em que um deles muda.
+    expect(read('src/theme.js')).toMatch(/export const LARGURA_APP = \d+/);
+  });
+
+  for (const f of COM_MODAL) {
+    test(`${f} limita a modal à largura da app`, () => {
+      const c = read(f);
+      expect(c).toMatch(/maxWidth: LARGURA_APP/);
+      expect(c).toMatch(/LARGURA_APP.*from '.*theme'/s);
+    });
+  }
+
+  test('nenhum ficheiro escreve o 460 à mão', () => {
+    const culpados = [];
+    for (const f of [...COM_MODAL, 'App.jsx']) {
+      if (/maxWidth: 460\b/.test(read(f))) culpados.push(f);
+    }
+    expect(culpados).toEqual([]);
+  });
+});

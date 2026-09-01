@@ -5,7 +5,7 @@ import * as Font from 'expo-font';
 import { Roboto_500Medium, Roboto_400Regular } from '@expo-google-fonts/roboto';
 import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { StoreProvider, useStore } from './src/store';
-import { buildTheme, onChrome, chromeLine, S, R, FONT, elev } from './src/theme';
+import { buildTheme, onChrome, chromeLine, S, R, FONT, elev, LARGURA_APP } from './src/theme';
 import Icon, { Marca } from './src/Icon';
 import { FEM, DE } from './src/data';
 import { EUR, dayLabel, TODAY, TODAY_KEY, warrantyDaysLeft, semanaDeHoje, plural,
@@ -470,7 +470,7 @@ function Shell() {
   // maxWidth e margens automáticas na PRÓPRIA raiz, sem envolver nada: a raiz
   // é a coluna flex do INVARIANTE #1 e um <View> a mais em volta dela é
   // exactamente o erro #1 da lista do CLAUDE.md.
-  const LARGURA_MAX = 460;
+  const LARGURA_MAX = LARGURA_APP;
   // ⚠ INVARIANTE — ver CLAUDE.md
   // Cabeçalho e rodapé aparecem em TODAS as janelas. A raiz é uma coluna flex
   // com três filhos e a condição do rodapé não leva nada além de "estar na app":

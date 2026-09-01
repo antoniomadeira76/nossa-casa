@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, Modal } from 'react-native';
-import { S, R, FONT } from './theme';
+import { S, R, FONT, LARGURA_APP } from './theme';
 import Icon from './Icon';
 
 export default function ConfirmShare({ t, type, isPrivate, onConfirm, onCancel }) {
@@ -12,7 +12,10 @@ export default function ConfirmShare({ t, type, isPrivate, onConfirm, onCancel }
 
   return (
     <Modal transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: S.lg }}>
+      {/* Dentro da coluna da app — ver o comentário no `Sheet.jsx`. */}
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
+        width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto',
+        alignItems: 'center', justifyContent: 'center', padding: S.lg }}>
         <View style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.xl, gap: S.lg, maxWidth: 320 }}>
           <View style={{ alignItems: 'center', gap: S.md }}>
             <Icon name={icon} size={32} color={t.accent} />
