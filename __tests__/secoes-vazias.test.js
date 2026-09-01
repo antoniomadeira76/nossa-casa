@@ -23,8 +23,10 @@ const NUNCA_VAZIAS = {
     'as áreas e os seus itens são texto escrito à mão neste ficheiro',
   'src/screens/Gestao.jsx :: Membros e PIN':
     'quem abre a Gestão é membro da casa, logo a lista tem-no sempre',
-  'src/screens/Perfil.jsx :: O Meu Perfil':
-    'os aspetos e os seis esquemas de cor são constantes do tema',
+  // Chamava-se «O Meu Perfil» e passou a «Aparência» quando o ecrã foi
+  // reorganizado. Foi esta prova que deu por isso — é para isso que ela existe.
+  'src/screens/Perfil.jsx :: Aparência':
+    'os três aspetos e os seis esquemas de cor são constantes do tema',
 };
 
 // `].map(` é um array escrito na própria linha — as opções de um Segmented, os

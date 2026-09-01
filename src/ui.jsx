@@ -233,13 +233,22 @@ export const Segmented = ({ t, options, value, onChange, small }) => (
   </View>
 );
 
+// ⚠ O alvo tem 44 de altura; o desenho continua a ter 27.
+//
+// Media 46×27 e contava com o `hitSlop={10}` para chegar aos 44. O `hitSlop`
+// funciona no telemóvel e o react-native-web IGNORA-O — no navegador o alvo
+// era mesmo 27, e o INVARIANTE #5 não abre excepção para um interruptor.
+//
+// Medido no Perfil, com todos os alvos do ecrã: era o único abaixo de 44.
 export const Toggle = ({ t, on, onPress, label }) => (
   <Pressable onPress={onPress} accessibilityRole="switch" accessibilityState={{ checked: on }}
     accessibilityLabel={label} hitSlop={10}
-    style={{ width: 46, height: 27, borderRadius: R.pill, padding: 3,
+    style={{ minWidth: 46, minHeight: 44, alignItems: 'flex-end', justifyContent: 'center' }}>
+    <View style={{ width: 46, height: 27, borderRadius: R.pill, padding: 3,
       backgroundColor: on ? t.chrome : t.border,
       alignItems: on ? 'flex-end' : 'flex-start', justifyContent: 'center' }}>
-    <View style={{ width: 21, height: 21, borderRadius: R.pill, backgroundColor: '#FFFFFF', ...elev(1) }} />
+      <View style={{ width: 21, height: 21, borderRadius: R.pill, backgroundColor: '#FFFFFF', ...elev(1) }} />
+    </View>
   </Pressable>
 );
 

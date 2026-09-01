@@ -5,8 +5,9 @@ import { useStore } from '../store';
 import { SCHEMES, S, R, FONT, elev, corDoMembro } from '../theme';
 import { EUR, plural } from '../format';
 import { FEM } from '../data';
-import { Card, SectionTitle, Label, Row, Pill, Primary, Toggle, Segmented, Tap, Avatar, avatarDe } from '../ui';
+import { Card, SectionTitle, Label, Row, Pill, Primary, Toggle, Segmented, Tap, Avatar, avatarDe, mostraFotografia } from '../ui';
 import Icon from '../Icon';
+import { nomeDaFigura } from '../Avatares';
 import Sheet from '../Sheet';
 import ConfirmarAdministradores from '../sheets/ConfirmarAdministradores';
 import EscolherAvatar from '../sheets/EscolherAvatar';
@@ -55,6 +56,21 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
   const [aApagar, setAApagar] = useState(null);   // 'repor' | 'zero' | null
   const [erroAoApagar, setErroAoApagar] = useState(null);
   const [aEscolherAvatar, setAEscolherAvatar] = useState(false);
+
+  // O subtítulo da linha do Avatar: a escolha EM CURSO, por extenso. Um «ver»
+  // ou um «alterar» não diz nada que a seta já não diga; o que a pessoa quer
+  // saber ao passar os olhos é o que está lá agora.
+  //
+  // A ordem é a mesma do `mostraFotografia`, para a linha não poder mentir
+  // sobre o que a bola ao lado dela mostra.
+  const COMO_APARECE = mostraFotografia(MEMBERS[user])
+    ? 'A fotografia da conta Google'
+    : (MEMBERS[user]?.figura && nomeDaFigura(MEMBERS[user].figura))
+      || 'A sua inicial';
+
+  // Quantos administradores tem esta casa — a frase da secção de apagar conta-os
+  // em vez de prometer «todos» sem dizer quantos são.
+  const nAdmins = Object.values(s.roles || {}).filter(r => r === 'admin').length;
 
   const APAGAR = {
     repor: {
@@ -123,11 +139,28 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
         </Card>
       </View>
 
-      <SectionTitle t={t}>O Meu Perfil</SectionTitle>
+      {/* ── Aparência ──────────────────────────────────────────────────────
+          Três perguntas sobre a mesma coisa — como este perfil se vê e como
+          esta pessoa aparece — debaixo de um cabeçalho só.
 
-      {/* Aspeto e cor são a mesma pergunta — um bloco só */}
+          O AVATAR entra aqui porque não estava em lado nenhum: a escolha
+          abria-se tocando na bola do cabeçalho da folha, e nada no ecrã dizia
+          que aquilo era tocável. Um gesto que não se anuncia não existe. */}
+      <View>
+        <SectionTitle t={t}>Aparência</SectionTitle>
+        <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+          <Row t={t} icon="user" title="Avatar" sub={COMO_APARECE}
+            right={<View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+              <Avatar {...avatarDe(user, MEMBERS[user], t.text3)} size={28} />
+              <Icon name="caretRight" size={18} color={t.text3} />
+            </View>}
+            onPress={() => setAEscolherAvatar(true)} last />
+        </Card>
+      </View>
+
+      <Card t={t} style={{ gap: S.lg }}>
       <View style={{ gap: S.md }}>
-        <Label t={t}>Aspeto</Label>
+        <Label t={t}>Claro ou escuro</Label>
         <View style={{ flexDirection: 'row', gap: S.md }}>
           {[{ k: 'claro', icon: 'sun', label: 'Claro' },
             { k: 'escuro', icon: 'moon', label: 'Escuro' },
@@ -144,7 +177,12 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
             );
           })}
         </View>
-        <View style={{ height: 1, backgroundColor: t.divider }} />
+      </View>
+
+      <View style={{ height: 1, backgroundColor: t.divider }} />
+
+      <View style={{ gap: S.md }}>
+        <Label t={t}>Cor do perfil</Label>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, flexWrap: 'wrap' }}>
           {SCHEMES.map((sc, i) => {
             const on = scheme === i;
@@ -188,11 +226,13 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
           membros mantêm o que escolheram.
         </Text>
       </View>
+      </Card>
 
-      {/* Avisos: os dados estão em s.notif desde sempre e nada os mostrava.
-          A referência 24 tem este bloco entre o Aspeto e os Dados. */}
-      <View style={{ gap: S.md }}>
-        <Label t={t}>Avisos</Label>
+      {/* ── Avisos ─────────────────────────────────────────────────────────
+          Os dados estão em `s.notif` desde sempre e nada os mostrava. Sobe a
+          cabeçalho próprio: era um `Label` de 12 px a servir de secção. */}
+      <View>
+        <SectionTitle t={t}>Avisos</SectionTitle>
         <Card t={t} style={{ gap: S.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
             <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 14.5, lineHeight: 22, color: t.text2 }}>
@@ -205,32 +245,66 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
         </Card>
       </View>
 
-      <View style={{ height: 1, backgroundColor: t.divider }} />
+      {/* ── A App ──────────────────────────────────────────────────────────
+          Este cartão não tinha cabeçalho nenhum, e vinha depois de uma régua
+          que não separava nada com nome. */}
+      <View>
+        <SectionTitle t={t}>A App</SectionTitle>
+        <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+          <Row t={t} icon="fileText" title="Documentação" sub="O que a app faz, versão a versão"
+            onPress={() => { onClose(); onDoc?.(); }} last />
+        </Card>
+        {/* ⚠ Isto era uma LINHA, com ícone, título e subtítulo — igual à
+            Documentação ao lado, que abre um ecrã. Uma afirmação vestida de
+            navegação: parecia tocável e não era. É uma nota de rodapé, e passa
+            a ter o aspeto de uma. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
+          paddingHorizontal: 2, paddingTop: S.md }}>
+          <Icon name="lock" size={14} color={t.text3} />
+          <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+            Guardado neste dispositivo — os dados desta casa não saem daqui.
+          </Text>
+        </View>
+      </View>
 
-      <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
-        <Row t={t} icon="lock" title="Guardado neste dispositivo"
-          sub="Os dados desta casa não saem daqui" />
-        <Row t={t} icon="fileText" title="Documentação" sub="O que a app faz, versão a versão"
-          onPress={() => { onClose(); onDoc?.(); }} last />
-      </Card>
+      {/* ── Apagar Dados ───────────────────────────────────────────────────
+          ⚠ Estes dois botões estavam soltos no fim da página, sem cabeçalho e
+          sem uma palavra a dizer o que faziam. E o mais perigoso dos dois era
+          o ÚNICO pintado com a cor de ação — que nesta app se lê como «este é
+          o botão principal do ecrã». O que ele faz é apagar a casa.
 
+          Agora têm secção com nome, uma frase que diz o que os espera, e a cor
+          de erro do sistema em vez do acento do esquema. A cor de ação volta a
+          querer dizer só uma coisa. */}
       {admin ? (
-        <View style={{ gap: S.md }}>
-          <Pressable onPress={() => { setErroAoApagar(null); setAApagar('repor'); }} accessibilityRole="button" accessibilityLabel="Repor dados de demonstração"
-            style={{ minHeight: 44, borderRadius: R.pill, borderWidth: 2, borderColor: t.accent,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <Icon name="refresh" size={18} color={t.accent} />
-            <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '700', color: t.accent }}>
-              Repor Dados de Demonstração
+        <View>
+          <SectionTitle t={t}>Apagar Dados</SectionTitle>
+          <Card t={t} style={{ gap: S.lg }}>
+            <Text style={{ fontFamily: FONT.body, fontSize: 13.5, lineHeight: 21, color: t.text2 }}>
+              As duas acções não se desfazem, e nenhuma acontece ao toque:{' '}
+              {nAdmins > 1
+                ? `pedem a confirmação dos ${nAdmins} administradores desta casa.`
+                : 'pedem a sua confirmação.'}
             </Text>
-          </Pressable>
-          <Pressable onPress={() => { setErroAoApagar(null); setAApagar('zero'); }} accessibilityRole="button" accessibilityLabel="Começar de zero"
-            style={{ minHeight: 44, borderRadius: R.pill, borderWidth: 1, borderColor: t.border,
-              alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.text2 }}>
-              Começar de Zero (casa nova)
-            </Text>
-          </Pressable>
+            <Pressable onPress={() => { setErroAoApagar(null); setAApagar('repor'); }}
+              accessibilityRole="button" accessibilityLabel="Repor dados de demonstração"
+              style={{ minHeight: 44, borderRadius: R.pill, borderWidth: 1, borderColor: t.state.err,
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <Icon name="refresh" size={18} color={t.state.errDeep} />
+              <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.state.errDeep }}>
+                Repor Dados de Demonstração
+              </Text>
+            </Pressable>
+            <Pressable onPress={() => { setErroAoApagar(null); setAApagar('zero'); }}
+              accessibilityRole="button" accessibilityLabel="Começar de zero"
+              style={{ minHeight: 44, borderRadius: R.pill, borderWidth: 1, borderColor: t.state.err,
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <Icon name="trash" size={18} color={t.state.errDeep} />
+              <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.state.errDeep }}>
+                Começar de Zero (casa nova)
+              </Text>
+            </Pressable>
+          </Card>
         </View>
       ) : null}
 
