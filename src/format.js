@@ -170,11 +170,23 @@ export const dayLabel = (key) => {
 // Sem hora não é meia-noite — devolve vazio
 export const evTime = (t) => (!t || t === '00:00') ? '' : t;
 
+// A hora de agora.
+//
+// O `dueInfo` tinha `new Date(TODAY.y, TODAY.m, TODAY.d, 14, 30)` — as 14:30,
+// sempre. Uma tarefa para as 18:00 dizia «falta 3h30» às nove da manhã e às
+// onze da noite. Com o `EXPO_PUBLIC_HOJE` posto, mantém-se as 14:30: as provas
+// e as capturas de referência contam com essa hora, e um teste que dependa do
+// minuto em que corre não serve de teste.
+export const agoraNaApp = () => {
+  if (HOJE_FIXO) return new Date(TODAY.y, TODAY.m, TODAY.d, 14, 30);
+  return new Date();
+};
+
 // Prazo de uma tarefa: quanto falta, ou quanto está atrasada
 export const dueInfo = (dueKey, dueTime) => {
   const o = parseKey(dueKey);
   if (!o) return null;
-  const now = new Date(TODAY.y, TODAY.m, TODAY.d, 14, 30);
+  const now = agoraNaApp();
   const [hh, mm] = (dueTime || '23:59').split(':').map(Number);
   const due = new Date(o.y, o.m, o.d, hh, mm);
   const diffMin = Math.round((due - now) / 60000);

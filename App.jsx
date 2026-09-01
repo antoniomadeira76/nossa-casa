@@ -8,7 +8,8 @@ import { StoreProvider, useStore } from './src/store';
 import { buildTheme, onChrome, chromeLine, S, R, FONT, elev } from './src/theme';
 import Icon, { Marca } from './src/Icon';
 import { FEM, DE } from './src/data';
-import { EUR, dayLabel, TODAY, TODAY_KEY, warrantyDaysLeft, semanaDeHoje, plural } from './src/format';
+import { EUR, dayLabel, TODAY, TODAY_KEY, warrantyDaysLeft, semanaDeHoje, plural,
+         chaveRelativa } from './src/format';
 import Login from './src/screens/Login';
 import Inicio from './src/screens/Inicio';
 import Dinheiro from './src/screens/Dinheiro';
@@ -57,10 +58,16 @@ const daGoogle = (e) => ({
   description: e.local || '',
 });
 
+// Os eventos que o aviso de importação mostra numa casa de demonstração.
+//
+// Tinham as datas escritas — `d2026-08-28`, `29`, `30`. A 1 de setembro o
+// aviso oferecia três eventos «novos» que já tinham passado: uma reunião na
+// semana anterior, um almoço no sábado que já foi. São deslocamentos, como o
+// resto das sementes.
 const EVENTOS_DE_DEMONSTRACAO = [
-  { id: 'gcal-1', title: 'Reunião de equipa', date: 'd2026-08-28', time: '14:00', isRecurring: false, description: '' },
-  { id: 'gcal-2', title: 'Almoço com a mãe', date: 'd2026-08-29', time: '12:30', isRecurring: false, description: 'Restaurante Taberna' },
-  { id: 'gcal-3', title: 'Chamada com o cliente', date: 'd2026-08-30', time: '10:00', isRecurring: true, description: 'Reunião semanal' },
+  { id: 'gcal-1', title: 'Reunião de equipa', date: chaveRelativa(2), time: '14:00', isRecurring: false, description: '' },
+  { id: 'gcal-2', title: 'Almoço com a mãe', date: chaveRelativa(3), time: '12:30', isRecurring: false, description: 'Restaurante Taberna' },
+  { id: 'gcal-3', title: 'Chamada com o cliente', date: chaveRelativa(4), time: '10:00', isRecurring: true, description: 'Reunião semanal' },
 ];
 
 // Os subtítulos vêm da semana e do mês da app, não escritos à mão. O da

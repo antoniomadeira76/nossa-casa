@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES, HEALTH, HEALTH_DOCS, VAULT, DE } from './data';
-import { TODAY_KEY, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY } from './format';
+import { TODAY_KEY, TODAY, MONTHS, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY,
+         chaveRelativa } from './format';
 import { observacao, precosDe, estimativaDe, compararLojas } from './precos';
 // A camada do servidor entra por importação dinâmica, não estática. Duas
 // razões: o SDK do PocketBase é ESM e uma importação estática arrastava-o
@@ -411,6 +412,17 @@ export const MIGRATIONS = {
   },
 };
 
+// O próximo domingo, para o plano de compras da demonstração.
+//
+// A ida às compras da casa é ao domingo, e a semente tinha o dia escrito —
+// `d2026-08-23`. Fora dessa semana, o ecrã mostrava um plano para um dia que
+// já tinha passado.
+const proximoDomingo = () => {
+  const hoje = new Date(TODAY.y, TODAY.m, TODAY.d);
+  // getDay(): 0 é domingo. Se hoje for domingo, é hoje.
+  return chaveRelativa((7 - hoje.getDay()) % 7);
+};
+
 export const DEMO = () => ({
   done: TASKS.reduce((a, t) => (a[t.id] = !!t.done, a), {}),
   pending: {}, status: {}, registered: 0, acertoMovs: [],
@@ -424,7 +436,10 @@ export const DEMO = () => ({
   rotate: {},
   urg: TASKS.reduce((a, t) => (a[t.id] = t.urg ?? 1, a), {}),
   due: TASKS.reduce((a, t) => (t.due && (a[t.id] = { key: t.due, time: t.dueTime }), a), {}),
-  monthName: 'Agosto', monthLimits: null, monthZero: false,
+  // Era `'Agosto'` escrito à mão. A 1 de setembro o cabeçalho do Dinheiro
+  // dizia «Conta conjunta · Agosto de 2026» e o Início «Orçamento de Agosto»,
+  // com o resto da app já em setembro.
+  monthName: MONTHS[TODAY.m], monthLimits: null, monthZero: false,
   clearedSeeds: false, eventGone: {}, eventEdits: {},
   roles: { ...ROLES },
   pins: {},                       // sem PIN de fábrica — o adulto define
@@ -433,7 +448,10 @@ export const DEMO = () => ({
   stores: ['Continente de Belém', 'Pingo Doce da Ajuda', 'Mercado de Alcântara'],
   shopPlan: {
     who: Object.keys(MEMBERS).filter(n => !MEMBERS[n].kid)[1] || Object.keys(MEMBERS)[0],
-    day: 'd2026-08-23', time: '10:30', store: 0,   // domingo
+    // O próximo domingo, e não `'d2026-08-23'`. A data fixa passou, e o ecrã
+    // dizia «Compras de domingo · Domingo, 23/08» numa semana que começava a
+    // 31/08 — um plano para um dia que já lá vai.
+    day: proximoDomingo(), time: '10:30', store: 0,
   },
   shopHistory: [],
   // O histórico de preços da casa: uma observação por artigo, loja e dia.

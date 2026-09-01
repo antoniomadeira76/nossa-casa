@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
-import { EUR, plural, evTime, TODAY_KEY, dayLabel } from '../format';
+import { EUR, plural, evTime, TODAY_KEY, dayLabel, agoraNaApp } from '../format';
 
 import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade } from '../ui';
 import Icon from '../Icon';
@@ -13,8 +13,9 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
           garantiasAExpirar, receitasAExpirar, consultasProximas, membros: MEMBERS,
           acerto, acertado, artigo, oNome, aoNome, podeVerEvento } = st;
 
-  const hour = 9;
-  const greet = hour < 13 ? 'Bom dia' : hour < 20 ? 'Boa tarde' : 'Boa noite';
+  // Era `const hour = 9`, e a app dizia «Bom dia» às onze da noite.
+  const hora = agoraNaApp().getHours();
+  const greet = hora < 13 ? 'Bom dia' : hora < 20 ? 'Boa tarde' : 'Boa noite';
 
   const tasks = allTasks();
   const toConfirm = tasks.filter(x => s.pending[x.id]);

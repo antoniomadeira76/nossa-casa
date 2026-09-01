@@ -39,15 +39,15 @@ export const TASKS = [
 ];
 
 export const ITEMS = [
-  { id: 'maca',   s: 0, label: 'Maçã reineta · 1,5 kg',     est: 3.40, by: 'Adicionado por Rita · 19/08' },
+  { id: 'maca',   s: 0, label: 'Maçã reineta · 1,5 kg',     est: 3.40, by: `Adicionado por Rita · ${ddmmRelativo(-1)}` },
   { id: 'cen',    s: 0, label: 'Cenoura · 1 kg',            est: 1.20, staple: true, by: 'Artigo habitual · semanal' },
-  { id: 'ban',    s: 0, label: 'Banana · 1 kg',             est: 1.85, real: 1.85, by: 'Comprado por Tomás · 19/08' },
+  { id: 'ban',    s: 0, label: 'Banana · 1 kg',             est: 1.85, real: 1.85, by: `Comprado por Tomás · ${ddmmRelativo(-1)}` },
   { id: 'leite',  s: 1, label: 'Leite meio-gordo · 6 un.',  est: 5.10, staple: true, by: 'Artigo habitual · semanal' },
-  { id: 'iog',    s: 1, label: 'Iogurtes das crianças · 8', est: 4.60, by: 'Adicionado pela Mia · 20/08' },
+  { id: 'iog',    s: 1, label: 'Iogurtes das crianças · 8', est: 4.60, by: `Adicionado pela Mia · ${ddmmRelativo(0)}` },
   { id: 'queijo', s: 1, label: 'Queijo flamengo fatiado',   est: 3.20, staple: true, by: 'Artigo habitual' },
-  { id: 'mant',   s: 1, label: 'Manteiga sem sal',          est: 2.50, by: 'Adicionado por Rita · 20/08' },
+  { id: 'mant',   s: 1, label: 'Manteiga sem sal',          est: 2.50, by: `Adicionado por Rita · ${ddmmRelativo(0)}` },
   { id: 'arroz',  s: 2, label: 'Arroz agulha · 1 kg',       est: 1.30, staple: true, by: 'Artigo habitual' },
-  { id: 'massa',  s: 2, label: 'Massa espirais · 500 g',    est: 0.95, by: 'Adicionado por Tomás · 20/08' },
+  { id: 'massa',  s: 2, label: 'Massa espirais · 500 g',    est: 0.95, by: `Adicionado por Tomás · ${ddmmRelativo(0)}` },
   { id: 'cafe',   s: 2, label: 'Café moído · 250 g',        est: 3.80, staple: true, by: 'Artigo habitual' },
   { id: 'pao',    s: 2, label: 'Pão de forma',              est: 1.60, by: 'Adicionado por Rita · há 3 min' },
   { id: 'papel',  s: 3, label: 'Papel de cozinha · 6 rolos',est: 4.20, staple: true, by: 'Artigo habitual' },

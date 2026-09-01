@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
-import { EUR, warrantyDaysLeft } from '../format';
+import { EUR, warrantyDaysLeft, MONTHS } from '../format';
 import { ENV_BASE, GOALS, EQUIP } from '../data';
 import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Tap, Opcao } from '../ui';
 import Icon from '../Icon';
@@ -92,9 +92,10 @@ export default function Dinheiro({ t, user, onEquip }) {
   // O que sobra do rendimento depois de atribuir os envelopes — a segunda
   // metade da frase da referência 05.
   const semEnvelope = Math.max(0, (s.rendimento || 0) - budget);
-  const MESES_SEG = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho',
-    'Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const proximoMes = MESES_SEG[(MESES_SEG.indexOf(s.monthName) + 1) % 12];
+  // Os meses vêm do `format.js`, onde já viviam. Uma segunda lista escrita à
+  // mão aqui era um sítio a mais para divergir — e divergiu: esta tinha os
+  // acentos certos e ninguém garantia que continuasse.
+  const proximoMes = MONTHS[(MONTHS.indexOf(s.monthName) + 1) % 12];
 
   const eq = allEquip();
   const eqWarn = eq.filter(x => { const d = warrantyDaysLeft(x); return d >= 0 && d <= 90; }).length;
@@ -127,7 +128,11 @@ export default function Dinheiro({ t, user, onEquip }) {
     set(x => ({
       monthLimits: envLimits,
       monthZero: false,
-      monthName: 'Setembro', // This should be dynamic based on current month
+      // Era `'Setembro'` escrito à mão, com um TODO em inglês ao lado.
+      // Abrir o mês em março punha a app a dizer «Orçamento de Setembro» em
+      // quatro ecrãs, e o `proximoMes` daí em diante contava a partir do mês
+      // errado. É o mês SEGUINTE ao que está aberto, que é o que o botão diz.
+      monthName: proximoMes,
       registered: 0,
     }));
     setSheet(null);

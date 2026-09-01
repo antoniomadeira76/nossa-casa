@@ -20,14 +20,22 @@ const DIAS = [
   '2027-06-15',   // um dia qualquer, longe do original
 ];
 
+// ⚠ O `store.jsx` tem de ser carregado AQUI, com os outros.
+//
+// A primeira versão só recarregava `data` e `format`, e depois pedia
+// `require('../src/store')` dentro de cada `it`. O registo de módulos já tinha
+// avançado: o store vinha com a data da ÚLTIMA iteração do ciclo, e o teste do
+// dia 20 de agosto comparava-se contra junho de 2027. Cinco falhas que não
+// eram do código.
 const carregar = (dia) => {
   jest.resetModules();
   const guardado = process.env.EXPO_PUBLIC_HOJE;
   process.env.EXPO_PUBLIC_HOJE = dia;
   const data = require('../src/data');
   const format = require('../src/format');
+  const store = require('../src/store');
   process.env.EXPO_PUBLIC_HOJE = guardado;
-  return { ...data, ...format };
+  return { ...data, ...format, DEMO: store.DEMO };
 };
 
 for (const dia of DIAS) {
@@ -125,6 +133,39 @@ for (const dia of DIAS) {
         const saldo = m.VAULT.filter(v => v.kid === kid)
           .reduce((a, v) => a + v.delta, 0);
         expect(saldo).toBeGreaterThan(0);
+      }
+    });
+
+    it('o mês do orçamento é o mês de hoje', () => {
+      // Era `'Agosto'` escrito à mão. A 1 de setembro o Dinheiro dizia «Conta
+      // conjunta · Agosto de 2026» e o Início «Orçamento de Agosto», com o
+      // resto da app já em setembro.
+      expect(m.DEMO().monthName).toBe(m.MONTHS[m.TODAY.m]);
+    });
+
+    it('a ida às compras é num domingo que ainda não passou', () => {
+      // A semente tinha `d2026-08-23` — um domingo, mas só naquela semana.
+      // Fora dela o ecrã mostrava um plano para um dia que já lá ia.
+      const chave = m.DEMO().shopPlan.day;
+      const p = m.parseKey(chave);
+      expect(p).not.toBeNull();
+      expect(new Date(p.y, p.m, p.d).getDay()).toBe(0);        // domingo
+      expect(m.daysUntil(chave)).toBeGreaterThanOrEqual(0);    // hoje ou à frente
+      expect(m.daysUntil(chave)).toBeLessThanOrEqual(6);
+    });
+
+    it('as legendas dos artigos não trazem datas de outra semana', () => {
+      // «Adicionado por Rita · 19/08» numa lista da semana de 31/08.
+      const comData = m.ITEMS.map(i => i.by).filter(b => /\d{2}\/\d{2}/.test(b));
+      expect(comData.length).toBeGreaterThan(2);
+      for (const b of comData) {
+        const [, dd, mm] = b.match(/(\d{2})\/(\d{2})/);
+        const ano = Number(mm) - 1 > m.TODAY.m ? m.TODAY.y - 1 : m.TODAY.y;
+        const dias = Math.round(
+          (Date.UTC(m.TODAY.y, m.TODAY.m, m.TODAY.d) - Date.UTC(ano, Number(mm) - 1, Number(dd))) / 86400000);
+        // Adicionado nos últimos dias, nunca no futuro.
+        expect(dias).toBeGreaterThanOrEqual(0);
+        expect(dias).toBeLessThanOrEqual(7);
       }
     });
 
