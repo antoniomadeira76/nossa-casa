@@ -1,4 +1,5 @@
-import { dkey, TODAY, TODAY_KEY, TOMORROW_KEY } from './format';
+import { dkey, TODAY, TODAY_KEY, TOMORROW_KEY, chaveRelativa, dmyRelativo,
+         diaEMesRelativo, ddmmRelativo, mesEAnoRelativo } from './format';
 
 // `fem` é o género gramatical, e está aqui porque é uma propriedade da pessoa
 // — não uma coisa que se adivinhe do nome. Havia três sítios a fazer
@@ -59,34 +60,36 @@ export const EVENTS = [
   { id: 'e3', day: TODAY_KEY,    time: '18:00', title: 'Consulta do dentista',    who: 'Tomás · Dr.ª Neves',               owner: 'Tomás', shared: false },
   { id: 'e4', day: TOMORROW_KEY, time: '09:00', title: 'Reunião de pais — 2.º ano', who: 'Rita e Tomás',                   owner: 'Rita',  shared: true },
   { id: 'e5', day: TOMORROW_KEY, time: '17:00', title: 'Natação do Léo',          who: 'Rita · Léo',                       owner: 'Léo',   shared: true },
-  { id: 'e6', day: dkey(2026, 7, 23), time: '10:30', title: 'Compras da semana',  who: 'Tomás · lista com 13 artigos',     owner: 'Tomás', shared: true },
-  { id: 'e7', day: dkey(2026, 7, 23), time: '16:00', title: 'Anos da Clara — festa', who: 'Mia · levar prenda',            owner: 'Mia',   shared: true },
+  { id: 'e6', day: chaveRelativa(3), time: '10:30', title: 'Compras da semana',  who: 'Tomás · lista com 13 artigos',     owner: 'Tomás', shared: true },
+  { id: 'e7', day: chaveRelativa(3), time: '16:00', title: 'Anos da Clara — festa', who: 'Mia · levar prenda',            owner: 'Mia',   shared: true },
 ];
 
 export const EQUIP = [
-  { id: 'maq',  name: 'Máquina de lavar roupa Bosch', cat: 'Eletrodomésticos', bought: '12/03/2025', shop: 'Worten · Colombo',        price: 549,  warrantyEnd: '12/03/2027', daysLeft: 203,   maint: 'Limpeza do filtro',           maintDate: '15/09/2026' },
-  { id: 'frig', name: 'Frigorífico Samsung RB34',     cat: 'Eletrodomésticos', bought: '04/10/2023', shop: 'El Corte Inglés',         price: 899,  warrantyEnd: '04/10/2026', daysLeft: 44,    maint: 'Substituição do filtro de água', maintDate: '28/09/2026' },
-  { id: 'cald', name: 'Caldeira Vulcano 24 kW',       cat: 'Aquecimento',      bought: '18/11/2021', shop: 'Instalador Aquatérmica',  price: 1250, warrantyEnd: '18/11/2023', daysLeft: -1007, maint: 'Revisão anual obrigatória',   maintDate: '02/11/2026' },
-  { id: 'dell', name: 'Portátil Dell da Rita',        cat: 'Informática',      bought: '20/01/2026', shop: 'Dell Online',             price: 1099, warrantyEnd: '20/01/2028', daysLeft: 517,   maint: '',                            maintDate: '' },
+  { id: 'maq',  name: 'Máquina de lavar roupa Bosch', cat: 'Eletrodomésticos', bought: dmyRelativo(-526), shop: 'Worten · Colombo',        price: 549,  warrantyEnd: dmyRelativo(203),   daysLeft: 203,   maint: 'Limpeza do filtro',           maintDate: dmyRelativo(26) },
+  { id: 'frig', name: 'Frigorífico Samsung RB34',     cat: 'Eletrodomésticos', bought: dmyRelativo(-1051), shop: 'El Corte Inglés',         price: 899,  warrantyEnd: dmyRelativo(44),    daysLeft: 44,    maint: 'Substituição do filtro de água', maintDate: dmyRelativo(39) },
+  { id: 'cald', name: 'Caldeira Vulcano 24 kW',       cat: 'Aquecimento',      bought: dmyRelativo(-1736), shop: 'Instalador Aquatérmica',  price: 1250, warrantyEnd: dmyRelativo(-1007), daysLeft: -1007, maint: 'Revisão anual obrigatória',   maintDate: dmyRelativo(74) },
+  { id: 'dell', name: 'Portátil Dell da Rita',        cat: 'Informática',      bought: dmyRelativo(-212), shop: 'Dell Online',             price: 1099, warrantyEnd: dmyRelativo(517),   daysLeft: 517,   maint: '',                            maintDate: '' },
 ];
 
 export const GOALS = [
-  { name: 'Férias no Algarve', at: 1920, of: 3000, when: 'julho de 2027' },
+  { name: 'Férias no Algarve', at: 1920, of: 3000, when: mesEAnoRelativo(345) },
   { name: 'Carro novo',        at: 6600, of: 30000, when: 'sem prazo' },
 ];
 
 // Fichas de saúde. Uma consulta é um episódio: especialidade, médico, quando,
 // e os anexos que lhe pertencem. Os documentos soltos ficam no arquivo clínico.
-// Datas explícitas: dkey não normaliza, e somar dias ao dia do mês dava «49/08».
+// As datas são deslocamentos em relação a hoje, não datas escritas: ver
+// `chaveRelativa` em `format.js`. Eram explícitas, e quando o «hoje» deixou de
+// estar preso a 20/08/2026 ficaram todas no passado.
 export const HEALTH = [
   { id: 'h1', member: 'Mia',   specialty: 'Dentista',       doctor: 'Dr. Cardoso',
-    day: dkey(2026, 7, 28), time: '10:00' },   // 28/08, daqui a 8 dias
+    day: chaveRelativa(8),  time: '10:00' },   // daqui a 8 dias
   { id: 'h2', member: 'Léo',   specialty: 'Pediatria',      doctor: 'Dr.ª Neves',
-    day: dkey(2026, 7, 8),  time: '16:30' },   // 08/08, já passou
+    day: chaveRelativa(-12), time: '16:30' },  // já passou
   { id: 'h3', member: 'Léo',   specialty: 'Oftalmologia',   doctor: 'Dr. Sequeira',
-    day: dkey(2026, 8, 18), time: '09:15' },   // 18/09
+    day: chaveRelativa(29), time: '09:15' },   // daqui a um mês
   { id: 'h4', member: 'Rita',  specialty: 'Medicina geral', doctor: 'Dr.ª Pinto',
-    day: dkey(2026, 6, 11), time: '11:00' },   // 11/07, já passou
+    day: chaveRelativa(-40), time: '11:00' },  // já passou, há mais tempo
 ];
 
 // Arquivo clínico: documentos, ligados ou não a uma consulta.
@@ -96,7 +99,7 @@ export const HEALTH_DOCS = [
   // Uma receita tem prazo, e é isso que a põe no «Precisa de Si» do Início.
   // Sem esta semente, a linha da referência não tinha dados por trás.
   { id: 'd3', member: 'Léo', healthId: 'h2', title: 'Ferro — 3 meses', kind: 'Receita',
-    expires: dkey(2026, 8, 10) },   // 10/09 — faltam 21 dias
+    expires: chaveRelativa(21) },   // faltam 21 dias — é o que a põe no «Precisa de Si»
 ];
 
 // Movimentos iniciais dos cofres. Vivem aqui, como as tarefas e os
@@ -104,20 +107,22 @@ export const HEALTH_DOCS = [
 // que se grava. Persistir as sementes fazia com que mudá-las não tivesse
 // efeito em quem já tinha a app aberta.
 export const VAULT = [
-  { id: 'vm-l0', kid: 'Léo', delta: 8.30, kind: 'semanada', day: dkey(2026, 7, 2),
-    label: 'Semanadas anteriores', sub: 'até 2 de agosto' },
-  { id: 'vm-l1', kid: 'Léo', delta: -2.50, kind: 'retirada', day: dkey(2026, 7, 9),
+  { id: 'vm-l0', kid: 'Léo', delta: 8.30, kind: 'semanada', day: chaveRelativa(-18),
+    label: 'Semanadas anteriores', sub: `até ${diaEMesRelativo(-18)}` },
+  { id: 'vm-l1', kid: 'Léo', delta: -2.50, kind: 'retirada', day: chaveRelativa(-11),
     label: 'Retirada — cromos', sub: 'autorizado pelo Tomás' },
-  { id: 'vm-l2', kid: 'Léo', delta: 5.00, kind: 'bonus', day: dkey(2026, 7, 14),
+  { id: 'vm-l2', kid: 'Léo', delta: 5.00, kind: 'bonus', day: chaveRelativa(-6),
     label: 'Bónus — boletim escolar', sub: 'Rita' },
-  { id: 'vm-l3', kid: 'Léo', delta: 1.60, kind: 'semanada', day: dkey(2026, 7, 17),
-    label: 'Semanada de 10 a 16 de agosto', sub: '16 pt · pago a 17/08' },
-  { id: 'vm-m0', kid: 'Mia', delta: 7.40, kind: 'semanada', day: dkey(2026, 7, 2),
-    label: 'Semanadas anteriores', sub: 'até 2 de agosto' },
-  { id: 'vm-m1', kid: 'Mia', delta: -1.00, kind: 'retirada', day: dkey(2026, 7, 11),
+  { id: 'vm-l3', kid: 'Léo', delta: 1.60, kind: 'semanada', day: chaveRelativa(-3),
+    label: `Semanada de ${diaEMesRelativo(-10)} a ${diaEMesRelativo(-4)}`,
+    sub: `16 pt · pago a ${ddmmRelativo(-3)}` },
+  { id: 'vm-m0', kid: 'Mia', delta: 7.40, kind: 'semanada', day: chaveRelativa(-18),
+    label: 'Semanadas anteriores', sub: `até ${diaEMesRelativo(-18)}` },
+  { id: 'vm-m1', kid: 'Mia', delta: -1.00, kind: 'retirada', day: chaveRelativa(-9),
     label: 'Retirada — gelado', sub: 'autorizado pela Rita' },
-  { id: 'vm-m2', kid: 'Mia', delta: 1.40, kind: 'bonus', day: dkey(2026, 7, 13),
+  { id: 'vm-m2', kid: 'Mia', delta: 1.40, kind: 'bonus', day: chaveRelativa(-7),
     label: 'Bónus — arrumou o quarto', sub: 'Tomás' },
-  { id: 'vm-m3', kid: 'Mia', delta: 1.10, kind: 'semanada', day: dkey(2026, 7, 17),
-    label: 'Semanada de 10 a 16 de agosto', sub: '11 pt · pago a 17/08' },
+  { id: 'vm-m3', kid: 'Mia', delta: 1.10, kind: 'semanada', day: chaveRelativa(-3),
+    label: `Semanada de ${diaEMesRelativo(-10)} a ${diaEMesRelativo(-4)}`,
+    sub: `11 pt · pago a ${ddmmRelativo(-3)}` },
 ];

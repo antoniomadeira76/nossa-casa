@@ -108,6 +108,54 @@ export const TOMORROW_KEY = (() => {
   return dkey(d.getFullYear(), d.getMonth(), d.getDate());
 })();
 
+// ── Datas relativas a hoje ───────────────────────────────────────────────────
+//
+// Os dados de demonstração tinham as datas escritas à mão em torno de 20 de
+// agosto de 2026, com o «hoje» preso na mesma data. Quando o «hoje» passou a
+// vir do relógio, a demonstração ficou toda no passado: consultas «próximas»
+// há duas semanas, garantias já expiradas, uma receita a expirar há um mês.
+//
+// Passam a ser DESLOCAMENTOS. `-18` é há dezoito dias, `+8` é daqui a oito, e
+// a demonstração é coerente em qualquer dia em que alguém a abra.
+//
+// ⚠ Tudo isto conta com um `Date`, e não somando ao dia do mês. `dkey` não
+// normaliza: somar 12 a 20 de agosto dava «d2026-08-32», que o `parseKey`
+// aceita pelo formato e não é dia nenhum.
+export const diaRelativo = (dias) => new Date(TODAY.y, TODAY.m, TODAY.d + dias);
+
+// A chave interna: `d2026-09-09`.
+export const chaveRelativa = (dias) => {
+  const d = diaRelativo(dias);
+  return dkey(d.getFullYear(), d.getMonth(), d.getDate());
+};
+
+// O que se escreve num campo de data: `09/09/2026`.
+export const dmyRelativo = (dias) => {
+  const d = diaRelativo(dias);
+  return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
+};
+
+// O que se escreve numa frase: `9 de setembro`. As legendas das sementes do
+// cofre dizem «Semanada de 10 a 16 de agosto» — texto com datas lá dentro, que
+// tem de acompanhar os deslocamentos, senão a demonstração contradiz-se a si
+// própria e isso é pior do que estar desactualizada.
+export const diaEMesRelativo = (dias) => {
+  const d = diaRelativo(dias);
+  return `${d.getDate()} de ${MONTHS[d.getMonth()].toLowerCase()}`;
+};
+
+// «julho de 2027», para o prazo de uma meta.
+export const mesEAnoRelativo = (dias) => {
+  const d = diaRelativo(dias);
+  return `${MONTHS[d.getMonth()].toLowerCase()} de ${d.getFullYear()}`;
+};
+
+// E o curto, para «pago a 17/08».
+export const ddmmRelativo = (dias) => {
+  const d = diaRelativo(dias);
+  return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`;
+};
+
 const wdIndex = (o) => (new Date(o.y, o.m, o.d).getDay() + 6) % 7;
 
 export const dayLabel = (key) => {

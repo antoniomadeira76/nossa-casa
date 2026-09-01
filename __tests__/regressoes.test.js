@@ -684,13 +684,28 @@ describe('PIN', () => {
 });
 
 describe('Equipamentos', () => {
-  const dataSrc = read('src/data.js');
-  const equip = [...dataSrc.matchAll(
-    /\{ id: '(\w+)',\s+name: '([^']+)',\s+cat: '([^']+)',\s+bought: '([^']+)',[\s\S]*?warrantyEnd: '([^']+)'/g
-  )].map(([, id, name, cat, bought, warrantyEnd]) => ({ id, name, cat, bought, warrantyEnd }));
+  // As sementes IMPORTAM-SE, não se raspam do ficheiro.
+  //
+  // Isto era uma expressão regular sobre o texto de `src/data.js`, à procura
+  // de `bought: '12/03/2025'`. No dia em que as datas passaram a ser
+  // deslocamentos — `dmyRelativo(-526)`, para a demonstração não envelhecer —
+  // a expressão deixou de casar, `equip` ficou vazio, e dois testes falharam
+  // sem que nada estivesse errado.
+  //
+  // É o mesmo erro que já está registado mais acima neste ficheiro: olhar
+  // para a formatação em vez do invariante. Importar dá os VALORES, que é o
+  // que estes testes querem medir.
+  const { EQUIP: equip } = require('../src/data');
 
   test('as sementes foram lidas', () => {
     expect(equip.length).toBe(4);
+    // E têm os campos que o resto deste bloco mede — se um deles se chamar
+    // outra coisa, falha aqui e não três testes abaixo.
+    for (const e of equip) {
+      expect(typeof e.bought).toBe('string');
+      expect(e.bought).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+      expect(e.warrantyEnd).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+    }
   });
 
   // O ecrã lia e.category/e.purchase; as sementes têm cat/bought. Todas as
