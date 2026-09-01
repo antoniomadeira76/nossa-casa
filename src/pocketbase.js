@@ -289,7 +289,6 @@ export const google = {
   // `verificar()` é que vai ao servidor; até ele responder, `null` quer dizer
   // «ainda não se sabe» — e um ecrã que não sabe não deve afirmar nada.
   disponivel: () => agendaLigada === true,
-  porSaber: () => agendaLigada === null,
 
   // Há sessão, mas a agenda não está ligada — é uma situação a EXPLICAR, e não
   // a esconder. Numa app sem servidor devolve falso: aí não há nada a ligar.

@@ -169,15 +169,25 @@ function Shell() {
   // eventos AINDA NÃO VISTOS — não o histórico da casa. Os dispensados ficam
   // marcados em `googleCalendarImported`, por isso o «Agora não» continua a
   // valer para aqueles e não para os que vierem depois.
+  // ⚠ `MEMBERS` TEM de estar nas dependências.
+  //
+  // `entrar()` faz `setUser(nome)` e só DEPOIS lê a casa do servidor. O efeito
+  // disparava com o nome já posto e o quadro ainda vazio, caía na primeira
+  // linha — `!MEMBERS[user]` — e não voltava a correr, porque `MEMBERS` não
+  // estava na lista. Resultado: entrar pela Google nunca pesquisava a agenda.
+  // Só uma recarga da página o fazia, e aí já havia membros à partida.
   useEffect(() => {
     if (!user || !MEMBERS[user] || MEMBERS[user].kid) return;
 
     let vivo = true;
     (async () => {
-      // Primeiro saber SE está ligada. `disponivel()` é síncrono para a
-      // interface o poder ler, e antes desta pergunta responde `null` — que é
-      // «ainda não se sabe», e não «não está».
-      if (servidor.google.porSaber()) await servidor.google.verificar();
+      // Saber se a agenda está ligada NESTA conta, sempre que alguém entra.
+      //
+      // Antes só se perguntava quando a resposta era desconhecida. Se um
+      // adulto saísse e o outro entrasse, ficava a resposta do primeiro — a
+      // app dizia «ligada» a quem nunca a ligou, e depois falhava a cada
+      // pedido sem explicar porquê.
+      await servidor.google.verificar();
       if (!vivo) return;
 
       const jaVistos = s.googleCalendarImported || {};
@@ -202,7 +212,7 @@ function Shell() {
       if (vivo && novos.length) { setEventosGoogle(novos); setGoogleImport(true); }
     })();
     return () => { vivo = false; };
-  }, [user, s.googleCalendarImported, s.clearedSeeds]);
+  }, [user, MEMBERS, s.googleCalendarImported, s.clearedSeeds]);
 
   // Quem entrou, tal como o quadro da casa o conhece. Pode ser `undefined`
   // durante um instante: quem entra pela Google chega com um nome que a loja
@@ -215,8 +225,18 @@ function Shell() {
   // membros a sério. Sem isto, quem entrava ficava com o seu nome e a família
   // de demonstração ao lado.
   const entrar = async (nome) => {
-    setUser(nome);
+    // ⚠ A CASA antes do NOME, como na retoma da sessão logo acima.
+    //
+    // Estava ao contrário, e a diferença não era cosmética: o efeito que
+    // pesquisa a agenda da Google corre quando o `user` muda, e caía logo no
+    // `!MEMBERS[user]` porque o quadro ainda estava vazio. Entrar pela Google
+    // nunca pesquisava a agenda — só uma recarga da página o fazia, e aí os
+    // membros já estavam lá à partida.
+    //
+    // Nesta ordem, quem entra já encontra a casa montada: o quadro, o tema do
+    // perfil e a agenda apanham-no todos no mesmo passo.
     await lerDoServidor();
+    setUser(nome);
   };
 
   const mode = (user && s.themeByUser[user]) || 'claro';
