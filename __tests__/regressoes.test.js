@@ -1222,3 +1222,35 @@ describe('Nenhum ecrã tem números do orçamento escritos à mão', () => {
     }
   });
 });
+
+describe('Concordância de género nos nomes dos membros', () => {
+  // «Cofre do Mia», visto no ecrã. É o mesmo erro que já tinha dado «Saúde do
+  // Mia» — o `deNome`/`oNome`/`aoNome` existem na loja desde então, e estes
+  // sítios não os usavam. O género é uma propriedade da pessoa, não coisa que
+  // se adivinhe do nome.
+  const jsx = () => {
+    const fs = require('fs');
+    const path = require('path');
+    const dirs = ['src', 'src/screens', 'src/sheets', 'src/modals'];
+    return dirs.flatMap(d => {
+      const p = path.join(__dirname, '..', d);
+      if (!fs.existsSync(p)) return [];
+      return fs.readdirSync(p).filter(f => f.endsWith('.jsx')).map(f => `${d}/${f}`);
+    });
+  };
+
+  test('nenhum artigo ou preposição está colado a um nome de membro', () => {
+    const culpados = [];
+    for (const f of jsx()) {
+      const linhas = read(f).split('\n');
+      linhas.forEach((l, i) => {
+        // `do ${kid}`, `da ${nome}`, `ao ${membro}` — o artigo escrito à mão
+        // antes de uma variável que é o nome de uma pessoa.
+        if (/\b(do|da|ao|à|pelo|pela|no|na)\s+\$\{(?:st\.)?(nome|membro|kid|k|m|user|quem|name)\}/.test(l)) {
+          culpados.push(`${f}:${i + 1}  ${l.trim()}`);
+        }
+      });
+    }
+    expect(culpados).toEqual([]);
+  });
+});

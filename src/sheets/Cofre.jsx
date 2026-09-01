@@ -74,7 +74,7 @@ export default function Cofre({ t, kid, onClose }) {
 
   return (
     <Sheet t={t} onClose={onClose}
-      title={`Cofre do ${kid}`}
+      title={`Cofre ${st.deNome(kid)} ${kid}`}
       sub={`1 pt = ${EUR(s.pointValue)} · pago ${WD[s.payDay].toLowerCase()}s`}
       leading={<Avatar initial={kid[0]} color={corDoMembro(kid)} size={40} />}
       action={

@@ -64,7 +64,7 @@ export default function Tarefas({ t, user, abrir }) {
               const pend = kidPts[k] - s.paidPts[k];
               return (
                 <Pressable key={k} onPress={() => setCofre(k)}
-                  accessibilityRole="button" accessibilityLabel={`Cofre do ${k}`}
+                  accessibilityRole="button" accessibilityLabel={`Cofre ${st.deNome(k)} ${k}`}
                   style={({ pressed }) => ({ flex: 1, backgroundColor: pressed ? t.card : t.subtle,
                     borderWidth: 1, borderColor: t.border,
                     borderRadius: R.card, padding: 14, gap: S.md })}>
