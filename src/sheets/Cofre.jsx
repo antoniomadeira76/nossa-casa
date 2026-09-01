@@ -76,7 +76,7 @@ export default function Cofre({ t, kid, onClose }) {
     <Sheet t={t} onClose={onClose}
       title={`Cofre ${st.deNome(kid)} ${kid}`}
       sub={`1 pt = ${EUR(s.pointValue)} · pago ${WD[s.payDay].toLowerCase()}s`}
-      leading={<Avatar {...avatarDe(kid, MEMBROS[kid], t.text3)} size={40} />}
+      leading={<Avatar {...avatarDe(kid, st.membros[kid], t.text3)} size={40} />}
       action={
         <View style={{ gap: S.md }}>
           <Acao filled label={`Pagar Semanada · ${EUR(porPagar)}`}
