@@ -63,6 +63,11 @@ export const membrosDoServidor = (linhas) => Object.fromEntries(
     papel: m.papel,
     fem: !!m.fem,
     cor: m.cor || null,
+    // A fotografia da conta Google, se houver. É uma URL, não um ficheiro: a
+    // imagem vive na Google, e copiá-la para o servidor da casa seria guardar
+    // um dado pessoal que não é preciso guardar.
+    avatar: m.avatar || null,
+    figura: m.figura || null,
   }]));
 
 export async function puxarCasa() {
@@ -215,3 +220,10 @@ export function recusaSaude(colecao) {
   }
   return colecao;
 }
+
+// O aspeto do próprio membro — a cor do avatar.
+//
+// Passa por aqui, e não pelo `pocketbase` directamente, porque a loja só
+// conhece esta porta: importa o `./sync` em atraso e nunca o cliente. Manter a
+// regra poupa à loja saber que servidor está do outro lado.
+export const guardarAspeto = (campos) => servidor.auth.guardarAspeto(campos);

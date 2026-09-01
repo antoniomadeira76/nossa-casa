@@ -1150,6 +1150,46 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     };
   });
 
+  // O avatar do próprio membro: a fotografia da conta, ou a inicial numa cor.
+  //
+  // ── Porque é uma escolha e não a fotografia sempre que ela existe ───────────
+  //
+  // Nem toda a gente quer a cara na app da casa, e quem entrou com a Google não
+  // pediu por isso que a fotografia do perfil dela passasse a estar em cada
+  // linha de tarefa. A fotografia fica GUARDADA — é grátis — mas quem a mostra
+  // é esta escolha.
+  //
+  // A cor não é decoração: é o que distingue as pessoas no filtro da agenda, no
+  // ponto do calendário e na barra da ficha de saúde. Duas iguais na mesma casa
+  // tornam esses sítios ilegíveis, por isso a folha não deixa escolher uma que
+  // já é de outro membro.
+  //
+  // Escreve LOCAL primeiro e no servidor a seguir, como tudo o resto nesta app
+  // menos a limpeza da casa. Um avatar que não chega ao servidor é um avatar
+  // que o outro telemóvel não vê — não é uma casa em dois estados.
+  const definirAvatar = async (name, { cor, figura, usarFoto } = {}) => {
+    set(x => ({
+      membros: { ...x.membros, [name]: { ...x.membros[name],
+        ...(cor !== undefined ? { cor } : {}),
+        ...(figura !== undefined ? { figura } : {}),
+        ...(usarFoto !== undefined ? { usarFoto: !!usarFoto } : {}) } },
+    }));
+    // A fotografia no servidor é o ENDEREÇO dela, e esse não muda com a
+    // escolha — o que muda é mostrá-la ou não, e isso é deste aparelho. A COR
+    // é que é da casa inteira: é ela que distingue as pessoas no filtro da
+    // agenda e no ponto do calendário, e tem de ser a mesma nos dois telemóveis.
+    if (cor === undefined && figura === undefined) return null;
+    const sy = await carregarSync();
+    if (!sy || !sy.ligado()) return null;
+    try {
+      await sy.guardarAspeto({
+        ...(cor !== undefined ? { cor: cor || '' } : {}),
+        ...(figura !== undefined ? { figura: figura || '' } : {}),
+      });
+      return null;
+    } catch (e) { return e.message || 'O avatar não chegou ao servidor.'; }
+  };
+
   // PIN: recusa dígitos iguais, sequências, e reutilização
   const pinError = (name, pin) => {
     if (!/^\d{4}$/.test(pin)) return 'O PIN tem de ter 4 dígitos.';
@@ -1548,7 +1588,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     deDemonstracao: s.deDemonstracao !== false,
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
     garantiasAExpirar, receitasAExpirar, consultasProximas,
-    tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring,
+    tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring, definirAvatar,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
     lerDoServidor,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),

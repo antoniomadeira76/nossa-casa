@@ -54,11 +54,108 @@ const LIGHT = {
   divider: '#F0F2F5', tileWarn: 'rgba(255,251,230,0.8)', tileInfo: 'rgba(232,244,255,0.8)',
   tileErr: 'rgba(255,241,240,0.9)',
 };
-const DARK = {
-  page: '#00101C', card: '#0A2033', surface: '#0A2033', subtle: '#10293D', border: '#1E3A4F',
-  text1: '#F0F2F5', text2: '#DCE3EA', text3: '#93A4B5', slate: '#9DB2D6',
-  divider: '#1E3A4F', tileWarn: 'rgba(250,173,20,0.16)', tileInfo: 'rgba(24,144,255,0.16)',
-  tileErr: 'rgba(255,77,79,0.16)',
+// ── O escuro segue o esquema ─────────────────────────────────────────────────
+//
+// O escuro era UM só — página #00101C, cartão #0A2033, linhas #1E3A4F: um
+// azul-marinho fixo, igual nos seis esquemas.
+//
+// No claro isso não se nota. A página é um cinzento quase branco, quase sem
+// cor, e quem dá cor ao ecrã é o cabeçalho, o acento e os títulos. No escuro é
+// ao contrário: a PÁGINA é a maior superfície do ecrã, e estava sempre azul.
+// Com o Violeta escolhido, o ecrã inteiro ficava azul-marinho com um ponto
+// violeta no meio — o esquema escolhido não chegava ao que se vê.
+//
+// Agora a página, os cartões e as linhas nascem do TOM do cabeçalho do esquema.
+//
+// ⚠ A saturação é limitada pela DO PRÓPRIO ESQUEMA, e não por um valor fixo.
+// Uma saturação igual para todos tornava o Cinza — que é cinzento de propósito,
+// e foi escolhido justamente por isso — num azul como os outros. O `Math.min`
+// deixa o Violeta ir a violeta e o Cinza ficar onde está.
+//
+// Os tons por extenso, e o que cada um sustenta, estão em `LUMES`. As claridades
+// vêm das do escuro antigo, para que o escuro continue igualmente escuro.
+
+const hsl = (hex) => {
+  const n = String(hex || '').replace('#', '');
+  if (n.length !== 6) return { h: 0, s: 0, l: 0 };
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(n.slice(i, i + 2), 16) / 255);
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  const l = (mx + mn) / 2;
+  if (!d) return { h: 0, s: 0, l };
+  const s = d / (1 - Math.abs(2 * l - 1));
+  const h = mx === r ? ((g - b) / d + (g < b ? 6 : 0))
+    : mx === g ? (b - r) / d + 2
+    : (r - g) / d + 4;
+  return { h: h * 60, s, l };
+};
+
+const paraHex = (h, s, l) => {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x]
+    : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  return '#' + [r, g, b].map(v =>
+    Math.round((v + m) * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
+};
+
+// claridade e saturação máxima, por superfície
+//
+// ⚠ As claridades da página e do cartão não são um gosto — são a única coisa
+// que separa um cartão do fundo no escuro, e essa separação foi MEDIDA contra a
+// do escuro antigo (cartão/página 1,16 · linha/cartão 1,40) para não regredir.
+// Um cartão a 0,115 de claridade sobre uma página a 0,055 dava 1,10 no Violeta:
+// o cartão desaparecia no fundo, e um ecrã de cartões passava a uma mancha só.
+const LUMES = {
+  page:    [0.042, 0.55],   // o fundo de tudo
+  card:    [0.135, 0.42],   // cartões, folhas, rodapé
+  subtle:  [0.180, 0.36],   // a superfície de dentro de um cartão
+  border:  [0.255, 0.28],   // linhas e divisórias
+  text3:   [0.660, 0.14],   // texto terciário — pouca cor, muito contraste
+  slate:   [0.740, 0.24],   // as etiquetas pequenas
+};
+
+// A luminância relativa da WCAG, e o contraste entre duas cores.
+const luminancia = (hex) => {
+  const n = String(hex || '').replace('#', '');
+  const v = [0, 2, 4].map(i => parseInt(n.slice(i, i + 2), 16) / 255)
+    .map(c => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)));
+  return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+};
+
+export const contraste = (a, b) => {
+  const [x, y] = [luminancia(a), luminancia(b)].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+};
+
+// Clareia uma cor até ela cumprir um contraste contra um fundo.
+//
+// Sobe a claridade em passos de 1% e pára ao chegar ao alvo. O tom e a
+// saturação não se mexem: a cor continua a ser a do esquema, só mais clara.
+const clarearAte = (hex, fundo, alvo) => {
+  const { h, s, l } = hsl(hex);
+  for (let x = l; x <= 1; x += 0.01) {
+    const c = paraHex(h, s, x);
+    if (contraste(c, fundo) >= alvo) return c;
+  }
+  return '#FFFFFF';
+};
+
+const escuroDoEsquema = (chrome) => {
+  const { h, s } = hsl(chrome);
+  const tom = (k) => paraHex(h, Math.min(s, LUMES[k][1]), LUMES[k][0]);
+  const card = tom('card');
+  const linha = tom('border');
+  return {
+    page: tom('page'), card, surface: card, subtle: tom('subtle'),
+    border: linha, divider: linha,
+    // O texto claro fica NEUTRO. Tingi-lo também punha cor a competir com o
+    // acento em cada palavra do ecrã, e a cor de ação deixava de saltar.
+    text1: '#F0F2F5', text2: '#DCE3EA',
+    text3: tom('text3'), slate: tom('slate'),
+    tileWarn: 'rgba(250,173,20,0.16)', tileInfo: 'rgba(24,144,255,0.16)',
+    tileErr: 'rgba(255,77,79,0.16)',
+  };
 };
 
 // Estado — do sistema, não dos esquemas
@@ -156,7 +253,7 @@ export const buildTheme = (schemeIdx = 0, dark = false) => {
   // não era esse — era o índice inválido a ser aceite em silêncio há muito.
   const i = Number(schemeIdx);
   const s = SCHEMES[Number.isFinite(i) ? Math.min(SCHEMES.length - 1, Math.max(0, Math.trunc(i))) : 0];
-  const c = dark ? DARK : LIGHT;
+  const c = dark ? escuroDoEsquema(s.chrome) : LIGHT;
   // O título de secção segue o esquema — e no escuro é o `hover`, não o acento.
   //
   // Os títulos eram slate fixo (#67769B). A cor passa a ser a do esquema, mas o
@@ -169,7 +266,15 @@ export const buildTheme = (schemeIdx = 0, dark = false) => {
   // texto pequeno precisa de 4,5:1, e aí o Cião falha no claro (3,16) e o Cinza
   // no escuro (3,51). Uma etiqueta ilegível não fica mais bonita por ser da cor
   // do esquema.
-  const titulo = dark ? s.hover : s.accent;
+  //
+  // No escuro o `hover` é o PONTO DE PARTIDA, não a resposta final: passa a ser
+  // clareado até chegar aos 3:1 contra o cartão. Com o escuro a seguir o
+  // esquema, o cartão deixou de ser o mesmo para todos, e o Cinza — cujo hover
+  // é o mais apagado dos seis — caía a 2,92 contra o seu. Escolher outro tom à
+  // mão resolvia o Cinza e deixava o próximo esquema a falhar em silêncio,
+  // como este falhou. Isto não tem como falhar em silêncio: ou sobe, ou o
+  // limite baixa, e um limite baixado vê-se no código.
+  const titulo = dark ? clarearAte(s.hover, c.card, 3) : s.accent;
   return { ...c, ...s, dark, titulo, state: STATE };
 };
 

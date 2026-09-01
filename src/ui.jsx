@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, Image } from 'react-native';
 import { S, R, elev, FONT, corDoMembro, comAlfa } from './theme';
 import Icon from './Icon';
+import Figura from './Avatares';
 import { visibilidadeDe } from './store';
 
 // Cartão: um enchimento só, 14/16, herdado do protótipo
@@ -106,7 +107,7 @@ export const Choice = ({ t, label, selected, onPress }) => (
 // redonda quer dizer um, quadrada quer dizer vários. Sem isso, duas listas com
 // o mesmo aspeto comportam-se de maneiras diferentes e ninguém sabe porquê até
 // tentar.
-const PastilhaMembro = ({ t, nome, on, varios, onPress }) => (
+const PastilhaMembro = ({ t, nome, cor, on, varios, onPress }) => (
   <Pressable onPress={onPress}
     accessibilityRole={varios ? 'checkbox' : 'button'} accessibilityLabel={nome}
     accessibilityState={{ selected: on, checked: varios ? on : undefined }}
@@ -117,7 +118,7 @@ const PastilhaMembro = ({ t, nome, on, varios, onPress }) => (
       backgroundColor: pressed ? t.subtle : t.card,
     })}>
     <View style={{ width: 9, height: 9, borderRadius: R.pill,
-      backgroundColor: corDoMembro(nome) || t.text3 }} />
+      backgroundColor: corDoMembro(nome, cor) || t.text3 }} />
     <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{nome}</Text>
     <View style={{
       width: 18, height: 18, borderRadius: varios ? R.sm : R.pill, borderWidth: 2,
@@ -133,10 +134,12 @@ const PastilhaMembro = ({ t, nome, on, varios, onPress }) => (
   </Pressable>
 );
 
-export const EscolherMembro = ({ t, valor, onEscolher, membros }) => (
+// `cores` é o mapa nome → cor escolhida. Opcional: sem ele, a cor sai do
+// nome como sempre saiu, e nada rebenta em quem ainda não o passa.
+export const EscolherMembro = ({ t, valor, onEscolher, membros, cores = {} }) => (
   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
     {membros.map(nome => (
-      <PastilhaMembro key={nome} t={t} nome={nome} on={valor === nome}
+      <PastilhaMembro key={nome} t={t} nome={nome} cor={cores[nome]} on={valor === nome}
         onPress={() => onEscolher(nome)} />
     ))}
   </View>
@@ -145,12 +148,12 @@ export const EscolherMembro = ({ t, valor, onEscolher, membros }) => (
 // O mesmo, para escolher mais do que um. `valor` é uma lista, e tocar numa
 // pastilha já escolhida tira-a — que é o que uma pessoa espera de uma marca
 // e o que não se consegue fazer com a de escolha única.
-export const EscolherMembros = ({ t, valor = [], onEscolher, membros }) => (
+export const EscolherMembros = ({ t, valor = [], onEscolher, membros, cores = {} }) => (
   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
     {membros.map(nome => {
       const on = valor.includes(nome);
       return (
-        <PastilhaMembro key={nome} t={t} nome={nome} on={on} varios
+        <PastilhaMembro key={nome} t={t} nome={nome} cor={cores[nome]} on={on} varios
           onPress={() => onEscolher(on ? valor.filter(x => x !== nome) : [...valor, nome])} />
       );
     })}
@@ -270,10 +273,49 @@ export const AddButton = ({ t, label, onPress }) => (
 );
 
 // Avatar com a inicial — a informação não depende só da cor
-export const Avatar = ({ initial, color, size = 24 }) => (
+// O avatar de um membro: a fotografia da conta Google, ou a inicial.
+//
+// A cor de fundo fica por baixo da imagem de propósito — é o que se vê
+// enquanto ela carrega, e o que fica se ela não carregar. Sem isso, o avatar
+// pisca a branco a cada ecrã, e uma casa sem rede ficava com buracos redondos
+// onde deviam estar as pessoas.
+// As propriedades do avatar de um membro, a partir do registo dele.
+//
+// Existe porque eram TRÊS propriedades em ONZE sítios, e porque dez deles
+// chamavam `corDoMembro(nome)` sem o segundo argumento — sem a cor ESCOLHIDA.
+// Quem escolhesse uma cor via-a no Perfil e em mais lado nenhum: na agenda, nas
+// tarefas e nas compras continuava a aparecer a cor calculada do nome. Um sítio
+// só para decidir isto é a diferença entre acrescentar uma escolha e acrescentar
+// uma escolha que só funciona em metade da app.
+export const avatarDe = (nome, m, fallback) => {
+  const r = m || {};
+  return {
+    initial: r.initial || String(nome || '?').trim().charAt(0).toUpperCase(),
+    color: corDoMembro(nome, r.cor) || fallback,
+    figura: r.figura || null,
+    // A fotografia guardada não se mostra sozinha — quem entrou com a Google
+    // não pediu por isso que a sua cara ficasse em cada linha da casa.
+    foto: r.usarFoto ? (r.avatar || null) : null,
+  };
+};
+
+// O mapa nome → cor escolhida, para os dois escolhedores de membro.
+export const coresDe = (membros = {}) => Object.fromEntries(
+  Object.entries(membros).map(([n, m]) => [n, (m || {}).cor]).filter(([, c]) => c));
+
+export const Avatar = ({ initial, color, size = 24, foto, figura }) => (
   <View style={{ width: size, height: size, borderRadius: R.pill, backgroundColor: color,
-    alignItems: 'center', justifyContent: 'center' }}>
-    <Text style={{ fontFamily: FONT.ui, fontSize: size * 0.46, fontWeight: '700', color: '#FFFFFF' }}>{initial}</Text>
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+    {foto ? (
+      <Image source={{ uri: foto }} accessibilityIgnoresInvertColors
+        style={{ width: size, height: size }} />
+    ) : figura ? (
+      // A figura ocupa dois terços da bola. Cheia, encostava ao rebordo e
+      // perdia a forma nos 24 px a que ela aparece numa linha de tarefa.
+      <Figura nome={figura} size={size * 0.66} color="#FFFFFF" />
+    ) : (
+      <Text style={{ fontFamily: FONT.ui, fontSize: size * 0.46, fontWeight: '700', color: '#FFFFFF' }}>{initial}</Text>
+    )}
   </View>
 );
 

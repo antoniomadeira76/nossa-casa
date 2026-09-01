@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
 import { EUR } from '../format';
 
-import { Card, SectionTitle, Label, Pill, Row, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap } from '../ui';
+import { Card, SectionTitle, Label, Pill, Row, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import NovaTarefa from '../sheets/NovaTarefa';
@@ -47,7 +47,7 @@ export default function Tarefas({ t, user, abrir }) {
                 borderColor: on ? t.chrome : t.border, backgroundColor: on ? t.chrome : 'transparent',
                 flexDirection: 'row', alignItems: 'center', gap: 7 }}>
               {n !== 'Todos' ? <View style={{ width: 8, height: 8, borderRadius: R.pill,
-                backgroundColor: on ? '#FFFFFF' : corDoMembro(n) }} /> : null}
+                backgroundColor: on ? '#FFFFFF' : corDoMembro(n, MEMBERS[n]?.cor) }} /> : null}
               <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: on ? '#FFFFFF' : t.text2 }}>{n}</Text>
             </Pressable>
           );
@@ -69,7 +69,7 @@ export default function Tarefas({ t, user, abrir }) {
                     borderWidth: 1, borderColor: t.border,
                     borderRadius: R.card, padding: 14, gap: S.md })}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <View style={{ width: 8, height: 8, borderRadius: R.pill, backgroundColor: corDoMembro(k) }} />
+                    <View style={{ width: 8, height: 8, borderRadius: R.pill, backgroundColor: corDoMembro(k, MEMBERS[k]?.cor) }} />
                     <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 14.5, color: t.text2 }}>{k}</Text>
                     <Icon name="caretRight" size={16} color={t.text3} />
                   </View>
@@ -131,7 +131,7 @@ export default function Tarefas({ t, user, abrir }) {
                           feita, à espera, ou por fazer, sem ler a legenda. */}
                       <Icon name={done ? 'checkCircle' : pend ? 'clock' : 'infoCircle'} size={20}
                         color={done ? t.state.ok : pend ? t.state.info : t.text3} />
-                      <Avatar initial={(MEMBERS[x.who] || { initial: '?' }).initial} color={corDoMembro(x.who) || t.text3} />
+                      <Avatar {...avatarDe(x.who, MEMBERS[x.who], t.text3)} />
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{x.title}</Text>
                         <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5,

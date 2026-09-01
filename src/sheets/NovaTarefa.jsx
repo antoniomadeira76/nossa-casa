@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, Choice, Segmented, Primary, EscolherMembro } from '../ui';
+import { Label, Choice, Segmented, Primary, EscolherMembro, coresDe } from '../ui';
 import { TODAY_KEY, dkey, pad2 } from '../format';
 import Icon from '../Icon';
 
@@ -14,7 +14,7 @@ const URG_OPTS = [
 ];
 
 export default function NovaTarefa({ t, user, onClose }) {
-  const { set, membrosDaCasa } = useStore();
+  const { set, membrosDaCasa, membros: MEMBROS } = useStore();
   const [form, setForm] = useState({
     title: '',
     who: user,
@@ -66,7 +66,7 @@ export default function NovaTarefa({ t, user, onClose }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Atribuir a</Label>
-        <EscolherMembro t={t} membros={membrosDaCasa}
+        <EscolherMembro t={t} membros={membrosDaCasa} cores={coresDe(MEMBROS)}
           valor={form.who} onEscolher={(name) => setForm(f => ({ ...f, who: name }))} />
       </View>
 

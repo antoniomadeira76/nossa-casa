@@ -5,10 +5,11 @@ import { useStore } from '../store';
 import { SCHEMES, S, R, FONT, elev, corDoMembro } from '../theme';
 import { EUR, plural } from '../format';
 import { FEM } from '../data';
-import { Card, SectionTitle, Label, Row, Pill, Primary, Toggle, Segmented, Tap, Avatar } from '../ui';
+import { Card, SectionTitle, Label, Row, Pill, Primary, Toggle, Segmented, Tap, Avatar, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import ConfirmarAdministradores from '../sheets/ConfirmarAdministradores';
+import EscolherAvatar from '../sheets/EscolherAvatar';
 import * as servidor from '../pocketbase';
 
 // O aspeto por extenso, para a frase que diz o que está escolhido.
@@ -53,6 +54,7 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
   // `sheets/ConfirmarAdministradores.jsx`.
   const [aApagar, setAApagar] = useState(null);   // 'repor' | 'zero' | null
   const [erroAoApagar, setErroAoApagar] = useState(null);
+  const [aEscolherAvatar, setAEscolherAvatar] = useState(false);
 
   const APAGAR = {
     repor: {
@@ -85,7 +87,13 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
   return (
     <Sheet t={t} title={`${user} ${nomeDaCasa}`} sub={MEMBERS[user]?.email || ROLE_LABEL(s.roles[user], user)}
       onClose={onClose}
-      leading={<Avatar initial={MEMBERS[user]?.initial || '?'} color={corDoMembro(user)} size={40} />}
+      leading={
+        // O avatar abre a escolha. Um alvo de 44 à volta de uma bola de 40 —
+        // o INVARIANTE #5 não abre excepção para o cabeçalho de uma folha.
+        <Tap onPress={() => setAEscolherAvatar(true)} label="Escolher avatar">
+          <Avatar {...avatarDe(user, MEMBERS[user], t.text3)} size={40} />
+        </Tap>
+      }
       headerRight={
         <Tap onPress={onSignOut} label="Terminar sessão">
           <Icon name="logout" size={22} color={t.text3} />
@@ -224,6 +232,13 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
             </Text>
           </Pressable>
         </View>
+      ) : null}
+
+      {aEscolherAvatar ? (
+        <Sheet t={t} title="Avatar" sub={`Como ${user} aparece na casa`}
+          onClose={() => setAEscolherAvatar(false)}>
+          <EscolherAvatar t={t} user={user} onFeito={() => setAEscolherAvatar(false)} />
+        </Sheet>
       ) : null}
 
       {/* A confirmação dos administradores. Vive dentro da folha do Perfil, e

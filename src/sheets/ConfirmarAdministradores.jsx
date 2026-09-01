@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
-import { Label, Primary, Tile, Avatar } from '../ui';
+import { Label, Primary, Tile, Avatar, avatarDe } from '../ui';
 import Icon from '../Icon';
 import * as servidor from '../pocketbase';
 
@@ -113,8 +113,7 @@ export default function ConfirmarAdministradores({
                 borderWidth: 1, borderColor: feito ? t.state.okBorder : t.border,
                 backgroundColor: feito ? t.state.okBg : t.card }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <Avatar initial={(MEMBROS[nome] || { initial: '?' }).initial}
-                    color={corDoMembro(nome) || t.text3} />
+                  <Avatar {...avatarDe(nome, MEMBROS[nome], t.text3)} />
                   <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>
                     {nome}
                   </Text>

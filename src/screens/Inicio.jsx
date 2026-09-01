@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
 import { EUR, plural, evTime, TODAY_KEY, dayLabel, agoraNaApp } from '../format';
 
-import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade } from '../ui';
+import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade, avatarDe } from '../ui';
 import Icon from '../Icon';
 
 export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir,
@@ -157,7 +157,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
                   <Text style={{ width: 42, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3 }}>
                     {evTime(e.time)}
                   </Text>
-                  <Avatar initial={(MEMBERS[e.owner] || { initial: '?' }).initial} color={corDoMembro(e.owner) || t.text3} />
+                  <Avatar {...avatarDe(e.owner, MEMBERS[e.owner], t.text3)} />
                   <View style={{ flex: 1, gap: 2 }}>
                     <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{e.title}</Text>
                     <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{e.who}</Text>

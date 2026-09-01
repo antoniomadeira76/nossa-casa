@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
 import { MONTHS, WD_SHORT, TODAY, TODAY_KEY, dkey, dayLabel, evTime, pad2 } from '../format';
 
-import { Card, SectionTitle, Pill, Avatar, Empty, AddButton, Tap, usePaged, Pager, PastilhaVisibilidade } from '../ui';
+import { Card, SectionTitle, Pill, Avatar, Empty, AddButton, Tap, usePaged, Pager, PastilhaVisibilidade, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import NovoEvento from '../sheets/NovoEvento';
@@ -188,7 +188,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                       <View style={{ flexDirection: 'row', gap: 3, height: 5 }}>
                         {c.evs.slice(0, 3).map(e => (
                           <View key={e.id} style={{ width: 5, height: 5, borderRadius: R.pill,
-                            backgroundColor: corDoMembro(e.owner) || t.text3 }} />
+                            backgroundColor: corDoMembro(e.owner, MEMBERS[e.owner]?.cor) || t.text3 }} />
                         ))}
                       </View>
                     </Pressable>
@@ -224,7 +224,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
           ) : selEvents.map(e => (
             <View key={e.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
               <Text style={{ width: 42, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3 }}>{evTime(e.time)}</Text>
-              <Avatar initial={(MEMBERS[e.owner] || { initial: '?' }).initial} color={corDoMembro(e.owner) || t.text3} />
+              <Avatar {...avatarDe(e.owner, MEMBERS[e.owner], t.text3)} />
               <Text numberOfLines={2} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{e.title}</Text>
             </View>
           ))}
@@ -236,7 +236,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.lg }}>
         {Object.keys(MEMBERS).map(n => (
           <View key={n} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 10, height: 10, borderRadius: R.pill, backgroundColor: corDoMembro(n) }} />
+            <View style={{ width: 10, height: 10, borderRadius: R.pill, backgroundColor: corDoMembro(n, MEMBERS[n]?.cor) }} />
             <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text3 }}>{n}</Text>
           </View>
         ))}
@@ -263,7 +263,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                         gap: 12, minHeight: 52, paddingVertical: 14,
                         opacity: pressed ? 0.7 : 1 })}>
                       <Text style={{ width: 42, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3 }}>{evTime(e.time)}</Text>
-                      <Avatar initial={(MEMBERS[e.owner] || { initial: '?' }).initial} color={corDoMembro(e.owner) || t.text3} />
+                      <Avatar {...avatarDe(e.owner, MEMBERS[e.owner], t.text3)} />
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{e.title}</Text>
                         <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{e.who}</Text>

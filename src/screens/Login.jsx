@@ -212,7 +212,7 @@ export default function Login({ t, onEnter }) {
                   style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: R.card, padding: 14,
                     minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 14, opacity: hasPin ? 1 : 0.55 }}>
                   <View style={{ width: 40, height: 40, borderRadius: R.pill,
-                    backgroundColor: corDoMembro(n), alignItems: 'center', justifyContent: 'center' }}>
+                    backgroundColor: corDoMembro(n, MEMBERS[n]?.cor), alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ fontFamily: FONT.display, fontSize: 17, fontWeight: '500', color: '#FFFFFF' }}>{MEMBERS[n].initial}</Text>
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
@@ -234,7 +234,7 @@ export default function Login({ t, onEnter }) {
           <View style={glass}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
               <View style={{ width: 44, height: 44, borderRadius: R.pill,
-                backgroundColor: corDoMembro(kid) || t.chrome,
+                backgroundColor: corDoMembro(kid, MEMBERS[kid]?.cor) || t.chrome,
                 alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontFamily: FONT.display, fontSize: 18, fontWeight: '500', color: '#FFFFFF' }}>
                   {(MEMBERS[kid] || { initial: '?' }).initial}

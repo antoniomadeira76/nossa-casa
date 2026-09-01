@@ -4,7 +4,7 @@ import CampoData from '../CampoData';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro, STATE } from '../theme';
 import { DE } from '../data';
-import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Avatar } from '../ui';
+import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Avatar, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import { pad2, plural, dayLabel, daysUntil, chaveDeDMY, dmyDeChave, TODAY_KEY } from '../format';
@@ -112,12 +112,12 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
       <Card
         t={t}
         onPress={() => setExpandedRecord(expanded ? null : record.id)}
-        style={{ borderLeftWidth: 3, borderLeftColor: corDoMembro(record.member) || t.accent }}
+        style={{ borderLeftWidth: 3, borderLeftColor: corDoMembro(record.member, MEMBERS[record.member]?.cor) || t.accent }}
       >
         <View style={{ gap: S.md }}>
           {/* Header da consulta */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-            <Icon name="heartPulse" size={20} color={corDoMembro(record.member) || t.accent} />
+            <Icon name="heartPulse" size={20} color={corDoMembro(record.member, MEMBERS[record.member]?.cor) || t.accent} />
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={{ fontFamily: FONT.body, fontSize: 15, fontWeight: '500', color: t.text1 }}>
                 {record.specialty}
@@ -408,11 +408,11 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
               const d = st.docsOf(m, user).length;
               const prox = st.nextHealth(m, user);
               return (
-                <Card key={m} t={t} style={{ borderLeftWidth: 3, borderLeftColor: corDoMembro(m) }}>
+                <Card key={m} t={t} style={{ borderLeftWidth: 3, borderLeftColor: corDoMembro(m, MEMBERS[m]?.cor) }}>
                   <Pressable onPress={() => onAbrirFicha(m)} accessibilityRole="button"
                     accessibilityLabel={m === user ? 'A minha ficha' : `Saúde ${DE(m)} ${m}`}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52 }}>
-                    <Avatar initial={MEMBERS[m].initial} color={corDoMembro(m)} size={40} />
+                    <Avatar {...avatarDe(m, MEMBERS[m], t.text3)} size={40} />
                     <View style={{ flex: 1, gap: 2 }}>
                       <Text style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text1 }}>
                         {m === user ? 'A minha ficha' : m}
@@ -475,12 +475,12 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                   onPress={() => setMemberFilter(memberFilter === member ? null : member)}
                   style={{
                     paddingHorizontal: S.md, minHeight: 32, borderRadius: R.pill,
-                    borderWidth: 1, borderColor: memberFilter === member ? corDoMembro(member) : t.border,
+                    borderWidth: 1, borderColor: memberFilter === member ? corDoMembro(member, MEMBERS[member]?.cor) : t.border,
                     backgroundColor: memberFilter === member ? 'rgba(0,0,0,0.02)' : 'transparent',
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: memberFilter === member ? corDoMembro(member) : t.text3 }}>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: memberFilter === member ? corDoMembro(member, MEMBERS[member]?.cor) : t.text3 }}>
                     {member}
                   </Text>
                 </Pressable>
@@ -602,13 +602,13 @@ function MarcarConsulta({ t, user, membro, onClose }) {
                     style={{
                       paddingHorizontal: S.md, minHeight: 36, borderRadius: R.pill,
                       borderWidth: 2,
-                      borderColor: form.member === name ? corDoMembro(name) : t.border,
+                      borderColor: form.member === name ? corDoMembro(name, MEMBERS[name]?.cor) : t.border,
                       backgroundColor: form.member === name ? 'rgba(0,0,0,0.02)' : 'transparent',
                       justifyContent: 'center',
                     }}
                   >
                     <Text style={{
-                      fontFamily: FONT.ui, fontSize: 12, color: form.member === name ? corDoMembro(name) : t.text3,
+                      fontFamily: FONT.ui, fontSize: 12, color: form.member === name ? corDoMembro(name, MEMBERS[name]?.cor) : t.text3,
                     }}>
                       {name}
                     </Text>

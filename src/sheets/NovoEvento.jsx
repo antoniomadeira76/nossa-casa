@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { useStore, VISIBILIDADES } from '../store';
 import CampoData from '../CampoData';
 import { S, R, FONT } from '../theme';
-import { Label, Primary, EscolherMembros, Opcao, Toggle, Tile } from '../ui';
+import { Label, Primary, EscolherMembros, Opcao, Toggle, Tile, coresDe } from '../ui';
 import Confirm from '../Confirm';
 import Icon from '../Icon';
 import ConfirmShare from '../ConfirmShare';
@@ -261,7 +261,7 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>{form.responsaveis.length > 1 ? 'Responsáveis' : 'Responsável'}</Label>
-        <EscolherMembros t={t} membros={adultos}
+        <EscolherMembros t={t} membros={adultos} cores={coresDe(MEMBROS)}
           valor={form.responsaveis}
           onEscolher={(nomes) => setForm(f => ({ ...f, responsaveis: nomes }))} />
         <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>

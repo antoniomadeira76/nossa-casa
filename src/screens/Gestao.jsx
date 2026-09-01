@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-nativ
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro, LARGURA_APP } from '../theme';
 import { EUR } from '../format';
-import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty } from '../ui';
+import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import { ENV_BASE } from '../data';
@@ -275,7 +275,7 @@ export default function Gestao({ t, user, onClose }) {
             : role === 'admin' ? (info.fem ? 'Administradora' : 'Administrador') : 'Adulto';
           return (
             <Row key={name} t={t} last={i === arr.length - 1}
-              leading={<Avatar initial={info.initial} color={corDoMembro(name, info.cor)} size={40} />}
+              leading={<Avatar {...avatarDe(name, info, t.text3)} size={40} />}
               title={name}
               sub={crianca ? (hasPin ? 'Perfil de criança · PIN definido'
                                     : 'Perfil de criança · ainda sem PIN')
@@ -558,8 +558,7 @@ export default function Gestao({ t, user, onClose }) {
       {sheetOpen === 'membro' && selectedMember && (
         <Sheet t={t} title={selectedMember}
           sub={MEMBERS[selectedMember]?.email || 'Perfil de criança'}
-          leading={<Avatar initial={MEMBERS[selectedMember]?.initial}
-            color={corDoMembro(selectedMember, MEMBERS[selectedMember]?.cor)} size={40} />}
+          leading={<Avatar {...avatarDe(selectedMember, MEMBERS[selectedMember], t.text3)} size={40} />}
           onClose={fecharMembro}
           action={
             <View style={{ gap: S.md }}>

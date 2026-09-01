@@ -3,7 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
 import { EUR, WD, plural } from '../format';
-import { SectionTitle, Avatar, Empty } from '../ui';
+import { SectionTitle, Avatar, Empty, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 
@@ -76,7 +76,7 @@ export default function Cofre({ t, kid, onClose }) {
     <Sheet t={t} onClose={onClose}
       title={`Cofre ${st.deNome(kid)} ${kid}`}
       sub={`1 pt = ${EUR(s.pointValue)} · pago ${WD[s.payDay].toLowerCase()}s`}
-      leading={<Avatar initial={kid[0]} color={corDoMembro(kid)} size={40} />}
+      leading={<Avatar {...avatarDe(kid, MEMBROS[kid], t.text3)} size={40} />}
       action={
         <View style={{ gap: S.md }}>
           <Acao filled label={`Pagar Semanada · ${EUR(porPagar)}`}

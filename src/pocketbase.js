@@ -225,6 +225,19 @@ export const auth = {
     //
     // A autorização da agenda vem do fluxo próprio — `google.ligar()`.
     agendaLigada = null;
+
+    // A fotografia da conta, guardada no membro.
+    //
+    // A Google devolve-a em `meta.avatarURL`, e ela muda quando a pessoa a
+    // muda na conta — por isso escreve-se a cada entrada, e não só na primeira.
+    // Falhar aqui não pode estragar a entrada: quem entra quer entrar, e um
+    // avatar é um pormenor. Daí o `catch` vazio, que neste caso é a decisão
+    // certa e não um descuido.
+    const foto = r.meta && (r.meta.avatarURL || r.meta.avatarUrl);
+    if (foto) {
+      try { await auth.guardarAspeto({ avatar: foto }); }
+      catch (e) { /* a entrada não se perde por causa de uma fotografia */ }
+    }
     return r;
   },
 
@@ -310,6 +323,32 @@ export const auth = {
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.message || 'O servidor recusou a limpeza.');
+    return d;
+  },
+
+  // O aspeto do próprio membro — a fotografia e a cor do avatar.
+  //
+  // Vai por uma rota e não por um `update` da coleção: a regra de update de
+  // `membros` exige papel admin, porque quem escreve um membro escreve o PAPEL
+  // dele. A rota escreve dois campos, no membro autenticado, e mais nada. Ver
+  // `db/pocketbase/pb_hooks/avatar.pb.js`.
+  //
+  // Os campos são opcionais e independentes: quem manda só a cor não perde a
+  // fotografia. Uma cadeia vazia LIMPA — é diferente de não mandar.
+  async guardarAspeto({ avatar, cor } = {}) {
+    if (!estaLigado()) throw new Error('Servidor não configurado.');
+    const corpo = {};
+    if (avatar !== undefined) corpo.avatar = String(avatar || '');
+    if (cor !== undefined) corpo.cor = String(cor || '');
+    if (!Object.keys(corpo).length) return null;
+
+    const r = await fetch(`${URL.replace(/\/+$/, '')}/api/membro/aspeto`, {
+      method: 'POST',
+      headers: { Authorization: pb.authStore.token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(corpo),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.message || 'Não foi possível guardar o avatar.');
     return d;
   },
 

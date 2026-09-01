@@ -5,7 +5,7 @@ import { useStore } from '../store';
 import { S, R, FONT, elev, corDoMembro } from '../theme';
 import { EUR, dayLabel, parseKey, WD } from '../format';
 import { SECTIONS } from '../data';
-import { Card, SectionTitle, Label, Pill, Bar, Primary, AddButton, Empty, usePaged, Pager, Tap, Tile, Avatar } from '../ui';
+import { Card, SectionTitle, Label, Pill, Bar, Primary, AddButton, Empty, usePaged, Pager, Tap, Tile, Avatar, avatarDe } from '../ui';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
 import NovoArtigo from '../sheets/NovoArtigo';
@@ -96,8 +96,7 @@ export default function Compras({ t, user, onModoCompras }) {
 
         <View style={{ height: 1, backgroundColor: t.divider }} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Avatar initial={(MEMBERS[planoDe] || { initial: '?' }).initial}
-            color={corDoMembro(planoDe) || t.text3} />
+          <Avatar {...avatarDe(planoDe, MEMBERS[planoDe], t.text3)} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>
               {diaDoPlano ? `Compras de ${diaDaSemana(diaDoPlano)}` : 'Compras'}{planoDe ? ` · ${planoDe}` : ''}
