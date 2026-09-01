@@ -6,9 +6,39 @@
 // Não confundir com `s.registo`, que é o histórico de alterações que a
 // FAMÍLIA faz à casa. São duas coisas diferentes, e o ecrã mostrava a segunda
 // onde a referência 17 mostra a primeira.
-export const APP_VERSION = '1.4.2';
+export const APP_VERSION = '1.7.0';
 
 export const REGISTO_APP = [
+  // ── 1.7.0 ─────────────────────────────────────────────────────────────────
+  { v: '1.7.0', d: '01/09/2026', k: 'corrigido', a: 'A App', t: 'A data era 20 de agosto, sempre — o cabeçalho, os prazos e as garantias contavam a partir daí' },
+  { v: '1.7.0', d: '01/09/2026', k: 'corrigido', a: 'Início', t: '«Bom dia» aparecia a qualquer hora, e uma tarefa das 18:00 dizia sempre «falta 3h30»' },
+  { v: '1.7.0', d: '01/09/2026', k: 'alterado', a: 'Perfil', t: 'Três esquemas de cor novos — Rosa, Menta e Cinza — com cabeçalhos mais claros' },
+  { v: '1.7.0', d: '01/09/2026', k: 'alterado', a: 'Perfil', t: 'A bola do esquema mostra as duas cores separadas na diagonal' },
+  { v: '1.7.0', d: '01/09/2026', k: 'novo', a: 'Agenda', t: 'A autorização da agenda da Google liga-se uma vez e fica — deixou de a pedir a cada sessão' },
+  { v: '1.7.0', d: '01/09/2026', k: 'corrigido', a: 'Entrada', t: 'O servidor em baixo dizia que a Google não estava configurada; agora diz o que é' },
+  { v: '1.7.0', d: '01/09/2026', k: 'corrigido', a: 'Dinheiro', t: 'Abrir o mês punha sempre «Setembro», qualquer que fosse o mês' },
+  { v: '1.7.0', d: '01/09/2026', k: 'corrigido', a: 'Tarefas', t: '«Cofre do Mia» — o artigo passa a acompanhar o género de cada membro' },
+
+  // ── 1.6.0 ─────────────────────────────────────────────────────────────────
+  { v: '1.6.0', d: '31/08/2026', k: 'novo', a: 'Agenda', t: 'Eventos editam-se e apagam-se, e vão para a agenda da Google nos dois sentidos' },
+  { v: '1.6.0', d: '31/08/2026', k: 'novo', a: 'Agenda', t: 'Visibilidade com três níveis: toda a família, só os adultos, ou só eu' },
+  { v: '1.6.0', d: '31/08/2026', k: 'corrigido', a: 'Agenda', t: 'Guardar um evento não fazia nada — gravava num campo que nenhum ecrã lê' },
+  { v: '1.6.0', d: '31/08/2026', k: 'novo', a: 'Saúde', t: 'Exportar fichas em PDF: uma consulta, uma especialidade, ou tudo' },
+  { v: '1.6.0', d: '31/08/2026', k: 'novo', a: 'Saúde', t: 'O PDF pode seguir por correio para outro adulto da casa' },
+  { v: '1.6.0', d: '31/08/2026', k: 'novo', a: 'Compras', t: 'O preço escreve-se no corredor, e a ida seguinte já o sabe' },
+  { v: '1.6.0', d: '31/08/2026', k: 'novo', a: 'Compras', t: 'A lista diz em que loja sai mais barata, sobre os artigos que conhece nas duas' },
+  { v: '1.6.0', d: '31/08/2026', k: 'novo', a: 'A App', t: 'Instala-se no telemóvel a partir do navegador, sem loja de aplicações' },
+  { v: '1.6.0', d: '31/08/2026', k: 'novo', a: 'A App', t: 'Datas escrevem-se à mão ou escolhem-se no calendário, em todos os ecrãs' },
+  { v: '1.6.0', d: '31/08/2026', k: 'alterado', a: 'A App', t: 'Uma secção sem nada mostra um aviso, em vez de um título a apontar para o vazio' },
+  { v: '1.6.0', d: '31/08/2026', k: 'alterado', a: 'Início', t: 'Tocar num evento ou numa tarefa leva ao ecrã dele, já aberto' },
+  { v: '1.6.0', d: '31/08/2026', k: 'corrigido', a: 'Entrada', t: 'Entrar com a conta Google — três defeitos, nenhum na configuração' },
+  { v: '1.6.0', d: '31/08/2026', k: 'corrigido', a: 'Dinheiro', t: 'Uma casa nova já não herdava o orçamento da família de demonstração' },
+
+  // ── 1.5.0 ─────────────────────────────────────────────────────────────────
+  { v: '1.5.0', d: '30/08/2026', k: 'novo', a: 'Gestão da Casa', t: 'A casa configura-se: nome, membros, papéis e quem sai' },
+  { v: '1.5.0', d: '30/08/2026', k: 'novo', a: 'Gestão da Casa', t: 'Renomear um membro leva com ele as tarefas, as despesas e o cofre' },
+  { v: '1.5.0', d: '30/08/2026', k: 'alterado', a: 'A App', t: 'A casa deixou de ser quatro nomes escritos no código' },
+
   { v: '1.4.0', d: '25/08/2026', k: 'novo', a: 'Documentação', t: 'Registo de versões e Como funciona, gerados deste registo' },
   { v: '1.4.0', d: '25/08/2026', k: 'novo', a: 'Saúde', t: 'Ficha por membro com episódios, anexos e notas' },
   { v: '1.4.0', d: '25/08/2026', k: 'novo', a: 'Saúde', t: 'Especialidades geridas na Gestão da Casa' },
