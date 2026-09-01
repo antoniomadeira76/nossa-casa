@@ -556,6 +556,14 @@ export const DEMO = () => ({
   healthNotes: {}, // healthId -> [{ author, date, text }]
   healthRecipes: {}, // healthId -> [{ id, name, dosage, quantity, unit, expiresAt, decision }]
   healthDecisions: {}, // healthId -> { type, status, note }
+  // ⚠ Estas duas eram gravadas e não nasciam.
+  //
+  // Estavam nas DATA_KEYS e não no DEMO(): numa casa nova valiam
+  // `undefined`, e cada leitura tinha de as defender com `|| []`. Ninguém
+  // rebentou porque as guardas lá estavam — mas uma guarda em cada sítio é
+  // uma forma cara de não ter a forma certa. Apanhado por um teste de fumo.
+  healthDocs: [],    // documentos acrescentados a uma ficha
+  healthGone: {},    // fichas apagadas
   googleCalendarImported: {}, // eventId -> true (track which Google Calendar events were imported)
 
   // Quem vive nesta casa. Era uma constante importada de data.js, e a app
@@ -590,6 +598,7 @@ export const BLANK = () => ({
   ...DEMO(), done: {}, urg: {}, due: {}, vaultMoves: [],
   clearedSeeds: true, shopHistory: [], health: [],
   healthNotes: {}, healthRecipes: {}, healthDecisions: {}, googleCalendarImported: {},
+  healthDocs: [], healthGone: {},
   ...SEM_DINHEIRO_SEMEADO(),
 });
 

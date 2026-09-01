@@ -34,172 +34,219 @@ jest.mock('../src/pocketbase', () => ({
   sessaoPronta: async () => false,
 }));
 
+// Abrir a loja a sério, para os testes falarem com ela em vez de com um objeto
+// que eles próprios escreveram.
+const abrirLoja = (casa) => {
+  const React = require('react');
+  const TestRenderer = require('react-test-renderer');
+  const { StoreProvider, useStore } = require('../src/store');
+  const cofre = {};
+  const Envolve = () => {
+    const st = useStore();
+    cofre.st = st;
+    React.useMemo(() => { if (casa) st.set(casa); }, []);
+    return null;
+  };
+  TestRenderer.act(() => {
+    TestRenderer.create(React.createElement(StoreProvider, null, React.createElement(Envolve)));
+  });
+  return cofre;
+};
+
 describe('🔥 Smoke Tests — Nossa Casa', () => {
 
   describe('1️⃣ State & Store', () => {
-    test('Initial state is valid', () => {
-      const initialState = {
-        members: [],
-        tasks: [],
-        envelopes: [],
-        vault: [],
-        events: [],
-        equip: [],
-        saude: [],
-        docs: [],
-        openMonth: new Date(),
-      };
+    // ⚠ Escrevia um objeto com nomes que a app não usa — `members`, `saude`,
+    // `docs` — e verificava que o objeto existia. Passava com a loja em
+    // qualquer estado, incluindo nenhum.
+    //
+    // O que vale a pena guardar é a correspondência entre o que se GRAVA e o
+    // que a casa tem: uma chave nova em `DATA_KEYS` sem valor no `DEMO()` (ou
+    // ao contrário) é um campo que morre no recarregamento seguinte. Aconteceu
+    // hoje mesmo, com o livro de pontos.
+    test('Tudo o que se grava nasce numa casa nova', () => {
+      const { DEMO } = require('../src/store');
+      const fs = require('fs');
+      const path = require('path');
+      const fonte = fs.readFileSync(path.join(__dirname, '..', 'src', 'store.jsx'), 'utf8');
+      const i = fonte.indexOf('const DATA_KEYS = [');
+      const chaves = [...fonte.slice(i, fonte.indexOf('];', i)).matchAll(/'([^']+)'/g)].map(m => m[1]);
 
-      expect(initialState).toBeDefined();
-      expect(initialState.members).toEqual([]);
-      expect(initialState.tasks).toEqual([]);
+      expect(chaves.length).toBeGreaterThan(30);
+      const casa = DEMO();
+      const semValor = chaves.filter(k => casa[k] === undefined);
+      // As que vêm do servidor ou da sessão não nascem na demonstração.
+      const DE_FORA = ['roles', 'pins', 'membros', 'nomeDaCasa'];
+      expect(semValor.filter(k => !DE_FORA.includes(k))).toEqual([]);
     });
 
-    test('Additive balance calculations never overwrite sums', () => {
-      // Simulate vault movements
-      const movements = [
-        { kid: 'leo', amount: 500, date: '2026-01-01' },
-        { kid: 'leo', amount: 250, date: '2026-01-02' },
-        { kid: 'mia', amount: 1000, date: '2026-01-01' },
-      ];
+    // ⚠ Somava um array escrito pelo próprio teste. O cofre da app não era
+    // chamado uma única vez.
+    test('O cofre é uma soma de movimentos, e não um campo (INVARIANTE #2)', () => {
+      const TestRenderer = require('react-test-renderer');
+      const c = abrirLoja({
+        membros: { 'Rita': { initial: 'R' }, 'Léo': { initial: 'L', kid: true } },
+        roles: { 'Rita': 'admin', 'Léo': 'crianca' },
+        clearedSeeds: true, vaultMoves: [],
+      });
 
-      const leoBalance = movements
-        .filter(m => m.kid === 'leo')
-        .reduce((sum, m) => sum + m.amount, 0);
+      expect(c.st.vaultOf('Léo')).toBe(0);
+      TestRenderer.act(() => { c.st.vaultAdd('Léo', 500, 'entrada', 'Semanada'); });
+      TestRenderer.act(() => { c.st.vaultAdd('Léo', 250, 'entrada', 'Pontos'); });
+      TestRenderer.act(() => { c.st.vaultAdd('Léo', -100, 'saida', 'Gelado'); });
 
-      const miaBalance = movements
-        .filter(m => m.kid === 'mia')
-        .reduce((sum, m) => sum + m.amount, 0);
-
-      expect(leoBalance).toBe(750);
-      expect(miaBalance).toBe(1000);
+      expect(c.st.vaultOf('Léo')).toBe(650);
+      // E o saldo é MESMO a soma dos movimentos gravados, não um número à parte.
+      expect(c.st.s.vaultMoves.filter(m => m.kid === 'Léo')).toHaveLength(3);
     });
 
-    test('EUR format is correct', () => {
-      const EUR = (value) => {
-        if (!Number.isFinite(value)) return '0,00 €';
-        const parts = value.toFixed(2).split('.');
-        const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-        return `${intPart},${parts[1]} €`;
-      };
+    // ⚠ Este era o pior do ficheiro: REIMPLEMENTAVA o `EUR` dentro de si
+    // próprio, com espaços NORMAIS — e a sua cópia violava o invariante #4
+    // que o teste dizia guardar. Verificava-se a si mesmo enquanto o símbolo
+    // do euro caía para a linha de baixo na app. Medido: a cadeia do teste e
+    // a do `format` não eram iguais.
+    test('O euro vem do format, com os espaços inquebráveis (INVARIANTE #4)', () => {
+      const { EUR } = require('../src/format');
 
+      // U+202F entre os milhares, U+00A0 antes do €. Sem o segundo, o
+      // símbolo desgarra-se para a linha seguinte.
       expect(EUR(1250)).toBe('1 250,00 €');
       expect(EUR(0)).toBe('0,00 €');
       expect(EUR(1000000)).toBe('1 000 000,00 €');
+
+      // E nenhum espaço normal se intromete.
+      expect(EUR(1250)).not.toMatch(/ /);
     });
   });
 
   describe('2️⃣ Component Structure', () => {
-    test('Header is always visible (invariant #1)', () => {
-      // In React Native, this would be verified by layout inspection
-      // For now, we verify the principle: header flex:0, content flex:1, footer flex:0
-      const layout = {
-        header: { flex: 0, height: 56 },
-        content: { flex: 1 },
-        footer: { flex: 0, height: 56 },
-      };
+    // ⚠ Escrevia `{ header: { flex: 0 } }` e verificava que era zero.
+    //
+    // Não tocava na app: o objeto era do próprio teste. Passava com o rodapé
+    // partido — que é precisamente o defeito que já quebrou TRÊS vezes.
+    test('O rodapé é o último filho da raiz (INVARIANTE #1)', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const app = fs.readFileSync(path.join(__dirname, '..', 'App.jsx'), 'utf8');
 
-      expect(layout.header.flex).toBe(0);
-      expect(layout.content.flex).toBe(1);
-      expect(layout.footer.flex).toBe(0);
+      // O rodapé não encolhe, e é a barra dos separadores que o preenche.
+      const i = app.indexOf('TABS.map');
+      expect(i).toBeGreaterThan(0);
+      const bloco = app.slice(Math.max(0, i - 500), i);
+      expect(bloco).toMatch(/flexGrow: 0/);
+      expect(bloco).toMatch(/flexShrink: 0/);
+
+      // E vem DEPOIS da área de scroll — se subisse para dentro dela, saía da
+      // coluna e desaparecia com o conteúdo.
+      expect(app.lastIndexOf('</ScrollView>')).toBeLessThan(i);
     });
 
-    test('Touch targets are minimum 44px (invariant #5)', () => {
-      const touchTargets = [
-        { name: 'Button', minSize: 44 },
-        { name: 'Toggle', minSize: 44 },
-        { name: 'Pill', minSize: 44 },
-        { name: 'Icon Solo', minSize: 44 },
-        { name: 'Shop Line', minSize: 64 },
-      ];
+    // ⚠ Escrevia uma lista com `minSize: 44` e verificava que era ≥ 44.
+    //
+    // O interruptor tinha 27 de alvo no navegador e este teste passava.
+    test('Os componentes tocáveis declaram 44 (INVARIANTE #5)', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const ui = fs.readFileSync(path.join(__dirname, '..', 'src', 'ui.jsx'), 'utf8');
 
-      touchTargets.forEach(target => {
-        expect(target.minSize).toBeGreaterThanOrEqual(44);
-      });
+      for (const nome of ['Tap', 'Choice', 'Opcao', 'Toggle', 'Primary']) {
+        const i = ui.indexOf(`export const ${nome} =`);
+        expect(i).toBeGreaterThan(0);
+        const bloco = ui.slice(i, i + 900);
+        // Ou um mínimo declarado, ou um tamanho por omissão de 44.
+        const medidas = [...bloco.matchAll(/min(?:Height|Width): (\d+)/g)].map(m => Number(m[1]))
+          .concat([...bloco.matchAll(/size = (\d+)/g)].map(m => Number(m[1])));
+        expect(medidas.length).toBeGreaterThan(0);
+        expect(Math.max(...medidas)).toBeGreaterThanOrEqual(44);
+      }
     });
 
-    test('Spacing follows 2/4/8/16/24 scale', () => {
-      const SPACING = [2, 4, 8, 16, 24];
-
-      expect(SPACING).toHaveLength(5);
-      expect(SPACING[0]).toBe(2);
-      expect(SPACING[4]).toBe(24);
+    // ⚠ Escrevia `[2,4,8,16,24]` e contava cinco. Lê-se do tema, agora.
+    test('A escala de espaçamento vem do tema, e são cinco valores', () => {
+      const { S } = require('../src/theme');
+      const { empty, ...escala } = S;
+      expect(Object.values(escala).sort((a, b) => a - b)).toEqual([2, 4, 8, 16, 24]);
     });
   });
 
   describe('3️⃣ Navigation Flow', () => {
-    test('Login screen renders without auth (no crash)', () => {
-      // Verify entry point exists
-      const loginContent = {
-        title: 'Bem-vindo',
-        subtitle: 'Entre com a sua Conta Google para acessar a casa partilhada.',
-        buttons: ['Continuar com Google', 'Entrar como Criança'],
-      };
+    // ⚠ Escrevia o texto do ecrã à mão e verificava que o tinha escrito. O
+    // «acessar» daquela frase nem é português europeu — o ecrã a sério nunca
+    // o disse.
+    test('O ecrã de entrada monta sem sessão', () => {
+      const React = require('react');
+      const TestRenderer = require('react-test-renderer');
+      const { SafeAreaProvider } = require('react-native-safe-area-context');
+      const { StoreProvider } = require('../src/store');
+      const { buildTheme } = require('../src/theme');
+      const Login = require('../src/screens/Login').default;
 
-      expect(loginContent.title).toBeDefined();
-      expect(loginContent.buttons).toHaveLength(2);
+      let arvore = null;
+      TestRenderer.act(() => {
+        arvore = TestRenderer.create(
+          React.createElement(SafeAreaProvider, {
+            initialMetrics: { frame: { x: 0, y: 0, width: 402, height: 874 },
+                              insets: { top: 47, left: 0, right: 0, bottom: 34 } },
+          }, React.createElement(StoreProvider, null,
+            React.createElement(Login, { t: buildTheme(0, false), onEntrar: () => {} }))));
+      });
+      expect(arvore.toJSON()).toBeTruthy();
+      TestRenderer.act(() => arvore.unmount());
     });
 
-    test('Task urgency ordering works (invariant #6)', () => {
-      const tasks = [
-        { id: 1, title: 'Tarefa A', urgency: 'normal', group: 'normal' },
-        { id: 2, title: 'Tarefa B', urgency: 'urgente', group: 'urgent' },
-        { id: 3, title: 'Tarefa C', urgency: 'urgente', group: 'urgent' },
-        { id: 4, title: 'Tarefa D', urgency: 'sem pressa', group: 'relaxed' },
-      ];
+    // ⚠ Filtrava um array escrito pelo próprio teste, com urgências em texto
+    // («urgente») que a app não usa — ela usa 0, 1, 2. O `allTasks` nunca foi
+    // chamado.
+    test('A urgência manda na ordem das tarefas (INVARIANTE #6)', () => {
+      const c = abrirLoja({
+        membros: { 'Rita': { initial: 'R' } }, roles: { 'Rita': 'admin' },
+        clearedSeeds: true,
+        newTasks: [
+          { id: 'n1', title: 'Normal', who: 'Rita' },
+          { id: 's1', title: 'Sem pressa', who: 'Rita' },
+          { id: 'u1', title: 'Urgente', who: 'Rita' },
+        ],
+        urg: { n1: 1, s1: 2, u1: 0 },
+        due: {},
+      });
 
-      const grouped = {
-        urgent: tasks.filter(t => t.urgency === 'urgente'),
-        normal: tasks.filter(t => t.urgency === 'normal'),
-        relaxed: tasks.filter(t => t.urgency === 'sem pressa'),
-      };
-
-      expect(grouped.urgent.length).toBe(2);
-      expect(grouped.normal.length).toBe(1);
-      expect(grouped.relaxed.length).toBe(1);
+      // Escritas por outra ordem, saem urgente → normal → sem pressa.
+      expect(c.st.allTasks().map(t => t.id)).toEqual(['u1', 'n1', 's1']);
     });
   });
 
   describe('4️⃣ Child Safety (Mode Criança)', () => {
-    test('Child mode hides budget information (invariant #3)', () => {
-      const childView = {
-        visible: ['Tasks', 'Vault', 'Health'],
-        hidden: ['Budget', 'Envelopes', 'Admin'],
-      };
+    // ⚠ Escrevia `{ visible: ['Tasks'] }` e verificava que não continha
+    // 'Budget'. Duas listas inventadas pelo teste, sem relação com a app.
+    test('O modo criança não fala de orçamento (INVARIANTE #3)', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const kid = fs.readFileSync(path.join(__dirname, '..', 'src', 'KidApp.jsx'), 'utf8');
 
-      expect(childView.visible).not.toContain('Budget');
-      expect(childView.visible).not.toContain('Envelopes');
+      // Nem as palavras, nem os ecrãs por onde elas entrariam.
+      for (const palavra of ['Envelope', 'envelope', 'Orçamento', 'orçamento', 'Rendimento']) {
+        expect(kid).not.toContain(palavra);
+      }
+      for (const ecra of ['screens/Dinheiro', 'screens/Gestao', 'screens/Compras']) {
+        expect(kid).not.toContain(ecra);
+      }
     });
 
-    test('PIN validation rejects weak patterns', () => {
-      const isValidPIN = (pin) => {
-        if (pin.length !== 4) return false;
+    // ⚠ REIMPLEMENTAVA o validador dentro do teste e testava a cópia. O
+    // `pinError` da app não era chamado uma única vez.
+    test('O PIN da app recusa os padrões fracos', () => {
+      const c = abrirLoja({
+        membros: { 'Rita': { initial: 'R' }, 'Léo': { initial: 'L', kid: true } },
+        roles: { 'Rita': 'admin', 'Léo': 'crianca' }, pins: {},
+      });
+      const recusa = (pin) => c.st.pinError('Léo', pin) !== null;
 
-        // Reject equal digits: 1111, 2222
-        if (/^(\d)\1{3}$/.test(pin)) return false;
-
-        // Reject sequences: 1234, 0123, 9876
-        const digits = pin.split('').map(Number);
-
-        // Forward sequence: each digit is +1
-        const isAscending = digits.every((d, i) =>
-          i === 0 || d === digits[i-1] + 1
-        );
-        if (isAscending) return false;
-
-        // Reverse sequence: each digit is -1
-        const isDescending = digits.every((d, i) =>
-          i === 0 || d === digits[i-1] - 1
-        );
-        if (isDescending) return false;
-
-        return true;
-      };
-
-      expect(isValidPIN('1111')).toBe(false); // Equal
-      expect(isValidPIN('1234')).toBe(false); // Sequence
-      expect(isValidPIN('1357')).toBe(true);  // Valid
-      expect(isValidPIN('9876')).toBe(false); // Reverse sequence
+      expect(recusa('1111')).toBe(true);    // quatro iguais
+      expect(recusa('1234')).toBe(true);    // sequência
+      expect(recusa('9876')).toBe(true);    // sequência ao contrário
+      expect(recusa('123')).toBe(true);     // curto de mais
+      expect(recusa('12a4')).toBe(true);    // não são dígitos
+      expect(recusa('4820')).toBe(false);   // este serve
     });
   });
 
@@ -274,34 +321,48 @@ describe('🔥 Smoke Tests — Nossa Casa', () => {
       expect(new Set(SCHEMES.map(s => s.name)).size).toBe(6);
     });
 
-    test('Os títulos de secção são slate, e vêm do tema', () => {
-      const { buildTheme } = require('../src/theme');
-      // Nos dois aspetos: o slate do modo escuro é outro, e ambos têm de
-      // existir — o título nunca é preto (é a regra de tipo mais distintiva
-      // do sistema, no CLAUDE.md).
-      for (const escuro of [false, true]) {
-        const t = buildTheme(0, escuro);
-        expect(t.slate).toMatch(/^#[0-9A-F]{6}$/i);
-        expect(t.slate.toLowerCase()).not.toBe('#000000');
+    // ⚠ O nome deste teste mentia. Os títulos deixaram de ser slate e passaram
+    // a seguir o esquema do membro; ele continuava a verificar o `slate`, que
+    // existe para as ETIQUETAS pequenas e não para os títulos.
+    test('Os títulos de secção seguem o esquema, e nunca são pretos', () => {
+      const { buildTheme, SCHEMES } = require('../src/theme');
+      for (let i = 0; i < SCHEMES.length; i++) {
+        for (const escuro of [false, true]) {
+          const t = buildTheme(i, escuro);
+          expect(t.titulo).toMatch(/^#[0-9A-F]{6}$/i);
+          expect(t.titulo.toLowerCase()).not.toBe('#000000');
+        }
+        // No claro é o acento tal e qual; no escuro é clareado até dar
+        // contraste contra o cartão, e por isso não se compara.
+        expect(buildTheme(i, false).titulo).toBe(SCHEMES[i].accent);
       }
+      // E as etiquetas pequenas continuam em slate, que é outra decisão.
       expect(buildTheme(0, false).slate).toBe('#67769B');
     });
   });
 
   describe('8️⃣ Critical Invariants', () => {
-    test('All 8 CLAUDE.md invariants are enforced', () => {
-      const invariants = [
-        '1. Header/Footer always visible',
-        '2. Balances are additive (never overwrite)',
-        '3. Privacy enforced server-side (RLS)',
-        '4. EUR format with U+202F and U+00A0',
-        '5. Touch targets ≥44px (64px in shop)',
-        '6. Tasks ordered by urgency',
-        '7. Portuguese formal, 3rd person',
-        '8. No emoji',
-      ];
+    // ⚠ Escrevia OITO FRASES e verificava que eram oito.
+    //
+    // O nome dizia «are enforced» e o que fazia era contar strings escritas
+    // pelo próprio teste. Os outros invariantes têm prova a sério noutros
+    // blocos deste ficheiro; fica aqui o #2, que é o mais caro de perder e era
+    // o único sem prova de fumo nenhuma.
+    test('Os saldos são somas de movimentos, nunca campos escritos (INVARIANTE #2)', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const loja = fs.readFileSync(path.join(__dirname, '..', 'src', 'store.jsx'), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .split('\n').map(l => l.replace(/(^|\s)\/\/.*$/, '')).join('\n');
 
-      expect(invariants).toHaveLength(8);
+      // Ninguém escreve um saldo. Escreve-se um movimento e soma-se.
+      expect(loja).not.toMatch(/\bsaldo\s*=[^=]/);
+      expect(loja).not.toMatch(/vaultBalance\s*[:=]\s*\d/);
+
+      // E os três livros aditivos existem mesmo.
+      for (const livro of ['vaultMoves', 'envMove', 'pontosDeTarefasApagadas']) {
+        expect(loja).toContain(livro);
+      }
     });
   });
 
@@ -372,6 +433,137 @@ describe('🔥 Smoke Tests — Nossa Casa', () => {
     test('As Compras montam', () => {
       expect(montar(require('../src/screens/Compras').default).length)
         .toBeGreaterThan(120);
+    });
+
+    // O Perfil vive numa folha, e a folha lê os insets — daí o provedor com
+    // métricas acima. Sem ele nem chega a desenhar.
+    test('O Perfil monta, com as cinco secções', () => {
+      const t = montar(require('../src/screens/Perfil').default, { onSignOut: () => {} });
+      for (const s of ['A Casa', 'Aparência', 'Avisos', 'A App']) expect(t).toContain(s);
+    });
+  });
+
+  // ── O que se fez hoje ─────────────────────────────────────────────────────
+  //
+  // Ao nível de fumo: o que rebentaria alto, e o que já rebentou uma vez.
+
+  describe('🔟 O escuro segue o esquema', () => {
+    const { buildTheme, SCHEMES, contraste } = require('../src/theme');
+
+    test('cada esquema tem a SUA página escura', () => {
+      // Era um azul-marinho fixo, igual nos seis: com o Violeta escolhido o
+      // ecrã inteiro ficava azul com um ponto violeta ao meio.
+      const paginas = new Set(SCHEMES.map((_, i) => buildTheme(i, true).page));
+      expect(paginas.size).toBe(SCHEMES.length);
+      expect([...paginas]).not.toContain('#00101C');
+    });
+
+    test('e o texto continua legível em todos', () => {
+      for (let i = 0; i < SCHEMES.length; i++) {
+        const t = buildTheme(i, true);
+        expect(contraste(t.text1, t.page)).toBeGreaterThanOrEqual(4.5);
+        expect(contraste(t.titulo, t.card)).toBeGreaterThanOrEqual(3);
+      }
+    });
+
+    test('o claro não mexeu', () => {
+      const claras = new Set(SCHEMES.map((_, i) => buildTheme(i, false).page));
+      expect(claras).toEqual(new Set(['#F0F2F5']));
+    });
+  });
+
+  describe('1️⃣1️⃣ O avatar', () => {
+    const { avatarDe, mostraFotografia } = require('../src/ui');
+    const { FIGURAS, existeFigura } = require('../src/Avatares');
+    const FOTO = 'https://lh3.googleusercontent.com/a/abc';
+
+    test('as dezasseis figuras existem', () => {
+      expect(FIGURAS.length).toBe(16);
+      for (const k of FIGURAS) expect(existeFigura(k)).toBe(true);
+    });
+
+    test('uma fotografia guardada mostra-se', () => {
+      expect(mostraFotografia({ avatar: FOTO })).toBe(true);
+      expect(avatarDe('Rita', { avatar: FOTO }).foto).toBe(FOTO);
+    });
+
+    test('uma figura escolhida ganha-lhe, e um não explícito ganha às duas', () => {
+      expect(mostraFotografia({ avatar: FOTO, figura: 'gato' })).toBe(false);
+      expect(mostraFotografia({ avatar: FOTO, usarFoto: false })).toBe(false);
+    });
+
+    test('e a cor ESCOLHIDA ganha à calculada do nome', () => {
+      // Dez dos onze sítios pediam a cor sem a escolha: ela via-se no Perfil
+      // e em mais lado nenhum.
+      const { PALETA_MEMBROS, corDoMembro } = require('../src/theme');
+      const outra = PALETA_MEMBROS.find(c => c !== corDoMembro('Rita'));
+      expect(avatarDe('Rita', { cor: outra }).color).toBe(outra);
+    });
+
+    test('⚠ a fotografia é pedida sem referenciador — a Google recusa-a com', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const ui = fs.readFileSync(path.join(__dirname, '..', 'src', 'ui.jsx'), 'utf8');
+      expect(ui).toContain("referrerPolicy: 'no-referrer'");
+    });
+  });
+
+  describe('1️⃣2️⃣ Apagar não reescreve saldos', () => {
+    const React = require('react');
+    const TestRenderer = require('react-test-renderer');
+    const { StoreProvider, useStore } = require('../src/store');
+
+    const abrir = (casa) => {
+      const cofre = {};
+      const Envolve = () => {
+        const st = useStore();
+        cofre.st = st;
+        React.useMemo(() => st.set(casa), []);
+        return null;
+      };
+      TestRenderer.act(() => {
+        TestRenderer.create(React.createElement(StoreProvider, null, React.createElement(Envolve)));
+      });
+      return cofre;
+    };
+
+    test('⚠ apagar uma tarefa feita não tira os pontos à criança', () => {
+      // E se já tivessem sido pagos, o saldo ia a NEGATIVO: a criança passava
+      // a dever pontos à casa por causa de uma arrumação de um adulto.
+      const c = abrir({
+        membros: { 'Rita': { initial: 'R' }, 'Léo': { initial: 'L', kid: true } },
+        roles: { 'Rita': 'admin', 'Léo': 'crianca' },
+        clearedSeeds: true,
+        newTasks: [{ id: 'x1', title: 'Lixo', who: 'Léo', pts: 5 }],
+        done: { x1: true }, paidPts: { 'Léo': 5 }, urg: { x1: 1 }, due: {},
+      });
+      expect(c.st.kidPts['Léo'] - c.st.s.paidPts['Léo']).toBe(0);
+      TestRenderer.act(() => { c.st.removerTarefa('x1'); });
+      expect(c.st.kidPts['Léo']).toBe(5);
+      expect(c.st.kidPts['Léo'] - c.st.s.paidPts['Léo']).toBe(0);
+    });
+
+    test('⚠ apagar um artigo não apaga o histórico de preços', () => {
+      const precos = [{ artigo: 'maca', loja: 'Pingo Doce', valor: 3.29, dia: 'd2026-08-30' }];
+      const c = abrir({
+        membros: { 'Rita': { initial: 'R' } }, roles: { 'Rita': 'admin' },
+        clearedSeeds: true,
+        newItems: [{ id: 'a1', s: 0, label: 'Maçã', est: 3.4 }],
+        status: {}, precoPago: {}, precos,
+      });
+      TestRenderer.act(() => { c.st.removerArtigo('a1'); });
+      expect(c.st.allItems()).toHaveLength(0);
+      expect(c.st.s.precos).toEqual(precos);
+    });
+
+    test('e nenhum dos dois apaga ao toque', () => {
+      const fs = require('fs');
+      const path = require('path');
+      for (const f of ['src/screens/Tarefas.jsx', 'src/screens/Compras.jsx']) {
+        const c = fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+        expect(c).toMatch(/<Confirm/);
+        expect(c).toMatch(/destructive/);
+      }
     });
   });
 });
