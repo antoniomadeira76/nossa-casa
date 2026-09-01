@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, Image } from 'react-native';
+import { View, Text, Pressable, Image, Platform } from 'react-native';
 import { S, R, elev, FONT, corDoMembro, comAlfa } from './theme';
 import Icon from './Icon';
 import Figura from './Avatares';
@@ -314,16 +314,89 @@ export const avatarDe = (nome, m, fallback) => {
   };
 };
 
+// O avatar do CABEÇALHO — disco branco com anel, não bola da cor do membro.
+//
+// É outro desenho de propósito: assenta no cabeçalho colorido, e uma bola da
+// cor do membro sobre o cabeçalho do esquema seriam duas cores a discutir no
+// canto do ecrã. O branco é o que o separa do fundo (referência 04).
+//
+// ⚠ Mas é o avatar MAIS VISTO da app, e não sabia da escolha nenhuma: mostrava
+// sempre a inicial, mesmo com fotografia guardada e figura escolhida. Era este
+// o que aparecia nas capturas de quem perguntava porque é que o avatar não
+// mudava.
+//
+// A fotografia enche o disco; a figura desenha-se na cor do cabeçalho, como a
+// inicial que ela substitui.
+export const AvatarDeCabecalho = ({ t, nome, membro, size = 36 }) => {
+  const [falhou, setFalhou] = React.useState(false);
+  const r = membro || {};
+  const foto = mostraFotografia(r) ? r.avatar : null;
+  React.useEffect(() => { setFalhou(false); }, [foto]);
+  return (
+    <View style={{ width: size, height: size, borderRadius: R.pill, backgroundColor: '#FFFFFF',
+      borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)', overflow: 'hidden',
+      alignItems: 'center', justifyContent: 'center' }}>
+      {foto && !falhou ? (
+        <FotoDoAvatar uri={foto} size={size} onFalhar={() => setFalhou(true)} />
+      ) : r.figura ? (
+        <Figura nome={r.figura} size={size * 0.62} color={t.chrome} />
+      ) : (
+        <Text style={{ fontFamily: FONT.display, fontSize: size * 0.42, fontWeight: '500',
+          color: t.chrome }}>
+          {r.initial || String(nome || '?').trim().charAt(0).toUpperCase()}
+        </Text>
+      )}
+    </View>
+  );
+};
+
 // O mapa nome → cor escolhida, para os dois escolhedores de membro.
 export const coresDe = (membros = {}) => Object.fromEntries(
   Object.entries(membros).map(([n, m]) => [n, (m || {}).cor]).filter(([, c]) => c));
 
-export const Avatar = ({ initial, color, size = 24, foto, figura }) => (
+// A fotografia da conta, desenhada.
+//
+// ── Porque não é só um `<Image>` ────────────────────────────────────────────
+//
+// A Google RECUSA a fotografia quando o pedido leva referenciador. Medido no
+// navegador, contra o endereço real de uma conta:
+//
+//     política por omissão   erro
+//     no-referrer            OK 96×96
+//
+// O `Image` do react-native-web (0.21.2) não expõe `referrerPolicy` — procurei
+// no módulo, não existe. Na web desenha-se um `<img>` verdadeiro, que a
+// aceita; no telemóvel não há referenciador nenhum e o `Image` serve.
+//
+// ⚠ E se a imagem falhar, NÃO fica um buraco. Foi o que aconteceu: a bola
+// aparecia da cor do membro e vazia por dentro, sem inicial e sem figura —
+// pior do que não ter fotografia nenhuma. Um endereço destes caduca quando a
+// pessoa muda a fotografia na conta, portanto isto não é um caso de esquina.
+const FotoDoAvatar = ({ uri, size, onFalhar }) => {
+  if (Platform.OS === 'web') {
+    return React.createElement('img', {
+      src: uri,
+      // A razão de tudo isto.
+      referrerPolicy: 'no-referrer',
+      alt: '',
+      width: size, height: size,
+      onError: onFalhar,
+      style: { width: size, height: size, objectFit: 'cover', display: 'block' },
+    });
+  }
+  return <Image source={{ uri }} accessibilityIgnoresInvertColors
+    onError={onFalhar} style={{ width: size, height: size }} />;
+};
+
+export const Avatar = ({ initial, color, size = 24, foto, figura }) => {
+  const [falhou, setFalhou] = React.useState(false);
+  // Um endereço novo merece uma tentativa nova.
+  React.useEffect(() => { setFalhou(false); }, [foto]);
+  return (
   <View style={{ width: size, height: size, borderRadius: R.pill, backgroundColor: color,
     alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-    {foto ? (
-      <Image source={{ uri: foto }} accessibilityIgnoresInvertColors
-        style={{ width: size, height: size }} />
+    {foto && !falhou ? (
+      <FotoDoAvatar uri={foto} size={size} onFalhar={() => setFalhou(true)} />
     ) : figura ? (
       // A figura ocupa dois terços da bola. Cheia, encostava ao rebordo e
       // perdia a forma nos 24 px a que ela aparece numa linha de tarefa.
@@ -332,7 +405,8 @@ export const Avatar = ({ initial, color, size = 24, foto, figura }) => (
       <Text style={{ fontFamily: FONT.ui, fontSize: size * 0.46, fontWeight: '700', color: '#FFFFFF' }}>{initial}</Text>
     )}
   </View>
-);
+  );
+};
 
 export const Bar = ({ t, pct, color, height = 8 }) => (
   <View style={{ height, borderRadius: R.pill, backgroundColor: t.page, overflow: 'hidden' }}>

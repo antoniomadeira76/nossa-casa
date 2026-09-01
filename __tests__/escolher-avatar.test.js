@@ -437,3 +437,75 @@ describe('a escolha chega a TODA a app, e não só ao Perfil', () => {
     }
   });
 });
+
+describe('a fotografia desenha-se mesmo', () => {
+  const React = require('react');
+  const TestRenderer = require('react-test-renderer');
+  const { Avatar, AvatarDeCabecalho } = require('../src/ui');
+  const { buildTheme } = require('../src/theme');
+  const fs = require('fs');
+  const path = require('path');
+  const ler = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+
+  it('⚠ pede-a sem referenciador — sem isso a Google RECUSA-A', () => {
+    // Medido no navegador, contra o endereço real de uma conta:
+    //
+    //     política por omissão   erro
+    //     no-referrer            OK 96x96
+    //
+    // O `Image` do react-native-web (0.21.2) não expõe `referrerPolicy` — não
+    // existe no módulo. Daí o `<img>` verdadeiro na web.
+    const c = ler('src/ui.jsx');
+    expect(c).toContain("referrerPolicy: 'no-referrer'");
+    expect(c).toMatch(/Platform\.OS === 'web'/);
+  });
+
+  it('⚠ e se ela falhar, a bola NÃO fica vazia', () => {
+    // Foi o que aconteceu: a bola aparecia da cor do membro e vazia por
+    // dentro, sem inicial e sem figura — pior do que não ter fotografia
+    // nenhuma. Um endereço destes caduca quando a pessoa a muda na conta.
+    let a = null;
+    TestRenderer.act(() => {
+      a = TestRenderer.create(React.createElement(Avatar,
+        { initial: 'R', color: '#722ED1', size: 40, foto: FOTO }));
+    });
+    const img = a.root.findAll(n => n.props && n.props.onError)[0];
+    expect(img).toBeTruthy();
+    TestRenderer.act(() => { img.props.onError(); });
+    // Caiu para a inicial.
+    expect(JSON.stringify(a.toJSON())).toContain('R');
+    TestRenderer.act(() => a.unmount());
+  });
+
+  it('o avatar do CABEÇALHO também conhece a fotografia', () => {
+    // Era um desenho à parte — disco branco com a inicial — e não sabia de
+    // escolha nenhuma. É o avatar mais visto da app, e era esse o que aparecia
+    // nas capturas de quem perguntava porque é que nada mudava.
+    let a = null;
+    TestRenderer.act(() => {
+      a = TestRenderer.create(React.createElement(AvatarDeCabecalho,
+        { t: buildTheme(0, false), nome: 'Rita', membro: { initial: 'R', avatar: FOTO } }));
+    });
+    // Indiferente à plataforma: no jest o `Platform.OS` é nativo e sai um
+    // `Image` com `source.uri`; na web sai um `<img>` com `src`. O que importa
+    // é que a fotografia lá está.
+    const comFoto = a.root.findAll(n => n.props
+      && (n.props.src === FOTO || (n.props.source && n.props.source.uri === FOTO)));
+    expect(comFoto.length).toBeGreaterThan(0);
+    TestRenderer.act(() => a.unmount());
+  });
+
+  it('e o App usa-o, em vez de desenhar a inicial à mão', () => {
+    const c = ler('App.jsx');
+    expect(c).toContain('<AvatarDeCabecalho');
+    expect(c).not.toContain('{euNaCasa.initial}');
+  });
+
+  it('a folha usa o MESMO Avatar, e não um desenho parecido', () => {
+    // Um deles sabia o que fazer quando a fotografia não carrega e o outro
+    // não — e era o da pré-visualização que ficava um buraco.
+    const c = ler('src/sheets/EscolherAvatar.jsx');
+    expect(c).not.toContain('<Image source={{ uri: foto }}');
+    expect(c).toContain('<Avatar size={size}');
+  });
+});

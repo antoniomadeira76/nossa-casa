@@ -7,6 +7,7 @@ import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { StoreProvider, useStore } from './src/store';
 import { buildTheme, onChrome, chromeLine, S, R, FONT, elev, LARGURA_APP } from './src/theme';
 import Icon, { Marca } from './src/Icon';
+import { AvatarDeCabecalho } from './src/ui';
 import { FEM, DE } from './src/data';
 import { EUR, dayLabel, TODAY, TODAY_KEY, warrantyDaysLeft, semanaDeHoje, plural,
          chaveRelativa } from './src/format';
@@ -578,13 +579,7 @@ function Shell() {
         <Pressable onPress={() => setPerfil(true)} accessibilityRole="button"
           accessibilityLabel="Perfil e ajustes"
           style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ width: 36, height: 36, borderRadius: R.pill, backgroundColor: '#FFFFFF',
-            borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
-            alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '500', color: t.chrome }}>
-              {euNaCasa.initial}
-            </Text>
-          </View>
+          <AvatarDeCabecalho t={t} nome={user} membro={euNaCasa} size={36} />
         </Pressable>
       </View>
 

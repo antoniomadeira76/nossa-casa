@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT, PALETA_MEMBROS, corDoMembro } from '../theme';
 import Figura, { GRUPOS, figurasDoGrupo, nomeDaFigura } from '../Avatares';
 import Icon, { GoogleG } from '../Icon';
-import { Empty, Tile, mostraFotografia } from '../ui';
+import { Empty, Tile, Avatar, mostraFotografia } from '../ui';
 
 // A escolha do avatar: uma figura, uma cor, ou a fotografia da conta Google.
 //
@@ -59,16 +59,12 @@ export default function EscolherAvatar({ t, user, onFeito }) {
 
   // O avatar como ele fica — a mesma ordem de decisão do componente `Avatar`,
   // para que a pré-visualização não possa mentir sobre o resultado.
+  // ⚠ É o MESMO componente que o resto da app usa, e não um desenho parecido
+  // feito aqui. Um deles sabia o que fazer quando a fotografia não carrega e o
+  // outro não — e era este, o da pré-visualização, que ficava um buraco.
   const Previa = ({ size }) => (
-    <View style={{ width: size, height: size, borderRadius: R.pill, overflow: 'hidden',
-      backgroundColor: cor, alignItems: 'center', justifyContent: 'center' }}>
-      {usarFoto ? <Image source={{ uri: foto }} accessibilityIgnoresInvertColors
-        style={{ width: size, height: size }} />
-        : figura ? <Figura nome={figura} size={size * 0.66} color="#FFFFFF" />
-        : <Text style={{ fontFamily: FONT.ui, fontSize: size * 0.46, fontWeight: '700', color: '#FFFFFF' }}>
-            {inicial}
-          </Text>}
-    </View>
+    <Avatar size={size} color={cor} initial={inicial}
+      figura={usarFoto ? null : figura} foto={usarFoto ? foto : null} />
   );
 
   return (
@@ -170,8 +166,7 @@ export default function EscolherAvatar({ t, user, onFeito }) {
             style={{ minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: S.lg,
               paddingHorizontal: S.lg, borderRadius: R.card, borderWidth: usarFoto ? 2 : 1,
               borderColor: usarFoto ? t.accent : t.border, backgroundColor: t.card }}>
-            <Image source={{ uri: foto }} accessibilityIgnoresInvertColors
-              style={{ width: BOLA, height: BOLA, borderRadius: R.pill }} />
+            <Avatar size={BOLA} color={cor} initial={inicial} foto={foto} />
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 14.5, color: t.text1 }}>
                 A minha fotografia
