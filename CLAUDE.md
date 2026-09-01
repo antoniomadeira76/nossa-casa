@@ -43,7 +43,10 @@ O alvo é o **PocketBase**: `db/pocketbase/`. As regras que impõem os invariant
 não estão escritas e esperadas — estão **provadas a correr**:
 
 ```
-npm run db:provar     # 19 provas das regras + 12 dos hooks
+npm run db:servir     # o servidor. Sem ele a app corre local, e o ecrã de
+                      # entrada diz que o servidor não responde — não que a
+                      # Google esteja mal configurada. Já enganou duas vezes.
+npm run db:provar     # 141 provas, oito ficheiros
 ```
 
 Cada prova tenta o que a `docs/seguranca.html` diz que não pode acontecer e falha se

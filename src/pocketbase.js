@@ -200,12 +200,30 @@ export const auth = {
   // frase do erro — que foi o que o pôs a afirmar «ainda não está configurada»
   // com tudo configurado, porque «Failed to fetch OAuth2 user» também tem a
   // palavra «OAuth» lá dentro.
+  // ⚠ Devolve TRÊS estados, e não uma lista.
+  //
+  // A versão anterior devolvia `[]` tanto quando o servidor respondia «não
+  // tenho a Google» como quando não respondia nada. O ecrã de entrada leu
+  // aquele `[]` e afirmou «a entrada pela Google ainda não está configurada
+  // neste servidor» — com a Google configurada e o servidor simplesmente
+  // desligado.
+  //
+  // É exactamente o defeito que este método existia para corrigir, uma camada
+  // mais abaixo: afirmar uma causa que não se apurou. «Não sei» tem de ser
+  // uma resposta possível, senão alguém vai à consola da Google procurar um
+  // problema que está no processo do servidor.
   provedores: async () => {
-    if (!estaLigado()) return [];
+    if (!estaLigado()) return { alcancavel: false, semServidor: true, lista: [] };
     try {
       const m = await pb.collection('membros').listAuthMethods();
-      return (m.oauth2?.providers || []).map(p => p.name);
-    } catch { return []; }
+      return {
+        alcancavel: true,
+        semServidor: false,
+        lista: (m.oauth2?.providers || []).map(p => p.name),
+      };
+    } catch {
+      return { alcancavel: false, semServidor: false, lista: [] };
+    }
   },
 
   sair: () => { if (estaLigado()) { pb.authStore.clear(); esquecerToken(); agendaLigada = null; } },

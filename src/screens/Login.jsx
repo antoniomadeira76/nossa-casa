@@ -65,10 +65,18 @@ export default function Login({ t, onEnter }) {
       // user» tem lá «OAuth»: com tudo configurado, o ecrã afirmava que a
       // Google não estava configurada. Mandou-nos à consola da Google duas
       // vezes à procura de um problema que estava aqui.
-      const provedores = await servidor.auth.provedores();
+      const p = await servidor.auth.provedores();
       const cancelado = /cancel|closed|aborted/i.test(e.message || '');
       setErroGoogle(
-        !provedores.includes('google')
+        // Quatro causas, e nenhuma se deduz da frase do erro. O «não responde»
+        // era dito como «não está configurada», e mandou-nos à consola da
+        // Google procurar um problema que era o servidor estar desligado.
+        p.semServidor
+          ? 'Esta app está a correr sem servidor. A abrir as contas desta casa.'
+        : !p.alcancavel
+          ? 'O servidor da casa não está a responder. Não é a Google: quando ele '
+            + 'voltar, a entrada volta com ele. A abrir as contas desta casa.'
+        : !p.lista.includes('google')
           ? 'A entrada pela Google ainda não está configurada neste servidor. A abrir as contas desta casa.'
         : cancelado
           ? 'Entrada cancelada. A abrir as contas desta casa.'

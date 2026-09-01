@@ -141,9 +141,12 @@ await prova('o servidor anuncia se o OAuth está ligado', async () => {
 });
 await prova('sem autorização da agenda, google.disponivel() é falso', () =>
   igual(google.disponivel(), false));
+// A mensagem mudou com o desenho, e a prova acompanha. A autorização
+// deixou de vir da entrada — vem do fluxo próprio, e o que falta agora é
+// LIGAR a agenda, não entrar outra vez.
 await prova('e pedir eventos explica o que fazer, em vez de rebentar', async () => {
   try { await google.eventos(); throw new Error('devia ter recusado'); }
-  catch (e) { igual(e.message, 'Entre com o Google e autorize a agenda.'); }
+  catch (e) { igual(e.message, 'A agenda não está ligada nesta conta.'); }
 });
 await prova('entrar com Google sem provedor configurado dá erro claro', async () => {
   try { await auth.entrarComGoogle(); throw new Error('devia ter recusado'); }
