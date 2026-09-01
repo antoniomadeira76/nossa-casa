@@ -247,7 +247,7 @@ const DATA_KEYS = [
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
 // muda, e MIGRATIONS ganha a entrada correspondente. Sem isto, dados antigos
 // eram lidos com a forma nova e ganhavam silenciosamente ao código.
-export const SCHEMA = 10;
+export const SCHEMA = 11;
 
 // Uma migração por salto de versão: recebe o objeto lido e devolve-o corrigido.
 export const MIGRATIONS = {
@@ -363,6 +363,22 @@ export const MIGRATIONS = {
         .map(([k, e]) => [k, converter(e)])),
     };
   },
+
+  // v10 → v11: o mês do orçamento numa casa que nunca abriu um mês.
+  //
+  // O `monthName` da semente era `'Agosto'` escrito à mão. Corrigi a semente,
+  // mas quem já tinha a app aberta ficou com o valor gravado: o Dinheiro dizia
+  // «Conta conjunta · Agosto de 2026» e o Início «Orçamento de Agosto», a 1 de
+  // setembro.
+  //
+  // `monthZero: true` é a marca de uma casa que ainda não abriu mês nenhum —
+  // é o que o `SEM_DINHEIRO_SEMEADO` põe, e o «Abrir Mês» é que o desliga.
+  // Nessas, o nome do mês não é uma escolha de ninguém, é um resto. Numa casa
+  // que JÁ abriu um mês não se toca: aí o nome é o que um adulto decidiu, e
+  // sobrepor-lhe o relógio seria desfazer uma acção.
+  11: (o) => (o.monthZero && o.monthName !== MONTHS[TODAY.m]
+    ? { ...o, monthName: MONTHS[TODAY.m] }
+    : o),
 
   // v8 → v9: a recuperação do `date` outra vez, porque a primeira não chegou
   // a correr onde era precisa.

@@ -45,13 +45,28 @@ const credenciaisDaGoogle = () => {
 
 // O endereço de retorno tem de bater EXACTAMENTE com o que está autorizado na
 // consola da Google — esquema, anfitrião e porta incluídos.
+// ⚠ Vem do PEDIDO, e não do `appURL` das definições.
+//
+// A primeira versão preferia o `appURL`, por parecer a fonte mais oficial. E
+// neste servidor o `appURL` dizia `http://localhost:8090` enquanto o
+// PocketBase escutava em `127.0.0.1:8095` — um valor antigo que ninguém tinha
+// razão para reler. O consentimento ia com um retorno para uma porta onde não
+// há nada, e a Google respondia `Erro 400: redirect_uri_mismatch`, que soa a
+// credencial mal configurada e manda quem o vê para o sítio errado.
+//
+// O endereço certo é aquele por onde o navegador CHEGOU: é para lá que ele tem
+// de ser mandado de volta, e é esse que faz sentido autorizar na consola. É
+// também o que o próprio fluxo OAuth do PocketBase faz.
+//
+// Atrás de um proxy, o anfitrião real vem nos cabeçalhos reencaminhados — sem
+// eles, o retorno apontaria para o nome interno da máquina.
 const enderecoDeRetorno = (e) => {
-  const base = $app.settings().meta.appURL || '';
-  if (base) return base.replace(/\/+$/, '') + '/api/agenda/retorno';
-  // Sem `appURL` configurado, deduz-se do pedido. Serve para desenvolvimento;
-  // num servidor a sério o `appURL` está posto e é ele que manda.
-  const esquema = e.request.tls ? 'https' : 'http';
-  return esquema + '://' + e.request.host + '/api/agenda/retorno';
+  const cab = (n) => {
+    try { return e.request.header.get(n) || ''; } catch (err) { return ''; }
+  };
+  const anfitriao = cab('X-Forwarded-Host') || e.request.host;
+  const esquema = cab('X-Forwarded-Proto') || (e.request.tls ? 'https' : 'http');
+  return esquema + '://' + anfitriao + '/api/agenda/retorno';
 };
 
 // A linha de credenciais deste membro, criada se ainda não existir.
