@@ -282,3 +282,36 @@ describe('o aviso de importação não é uma vez na vida', () => {
     expect(efeito).toMatch(/if \(s\.clearedSeeds\) return;/);
   });
 });
+
+describe('um evento trazido da Google fica ligado a ela', () => {
+  // Observado na casa a sério: três eventos importados, todos com
+  // `source: 'Google Calendar'` e nenhum com `idGoogle`. As folhas leem
+  // `evento.idGoogle` para editar e apagar do lado de lá, portanto esses três
+  // eram intocáveis: mudar a hora na app deixava a Google a dizer outra coisa,
+  // e apagar deixava-o lá a apitar no dia seguinte.
+  const loja = semComentarios(ler('src/store.jsx'));
+  const bloco = loja.slice(loja.indexOf('const importGoogleEvents'),
+                           loja.indexOf('const importGoogleEvents') + 1400);
+
+  it('guarda o identificador da Google', () => {
+    expect(bloco).toMatch(/idGoogle: ev\.id/);
+  });
+
+  it('e continua a marcar a origem', () => {
+    expect(bloco).toMatch(/source: 'Google Calendar'/);
+  });
+
+  it('a chave do dia leva o prefixo, como sempre', () => {
+    expect(bloco).toMatch(/\^d/);
+  });
+
+  it('assim o ciclo continua protegido pelos dois lados', () => {
+    // `idsGoogleDaCasa` lê `e.idGoogle`: com o identificador guardado, um
+    // evento importado também deixa de ser oferecido de volta — além da marca
+    // em `googleCalendarImported`, que já o fazia.
+    const ids = loja.slice(loja.indexOf('const idsGoogleDaCasa'),
+                           loja.indexOf('const idsGoogleDaCasa') + 400);
+    expect(ids).toMatch(/s\.added/);
+    expect(ids).toMatch(/e\.idGoogle/);
+  });
+});

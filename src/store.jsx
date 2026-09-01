@@ -1337,6 +1337,19 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         owner: user,
         visibilidade,
         source: 'Google Calendar',
+        // ⚠ O identificador da Google guarda-se, e não se guardava.
+        //
+        // Sem ele, um evento trazido da agenda podia ser editado e apagado na
+        // app e a Google nunca saber: a mesma reunião, com duas horas
+        // diferentes, em dois sítios, sem nada a dizer qual está certa. E o
+        // «Apagar» dizia «sai da agenda de quem o via», deixava-o na Google, e
+        // no dia seguinte ele estava lá a apitar.
+        //
+        // Com ele, um evento importado segue exactamente o mesmo caminho de um
+        // criado aqui — as folhas já leem `evento.idGoogle` para editar e
+        // apagar do lado de lá, e o confirmar de apagar já diz que sai das
+        // duas agendas quando ele existe.
+        idGoogle: ev.id,
         isRecurring: ev.isRecurring || false,
       }));
 
