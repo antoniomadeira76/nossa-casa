@@ -17,6 +17,15 @@ const ROLE_LABEL = (r, name) => {
   return r === 'admin' ? (fem ? 'administradora' : 'administrador') : r === 'adulto' ? 'adulto' : 'criança';
 };
 
+// A bola do esquema de cor, e a geometria do seu risco diagonal.
+//
+// BOLA  o diâmetro (dentro do alvo de 44 do INVARIANTE #5)
+// CORTE o quadrado que tapa metade — maior do que a bola, para a cobrir
+//       inteira depois de rodado
+// RECUO onde o quadrado assenta, para a aresta passar pelo centro da bola
+const BOLA = 34;
+const CORTE = 60;
+const RECUO = BOLA / 2 + (CORTE / 2) * (Math.SQRT1_2 - 1);
 export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, onGestao }) {
   const st = useStore();
   const { s, set, isAdmin, resetDemo, startBlank, canSeeHealth, healthOf, receitasAExpirar, membros: MEMBERS, deDemonstracao, nomeDaCasa } = st;
@@ -96,11 +105,30 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
                 style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
                 {/* Dois tons: a cor de ação e a do cabeçalho. Um esquema são
                     as duas, e uma bolinha só não distingue os que partilham
-                    o acento. */}
-                <View style={{ width: 34, height: 34, borderRadius: R.pill, overflow: 'hidden',
-                  flexDirection: 'row', borderWidth: on ? 2 : 0, borderColor: t.state.ok }}>
-                  <View style={{ flex: 1, backgroundColor: sc.accent }} />
-                  <View style={{ flex: 1, backgroundColor: sc.chrome }} />
+                    o acento.
+
+                    A separação é DIAGONAL, e não a meio na vertical. Não há
+                    gradientes sem biblioteca — e o sistema visual é próprio,
+                    não se traz uma por causa de um risco. Faz-se com um
+                    quadrado rodado 45° dentro do círculo recortado:
+
+                      · a bola inteira é pintada de `accent`
+                      · por cima, um quadrado maior do que ela, rodado 45°,
+                        pintado de `chrome`
+                      · o quadrado é posto de forma a que UMA das suas arestas
+                        passe exactamente pelo centro da bola
+
+                    O deslocamento não é um número adivinhado. Depois de rodar
+                    45°, a aresta fica a metade do lado do centro do quadrado,
+                    na diagonal — por isso o centro do quadrado tem de recuar
+                    dessa distância a partir do centro da bola, e o canto
+                    superior esquerdo fica em D/2 + (S/2)·(√½ − 1). */}
+                <View style={{ width: BOLA, height: BOLA, borderRadius: R.pill, overflow: 'hidden',
+                  backgroundColor: sc.accent,
+                  borderWidth: on ? 2 : 0, borderColor: t.state.ok }}>
+                  <View style={{ position: 'absolute',
+                    width: CORTE, height: CORTE, left: RECUO, top: RECUO,
+                    backgroundColor: sc.chrome, transform: [{ rotate: '45deg' }] }} />
                 </View>
               </Pressable>
             );

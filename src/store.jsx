@@ -246,7 +246,7 @@ const DATA_KEYS = [
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
 // muda, e MIGRATIONS ganha a entrada correspondente. Sem isto, dados antigos
 // eram lidos com a forma nova e ganhavam silenciosamente ao código.
-export const SCHEMA = 9;
+export const SCHEMA = 10;
 
 // Uma migração por salto de versão: recebe o objeto lido e devolve-o corrigido.
 export const MIGRATIONS = {
@@ -375,6 +375,27 @@ export const MIGRATIONS = {
   // Corrigir a 7 no lugar não serviria de nada, pela mesma razão. Tem de ser
   // um número NOVO. A operação é idempotente: numa loja onde a 7 correu, não
   // há `date` nenhum e isto não toca em nada.
+  // v9 → v10: a lista de esquemas mudou, e a escolha é guardada por ÍNDICE.
+  //
+  // Sem isto, reordenar `SCHEMES` mudava a cor de toda a gente em silêncio:
+  // quem estava em violeta (índice 1) acordava em cião, e a única pista era a
+  // app estar de outra cor. Não dá erro, não dá aviso — muda e pronto.
+  //
+  //   antes  0 Azul Sóbrio  1 Violeta  2 Cião  3 Verde  4 Grafite  5 Céu
+  //   agora  0 Violeta      1 Cião     2 Céu   3 Rosa   4 Menta    5 Cinza
+  //
+  // Os três que saíram vão para o mais próximo do que era: o Azul Sóbrio para
+  // o Céu, o Verde para o Menta, o Grafite para o Cinza. Ninguém fica com uma
+  // cor que não escolheria.
+  10: (o) => {
+    const NOVO = { 0: 2, 1: 0, 2: 1, 3: 4, 4: 5, 5: 2 };
+    return {
+      ...o,
+      schemeByUser: Object.fromEntries(Object.entries(o.schemeByUser || {})
+        .map(([quem, i]) => [quem, NOVO[i] ?? 0])),
+    };
+  },
+
   9: (o) => {
     const comDia = (e) => {
       if (!e || typeof e !== 'object' || e.day || !e.date) return e;

@@ -245,8 +245,13 @@ describe('a migração que não chegou a correr', () => {
     // depois de a loja já estar estampada com 8, e uma migração numerada
     // abaixo da versão gravada nunca corre. Quatro eventos ficaram com
     // `date: '2026-08-14'` e nenhum `day` — invisíveis em todos os ecrãs.
-    expect(loja).toMatch(/export const SCHEMA = 9;/);
+    // O número não se fixa aqui: a cadeia continua a crescer, e um teste que
+    // exigisse «9» falharia à décima migração sem nada estar errado. O que
+    // tem de continuar verdade é a migração existir e o SCHEMA alcançá-la —
+    // e é o teste seguinte que guarda a segunda metade.
     expect(loja).toMatch(/^ {2}9: \(o\) => \{/m);
+    const versao = Number(loja.match(/export const SCHEMA = (\d+);/)[1]);
+    expect(versao).toBeGreaterThanOrEqual(9);
   });
 
   it('a versão do esquema acompanha a última migração', () => {

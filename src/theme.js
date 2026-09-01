@@ -1,13 +1,50 @@
 // Tokens do sistema +Cliente. Único sítio onde vivem cores, escala e tipo.
 // Regra herdada do protótipo: títulos de secção são slate, nunca preto.
 
+// Os seis esquemas. Cada um são DUAS cores: a de ação e a do cabeçalho.
+//
+// ── O tecto, que não é uma questão de gosto ──────────────────────────────────
+//
+// O cabeçalho leva o título a branco, 20 px, peso 500 — que não conta como
+// texto grande em nenhuma norma. Precisa de 4,5:1, e isso põe um limite duro:
+// luminância do cabeçalho ≤ 0,183. Um esquema «claro» de verdade — um pastel —
+// dava um título ilegível, e nenhum ajuste de alfa salva um branco sobre
+// bege.
+//
+// O que se pode fazer, e é o que estes três novos fazem, é sair dos 14–18:1
+// dos antigos para 5–7,5:1: um cabeçalho visivelmente mais claro, com o título
+// ainda a passar. O mais claro de todos é o Cinza, a 5,09 — e o cinza mais
+// claro que ainda cumpre a norma é #6B7280, a 4,83. Não há muito mais para
+// dar deste lado.
+//
+// ── Os três que saíram, e porquê ─────────────────────────────────────────────
+//
+//   Azul Sóbrio  o mais escuro de todos (18:1) e da mesma família do Céu
+//   Verde        substituído pelo Menta, a mesma família muito mais clara
+//   Grafite      substituído pelo Cinza, o mesmo neutro muito mais claro
+//
+// ── Nem âmbar nem terracota ──────────────────────────────────────────────────
+//
+// Passavam no contraste e ficaram de fora à mesma: seriam um laranja como cor
+// de AÇÃO, e o laranja saiu desta app de propósito (ver o erro #3 da lista do
+// CLAUDE.md). Um esquema laranja trá-lo-ia de volta pela porta do lado.
 export const SCHEMES = [
-  { name: 'Azul Sóbrio', accent: '#011B58', hover: '#0A2A7A', chrome: '#001529' },
   { name: 'Violeta',     accent: '#722ED1', hover: '#8B4EE0', chrome: '#241239' },
   { name: 'Cião',        accent: '#08979C', hover: '#13ADB3', chrome: '#0A5B60' },
-  { name: 'Verde',       accent: '#2F7D1F', hover: '#3B9B23', chrome: '#12300B' },
-  { name: 'Grafite',     accent: '#3F3F46', hover: '#52525B', chrome: '#1C1C1F' },
   { name: 'Céu',         accent: '#1B5FA8', hover: '#2679C9', chrome: '#0C2A47' },
+  // Os três novos — cabeçalho entre 5:1 e 7,5:1 com o branco, contra os
+  // 14–18:1 dos antigos.
+  { name: 'Rosa',        accent: '#B5306E', hover: '#CC4285', chrome: '#8A3A5A' },
+  { name: 'Menta',       accent: '#177D5E', hover: '#1E9B75', chrome: '#2E6455' },
+  // O único em que o cabeçalho é MAIS CLARO do que a cor de ação. Nos outros
+  // cinco o cabeçalho é o tom escuro; aqui é o claro, que é o que faz este
+  // esquema ser cinza claro e não outro grafite. O `onChrome` e o `chromeLine`
+  // sobem sozinhos o alfa do branco — foram feitos para isto.
+  //
+  // #646F80 dá 5,09:1 com o branco. O limite é 4,5, e o cinza mais claro que
+  // ainda o cumpre é #6B7280 (4,83). Ficou um passo abaixo de propósito: sem
+  // margem, qualquer futuro ajuste de tom atravessa a linha sem se notar.
+  { name: 'Cinza',       accent: '#4B5563', hover: '#5E6A7C', chrome: '#646F80' },
 ];
 
 const LIGHT = {
