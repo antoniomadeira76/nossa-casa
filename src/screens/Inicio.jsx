@@ -7,7 +7,8 @@ import { EUR, plural, evTime, TODAY_KEY, dayLabel, agoraNaApp } from '../format'
 import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade } from '../ui';
 import Icon from '../Icon';
 
-export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir }) {
+export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir,
+                                 agendaPorLigar, onLigarAgenda }) {
   const st = useStore();
   const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring,
           garantiasAExpirar, receitasAExpirar, consultasProximas, membros: MEMBERS,
@@ -34,6 +35,23 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
   // `idcard` é o ícone das duas primeiras: neste sistema quer dizer «papel com
   // prazo» — a garantia e a receita. Não é reutilização com outro sentido.
   const needs = [];
+
+  // A agenda da Google por ligar.
+  //
+  // Vem primeiro de propósito. Com a autorização a viver no servidor, ligar a
+  // agenda passou a ser um passo único — e um passo único que não se vê é um
+  // passo que não se dá: entrar pela Google deixou de trazer a agenda, e o
+  // ecrã não dizia porquê. Quem tinha a agenda a funcionar via-a desaparecer
+  // sem uma palavra.
+  //
+  // Só aparece a quem TEM sessão no servidor e ainda não ligou — quem decide
+  // isso é o App, que conhece a camada do servidor. Este ecrã não a importa:
+  // um ecrã de apresentação que fala com a rede não se monta num teste sem
+  // que alguém tenha de a simular primeiro.
+  if (agendaPorLigar) needs.push({ icon: 'calendar', color: t.state.info,
+    title: 'Agenda da Google por ligar',
+    sub: 'Liga-se uma vez; depois os eventos vêm sozinhos',
+    go: () => onLigarAgenda?.() });
   if (toConfirm.length) needs.push({ icon: 'clock', color: t.text3,
     title: plural(toConfirm.length, 'tarefa a confirmar', 'tarefas a confirmar'),
     sub: [...new Set(toConfirm.map(x => x.who))].join(', '), go: () => go('tarefas') });

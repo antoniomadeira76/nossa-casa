@@ -224,6 +224,25 @@ function Shell() {
   // Entrar relê a casa: é a seguir à sessão que o servidor responde com os
   // membros a sério. Sem isto, quem entrava ficava com o seu nome e a família
   // de demonstração ao lado.
+  // Ligar a agenda da Google, e procurar logo a seguir.
+  //
+  // Quem carrega aqui quer os eventos, não um ecrã a dizer que agora já pode
+  // tentar. A janela do consentimento abre, e assim que fechar com a
+  // autorização dada, a app faz a pesquisa que faria ao entrar.
+  const ligarAgenda = async () => {
+    try {
+      if (!(await servidor.google.ligar())) return;
+      const reais = await servidor.google.eventos({ dias: 30, max: 50 });
+      const jaVistos = s.googleCalendarImported || {};
+      const nossos = idsGoogleDaCasa();
+      const novos = reais.filter(e => !jaVistos[e.id] && !nossos.has(e.id));
+      if (novos.length) { setEventosGoogle(novos.map(daGoogle)); setGoogleImport(true); }
+    } catch (e) {
+      // A folha da Agenda explica; aqui não há sítio para o dizer sem tapar
+      // o ecrã de quem só queria entrar.
+    }
+  };
+
   const entrar = async (nome) => {
     // ⚠ A CASA antes do NOME, como na retoma da sessão logo acima.
     //
@@ -534,7 +553,9 @@ function Shell() {
                   // Ir a um separador COM uma coisa em mão. Sem isto, tocar num
                   // evento do Início levava à Agenda e obrigava a procurá-lo
                   // outra vez — a app já sabia qual era.
-                  onAbrir={(tabAlvo, id) => { setAbrirNoTab({ tab: tabAlvo, id }); setTab(tabAlvo); }} />
+                  onAbrir={(tabAlvo, id) => { setAbrirNoTab({ tab: tabAlvo, id }); setTab(tabAlvo); }}
+                  agendaPorLigar={servidor.google.porLigar()}
+                  onLigarAgenda={ligarAgenda} />
               : <Screen t={t} user={user} go={setTab} onEquip={() => setEquip(true)}
                   onModoCompras={() => setLoja(true)}
                   abrir={abrirNoTab && abrirNoTab.tab === tab ? abrirNoTab.id : null} />}
