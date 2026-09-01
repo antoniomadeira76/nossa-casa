@@ -85,3 +85,45 @@ describe('a camada do servidor não deixa APIs sem quem as chame', () => {
     expect(pb).not.toMatch(/porSaber/);
   });
 });
+
+describe('a sessão gravada não se dá por ausente antes de ser lida', () => {
+  // ── O defeito ─────────────────────────────────────────────────────────────
+  //
+  // O `AsyncAuthStore` recebe a sessão como PROMESSA — o AsyncStorage é
+  // assíncrono — e aplica-a quando ela resolve. O efeito que retoma a sessão
+  // perguntava `authStore.isValid` no instante em que a app monta, com
+  // dependências vazias: perguntava uma vez, no pior momento possível, e nunca
+  // voltava a tentar.
+  //
+  // Uma corrida: às vezes retomava, às vezes mandava para o ecrã de entrada
+  // uma pessoa com uma sessão válida gravada e cinco dias de validade pela
+  // frente. Ganhar ou perder dependia da velocidade do disco no arranque.
+  const pb = semComentarios(
+    fs.readFileSync(path.join(__dirname, '..', 'src', 'pocketbase.js'), 'utf8'));
+
+  it('há uma forma de esperar pela sessão', () => {
+    expect(pb).toMatch(/export const sessaoPronta/);
+  });
+
+  it('a espera é limitada, para nunca prender o arranque', () => {
+    const f = pb.slice(pb.indexOf('export const sessaoPronta'));
+    expect(f).toMatch(/msMax/);
+    expect(f).toMatch(/Date\.now\(\) < fim/);
+  });
+
+  it('a promessa do disco é guardada, e não descartada', () => {
+    // Era passada directamente ao construtor e perdida. Sem a guardar, não há
+    // nada por que esperar.
+    expect(pb).toMatch(/sessaoACarregar/);
+    expect(pb).toMatch(/initial: sessaoACarregar/);
+  });
+
+  it('a retoma espera antes de decidir', () => {
+    const retoma = codigo.slice(codigo.indexOf('if (user) return;'),
+                                codigo.indexOf('const euNaCasa'));
+    const espera = retoma.indexOf('await servidor.sessaoPronta()');
+    const decide = retoma.indexOf('servidor.auth.valida()');
+    expect(espera).toBeGreaterThan(-1);
+    expect(espera).toBeLessThan(decide);
+  });
+});

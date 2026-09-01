@@ -41,16 +41,49 @@ export const configurar = (opts = {}) => {
 export const estaLigado = () => Boolean(URL);
 
 let cliente = null;
+// A promessa da sessão gravada. Guarda-se para se poder ESPERAR por ela.
+let sessaoACarregar = null;
+
 const obter = () => {
   if (!URL) return null;
   if (!cliente) {
+    sessaoACarregar = Promise.resolve(guarda.getItem('nossa-casa/auth')).catch(() => null);
     cliente = new PocketBase(URL, new AsyncAuthStore({
       save: (s) => guarda.setItem('nossa-casa/auth', s),
-      initial: guarda.getItem('nossa-casa/auth'),
+      initial: sessaoACarregar,
       clear: () => guarda.removeItem('nossa-casa/auth'),
     }));
   }
   return cliente;
+};
+
+// ⚠ Esperar que a sessão gravada esteja aplicada, antes de a dar por ausente.
+//
+// O `AsyncAuthStore` recebe o `initial` como PROMESSA — o AsyncStorage é
+// assíncrono — e aplica-o quando ela resolve. Quem perguntasse
+// `authStore.isValid` no instante em que a app monta recebia FALSO, com uma
+// sessão válida gravada em disco a dois milissegundos de distância.
+//
+// O efeito que retoma a sessão fazia exactamente isso, e com dependências
+// vazias: perguntava uma vez, no pior momento possível, e nunca voltava a
+// tentar. O resultado é uma corrida — às vezes retoma, às vezes manda para o
+// ecrã de entrada uma pessoa que já estava dentro. Ganhar ou perder a corrida
+// dependia da velocidade do disco naquele arranque.
+//
+// Esperar pela promessa não basta: o `AsyncAuthStore` aplica-a numa fila
+// interna, e não há como saber que ela já drenou. Daí a espera limitada — que
+// devolve assim que a sessão aparece, e desiste depois de um segundo e meio
+// para nunca prender o arranque.
+export const sessaoPronta = async (msMax = 1500) => {
+  if (!estaLigado()) return false;
+  obter();
+  try { await sessaoACarregar; } catch (e) { /* sem sessão gravada */ }
+  const fim = Date.now() + msMax;
+  while (Date.now() < fim) {
+    if (pb.authStore && pb.authStore.isValid) return true;
+    await new Promise(r => setTimeout(r, 25));
+  }
+  return Boolean(pb.authStore && pb.authStore.isValid);
 };
 
 // Mantido para quem já lia `ligado`; `estaLigado()` é que reflete uma

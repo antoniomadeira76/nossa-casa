@@ -150,6 +150,13 @@ function Shell() {
     if (user) return;
     let vivo = true;
     (async () => {
+      // ESPERAR pela sessão gravada antes de a dar por ausente. Sem isto era
+      // uma corrida: o `AsyncAuthStore` carrega o disco de forma assíncrona, e
+      // quem perguntasse no instante do arranque recebia «não há sessão» com
+      // uma válida a dois milissegundos de distância. Este efeito tem
+      // dependências vazias — pergunta uma vez e nunca volta a tentar.
+      await servidor.sessaoPronta();
+      if (!vivo) return;
       const m = servidor.auth.valida() ? servidor.auth.membro() : null;
       if (!m || !vivo) return;
       await lerDoServidor();          // a casa antes do nome, para o quadro já o ter
