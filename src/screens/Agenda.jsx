@@ -12,7 +12,7 @@ import ImportarGoogle from '../sheets/ImportarGoogle';
 
 // `abrir` é o id de um evento cuja folha de edição deve estar aberta à
 // chegada.
-export default function Agenda({ t, user, abrir }) {
+export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto }) {
   const { s, allEvents, membros: MEMBERS, podeVerEvento, podeEditarEvento } = useStore();
   const [open, setOpen] = useState(false);
   const [ym, setYm] = useState({ y: TODAY.y, m: TODAY.m });
@@ -21,6 +21,14 @@ export default function Agenda({ t, user, abrir }) {
   const [googleSheetOpen, setGoogleSheetOpen] = useState(false);
   const [preFillDay, setPreFillDay] = useState(null);
   const [editar, setEditar] = useState(null);   // o evento a editar, ou null
+
+  // Chegar aqui a partir do Início para ligar a agenda da Google. A folha
+  // é que sabe ligar e explicar o que correu mal; o Início só aponta.
+  React.useEffect(() => {
+    if (!abrirImportar) return;
+    setGoogleSheetOpen(true);
+    onImportarAberto?.();
+  }, [abrirImportar]);
 
   // Chegar aqui a partir do Início, com um evento em mão.
   React.useEffect(() => {

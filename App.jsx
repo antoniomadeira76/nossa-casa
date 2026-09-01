@@ -108,6 +108,8 @@ function Shell() {
   const [ficha, setFicha] = useState(null); // membro cuja ficha de saúde está aberta
   const [marcarPara, setMarcarPara] = useState(null); // membro a pré-seleccionar ao marcar
   const [googleImport, setGoogleImport] = useState(false);
+  // Abrir a folha de importação ao chegar à Agenda, vindo do Início.
+  const [importarNaAgenda, setImportarNaAgenda] = useState(false);
   // Os eventos da agenda da Google. Vazio até haver token — e havendo, vêm da
   // API a sério, não de uma lista escrita no código.
   const [eventosGoogle, setEventosGoogle] = useState(EVENTOS_DE_DEMONSTRACAO);
@@ -224,24 +226,17 @@ function Shell() {
   // Entrar relê a casa: é a seguir à sessão que o servidor responde com os
   // membros a sério. Sem isto, quem entrava ficava com o seu nome e a família
   // de demonstração ao lado.
-  // Ligar a agenda da Google, e procurar logo a seguir.
+  // A linha do Início LEVA à folha de importação; não liga por conta própria.
   //
-  // Quem carrega aqui quer os eventos, não um ecrã a dizer que agora já pode
-  // tentar. A janela do consentimento abre, e assim que fechar com a
-  // autorização dada, a app faz a pesquisa que faria ao entrar.
-  const ligarAgenda = async () => {
-    try {
-      if (!(await servidor.google.ligar())) return;
-      const reais = await servidor.google.eventos({ dias: 30, max: 50 });
-      const jaVistos = s.googleCalendarImported || {};
-      const nossos = idsGoogleDaCasa();
-      const novos = reais.filter(e => !jaVistos[e.id] && !nossos.has(e.id));
-      if (novos.length) { setEventosGoogle(novos.map(daGoogle)); setGoogleImport(true); }
-    } catch (e) {
-      // A folha da Agenda explica; aqui não há sítio para o dizer sem tapar
-      // o ecrã de quem só queria entrar.
-    }
-  };
+  // A primeira versão ligava aqui mesmo, e apanhava os erros num `catch` vazio
+  // com um comentário a dizer que não havia onde os mostrar. O resultado é o
+  // pior de todos: carregar no botão e não acontecer nada — nem a janela, nem
+  // um aviso. Uma janela bloqueada pelo navegador dava exactamente isso.
+  //
+  // A folha da Agenda já sabe ligar E explicar: tem o botão, tem o sítio para
+  // o erro, e a seguir mostra logo os eventos. Duas cópias da mesma coisa, uma
+  // delas muda, é como se perde uma tarde.
+  const ligarAgenda = () => { setImportarNaAgenda(true); setTab('agenda'); };
 
   const entrar = async (nome) => {
     // ⚠ A CASA antes do NOME, como na retoma da sessão logo acima.
@@ -558,7 +553,9 @@ function Shell() {
                   onLigarAgenda={ligarAgenda} />
               : <Screen t={t} user={user} go={setTab} onEquip={() => setEquip(true)}
                   onModoCompras={() => setLoja(true)}
-                  abrir={abrirNoTab && abrirNoTab.tab === tab ? abrirNoTab.id : null} />}
+                  abrir={abrirNoTab && abrirNoTab.tab === tab ? abrirNoTab.id : null}
+                  abrirImportar={tab === 'agenda' && importarNaAgenda}
+                  onImportarAberto={() => setImportarNaAgenda(false)} />}
         </ScrollView>
       </View>
 
