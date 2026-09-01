@@ -158,6 +158,33 @@ await prova('um retorno sem código é recusado', async () => {
   if (r.estado === 200) throw new Error('aceitou um retorno sem código');
 });
 
+console.log('\n── a janela do consentimento consegue fechar-se ──');
+
+// Isto já tinha sido corrigido uma vez, para o `/api/oauth2-redirect`, e voltou
+// quando o `/api/agenda/retorno` apareceu depois e ficou fora da condição: quem
+// ligava a agenda ficava com a janela da Google pendurada por cima da app.
+//
+// O PocketBase serve a API com `Cross-Origin-Opener-Policy: same-origin`, o que
+// põe a janela num grupo de contextos diferente do da app que a abriu — e o
+// navegador recusa então o `window.close()` que a página faz no fim.
+for (const rota of ['/api/oauth2-redirect', '/api/agenda/retorno']) {
+  await prova(`${rota} deixa a janela fechar-se`, async () => {
+    const r = await chamar('GET', rota);
+    const coop = r.cabecalhos.get('cross-origin-opener-policy');
+    if (coop !== 'same-origin-allow-popups') {
+      throw new Error(`devolveu «${coop}», e a janela não se fecha`);
+    }
+  });
+}
+
+await prova('e o resto da API mantém a protecção', async () => {
+  // O ajuste é para as janelas que se fecham e mais nada. Alargá-lo à API toda
+  // seria trocar um incómodo por uma abertura.
+  const r = await chamar('GET', '/api/health');
+  const coop = r.cabecalhos.get('cross-origin-opener-policy');
+  if (coop !== 'same-origin') throw new Error(`o /api/health devolveu «${coop}»`);
+});
+
 // Limpeza: as linhas de credenciais não pertencem a nenhuma casa, portanto a
 // limpeza normal não lhes chega.
 for (const m of [rita.id, tomas.id]) {

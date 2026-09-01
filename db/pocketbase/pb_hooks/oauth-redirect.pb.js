@@ -18,8 +18,27 @@
 //
 // O ajuste é para esta rota e mais nenhuma. `same-origin` continua em todo o
 // resto da API.
+// ⚠ São DUAS rotas, não uma.
+//
+// `/api/agenda/retorno` é a janela do consentimento da agenda da Google, e faz
+// exactamente o mesmo `window.close()` no fim. Foi acrescentada depois deste
+// hook e ficou de fora: quem ligava a agenda ficava com a janela da Google
+// pendurada por cima da app, e o defeito que este ficheiro existe para corrigir
+// voltou pela porta do lado.
+//
+// Uma lista, e não um `if` por rota: a terceira janela que aparecer entra aqui
+// numa linha, em vez de repetir a condição e esquecer a metade de baixo.
+//
+// ⚠ A lista vive DENTRO do handler, e não ao lado dele.
+//
+// O JSVM do PocketBase corre cada handler num contexto isolado: não vê o
+// âmbito do módulo que o registou. Escrevê-la fora — como se fosse JS normal —
+// deu `ReferenceError` em TODOS os pedidos, porque este `routerUse` corre em
+// todos: o servidor passou a responder 400 a tudo, incluindo ao `/api/health`.
+// É a mesma armadilha do `agenda-google-comum.js`, e ali custou uma volta.
 routerUse((e) => {
-  if (e.request?.url?.path === '/api/oauth2-redirect') {
+  const janelasQueSeFecham = ['/api/oauth2-redirect', '/api/agenda/retorno'];
+  if (janelasQueSeFecham.includes(e.request?.url?.path)) {
     e.response.header().set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   }
   return e.next();
