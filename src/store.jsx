@@ -231,6 +231,14 @@ const ACERTO_INICIAL = 86.5;
 
 const KEY = 'nossa-casa/v1';
 
+// A cópia de segurança de antes da última migração. Uma só, sempre a última —
+// ver o bloco que a escreve, no carregamento.
+const BACKUP = `${KEY}.antes-da-migracao`;
+
+// As chaves que versões anteriores usaram para o mesmo e deixaram atrás.
+// Limpam-se no arranque: eram uma por migração, e nenhuma saía.
+const BACKUPS_ANTIGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(n => `${KEY}.antes-de-v${n}`);
+
 // Só isto é gravado. O resto — separador ativo, folha aberta, rascunhos — é UI.
 const DATA_KEYS = [
   'done', 'pending', 'status', 'registered', 'acertoMovs', 'vaultMoves', 'paidPts', 'extraLog',
@@ -628,6 +636,13 @@ export function StoreProvider({ children }) {
       try { raw = await AsyncStorage.getItem(KEY); }
       catch (e) { /* armazenamento indisponível — segue em memória */ }
 
+      // As cópias que as versões anteriores deixaram, uma por migração. Saem
+      // sem cerimónia: a única que serve para recuperar é a última, e essa
+      // passou a viver numa chave fixa.
+      for (const antiga of BACKUPS_ANTIGOS) {
+        try { await AsyncStorage.removeItem(antiga); } catch (e) { /* segue */ }
+      }
+
       if (raw) {
         let saved = null;
         try { saved = JSON.parse(raw); } catch (e) { saved = null; }
@@ -642,8 +657,20 @@ export function StoreProvider({ children }) {
         } else if (saved) {
           // A cópia do que está no disco, ANTES de lhe mexer. É baratíssima e
           // é a diferença entre um erro de migração ser um susto ou uma perda.
+          //
+          // ⚠ Uma chave FIXA, e não `.antes-de-v${v}`.
+          //
+          // Com a versão no nome, cada migração deixava uma cópia nova e
+          // nenhuma saía: `antes-de-v9`, `antes-de-v10`, `antes-de-v11`… um
+          // monte de casas velhas a ocupar o armazenamento do telemóvel para
+          // sempre. Já se via uma no navegador ao fim de uma tarde.
+          //
+          // Uma cópia só, sempre a última: é a que serve para recuperar de uma
+          // migração que corra mal, e as anteriores só existiriam para
+          // recuperar de um erro que já passou. A versão vai dentro do próprio
+          // conteúdo, no campo `v` — não precisa de estar no nome.
           if (v < SCHEMA) {
-            try { await AsyncStorage.setItem(`${KEY}.antes-de-v${v}`, raw); }
+            try { await AsyncStorage.setItem(BACKUP, raw); }
             catch (e) { /* sem espaço: segue, o resto já protege */ }
           }
           try {
@@ -661,7 +688,7 @@ export function StoreProvider({ children }) {
             if (typeof console !== 'undefined' && console.error) {
               console.error(`[Nossa Casa] A migração de v${v} para v${SCHEMA} falhou. `
                 + `Os dados no disco NÃO foram tocados e há uma cópia em `
-                + `«${KEY}.antes-de-v${v}». A app corre em memória até isto ser corrigido.`, e);
+                + `«${BACKUP}». A app corre em memória até isto ser corrigido.`, e);
             }
           }
         }

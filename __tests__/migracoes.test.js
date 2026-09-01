@@ -130,6 +130,20 @@ describe('uma migração que falha não apaga a casa', () => {
     }
   });
 
+  it('a cópia vive numa chave fixa, uma só', async () => {
+    // Era `.antes-de-v${v}`: cada migração deixava uma cópia nova e nenhuma
+    // saía — `antes-de-v9`, `antes-de-v10`, `antes-de-v11`… casas velhas a
+    // ocupar o armazenamento do telemóvel para sempre. Viu-se uma no
+    // navegador ao fim de uma tarde.
+    await AsyncStorage.setItem(KEY, JSON.stringify(LOJA_V8));
+    // uma cópia de uma versão anterior, deixada atrás
+    await AsyncStorage.setItem(`${KEY}.antes-de-v7`, 'lixo antigo');
+    await montar();
+    expect(await AsyncStorage.getItem(`${KEY}.antes-de-v7`)).toBeNull();
+    expect(await AsyncStorage.getItem(`${KEY}.antes-de-v8`)).toBeNull();
+    expect(await AsyncStorage.getItem(`${KEY}.antes-da-migracao`)).toBe(JSON.stringify(LOJA_V8));
+  });
+
   it('e fica uma cópia do que lá estava, antes de lhe mexer', async () => {
     const gravado = JSON.stringify(LOJA_V8);
     await AsyncStorage.setItem(KEY, gravado);
@@ -138,7 +152,7 @@ describe('uma migração que falha não apaga a casa', () => {
     jest.spyOn(console, 'error').mockImplementation(() => {});
     try {
       await montar();
-      expect(await AsyncStorage.getItem(`${KEY}.antes-de-v8`)).toBe(gravado);
+      expect(await AsyncStorage.getItem(`${KEY}.antes-da-migracao`)).toBe(gravado);
     } finally {
       MIGRATIONS[SCHEMA] = original;
     }
