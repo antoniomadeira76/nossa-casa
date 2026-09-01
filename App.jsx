@@ -90,7 +90,7 @@ const TABS = [
 function Shell() {
   const { s, set, importGoogleEvents, idsGoogleDaCasa, remaining, allEvents, allTasks,
           canSeeHealth, healthOf, docsOf, allEquip, membros: MEMBERS, nomeDaCasa,
-          lerDoServidor } = useStore();
+          lerDoServidor, removerEvento, eventosQueSairamDaGoogle } = useStore();
   const sysDark = useColorScheme() === 'dark';
   const [user, setUser] = useState(null);      // nome do membro ligado
   const [tab, setTab] = useState('inicio');
@@ -110,6 +110,9 @@ function Shell() {
   const [googleImport, setGoogleImport] = useState(false);
   // Abrir a folha de importação ao chegar à Agenda, vindo do Início.
   const [importarNaAgenda, setImportarNaAgenda] = useState(false);
+  // Os eventos que saíram da agenda da Google e ainda estão nesta casa.
+  // Guardam-se para PERGUNTAR — nunca se apagam sem resposta.
+  const [saidosDaGoogle, setSaidosDaGoogle] = useState([]);
   // Os eventos da agenda da Google. Vazio até haver token — e havendo, vêm da
   // API a sério, não de uma lista escrita no código.
   const [eventosGoogle, setEventosGoogle] = useState(EVENTOS_DE_DEMONSTRACAO);
@@ -209,6 +212,12 @@ function Shell() {
           // O que a app pôs na agenda da Google não volta como novidade.
           const novos = reais.filter(e => !jaVistos[e.id] && !nossos.has(e.id));
           if (novos.length) { setEventosGoogle(novos.map(daGoogle)); setGoogleImport(true); }
+
+          // E o sentido inverso do apagar: o que SAIU da agenda da Google.
+          // Pergunta-se — nunca se apaga sem resposta, porque quem apagou lá
+          // pode querer o evento na casa mesmo assim.
+          const saidos = eventosQueSairamDaGoogle(reais.map(x => x.id), 30);
+          if (saidos.length) setSaidosDaGoogle(saidos);
         } catch (e) { /* autorização caducada — o botão da Agenda explica */ }
         return;
       }
@@ -605,6 +614,57 @@ function Shell() {
           onConfirm={() => { setSignOut(false); setPerfil(false); setUser(null); }} />
       ) : null}
 
+      {/* Apagados na agenda da Google — pergunta antes, e diz quais.
+
+          O apagar tinha um sentido só: apagado aqui, apagado lá. Ao
+          contrário não acontecia nada, e um evento apagado na Google ficava
+          nesta casa a apitar à hora de uma coisa que já não existe.
+
+          Pergunta-se, e diz-se QUAIS: apagar sozinho o que outra pessoa
+          apagou noutro sítio é decidir por ela. */}
+      {saidosDaGoogle.length ? (
+        <Confirm t={t}
+          icon="calendar"
+          title={saidosDaGoogle.length === 1
+            ? 'Um evento saiu da agenda da Google'
+            : `${saidosDaGoogle.length} eventos saíram da agenda da Google`}
+          message={
+            (saidosDaGoogle.length === 1
+              ? 'Já não está na agenda da Google, e continua nesta casa:\n\n'
+              : 'Já não estão na agenda da Google, e continuam nesta casa:\n\n')
+            + saidosDaGoogle.slice(0, 6).map(e => `· ${e.title} — ${dayLabel(e.day)}`).join('\n')
+            + (saidosDaGoogle.length > 6 ? `\n· e mais ${saidosDaGoogle.length - 6}` : '')
+            + '\n\nApagar também aqui? Escolhendo Manter, ficam na Nossa Casa e '
+            + 'não se volta a perguntar por eles.'}
+          confirmLabel={saidosDaGoogle.length === 1 ? 'Apagar aqui também' : 'Apagar todos aqui'}
+          cancelLabel="Manter"
+          destructive
+          onConfirm={() => {
+            // Só na app: na Google já não existem. Pedir a apagar outra vez
+            // devolveria 410 — que o `apagarEvento` trata como sucesso, mas
+            // é uma viagem à rede para nada.
+            saidosDaGoogle.forEach(e => removerEvento(e.id));
+            setSaidosDaGoogle([]);
+          }}
+          onCancel={() => {
+            // «Manter» tem de ficar REGISTADO, senão a pergunta volta à
+            // entrada seguinte, e à seguinte — e uma pergunta que se repete
+            // ensina a responder sem ler.
+            //
+            // Corta-se a ligação (`idGoogle: null`), que é o que ela passou
+            // a ser: o evento do lado de lá não existe, e nada há para
+            // editar ou apagar lá. O evento fica na casa, como se tivesse
+            // sido criado aqui.
+            set(x => ({
+              eventEdits: {
+                ...x.eventEdits,
+                ...Object.fromEntries(saidosDaGoogle.map(e => [e.id,
+                  { ...(x.eventEdits[e.id] || {}), idGoogle: null }])),
+              },
+            }));
+            setSaidosDaGoogle([]);
+          }} />
+      ) : null}
       {/* Google Calendar Import Modal */}
       {googleImport && user && euNaCasa && !euNaCasa.kid && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,

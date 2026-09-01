@@ -952,6 +952,36 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     registo: [{ t: 'Um evento foi apagado da agenda', at: Date.now() }, ...x.registo],
   }));
 
+  // Os eventos da casa que JÁ NÃO EXISTEM na agenda da Google.
+  //
+  // O apagar tinha um sentido só: apagado aqui, apagado lá. Ao contrário não
+  // acontecia nada — um evento apagado na Google ficava nesta casa a apitar à
+  // hora de uma coisa que já não existe, que é o mesmo defeito visto do outro
+  // lado do espelho.
+  //
+  // ⚠ SÓ se consideram os eventos cujo dia cai DENTRO da janela que foi lida.
+  //
+  // Sem esse cuidado, um evento marcado para daqui a dois meses — fora dos
+  // trinta dias que se pedem à Google — parecia apagado só por não vir na
+  // resposta, e a app oferecia-se para o apagar. Perguntar antes salva a casa
+  // de perder o evento, mas uma pergunta errada repetida a cada entrada é uma
+  // forma lenta de ensinar alguém a dizer «sim» sem ler.
+  //
+  // Devolve os eventos, e não só os identificadores: quem pergunta tem de
+  // poder dizer QUAIS.
+  const eventosQueSairamDaGoogle = (idsNaGoogle, dias = 30) => {
+    const presentes = new Set(idsNaGoogle || []);
+    const hoje = new Date(TODAY.y, TODAY.m, TODAY.d);
+    const fim = new Date(hoje.getTime() + dias * 86400000);
+    return allEvents().filter(e => {
+      if (!e.idGoogle || presentes.has(e.idGoogle)) return false;
+      const p = /^d(\d{4})-(\d{2})-(\d{2})$/.exec(e.day || '');
+      if (!p) return false;                       // sem dia legível, não se toca
+      const quando = new Date(+p[1], +p[2] - 1, +p[3]);
+      return quando >= hoje && quando < fim;
+    });
+  };
+
   // Os eventos da Google que esta casa CRIOU.
   //
   // Sem isto o ciclo fechava-se em cima de si próprio: agenda-se na app, o
@@ -1411,7 +1441,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     compararLojas: (artigos) => compararLojas(s.precos || [], artigos, s.stores || []),
     podeVerEvento: (e, viewer) => podeVerEvento(e, viewer, quadro),
     podeEditarEvento: (e, viewer) => podeEditarEvento(e, viewer, quadro),
-    editarEvento, removerEvento, idsGoogleDaCasa,
+    editarEvento, removerEvento, idsGoogleDaCasa, eventosQueSairamDaGoogle,
     artigo, oNome, aoNome, deNome,
     nomeDaCasa: s.nomeDaCasa || 'Bengui',
     deDemonstracao: s.deDemonstracao !== false,
