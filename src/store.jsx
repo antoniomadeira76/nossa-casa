@@ -859,6 +859,38 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   };
 
   const allItems = () => [...(s.clearedSeeds ? [] : ITEMS), ...s.newItems].filter(i => !s.itemGone[i.id]);
+
+  // Apagar um artigo da lista de compras.
+  //
+  // O `itemGone` estava no estado e neste filtro desde sempre, e nada o
+  // escrevia — o mesmo andaime sem obra que as tarefas tinham. Um artigo posto
+  // por engano ficava na lista até alguém fechar a conta com ele dentro.
+  //
+  // ── O que sai, e o que fica ────────────────────────────────────────────
+  //
+  // Saem o artigo e os rascunhos DESTA ida às compras: se está apanhado, e o
+  // preço que se escreveu na loja.
+  //
+  // ⚠ FICA o histórico de preços. É o que a casa aprendeu sobre quanto custa
+  // uma coisa e onde — o mesmo princípio dos pontos de uma tarefa apagada: um
+  // artigo sai da lista, não se desaprende o que ele custou. Aqui nem é
+  // preciso cuidado nenhum: o `precos` é indexado pelo RÓTULO do artigo e não
+  // pelo id, portanto apagar por id nunca lhe toca. Está dito porque a
+  // próxima pessoa a mexer nisto não tem como saber.
+  const removerArtigo = (id) => set(x => {
+    const a = allItems().find(i => i.id === id);
+    if (!a) return {};
+
+    const daApp = (x.newItems || []).some(i => i.id === id);
+    const fora = (m) => { const { [id]: _, ...resto } = m || {}; return resto; };
+
+    return {
+      newItems: daApp ? x.newItems.filter(i => i.id !== id) : x.newItems,
+      itemGone: daApp ? x.itemGone : { ...x.itemGone, [id]: true },
+      status: fora(x.status), precoPago: fora(x.precoPago),
+      registo: [{ t: `«${a.label}» saiu da lista de compras`, at: Date.now() }, ...x.registo],
+    };
+  });
   const allEvents = () => [...(s.clearedSeeds ? [] : EVENTS), ...s.added, ...s.health.map(h => h.event).filter(Boolean)]
     .filter(e => e && !s.eventGone[e.id])
     .map(e => ({ ...e, ...(s.eventEdits[e.id] || {}) }));
@@ -1635,7 +1667,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
 
   return {
     s, set,
-    allTasks, allItems, allEvents, allEquip, editEquip, removeEquip,
+    allTasks, allItems, allEvents, allEquip, editEquip, removeEquip, removerArtigo,
     budget, spent, remaining: budget - spent, envelopes, kidPts,
     vaultOf, vaultMoves, vaultAdd,
     verificarPin,

@@ -8,6 +8,7 @@ import { SECTIONS } from '../data';
 import { Card, SectionTitle, Label, Pill, Bar, Primary, AddButton, Empty, usePaged, Pager, Tap, Tile, Avatar, avatarDe } from '../ui';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
+import Confirm from '../Confirm';
 import NovoArtigo from '../sheets/NovoArtigo';
 
 // A lista partilhada. O modo de loja saiu daqui para ModoCompras.jsx: era um
@@ -20,11 +21,15 @@ const diaDaSemana = (k) => {
 
 export default function Compras({ t, user, onModoCompras }) {
   const st = useStore();
-  const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas } = st;
+  const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas, removerArtigo } = st;
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [aApagar, setAApagar] = useState(null);
 
   const items = allItems();
   const stateOf = (i) => s.status[i.id] || (i.real ? 'done' : 'open');
+  // O artigo que está a ser apagado — a pergunta tem de continuar a saber de
+  // qual fala depois de a lista já não o ter.
+  const aApagarArtigo = items.find(i => i.id === aApagar);
   const doneItems = items.filter(i => stateOf(i) === 'done');
   const loja = st.lojaDoPlano();
 
@@ -173,19 +178,32 @@ export default function Compras({ t, user, onModoCompras }) {
                     borderColor: done ? t.state.okBorder : t.border,
                     backgroundColor: done ? t.state.okBg : t.card,
                   }}>
-                    <Pressable onPress={() => toggle(i.id)} accessibilityRole="button"
-                      accessibilityLabel={i.label}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
-                      <Icon name={done ? 'checkCircle' : 'infoCircle'} size={24} color={done ? t.state.ok : t.text3} />
-                      <View style={{ flex: 1, gap: 2 }}>
-                        <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{i.label}</Text>
-                        <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{i.by}</Text>
-                      </View>
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 13,
-                        fontWeight: done ? '600' : '400', color: done ? t.state.okDeep : t.text3 }}>
-                        {done ? EUR(i.real || i.est) : `~ ${EUR(i.est)}`}
-                      </Text>
-                    </Pressable>
+                    {/* A LINHA alterna apanhado/por apanhar; o caixote é um
+                        alvo à parte, na borda. É o mesmo idioma das Tarefas,
+                        onde a linha marca a tarefa e o lápis abre a gestão.
+
+                        Não é a pílula tocável dentro da linha tocável do erro
+                        #6 do CLAUDE.md — essa ficava a meio e obrigava a
+                        adivinhar onde se tinha tocado. Este está encostado à
+                        direita, com 44 de alvo, e é o último elemento. */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+                      <Pressable onPress={() => toggle(i.id)} accessibilityRole="button"
+                        accessibilityLabel={i.label}
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
+                        <Icon name={done ? 'checkCircle' : 'infoCircle'} size={24} color={done ? t.state.ok : t.text3} />
+                        <View style={{ flex: 1, gap: 2 }}>
+                          <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{i.label}</Text>
+                          <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{i.by}</Text>
+                        </View>
+                        <Text style={{ fontFamily: FONT.ui, fontSize: 13,
+                          fontWeight: done ? '600' : '400', color: done ? t.state.okDeep : t.text3 }}>
+                          {done ? EUR(i.real || i.est) : `~ ${EUR(i.est)}`}
+                        </Text>
+                      </Pressable>
+                      <Tap onPress={() => setAApagar(i.id)} label={`Apagar ${i.label}`}>
+                        <Icon name="trash" size={18} color={t.text3} />
+                      </Tap>
+                    </View>
                   </Card>
                 );
               })}
@@ -193,6 +211,19 @@ export default function Compras({ t, user, onModoCompras }) {
           </View>
         );
       })}
+
+      {/* ⚠ Um artigo apagado não desapaga o que a casa aprendeu sobre o preço
+          dele: o histórico é indexado pelo RÓTULO e não pelo id. A pergunta
+          diz isso, para ninguém hesitar a arrumar a lista com medo de perder
+          a comparação entre lojas. */}
+      {aApagarArtigo ? (
+        <Confirm t={t} destructive icon="trash"
+          title={`Apagar «${aApagarArtigo.label}»?`}
+          message="O artigo sai da lista. Os preços que a casa já registou para ele ficam — a comparação entre lojas não se perde."
+          confirmLabel="Apagar"
+          onConfirm={() => { removerArtigo(aApagar); setAApagar(null); }}
+          onCancel={() => setAApagar(null)} />
+      ) : null}
 
       <AddButton t={t} label="acrescentar artigo" onPress={() => setSheetOpen(true)} />
       <AddButton t={t} label="iniciar compras na loja" onPress={onModoCompras} />

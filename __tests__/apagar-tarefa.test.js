@@ -211,3 +211,107 @@ describe('a interface', () => {
     expect(semComentarios).toMatch(/um ponto ganho não se desfaz/);
   });
 });
+
+// ── Os artigos da lista de compras ──────────────────────────────────────────
+//
+// O mesmo andaime sem obra: `itemGone` estava no estado e no filtro do
+// `allItems` desde sempre, e nada o escrevia. Um artigo posto por engano ficava
+// na lista até alguém fechar a conta com ele dentro.
+//
+// (Os EQUIPAMENTOS já tinham — «Remover Equipamento» na ficha, com confirmação
+// e ligado ao `removeEquip`. Não precisaram de nada.)
+
+describe('apagar um artigo de compras', () => {
+  const CASA_C = (extra = {}) => ({
+    membros: { 'Rita': { initial: 'R', fem: true } },
+    roles: { 'Rita': 'admin' },
+    clearedSeeds: true,
+    newItems: [{ id: 'a1', s: 0, label: 'Maçã reineta · 1,5 kg', est: 3.4, by: 'Adicionado por Rita' }],
+    status: {}, precoPago: {},
+    ...extra,
+  });
+
+  it('sai da lista', () => {
+    const c = loja(CASA_C());
+    expect(c.st.allItems().map(i => i.id)).toContain('a1');
+    TestRenderer.act(() => { c.st.removerArtigo('a1'); });
+    expect(c.st.allItems().map(i => i.id)).not.toContain('a1');
+  });
+
+  it('um criado na app sai mesmo do `newItems`', () => {
+    const c = loja(CASA_C());
+    TestRenderer.act(() => { c.st.removerArtigo('a1'); });
+    expect(c.st.s.newItems).toHaveLength(0);
+    expect(c.st.s.itemGone.a1).toBeFalsy();
+  });
+
+  it('leva os rascunhos desta ida às compras', () => {
+    const c = loja(CASA_C({ status: { a1: 'done' }, precoPago: { a1: 3.29 } }));
+    TestRenderer.act(() => { c.st.removerArtigo('a1'); });
+    expect(c.st.s.status.a1).toBeUndefined();
+    expect(c.st.s.precoPago.a1).toBeUndefined();
+  });
+
+  it('⚠ mas o histórico de PREÇOS fica', () => {
+    // É o que a casa aprendeu sobre quanto custa uma coisa e onde — o mesmo
+    // princípio dos pontos de uma tarefa apagada. Aqui é grátis: o `precos` é
+    // indexado pelo RÓTULO e não pelo id, portanto apagar por id nunca lhe
+    // toca. A prova está aqui para que continue assim.
+    const precos = [{ artigo: 'maca-reineta', loja: 'Pingo Doce', valor: 3.29, dia: 'd2026-08-30' }];
+    const c = loja(CASA_C({ precos }));
+    TestRenderer.act(() => { c.st.removerArtigo('a1'); });
+    expect(c.st.s.precos).toEqual(precos);
+  });
+
+  it('fica escrito no registo da casa', () => {
+    const c = loja(CASA_C());
+    TestRenderer.act(() => { c.st.removerArtigo('a1'); });
+    expect(c.st.s.registo[0].t).toContain('Maçã reineta');
+  });
+
+  it('apagar um que não existe não faz nada', () => {
+    const c = loja(CASA_C());
+    const antes = c.st.s.registo.length;
+    TestRenderer.act(() => { c.st.removerArtigo('nao-existe'); });
+    expect(c.st.s.registo.length).toBe(antes);
+  });
+
+  describe('a interface', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const semComentarios = fs.readFileSync(
+      path.join(__dirname, '..', 'src', 'screens', 'Compras.jsx'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .split('\n').map(l => l.replace(/(^|\s)\/\/.*$/, '')).join('\n');
+
+    it('⚠ pergunta antes de apagar', () => {
+      expect(semComentarios).not.toMatch(/onPress=\{\(\) => removerArtigo/);
+      expect(semComentarios).toMatch(/setAApagar\(i\.id\)/);
+      expect(semComentarios).toMatch(/<Confirm/);
+      expect(semComentarios).toMatch(/destructive/);
+    });
+
+    it('a linha continua a alternar apanhado/por apanhar', () => {
+      // O caixote é um alvo À PARTE, na borda. Se a linha passasse a apagar,
+      // a lista deixava de servir para o que serve.
+      expect(semComentarios).toMatch(/onPress=\{\(\) => toggle\(i\.id\)\}/);
+    });
+
+    it('e a pergunta diz que os preços ficam', () => {
+      expect(semComentarios).toMatch(/a comparação entre lojas não se perde/);
+    });
+  });
+});
+
+describe('os equipamentos já tinham — e continuam a ter', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const ficha = fs.readFileSync(
+    path.join(__dirname, '..', 'src', 'sheets', 'FichaEquipamento.jsx'), 'utf8');
+
+  it('há um «Remover Equipamento», com confirmação', () => {
+    expect(ficha).toMatch(/label="Remover Equipamento"/);
+    expect(ficha).toMatch(/<Confirm/);
+    expect(ficha).toMatch(/removeEquip\(equip\.id\)/);
+  });
+});
