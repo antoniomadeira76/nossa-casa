@@ -59,6 +59,19 @@ export default function Compras({ t, user, onModoCompras }) {
 
   return (
     <>
+      {/* Sem nada na lista, o cartão do topo não se mostra.
+          Eram quatro contadores a zero e um plano para uma ida às compras que
+          não tem o que comprar — «Compras de domingo · António · loja por
+          escolher», com uma lista vazia por baixo. Um aviso diz a mesma coisa
+          numa linha, e diz-lhe a verdade.
+
+          O plano volta assim que houver um artigo: ele existe, não se apagou —
+          é o cartão que espera por ter o que anunciar. */}
+      {items.length === 0 ? (
+        <Tile t={t} kind="info">
+          Não há nada na lista de compras desta casa.
+        </Tile>
+      ) : (
       <Card t={t} style={{ gap: S.lg }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
           {[['Artigos na lista', String(items.length)],
@@ -101,6 +114,7 @@ export default function Compras({ t, user, onModoCompras }) {
           </Pressable>
         </View>
       </Card>
+      )}
 
       {/* Onde a lista sai mais barata.
           Só aparece quando há o que dizer: a comparação faz-se sobre os

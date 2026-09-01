@@ -281,7 +281,8 @@ export default function Dinheiro({ t, user, onEquip }) {
               <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
                 {EUR(g.at)} de {EUR(g.of)} · {g.when}
               </Text>
-              <Bar t={t} pct={(g.at / g.of) * 100} color={t.state.info} height={6} />
+              {/* O progresso de uma meta não é um estado — é do esquema. */}
+              <Bar t={t} pct={(g.at / g.of) * 100} color={t.accent} height={6} />
             </View>
           ))}
         </Card>

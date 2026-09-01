@@ -65,7 +65,9 @@ export default function ModoCompras({ t, user, onClose }) {
 
   const tabs = [{ i: -1, label: 'Todos' }, ...SECTIONS.map((n, i) => ({ i, label: n.split(' ')[0] }))];
   const pctCart = merc > 0 ? (cart / merc) * 100 : 0;
-  const barColor = pctCart > 100 ? t.state.err : pctCart > 80 ? t.state.warn : t.state.info;
+  // A barra do carrinho: vermelha acima do limite, âmbar perto dele, e do
+  // ESQUEMA no caso normal — que não é um estado, é o progresso da compra.
+  const barColor = pctCart > 100 ? t.state.err : pctCart > 80 ? t.state.warn : t.accent;
 
   return (
     <>
@@ -82,7 +84,16 @@ export default function ModoCompras({ t, user, onClose }) {
       <View style={{ flexDirection: 'row', gap: S.md }}>
         {tabs.map(x => {
           const on = step === x.i;
-          const limpo = x.i >= 0 && items.filter(i => i.s === x.i).every(i => stateOf(i) !== 'open');
+          // ⚠ Uma secção VAZIA não está «despachada».
+          //
+          // Era só `.every(...)`, e num array vazio o `every` é verdadeiro por
+          // vacuidade: com a lista a zero, as quatro secções apareciam todas a
+          // verde — «Frutas», «Frescos», «Mercearia», «Casa», todas
+          // despachadas, sem nunca ter havido nada para despachar. Um ecrã
+          // cheio de verde a dizer que se fez o que não havia que fazer.
+          const naSeccao = items.filter(i => i.s === x.i);
+          const limpo = x.i >= 0 && naSeccao.length > 0
+            && naSeccao.every(i => stateOf(i) !== 'open');
           return (
             <Pressable key={x.i} onPress={() => setStep(x.i)} accessibilityRole="tab"
               accessibilityLabel={x.label} accessibilityState={{ selected: on }}

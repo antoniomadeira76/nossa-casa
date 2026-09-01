@@ -259,6 +259,37 @@ export const auth = {
     }
   },
 
+  // Confirmar a credencial de OUTRA pessoa, sem lhe entrar na sessão.
+  //
+  // É a peça de que uma acção «precisa de todos os administradores» depende: um
+  // adulto passa o telemóvel ao outro, o outro escreve a sua palavra-passe, e a
+  // app tem de saber se está certa SEM ficar com a sessão dele.
+  //
+  // ⚠ Não se pode usar o cliente da app: `authWithPassword` grava a sessão no
+  // `authStore`, e quem confirmasse ficava a usar a app em nome do outro. Aqui
+  // constrói-se um cliente DESCARTÁVEL, sem armazenamento nenhum — ele nasce,
+  // pergunta ao servidor, e desaparece com a resposta.
+  //
+  // A verificação é do SERVIDOR: as palavras-passe estão em bcrypt e o valor
+  // correto nunca chega ao dispositivo. Comparar no cliente seria pedir a quem
+  // quisesse passar por cima que abrisse a consola.
+  //
+  // Devolve o membro quando a credencial está certa, e `null` quando não está.
+  // Não distingue «não existe» de «palavra-passe errada»: isso diria a quem
+  // tentasse quais os endereços que existem nesta casa.
+  async confirmarCredencial(identidade, palavraPasse) {
+    if (!estaLigado()) return null;
+    try {
+      const descartavel = new PocketBase(URL);   // sem AsyncAuthStore, de propósito
+      const r = await descartavel.collection('membros').authWithPassword(identidade, palavraPasse);
+      const membro = r && r.record ? { id: r.record.id, nome: r.record.nome, papel: r.record.papel } : null;
+      descartavel.authStore.clear();
+      return membro;
+    } catch (e) {
+      return null;
+    }
+  },
+
   sair: () => { if (estaLigado()) { pb.authStore.clear(); esquecerToken(); agendaLigada = null; } },
   membro: () => (estaLigado() ? pb.authStore.record : null),
   valida: () => Boolean(estaLigado() && pb.authStore.isValid),

@@ -109,6 +109,18 @@ export const FONT = {
   ui: 'Inter-600',         // dados densos e etiquetas pequenas
 };
 
+// Uma cor do esquema com transparência.
+//
+// Serve os fundos dos avisos informativos, que passaram a seguir o esquema
+// escolhido pelo membro em vez do azul fixo do sistema. Escrever um `rgba`
+// à mão por esquema seriam seis valores a manter em vez de um cálculo.
+export const comAlfa = (hex, a) => {
+  const n = String(hex || '').replace('#', '');
+  if (n.length !== 6) return `rgba(0,0,0,${a})`;
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(n.slice(i, i + 2), 16));
+  return `rgba(${r},${g},${b},${a})`;
+};
+
 // Uma receita de sombra, três opacidades
 export const elev = (level = 1) => {
   const o = level === 3 ? 0.20 : level === 2 ? 0.15 : 0.10;

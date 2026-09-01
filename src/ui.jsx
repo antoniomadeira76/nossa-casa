@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { S, R, elev, FONT, corDoMembro } from './theme';
+import { S, R, elev, FONT, corDoMembro, comAlfa } from './theme';
 import Icon from './Icon';
 import { visibilidadeDe } from './store';
 
@@ -284,8 +284,18 @@ export const Bar = ({ t, pct, color, height = 8 }) => (
   </View>
 );
 
+// ⚠ O «info» segue o ESQUEMA; o «warn» e o «err» NÃO.
+//
+// Um aviso informativo — «não há nada aqui», «está tudo em dia» — não é um
+// estado, é a app a falar. Ficava azul-do-sistema em cima de um cabeçalho
+// violeta ou cião, e lia-se como uma peça de outra app.
+//
+// O aviso e o erro ficam onde estão, e é uma decisão e não um esquecimento: um
+// aviso que toma a cor do esquema deixa de se distinguir do resto, e um erro em
+// cião não é um erro. A cor deles é o que eles significam — a semântica não é
+// decoração, e num ecrã de dinheiro isso importa.
 const TILE = {
-  info: { border: (t) => t.state.info, bg: (t) => t.tileInfo, icon: 'infoCircle' },
+  info: { border: (t) => t.accent, bg: (t) => comAlfa(t.accent, t.dark ? 0.18 : 0.09), icon: 'infoCircle' },
   warn: { border: (t) => t.state.warn, bg: (t) => t.tileWarn, icon: 'exclamation' },
   err:  { border: (t) => t.state.err,  bg: (t) => t.tileErr,  icon: 'lock' },
 };
@@ -301,12 +311,35 @@ export const Tile = ({ t, kind = 'info', icon, children }) => {
   );
 };
 
+// O aviso de «não há nada aqui».
+//
+// ── Era uma caixa tracejada, alta e centrada ────────────────────────────────
+//
+// Ícone grande por cima, título ao centro, dica por baixo, contorno a
+// tracejado. Ocupava cerca de 120 px para dizer uma frase, e uma app com três
+// secções vazias — o que é uma casa nova — ficava com três placas a dizer que
+// não havia nada, cada uma maior do que o conteúdo que substituía.
+//
+// Passa a ser a mesma caixa do `Tile` de informação: uma linha, ícone à
+// esquerda, contorno azul. É o aviso que a app já usava para «Não há contas a
+// acertar nesta casa», e é o que faz um ecrã vazio parecer arrumado em vez de
+// abandonado.
+//
+// A API não muda — `icon`, `title`, `hint` — para os quinze sítios que o
+// chamam não precisarem de saber disto.
 export const Empty = ({ t, icon, title, hint }) => (
-  <View style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: t.border,
-    borderRadius: R.card, padding: 20, alignItems: 'center', gap: S.md }}>
-    <Icon name={icon} size={28} color={t.text3} />
-    <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2, textAlign: 'center' }}>{title}</Text>
-    {hint ? <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3, textAlign: 'center' }}>{hint}</Text> : null}
+  <View style={{ flexDirection: 'row', gap: 12, padding: 14, borderRadius: R.card,
+    borderWidth: 1, borderColor: t.accent, backgroundColor: comAlfa(t.accent, t.dark ? 0.18 : 0.09) }}>
+    <Icon name={icon || 'infoCircle'} size={20} color={t.accent} />
+    <View style={{ flex: 1, gap: 2 }}>
+      <Text style={{ fontFamily: FONT.body, fontSize: 14.5, lineHeight: 21, color: t.text2 }}>{title}</Text>
+      {/* A dica fica: é ela que diz o que fazer a seguir, e um aviso que só
+          constata é meio aviso. Vai por baixo, mais pequena, e não numa
+          segunda caixa. */}
+      {hint ? (
+        <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>{hint}</Text>
+      ) : null}
+    </View>
   </View>
 );
 

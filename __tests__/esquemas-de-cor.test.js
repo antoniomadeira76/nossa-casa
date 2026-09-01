@@ -140,3 +140,46 @@ describe('a bola do esquema, com o risco em diagonal', () => {
     expect(bloco).toMatch(/backgroundColor: sc\.chrome/);
   });
 });
+
+describe('os avisos seguem o esquema escolhido', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const ler = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+  const ui = ler('src/ui.jsx');
+
+  it('o aviso informativo usa o acento, e não o azul do sistema', () => {
+    // Um aviso «não há nada aqui» não é um estado, é a app a falar. Ficava
+    // azul-do-sistema em cima de um cabeçalho violeta ou cinzento e lia-se
+    // como uma peça de outra app.
+    const tile = ui.slice(ui.indexOf('const TILE = {'), ui.indexOf('export const Tile'));
+    expect(tile).toMatch(/info:.*t\.accent/);
+    expect(tile).not.toMatch(/info:.*t\.state\.info/);
+  });
+
+  it('⚠ o aviso e o erro NÃO seguem o esquema', () => {
+    // É uma decisão, não um esquecimento: um aviso que toma a cor do esquema
+    // deixa de se distinguir do resto, e um erro em cião não é um erro. A cor
+    // deles é o que eles significam, e num ecrã de dinheiro isso importa.
+    const tile = ui.slice(ui.indexOf('const TILE = {'), ui.indexOf('export const Tile'));
+    expect(tile).toMatch(/warn:.*t\.state\.warn/);
+    expect(tile).toMatch(/err:.*t\.state\.err/);
+  });
+
+  it('o `Empty` é a mesma caixa do aviso, e não uma tracejada', () => {
+    const empty = ui.slice(ui.indexOf('export const Empty'), ui.indexOf('export const Empty') + 900);
+    expect(empty).toMatch(/borderColor: t\.accent/);
+    expect(empty).not.toMatch(/borderStyle: 'dashed'/);
+  });
+
+  it('o fundo do aviso deriva do acento, e não é um rgba escrito à mão', () => {
+    // Seis esquemas dariam seis literais para manter. É um cálculo.
+    expect(ui).toMatch(/comAlfa\(t\.accent/);
+    expect(ler('src/theme.js')).toMatch(/export const comAlfa/);
+  });
+
+  it('a barra do carrinho e a das metas são do esquema', () => {
+    // O progresso de uma compra ou de uma meta não é um estado.
+    expect(ler('src/screens/ModoCompras.jsx')).toMatch(/pctCart > 80 \? t\.state\.warn : t\.accent/);
+    expect(ler('src/screens/Dinheiro.jsx')).toMatch(/color=\{t\.accent\} height=\{6\}/);
+  });
+});
