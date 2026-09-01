@@ -183,3 +183,79 @@ describe('uma migração que falha não apaga a casa', () => {
     expect(depois.added).toHaveLength(2);
   });
 });
+
+describe('o plano de compras não aponta para quem não existe', () => {
+  // Visto no ecrã: «Compras de domingo · Domingo, 23/08» com um avatar «?».
+  // O `who` era «Tomás» — o segundo adulto da casa de DEMONSTRAÇÃO — numa casa
+  // que só tem o António. `MEMBROS['Tomás']` é `undefined`, o avatar sai «?» e
+  // a cor sai cinzenta. E o `day` era a data fixa antiga, de há duas semanas.
+  //
+  // É a mesma família dos nomes escritos à mão que se tiraram do código: este
+  // estava nos DADOS gravados, e por isso sobreviveu à limpeza.
+  const { chaveRelativa, TODAY } = require('../src/format');
+  const doze = (loja) => MIGRATIONS[12](loja);
+
+  const casaComUmAdulto = {
+    v: 11,
+    membros: { 'António': { initial: 'A', email: 'a@exemplo.pt' } },
+  };
+
+  it('reaponta para o adulto da casa', () => {
+    const r = doze({ ...casaComUmAdulto,
+      shopPlan: { who: 'Tomás', day: chaveRelativa(3), time: '10:30', store: 0 } });
+    expect(r.shopPlan.who).toBe('António');
+  });
+
+  it('não mexe em quem JÁ é da casa', () => {
+    const plano = { who: 'António', day: chaveRelativa(3), time: '10:30', store: 0 };
+    expect(doze({ ...casaComUmAdulto, shopPlan: plano }).shopPlan).toEqual(plano);
+  });
+
+  it('prefere um adulto a uma criança', () => {
+    const r = doze({
+      v: 11,
+      membros: { 'Léo': { kid: true }, 'Rita': { email: 'r@exemplo.pt' } },
+      shopPlan: { who: 'Tomás', day: chaveRelativa(3), time: '10:30', store: 0 },
+    });
+    // Ir às compras é uma tarefa de adulto; e a criança não tem e-mail nem
+    // conta própria (§8).
+    expect(r.shopPlan.who).toBe('Rita');
+  });
+
+  it('⚠ sem quadro gravado NÃO inventa um nome', () => {
+    // A casa vem do servidor: o nome pode ser válido lá e o quadro só chegar
+    // depois. Apagá-lo aqui seria pior do que deixá-lo.
+    const plano = { who: 'Tomás', day: chaveRelativa(3), time: '10:30', store: 0 };
+    expect(doze({ v: 11, shopPlan: plano }).shopPlan.who).toBe('Tomás');
+    expect(doze({ v: 11, membros: {}, shopPlan: plano }).shopPlan.who).toBe('Tomás');
+  });
+
+  it('um dia que já passou vira o próximo domingo', () => {
+    const r = doze({ ...casaComUmAdulto,
+      shopPlan: { who: 'António', day: chaveRelativa(-14), time: '10:30', store: 0 } });
+    const p = /^d(\d{4})-(\d{2})-(\d{2})$/.exec(r.shopPlan.day);
+    expect(p).not.toBeNull();
+    expect(new Date(+p[1], +p[2] - 1, +p[3]).getDay()).toBe(0);   // domingo
+    const hoje = new Date(TODAY.y, TODAY.m, TODAY.d);
+    expect(new Date(+p[1], +p[2] - 1, +p[3]).getTime()).toBeGreaterThanOrEqual(hoje.getTime());
+  });
+
+  it('um dia futuro fica onde está', () => {
+    const dia = chaveRelativa(5);
+    const r = doze({ ...casaComUmAdulto,
+      shopPlan: { who: 'António', day: dia, time: '10:30', store: 0 } });
+    expect(r.shopPlan.day).toBe(dia);
+  });
+
+  it('sem plano nenhum não rebenta', () => {
+    expect(() => doze({ v: 11 })).not.toThrow();
+    expect(doze({ v: 11 }).shopPlan).toBeUndefined();
+  });
+
+  it('a hora e a loja não se tocam', () => {
+    const r = doze({ ...casaComUmAdulto,
+      shopPlan: { who: 'Tomás', day: chaveRelativa(-1), time: '09:15', store: 2 } });
+    expect(r.shopPlan.time).toBe('09:15');
+    expect(r.shopPlan.store).toBe(2);
+  });
+});

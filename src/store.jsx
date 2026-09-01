@@ -255,7 +255,7 @@ const DATA_KEYS = [
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
 // muda, e MIGRATIONS ganha a entrada correspondente. Sem isto, dados antigos
 // eram lidos com a forma nova e ganhavam silenciosamente ao código.
-export const SCHEMA = 11;
+export const SCHEMA = 12;
 
 // Uma migração por salto de versão: recebe o objeto lido e devolve-o corrigido.
 export const MIGRATIONS = {
@@ -370,6 +370,44 @@ export const MIGRATIONS = {
       eventEdits: Object.fromEntries(Object.entries(o.eventEdits || {})
         .map(([k, e]) => [k, converter(e)])),
     };
+  },
+
+  // v11 → v12: o plano de compras apontava para quem não existe.
+  //
+  // Visto no ecrã das Compras: «Compras de domingo · Domingo, 23/08» com um
+  // avatar «?» ao lado. Duas coisas erradas, as duas gravadas da semente:
+  //
+  //   who   «Tomás» — o segundo adulto da casa de DEMONSTRAÇÃO. Numa casa que
+  //         não o tem, `MEMBROS['Tomás']` é `undefined`, o avatar sai «?» e a
+  //         cor sai cinzenta. É a mesma família dos nomes escritos à mão que
+  //         se tiraram do código — este estava nos DADOS, e por isso sobreviveu.
+  //   day   `d2026-08-23`, a data fixa antiga. Corrigi a semente e não os
+  //         dados de quem já tinha a app aberta, como no `monthName`.
+  //
+  // O responsável passa a ser o primeiro adulto da casa — não se adivinha um
+  // nome, lê-se o quadro. E o dia, se já passou, passa a ser o próximo domingo:
+  // a ida às compras da casa é ao domingo, e um plano para um dia que já lá vai
+  // não é um plano.
+  12: (o) => {
+    const plano = o.shopPlan;
+    if (!plano) return o;
+    const quadro = o.membros || {};
+    const nomes = Object.keys(quadro);
+    const adultos = nomes.filter(n => !quadro[n].kid);
+    const naCasa = nomes.includes(plano.who);
+
+    // Sem quadro gravado não se mexe no responsável: apagá-lo seria pior do
+    // que deixá-lo — a casa vem do servidor e o nome pode ser válido lá.
+    const who = (nomes.length && !naCasa) ? (adultos[0] || nomes[0]) : plano.who;
+
+    const hoje = new Date(TODAY.y, TODAY.m, TODAY.d);
+    const p = /^d(\d{4})-(\d{2})-(\d{2})$/.exec(plano.day || '');
+    const passou = p && new Date(+p[1], +p[2] - 1, +p[3]) < hoje;
+    const day = passou ? chaveRelativa((7 - hoje.getDay()) % 7) : plano.day;
+
+    return (who === plano.who && day === plano.day)
+      ? o
+      : { ...o, shopPlan: { ...plano, who, day } };
   },
 
   // v10 → v11: o mês do orçamento numa casa que nunca abriu um mês.
