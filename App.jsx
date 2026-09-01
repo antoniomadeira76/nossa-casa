@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, useColorScheme, StatusBar, Modal } from 'react-native';
+import { View, Text, ScrollView, Pressable, useColorScheme, StatusBar, Modal, Image } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Font from 'expo-font';
 import { Roboto_500Medium, Roboto_400Regular } from '@expo-google-fonts/roboto';
@@ -30,6 +30,11 @@ import { APP_VERSION } from './src/registo-app';
 import * as servidor from './src/pocketbase';
 
 const TODAY_ANO = TODAY.y;
+
+// A imagem do ecrã de entrada, reaproveitada como fundo à volta da coluna no
+// monitor. É a mesma que o `Login.jsx` usa — uma só imagem, um só sítio de onde
+// vem, e a app fica assente no mesmo sítio onde se entra nela.
+const FUNDO_DA_ENTRADA = require('./assets/login-bg.png');
 
 // A lista que o ecrã mostra quando não há agenda da Google ligada. Está aqui,
 // e não dentro do JSX, para ser óbvio que é demonstração e não dados.
@@ -275,13 +280,46 @@ function Shell() {
 
   // O que fica ao lado da coluna, no monitor.
   //
-  // O `public/index.html` pinta o body de #001529 fixo, porque nasceu antes
-  // de haver coluna limitada: não se via. Agora vê-se, e um azul quase preto
-  // ao lado de um esquema claro é uma moldura que ninguém escolheu. Passa a
-  // ser a cor do cabeçalho do esquema — a mesma que a app já usa em cima.
+  // O `public/index.html` pinta o body de #001529 fixo, porque nasceu antes de
+  // haver coluna limitada: não se via. Passou a ver-se, e uma cor lisa ao lado
+  // da coluna é uma moldura que ninguém escolheu.
+  //
+  // Fica a MESMA imagem do ecrã de entrada, com o mesmo véu — `login-bg.png`
+  // sob `rgba(0,0,0,0.6)`, como em `src/screens/Login.jsx`. A app deixa de
+  // parecer uma janela a flutuar num rectângulo escuro e passa a estar assente
+  // no sítio onde se entrou nela.
+  //
+  // O `t.chrome` fica por baixo como base: é o que se vê no instante antes de
+  // a imagem carregar, e é o que fica se ela não carregar de todo.
+  //
+  // Em nativo não há `document` — nem há «ao lado da coluna», porque a app
+  // ocupa o ecrã. O efeito não faz nada e é isso que se quer.
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.body.style.backgroundColor = t.chrome;
+    // ⚠ O `require` de uma imagem não devolve a mesma coisa nas duas
+    // plataformas: em nativo é um número que o `resolveAssetSource` traduz;
+    // no react-native-web é a própria URL, ou um objecto com ela lá dentro,
+    // conforme o empacotador. Pedir só `.uri` dava `undefined` e o fundo ficava
+    // uma cor lisa, sem erro nenhum a dizer porquê.
+    const fonte = FUNDO_DA_ENTRADA;
+    const uri = typeof fonte === 'string' ? fonte
+      : (fonte && fonte.uri) ? fonte.uri
+      : (fonte && fonte.default) ? fonte.default
+      : (Image.resolveAssetSource ? (Image.resolveAssetSource(fonte) || {}).uri : null);
+    if (uri) {
+      // O véu vai num gradiente de dois pontos iguais: é a forma de escurecer
+      // uma imagem de fundo em CSS sem lhe pôr um elemento por cima — e um
+      // elemento por cima teria de viver na árvore da app, onde não pertence.
+      document.body.style.backgroundImage =
+        `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url("${uri}")`;
+      document.body.style.backgroundSize = 'cover';
+      document.body.style.backgroundPosition = 'center';
+      document.body.style.backgroundRepeat = 'no-repeat';
+      // Fixa: sem isto a imagem acompanha o scroll do corpo e a moldura
+      // parece deslizar por trás da coluna.
+      document.body.style.backgroundAttachment = 'fixed';
+    }
   }, [t.chrome]);
   const onC = onChrome(t.chrome);
 

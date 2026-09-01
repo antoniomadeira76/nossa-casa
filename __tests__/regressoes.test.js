@@ -1254,3 +1254,43 @@ describe('Concordância de género nos nomes dos membros', () => {
     expect(culpados).toEqual([]);
   });
 });
+
+describe('O fundo à volta da coluna, no monitor', () => {
+  const app = read('App.jsx');
+
+  test('é a imagem do ecrã de entrada, e não uma cor lisa', () => {
+    // Uma cor lisa ao lado da coluna é uma moldura que ninguém escolheu. A app
+    // assenta na mesma imagem onde se entra nela.
+    expect(app).toMatch(/login-bg\.png/);
+    expect(app).toMatch(/document\.body\.style\.backgroundImage/);
+  });
+
+  test('leva o mesmo véu do ecrã de entrada', () => {
+    // O Login põe `rgba(0,0,0,0.6)` por cima da fotografia. Se os dois véus
+    // divergirem, a passagem da entrada para a app dá um salto de brilho.
+    const login = read('src/screens/Login.jsx');
+    const veuNoLogin = (login.match(/rgba\(0,0,0,0\.6\)/) || [])[0];
+    expect(veuNoLogin).toBeDefined();
+    expect(app).toMatch(/rgba\(0, ?0, ?0, ?0\.6\)/);
+  });
+
+  test('a imagem não é pedida ao `.uri` e mais nada', () => {
+    // O `require` de um asset devolve coisas diferentes em nativo e na web:
+    // um número lá, a própria URL cá. Pedir só `.uri` dava `undefined`, e o
+    // fundo ficava liso sem um erro a dizer porquê.
+    const bloco = app.slice(app.indexOf('document.body.style.backgroundColor'),
+                            app.indexOf('backgroundAttachment'));
+    expect(bloco).toMatch(/typeof fonte === 'string'/);
+    expect(bloco).toMatch(/resolveAssetSource/);
+  });
+
+  test('há uma cor por baixo, para o instante antes de a imagem chegar', () => {
+    expect(app).toMatch(/document\.body\.style\.backgroundColor = t\.chrome/);
+  });
+
+  test('em nativo não se toca no documento, que não existe', () => {
+    const bloco = app.slice(app.indexOf('// O que fica ao lado da coluna'),
+                            app.indexOf('backgroundAttachment'));
+    expect(bloco).toMatch(/typeof document === 'undefined'/);
+  });
+});
