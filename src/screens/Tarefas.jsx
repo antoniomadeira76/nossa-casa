@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
-import { EUR } from '../format';
+import { EUR, subtituloDaTarefa } from '../format';
 
 import { Card, SectionTitle, Label, Pill, Row, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe } from '../ui';
 import Icon from '../Icon';
@@ -138,7 +138,7 @@ export default function Tarefas({ t, user, abrir }) {
                           color: d && d.late ? t.state.errDeep : d && d.soon ? t.state.warnDeep : t.text3 }}>
                           {done && rec ? 'feita hoje · volta amanhã'
                             : pend ? 'Feito — a aguardar confirmação'
-                            : d ? `${x.who} · ${d.text}` : `${x.who} · ${x.meta}`}
+                            : subtituloDaTarefa(x, d)}
                         </Text>
                       </View>
                       {/* Pastilha contornada, como na referência: o amarelo
@@ -167,7 +167,7 @@ export default function Tarefas({ t, user, abrir }) {
       ) : null}
 
       {task ? (
-        <Sheet t={t} title={task.title} sub={`${task.who} · ${task.meta}`} onClose={() => setManage(null)}
+        <Sheet t={t} title={task.title} sub={subtituloDaTarefa(task)} onClose={() => setManage(null)}
           action={<Primary t={t} label="Guardar Alterações" onPress={() => setManage(null)} />}>
           <View style={{ gap: S.md }}>
             <Label t={t}>Urgência</Label>

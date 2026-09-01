@@ -158,6 +158,21 @@ export const ddmmRelativo = (dias) => {
 
 const wdIndex = (o) => (new Date(o.y, o.m, o.d).getDay() + 6) % 7;
 
+// O subtítulo de uma tarefa: quem, e a seguir o que houver.
+//
+// ⚠ Era `${x.who} · ${x.meta}`, e o `meta` NÃO EXISTE nas tarefas que a app
+// cria: a folha de Nova Tarefa escreve `recur`, nunca `meta`. Só os dados de
+// demonstração o traziam, e por isso o defeito viveu escondido — toda a tarefa
+// escrita por esta família saía com «António · undefined» por baixo do título.
+//
+// A ordem é a da informação mais útil: um prazo ganha à recorrência, que ganha
+// ao texto solto. Sem nada, fica o nome sozinho — que é verdade e chega.
+export const subtituloDaTarefa = (t = {}, prazo = null) => {
+  const quem = t.who || '';
+  const resto = (prazo && prazo.text) || t.meta || t.recur || '';
+  return resto ? `${quem} · ${resto}` : quem;
+};
+
 export const dayLabel = (key) => {
   const o = parseKey(key);
   if (!o) return '';

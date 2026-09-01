@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
-import { EUR, plural, evTime, TODAY_KEY, dayLabel, agoraNaApp } from '../format';
+import { EUR, plural, evTime, TODAY_KEY, dayLabel, agoraNaApp, subtituloDaTarefa } from '../format';
 
 import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade, avatarDe } from '../ui';
 import Icon from '../Icon';
@@ -192,7 +192,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
                   title={x.title}
                   sub={done && rec ? 'feita hoje · volta amanhã'
                     : pend ? 'Feito — a aguardar confirmação'
-                    : d ? `${x.who} · ${d.text}` : `${x.who} · ${x.meta}`}
+                    : subtituloDaTarefa(x, d)}
                   right={<>
                     {x.pts > 0 && !done ? <Pill label={`${x.pts} pt`} fg={t.state.warnDeep} bg={t.state.warnBg} border={t.state.warn} /> : null}
                   </>}
