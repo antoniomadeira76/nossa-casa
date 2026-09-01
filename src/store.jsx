@@ -1190,6 +1190,25 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     } catch (e) { return e.message || 'O avatar não chegou ao servidor.'; }
   };
 
+  // Ir buscar a fotografia da conta Google.
+  //
+  // Devolve `null` quando correu bem, e a mensagem quando não. Guarda no
+  // membro o ENDEREÇO — a imagem fica na Google — e liga-a: quem carregou num
+  // botão que diz «trazer a fotografia» quer vê-la, e obrigar a um segundo
+  // toque a seguir seria fazer de conta que não se percebeu.
+  const trazerFotografia = async (name) => {
+    const sy = await carregarSync();
+    if (!sy || !sy.ligado()) return 'A app está a correr sem servidor.';
+    try {
+      const foto = await sy.trazerFotografiaDaGoogle();
+      set(x => ({ membros: { ...x.membros, [name]: {
+        ...x.membros[name], avatar: foto, usarFoto: true } } }));
+      return null;
+    } catch (e) {
+      return e.message || 'Não foi possível trazer a fotografia.';
+    }
+  };
+
   // PIN: recusa dígitos iguais, sequências, e reutilização
   const pinError = (name, pin) => {
     if (!/^\d{4}$/.test(pin)) return 'O PIN tem de ter 4 dígitos.';
@@ -1588,7 +1607,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     deDemonstracao: s.deDemonstracao !== false,
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
     garantiasAExpirar, receitasAExpirar, consultasProximas,
-    tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring, definirAvatar,
+    tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring, definirAvatar, trazerFotografia,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
     lerDoServidor,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),

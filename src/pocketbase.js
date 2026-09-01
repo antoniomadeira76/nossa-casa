@@ -116,6 +116,10 @@ const semLigacao = () => Promise.reject(new Error('Servidor não configurado.'))
 //
 // Ver `db/pocketbase/pb_hooks/agenda-google.pb.js`.
 
+// O que correu mal ao guardar a fotografia na última entrada, se correu.
+// Lê-se com `auth.erroDaFotografia()`.
+let erroDaFotografia = null;
+
 let tokenGoogle = null;
 let tokenExpiraEm = 0;
 
@@ -225,6 +229,7 @@ export const auth = {
     //
     // A autorização da agenda vem do fluxo próprio — `google.ligar()`.
     agendaLigada = null;
+    erroDaFotografia = null;
 
     // A fotografia da conta, guardada no membro.
     //
@@ -236,7 +241,18 @@ export const auth = {
     const foto = r.meta && (r.meta.avatarURL || r.meta.avatarUrl);
     if (foto) {
       try { await auth.guardarAspeto({ avatar: foto }); }
-      catch (e) { /* a entrada não se perde por causa de uma fotografia */ }
+      catch (e) {
+        // A entrada não se perde por causa de uma fotografia — mas o erro
+        // TAMBÉM não se perde.
+        //
+        // ⚠ Este catch era vazio, e escondeu um defeito a sério: durante duas
+        // entradas seguidas o servidor respondeu 404 a esta escrita (a rota
+        // ainda não estava carregada) e a app não disse nada. A folha do
+        // avatar mostrava «ainda não há fotografia», que é verdade e não é a
+        // verdade útil: a fotografia veio e não se conseguiu guardar.
+        erroDaFotografia = e && e.message ? e.message : 'A fotografia não foi guardada.';
+        if (typeof console !== 'undefined') console.warn('[avatar]', erroDaFotografia);
+      }
     }
     return r;
   },
@@ -326,6 +342,60 @@ export const auth = {
     return d;
   },
 
+  // Ir buscar a fotografia da conta Google, SEM terminar a sessão.
+  //
+  // ── Porque é preciso um pedido só para isto ─────────────────────────────────
+  //
+  // A fotografia chega no `meta.avatarURL` que a Google devolve NO INSTANTE da
+  // entrada, e mais em momento nenhum. Quem já estava dentro quando este campo
+  // passou a existir nunca a escreveu — e não há como a ir buscar depois: o
+  // token que a app guarda é o da AGENDA, pede `calendar.events` e mais nada.
+  // Alargar o âmbito de uma autorização de agenda para apanhar uma fotografia
+  // seria pedir mais acesso do que o preciso, e ficaria pedido para sempre.
+  //
+  // A alternativa era o que a folha dizia: «termine a sessão e volte a entrar».
+  // Funciona e é má — obriga a sair de casa para ir buscar uma coisa que está
+  // à porta.
+  //
+  // ⚠ Corre num cliente DESCARTÁVEL, como o `confirmarCredencial`. Sem isso, a
+  // entrada substituía a sessão em curso: quem escolhesse outra conta na janela
+  // da Google — a do trabalho, a de outra pessoa do mesmo telemóvel — ficava com
+  // a app aberta em nome dela sem ter pedido nada disso.
+  //
+  // E por isso mesmo confirma-se que o membro devolvido é ESTE. Se for outro,
+  // não se escreve nada e diz-se porquê: a sessão a sério nunca chegou a ser
+  // tocada.
+  async trazerFotografiaDaGoogle() {
+    if (!estaLigado()) throw new Error('Servidor não configurado.');
+    const eu = pb.authStore.record;
+    if (!eu) throw new Error('Entre primeiro.');
+
+    const descartavel = new PocketBase(URL);   // sem AsyncAuthStore, de propósito
+    let r;
+    try {
+      r = await descartavel.collection('membros').authWithOAuth2({
+        provider: 'google',
+        // Só a identidade. Nada de agenda: isto é uma fotografia.
+        scopes: ['openid',
+          'https://www.googleapis.com/auth/userinfo.email',
+          'https://www.googleapis.com/auth/userinfo.profile'],
+      });
+    } catch (e) {
+      descartavel.authStore.clear();
+      throw new Error('A Google não devolveu a fotografia.');
+    }
+
+    const outro = !r || !r.record || r.record.id !== eu.id;
+    const foto = r && r.meta && (r.meta.avatarURL || r.meta.avatarUrl);
+    descartavel.authStore.clear();
+
+    if (outro) throw new Error('Essa é outra conta Google. A sessão não mudou.');
+    if (!foto) throw new Error('Esta conta Google não tem fotografia.');
+
+    await auth.guardarAspeto({ avatar: foto });
+    return foto;
+  },
+
   // O aspeto do próprio membro — a fotografia e a cor do avatar.
   //
   // Vai por uma rota e não por um `update` da coleção: a regra de update de
@@ -351,6 +421,8 @@ export const auth = {
     if (!r.ok) throw new Error(d.message || 'Não foi possível guardar o avatar.');
     return d;
   },
+
+  erroDaFotografia: () => erroDaFotografia,
 
   sair: () => { if (estaLigado()) { pb.authStore.clear(); esquecerToken(); agendaLigada = null; } },
   membro: () => (estaLigado() ? pb.authStore.record : null),

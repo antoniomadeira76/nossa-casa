@@ -3,8 +3,8 @@ import { View, Text, Pressable, Image, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, PALETA_MEMBROS, corDoMembro } from '../theme';
 import Figura, { GRUPOS, figurasDoGrupo, nomeDaFigura } from '../Avatares';
-import Icon from '../Icon';
-import { Empty, Tile } from '../ui';
+import Icon, { GoogleG } from '../Icon';
+import { Empty, Tile, mostraFotografia } from '../ui';
 
 // A escolha do avatar: uma figura, uma cor, ou a fotografia da conta Google.
 //
@@ -32,13 +32,14 @@ const Etiqueta = ({ t, children }) => (
 );
 
 export default function EscolherAvatar({ t, user, onFeito }) {
-  const { membros: MEMBROS, definirAvatar } = useStore();
+  const { membros: MEMBROS, definirAvatar, trazerFotografia } = useStore();
   const eu = MEMBROS[user] || {};
   const [erro, setErro] = useState(null);
   const [aGuardar, setAGuardar] = useState(false);
+  const [aTrazer, setATrazer] = useState(false);
 
   const foto = eu.avatar || null;
-  const usarFoto = !!eu.usarFoto && !!foto;
+  const usarFoto = mostraFotografia(eu);
   const cor = corDoMembro(user, eu.cor);
   const figura = eu.figura || null;
   const inicial = eu.initial || user.charAt(0).toUpperCase();
@@ -194,9 +195,36 @@ export default function EscolherAvatar({ t, user, onFeito }) {
           // apanhar uma fotografia seria pedir mais acesso do que o preciso.
           //
           // Portanto o remédio é o que aqui está escrito, e é verdade.
-          <Empty t={t} icon="user"
-            title="Ainda não há fotografia guardada."
-            hint="Ela vem da Google no momento da entrada — termine a sessão e volte a entrar com a conta Google para a trazer." />
+          // ⚠ Isto dizia «termine a sessão e volte a entrar». Era verdade e
+          // era uma má resposta: obrigava a sair de casa para ir buscar uma
+          // coisa que está à porta.
+          //
+          // A fotografia chega no `meta.avatarURL` que a Google devolve no
+          // INSTANTE da entrada, e mais em momento nenhum — quem já estava
+          // dentro quando este campo passou a existir nunca a escreveu. O botão
+          // faz esse instante acontecer outra vez, num cliente descartável, sem
+          // tocar na sessão em curso. Ver `trazerFotografiaDaGoogle`.
+          <View style={{ gap: S.md }}>
+            <Empty t={t} icon="user"
+              title="Ainda não há fotografia guardada."
+              hint="Ela vem da conta Google, e só chega no momento em que se entra." />
+            <Pressable onPress={async () => {
+              setErro(null); setATrazer(true);
+              const e = await trazerFotografia(user);
+              setATrazer(false);
+              if (e) setErro(e);
+            }} disabled={aTrazer}
+              accessibilityRole="button" accessibilityLabel="Trazer a fotografia da Google"
+              accessibilityState={{ disabled: aTrazer }}
+              style={{ minHeight: 48, borderRadius: R.pill, borderWidth: 2, borderColor: t.accent,
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.md,
+                opacity: aTrazer ? 0.5 : 1 }}>
+              <GoogleG size={18} />
+              <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '700', color: t.accent }}>
+                {aTrazer ? 'A perguntar à Google…' : 'Trazer a fotografia da Google'}
+              </Text>
+            </Pressable>
+          </View>
         )}
       </View>
 

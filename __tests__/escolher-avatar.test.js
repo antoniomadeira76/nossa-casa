@@ -209,45 +209,90 @@ describe('as cores', () => {
 });
 
 describe('a fotografia da conta', () => {
-  it('⚠ sem fotografia, não manda entrar com a Google quem já entrou', () => {
-    // A frase dizia «Aparece aqui depois de entrar com a conta Google» — a
-    // quem tinha entrado com a conta Google. Mandava fazer o que já estava
-    // feito. A fotografia só chega no INSTANTE da entrada, e uma sessão
-    // anterior a este campo existir nunca a escreveu.
-    const t = texto(montar());
-    expect(t).toContain('termine a sessão e volte a entrar');
+  it('⚠ sem fotografia, oferece um BOTÃO em vez de uma instrução', () => {
+    // Dizia «Aparece aqui depois de entrar com a conta Google» a quem já tinha
+    // entrado com a conta Google — mandava fazer o que estava feito. Depois
+    // passou a «termine a sessão e volte a entrar», que era verdade e má
+    // resposta: obrigava a sair de casa para ir buscar uma coisa à porta.
+    const a = montar();
+    expect(porRotulo(a, 'Trazer a fotografia da Google')).toBeTruthy();
+    const t = texto(a);
     expect(t).not.toContain('Aparece aqui depois de entrar');
+    expect(t).not.toContain('termine a sessão');
   });
 
-  it('sem fotografia, não finge um botão', () => {
+  it('sem fotografia, não finge que já há uma para usar', () => {
     expect(porRotulo(montar(), 'Usar a fotografia da conta Google')).toBeFalsy();
   });
 
-  it('com fotografia, dá-se a escolher', () => {
+  it('e com fotografia o botão de a trazer desaparece', () => {
+    expect(porRotulo(montar(CASA({ avatar: FOTO })), 'Trazer a fotografia da Google')).toBeFalsy();
+  });
+
+  it('com fotografia, dá-se a desligar', () => {
     const a = montar(CASA({ avatar: FOTO }));
     expect(porRotulo(a, 'Usar a fotografia da conta Google')).toBeTruthy();
-    expect(texto(a)).toContain('Tocar para usar');
+    expect(texto(a)).toContain('A ser usada');
   });
 
-  it('tocar liga-a', async () => {
+  // ⚠ Um toque por prova, e não dois na mesma.
+  //
+  // O efeito que grava a loja corre entre os dois `act`, e o AsyncStorage
+  // simulado devolve `undefined` em vez de uma promessa — o `.catch` rebenta.
+  // É artefacto do ambiente e não da app, mas duas provas de um toque dizem o
+  // mesmo sem depender disso.
+  it('tocar desliga-a', async () => {
     const a = montar(CASA({ avatar: FOTO }));
-    await tocar(a, 'Usar a fotografia da conta Google');
-    expect(a.eu().usarFoto).toBe(true);
-  });
-
-  it('e tocar outra vez desliga-a — quem a pôs pode tirá-la', async () => {
-    const a = montar(CASA({ avatar: FOTO, usarFoto: true }));
     await tocar(a, 'Usar a fotografia da conta Google');
     expect(a.eu().usarFoto).toBe(false);
   });
 
-  it('⚠ a fotografia guardada NÃO se mostra sozinha', () => {
-    // Quem entrou com a Google não pediu por isso que a sua cara passasse a
-    // estar em cada linha de tarefa da casa. Guardar é grátis; mostrar é uma
-    // escolha, e a escolha é de quem lá aparece.
-    const a = montar(CASA({ avatar: FOTO }));
-    expect(a.eu().usarFoto).toBeFalsy();
-    expect(texto(a)).toContain('Tocar para usar');
+  it('e a partir de desligada, tocar volta a ligá-la', async () => {
+    const a = montar(CASA({ avatar: FOTO, usarFoto: false }));
+    await tocar(a, 'Usar a fotografia da conta Google');
+    expect(a.eu().usarFoto).toBe(true);
+  });
+
+  it('⚠ a escrita da fotografia não falha em silêncio', () => {
+    // Durante DUAS entradas seguidas o servidor respondeu 404 a esta escrita —
+    // a rota ainda não estava carregada — e a app não disse nada. A folha
+    // mostrava «ainda não há fotografia», que é verdade e não é a verdade
+    // útil: a fotografia veio e não se conseguiu guardar.
+    const fs = require('fs');
+    const path = require('path');
+    const c = fs.readFileSync(path.join(__dirname, '..', 'src', 'pocketbase.js'), 'utf8');
+    const i = c.indexOf('const foto = r.meta');
+    const bloco = c.slice(i, i + 1200);
+    expect(bloco).toContain('erroDaFotografia =');
+    expect(bloco).not.toContain('a entrada não se perde por causa de uma fotografia */ }');
+    expect(c).toContain('erroDaFotografia: () => erroDaFotografia');
+  });
+
+  it('⚠ uma fotografia guardada MOSTRA-SE, sem ser preciso escolhê-la', () => {
+    // Começou por não se mostrar, por uma razão de privacidade que era minha e
+    // não de quem usa a app: a fotografia era importada, ficava guardada, e o
+    // avatar continuava a mostrar a inicial. Parecia avariado, e era.
+    const { mostraFotografia } = require('../src/ui');
+    expect(mostraFotografia({ avatar: FOTO })).toBe(true);
+    expect(texto(montar(CASA({ avatar: FOTO })))).toContain('A ser usada');
+  });
+
+  it('mas uma figura escolhida ganha à fotografia', () => {
+    const { mostraFotografia } = require('../src/ui');
+    expect(mostraFotografia({ avatar: FOTO, figura: 'gato' })).toBe(false);
+  });
+
+  it('e um NÃO explícito ganha às duas — a escolha manda nos dois sentidos', () => {
+    const { mostraFotografia } = require('../src/ui');
+    expect(mostraFotografia({ avatar: FOTO, usarFoto: false })).toBe(false);
+    expect(mostraFotografia({ avatar: FOTO, figura: 'gato', usarFoto: true })).toBe(true);
+  });
+
+  it('sem fotografia nenhuma, não se mostra nada', () => {
+    const { mostraFotografia } = require('../src/ui');
+    expect(mostraFotografia({ usarFoto: true })).toBe(false);
+    expect(mostraFotografia({})).toBe(false);
+    expect(mostraFotografia(null)).toBe(false);
   });
 });
 
@@ -316,6 +361,34 @@ describe('o servidor', () => {
     expect(h).toMatch(/const membro = e\.auth/);
     expect(h).toMatch(/\$apis\.requireAuth\(\)/);
     expect(h).not.toMatch(/corpo\.(membro|id)\b/);
+  });
+
+  it('⚠ trazer a fotografia corre num cliente DESCARTÁVEL', () => {
+    // Sem isso, a entrada substituía a sessão em curso: quem escolhesse outra
+    // conta na janela da Google — a do trabalho, a de outra pessoa do mesmo
+    // telemóvel — ficava com a app aberta em nome dela sem ter pedido nada.
+    const c = semComentarios('src/pocketbase.js');
+    const i = c.indexOf('trazerFotografiaDaGoogle');
+    const bloco = c.slice(i, i + 1400);
+    expect(bloco).toContain('const descartavel = new PocketBase(URL)');
+    expect(bloco).toContain("descartavel.collection('membros').authWithOAuth2");
+    expect(bloco).not.toContain("pb.collection('membros').authWithOAuth2");
+  });
+
+  it('e recusa se a conta devolvida for de OUTRO membro', () => {
+    const c = semComentarios('src/pocketbase.js');
+    const bloco = c.slice(c.indexOf('trazerFotografiaDaGoogle'), c.indexOf('trazerFotografiaDaGoogle') + 1600);
+    expect(bloco).toContain('r.record.id !== eu.id');
+    expect(bloco).toContain('outra conta Google');
+  });
+
+  it('e não pede o âmbito da agenda para ir buscar uma fotografia', () => {
+    // Alargar o âmbito de uma autorização de AGENDA para apanhar uma
+    // fotografia seria pedir mais acesso do que o preciso — e ficaria pedido
+    // para sempre.
+    const c = semComentarios('src/pocketbase.js');
+    const bloco = c.slice(c.indexOf('trazerFotografiaDaGoogle'), c.indexOf('trazerFotografiaDaGoogle') + 1400);
+    expect(bloco).not.toMatch(/calendar/);
   });
 
   it('a cor e a figura viajam; mostrar a própria cara não', () => {

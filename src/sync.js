@@ -227,3 +227,4 @@ export function recusaSaude(colecao) {
 // conhece esta porta: importa o `./sync` em atraso e nunca o cliente. Manter a
 // regra poupa à loja saber que servidor está do outro lado.
 export const guardarAspeto = (campos) => servidor.auth.guardarAspeto(campos);
+export const trazerFotografiaDaGoogle = () => servidor.auth.trazerFotografiaDaGoogle();

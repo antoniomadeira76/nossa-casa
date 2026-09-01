@@ -287,15 +287,30 @@ export const AddButton = ({ t, label, onPress }) => (
 // tarefas e nas compras continuava a aparecer a cor calculada do nome. Um sítio
 // só para decidir isto é a diferença entre acrescentar uma escolha e acrescentar
 // uma escolha que só funciona em metade da app.
+// Se a fotografia da conta é para mostrar.
+//
+// ⚠ Três estados, e não dois. `usarFoto` por decidir (`undefined`) não é o
+// mesmo que decidido que NÃO: quem entra com a Google e vê a sua fotografia
+// aparecer teve o que pediu, e quem prefere outra coisa escolhe-a — a escolha
+// explícita ganha sempre, nos dois sentidos.
+//
+// Estava a começar em `false`, por uma razão de privacidade que era minha e não
+// de quem usa a app: a fotografia era importada, ficava guardada, e o avatar
+// continuava a mostrar a inicial. Parecia avariado, e era.
+export const mostraFotografia = (m) => {
+  const r = m || {};
+  if (!r.avatar) return false;
+  if (r.usarFoto === undefined || r.usarFoto === null) return !r.figura;
+  return !!r.usarFoto;
+};
+
 export const avatarDe = (nome, m, fallback) => {
   const r = m || {};
   return {
     initial: r.initial || String(nome || '?').trim().charAt(0).toUpperCase(),
     color: corDoMembro(nome, r.cor) || fallback,
     figura: r.figura || null,
-    // A fotografia guardada não se mostra sozinha — quem entrou com a Google
-    // não pediu por isso que a sua cara ficasse em cada linha da casa.
-    foto: r.usarFoto ? (r.avatar || null) : null,
+    foto: mostraFotografia(r) ? r.avatar : null,
   };
 };
 
