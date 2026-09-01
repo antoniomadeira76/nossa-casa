@@ -255,7 +255,7 @@ const DATA_KEYS = [
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
 // muda, e MIGRATIONS ganha a entrada correspondente. Sem isto, dados antigos
 // eram lidos com a forma nova e ganhavam silenciosamente ao código.
-export const SCHEMA = 12;
+export const SCHEMA = 13;
 
 // Uma migração por salto de versão: recebe o objeto lido e devolve-o corrigido.
 export const MIGRATIONS = {
@@ -370,6 +370,30 @@ export const MIGRATIONS = {
       eventEdits: Object.fromEntries(Object.entries(o.eventEdits || {})
         .map(([k, e]) => [k, converter(e)])),
     };
+  },
+
+  // v12 → v13: as três lojas da demonstração saem de uma casa a sério.
+  //
+  // «Continente de Belém», «Pingo Doce da Ajuda», «Mercado de Alcântara» são
+  // sementes — lojas de Lisboa escritas no código para a demonstração ter algo
+  // que mostrar. Numa casa de verdade são o palpite de outra pessoa sobre onde
+  // essa família faz compras.
+  //
+  // ⚠ Só saem se estiverem INTACTAS: a lista tem de ser exactamente aquelas
+  // três, na mesma ordem. Quem lhes mexeu — acrescentou, renomeou, tirou uma —
+  // fez uma escolha, e uma migração não desfaz escolhas.
+  //
+  // O `shopPlan.store` é um ÍNDICE nesta lista. Fica em zero, que é o que uma
+  // casa nova tem, e o `lojaDoPlano()` responde «nenhuma» enquanto a lista
+  // estiver vazia — daí as seis leituras diretas terem passado por lá.
+  13: (o) => {
+    const SEMENTES = ['Continente de Belém', 'Pingo Doce da Ajuda', 'Mercado de Alcântara'];
+    const lista = o.stores;
+    if (!Array.isArray(lista) || lista.length !== SEMENTES.length) return o;
+    if (!lista.every((nome, i) => nome === SEMENTES[i])) return o;
+    // Numa casa de demonstração ficam: é lá que servem para algo.
+    if (!o.clearedSeeds) return o;
+    return { ...o, stores: [] };
   },
 
   // v11 → v12: o plano de compras apontava para quem não existe.
@@ -1056,7 +1080,45 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // Fechar a conta transforma o rascunho em histórico. É aqui, e não a cada
   // tecla: uma observação por dígito escrito enchia o histórico de preços que
   // nunca existiram.
+  // O dia do plano de compras: o próximo domingo, enquanto ninguém escolher
+  // outro que ainda esteja para vir.
+  //
+  // Era só o valor gravado, e por isso envelhecia: numa segunda-feira o ecrã
+  // dizia «Compras de domingo · Domingo, 23/08» — um plano para um dia que já
+  // lá ia. Uma migração corrige isso UMA vez; na semana seguinte volta.
+  //
+  // A ida às compras desta casa é ao domingo. Enquanto o dia gravado estiver
+  // no passado, o que se mostra é o próximo domingo — e no dia em que alguém
+  // marcar outra data, essa data manda, porque é uma escolha.
+  const diaDoPlano = () => {
+    const guardado = s.shopPlan ? s.shopPlan.day : null;
+    const hoje = new Date(TODAY.y, TODAY.m, TODAY.d);
+    const p = /^d(\d{4})-(\d{2})-(\d{2})$/.exec(guardado || '');
+    if (p && new Date(+p[1], +p[2] - 1, +p[3]) >= hoje) return guardado;
+    // getDay(): 0 é domingo. Se hoje for domingo, é hoje.
+    return chaveRelativa((7 - hoje.getDay()) % 7);
+  };
+
+  // A loja do plano de compras, ou nada.
+  //
+  // Seis sítios liam `s.stores[s.shopPlan.store]` à mão. Numa casa sem lojas
+  // — e uma casa nova não tem nenhuma — isso é ler uma posição que não existe,
+  // e o ecrã escrevia «undefined» a seguir à hora. Aqui a resposta é uma só, e
+  // é `null` quando não há loja escolhida.
+  const lojaDoPlano = () => {
+    const lista = s.stores || [];
+    const i = s.shopPlan ? s.shopPlan.store : null;
+    return (typeof i === 'number' && lista[i]) ? lista[i] : null;
+  };
+
+  // ⚠ Sem loja não se grava histórico de preços.
+  //
+  // O histórico é «o que esta casa pagou, NAS lojas dela»: uma observação com
+  // `loja: null` não responde a pergunta nenhuma — o `precosDe` filtra as que
+  // não têm loja, portanto ficaria a ocupar espaço e a não contar para nada.
+  // Melhor não a escrever do que escrever lixo.
   const registarPrecos = (artigos, loja, dia = TODAY_KEY) => set(x => {
+    if (!loja) return {};
     const novas = (artigos || [])
       .filter(a => (x.precoPago || {})[a.id] > 0)
       .map(a => observacao({ rotulo: a.label, loja, valor: x.precoPago[a.id], dia }));
@@ -1480,6 +1542,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     podeVerEvento: (e, viewer) => podeVerEvento(e, viewer, quadro),
     podeEditarEvento: (e, viewer) => podeEditarEvento(e, viewer, quadro),
     editarEvento, removerEvento, idsGoogleDaCasa, eventosQueSairamDaGoogle,
+    lojaDoPlano, diaDoPlano,
     artigo, oNome, aoNome, deNome,
     nomeDaCasa: s.nomeDaCasa || 'Bengui',
     deDemonstracao: s.deDemonstracao !== false,

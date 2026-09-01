@@ -19,7 +19,8 @@ import Carrinho from '../sheets/Carrinho';
 // Agora é uma vista de ecrã inteiro como as outras: o App põe o cabeçalho
 // (seta de voltar, título, loja) e o rodapé, e isto é só o conteúdo.
 export default function ModoCompras({ t, user, onClose }) {
-  const { s, set, allItems, envelopes, precoDe, definirPrecoPago, registarPrecos } = useStore();
+  const { s, set, allItems, envelopes, precoDe, definirPrecoPago, registarPrecos,
+          lojaDoPlano } = useStore();
   const [step, setStep] = useState(-1);            // -1 = Todos
   const [novoArtigo, setNovoArtigo] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -29,7 +30,7 @@ export default function ModoCompras({ t, user, onClose }) {
   const doneItems = items.filter(i => stateOf(i) === 'done');
   const semStock = items.filter(i => stateOf(i) === 'sem-stock');
   const porConfirmar = items.filter(i => stateOf(i) === 'open');
-  const loja = s.stores[s.shopPlan.store];
+  const loja = lojaDoPlano();
 
   // O que se paga por um artigo: o que se escreveu agora, senão o que se pagou
   // da última vez nesta loja, senão o que está na lista.
@@ -73,7 +74,7 @@ export default function ModoCompras({ t, user, onClose }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
         <Icon name="storefront" size={20} color={t.slate} />
         <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.ui, fontSize: 12.5, color: t.text2 }}>
-          {s.stores[s.shopPlan.store]} · ordem do corredor
+          {loja || 'Loja por escolher'} · ordem do corredor
         </Text>
       </View>
 
@@ -218,7 +219,7 @@ export default function ModoCompras({ t, user, onClose }) {
 
       {cartOpen ? (
         <Carrinho t={t} doneItems={doneItems} items={items} cart={cart} pago={pago}
-          user={user} store={s.stores[s.shopPlan.store]} who={s.shopPlan.who}
+          user={user} store={loja} who={s.shopPlan.who}
           onClose={() => setCartOpen(false)}
           onConfirm={() => {
             // Os preços escritos no corredor viram histórico aqui, com a loja
@@ -228,7 +229,7 @@ export default function ModoCompras({ t, user, onClose }) {
               registered: x.registered + cart,
               acertoMovs: [],
               shopHistory: [{
-                at: Date.now(), store: x.stores[x.shopPlan.store], who: x.shopPlan.who,
+                at: Date.now(), store: (x.stores || [])[x.shopPlan.store] || null, who: x.shopPlan.who,
                 total: cart, items: doneItems.length,
               }, ...x.shopHistory].slice(0, 10),
             }));

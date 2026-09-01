@@ -26,7 +26,7 @@ export default function Compras({ t, user, onModoCompras }) {
   const items = allItems();
   const stateOf = (i) => s.status[i.id] || (i.real ? 'done' : 'open');
   const doneItems = items.filter(i => stateOf(i) === 'done');
-  const loja = s.stores[s.shopPlan.store];
+  const loja = st.lojaDoPlano();
 
   // A estimativa passa a usar o que a casa PAGOU nesta loja, e cai no que
   // está escrito só para o que ainda não se comprou. É o ganho de todos os
@@ -47,6 +47,9 @@ export default function Compras({ t, user, onModoCompras }) {
   // avatar a «?», que é a guarda a funcionar e a pergunta a ficar por
   // responder. Sem ninguém válido, não se nomeia ninguém.
   const planoDe = MEMBERS[s.shopPlan.who] ? s.shopPlan.who : null;
+  // O dia vem derivado: o gravado se ainda estiver para vir, senão o próximo
+  // domingo. Ler `s.shopPlan.day` cru punha aqui datas de há duas semanas.
+  const diaDoPlano = st.diaDoPlano();
 
   const listPg = usePaged(items, 5);
 
@@ -84,10 +87,12 @@ export default function Compras({ t, user, onModoCompras }) {
             color={corDoMembro(planoDe) || t.text3} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>
-              {s.shopPlan.day ? `Compras de ${diaDaSemana(s.shopPlan.day)}` : 'Compras'}{planoDe ? ` · ${planoDe}` : ''}
+              {diaDoPlano ? `Compras de ${diaDaSemana(diaDoPlano)}` : 'Compras'}{planoDe ? ` · ${planoDe}` : ''}
             </Text>
             <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
-              {s.shopPlan.day ? `${dayLabel(s.shopPlan.day)} · ` : ''}{s.shopPlan.time} · {s.stores[s.shopPlan.store]}
+              {/* Sem loja escolhida não se escreve « · undefined». Uma casa
+                  nova não tem lojas, e a linha tem de ler-se de qualquer forma. */}
+              {diaDoPlano ? `${dayLabel(diaDoPlano)} · ` : ''}{s.shopPlan.time}{loja ? ` · ${loja}` : ' · loja por escolher'}
             </Text>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel="Alterar quem vai às compras"

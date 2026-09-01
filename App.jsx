@@ -409,7 +409,8 @@ function Shell() {
     },
     loja: {
       icon: 'fileDone', titulo: 'Modo Compras', fechar: () => setLoja(false),
-      sub: () => `${s.shopPlan.who} · ${s.stores[s.shopPlan.store]} · ${s.shopPlan.time}`,
+      sub: () => [s.shopPlan.who, (s.stores || [])[s.shopPlan.store], s.shopPlan.time]
+        .filter(Boolean).join(' · '),
       render: () => <ModoCompras t={t} user={user} onClose={() => setLoja(false)} />,
     },
   };

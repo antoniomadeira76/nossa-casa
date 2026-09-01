@@ -259,3 +259,120 @@ describe('o plano de compras não aponta para quem não existe', () => {
     expect(r.shopPlan.store).toBe(2);
   });
 });
+
+describe('as lojas da demonstração saem de uma casa a sério', () => {
+  const SEMENTES = ['Continente de Belém', 'Pingo Doce da Ajuda', 'Mercado de Alcântara'];
+  const treze = (loja) => MIGRATIONS[13](loja);
+
+  it('saem quando estão intactas', () => {
+    expect(treze({ v: 12, clearedSeeds: true, stores: [...SEMENTES] }).stores).toEqual([]);
+  });
+
+  it('⚠ NÃO saem se alguém lhes mexeu', () => {
+    // Acrescentar, renomear ou tirar uma é uma escolha, e uma migração não
+    // desfaz escolhas.
+    const casos = [
+      [...SEMENTES, 'Lidl da Ajuda'],
+      ['Continente de Belém', 'Pingo Doce da Ajuda'],
+      ['Continente do Colombo', 'Pingo Doce da Ajuda', 'Mercado de Alcântara'],
+      ['Pingo Doce da Ajuda', 'Continente de Belém', 'Mercado de Alcântara'],
+    ];
+    for (const stores of casos) {
+      expect(treze({ v: 12, clearedSeeds: true, stores }).stores).toEqual(stores);
+    }
+  });
+
+  it('ficam numa casa de demonstração, que é onde servem', () => {
+    expect(treze({ v: 12, clearedSeeds: false, stores: [...SEMENTES] }).stores).toEqual(SEMENTES);
+  });
+
+  it('sem lojas gravadas não rebenta', () => {
+    expect(() => treze({ v: 12, clearedSeeds: true })).not.toThrow();
+    expect(() => treze({ v: 12, clearedSeeds: true, stores: null })).not.toThrow();
+  });
+});
+
+describe('o dia do plano de compras é o próximo domingo', () => {
+  // Era só o valor gravado, e envelhecia: numa segunda-feira o ecrã dizia
+  // «Compras de domingo · Domingo, 23/08». Uma migração corrige isso uma vez;
+  // na semana seguinte volta. Passa a ser derivado.
+  const React = require('react');
+  const { chaveRelativa, TODAY, parseKey } = require('../src/format');
+
+  const comPlano = (day) => {
+    let api = null;
+    const Sonda = () => { api = useStore(); return null; };
+    TestRenderer.act(() => {
+      TestRenderer.create(React.createElement(StoreProvider, null, React.createElement(Sonda)));
+    });
+    TestRenderer.act(() => { api.set({ shopPlan: { who: 'Rita', day, time: '10:30', store: 0 } }); });
+    return () => api;
+  };
+
+  it('um dia que já passou mostra o próximo domingo', () => {
+    const d = comPlano(chaveRelativa(-14))().diaDoPlano();
+    const p = parseKey(d);
+    expect(new Date(p.y, p.m, p.d).getDay()).toBe(0);
+    expect(new Date(p.y, p.m, p.d).getTime())
+      .toBeGreaterThanOrEqual(new Date(TODAY.y, TODAY.m, TODAY.d).getTime());
+  });
+
+  it('um dia escolhido para o futuro MANDA — é uma escolha', () => {
+    const escolhido = chaveRelativa(4);
+    expect(comPlano(escolhido)().diaDoPlano()).toBe(escolhido);
+  });
+
+  it('hoje conta como ainda por vir', () => {
+    expect(comPlano(chaveRelativa(0))().diaDoPlano()).toBe(chaveRelativa(0));
+  });
+
+  it('sem dia gravado dá o próximo domingo', () => {
+    const p = parseKey(comPlano(null)().diaDoPlano());
+    expect(new Date(p.y, p.m, p.d).getDay()).toBe(0);
+  });
+
+  it('um dia ilegível dá o próximo domingo, em vez de o mostrar', () => {
+    const p = parseKey(comPlano('2026-09-06')().diaDoPlano());
+    expect(p).not.toBeNull();
+    expect(new Date(p.y, p.m, p.d).getDay()).toBe(0);
+  });
+});
+
+describe('sem loja escolhida a app não escreve «undefined»', () => {
+  const React = require('react');
+
+  const comLojas = (stores, indice) => {
+    let api = null;
+    const Sonda = () => { api = useStore(); return null; };
+    TestRenderer.act(() => {
+      TestRenderer.create(React.createElement(StoreProvider, null, React.createElement(Sonda)));
+    });
+    TestRenderer.act(() => {
+      api.set({ stores, shopPlan: { who: 'Rita', day: null, time: '10:30', store: indice } });
+    });
+    return () => api;
+  };
+
+  it('sem lojas, a resposta é nada', () => {
+    expect(comLojas([], 0)().lojaDoPlano()).toBeNull();
+  });
+
+  it('com um índice fora da lista, a resposta é nada', () => {
+    expect(comLojas(['Lidl'], 7)().lojaDoPlano()).toBeNull();
+  });
+
+  it('com lojas, devolve a escolhida', () => {
+    expect(comLojas(['Lidl', 'Continente'], 1)().lojaDoPlano()).toBe('Continente');
+  });
+
+  it('nenhum ecrã lê `stores[...]` à mão', () => {
+    // Seis sítios liam a posição direta e escreviam «undefined» numa casa sem
+    // lojas. A pergunta passou a ser uma só.
+    const fs = require('fs');
+    const path = require('path');
+    for (const f of ['src/screens/Compras.jsx', 'src/screens/ModoCompras.jsx']) {
+      const c = fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+      expect(c).not.toMatch(/s\.stores\[s\.shopPlan\.store\]/);
+    }
+  });
+});
