@@ -29,9 +29,7 @@
       "orientation": "portrait",
       "shortName": "Nossa Casa",
       "description": "Agenda, tarefas, compras e dinheiro da casa.",
-      "lang": "pt-PT",
-      "startUrl": "/",
-      "scope": "/"
+      "lang": "pt-PT"
     },
     "icon": "./assets/icon.png",
     "plugins": [
@@ -39,6 +37,9 @@
       "expo-status-bar",
       "expo-sharing",
       "expo-mail-composer"
-    ]
+    ],
+    "experiments": {
+      "baseUrl": "/nossa-casa"
+    }
   }
 }
