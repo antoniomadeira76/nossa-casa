@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT, corDoMembro } from '../theme';
+import { S, FONT, corDoMembro } from '../theme';
 import { EUR, plural, evTime, TODAY_KEY, dayLabel, agoraNaApp, subtituloDaTarefa } from '../format';
 
 import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade, avatarDe } from '../ui';
@@ -91,32 +91,34 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
   return (
     <>
       {/* A saudação, a data e os três números vivem no cabeçalho — ver
-          docs/referencia/04-inicio.png. Estavam aqui também, e a app cumprimentava
-          duas vezes. Aqui ficam os dois atalhos que a referência mostra. */}
-      {/* Os dois atalhos não são iguais: nas referências 04 e 22 — claro e
-          escuro — o «Compras» está destacado e o «Tarefas» é neutro. Tinha-os
-          pintado os dois com a cor de ação por assumir simetria; as duas
-          referências mostram que a ênfase é deliberada. */}
-      <View style={{ flexDirection: 'row', gap: S.md }}>
-        {[['compras', 'Compras', 'fileDone', true],
-          ['tarefas', 'Tarefas', 'checkSquare', false]].map(([alvo, rotulo, icone, destaque]) => (
-          <Pressable key={alvo} onPress={() => go(alvo)}
-            accessibilityRole="button" accessibilityLabel={rotulo}
-            style={({ pressed }) => ({
-              flex: 1, minHeight: 52, borderRadius: R.card, borderWidth: 1,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.md,
-              backgroundColor: pressed ? t.card : destaque ? t.subtle : t.card,
-              borderColor: destaque ? t.accent : t.border,
-            })}>
-            <Icon name={icone} size={20} color={destaque ? t.accent : t.text3} />
-            <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '600',
-              color: destaque ? t.accent : t.text2 }}>
-              {rotulo}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+          docs/referencia/04-inicio.png. Estavam aqui também, e a app
+          cumprimentava duas vezes.
 
+          ── Os dois atalhos saíram, e é uma DECISÃO ────────────────────────
+
+          ⚠ Isto afasta-se do protótipo. As referências 04 e 22 mostram aqui
+          dois botões, «Compras» e «Tarefas», o primeiro destacado e o segundo
+          neutro. O CLAUDE.md diz que quando o protótipo e o código discordam
+          o protótipo ganha — portanto quem vier comparar vai encontrar uma
+          falta e vai querer repô-la. Não reponha: o dono da casa decidiu
+          tirá-los em 02/09/2026, e a razão é medida.
+
+          O `onPress` deles era `go('compras')` e `go('tarefas')` — o MESMO
+          dos separadores do rodapé, que estão sempre visíveis 580 px abaixo.
+          Sem contagem, sem filtro, sem estado: não levavam a uma vista
+          diferente, levavam à mesma. Ocupavam 76 px (52 de altura mais o
+          espaçamento) no topo do Início, ACIMA do «Precisa de Si», que é a
+          razão de existir deste ecrã — o primeiro ecrã da app abria com dois
+          botões que não diziam nada e empurrava para baixo o que diz tudo.
+
+          E a ênfase não podia adaptar-se: o destaque do «Compras» era uma
+          constante, não mudava por haver compras marcadas para hoje nem
+          tarefas atrasadas. Decoração fixa onde parecia sinal.
+
+          Se um dia voltarem, que voltem como AÇÕES — «Nova tarefa» e
+          «Acrescentar à lista» — que poupam dois passos. Um atalho ganha o
+          seu lugar quando poupa um passo, e navegar para onde o rodapé já
+          leva poupa zero. */}
       {/* A secção fica SEMPRE. Desaparecer quando não há nada faz a app
           parecer meia carregada — e tira a única coisa que diz que se olhou e
           está tudo em ordem. É a mesma escolha que o acerto de contas já fazia

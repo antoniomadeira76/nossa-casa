@@ -204,9 +204,35 @@ describe('o cabeçalho é o mesmo em todos os ecrãs', () => {
   it('e o sair vive no cabeçalho, a branco como os outros ícones', () => {
     const i = app.indexOf('label="Terminar sessão"');
     expect(i).toBeGreaterThan(0);
-    const bloco = app.slice(i, i + 700);
+
+    // ⚠ Até ao `</Tap>`, e não os primeiros 700 caracteres. Com a janela fixa
+    // esta prova falhou por se ter ACRESCENTADO um comentário ao ícone: o
+    // `name="logout"` saiu dos 700 e a prova disse que o sair tinha
+    // desaparecido do cabeçalho. Uma prova que se parte quando alguém explica
+    // o código está a medir o comprimento do texto, não o que diz.
+    const fim = app.indexOf('</Tap>', i);
+    expect(fim).toBeGreaterThan(i);
+    const bloco = app.slice(i, fim);
+
     expect(bloco).toMatch(/name="logout"/);
     // ⚠ Em `onC` ficava a 3,03 sobre o telhado da marca, contra os 3 exigidos.
     expect(bloco).toMatch(/color="#FFFFFF"/);
+  });
+
+  it('⚠ e o ícone do sair encosta à direita, alinhado com os cartões', () => {
+    // Medido no navegador: os cartões do conteúdo acabam em 396 e o ícone
+    // acabava em 387 — 9 px por dentro, porque estava CENTRADO dentro do alvo
+    // de 44. O alvo já estava certo; o desenho não.
+    //
+    // A correção é `alignItems: 'flex-end'` no `Tap`, e não uma margem: uma
+    // margem empurrava o alvo para a direita e comia os 16 da coluna. Assim o
+    // alvo continua com 44 (INVARIANTE #5) e a margem com 16.
+    const i = app.indexOf('label="Terminar sessão"');
+    const bloco = app.slice(i, app.indexOf('</Tap>', i));
+    expect(bloco).toMatch(/alignItems: 'flex-end'/);
+
+    // E o tamanho é o que a medição fixou. Se alguém o mudar sem medir, isto
+    // diz-lhe que o número não é um número qualquer.
+    expect(bloco).toMatch(/name="logout" size=\{30\}/);
   });
 });

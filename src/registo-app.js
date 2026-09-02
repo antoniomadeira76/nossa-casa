@@ -16,6 +16,8 @@ export const REGISTO_APP = [
   { v: '1.8.0', d: '02/09/2026', k: 'alterado', a: 'Perfil', t: '«Repor Dados de Demonstração» e «Começar de Zero» deixaram de apagar ao toque: pedem a confirmação de todos os administradores da casa' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Perfil', t: 'A fotografia da conta ficava guardada e não aparecia em lado nenhum' },
   { v: '1.8.0', d: '02/09/2026', k: 'alterado', a: 'Início', t: 'O avatar passou para junto do nome, e é ele que abre o Perfil' },
+  { v: '1.8.0', d: '02/09/2026', k: 'alterado', a: 'Início', t: 'Os dois atalhos do topo saíram: levavam aos mesmos ecrãs que o rodapé e ocupavam o lugar do «Precisa de Si»' },
+  { v: '1.8.0', d: '02/09/2026', k: 'alterado', a: 'Tarefas', t: 'Dentro de cada grupo de urgência, a lista passou a ordenar-se pelo prazo — quem acaba primeiro aparece primeiro' },
   { v: '1.8.0', d: '02/09/2026', k: 'alterado', a: 'Início', t: 'Terminar sessão passou para o cabeçalho, à direita — deixou de ser preciso abrir o Perfil para sair' },
   { v: '1.8.0', d: '02/09/2026', k: 'alterado', a: 'A App', t: 'O modo escuro segue o esquema de cor escolhido — a página deixou de ser azul-marinho para os seis' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'A App', t: 'O rodapé não levava onde dizia: com a Saúde, os Equipamentos, a Gestão ou a Documentação abertos, tocar num separador não saía de lá' },

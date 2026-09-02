@@ -84,24 +84,13 @@ describe('⚠ as especialidades são geridas num sítio só', () => {
     expect(donos).toEqual(['src/screens/Saude.jsx']);
   });
 
-  it('⚠ e nenhum ecrã chama o `renameSpecialty`, que não migra os episódios', () => {
-    // Existe na loja e está errado: renomeia a lista e deixa os episódios de
-    // `health` a apontar para um nome que desapareceu. Quem o quiser usar tem
-    // de o corrigir primeiro — e esta prova é onde vai dar de cara com isso.
-    const quemChama = [...ecras, ...folhas]
-      .filter(rel => /\brenameSpecialty\b/.test(semComentarios(rel)));
-    expect(quemChama).toEqual([]);
-  });
-
-  it('e o renomear da loja continua a NÃO migrar — por isso é que não se usa', () => {
-    // Se algum dia migrar, esta prova falha, e é o sinal de que o renomear
-    // pode voltar à interface. Falhar aqui é uma boa notícia.
-    const loja = ler('src/store.jsx');
-    const i = loja.indexOf('const renameSpecialty');
-    const corpo = loja.slice(i, i + 260);
-    expect(corpo).toContain('specialities');
-    expect(corpo).not.toContain('health');
-  });
+  // ⚠ Aqui viviam duas provas que exigiam que o `renameSpecialty` estivesse
+  // ERRADO: uma pedia que nenhum ecrã o chamasse, a outra que o corpo dele não
+  // falasse de `health`. Eram uma trela, não uma rede, e o sítio delas era
+  // enquanto o defeito existisse. O defeito foi corrigido — a migração está
+  // provada no bloco «renomear leva tudo atrás», mais abaixo — e as duas
+  // saíram. Uma prova que exige que algo continue mal cumpre-se apagando-a no
+  // dia em que deixa de ser verdade, não mantendo-a.
 });
 
 describe('⚠ a faixa de abas da Gestão cabe num telemóvel', () => {

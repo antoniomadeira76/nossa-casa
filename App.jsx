@@ -597,7 +597,16 @@ function Shell() {
                   Existia só dentro da folha do Perfil — dois toques para sair
                   de uma app familiar partilhada, que é o gesto de quem passa o
                   telemóvel a outra pessoa. */}
-              <Tap onPress={() => setSignOut(true)} label="Terminar sessão">
+              {/* ⚠ `alignItems: 'flex-end'` e não uma margem. O alvo do `Tap`
+                  tem 44 e a borda direita dele já está nos mesmos 396 onde
+                  acabam os cartões do conteúdo — o que estava desalinhado era
+                  o ÍCONE, centrado dentro do alvo e portanto 9 px por dentro
+                  (medido: cartões 396, ícone 387). Encostá-lo à direita alinha
+                  o desenho sem mexer no alvo nem na margem de 16: os 44 do
+                  INVARIANTE #5 ficam intactos. Empurrar o alvo para a direita
+                  alinhava também, e comia a margem. */}
+              <Tap onPress={() => setSignOut(true)} label="Terminar sessão"
+                style={{ alignItems: 'flex-end' }}>
                 {/* Branco, como os outros ícones deste cabeçalho.
 
                     Estava em `onC` (branco a 0,68) e ficava por cima do
@@ -605,7 +614,12 @@ function Shell() {
                     gráfico exige — passava com 0,03 de margem, que é o mesmo
                     que não passar no dia em que a opacidade da marca mude.
                     A branco dá 4,58. */}
-                <Icon name="logout" size={22} color="#FFFFFF" />
+                {/* 30. Estava a 22 e lia-se pequeno ao lado do avatar de 44;
+                    passou por 26 — a medida do ícone do ecrã nos outros
+                    cabeçalhos, linha 563 — e ficou nos 30 por decisão do dono
+                    da casa. O alvo continua a ser os 44 do `Tap`, portanto
+                    isto é desenho e não toque: o INVARIANTE #5 não se mexe. */}
+                <Icon name="logout" size={30} color="#FFFFFF" />
               </Tap>
               {/* A referência tem aqui uma lupa, e em todos os cabeçalhos.
                   Não a ponho enquanto não houver pesquisa: eu próprio a tinha

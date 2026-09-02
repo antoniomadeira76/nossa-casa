@@ -242,7 +242,7 @@ const BACKUPS_ANTIGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(n => `${KEY}.ant
 // Só isto é gravado. O resto — separador ativo, folha aberta, rascunhos — é UI.
 const DATA_KEYS = [
   'done', 'pending', 'status', 'registered', 'acertoMovs', 'vaultMoves', 'paidPts', 'extraLog',
-  'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'pontosDeTarefasApagadas',
+  'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
   'newItems', 'itemGone',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'importDone', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
@@ -516,7 +516,7 @@ export const DEMO = () => ({
   vaultMoves: [],
   paidPts: Object.fromEntries(Object.keys(MEMBERS).filter(n => MEMBERS[n].kid).map(n => [n, 0])),
   extraLog: {},
-  envMove: {}, added: [], newTasks: [], taskEdits: {}, taskGone: {},
+  envMove: {}, added: [], newTasks: [], taskEdits: {}, taskGone: {}, taskOrder: {},
   pontosDeTarefasApagadas: [],
   newItems: [], itemGone: {}, newEquip: [], equipGone: {}, equipEdits: {},
   schemeByUser: {}, themeByUser: {}, importDone: {},
@@ -863,8 +863,89 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         dueKey: (s.due[t.id] || {}).key,
         dueTime: (s.due[t.id] || {}).time,
       }));
-    // ordem: urgência primeiro, e o número é a posição na lista
-    return base.sort((a, b) => a.urgency - b.urgency);
+    // Ordem: a urgência manda nos grupos (INVARIANTE #6) e, DENTRO de cada
+    // grupo, manda o PRAZO — quem acaba primeiro aparece primeiro.
+    //
+    // ⚠ Dentro do grupo a ordem era a de criação. Isso punha uma tarefa que
+    // acaba hoje abaixo de uma que acaba na semana que vem, só por ter sido
+    // escrita depois — e o cabeçalho da secção diz «por urgência», o que dava
+    // a entender que dentro do grupo a ordem era alguma coisa.
+    //
+    // Duas decisões que a ordenação por prazo obriga a tomar:
+    //
+    //   sem prazo         vem DEPOIS de quem tem. Uma tarefa com data marcada
+    //                     pesa mais do que uma que pode ser feita a qualquer
+    //                     momento. O '￿' põe-na no fim sem um caso à parte.
+    //   dia sem hora      vem depois das que têm hora nesse dia. Uma tarefa
+    //                     «para o dia 20» acaba ao fim do dia 20, portanto
+    //                     depois da que acaba às 18:00 do dia 20.
+    //
+    // Empatados, fica a ordem de criação — que é a que a lista já tinha, e é
+    // estável, o que impede a lista de saltar sozinha entre desenhos.
+    const prazo = (t) => (t.dueKey ? t.dueKey + ' ' + (t.dueTime || '99:99') : '￿');
+
+    // O posto que a MÃO deu à tarefa, ao arrastá-la. Só existe para as que
+    // foram arrastadas; as outras não têm posto e vêm depois, pelo prazo.
+    //
+    // ⚠ `Infinity - Infinity` é `NaN`, e um comparador que devolve NaN deixa a
+    // ordenação por conta do motor — a lista sai numa ordem qualquer. Duas sem
+    // posto empatam, e o empate resolve-se no critério seguinte.
+    const posto = (t) => {
+      const n = (s.taskOrder || {})[t.id];
+      return typeof n === 'number' ? n : Infinity;
+    };
+    const porPosto = (a, b) => {
+      const x = posto(a), y = posto(b);
+      return x === y ? 0 : x - y;
+    };
+
+    return base
+      .map((t, i) => ({ ...t, _criacao: i }))
+      .sort((a, b) => a.urgency - b.urgency
+        || porPosto(a, b)
+        || (prazo(a) < prazo(b) ? -1 : prazo(a) > prazo(b) ? 1 : 0)
+        || a._criacao - b._criacao)
+      .map(({ _criacao, ...t }) => t);
+  };
+
+  // Arrastar uma tarefa: a mão manda DENTRO do grupo de urgência.
+  //
+  // Recebe os identificadores das tarefas de UM grupo, na ordem que a mão lhes
+  // deu, e escreve o posto de cada uma. A urgência continua a decidir o grupo
+  // (INVARIANTE #6); o posto decide dentro dele.
+  //
+  // Devolve null quando corre bem e uma frase em português quando não, como o
+  // `renomearMembro`.
+  const reordenarTarefas = (ids) => {
+    const lista = (Array.isArray(ids) ? ids : []).filter(Boolean);
+    if (lista.length < 2) return null;                  // nada a reordenar
+    if (new Set(lista).size !== lista.length) return 'A mesma tarefa aparece duas vezes na ordem.';
+
+    const todas = allTasks();
+    const porId = new Map(todas.map(t => [t.id, t]));
+    if (lista.some(id => !porId.has(id))) return 'Essa tarefa não existe nesta casa.';
+
+    const urgs = new Set(lista.map(id => porId.get(id).urgency));
+    if (urgs.size > 1) return 'A ordem só se muda dentro do mesmo grupo de urgência.';
+    const urg = [...urgs][0];
+
+    // ⚠ A vista pode estar filtrada por membro, e então `lista` é um
+    // SUBCONJUNTO do grupo. Escrever postos só ao subconjunto deixava metade do
+    // grupo sem posto — e essa metade saltava para o fim assim que o filtro
+    // saísse. Em vez disso percorre-se o grupo INTEIRO e, em cada lugar que era
+    // de uma das arrastadas, entra a seguinte da ordem nova. Quem não estava à
+    // vista fica onde estava.
+    const grupo = todas.filter(t => t.urgency === urg).map(t => t.id);
+    const fila = [...lista];
+    const nova = grupo.map(id => (lista.includes(id) ? fila.shift() : id));
+
+    set(x => ({
+      taskOrder: {
+        ...(x.taskOrder || {}),
+        ...Object.fromEntries(nova.map((id, i) => [id, i])),
+      },
+    }));
+    return null;
   };
 
   const allItems = () => [...(s.clearedSeeds ? [] : ITEMS), ...s.newItems].filter(i => !s.itemGone[i.id]);
@@ -1053,7 +1134,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     return {
       newTasks: daApp ? x.newTasks.filter(y => y.id !== id) : x.newTasks,
       taskGone: daApp ? x.taskGone : { ...x.taskGone, [id]: true },
-      urg: fora(x.urg), due: fora(x.due), taskEdits: fora(x.taskEdits),
+      urg: fora(x.urg), due: fora(x.due), taskEdits: fora(x.taskEdits), taskOrder: fora(x.taskOrder),
       rotate: fora(x.rotate), done: fora(x.done), pending: fora(x.pending),
       pontosDeTarefasApagadas: rende
         ? [...(x.pontosDeTarefasApagadas || []),
@@ -1629,10 +1710,60 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     }));
   };
 
-  const renameSpecialty = (oldName, newName) => {
+  // Renomear uma especialidade tem de LEVAR CONSIGO tudo o que guarda o nome —
+  // e o nome está em TRÊS sítios, não em um:
+  //
+  //     specialities        a lista, que é a única que se vê
+  //     health[].specialty  os episódios. Guardam a especialidade como TEXTO,
+  //                         não por referência
+  //     added[].title       o evento da agenda que «marcar consulta» cria, com
+  //                         o título `Consulta <especialidade>` lá dentro
+  //
+  // ⚠ Isto era só a primeira linha. Renomear trocava o nome na lista e deixava
+  // as consultas a apontar para um nome que já não existia — a ficha do Léo
+  // continuava a dizer «Pediatria» e a lista já não a tinha. Por isso a
+  // interface de renomear foi retirada até isto ficar feito.
+  //
+  // ⚠ Nos eventos a troca é por título EXATO (`Consulta <antigo>`) e só com a
+  // etiqueta «Saúde». Uma substituição de texto solta apanharia um evento que
+  // alguém escreveu à mão e que só por acaso tem a palavra lá dentro.
+  //
+  // Devolve null quando corre bem e uma frase em português quando não, como o
+  // `renomearMembro`.
+  const renameSpecialty = (antigo, novo) => {
+    const lista = s.specialities || [];
+    if (!lista.includes(antigo)) return 'Essa especialidade não existe nesta casa.';
+    const n = String(novo || '').trim();
+    if (!n) return 'A especialidade precisa de um nome.';
+    if (n === antigo) return null;                 // nada a fazer
+    if (n.length > 40) return 'O nome não pode passar de 40 caracteres.';
+
+    // ⚠ Renomear para um nome que JÁ existe é uma fusão, não um erro: as
+    // consultas do nome antigo passam para o que fica e a lista não ganha uma
+    // entrada repetida. É o que uma pessoa quer dizer quando corrige
+    // «Pediatra» para a «Pediatria» que já lá estava.
+    //
+    // A comparação ignora maiúsculas e o alvo é a grafia que JÁ está na lista —
+    // senão «pediatria» e «Pediatria» ficavam as duas, que é o mesmo defeito
+    // com outra cara. Mudar só as maiúsculas do próprio nome continua a ser um
+    // renomear: o `find` exclui o antigo.
+    const existente = lista.find(e => e !== antigo && e.toLowerCase() === n.toLowerCase());
+    const alvo = existente || n;
+
     set(x => ({
-      specialities: (x.specialities || []).map(s => s === oldName ? newName : s),
+      specialities: existente
+        ? (x.specialities || []).filter(e => e !== antigo)
+        : (x.specialities || []).map(e => (e === antigo ? alvo : e)),
+      health: (x.health || []).map(h => (
+        h.specialty === antigo ? { ...h, specialty: alvo } : h)),
+      added: (x.added || []).map(e => (
+        e.tag === 'Saúde' && e.title === `Consulta ${antigo}`
+          ? { ...e, title: `Consulta ${alvo}` } : e)),
+      registo: [{ at: Date.now(), t: existente
+        ? `A especialidade ${antigo} passou a contar como ${alvo}`
+        : `A especialidade ${antigo} passou a chamar-se ${alvo}` }, ...(x.registo || [])],
     }));
+    return null;
   };
 
   // Google Calendar: importar eventos
@@ -1717,7 +1848,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     startBlank: () => set(BLANK()),
     // Health feature methods
     addHealthRecord, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision,
-    addSpecialty, removeSpecialty, renameSpecialty,
+    addSpecialty, removeSpecialty, renameSpecialty, reordenarTarefas,
     // Google Calendar import
     importGoogleEvents,
   };

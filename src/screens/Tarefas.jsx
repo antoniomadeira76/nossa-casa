@@ -8,6 +8,7 @@ import { Card, SectionTitle, Label, Pill, Row, Avatar, Empty, AddButton, Primary
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
+import ListaArrastavel, { ATRASO_PARA_PEGAR } from '../ListaArrastavel';
 import NovaTarefa from '../sheets/NovaTarefa';
 import Cofre from '../sheets/Cofre';
 
@@ -116,8 +117,24 @@ export default function Tarefas({ t, user, abrir }) {
           <Empty t={t} icon="checkSquare" title="Sem tarefas nesta vista."
             hint="Use Acrescentar tarefa para criar a primeira rotina." />
         ) : (
-          <View style={{ gap: S.md }}>
-            {pg.slice.map((x, i) => {
+          <View>
+            {/* A ordem dentro do grupo é da mão. Ver `ListaArrastavel`: a
+                pressão longa arma, o dedo move, e a tarefa nunca sai do seu
+                grupo de urgência — a urgência manda nos grupos (INVARIANTE #6)
+                e a mão manda dentro do seu.
+
+                ⚠ Não há página para virar, e não é por preguiça. Arrasta-se o
+                que está NESTA página, e o `reordenarTarefas` trata do resto:
+                percorre o grupo inteiro e põe as arrastadas nos lugares que
+                eram delas, deixando as das outras páginas onde estavam. É a
+                mesma volta que faz a vista filtrada por membro funcionar, e é
+                por isso que uma reordenação na página 1 não desarruma a 2. */}
+            <ListaArrastavel
+              itens={pg.slice}
+              grupoDe={(x) => x.urgency}
+              espaco={S.md}
+              aoLargar={(ids) => st.reordenarTarefas(ids)}
+              render={(x, { arrastando, armar }) => {
               const idx = shown.indexOf(x) + 1;
               const done = !!s.done[x.id], pend = !!s.pending[x.id];
               const u = URG[x.urgency] || URG[1];
@@ -131,13 +148,22 @@ export default function Tarefas({ t, user, abrir }) {
               // espera de confirmação.
               return (
                 <Card key={x.id} t={t} style={{
-                  borderWidth: done ? 2 : 1,
-                  borderColor: done ? t.state.okBorder : pend ? t.state.info : t.border,
+                  borderWidth: arrastando ? 2 : done ? 2 : 1,
+                  borderColor: arrastando ? t.accent
+                    : done ? t.state.okBorder : pend ? t.state.info : t.border,
                   backgroundColor: done ? t.state.okBg : t.card,
                 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    {/* ⚠ É o `onLongPress` DESTE Pressable que arma o arrasto.
+                        Não há alça, e é de propósito: uma alça era o sexto
+                        alvo numa linha que já tem cinco (erro #6 do
+                        CLAUDE.md). O toque curto continua a marcar a tarefa —
+                        a `ListaArrastavel` só toma conta do dedo depois de
+                        estar armada. */}
                     <Pressable onPress={() => st.tapTask(x.id, false)} accessibilityRole="button"
+                      onLongPress={() => armar(x.id)} delayLongPress={ATRASO_PARA_PEGAR}
                       accessibilityLabel={`${pend ? 'Confirmar' : 'Marcar'} ${x.title} · ${u.label}${done ? ' · concluída' : ''}`}
+                      accessibilityHint="Mantenha premido para mudar a ordem dentro do grupo de urgência"
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minHeight: 44 }}>
                       {/* caixa do número: cor E forma dizem a urgência */}
                       <View style={{ width: 20, height: 20, borderRadius: R.sm,
@@ -172,8 +198,11 @@ export default function Tarefas({ t, user, abrir }) {
                   </View>
                 </Card>
               );
-            })}
-            <Pager t={t} pg={pg} />
+              }}
+            />
+            <View style={{ marginTop: S.md }}>
+              <Pager t={t} pg={pg} />
+            </View>
           </View>
         )}
       </View>
