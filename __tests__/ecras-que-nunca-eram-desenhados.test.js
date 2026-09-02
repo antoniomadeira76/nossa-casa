@@ -122,11 +122,28 @@ describe('nenhum deles escreve «undefined» ou «NaN» no ecrã', () => {
   // O sintoma clássico de um campo que não existe naquela casa. Não rebenta —
   // aparece, e fica lá. Foi assim que se descobriu o «António · undefined» das
   // tarefas, e por isso vale a pena perguntá-lo a todos.
+  //
+  // ⚠ O que está entre ASPAS ANGULARES não conta.
+  //
+  // A Documentação cita as palavras de propósito: a entrada do registo diz
+  // «Toda a tarefa criada na app dizia «undefined» por baixo do título», que é
+  // exactamente o que a família viu. Esta prova bateu nisso — e a saída não é
+  // dispensar o ecrã da verificação nem reescrever a frase para pior, é
+  // distinguir o que a app CUSPIU do que ela CITA.
+  const semCitacoes = (t) => t.replace(/«[^»]*»/g, '«…»');
+
   it.each(ECRAS)('%s', (nome, modulo, props) => {
-    const t = montar(require(modulo).default, props, CASA);
+    const t = semCitacoes(montar(require(modulo).default, props, CASA));
     expect(t).not.toMatch(/\bundefined\b/);
     expect(t).not.toMatch(/\bNaN\b/);
     expect(t).not.toMatch(/\bInfinity\b/);
+  });
+
+  it('⚠ e a rede continua a apanhar o que NÃO está citado', () => {
+    // Sem isto, o `semCitacoes` podia estar a engolir tudo e ninguém repara.
+    expect(semCitacoes('António · undefined')).toContain('undefined');
+    expect(semCitacoes('dizia «undefined» por baixo')).not.toContain('undefined');
+    expect(semCitacoes('0 pt e NaN pt')).toContain('NaN');
   });
 });
 

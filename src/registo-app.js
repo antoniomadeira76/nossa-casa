@@ -6,9 +6,28 @@
 // Não confundir com `s.registo`, que é o histórico de alterações que a
 // FAMÍLIA faz à casa. São duas coisas diferentes, e o ecrã mostrava a segunda
 // onde a referência 17 mostra a primeira.
-export const APP_VERSION = '1.7.0';
+export const APP_VERSION = '1.8.0';
 
 export const REGISTO_APP = [
+  // ── 1.8.0 ─────────────────────────────────────────────────────────────────
+  { v: '1.8.0', d: '02/09/2026', k: 'novo', a: 'Perfil', t: 'O avatar escolhe-se: dezasseis figuras, a cor do perfil, ou a fotografia da conta Google' },
+  { v: '1.8.0', d: '02/09/2026', k: 'novo', a: 'Perfil', t: 'A fotografia da conta Google traz-se sem terminar a sessão' },
+  { v: '1.8.0', d: '02/09/2026', k: 'alterado', a: 'Perfil', t: 'O ecrã passou a cinco secções com nome — A Casa, Aparência, Avisos, A App e Apagar Dados' },
+  { v: '1.8.0', d: '02/09/2026', k: 'alterado', a: 'Perfil', t: '«Repor Dados de Demonstração» e «Começar de Zero» deixaram de apagar ao toque: pedem a confirmação de todos os administradores da casa' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Perfil', t: 'A fotografia da conta ficava guardada e não aparecia em lado nenhum' },
+  { v: '1.8.0', d: '02/09/2026', k: 'alterado', a: 'A App', t: 'O modo escuro segue o esquema de cor escolhido — a página deixou de ser azul-marinho para os seis' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'A App', t: 'O rodapé não levava onde dizia: com a Saúde, os Equipamentos, a Gestão ou a Documentação abertos, tocar num separador não saía de lá' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'A App', t: 'A seta de voltar estava dez pixels mais perto da borda do que todo o resto do ecrã' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'A App', t: 'As folhas abriam a ocupar a janela toda no monitor, em vez de ficarem dentro da app' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'A App', t: 'Botões, pastilhas e interruptores mais pequenos do que o mínimo para o dedo — em cinco ecrãs' },
+  { v: '1.8.0', d: '02/09/2026', k: 'novo', a: 'Tarefas', t: 'Uma tarefa apaga-se — e os pontos que ela já rendeu ficam com a criança' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Tarefas', t: 'Toda a tarefa criada na app dizia «undefined» por baixo do título' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Tarefas', t: 'Uma criança acrescentada à casa mostrava «NaN pt» na semanada' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Tarefas', t: 'A folha do cofre de uma criança abria em branco' },
+  { v: '1.8.0', d: '02/09/2026', k: 'novo', a: 'Compras', t: 'Um artigo apaga-se da lista — e os preços que a casa já registou para ele ficam' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Compras', t: 'A lista deixava de abrir depois de a casa ter preços registados' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Saúde', t: 'Marcar consulta abria um ecrã em branco' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Gestão da Casa', t: 'As abas tinham espaços mortos entre elas, e um toque ali não acertava em nenhuma' },
   // ── 1.7.0 ─────────────────────────────────────────────────────────────────
   { v: '1.7.0', d: '01/09/2026', k: 'corrigido', a: 'A App', t: 'A data era 20 de agosto, sempre — o cabeçalho, os prazos e as garantias contavam a partir daí' },
   { v: '1.7.0', d: '01/09/2026', k: 'corrigido', a: 'Início', t: '«Bom dia» aparecia a qualquer hora, e uma tarefa das 18:00 dizia sempre «falta 3h30»' },
