@@ -534,20 +534,56 @@ function MarcarConsulta({ t, user, membro, onClose }) {
   // ⚠ Sem `renameSpecialty`, e de propósito: ele troca o nome na lista e não
   // toca nos episódios de `health`, que guardam a especialidade como texto.
   // Renomear deixava as consultas a apontar para um nome que já não existe.
-  const { s, set, addSpecialty, removeSpecialty, membrosDaCasa, criancas,
-          membros: MEMBERS } = useStore();
+  const st = useStore();
+  const { s, set, addSpecialty, removeSpecialty, renameSpecialty, addHealthRecord,
+          membrosDaCasa, criancas, membros: MEMBERS } = st;
+
+  // ⚠ Só os membros cuja ficha quem está a marcar PODE ver. O selector
+  // oferecia `membrosDaCasa` inteiro, o outro adulto incluído — e a ficha de um
+  // adulto é só dele (INVARIANTE #3). A Rita marcava uma consulta ao Tomás e
+  // ficava com um episódio que ela própria não vê e um evento que não lhe
+  // aparece: escrevia no escuro.
+  const marcaveis = membrosDaCasa.filter(n => st.canSeeHealth(n, user));
   const [tab, setTab] = useState('nova');
-  const [form, setForm] = useState({ member: membro || criancas[0] || membrosDaCasa[0], date: '', time: '', specialty: '' });
+  const [form, setForm] = useState({ member: membro || criancas[0] || marcaveis[0], date: '', time: '', specialty: '' });
   const [newSpecialty, setNewSpecialty] = useState('');
   // Esta lista era gerida em dois sítios — aqui e numa quinta aba da Gestão da
   // Casa. A da Gestão saiu, e com ela saiu o diálogo que PERGUNTAVA antes de
   // apagar: aqui o toque apagava logo. Passou a perguntar, porque agora é o
   // único sítio e um toque a mais não desfaz nada.
   const [aApagar, setAApagar] = useState(null);
+  // Qual está a ser renomeada, e o que a loja recusou dizer em português.
+  const [aRenomear, setARenomear] = useState(null);
+  const [erroEsp, setErroEsp] = useState(null);
 
+  // Marcar uma consulta cria DUAS coisas, e é o «nenhum exame órfão» do
+  // TAREFAS.md: o episódio na ficha e o evento na agenda, ligados.
+  //
+  // ⚠ Antes criava só o evento. O `addHealthRecord` existia na loja e nada o
+  // chamava: numa casa a sério a Ficha de Saúde ficava vazia para sempre, e a
+  // agenda tinha uma consulta que não correspondia a episódio nenhum. O ecrã
+  // dizia «Ainda não há nada nas fichas desta casa. Use Marcar Consulta para a
+  // primeira» — e usar Marcar Consulta não punha lá nada.
   const handleSaveConsultation = () => {
     if (!chaveDeDMY(form.date) || !form.specialty) return;
-    // Criar evento na agenda com tag "Saúde"
+
+    const id = addHealthRecord(form.member, form.date, form.specialty, form.time);
+
+    // ⚠ A visibilidade do evento ESPELHA a da saúde (INVARIANTE #3), e não era
+    // isso que fazia. Levava `shared: true` — o campo antigo, de antes dos três
+    // níveis — e o `visibilidadeDe` lê `shared: true` como «família». Ou seja:
+    // a consulta do Léo aparecia na agenda da Mia, e a de um adulto aparecia ao
+    // outro. O ecrã da Saúde promete o contrário, em letras, na primeira linha.
+    //
+    // A regra é `podeVerSaude`: a ficha de um adulto é só dele; as das crianças
+    // são visíveis aos adultos e invisíveis às próprias. Traduzida para um
+    // evento:
+    //
+    //   criança   `adultos`, e o dono é quem marca — NÃO a criança. O
+    //             `podeVerEvento` devolve verdade ao dono, portanto pôr a
+    //             criança como dona mostrava-lhe a própria consulta.
+    //   adulto    `so-eu`, e o dono é o adulto de quem é a consulta.
+    const paraCrianca = !!(MEMBERS[form.member] && MEMBERS[form.member].kid);
     set(s => ({
       added: [...(s.added || []), {
         id: 'ev-' + Date.now(),
@@ -555,9 +591,10 @@ function MarcarConsulta({ t, user, membro, onClose }) {
         time: form.time || '10:00',
         title: `Consulta ${form.specialty}`,
         who: `${form.member} · Consulta de saúde`,
-        owner: user,
-        shared: true,
+        owner: paraCrianca ? user : form.member,
+        visibilidade: paraCrianca ? 'adultos' : 'so-eu',
         tag: 'Saúde',
+        healthId: id,        // o episódio a que este evento pertence
       }],
     }));
     onClose();
@@ -612,9 +649,11 @@ function MarcarConsulta({ t, user, membro, onClose }) {
             <View style={{ gap: S.sm }}>
               <Label t={t}>Membro</Label>
               <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-                {membrosDaCasa.map(name => (
+                {marcaveis.map(name => (
                   <Pressable accessibilityRole="button"
                     key={name}
+                    accessibilityLabel={name}
+                    accessibilityState={{ selected: form.member === name }}
                     onPress={() => setForm(f => ({ ...f, member: name }))}
                     style={{
                       paddingHorizontal: S.md, minHeight: 44, borderRadius: R.pill,
@@ -660,6 +699,8 @@ function MarcarConsulta({ t, user, membro, onClose }) {
                 {(s.specialities || []).map(spec => (
                   <Pressable accessibilityRole="button"
                     key={spec}
+                    accessibilityLabel={spec}
+                    accessibilityState={{ selected: form.specialty === spec }}
                     onPress={() => setForm(f => ({ ...f, specialty: spec }))}
                     style={{
                       paddingHorizontal: S.md, minHeight: 44, borderRadius: R.pill,
@@ -686,36 +727,73 @@ function MarcarConsulta({ t, user, membro, onClose }) {
         {/* Especialidades Tab */}
         {tab === 'especialidades' && (
           <View style={{ gap: S.lg }}>
+            {/* ── Um campo, dois trabalhos ────────────────────────────────
+                Acrescentar e renomear partilham o campo. Tocar no lápis de uma
+                linha traz o nome para aqui e o botão passa a visto; o
+                «Cancelar» aparece ao lado.
+
+                ⚠ Não é uma folha dentro de outra, e é de propósito: isto já
+                está DENTRO da folha «Marcar Consulta», e a `Sheet` é um
+                `Modal` — encaixar outro por cima punha o rodapé em risco
+                (INVARIANTE #1, que já quebrou três vezes). O campo estava aqui
+                e não custa nada.
+
+                O renomear voltou depois de o `renameSpecialty` da loja passar
+                a migrar os episódios de `health` e o título do evento da
+                agenda. Antes trocava o nome na lista e mais nada, e por isso
+                foi retirado. */}
             <View style={{ gap: S.sm }}>
-              <Label t={t}>Adicionar especialidade</Label>
+              <Label t={t}>{aRenomear ? `Renomear «${aRenomear}»` : 'Adicionar especialidade'}</Label>
               <View style={{ flexDirection: 'row', gap: S.sm }}>
                 <TextInput
                   value={newSpecialty}
-                  onChangeText={setNewSpecialty}
+                  onChangeText={(v) => { setNewSpecialty(v); setErroEsp(null); }}
                   placeholder="Ex: Cardiologia"
                   placeholderTextColor={t.text3}
                   style={{
                     flex: 1, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
                     fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
-                    borderColor: t.border, backgroundColor: t.card,
+                    borderColor: erroEsp ? t.state.err : t.border, backgroundColor: t.card,
                   }}
                 />
+                {aRenomear ? (
+                  <Pressable accessibilityRole="button" accessibilityLabel="Cancelar"
+                    onPress={() => { setARenomear(null); setNewSpecialty(''); setErroEsp(null); }}
+                    style={{ paddingHorizontal: S.md, minWidth: 44, minHeight: 44, borderRadius: R.row,
+                      borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon name="close" size={20} color={t.text3} />
+                  </Pressable>
+                ) : null}
                 <Pressable accessibilityRole="button"
+                  accessibilityLabel={aRenomear ? 'Guardar o nome' : 'Acrescentar especialidade'}
                   onPress={() => {
-                    if (newSpecialty.trim()) {
-                      addSpecialty(newSpecialty.trim());
-                      setNewSpecialty('');
+                    const nome = newSpecialty.trim();
+                    if (!nome) return;
+                    if (aRenomear) {
+                      // A loja devolve null ou uma frase em português.
+                      const erro = renameSpecialty(aRenomear, nome);
+                      if (erro) return setErroEsp(erro);
+                      setARenomear(null);
+                    } else {
+                      addSpecialty(nome);
                     }
+                    setNewSpecialty('');
+                    setErroEsp(null);
                   }}
                   disabled={!newSpecialty.trim()}
                   style={{
-                    paddingHorizontal: S.md, minHeight: 44, borderRadius: R.row, backgroundColor: t.accent,
-                    justifyContent: 'center', opacity: !newSpecialty.trim() ? 0.5 : 1,
+                    paddingHorizontal: S.md, minWidth: 44, minHeight: 44, borderRadius: R.row, backgroundColor: t.accent,
+                    alignItems: 'center', justifyContent: 'center', opacity: !newSpecialty.trim() ? 0.5 : 1,
                   }}
                 >
-                  <Icon name="plus" size={20} color="#FFFFFF" />
+                  <Icon name={aRenomear ? 'check' : 'plus'} size={20} color="#FFFFFF" />
                 </Pressable>
               </View>
+              {erroEsp ? (
+                <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.errDeep }}>
+                  {erroEsp}
+                </Text>
+              ) : null}
             </View>
 
             <View style={{ gap: S.md }}>
@@ -734,6 +812,15 @@ function MarcarConsulta({ t, user, membro, onClose }) {
                       `hitSlop={8}` que o acompanhava não salvava nada: a
                       react-native-web IGNORA-O. Passou a `Tap`, que tem 44 por
                       omissão e não depende do hitSlop para os ter. */}
+                  {/* O lápis traz o nome para o campo lá em cima. Duas
+                      pastilhas numa linha que não é tocável — a linha não tem
+                      destino próprio, portanto o erro #6 do CLAUDE.md («uma
+                      linha, um destino») não se aplica: aqui há duas ações e
+                      nenhuma linha a competir com elas. */}
+                  <Tap label={`Renomear ${spec}`}
+                    onPress={() => { setARenomear(spec); setNewSpecialty(spec); setErroEsp(null); }}>
+                    <Icon name="edit" size={18} color={t.text3} />
+                  </Tap>
                   <Tap label={`Apagar ${spec}`} onPress={() => setAApagar(spec)}>
                     <Icon name="trash" size={18} color={STATE.err} />
                   </Tap>

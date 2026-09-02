@@ -37,7 +37,10 @@ export const REGISTO_APP = [
   { v: '1.8.0', d: '02/09/2026', k: 'alterado', a: 'Saúde', t: 'As especialidades médicas passaram a ser geridas num sítio só — em Marcar Consulta, onde aparecem' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Saúde', t: 'Apagar uma especialidade pergunta primeiro, e diz que as consultas já marcadas com ela ficam' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Saúde', t: 'O botão de apagar uma especialidade era menor do que o mínimo para o dedo' },
-  { v: '1.8.0', d: '02/09/2026', k: 'alterado', a: 'Saúde', t: 'Renomear uma especialidade saiu: trocava o nome na lista e deixava as consultas a apontar para um nome que já não existia' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Saúde', t: 'Renomear uma especialidade trocava o nome na lista e deixava as consultas a apontar para um nome que já não existia' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Saúde', t: 'Marcar consulta não punha nada na ficha — o ecrã dizia «Use Marcar Consulta para a primeira» e usá-lo não punha lá nada' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Saúde', t: 'A consulta de uma criança aparecia na agenda das outras crianças, e a de um adulto aparecia ao outro' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Saúde', t: 'Marcar consulta deixava escolher o outro adulto, cuja ficha não se pode ver' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Gestão da Casa', t: 'As abas tinham espaços mortos entre elas, e um toque ali não acertava em nenhuma' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Gestão da Casa', t: 'A faixa de abas cortava a última no telemóvel — «Especialidades» perdia o fim da palavra' },
   // ── 1.7.0 ─────────────────────────────────────────────────────────────────
