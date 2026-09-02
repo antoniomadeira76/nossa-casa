@@ -35,7 +35,6 @@ export default function Gestao({ t, user, onClose }) {
   const [limitInput, setLimitInput] = useState('');
   const [selectedMember, setSelectedMember] = useState(null);
   const [selectedEnvelope, setSelectedEnvelope] = useState(null);
-  const [selectedSpecialty, setSelectedSpecialty] = useState(null);
   // O formulário do membro, e a recusa que vier do servidor. O erro é estado
   // do ecrã, não um alerta: quem tenta tirar alguém da casa e não pode tem de
   // ler porquê no sítio onde tentou.
@@ -365,49 +364,21 @@ export default function Gestao({ t, user, onClose }) {
     </View>
   );
 
-  const renderSpecialtiesTab = () => (
-    <View style={{ gap: S.md }}>
-      <SectionTitle t={t}>Especialidades médicas</SectionTitle>
-      {!(s.specialities || []).length ? (
-        <Empty t={t} icon="heartPulse" title="Sem especialidades."
-          hint="São as que aparecem ao marcar uma consulta." />
-      ) : null}
-      {s.specialities && s.specialities.map((spec) => (
-        <Card key={spec} t={t} pad={false}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, padding: 14 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{spec}</Text>
-            </View>
-            <Tap label={`Editar ${spec}`} onPress={() => {
-              setSelectedSpecialty(spec);
-              setInput(spec);
-              setSheetOpen('editSpecialty');
-            }}>
-              {/* ⚠ Tinha size={40}, que anulava os 44 por omissão do Tap.
-                  Medido no navegador: 40x40, os dois. */}
-              <Icon name="edit" size={18} color={t.text3} />
-            </Tap>
-            <Tap label={`Apagar ${spec}`} onPress={() => {
-              setSelectedSpecialty(spec);
-              setModal('deleteSpecialty');
-            }}>
-              <Icon name="trash" size={18} color={t.state.err} />
-            </Tap>
-          </View>
-        </Card>
-      ))}
-
-      <AddButton t={t} label="Criar especialidade" onPress={() => {
-        setInput('');
-        setSheetOpen('newSpecialty');
-      }} />
-    </View>
-  );
+  // As especialidades médicas viviam aqui, numa quinta aba, E na Saúde — duas
+  // interfaces sobre a mesma lista `s.specialities`. Saíram para a Saúde, que
+  // é onde se usam: aparecem ao marcar uma consulta.
+  //
+  // ⚠ Com elas foi-se o RENOMEAR, e é bom que se tenha ido. O
+  // `renameSpecialty` da loja troca o nome na lista e mais nada — os episódios
+  // de `health` guardam a especialidade como texto e ficavam a apontar para um
+  // nome que já não existe. Um renomear correto tem de os migrar; até o haver,
+  // não há renomear nenhum, o que é melhor do que ter um que parte fichas
+  // clínicas em silêncio.
 
   return (
     <View style={{ flex: 1, backgroundColor: t.page }}>
       <View style={{ gap: S.xl }}>
-        {/* A faixa é UMA linha, contígua.
+        {/* A faixa é UMA linha, contígua, e agora CABE.
 
             ⚠ Duas coisas que ela já não faz, e que custaram medição:
 
@@ -418,13 +389,29 @@ export default function Gestao({ t, user, onClose }) {
               abas estreitas          a «Lojas» tinha 31 px de largura; o
                                       INVARIANTE #5 não fala só de altura
 
-            Contígua e com enchimento, ocupa 397 px dos 428 úteis da coluna, e
-            o toque acerta sempre em alguma.
+            ── E o corte, que era real ─────────────────────────────────────
 
-            ⚠ Abaixo de ~413 px de largura a última aba fica cortada. Foram
-            tentadas as duas saídas e nenhuma serviu: o deslize horizontal
-            ESCONDE que há mais secções para o lado, e a quebra em duas linhas
-            foi vista e recusada. Fica assim por decisão, não por esquecimento. */}
+            Cortava num telemóvel a sério, não só na teoria. Medido a 402 px,
+            aba a aba: Orçamento 84, Membros 75, Envelopes 80, Lojas 51,
+            Especialidades 107 — a última acabava em 413 e a coluna acaba em
+            386. Vinte e sete pixels por fora, comidos pelo `overflow: hidden`
+            sem deixar rasto, que é o que faz isto parecer erro de desenho em
+            vez de falta de espaço.
+
+            O deslize horizontal e a quebra em duas linhas foram vistos e
+            recusados. A saída foram DUAS coisas, e a segunda é a da causa:
+
+              enchimento 10 → 4   medido nos quatro valores da escala. Com 8
+                                  ainda sobravam 7 px por fora; com 4 sobram
+                                  27, e nenhuma aba desce dos 44 — a «Lojas»
+                                  segura-se no `minWidth`.
+              quatro abas         as especialidades médicas eram geridas em
+                                  DOIS sítios sobre a mesma lista
+                                  `s.specialities`: aqui e na Saúde. A faixa só
+                                  tinha cinco abas por haver uma secção a mais.
+
+            Com as duas, a faixa acaba em 263 dos 396 úteis de um telefone de
+            412 — e aguenta até aos 322 px de largura. */}
         <View style={{ flexDirection: 'row', borderBottomWidth: 1,
           borderBottomColor: t.border, paddingBottom: S.md }}>
           {[
@@ -432,12 +419,11 @@ export default function Gestao({ t, user, onClose }) {
             { key: 'membros', label: 'Membros' },
             { key: 'envelopes', label: 'Envelopes' },
             { key: 'lojas', label: 'Lojas' },
-            { key: 'especialidades', label: 'Especialidades' },
           ].map(({ key, label }) => (
             <Pressable key={key} onPress={() => setTab(key)}
               accessibilityRole="tab" accessibilityLabel={label}
               accessibilityState={{ selected: tab === key }}
-              style={{ minHeight: 44, minWidth: 44, paddingHorizontal: 10,
+              style={{ minHeight: 44, minWidth: 44, paddingHorizontal: 4,
                 alignItems: 'center', justifyContent: 'flex-end', paddingBottom: S.sm,
                 borderBottomWidth: tab === key ? 2 : 0,
                 borderBottomColor: tab === key ? t.accent : 'transparent' }}>
@@ -451,7 +437,6 @@ export default function Gestao({ t, user, onClose }) {
         {tab === 'membros' && renderMembersTab()}
         {tab === 'envelopes' && renderEnvelopesTab()}
         {tab === 'lojas' && renderShopsTab()}
-        {tab === 'especialidades' && renderSpecialtiesTab()}
 
         <Pressable accessibilityRole="button" onPress={onClose} style={{ paddingVertical: S.lg }}>
           <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.accent, textAlign: 'center' }}>
@@ -823,135 +808,11 @@ export default function Gestao({ t, user, onClose }) {
         </Sheet>
       )}
 
-      {sheetOpen === 'newSpecialty' && (
-        <Sheet t={t} title="Criar especialidade"
-          onClose={() => {
-            setSheetOpen(null);
-            setInput('');
-          }}
-          action={
-            <Primary t={t} label="Criar" onPress={() => {
-              if (input.trim()) {
-                set(s => ({
-                  specialities: [...(s.specialities || []), input.trim()],
-                }));
-                setSheetOpen(null);
-                setInput('');
-              }
-            }} />
-          }>
-          <View style={{ gap: S.md }}>
-            <View>
-              <Label t={t}>Nome da especialidade</Label>
-              <TextInput
-                placeholder="Ex: Cardiologia"
-                value={input}
-                onChangeText={setInput}
-                style={{
-                  marginTop: S.sm,
-                  paddingHorizontal: S.md,
-                  paddingVertical: S.md,
-                  borderRadius: R.row,
-                  borderWidth: 1,
-                  borderColor: t.border,
-                  fontFamily: FONT.body,
-                  fontSize: 16,
-                  color: t.text1,
-                }}
-              />
-            </View>
-          </View>
-        </Sheet>
-      )}
-
-      {sheetOpen === 'editSpecialty' && (
-        <Sheet t={t} title="Editar especialidade" sub={selectedSpecialty}
-          onClose={() => {
-            setSheetOpen(null);
-            setSelectedSpecialty(null);
-            setInput('');
-          }}
-          action={
-            <Primary t={t} label="Guardar" onPress={() => {
-              if (input.trim()) {
-                set(s => ({
-                  specialities: (s.specialities || []).map(x => x === selectedSpecialty ? input.trim() : x),
-                }));
-                setSheetOpen(null);
-                setSelectedSpecialty(null);
-                setInput('');
-              }
-            }} />
-          }>
-          <View style={{ gap: S.md }}>
-            <View>
-              <Label t={t}>Nome da especialidade</Label>
-              <TextInput
-                placeholder="Ex: Cardiologia"
-                value={input}
-                onChangeText={setInput}
-                style={{
-                  marginTop: S.sm,
-                  paddingHorizontal: S.md,
-                  paddingVertical: S.md,
-                  borderRadius: R.row,
-                  borderWidth: 1,
-                  borderColor: t.border,
-                  fontFamily: FONT.body,
-                  fontSize: 16,
-                  color: t.text1,
-                }}
-              />
-            </View>
-          </View>
-        </Sheet>
-      )}
-
       {/* O diálogo «Alterar papel» vivia aqui, e escolher o rótulo fazia
           `FEM(name)` — `name` não existe neste âmbito. No navegador resolvia
           para o `window.name`, string vazia, e dizia sempre «Administrador»;
           em React Native seria um ReferenceError. O papel mudou-se para
           dentro da folha do membro, onde o nome está em mão. */}
-
-      {modal === 'deleteSpecialty' && (
-        <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
-          <Pressable accessibilityRole="button" onPress={() => setModal(null)}
-            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <Pressable accessibilityRole="button" style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg }}>
-              <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
-                Apagar especialidade?
-              </Text>
-              <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2, textAlign: 'center' }}>
-                {selectedSpecialty}
-              </Text>
-
-              <View style={{ flexDirection: 'row', gap: S.md }}>
-                <Pressable onPress={() => setModal(null)} accessibilityRole="button"
-                  accessibilityLabel="Cancelar" style={{ flex: 1 }}>
-                  <View style={{ padding: S.md, borderRadius: R.row, borderWidth: 1, borderColor: t.border }}>
-                    <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.text2, textAlign: 'center' }}>
-                      Cancelar
-                    </Text>
-                  </View>
-                </Pressable>
-                <Pressable accessibilityRole="button" onPress={() => {
-                  set(s => ({
-                    specialities: (s.specialities || []).filter(x => x !== selectedSpecialty),
-                  }));
-                  setModal(null);
-                  setSelectedSpecialty(null);
-                }} style={{ flex: 1 }}>
-                  <View style={{ padding: S.md, borderRadius: R.row, backgroundColor: t.state.err }}>
-                    <Text style={{ fontFamily: FONT.display, fontSize: 14, color: '#FFFFFF', textAlign: 'center' }}>
-                      Apagar
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-            </Pressable>
-          </Pressable>
-        </Modal>
-      )}
 
       {modal === 'openMonth' && (
         <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>

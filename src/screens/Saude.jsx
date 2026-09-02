@@ -4,14 +4,15 @@ import CampoData from '../CampoData';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro, STATE } from '../theme';
 import { DE } from '../data';
-import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Avatar, avatarDe } from '../ui';
+import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Tap, Avatar, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
+import Confirm from '../Confirm';
 import { pad2, plural, dayLabel, daysUntil, chaveDeDMY, dmyDeChave, TODAY_KEY } from '../format';
 
 export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMarcado }) {
   const st = useStore();
-  const { s, set, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, renameSpecialty, membros: MEMBERS, membrosDaCasa } = st;
+  const { s, set, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, membros: MEMBERS, membrosDaCasa } = st;
   const [membroDaFolha, setMembroDaFolha] = useState(null);  // pré-selecção ao marcar
 
   // Quem toca em «marcar consulta» dentro de uma ficha volta para aqui com o
@@ -530,12 +531,19 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
 // portanto abrir a partir da ficha da Mia propunha o Léo, que é o valor por
 // omissão. Agora vem por prop.
 function MarcarConsulta({ t, user, membro, onClose }) {
-  const { s, set, addSpecialty, removeSpecialty, renameSpecialty, membrosDaCasa, criancas,
+  // ⚠ Sem `renameSpecialty`, e de propósito: ele troca o nome na lista e não
+  // toca nos episódios de `health`, que guardam a especialidade como texto.
+  // Renomear deixava as consultas a apontar para um nome que já não existe.
+  const { s, set, addSpecialty, removeSpecialty, membrosDaCasa, criancas,
           membros: MEMBERS } = useStore();
   const [tab, setTab] = useState('nova');
   const [form, setForm] = useState({ member: membro || criancas[0] || membrosDaCasa[0], date: '', time: '', specialty: '' });
   const [newSpecialty, setNewSpecialty] = useState('');
-  const [editingSpecialty, setEditingSpecialty] = useState(null);
+  // Esta lista era gerida em dois sítios — aqui e numa quinta aba da Gestão da
+  // Casa. A da Gestão saiu, e com ela saiu o diálogo que PERGUNTAVA antes de
+  // apagar: aqui o toque apagava logo. Passou a perguntar, porque agora é o
+  // único sítio e um toque a mais não desfaz nada.
+  const [aApagar, setAApagar] = useState(null);
 
   const handleSaveConsultation = () => {
     if (!chaveDeDMY(form.date) || !form.specialty) return;
@@ -559,8 +567,15 @@ function MarcarConsulta({ t, user, membro, onClose }) {
     <Sheet t={t} title="Marcar Consulta" sub="Marcar consultas e gerir especialidades" onClose={onClose}>
       <View style={{ gap: S.lg }}>
         {/* Tabs */}
+        {/* ⚠ Estes dois eram `accessibilityRole="button"` SEM rótulo nenhum.
+            São abas, e agora são a entrada para o único sítio onde as
+            especialidades se gerem — o leitor de ecrã tem de as anunciar como
+            abas, e dizer qual está escolhida. Sem rótulo também não apareciam
+            em varredura nenhuma, que é como catorze alvos pequenos viveram
+            escondidos neste ecrã. */}
         <View style={{ flexDirection: 'row', gap: S.sm }}>
-          <Pressable accessibilityRole="button"
+          <Pressable accessibilityRole="tab" accessibilityLabel="Nova Consulta"
+            accessibilityState={{ selected: tab === 'nova' }}
             onPress={() => setTab('nova')}
             style={{
               flex: 1, minHeight: 44, justifyContent: 'center', borderBottomWidth: 2,
@@ -574,7 +589,8 @@ function MarcarConsulta({ t, user, membro, onClose }) {
               Nova Consulta
             </Text>
           </Pressable>
-          <Pressable accessibilityRole="button"
+          <Pressable accessibilityRole="tab" accessibilityLabel="Especialidades"
+            accessibilityState={{ selected: tab === 'especialidades' }}
             onPress={() => setTab('especialidades')}
             style={{
               flex: 1, minHeight: 44, justifyContent: 'center', borderBottomWidth: 2,
@@ -704,24 +720,37 @@ function MarcarConsulta({ t, user, membro, onClose }) {
 
             <View style={{ gap: S.md }}>
               <Label t={t}>Especialidades</Label>
+              {!(s.specialities || []).length ? (
+                <Empty t={t} icon="heartPulse" title="Sem especialidades."
+                  hint="São as que aparecem ao marcar uma consulta." />
+              ) : null}
               {(s.specialities || []).map(spec => (
                 <View key={spec} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: t.subtle, borderRadius: R.row }}>
                   <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>
                     {spec}
                   </Text>
-                  <Pressable accessibilityRole="button"
-                    onPress={() => removeSpecialty(spec)}
-                    hitSlop={8}
-                    style={{ padding: S.sm }}
-                  >
+                  {/* ⚠ Era um `Pressable` com `padding: S.sm` à volta de um ícone
+                      de 18 — 34 px de alvo, contra os 44 do INVARIANTE #5. E o
+                      `hitSlop={8}` que o acompanhava não salvava nada: a
+                      react-native-web IGNORA-O. Passou a `Tap`, que tem 44 por
+                      omissão e não depende do hitSlop para os ter. */}
+                  <Tap label={`Apagar ${spec}`} onPress={() => setAApagar(spec)}>
                     <Icon name="trash" size={18} color={STATE.err} />
-                  </Pressable>
+                  </Tap>
                 </View>
               ))}
             </View>
           </View>
         )}
       </View>
+
+      {aApagar && (
+        <Confirm t={t} destructive icon="trash"
+          title="Apagar especialidade?"
+          message={`«${aApagar}» deixa de aparecer ao marcar uma consulta. As consultas já marcadas com ela ficam como estão.`}
+          confirmLabel="Apagar" onCancel={() => setAApagar(null)}
+          onConfirm={() => { removeSpecialty(aApagar); setAApagar(null); }} />
+      )}
     </Sheet>
   );
 }

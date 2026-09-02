@@ -32,7 +32,12 @@ export const REGISTO_APP = [
   { v: '1.8.0', d: '02/09/2026', k: 'novo', a: 'Compras', t: 'Um artigo apaga-se da lista — e os preços que a casa já registou para ele ficam' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Compras', t: 'A lista deixava de abrir depois de a casa ter preços registados' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Saúde', t: 'Marcar consulta abria um ecrã em branco' },
+  { v: '1.8.0', d: '02/09/2026', k: 'alterado', a: 'Saúde', t: 'As especialidades médicas passaram a ser geridas num sítio só — em Marcar Consulta, onde aparecem' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Saúde', t: 'Apagar uma especialidade pergunta primeiro, e diz que as consultas já marcadas com ela ficam' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Saúde', t: 'O botão de apagar uma especialidade era menor do que o mínimo para o dedo' },
+  { v: '1.8.0', d: '02/09/2026', k: 'alterado', a: 'Saúde', t: 'Renomear uma especialidade saiu: trocava o nome na lista e deixava as consultas a apontar para um nome que já não existia' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Gestão da Casa', t: 'As abas tinham espaços mortos entre elas, e um toque ali não acertava em nenhuma' },
+  { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Gestão da Casa', t: 'A faixa de abas cortava a última no telemóvel — «Especialidades» perdia o fim da palavra' },
   // ── 1.7.0 ─────────────────────────────────────────────────────────────────
   { v: '1.7.0', d: '01/09/2026', k: 'corrigido', a: 'A App', t: 'A data era 20 de agosto, sempre — o cabeçalho, os prazos e as garantias contavam a partir daí' },
   { v: '1.7.0', d: '01/09/2026', k: 'corrigido', a: 'Início', t: '«Bom dia» aparecia a qualquer hora, e uma tarefa das 18:00 dizia sempre «falta 3h30»' },
