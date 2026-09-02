@@ -399,19 +399,22 @@ export default function Gestao({ t, user, onClose }) {
             vez de falta de espaço.
 
             O deslize horizontal e a quebra em duas linhas foram vistos e
-            recusados. A saída foram DUAS coisas, e a segunda é a da causa:
+            recusados. A saída foi tirar a QUINTA ABA: as especialidades
+            médicas eram geridas em DOIS sítios sobre a mesma lista
+            `s.specialities` — aqui e na Saúde. A faixa só tinha cinco abas por
+            haver uma secção a mais, e é aí que estava a causa.
 
-              enchimento 10 → 4   medido nos quatro valores da escala. Com 8
-                                  ainda sobravam 7 px por fora; com 4 sobram
-                                  27, e nenhuma aba desce dos 44 — a «Lojas»
-                                  segura-se no `minWidth`.
-              quatro abas         as especialidades médicas eram geridas em
-                                  DOIS sítios sobre a mesma lista
-                                  `s.specialities`: aqui e na Saúde. A faixa só
-                                  tinha cinco abas por haver uma secção a mais.
+            ⚠ O enchimento é 10, e voltou a 10 depois de ter estado em 4.
+            Apertá-lo foi medido e funcionava — com 4 a faixa acabava em 263
+            dos 396 úteis — mas com quatro abas era apertar sem precisar: os
+            133 px que sobravam iam todos para um vazio à direita, e as
+            etiquetas ficavam a 8 px uma da outra, mais parecidas com uma linha
+            corrida do que com quatro abas.
 
-            Com as duas, a faixa acaba em 263 dos 396 úteis de um telefone de
-            412 — e aguenta até aos 322 px de largura. */}
+            Com quatro abas e 10 de enchimento: acaba em 306 dos 396 de um
+            telefone de 412, 90 px de folga, e aguenta até aos 322 px. Se
+            alguma vez voltar uma quinta aba, isto corta outra vez — e é a aba
+            que tem de sair, não o enchimento. */}
         <View style={{ flexDirection: 'row', borderBottomWidth: 1,
           borderBottomColor: t.border, paddingBottom: S.md }}>
           {[
@@ -423,7 +426,7 @@ export default function Gestao({ t, user, onClose }) {
             <Pressable key={key} onPress={() => setTab(key)}
               accessibilityRole="tab" accessibilityLabel={label}
               accessibilityState={{ selected: tab === key }}
-              style={{ minHeight: 44, minWidth: 44, paddingHorizontal: 4,
+              style={{ minHeight: 44, minWidth: 44, paddingHorizontal: 10,
                 alignItems: 'center', justifyContent: 'flex-end', paddingBottom: S.sm,
                 borderBottomWidth: tab === key ? 2 : 0,
                 borderBottomColor: tab === key ? t.accent : 'transparent' }}>
