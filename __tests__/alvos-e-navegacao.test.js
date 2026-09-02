@@ -144,3 +144,69 @@ describe('⚠ o rodapé leva sempre onde diz que leva', () => {
     }
   });
 });
+
+describe('o cabeçalho é o mesmo em todos os ecrãs', () => {
+  // Medido no navegador, ecrã a ecrã. O que aqui se guarda são os números que
+  // essa medição fixou — um valor mudado à mão volta a partir o que ela viu.
+  const app = ler('App.jsx');
+
+  it('o avatar tem UM tamanho, e é 44', () => {
+    // Eram 44 no Início e 36 nos outros: a bola da mesma pessoa mudava de
+    // medida ao mudar de separador.
+    const tamanhos = [...app.matchAll(/<AvatarDeCabecalho[^>]*size=\{(\d+)\}/g)].map(m => Number(m[1]));
+    expect(tamanhos.length).toBeGreaterThanOrEqual(2);
+    expect([...new Set(tamanhos)]).toEqual([44]);
+  });
+
+  it('⚠ a marca CABE no cabeçalho mais curto', () => {
+    // A 120 transbordava 44 px em três dos cinco ecrãs, e o recorte do
+    // cabeçalho escondia-o. O mais curto tem 80 e a marca começa em 4.
+    // ⚠ `opacity=` no padrão, e não é decoração: sem isso este `match` apanha
+    // a PRIMEIRA `Marca` do ficheiro, que é a do arranque (74). A prova
+    // passava — 4 + 74 ≤ 80 — e continuaria a passar com a do cabeçalho a 120.
+    // Uma prova que passa pela razão errada é pior do que nenhuma.
+    const m = app.match(/<Marca size=\{(\d+)\} opacity=/);
+    expect(m).toBeTruthy();
+    const tamanho = Number(m[1]);
+    const TOPO = 4;            // insets.top + 4, com insets a zero na web
+    const MAIS_CURTO = 80;     // o `minHeight` do cabeçalho
+    expect(TOPO + tamanho).toBeLessThanOrEqual(MAIS_CURTO);
+  });
+
+  it('e o mesmo tamanho serve os cinco — não há um por ecrã', () => {
+    // ⚠ Há DUAS `Marca` no App, e a segunda é legítima: a do arranque, em
+    // `<Marca size={74} />`, sem opacidade e sem posição. Esta prova nasceu a
+    // contar «uma só» e apanhou-a — a do cabeçalho é a que leva `opacity`.
+    const noCabecalho = [...app.matchAll(/<Marca [^/]*opacity=/g)];
+    expect(noCabecalho).toHaveLength(1);
+  });
+
+  it('⚠ a marca do cabeçalho está DENTRO da coluna, alinhada com o conteúdo', () => {
+    // Estava em `right: -24`, 24 px por fora: o recorte cortava-a e ninguém
+    // via que faltava um pedaço. Os 16 são o enchimento do conteúdo — a mesma
+    // vertical onde acaba o botão «Tarefas» do Início.
+    const i = app.search(/<Marca [^/]*opacity=/);
+    const bloco = app.slice(i, i + 220);
+    expect(bloco).toMatch(/right: 16/);
+    expect(bloco).not.toMatch(/right: -/);
+  });
+
+  it('só o avatar abre o Perfil — o nome e a data não são tocáveis', () => {
+    // Uma linha, um destino (erro #6 do CLAUDE.md).
+    const i = app.indexOf('{greet}, {user}');
+    const bloco = app.slice(Math.max(0, i - 700), i);
+    expect(bloco).toMatch(/label="Perfil e ajustes"/);
+    // O bloco do nome não tem onPress próprio.
+    const nome = app.slice(i - 200, i + 260);
+    expect(nome).not.toMatch(/onPress/);
+  });
+
+  it('e o sair vive no cabeçalho, a branco como os outros ícones', () => {
+    const i = app.indexOf('label="Terminar sessão"');
+    expect(i).toBeGreaterThan(0);
+    const bloco = app.slice(i, i + 700);
+    expect(bloco).toMatch(/name="logout"/);
+    // ⚠ Em `onC` ficava a 3,03 sobre o telhado da marca, contra os 3 exigidos.
+    expect(bloco).toMatch(/color="#FFFFFF"/);
+  });
+});

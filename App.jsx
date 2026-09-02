@@ -7,7 +7,7 @@ import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { StoreProvider, useStore } from './src/store';
 import { buildTheme, onChrome, chromeLine, S, R, FONT, elev, LARGURA_APP } from './src/theme';
 import Icon, { Marca } from './src/Icon';
-import { AvatarDeCabecalho } from './src/ui';
+import { AvatarDeCabecalho, Tap } from './src/ui';
 import { FEM, DE } from './src/data';
 import { EUR, dayLabel, TODAY, TODAY_KEY, warrantyDaysLeft, semanaDeHoje, plural,
          chaveRelativa } from './src/format';
@@ -511,8 +511,37 @@ function Shell() {
         paddingTop: insets.top + 10, paddingBottom: 24, paddingHorizontal: 16,
         flexDirection: 'row', alignItems: 'center', gap: 12, ...elev(3),
       }}>
-        <Marca size={120} mono opacity={0.10}
-          style={{ position: 'absolute', top: insets.top + 4, right: -24 }} />
+        {/* A marca da casa, com as suas cores.
+
+            ⚠ A borda direita fica em `right: 16` — a MESMA vertical onde acaba
+            o botão «Tarefas» do Início, que é o enchimento do conteúdo. Estava
+            em `right: -24`, ou seja 24 px por fora da coluna: o `overflow:
+            hidden` do cabeçalho recortava-a e ninguém via que faltava um
+            pedaço.
+
+            Deixa de ser `mono`: os quatro pontos ganham as cores da marca. E a
+            opacidade sobe de 0,10 para 0,22, senão as cores não se lêem sobre
+            o cabeçalho e «a cores» não passa de uma intenção.
+
+            ⚠ 72 e não 120, porque tem de CABER em todos os cabeçalhos.
+
+            Medido, com a marca a 120 e o topo em insets.top + 4:
+
+              Início     cabeçalho 140   cabia, com 16 de folga
+              Compras    cabeçalho  90   transbordava 34
+              Dinheiro   cabeçalho  80   transbordava 44
+              Tarefas    cabeçalho  80   transbordava 44
+              Agenda     cabeçalho  80   transbordava 44
+
+            O recorte do cabeçalho escondia o transbordo, e por isso ninguém
+            via que em quatro dos cinco ecrãs faltava um terço da marca.
+            4 + 72 = 76, e o cabeçalho mais curto tem 80.
+
+            Um tamanho SÓ para os cinco: o mesmo topo, a mesma borda direita e
+            o mesmo tamanho. Uma marca que muda de medida ao mudar de
+            separador é o mesmo defeito que o avatar tinha. */}
+        <Marca size={72} opacity={0.22}
+          style={{ position: 'absolute', top: insets.top + 4, right: 16 }} />
 
         {V ? (
           // Vista de ecrã inteiro: o cabeçalho passa a ser o dela.
@@ -546,11 +575,38 @@ function Shell() {
           // linha de texto, e a saudação aparecia duas vezes.
           <View style={{ flex: 1, gap: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              {/* O avatar junto ao nome, e é ELE que abre o Perfil.
+
+                  ⚠ Só ele. O bloco do nome e da data não é tocável: uma linha,
+                  um destino (erro #6 da lista do CLAUDE.md). Fazer o bloco
+                  inteiro abrir o Perfil dava um alvo maior e tirava a
+                  possibilidade de o nome ser algum dia outra coisa.
+
+                  A bola passa de 36 para 44 e o alvo deixa de ser maior do que
+                  ela: eram 44 de alvo à volta de 36 de desenho, e agora são os
+                  mesmos 44 — o mínimo do INVARIANTE #5 é a própria bola. */}
+              <Tap onPress={() => setPerfil(true)} label="Perfil e ajustes" size={44}>
+                <AvatarDeCabecalho t={t} nome={user} membro={euNaCasa} size={44} />
+              </Tap>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={{ fontFamily: FONT.display, fontSize: 24, fontWeight: '600',
                   color: '#FFFFFF', letterSpacing: 0.3 }}>{greet}, {user}</Text>
                 <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: onC }}>{today}</Text>
               </View>
+              {/* Terminar sessão passa a viver aqui, onde o avatar estava.
+                  Existia só dentro da folha do Perfil — dois toques para sair
+                  de uma app familiar partilhada, que é o gesto de quem passa o
+                  telemóvel a outra pessoa. */}
+              <Tap onPress={() => setSignOut(true)} label="Terminar sessão">
+                {/* Branco, como os outros ícones deste cabeçalho.
+
+                    Estava em `onC` (branco a 0,68) e ficava por cima do
+                    telhado da marca: medido, 3,03 contra os 3 que um elemento
+                    gráfico exige — passava com 0,03 de margem, que é o mesmo
+                    que não passar no dia em que a opacidade da marca mude.
+                    A branco dá 4,58. */}
+                <Icon name="logout" size={22} color="#FFFFFF" />
+              </Tap>
               {/* A referência tem aqui uma lupa, e em todos os cabeçalhos.
                   Não a ponho enquanto não houver pesquisa: eu próprio a tinha
                   posto neste ecrã sem `onPress`, e um controlo que parece
@@ -577,6 +633,17 @@ function Shell() {
                     accessibilityRole="button" accessibilityLabel={`${rot}: ${val}`}
                     style={({ pressed }) => ({ flex: 1, minHeight: 44, justifyContent: 'center',
                       gap: 3, opacity: pressed ? 0.6 : 1 })}>
+                    {/* Voltou ao `onC`.
+
+                        Cheguei a pô-lo em branco a 0,95 porque a marca a 120
+                        passava por trás desta faixa e o contraste caía a
+                        3,16 — abaixo dos 4,5 que 11 px exigem. Encolher a
+                        marca para 72 tirou-lhe os pontos de cima daqui: eles
+                        acabam em y 67 e este rótulo começa em 74.
+
+                        Com o defeito resolvido na causa, o remédio sai. Ficar
+                        com os dois achatava a hierarquia do cabeçalho à troca
+                        de nada. */}
                     <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: onC }}>{rot}</Text>
                     <Text style={{ fontFamily: FONT.display, fontSize: 19, fontWeight: '500',
                       color: '#FFFFFF' }}>{val}</Text>
@@ -597,14 +664,20 @@ function Shell() {
           </>
         )}
 
-        {/* INVARIANTE #5: o círculo tem 36, como na referência 04, mas o alvo
-            tem 44 — o desenho é o do protótipo e o toque é o da regra. Estava
-            a ser um alvo de 36, medido no navegador. */}
-        <Pressable onPress={() => setPerfil(true)} accessibilityRole="button"
-          accessibilityLabel="Perfil e ajustes"
-          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-          <AvatarDeCabecalho t={t} nome={user} membro={euNaCasa} size={36} />
-        </Pressable>
+        {/* Nos OUTROS cabeçalhos o avatar continua à direita.
+
+            No Início ele foi para junto do nome; aqui a esquerda já é da seta
+            de voltar e do ícone do ecrã, e enfiar o avatar entre eles daria
+            três coisas antes do título. O alvo tem 44 e a bola 36, que é o
+            desenho da referência 04. */}
+        {isHome ? null : (
+          <Tap onPress={() => setPerfil(true)} label="Perfil e ajustes" size={44}>
+            {/* 44, o MESMO do Início. Eram 36 aqui e 44 lá: o avatar mudava de
+                tamanho ao mudar de ecrã, e a bola da mesma pessoa não tem duas
+                medidas. */}
+            <AvatarDeCabecalho t={t} nome={user} membro={euNaCasa} size={44} />
+          </Tap>
+        )}
       </View>
 
       {/* área de scroll — o mesmo sítio para os separadores e para as vistas
