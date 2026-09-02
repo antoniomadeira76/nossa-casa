@@ -220,12 +220,20 @@ export const Segmented = ({ t, options, value, onChange, small }) => (
         <Pressable key={o.value} onPress={() => onChange(o.value)}
           accessibilityRole="button" accessibilityLabel={o.label}
           accessibilityState={{ selected: on }}
+          // ⚠ O `small` valia 38 de altura, e era o ÚNICO efeito que tinha.
+          //
+          // Media 38 na Gestão, nas Tarefas e no Dinheiro — abaixo dos 44 do
+          // INVARIANTE #5, nos três. Medido no navegador, não deduzido.
+          //
+          // Agora o `small` mexe no TIPO e não no alvo: o controlo continua a
+          // ler-se como mais leve, e a mão continua a ter 44 onde tocar. É a
+          // mesma decisão do interruptor — o alvo cresce, o desenho não.
           style={{
-            flex: 1, minHeight: small ? 38 : 44, alignItems: 'center', justifyContent: 'center',
+            flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center',
             backgroundColor: on ? t.chrome : 'transparent',
             borderLeftWidth: i === 0 ? 0 : 1, borderLeftColor: t.border,
           }}>
-          <Text style={{ fontFamily: FONT.ui, fontSize: 13,
+          <Text style={{ fontFamily: FONT.ui, fontSize: small ? 12 : 13,
             fontWeight: on ? '600' : '400', color: on ? '#FFFFFF' : t.text2 }}>{o.label}</Text>
         </Pressable>
       );

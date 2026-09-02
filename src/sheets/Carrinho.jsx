@@ -16,7 +16,7 @@ export default function Carrinho({ t, doneItems, items, cart, pago, user, store,
       {/* Dentro da coluna da app — ver o comentário no `Sheet.jsx`. */}
       <View style={{ flex: 1, justifyContent: 'flex-end',
         width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto' }}>
-        <Pressable onPress={onClose} accessibilityLabel="Fechar"
+        <Pressable accessibilityRole="button" onPress={onClose} accessibilityLabel="Fechar"
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' }} />
         <View style={{
           backgroundColor: t.surface, borderTopLeftRadius: R.card, borderTopRightRadius: R.card,

@@ -247,7 +247,7 @@ function KidVaultView({ t, kid }) {
           </Pressable>
         ) : (
           <>
-            <Pressable disabled style={{
+            <Pressable accessibilityRole="button" disabled style={{
               minHeight: 52, borderRadius: R.card, borderWidth: 1,
               borderColor: t.border, backgroundColor: t.subtle,
               alignItems: 'center', justifyContent: 'center',

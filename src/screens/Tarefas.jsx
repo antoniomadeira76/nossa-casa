@@ -53,7 +53,10 @@ export default function Tarefas({ t, user, abrir }) {
           return (
             <Pressable key={n} onPress={() => setFilter(n)} accessibilityRole="button"
               accessibilityLabel={n} accessibilityState={{ selected: on }}
-              style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: R.pill, borderWidth: 1,
+              // ⚠ Tinha 40. Medido no navegador, eram os dois únicos alvos
+              // deste ecrã abaixo dos 44 do INVARIANTE #5 — e são o primeiro
+              // que a mão encontra ao abrir as Tarefas.
+              style={{ minHeight: 44, paddingHorizontal: 14, borderRadius: R.pill, borderWidth: 1,
                 borderColor: on ? t.chrome : t.border, backgroundColor: on ? t.chrome : 'transparent',
                 flexDirection: 'row', alignItems: 'center', gap: 7 }}>
               {n !== 'Todos' ? <View style={{ width: 8, height: 8, borderRadius: R.pill,
@@ -194,7 +197,7 @@ export default function Tarefas({ t, user, abrir }) {
           <View style={{ gap: S.md }}>
             <Label t={t}>Prazo (opcional)</Label>
             <View style={{ flexDirection: 'row', gap: S.sm, alignItems: 'center' }}>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={() => set(x => {
                   const newDue = { ...x.due };
                   if (task.dueKey) {

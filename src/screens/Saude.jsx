@@ -170,9 +170,9 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                             </Text>
                           </View>
                           {!recipe.decision && (
-                            <Pressable
+                            <Pressable accessibilityRole="button"
                               onPress={() => setRecipeDecision(record.id, recipe.id, 'guardada')}
-                              style={{ paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: t.accent, borderRadius: R.row, minHeight: 32, justifyContent: 'center' }}
+                              style={{ paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: t.accent, borderRadius: R.row, minHeight: 44, justifyContent: 'center' }}
                             >
                               <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: '#FFFFFF' }}>
                                 Guardada
@@ -188,7 +188,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                   })}
 
                   {/* Botão para adicionar receita */}
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     onPress={() => setExpandedNote(expandedNote === `rx-${record.id}` ? null : `rx-${record.id}`)}
                     style={{ paddingVertical: S.sm, paddingHorizontal: S.md, gap: S.sm, flexDirection: 'row', alignItems: 'center' }}
                   >
@@ -206,7 +206,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                         placeholder="Nome da receita"
                         placeholderTextColor={t.text3}
                         style={{
-                          minHeight: 40, paddingHorizontal: S.md, fontFamily: FONT.body,
+                          minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
                           fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
                           borderColor: t.border, backgroundColor: t.surface,
                         }}
@@ -218,7 +218,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                           placeholder="Dose"
                           placeholderTextColor={t.text3}
                           style={{
-                            flex: 1, minHeight: 40, paddingHorizontal: S.md, fontFamily: FONT.body,
+                            flex: 1, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
                             fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
                             borderColor: t.border, backgroundColor: t.surface,
                           }}
@@ -229,7 +229,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                           placeholder="Qtd"
                           placeholderTextColor={t.text3}
                           style={{
-                            flex: 0.6, minHeight: 40, paddingHorizontal: S.md, fontFamily: FONT.body,
+                            flex: 0.6, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
                             fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
                             borderColor: t.border, backgroundColor: t.surface,
                           }}
@@ -240,7 +240,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                           placeholder="Unid"
                           placeholderTextColor={t.text3}
                           style={{
-                            flex: 0.6, minHeight: 40, paddingHorizontal: S.md, fontFamily: FONT.body,
+                            flex: 0.6, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
                             fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
                             borderColor: t.border, backgroundColor: t.surface,
                           }}
@@ -249,12 +249,12 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                       <CampoData t={t} valor={chaveDeDMY(recipeForm.expiresAt)}
                         placeholder="Validade (dd/mm/aaaa)"
                         onChange={(k) => setRecipeForm(f => ({ ...f, expiresAt: dmyDeChave(k) }))} />
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         onPress={() => handleAddRecipe(record.id)}
                         disabled={!recipeForm.name.trim() || !recipeForm.expiresAt.trim()}
                         style={{
                           paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: t.accent,
-                          borderRadius: R.row, minHeight: 40, justifyContent: 'center',
+                          borderRadius: R.row, minHeight: 44, justifyContent: 'center',
                           opacity: !recipeForm.name.trim() || !recipeForm.expiresAt.trim() ? 0.5 : 1,
                         }}
                       >
@@ -291,7 +291,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                 ))}
 
                 {/* Adicionar nota */}
-                <Pressable
+                <Pressable accessibilityRole="button"
                   onPress={() => setExpandedNote(expandedNote === `note-${record.id}` ? null : `note-${record.id}`)}
                   style={{ paddingVertical: S.sm, paddingHorizontal: S.md, gap: S.sm, flexDirection: 'row', alignItems: 'center' }}
                 >
@@ -317,12 +317,12 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                         backgroundColor: t.card, textAlignVertical: 'top',
                       }}
                     />
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       onPress={() => handleAddNote(record.id)}
                       disabled={!newNoteForm.text.trim()}
                       style={{
                         paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: t.accent,
-                        borderRadius: R.row, minHeight: 40, justifyContent: 'center',
+                        borderRadius: R.row, minHeight: 44, justifyContent: 'center',
                         opacity: !newNoteForm.text.trim() ? 0.5 : 1,
                       }}
                     >
@@ -341,17 +341,17 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                     Precisa de ação
                   </Text>
                   <View style={{ flexDirection: 'row', gap: S.sm }}>
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       onPress={() => setHealthDecision(record.id, 'acompanhamento', 'resolvido', 'Consulta marcada')}
-                      style={{ flex: 1, paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: t.accent, borderRadius: R.row, minHeight: 36, justifyContent: 'center' }}
+                      style={{ flex: 1, paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: t.accent, borderRadius: R.row, minHeight: 44, justifyContent: 'center' }}
                     >
                       <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: '#FFFFFF', textAlign: 'center' }}>
                         Resolvida
                       </Text>
                     </Pressable>
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       onPress={() => setHealthDecision(record.id, 'seguimento', 'pendente', 'A aguardar resultado')}
-                      style={{ flex: 1, paddingHorizontal: S.md, paddingVertical: S.sm, borderWidth: 1, borderColor: t.border, borderRadius: R.row, minHeight: 36, justifyContent: 'center' }}
+                      style={{ flex: 1, paddingHorizontal: S.md, paddingVertical: S.sm, borderWidth: 1, borderColor: t.border, borderRadius: R.row, minHeight: 44, justifyContent: 'center' }}
                     >
                       <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text2, textAlign: 'center' }}>
                         Pendente
@@ -448,7 +448,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
               placeholder="Procurar por especialidade..."
               placeholderTextColor={t.text3}
               style={{
-                minHeight: 40, paddingHorizontal: S.md, fontFamily: FONT.body,
+                minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
                 fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
                 borderColor: t.border, backgroundColor: t.card,
               }}
@@ -456,10 +456,10 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
 
             {/* Member filter pills */}
             <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 onPress={() => setMemberFilter(null)}
                 style={{
-                  paddingHorizontal: S.md, minHeight: 32, borderRadius: R.pill,
+                  paddingHorizontal: S.md, minHeight: 44, borderRadius: R.pill,
                   borderWidth: 1, borderColor: !memberFilter ? t.accent : t.border,
                   backgroundColor: !memberFilter ? 'rgba(0,0,0,0.02)' : 'transparent',
                   justifyContent: 'center',
@@ -470,11 +470,11 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                 </Text>
               </Pressable>
               {membrosDaCasa.map(member => (
-                <Pressable
+                <Pressable accessibilityRole="button"
                   key={member}
                   onPress={() => setMemberFilter(memberFilter === member ? null : member)}
                   style={{
-                    paddingHorizontal: S.md, minHeight: 32, borderRadius: R.pill,
+                    paddingHorizontal: S.md, minHeight: 44, borderRadius: R.pill,
                     borderWidth: 1, borderColor: memberFilter === member ? corDoMembro(member, MEMBERS[member]?.cor) : t.border,
                     backgroundColor: memberFilter === member ? 'rgba(0,0,0,0.02)' : 'transparent',
                     justifyContent: 'center',
@@ -560,10 +560,10 @@ function MarcarConsulta({ t, user, membro, onClose }) {
       <View style={{ gap: S.lg }}>
         {/* Tabs */}
         <View style={{ flexDirection: 'row', gap: S.sm }}>
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => setTab('nova')}
             style={{
-              flex: 1, paddingVertical: S.md, borderBottomWidth: 2,
+              flex: 1, minHeight: 44, justifyContent: 'center', borderBottomWidth: 2,
               borderBottomColor: tab === 'nova' ? t.accent : 'transparent',
             }}
           >
@@ -574,10 +574,10 @@ function MarcarConsulta({ t, user, membro, onClose }) {
               Nova Consulta
             </Text>
           </Pressable>
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => setTab('especialidades')}
             style={{
-              flex: 1, paddingVertical: S.md, borderBottomWidth: 2,
+              flex: 1, minHeight: 44, justifyContent: 'center', borderBottomWidth: 2,
               borderBottomColor: tab === 'especialidades' ? t.accent : 'transparent',
             }}
           >
@@ -597,11 +597,11 @@ function MarcarConsulta({ t, user, membro, onClose }) {
               <Label t={t}>Membro</Label>
               <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
                 {membrosDaCasa.map(name => (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={name}
                     onPress={() => setForm(f => ({ ...f, member: name }))}
                     style={{
-                      paddingHorizontal: S.md, minHeight: 36, borderRadius: R.pill,
+                      paddingHorizontal: S.md, minHeight: 44, borderRadius: R.pill,
                       borderWidth: 2,
                       borderColor: form.member === name ? corDoMembro(name, MEMBERS[name]?.cor) : t.border,
                       backgroundColor: form.member === name ? 'rgba(0,0,0,0.02)' : 'transparent',
@@ -642,11 +642,11 @@ function MarcarConsulta({ t, user, membro, onClose }) {
               <Label t={t}>Especialidade</Label>
               <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
                 {(s.specialities || []).map(spec => (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={spec}
                     onPress={() => setForm(f => ({ ...f, specialty: spec }))}
                     style={{
-                      paddingHorizontal: S.md, minHeight: 36, borderRadius: R.pill,
+                      paddingHorizontal: S.md, minHeight: 44, borderRadius: R.pill,
                       borderWidth: 1,
                       borderColor: form.specialty === spec ? t.accent : t.border,
                       backgroundColor: form.specialty === spec ? 'rgba(0,0,0,0.02)' : 'transparent',
@@ -684,7 +684,7 @@ function MarcarConsulta({ t, user, membro, onClose }) {
                     borderColor: t.border, backgroundColor: t.card,
                   }}
                 />
-                <Pressable
+                <Pressable accessibilityRole="button"
                   onPress={() => {
                     if (newSpecialty.trim()) {
                       addSpecialty(newSpecialty.trim());
@@ -709,7 +709,7 @@ function MarcarConsulta({ t, user, membro, onClose }) {
                   <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>
                     {spec}
                   </Text>
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     onPress={() => removeSpecialty(spec)}
                     hitSlop={8}
                     style={{ padding: S.sm }}

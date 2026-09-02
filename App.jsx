@@ -455,6 +455,21 @@ function Shell() {
   };
   // A ficha vem primeiro: abre-se de dentro da Saúde e é ela que manda no
   // cabeçalho enquanto estiver aberta.
+  // Fechar TUDO o que corre por cima dos separadores.
+  //
+  // ⚠ O toque num separador do rodapé fazia `setTab` e mais nada. Com a
+  // Saúde, os Equipamentos, a Gestão ou a Documentação abertos por cima, o
+  // separador acendia-se e o ecrã continuava a ser o outro: a app ficava
+  // presa numa vista de onde só a seta do cabeçalho saía. Medido no
+  // navegador — o rodapé dizia «Início» e o conteúdo dizia «Equipamentos da
+  // Casa».
+  //
+  // O rodapé tem de levar sempre onde diz que leva.
+  const fecharVistas = () => {
+    setFicha(null); setSaude(false); setEquip(false);
+    setGestao(false); setDoc(false); setLoja(false);
+  };
+
   const vistaAberta = ficha ? 'ficha' : saude ? 'saude' : equip ? 'equip'
     : gestao ? 'gestao' : doc ? 'doc' : loja ? 'loja' : null;
   const V = vistaAberta ? vistas[vistaAberta] : null;
@@ -619,7 +634,7 @@ function Shell() {
         {TABS.map(x => {
           const on = tab === x.key;
           return (
-            <Pressable key={x.key} onPress={() => { setAbrirNoTab(null); setTab(x.key); }}
+            <Pressable key={x.key} onPress={() => { setAbrirNoTab(null); fecharVistas(); setTab(x.key); }}
               accessibilityRole="tab" accessibilityLabel={x.label}
               accessibilityState={{ selected: on }}
               style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 4 }}>

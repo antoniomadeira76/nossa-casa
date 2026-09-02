@@ -114,7 +114,7 @@ export default function NovaTarefa({ t, user, onClose }) {
       <View style={{ gap: S.sm }}>
         <Label t={t}>Prazo (opcional)</Label>
         <View style={{ flexDirection: 'row', gap: S.sm, alignItems: 'center' }}>
-          <Pressable
+          <Pressable accessibilityRole="button"
             onPress={() => setForm(f => ({ ...f, dueKey: form.dueKey ? null : TODAY_KEY }))}
             style={{
               flex: 1, minHeight: 44, paddingHorizontal: S.md, borderRadius: R.row, borderWidth: 1,

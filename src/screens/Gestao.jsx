@@ -83,7 +83,7 @@ export default function Gestao({ t, user, onClose }) {
         <Text style={{ fontFamily: FONT.ui, fontSize: 14, color: t.text3, textAlign: 'center' }}>
           Apenas administradores podem aceder à gestão da casa.
         </Text>
-        <Pressable onPress={onClose} style={{ marginTop: S.xl, paddingHorizontal: S.lg, paddingVertical: S.md, backgroundColor: t.accent, borderRadius: R.row }}>
+        <Pressable accessibilityRole="button" onPress={onClose} style={{ marginTop: S.xl, paddingHorizontal: S.lg, paddingVertical: S.md, backgroundColor: t.accent, borderRadius: R.row }}>
           <Text style={{ fontFamily: FONT.display, fontSize: 14, color: '#FFFFFF' }}>Fechar</Text>
         </Pressable>
       </ScrollView>
@@ -353,7 +353,7 @@ export default function Gestao({ t, user, onClose }) {
       }} />
 
       {envelopes && envelopes.length > 1 && (
-        <Pressable onPress={() => setSheetOpen('transferEnvelopes')}
+        <Pressable accessibilityRole="button" onPress={() => setSheetOpen('transferEnvelopes')}
           style={({ pressed }) => ({
             minHeight: 48, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
             alignItems: 'center', justifyContent: 'center',
@@ -382,13 +382,15 @@ export default function Gestao({ t, user, onClose }) {
               setSelectedSpecialty(spec);
               setInput(spec);
               setSheetOpen('editSpecialty');
-            }} size={40}>
+            }}>
+              {/* ⚠ Tinha size={40}, que anulava os 44 por omissão do Tap.
+                  Medido no navegador: 40x40, os dois. */}
               <Icon name="edit" size={18} color={t.text3} />
             </Tap>
             <Tap label={`Apagar ${spec}`} onPress={() => {
               setSelectedSpecialty(spec);
               setModal('deleteSpecialty');
-            }} size={40}>
+            }}>
               <Icon name="trash" size={18} color={t.state.err} />
             </Tap>
           </View>
@@ -405,7 +407,16 @@ export default function Gestao({ t, user, onClose }) {
   return (
     <View style={{ flex: 1, backgroundColor: t.page }}>
       <View style={{ gap: S.xl }}>
-        <View style={{ flexDirection: 'row', gap: S.md, borderBottomWidth: 1, borderBottomColor: t.border, paddingBottom: S.md }}>
+        {/* ⚠ Havia S.md de intervalo entre as abas, e a 'Lojas' tinha 31 px
+            de largura. Medido no navegador: OITO pixels mortos entre cada par
+            — um toque ali não acerta em nada e a pessoa toca outra vez sem
+            perceber porquê. E 31 de largura fica muito abaixo dos 44 do
+            INVARIANTE #5, que não fala só de altura.
+
+            A faixa passa a ser contígua e cada aba ganha enchimento: a mais
+            estreita fica com 51 e o toque acerta sempre em alguma. Cabe —
+            medido, a faixa toda ocupa 405 dos 428 úteis. */}
+        <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: t.border, paddingBottom: S.md }}>
           {[
             { key: 'orcamento', label: 'Orçamento' },
             { key: 'membros', label: 'Membros' },
@@ -416,7 +427,7 @@ export default function Gestao({ t, user, onClose }) {
             <Pressable key={key} onPress={() => setTab(key)}
               accessibilityRole="tab" accessibilityLabel={label}
               accessibilityState={{ selected: tab === key }}
-              style={{ minHeight: 44, justifyContent: 'flex-end',
+              style={{ minHeight: 44, minWidth: 44, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'flex-end',
                 paddingBottom: S.sm, borderBottomWidth: tab === key ? 2 : 0, borderBottomColor: tab === key ? t.accent : 'transparent' }}>
               <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: tab === key ? t.accent : t.text3 }}>
                 {label}
@@ -431,7 +442,7 @@ export default function Gestao({ t, user, onClose }) {
         {tab === 'lojas' && renderShopsTab()}
         {tab === 'especialidades' && renderSpecialtiesTab()}
 
-        <Pressable onPress={onClose} style={{ paddingVertical: S.lg }}>
+        <Pressable accessibilityRole="button" onPress={onClose} style={{ paddingVertical: S.lg }}>
           <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.accent, textAlign: 'center' }}>
             Fechar
           </Text>
@@ -643,9 +654,9 @@ export default function Gestao({ t, user, onClose }) {
       {/* ── Tirar da casa ────────────────────────────────────────────────── */}
       {modal === 'confirmarRemocao' && selectedMember && (
         <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
-          <Pressable onPress={() => setModal(null)}
+          <Pressable accessibilityRole="button" onPress={() => setModal(null)}
             style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <Pressable style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 320 }}>
+            <Pressable accessibilityRole="button" style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 320 }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
                 Tirar {selectedMember} da casa?
               </Text>
@@ -893,9 +904,9 @@ export default function Gestao({ t, user, onClose }) {
 
       {modal === 'deleteSpecialty' && (
         <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
-          <Pressable onPress={() => setModal(null)}
+          <Pressable accessibilityRole="button" onPress={() => setModal(null)}
             style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <Pressable style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg }}>
+            <Pressable accessibilityRole="button" style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
                 Apagar especialidade?
               </Text>
@@ -912,7 +923,7 @@ export default function Gestao({ t, user, onClose }) {
                     </Text>
                   </View>
                 </Pressable>
-                <Pressable onPress={() => {
+                <Pressable accessibilityRole="button" onPress={() => {
                   set(s => ({
                     specialities: (s.specialities || []).filter(x => x !== selectedSpecialty),
                   }));
@@ -933,9 +944,9 @@ export default function Gestao({ t, user, onClose }) {
 
       {modal === 'openMonth' && (
         <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
-          <Pressable onPress={() => setModal(null)}
+          <Pressable accessibilityRole="button" onPress={() => setModal(null)}
             style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <Pressable style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 320 }}>
+            <Pressable accessibilityRole="button" style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 320 }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
                 Abrir novo mês?
               </Text>
@@ -952,7 +963,7 @@ export default function Gestao({ t, user, onClose }) {
                     </Text>
                   </View>
                 </Pressable>
-                <Pressable onPress={() => {
+                <Pressable accessibilityRole="button" onPress={() => {
                   set(s => ({
                     monthZero: false,
                     registered: 0,
@@ -973,9 +984,9 @@ export default function Gestao({ t, user, onClose }) {
 
       {modal === 'closeMonth' && (
         <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
-          <Pressable onPress={() => setModal(null)}
+          <Pressable accessibilityRole="button" onPress={() => setModal(null)}
             style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <Pressable style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 320 }}>
+            <Pressable accessibilityRole="button" style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 320 }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
                 Fechar mês?
               </Text>
@@ -992,7 +1003,7 @@ export default function Gestao({ t, user, onClose }) {
                     </Text>
                   </View>
                 </Pressable>
-                <Pressable onPress={() => {
+                <Pressable accessibilityRole="button" onPress={() => {
                   set(s => ({
                     monthZero: true,
                     registered: 0,
@@ -1071,7 +1082,7 @@ export default function Gestao({ t, user, onClose }) {
                   setInput('');
                 }
               }} disabled={!input.trim() || input === s.stores[selectedEnvelope]} />
-              <Pressable onPress={() => setModal('confirmDeleteShop')}
+              <Pressable accessibilityRole="button" onPress={() => setModal('confirmDeleteShop')}
                 style={{ paddingVertical: S.md, alignItems: 'center' }}>
                 <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.state.err }}>Apagar loja</Text>
               </Pressable>
@@ -1103,9 +1114,9 @@ export default function Gestao({ t, user, onClose }) {
 
       {modal === 'confirmDeleteShop' && (
         <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
-          <Pressable onPress={() => setModal(null)}
+          <Pressable accessibilityRole="button" onPress={() => setModal(null)}
             style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <Pressable style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 300 }}>
+            <Pressable accessibilityRole="button" style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 300 }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
                 Apagar loja?
               </Text>
@@ -1113,10 +1124,10 @@ export default function Gestao({ t, user, onClose }) {
                 {s.stores[selectedEnvelope]}
               </Text>
               <View style={{ flexDirection: 'row', gap: S.md }}>
-                <Pressable onPress={() => setModal(null)} style={{ flex: 1, paddingVertical: S.md, borderRadius: R.row, backgroundColor: t.border }}>
+                <Pressable accessibilityRole="button" onPress={() => setModal(null)} style={{ flex: 1, paddingVertical: S.md, borderRadius: R.row, backgroundColor: t.border }}>
                   <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.text2, textAlign: 'center' }}>Cancelar</Text>
                 </Pressable>
-                <Pressable onPress={() => {
+                <Pressable accessibilityRole="button" onPress={() => {
                   set(s => ({
                     stores: s.stores.filter((_, i) => i !== selectedEnvelope),
                   }));
