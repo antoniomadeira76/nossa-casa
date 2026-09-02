@@ -517,9 +517,18 @@ function Shell() {
         {V ? (
           // Vista de ecrã inteiro: o cabeçalho passa a ser o dela.
           <>
+            {/* ⚠ Sem o `marginLeft: -10` que aqui estava.
+
+                Ele puxava o alvo de 44 para FORA do enchimento do cabeçalho:
+                medido, a seta ficava a 6 px da borda da app quando o conteúdo
+                e o avatar do lado direito estão os dois a 16. Dez pixels de
+                diferença num ícone encostado ao canto lêem-se como um ícone
+                que saiu dos limites — e era o que se via.
+
+                O avatar do outro lado nunca usou o truque. Agora os dois
+                alinham pela CAIXA, e o cabeçalho fica simétrico. */}
             <Pressable onPress={V.fechar} accessibilityRole="button" accessibilityLabel="Voltar"
-              style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center',
-                marginLeft: -10 }}>
+              style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
               <Icon name="arrowLeft" size={24} color="#FFFFFF" />
             </Pressable>
             <Icon name={V.icon} size={26} color="#FFFFFF" />
@@ -649,10 +658,20 @@ function Shell() {
       {/* Perfil sheet */}
       {/* Terminar sessão pede confirmação — é uma ação que não se desfaz
           com um toque, e o perfil fica visível por trás para dar contexto. */}
+      {/* ⚠ Cada entrada do Perfil FECHA as outras vistas antes de abrir a sua.
+
+          É o mesmo defeito do rodapé, visto de outra porta: com a ficha de
+          saúde aberta, tocar em «Gestão da Casa» punha o `gestao` a verdadeiro
+          e ficava tudo na mesma — a `ficha` vem primeiro no `vistaAberta` e
+          continuava a ganhar. Medido no navegador: o cabeçalho continuava a
+          dizer «A minha ficha».
+
+          Uma escolha do Perfil leva sempre ao que se escolheu. */}
       {perfil ? <Perfil t={t} user={user} onClose={() => setPerfil(false)}
         onSignOut={() => setSignOut(true)}
-        onSaude={() => setSaude(true)} onDoc={() => setDoc(true)}
-        onGestao={() => setGestao(true)} /> : null}
+        onSaude={() => { fecharVistas(); setSaude(true); }}
+        onDoc={() => { fecharVistas(); setDoc(true); }}
+        onGestao={() => { fecharVistas(); setGestao(true); }} /> : null}
 
       {signOut ? (
         <Confirm t={t} destructive icon="warning"

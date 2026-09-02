@@ -1448,6 +1448,12 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       // O PIN local é um resumo, como o de toda a gente. O servidor guarda o
       // seu; são dois segredos do mesmo valor, não um copiado do outro.
       pins: papel === 'crianca' ? { ...x.pins, [n]: resumoPin(n, String(segredo)) } : x.pins,
+      // A criança nasce com a entrada dos pontos pagos.
+      //
+      // Sem ela, o saldo era `kidPts - undefined` = NaN em qualquer sítio que
+      // não se defendesse. Defender em cada leitura é o remédio; ter a forma
+      // certa desde o início é a cura.
+      paidPts: papel === 'crianca' ? { ...x.paidPts, [n]: 0 } : x.paidPts,
       registo: [{ t: `${n} entrou na casa`, at: Date.now() }, ...x.registo],
     }));
     return null;

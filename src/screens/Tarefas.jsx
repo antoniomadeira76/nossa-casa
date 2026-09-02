@@ -74,7 +74,15 @@ export default function Tarefas({ t, user, abrir }) {
           <Label t={t}>1 pt = {EUR(s.pointValue)}</Label>
           <View style={{ flexDirection: 'row', gap: S.md }}>
             {criancas.map(k => {
-              const pend = kidPts[k] - s.paidPts[k];
+              // ⚠ Sem os valores por omissão, uma criança acrescentada à
+              // casa mostrava «NaN pt».
+              //
+              // O DEMO() semeia o `paidPts` só para as crianças da
+              // demonstração; uma criança nova não tinha entrada, e
+              // `numero - undefined` é NaN. Este era o ÚNICO sítio que
+              // subtraía sem defesa — o Cofre, o KidApp e a Gestão já a
+              // tinham, o que fez o defeito aparecer num ecrã só.
+              const pend = (kidPts[k] ?? 0) - (s.paidPts[k] ?? 0);
               return (
                 <Pressable key={k} onPress={() => setCofre(k)}
                   accessibilityRole="button" accessibilityLabel={`Cofre ${st.deNome(k)} ${k}`}

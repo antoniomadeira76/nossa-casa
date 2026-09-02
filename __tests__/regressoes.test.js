@@ -231,10 +231,21 @@ describe('Nenhum ecrã fica sem entrada', () => {
     expect(dinheiro).toMatch(/onPress=\{onEquip\}/);
   });
 
-  it('o Perfil recebe as três saídas do App', () => {
+  // ⚠ Verifica a INTENÇÃO, e não a forma exacta do corpo.
+  //
+  // Era `onSaude=\{\(\) => set`, e passou a falhar quando cada saída deixou de
+  // ser uma chamada só: agora fecham as outras vistas antes de abrir a sua
+  // (`onSaude={() => { fecharVistas(); setSaude(true); }}`), porque abrir uma
+  // por cima de outra não mudava nada no ecrã. Uma prova que fixa a forma
+  // impede a correcção em vez de a guardar.
+  it('o Perfil recebe as três saídas do App, e cada uma abre a sua vista', () => {
     const app = read('App.jsx');
-    for (const p of ['onSaude', 'onDoc', 'onGestao']) {
-      expect(app).toMatch(new RegExp(`${p}=\\{\\(\\) => set`));
+    const PARES = { onSaude: 'setSaude(true)', onDoc: 'setDoc(true)', onGestao: 'setGestao(true)' };
+    for (const [p, abre] of Object.entries(PARES)) {
+      // A propriedade é passada, e o corpo dela chama o setter respetivo.
+      const i = app.indexOf(`${p}={`);
+      expect(i).toBeGreaterThan(0);
+      expect(app.slice(i, i + 90)).toContain(abre);
       expect(perfil).toContain(p);
     }
   });

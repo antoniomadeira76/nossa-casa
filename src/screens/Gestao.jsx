@@ -407,16 +407,26 @@ export default function Gestao({ t, user, onClose }) {
   return (
     <View style={{ flex: 1, backgroundColor: t.page }}>
       <View style={{ gap: S.xl }}>
-        {/* ⚠ Havia S.md de intervalo entre as abas, e a 'Lojas' tinha 31 px
-            de largura. Medido no navegador: OITO pixels mortos entre cada par
-            — um toque ali não acerta em nada e a pessoa toca outra vez sem
-            perceber porquê. E 31 de largura fica muito abaixo dos 44 do
-            INVARIANTE #5, que não fala só de altura.
+        {/* A faixa é UMA linha, contígua.
 
-            A faixa passa a ser contígua e cada aba ganha enchimento: a mais
-            estreita fica com 51 e o toque acerta sempre em alguma. Cabe —
-            medido, a faixa toda ocupa 405 dos 428 úteis. */}
-        <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: t.border, paddingBottom: S.md }}>
+            ⚠ Duas coisas que ela já não faz, e que custaram medição:
+
+              intervalos entre abas   havia S.md, e dava OITO pixels mortos
+                                      entre cada par — um toque ali não
+                                      acertava em nada e a pessoa tocava outra
+                                      vez sem perceber porquê
+              abas estreitas          a «Lojas» tinha 31 px de largura; o
+                                      INVARIANTE #5 não fala só de altura
+
+            Contígua e com enchimento, ocupa 397 px dos 428 úteis da coluna, e
+            o toque acerta sempre em alguma.
+
+            ⚠ Abaixo de ~413 px de largura a última aba fica cortada. Foram
+            tentadas as duas saídas e nenhuma serviu: o deslize horizontal
+            ESCONDE que há mais secções para o lado, e a quebra em duas linhas
+            foi vista e recusada. Fica assim por decisão, não por esquecimento. */}
+        <View style={{ flexDirection: 'row', borderBottomWidth: 1,
+          borderBottomColor: t.border, paddingBottom: S.md }}>
           {[
             { key: 'orcamento', label: 'Orçamento' },
             { key: 'membros', label: 'Membros' },
@@ -427,11 +437,12 @@ export default function Gestao({ t, user, onClose }) {
             <Pressable key={key} onPress={() => setTab(key)}
               accessibilityRole="tab" accessibilityLabel={label}
               accessibilityState={{ selected: tab === key }}
-              style={{ minHeight: 44, minWidth: 44, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'flex-end',
-                paddingBottom: S.sm, borderBottomWidth: tab === key ? 2 : 0, borderBottomColor: tab === key ? t.accent : 'transparent' }}>
-              <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: tab === key ? t.accent : t.text3 }}>
-                {label}
-              </Text>
+              style={{ minHeight: 44, minWidth: 44, paddingHorizontal: 10,
+                alignItems: 'center', justifyContent: 'flex-end', paddingBottom: S.sm,
+                borderBottomWidth: tab === key ? 2 : 0,
+                borderBottomColor: tab === key ? t.accent : 'transparent' }}>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600',
+                color: tab === key ? t.accent : t.text3 }}>{label}</Text>
             </Pressable>
           ))}
         </View>
