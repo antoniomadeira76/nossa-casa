@@ -223,3 +223,54 @@ describe('e nenhum ecrã volta a ficar sem ser desenhado', () => {
     expect(fora).toEqual([]);
   });
 });
+
+// ── Os caminhos que só se percorrem com a casa em certo estado ──────────────
+//
+// ⚠ Três `ReferenceError` viveram escondidos porque as linhas que os continham
+// só corriam assim: uma criança com cofre, uma consulta a marcar, preços já
+// registados. Compilava, montava, e as provas passavam.
+
+describe('a Saúde com a folha de marcar consulta aberta', () => {
+  const Saude = require('../src/screens/Saude').default;
+
+  it('⚠ o «Marcar Consulta» monta — rebentava com MEMBERS is not defined', () => {
+    // O `MarcarConsulta` é outro componente no mesmo ficheiro, e não trazia o
+    // quadro da casa. Abrir a folha dava ecrã branco.
+    const t = montar(Saude, { marcarPara: 'Léo' }, CASA);
+    expect(t.length).toBeGreaterThan(0);
+    expect(t).not.toMatch(/\bundefined\b/);
+  });
+});
+
+describe('as Compras com preços já registados', () => {
+  const Compras = require('../src/screens/Compras').default;
+
+  it('⚠ a linha dos preços conhecidos monta — o `plural` não estava importado', () => {
+    // Só se desenha quando `conhecidos > 0`, ou seja quando a casa já comprou
+    // alguma coisa. Numa casa por estrear nunca corria.
+    const comPrecos = {
+      ...CASA,
+      clearedSeeds: true,
+      newItems: [
+        { id: 'a1', s: 0, label: 'Maçã reineta · 1,5 kg', est: 3.4 },
+        { id: 'a2', s: 1, label: 'Leite meio-gordo · 6 un.', est: 5.1 },
+      ],
+      status: {}, precoPago: {},
+      stores: ['Pingo Doce', 'Continente'],
+      precos: [
+        { artigo: 'maca reineta 1 5 kg', loja: 'Pingo Doce', valor: 3.29, dia: 'd2026-08-30' },
+        { artigo: 'maca reineta 1 5 kg', loja: 'Continente', valor: 3.55, dia: 'd2026-08-24' },
+        { artigo: 'leite meio gordo 6 un', loja: 'Pingo Doce', valor: 4.99, dia: 'd2026-08-30' },
+      ],
+    };
+    const t = montar(Compras, {}, comPrecos);
+    // ⚠ A prova só vale se ela CHEGAR à linha: a chave dos preços é o rótulo
+    // normalizado (`maca reineta 1 5 kg`), e com uma chave inventada o
+    // `conhecidos` fica a zero e a linha nunca se desenha. Foi o que
+    // aconteceu à primeira, e a prova passava sem tocar no defeito.
+    expect(t).toMatch(/artigos? com preço/);
+    expect(t.length).toBeGreaterThan(0);
+    expect(t).not.toMatch(/\bundefined\b/);
+    expect(t).not.toMatch(/\bNaN\b/);
+  });
+});

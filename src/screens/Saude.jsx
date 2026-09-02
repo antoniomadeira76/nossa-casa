@@ -530,7 +530,8 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
 // portanto abrir a partir da ficha da Mia propunha o Léo, que é o valor por
 // omissão. Agora vem por prop.
 function MarcarConsulta({ t, user, membro, onClose }) {
-  const { s, set, addSpecialty, removeSpecialty, renameSpecialty, membrosDaCasa, criancas } = useStore();
+  const { s, set, addSpecialty, removeSpecialty, renameSpecialty, membrosDaCasa, criancas,
+          membros: MEMBERS } = useStore();
   const [tab, setTab] = useState('nova');
   const [form, setForm] = useState({ member: membro || criancas[0] || membrosDaCasa[0], date: '', time: '', specialty: '' });
   const [newSpecialty, setNewSpecialty] = useState('');
