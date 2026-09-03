@@ -59,9 +59,25 @@ local como sempre correu — a ligação é opcional, não um pré-requisito.
 `db/postgres/` é o esquema PostgreSQL anterior, guardado como referência: é onde as
 políticas estão pensadas ao pormenor.
 
-**A saúde está deliberadamente fora.** `episodios_saude` e `anexos` não existem nas
-coleções nem na camada de cliente, até os cinco pontos do `db/postgres/README.md`
-estarem resolvidos. São dados clínicos de menores.
+**A saúde não SINCRONIZA — mas está construída.** Esta linha dizia que `episodios_saude`
+e `anexos` «não existem nas coleções nem na camada de cliente», e era falso nas duas
+metades. Corrigido em 03/09/2026:
+
+- as coleções **existem**, com regras e **16 provas** em `provar-saude.mjs`
+- o cliente **tem** `ler.saude()` em `src/pocketbase.js`
+- o que não existe é a **escrita**, e é travada à mão: `recusaSaude()` em `src/sync.js`
+  rebenta se alguém lhe acrescentar uma escrita de saúde
+
+O travão é a conformidade, não a construção: cinco pontos no `db/postgres/README.md`, e
+são dados clínicos de menores. **Enquanto o servidor da casa correr em `127.0.0.1`**,
+quase todos colapsam — não há subcontratante nem titular fora da casa. Voltam todos no
+dia em que o servidor for exposto à internet ou alojado por outrem, e isso é decisão do
+dono da casa.
+
+⚠ **Uma criança não lê a sua própria ficha.** O servidor devolvia-a e o cliente
+escondia-a: uma divergência de três pontas, com o ecrã a prometer «invisíveis às
+próprias» em letras. O INVARIANTE #3 diz que o dado não pode CHEGAR ao dispositivo — e
+chegava. Resolvido no servidor, que era o lado errado.
 
 ### 1. Cabeçalho e rodapé aparecem em TODAS as janelas
 

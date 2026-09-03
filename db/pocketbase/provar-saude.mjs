@@ -78,10 +78,28 @@ await prova('o Tomás também', async () => {
   const v = await cTomas.collection('episodios_saude').getFullList();
   if (!v.some(x => x.membro === leo.id)) throw new Error('não vê a ficha da criança');
 });
-await prova('o Léo lê a sua', async () => {
+// ⚠ Esta prova exigia o CONTRÁRIO — «o Léo lê a sua», com `igual(v.length, 1)`.
+// E era uma divergência de três pontas: o `podeVerSaude` do cliente diz que uma
+// criança não lê a sua ficha, o ecrã da Saúde promete «invisíveis às próprias»
+// em letras, e esta regra devolvia-a.
+//
+// O que decide não é a contagem de dois contra um: o INVARIANTE #3 diz que o
+// dado não pode CHEGAR ao dispositivo. O telemóvel do Léo recebia a ficha dele
+// e era só a interface a esconder-lha — a forma de falha que aquele invariante
+// existe para impedir. Corrigido no servidor em 03/09/2026, por decisão do dono
+// da casa.
+//
+// Note a prova de baixo, «e ele continua a ver a sua»: no dia em que o Léo
+// passa a adulto, passa a ver. Não é o mesmo dado a mudar de regra — é a regra
+// a ler o papel a cada consulta.
+await prova('o Léo NÃO lê a sua própria ficha', async () => {
   const v = await cLeo.collection('episodios_saude').getFullList();
-  igual(v.length, 1);
-  igual(v[0].especialidade, 'Pediatria');
+  igual(v.length, 0, v.map(x => x.especialidade).join('/'));
+});
+await prova('nem por acesso direto ao registo dele', async () => {
+  // A lista pode filtrar e o `view` não: são duas regras, e ambas têm de
+  // recusar. É o mesmo par que apanhou o caso da Rita e do Tomás mais acima.
+  await recusado(() => cLeo.collection('episodios_saude').getOne(epLeo.id));
 });
 await prova('o Léo NÃO vê a de nenhum adulto', async () => {
   const v = await cLeo.collection('episodios_saude').getFullList();
@@ -102,10 +120,12 @@ await prova('a Rita vê o anexo do Léo', async () => {
   const a = await cRita.collection('anexos').getFullList();
   if (!a.some(x => x.episodio === epLeo.id)) throw new Error('não vê o anexo da criança');
 });
-await prova('o Léo vê o seu anexo e mais nenhum', async () => {
+// Os anexos herdam pelo episódio, portanto herdam também a correção: se o Léo
+// não lê a ficha, não lê o que está pendurado nela. Esta prova exigia
+// `igual(a.length, 1)` — «vê o seu anexo e mais nenhum».
+await prova('o Léo não vê anexo nenhum, nem o seu', async () => {
   const a = await cLeo.collection('anexos').getFullList();
-  igual(a.length, 1);
-  igual(a[0].titulo, 'Análises do Léo');
+  igual(a.length, 0, a.map(x => x.titulo).join('/'));
 });
 
 console.log('\n── §5: a transição de papel reavalia RETROATIVAMENTE ──');

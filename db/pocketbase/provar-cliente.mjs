@@ -109,11 +109,18 @@ await admin.collection('anexos').create({
 const epRita = await admin.collection('episodios_saude').create({
   casa: casa.id, membro: rita.id, especialidade: 'Medicina geral', dia: '2026-07-11' });
 
-await prova('a criança lê a sua ficha e os seus anexos', async () => {
+// ⚠ Esta prova exigia o contrário — «a criança lê a sua ficha e os seus
+// anexos». O `podeVerSaude` do cliente diz que não lê e o ecrã da Saúde promete
+// «invisíveis às próprias»; era o servidor que discordava dos dois. Corrigido
+// em 03/09/2026, por decisão do dono da casa.
+//
+// O que importa aqui é que a recusa vem pela CONSULTA, não pela interface: o
+// `ler.saude()` devolve vazio, portanto a ficha nunca chega ao dispositivo da
+// criança. É o INVARIANTE #3 medido do lado do cliente.
+await prova('a criança pede a SUA ficha e recebe VAZIO', async () => {
   const f = await ler.saude(leo.id);
-  igual(f.episodios.length, 1);
-  igual(f.episodios[0].especialidade, 'Pediatria');
-  igual(f.anexos.length, 1);
+  igual(f.episodios.length, 0, 'a ficha da criança chegou ao dispositivo dela');
+  igual(f.anexos.length, 0, 'os anexos dela chegaram');
 });
 await prova('a criança pede a ficha da Rita e recebe VAZIO', async () => {
   const f = await ler.saude(rita.id);

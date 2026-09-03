@@ -7,9 +7,21 @@ const pb = new PocketBase(process.env.PB_URL || 'http://127.0.0.1:8095');
 // correrem sem preparação nenhuma — mas num servidor a sério o administrador é
 // outro, e a palavra-passe não deve estar escrita num ficheiro versionado.
 //   PB_ADMIN=... PB_ADMIN_PASS=... node <este ficheiro>
-const ADMIN = process.env.PB_ADMIN || 'admin@nossacasa.local';
-const ADMIN_PASS = process.env.PB_ADMIN_PASS || 'casa-de-testes-123';
-await pb.collection('_superusers').authWithPassword(ADMIN, ADMIN_PASS);
+//
+// ⚠ `SUPER` e não `ADMIN`. Mais abaixo há um `const ADMIN` que é a REGRA do
+// papel de administrador (`@request.auth.papel = "admin"`), usada em sete
+// regras de coleção. Dois `const ADMIN` no mesmo módulo é um SyntaxError, e
+// este ficheiro deixou de analisar — «Identifier 'ADMIN' has already been
+// declared».
+//
+// Ou seja: desde o commit que tirou as credenciais do código (90e219d), o
+// script que CRIA as coleções nunca mais correu. As 141 provas continuaram
+// verdes porque corriam contra as coleções criadas ANTES disso — uma base de
+// dados que já não se sabia recriar. Descoberto em 03/09/2026, ao tentar
+// aplicar a correção da visibilidade da saúde.
+const SUPER = process.env.PB_ADMIN || 'admin@nossacasa.local';
+const SUPER_PASS = process.env.PB_ADMIN_PASS || 'casa-de-testes-123';
+await pb.collection('_superusers').authWithPassword(SUPER, SUPER_PASS);
 
 const txt = (name, o = {}) => ({ name, type: 'text', ...o });
 const num = (name, o = {}) => ({ name, type: 'number', ...o });
@@ -23,17 +35,65 @@ const ids = {};
 
 // Recriar do zero é o que torna isto repetível. Apagar pela ordem inversa,
 // porque as relações impedem apagar uma coleção que outra ainda refere.
+//
+// ⚠ `credenciais_agenda` está na lista e é preciso: foi acrescentada depois,
+// por outro script, e ninguém a pôs aqui. Sem ela a limpeza parava a meio —
+// «Failed to delete collection probably due to existing reference in
+// credenciais_agenda» — e deixava a base num estado que este ficheiro já não
+// sabia reconstruir.
 const NOSSAS = [
   // vistas primeiro: dependem das coleções de base
   'v_cofre_saldo', 'v_envelope_gasto', 'v_acerto_saldo', 'v_pontos_por_pagar',
+  'credenciais_agenda',
   'anexos', 'episodios_saude', 'especialidades', 'manutencoes', 'categorias_equip',
   'metas', 'acertos', 'transferencias', 'artigos', 'listas_compras', 'lojas',
   'meses', 'preferencias', 'equipamentos', 'cofre_movimentos', 'despesas',
   'envelopes', 'tarefas_feitas', 'tarefas', 'eventos', 'membros', 'casas'];
+
+// ── Uma casa habitada não se apaga ───────────────────────────────────────────
+//
+// ⚠ Este script apagava e recriava TUDO, `membros` e `casas` incluídos. Numa
+// base vazia é isso que o torna repetível; numa casa a sério apaga a conta de
+// quem lá vive e, com ela, a autorização da agenda da Google — que só se
+// recupera indo outra vez à Google.
+//
+// Aprendi-o da pior maneira, em 03/09/2026: corri-o para aplicar uma mudança
+// de regra, com a casa «Madeira» lá dentro. As coleções foram-se. A casa, o
+// membro e as credenciais sobreviveram por ACIDENTE — a limpeza parou no erro
+// da `credenciais_agenda` antes de chegar a `membros`. Um acidente não é uma
+// salvaguarda.
+//
+// Agora, se já existe uma casa com membros, reaproveitam-se as duas coleções e
+// só se recria o resto. As REGRAS aplicam-se de qualquer modo, que é a razão
+// pela qual alguém corre isto depois do primeiro dia.
+//
+// Para uma reconstrução total e deliberada: PB_RECRIAR=1.
+const casasVivas = await pb.collection('casas').getFullList().catch(() => []);
+const membrosVivos = await pb.collection('membros').getFullList().catch(() => []);
+const casaHabitada = !process.env.PB_RECRIAR && casasVivas.length > 0 && membrosVivos.length > 0;
+if (casaHabitada) {
+  console.log(`Casa habitada: «${casasVivas[0].nome}», ${membrosVivos.length} membro(s).`);
+  console.log('Reaproveito `casas` e `membros`; recrio o resto e aplico as regras.');
+  console.log('Para apagar tudo mesmo: PB_RECRIAR=1 npm run db:colecoes\n');
+}
+// ⚠ `credenciais_agenda` também se preserva, e custou aprendê-lo. Pu-la na
+// lista de limpeza para a ordem de apagamento funcionar, e na primeira
+// execução apagou-a — levando o `refresh_token` da agenda da Google. Esse não
+// se recupera de uma cópia: recupera-se voltando à Google a autorizar.
+//
+// Preservar `membros` e `casas` e não isto era guardar a conta e perder o que
+// a conta tinha autorizado.
+const PRESERVAR = casaHabitada ? ['membros', 'casas', 'credenciais_agenda'] : [];
+
 const existentes = await pb.collections.getFullList();
 for (const nome of NOSSAS) {
+  if (PRESERVAR.includes(nome)) continue;
   const c = existentes.find(x => x.name === nome);
   if (c) await pb.collections.delete(c.id);
+}
+if (casaHabitada) {
+  ids.casas = existentes.find(x => x.name === 'casas').id;
+  ids.membros = existentes.find(x => x.name === 'membros').id;
 }
 
 const criar = async (def) => {
@@ -49,7 +109,7 @@ const criar = async (def) => {
 
 // ── A casa ───────────────────────────────────────────────────────────────────
 // Sem regras ainda: membros ainda não existe para as poder referir.
-await criar({
+if (!casaHabitada) await criar({
   name: 'casas', type: 'base',
   fields: [
     txt('nome', { required: true }),
@@ -66,7 +126,17 @@ await criar({
 // hash das palavras-passe com bcrypt e verifica-as no servidor, portanto o PIN
 // de uma criança é a palavra-passe dela — e §3.2 fica satisfeita sem escrever
 // criptografia nenhuma. O valor correto nunca chega ao dispositivo.
-await criar({
+const REGRAS_MEMBROS = {
+  listRule: 'casa = @request.auth.casa',
+  viewRule: 'casa = @request.auth.casa',
+  createRule: '@request.auth.papel = "admin" && casa = @request.auth.casa',
+  updateRule: '@request.auth.papel = "admin" && casa = @request.auth.casa',
+  deleteRule: '@request.auth.papel = "admin" && casa = @request.auth.casa',
+};
+if (casaHabitada) {
+  // A coleção fica; as regras aplicam-se, que é para isso que se corre isto.
+  await pb.collections.update(ids.membros, REGRAS_MEMBROS);
+} else await criar({
   name: 'membros', type: 'auth',
   // Os adultos entram por e-mail. As crianças não têm e-mail nem conta própria
   // — §8 pede que assim continue — por isso entram por `login`, um
@@ -101,7 +171,7 @@ await criar({
 // Os campos de sistema da autenticação vêm com `password` a exigir 8 caracteres
 // e `email` obrigatório. Um PIN tem quatro dígitos, e uma criança não tem
 // e-mail — §8 pede que assim continue. Ajustam-se depois de criar.
-{
+if (!casaHabitada) {
   const c = (await pb.collections.getFullList()).find(x => x.name === 'membros');
   await pb.collections.update(c.id, {
     fields: c.fields.map(f => {
@@ -437,10 +507,23 @@ await criar({
 // testada». São duas regras, não uma:
 //
 //   ficha de ADULTO   → só o próprio. Nem o companheiro, nem a administração.
-//   ficha de CRIANÇA  → os adultos da casa; a criança lê a sua.
+//   ficha de CRIANÇA  → os adultos da casa. A criança NÃO lê a sua.
 //
-// A condição abaixo diz exatamente isso: ou o registo é meu, ou eu sou adulto
-// E o dono é uma criança. Um adulto nunca cai no segundo ramo por outro adulto.
+// ⚠ A criança lia a sua, e era uma DIVERGÊNCIA de três pontas. O `podeVerSaude`
+// do cliente diz que não lê, o ecrã da Saúde promete «invisíveis às próprias»
+// em letras — e esta regra devolvia-a. Duas contra uma, mas o que decide não é
+// a contagem: o INVARIANTE #3 diz que o dado não pode CHEGAR ao dispositivo, e
+// aqui chegava. O telemóvel do Léo recebia a ficha dele e era só a interface a
+// esconder--lha, que é exatamente a forma de falha que o invariante existe para
+// impedir. Resolvido em 03/09/2026, por decisão do dono da casa: o servidor
+// deixa de a devolver.
+//
+// A condição diz agora: tenho de ser adulto, E o registo é meu ou de uma
+// criança. Um adulto nunca cai no segundo ramo por outro adulto.
+//
+// Repare que ficou IGUAL à condição de escrita, logo abaixo. Era a leitura da
+// criança que fazia as duas diferirem; sem ela, quem pode ver é exatamente quem
+// pode escrever, e há uma regra a menos para manter em dois sítios.
 //
 // §5 acrescenta que «a transição de papel tem de reavaliar a visibilidade
 // retroativamente». Isto fá-lo sem migrar nada: a regra lê `membro.papel` a
@@ -450,7 +533,7 @@ await criar({
 // ⚠ Isto NÃO dispensa a conformidade. Ver db/README.md: são dados clínicos de
 // menores, e há cinco pontos por resolver antes da primeira linha real.
 const SAUDE_VISIVEL =
-  `${DA_CASA} && (membro = @request.auth.id || (${ADULTO} && membro.papel = "crianca"))`;
+  `${DA_CASA} && ${ADULTO} && (membro = @request.auth.id || membro.papel = "crianca")`;
 
 await criar({
   name: 'episodios_saude', type: 'base',
@@ -465,8 +548,8 @@ await criar({
   ],
   listRule: SAUDE_VISIVEL,
   viewRule: SAUDE_VISIVEL,
-  // Escrever é mais apertado do que ler: a criança lê a sua ficha, mas não a
-  // escreve. Quem regista consultas são os adultos.
+  // Escrever é a MESMA condição de ler, desde que a criança deixou de ler a
+  // sua. Quem registra e quem vê são os adultos da casa.
   createRule: `${DA_CASA} && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
   updateRule: `${DA_CASA} && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
   deleteRule: `${DA_CASA} && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
@@ -483,8 +566,8 @@ await criar({
     txt('titulo', { required: true }),
     fich('ficheiro'),
   ],
-  listRule: `${DA_CASA} && (episodio.membro = @request.auth.id || (${ADULTO} && episodio.membro.papel = "crianca"))`,
-  viewRule: `${DA_CASA} && (episodio.membro = @request.auth.id || (${ADULTO} && episodio.membro.papel = "crianca"))`,
+  listRule: `${DA_CASA} && ${ADULTO} && (episodio.membro = @request.auth.id || episodio.membro.papel = "crianca")`,
+  viewRule: `${DA_CASA} && ${ADULTO} && (episodio.membro = @request.auth.id || episodio.membro.papel = "crianca")`,
   createRule: `${DA_CASA} && ${ADULTO} && (episodio.membro = @request.auth.id || episodio.membro.papel = "crianca")`,
   updateRule: `${DA_CASA} && ${ADULTO} && (episodio.membro = @request.auth.id || episodio.membro.papel = "crianca")`,
   deleteRule: `${DA_CASA} && ${ADULTO} && (episodio.membro = @request.auth.id || episodio.membro.papel = "crianca")`,

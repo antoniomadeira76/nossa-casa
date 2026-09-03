@@ -903,8 +903,46 @@ describe('Camada de ligação ao servidor — PocketBase', () => {
   // provar-saude.mjs — incluindo a transição de papel retroativa.
   test('a ficha de um adulto exclui os outros adultos, na própria regra', () => {
     expect(colecoes).toMatch(/const SAUDE_VISIVEL =/);
-    // ou o registo é meu, ou eu sou adulto E o dono é criança — nunca outro adulto
-    expect(colecoes).toContain('membro = @request.auth.id || (${ADULTO} && membro.papel = "crianca")');
+    // Tenho de ser ADULTO, e o registo é meu ou de uma criança. Um adulto
+    // nunca cai no segundo ramo por outro adulto.
+    //
+    // ⚠ A condição era `membro = @request.auth.id || (ADULTO && ...)`, e o
+    // primeiro ramo servia QUALQUER membro — criança incluída. Uma criança
+    // lia a sua própria ficha, contra o que o `podeVerSaude` do cliente diz e
+    // contra o que o ecrã da Saúde promete em letras. Trocado em 03/09/2026.
+    expect(colecoes).toContain('${DA_CASA} && ${ADULTO} && (membro = @request.auth.id || membro.papel = "crianca")');
+    expect(colecoes).not.toContain('membro = @request.auth.id || (${ADULTO}');
+  });
+
+  test('⚠ e a leitura ficou IGUAL à escrita, porque era a criança que as separava', () => {
+    // Sem a leitura da criança, quem pode ver é exactamente quem pode
+    // escrever — uma regra a menos para manter em dois sítios.
+    const i = colecoes.indexOf("name: 'episodios_saude'");
+    const bloco = colecoes.slice(i, i + 1400);
+    const condicao = '${DA_CASA} && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")';
+    for (const regra of ['createRule', 'updateRule', 'deleteRule']) {
+      expect(bloco).toContain(`${regra}: \`${condicao}\``);
+    }
+  });
+
+  test('⚠ recriar as coleções não apaga uma casa habitada', () => {
+    // Isto custou a autorização da agenda da Google de uma casa a sério: o
+    // script apagava e recriava TUDO, `membros` e `casas` incluídos, e a
+    // `credenciais_agenda` levava com ela o refresh_token — que não se
+    // recupera de cópia nenhuma, só voltando à Google.
+    expect(colecoes).toMatch(/const casaHabitada =/);
+    expect(colecoes).toContain("['membros', 'casas', 'credenciais_agenda']");
+    // E a reconstrução total continua possível, mas tem de ser pedida.
+    expect(colecoes).toMatch(/process\.env\.PB_RECRIAR/);
+  });
+
+  test('⚠ e o script das coleções ANALISA', () => {
+    // Tinha dois `const ADMIN` — a credencial e a regra do papel — e um
+    // SyntaxError. Desde o commit que tirou as credenciais do código, o
+    // script que cria as coleções nunca mais correu; as provas continuavam
+    // verdes porque corriam contra as coleções criadas ANTES disso.
+    const parser = require('@babel/parser');
+    expect(() => parser.parse(colecoes, { sourceType: 'module' })).not.toThrow();
   });
 
   test('a saúde não vem na leitura em massa — pede-se ficha a ficha', () => {
