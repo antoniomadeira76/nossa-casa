@@ -171,16 +171,35 @@ await prova('tirar a última administração rebenta', async () => {
     sync.removerMembro(sync.sessao().membro));
 });
 
-// A guarda que existe para nunca precisar de ser usada.
-console.log('\n── a saúde não sai daqui ──');
+// A guarda que decide pelo ENDEREÇO.
+console.log('\n── a saúde só sai para um servidor de casa ──');
 
-await prova('recusaSaude rebenta para episódios e anexos', () => {
+// ⚠ Esta prova exigia que o `recusaSaude` rebentasse SEMPRE. Deixou de o
+// fazer em 03/09/2026: o travão passou a ser uma condição, porque a decisão do
+// dono da casa foi condicional — «o servidor fica na minha máquina por agora».
+// Ver `src/endereco.js` e `provar-saude-sobe.mjs`.
+//
+// Este script corre contra a casa de provas, em 127.0.0.1, portanto aqui o
+// travão DEIXA passar — e é o que se prova. Que ele recusa quando o servidor
+// está na internet prova-se no `provar-saude-sobe.mjs`, que é o sítio onde se
+// pode trocar o endereço.
+await prova('com o servidor em casa, a saúde passa a guarda', () => {
+  igual(sync.saudeSincroniza(), true, 'a casa de provas corre em 127.0.0.1');
+  for (const c of ['episodios_saude', 'anexos']) {
+    igual(sync.recusaSaude(c), c, `${c} devia passar com o servidor em casa`);
+  }
+  igual(sync.recusaSaude('despesas'), 'despesas', 'o resto passa sempre');
+});
+
+await prova('⚠ e um endereço da internet fecha-a outra vez', () => {
+  servidor.configurar({ url: 'https://nossa-casa.exemplo.com' });
+  igual(sync.saudeSincroniza(), false);
   for (const c of ['episodios_saude', 'anexos']) {
     let passou = false;
     try { sync.recusaSaude(c); passou = true; } catch { /* como devia */ }
-    if (passou) throw new Error(`${c} passou pela guarda`);
+    if (passou) throw new Error(`${c} passou pela guarda com o servidor na internet`);
   }
-  igual(sync.recusaSaude('despesas'), 'despesas', 'o resto passa');
+  servidor.configurar({ url: URL });        // devolver ao que estava
 });
 
 console.log(`\n${mau ? '✕' : '✓'} ${ok} provas passaram, ${mau} falharam\n`);

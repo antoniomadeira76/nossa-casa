@@ -1647,6 +1647,24 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         createdAt: new Date().toISOString(),
       }],
     }));
+
+    // A consulta sobe — mas só para um servidor que viva na casa. O
+    // `episodioDeSaude` chama o `recusaSaude`, portanto a condição é imposta
+    // no sync e não repetida aqui: se este ficheiro a repetisse, seriam duas
+    // ideias da mesma regra e a segunda acabaria mais fraca.
+    //
+    // Como no cofre: a fila guarda a escrita e falhar aqui não pode estragar o
+    // ecrã, que já tem a consulta. Sem servidor, `sync` é null e isto não faz
+    // nada. Com servidor fora de casa, o `recusaSaude` rebenta e o `.catch`
+    // engole — a consulta fica local, que é o que se quer.
+    if (sync) {
+      const ses = sync.sessao();
+      const idServidor = idDoMembro(member);
+      if (ses && idServidor) sync.episodioDeSaude({
+        casa: ses.casa, membro: idServidor, especialidade: specialty,
+        dia: day.replace(/^d/, ''), hora: time || '',
+      }).catch(() => {});
+    }
     return id;
   };
 

@@ -40,6 +40,12 @@ export const configurar = (opts = {}) => {
 // Sem configuração, a app corre local como sempre correu. Não rebenta.
 export const estaLigado = () => Boolean(URL);
 
+// O endereço configurado, para quem precise de decidir algo COM base nele — e
+// há um caso: a saúde só sobe para um servidor que viva na casa. Ver
+// `eEnderecoDeCasa` em `src/sync.js`. Devolve o valor, não o cliente: quem
+// pergunta isto quer o endereço, não uma ligação.
+export const enderecoDoServidor = () => URL || null;
+
 let cliente = null;
 // A promessa da sessão gravada. Guarda-se para se poder ESPERAR por ela.
 let sessaoACarregar = null;

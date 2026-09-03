@@ -19,18 +19,39 @@
 // `taskGone`) e não linhas, e traduzi-los é outro trabalho. Dizer que estão
 // ligados quando não estão seria pior do que a lacuna.
 //
-// ── A saúde não vai, e não é esquecimento ────────────────────────────────────
+// ── A saúde vai, e só para casa ──────────────────────────────────────────────
 //
-// `episodios_saude` e `anexos` existem no servidor e têm 15 provas, mas o
-// CLAUDE.md e o db/README.md põem-nos atrás de cinco pontos de conformidade
-// por resolver: são dados clínicos de menores, categoria especial no RGPD.
-// Enquanto isso não estiver feito, a saúde não sai deste dispositivo. Está
-// escrito abaixo como um filtro, não como uma intenção.
+// `episodios_saude` e `anexos` existem no servidor e têm 16 provas. O travão
+// era um «não» inteiro, atrás de cinco pontos de conformidade — são dados
+// clínicos de menores, categoria especial no RGPD.
+//
+// Passou a ser uma CONDIÇÃO, em 03/09/2026: as consultas sobem se o servidor
+// viver na casa, e não sobem se ele estiver na internet. A regra é o
+// `eEnderecoDeCasa`, em `src/endereco.js`, e o travão é o `recusaSaude` no fim
+// deste ficheiro. As notas, as receitas e os documentos continuam a não subir —
+// um documento leva ficheiro anexo, e é dessa peça que os cinco pontos mais
+// falam.
 
+// Sem extensão, que é como o Metro resolve.
+//
+// ⚠ Cheguei a pôr `.js` aqui para o Node ESM conseguir importar este ficheiro
+// numa prova de aceitação. Está escrito em `provar-gerir-casa-pela-app.mjs`
+// porque é que não se faz: «mudar a app para agradar à prova é ao contrário. A
+// prova é que se adapta.» As provas resolvem-no com um `registerHooks`.
 import * as servidor from './pocketbase';
+import { eEnderecoDeCasa, PORQUE_NAO_SOBE } from './endereco';
+
+export { eEnderecoDeCasa, PORQUE_NAO_SOBE };
 
 // O que NUNCA sobe, aconteça o que acontecer.
-export const NUNCA_SINCRONIZA = ['health', 'healthNotes', 'healthRecipes',
+//
+// ⚠ `health` SAIU desta lista em 03/09/2026: os episódios sobem quando o
+// servidor vive na casa — ver `eEnderecoDeCasa` mais abaixo. As notas, as
+// receitas, as decisões e os documentos ficam, e não é esquecimento: um
+// documento leva ficheiro anexo, e um ficheiro clínico de menor é a peça de
+// que os cinco pontos do db/postgres/README.md mais falam. Sobe a consulta;
+// o que está pendurado nela, não.
+export const NUNCA_SINCRONIZA = ['healthNotes', 'healthRecipes',
   'healthDecisions', 'healthDocs', 'healthGone'];
 
 export const ligado = () => servidor.estaLigado();
@@ -207,18 +228,39 @@ export async function removerMembro(id) {
 export const pendentes = () => servidor.escrever.pendentes();
 export const esvaziar = () => servidor.escrever.esvaziar();
 
+// ─── Onde é que a saúde pode ir ──────────────────────────────────────────────
+//
+// A REGRA vive em `src/endereco.js`, pura e sem importar nada — é a única
+// forma de a provar sem arrastar o SDK do PocketBase, que é ESM e que o jest
+// desta app não transforma. Aqui fica só a ligação dela ao servidor real.
+export const saudeSincroniza = () => ligado() && eEnderecoDeCasa(servidor.enderecoDoServidor());
+
+
 // ─── Guarda ──────────────────────────────────────────────────────────────────
 //
-// Uma rede de segurança, não uma decisão de desenho: se alguém acrescentar uma
-// escrita de saúde a este ficheiro, isto rebenta em testes antes de rebentar
-// na vida de alguém.
+// Uma rede de segurança, não uma decisão de desenho: qualquer escrita de saúde
+// passa por aqui, e se o servidor não for de casa isto rebenta — em testes
+// antes de rebentar na vida de alguém.
 export function recusaSaude(colecao) {
   if (colecao === 'episodios_saude' || colecao === 'anexos') {
-    throw new Error(
-      'A saúde não sincroniza: cinco pontos de conformidade por resolver '
-      + '(db/postgres/README.md). São dados clínicos de menores.');
+    if (!saudeSincroniza()) throw new Error(PORQUE_NAO_SOBE);
   }
   return colecao;
+}
+
+// ─── A saúde, quando pode ────────────────────────────────────────────────────
+//
+// Passa pela FILA, como o dinheiro e ao contrário da gestão da casa: uma
+// consulta marcada no corredor do hospital, sem rede, não se perde por isso.
+//
+// A visibilidade não se decide aqui. As regras de `episodios_saude` são as do
+// servidor, com 16 provas em provar-saude.mjs — incluindo a que garante que uma
+// criança não recebe a sua própria ficha.
+export async function episodioDeSaude({ casa, membro, especialidade, medico, dia, hora, notas }) {
+  recusaSaude('episodios_saude');
+  return servidor.escrever.criar('episodios_saude', {
+    casa, membro, especialidade, medico: medico || '', dia, hora: hora || '', notas: notas || '',
+  });
 }
 
 // O aspeto do próprio membro — a cor do avatar.
