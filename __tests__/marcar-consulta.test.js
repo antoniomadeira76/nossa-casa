@@ -74,13 +74,22 @@ const escreverData = (r, chave) => {
   TestRenderer.act(() => { campo.props.onChange(chave); });
 };
 
-const marcar = ({ user, membro, especialidade, chave }) => {
+const escreverCampo = (r, rot, texto) => {
+  const campo = r.root.findAll(x => x.props && typeof x.props.onChangeText === 'function'
+    && x.props.accessibilityLabel === rot)[0];
+  expect(campo).toBeTruthy();
+  TestRenderer.act(() => { campo.props.onChangeText(texto); });
+};
+
+const marcar = ({ user, membro, especialidade, chave, medico, nota }) => {
   const { r, loja } = abrir(user);
   tocar(r, 'marcar consulta');
   if (membro) tocar(r, membro);
   tocar(r, especialidade);
   escreverData(r, chave);
-  tocar(r, 'Marcar Consulta');
+  if (medico) escreverCampo(r, 'Médico ou clínica', medico);
+  if (nota) escreverCampo(r, 'Nota da consulta', nota);
+  tocar(r, 'Marcar e Pôr na Agenda');
   return { r, loja };
 };
 
@@ -119,7 +128,7 @@ describe('⚠ marcar consulta cria o episódio, não só o evento', () => {
     tocar(r, 'Dentista');
     const antes = loja().s.health.length;
     // O botão está lá, mas a folha recusa sem data.
-    if (alvos(r, 'Marcar Consulta').length) tocar(r, 'Marcar Consulta');
+    if (alvos(r, 'Marcar Consulta').length) tocar(r, 'Marcar e Pôr na Agenda');
     expect(loja().s.health).toHaveLength(antes);
   });
 });
@@ -276,5 +285,217 @@ describe('⚠ os dois botões do campo têm 44 de LARGURA, não só de altura', 
     expect(i).toBeGreaterThan(0);
     const bloco = codigo.slice(i, i + 3200);
     expect((bloco.match(/minWidth: 44, minHeight: 44/g) || [])).toHaveLength(2);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ⚠ O cartão de uma consulta não abria, e com ele ficava inalcançável TUDO o
+// que vive dentro dele: os botões «Resolvida» e «Pendente», as notas, as
+// receitas e a decisão de cada receita.
+//
+// A causa era uma linha: `<Card onPress={...}>`. O `Card` não aceita `onPress`
+// — nem nunca aceitou — e ignorava-o em SILÊNCIO. O cartão nunca expandia, a
+// seta nunca mudava de sentido, e o `setHealthDecision`, o `addHealthNote`, o
+// `addRecipe` e o `setRecipeDecision` estavam todos escritos sem caminho
+// nenhum até eles. É a mesma forma de defeito do `addHealthRecord`.
+//
+// Descoberto porque o dono da casa tocou em «Ação» e não aconteceu nada.
+describe('⚠ o cartão de uma consulta abre, e o que está dentro é alcançável', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const parser = require('@babel/parser');
+  const traverse = require('@babel/traverse').default;
+
+  const raiz = path.join(__dirname, '..');
+
+  it('nenhum `Card` recebe `onPress` — o `Card` ignora-o em silêncio', () => {
+    // A rede da CLASSE, não do caso. Um componente que aceita uma prop
+    // desconhecida e a descarta volta a fazer isto noutro ecrã.
+    const maus = [];
+    for (const d of ['src', 'src/screens', 'src/sheets']) {
+      for (const f of fs.readdirSync(path.join(raiz, d))) {
+        if (!f.endsWith('.jsx')) continue;
+        const rel = `${d}/${f}`;
+        const codigo = fs.readFileSync(path.join(raiz, rel), 'utf8');
+        traverse(parser.parse(codigo, { sourceType: 'module', plugins: ['jsx'] }), {
+          JSXElement(p) {
+            if (p.node.openingElement.name.name !== 'Card') return;
+            if (p.node.openingElement.attributes.some(a => a.name && a.name.name === 'onPress')) {
+              maus.push(`${rel}:${p.node.loc.start.line}`);
+            }
+          },
+        });
+      }
+    }
+    expect(maus).toEqual([]);
+  });
+
+  it('e o `Card` continua a não aceitar `onPress` — é o que torna a prova acima necessária', () => {
+    const ui = fs.readFileSync(path.join(raiz, 'src/ui.jsx'), 'utf8');
+    const i = ui.indexOf('export const Card =');
+    const assinatura = ui.slice(i, ui.indexOf(')', i));
+    expect(assinatura).not.toContain('onPress');
+  });
+
+  it('a linha da consulta é tocável, e abre o interior', () => {
+    const { r } = abrir('Rita');
+    const linhas = r.root.findAll(x => x.props
+      && typeof x.props.onPress === 'function'
+      && /^Dentista, Mia/.test(x.props.accessibilityLabel || ''));
+    expect(linhas.length).toBeGreaterThan(0);
+
+    expect(junta(r.toJSON())).not.toContain('Resolvida');
+    TestRenderer.act(() => { linhas[0].props.onPress(); });
+    const texto = junta(r.toJSON());
+    expect(texto).toContain('Resolvida');
+    expect(texto).toContain('Pendente');
+    expect(texto).toContain('Adicionar nota');
+  });
+
+  it('⚠ e «Resolvida» grava a decisão — o botão tinha para onde ir e não chegava lá', () => {
+    const { r, loja } = abrir('Rita');
+    const linha = r.root.findAll(x => x.props
+      && typeof x.props.onPress === 'function'
+      && /^Dentista, Mia/.test(x.props.accessibilityLabel || ''))[0];
+    TestRenderer.act(() => { linha.props.onPress(); });
+
+    const antes = JSON.stringify(loja().s.healthDecisions);
+    const resolvida = r.root.findAll(x => x.props && typeof x.props.onPress === 'function'
+      && junta(x.props.children) === 'Resolvida')[0];
+    expect(resolvida).toBeTruthy();
+    TestRenderer.act(() => { resolvida.props.onPress(); });
+
+    expect(JSON.stringify(loja().s.healthDecisions)).not.toBe(antes);
+    const decisao = Object.values(loja().s.healthDecisions)[0];
+    expect(decisao.status).toBe('resolvido');
+  });
+
+  it('e a pastilha «Ação» continua a ser etiqueta, não um segundo alvo na linha', () => {
+    // Erro #6 do CLAUDE.md: uma linha, um destino. Quem toca na pastilha abre
+    // o cartão, porque a linha inteira é que é o alvo.
+    const { r } = abrir('Rita');
+    const pastilhas = r.root.findAll(x => x.props
+      && x.props.label === 'Ação'
+      && typeof x.props.onPress === 'function');
+    expect(pastilhas).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Os quatro pontos que o protótipo mostrava e a implementação não tinha. A
+// validação está no TAREFAS.md, secção 8, e a razão pela qual passaram é minha:
+// auditei o código contra si próprio em vez de comparar os ecrãs com
+// `design/Nossa Casa App.dc.html`.
+describe('⚠ médico e nota — os campos que a app já lia e nunca escrevia', () => {
+  it('o `doctor` fica gravado, e é o que cinco ecrãs esperavam', () => {
+    // Lido em FichaSaude.jsx:51, :111, :159, exportar-saude.js:113 e
+    // ExportarSaude.jsx:169 — e escrito em nenhum sítio. A app mostrava
+    // «Dentista · Dr. Cardoso» para as sementes e nada para uma consulta real.
+    const { loja } = marcar({ user: 'Rita', membro: 'Léo', especialidade: 'Dentista',
+      chave: 'd2026-09-20', medico: 'Dr.ª Neves' });
+    expect(loja().s.health[0].doctor).toBe('Dr.ª Neves');
+  });
+
+  it('e a nota de quem marca também', () => {
+    const { loja } = marcar({ user: 'Rita', membro: 'Léo', especialidade: 'Dentista',
+      chave: 'd2026-09-20', nota: 'Jejum' });
+    expect(loja().s.health[0].nota).toBe('Jejum');
+  });
+
+  it('os dois são opcionais e nascem vazios, não `undefined`', () => {
+    // `undefined` num campo que cinco ecrãs concatenam dá «undefined» no ecrã.
+    const { loja } = marcar({ user: 'Rita', membro: 'Léo', especialidade: 'Dentista', chave: 'd2026-09-20' });
+    expect(loja().s.health[0].doctor).toBe('');
+    expect(loja().s.health[0].nota).toBe('');
+  });
+
+  it('e os espaços em branco não passam por conteúdo', () => {
+    const { loja } = marcar({ user: 'Rita', membro: 'Léo', especialidade: 'Dentista',
+      chave: 'd2026-09-20', medico: '   ', nota: '  ' });
+    expect(loja().s.health[0].doctor).toBe('');
+    expect(loja().s.health[0].nota).toBe('');
+  });
+
+  it('⚠ e a nota de quem marca não se confunde com as notas do episódio', () => {
+    // `nota` é uma string de quem marca. `healthNotes` são as notas escritas
+    // depois, cada uma com autor e data. Dois nomes parecidos, duas coisas.
+    const { loja } = marcar({ user: 'Rita', membro: 'Léo', especialidade: 'Dentista',
+      chave: 'd2026-09-20', nota: 'Jejum' });
+    const ep = loja().s.health[0];
+    expect(typeof ep.nota).toBe('string');
+    expect(loja().s.healthNotes[ep.id]).toBeUndefined();
+  });
+});
+
+describe('⚠ o aviso da privacidade diz a verdade para cada membro', () => {
+  const avisoDe = (membro) => {
+    const { r } = abrir('Rita');
+    tocar(r, 'marcar consulta');
+    tocar(r, membro);
+    return junta(r.toJSON());
+  };
+
+  it('para um adulto: «Só eu», e ninguém vê o motivo', () => {
+    const texto = avisoDe('Rita');
+    expect(texto).toContain('Só eu');
+    expect(texto).toContain('Ninguém mais vê o motivo');
+  });
+
+  it('⚠ para uma criança: «Só os adultos», e diz que ela não a vê', () => {
+    // A frase do protótipo é fixa — «entra na sua Agenda como Só eu» — porque
+    // aquela folha marca sempre para quem está a ver. Esta tem selector de
+    // membro, e copiar a frase fixa dizia «só eu» ao marcar ao Léo, quando o
+    // outro adulto a vê. Metade das vezes seria mentira.
+    const texto = avisoDe('Léo');
+    expect(texto).toContain('Só os adultos');
+    expect(texto).toContain('O Léo não a vê');
+    expect(texto).not.toContain('Só eu');
+  });
+
+  it('e a concordância acompanha o membro', () => {
+    expect(avisoDe('Mia')).toContain('A Mia não a vê');
+  });
+
+  it('⚠ e a frase concorda com a visibilidade que o evento leva', () => {
+    // Se as duas divergirem, o aviso mente — e é o género de mentira que só se
+    // descobre quando alguém vê o que não devia.
+    for (const [membro, esperado] of [['Rita', 'so-eu'], ['Léo', 'adultos'], ['Mia', 'adultos']]) {
+      const { r, loja } = abrir('Rita');
+      tocar(r, 'marcar consulta');
+      tocar(r, membro);
+      const disseSoEu = junta(r.toJSON()).includes('Só eu');
+      tocar(r, 'Dentista');
+      escreverData(r, 'd2026-09-20');
+      tocar(r, 'Marcar e Pôr na Agenda');
+      const ev = loja().s.added.find(e => e.tag === 'Saúde');
+      expect(visibilidadeDe(ev)).toBe(esperado);
+      expect(disseSoEu).toBe(esperado === 'so-eu');
+    }
+  });
+});
+
+describe('o botão e o «Gerir», como no protótipo', () => {
+  it('o botão promete as duas coisas que acontecem', () => {
+    // Dizia «Marcar Consulta». Acontecem duas: o episódio na ficha e o evento
+    // na agenda.
+    //
+    // ⚠ Com o formulário preenchido. O `Primary` desactivado não expõe
+    // `onPress`, portanto a sonda de alvos não o vê — e a primeira versão
+    // desta prova falhou por isso, não por o rótulo estar errado.
+    const { r } = abrir('Rita');
+    tocar(r, 'marcar consulta');
+    tocar(r, 'Dentista');
+    escreverData(r, 'd2026-09-20');
+    expect(alvos(r, 'Marcar e Pôr na Agenda').length).toBeGreaterThan(0);
+    expect(alvos(r, 'Marcar Consulta').length).toBe(0);
+  });
+
+  it('e o «Gerir» está ao lado do título, e leva às especialidades', () => {
+    const { r } = abrir('Rita');
+    tocar(r, 'marcar consulta');
+    expect(junta(r.toJSON())).toContain('A consulta');
+    expect(junta(r.toJSON())).not.toContain('Adicionar especialidade');
+    tocar(r, 'Gerir especialidades');
+    expect(junta(r.toJSON())).toContain('Adicionar especialidade');
   });
 });

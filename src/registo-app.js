@@ -41,6 +41,13 @@ export const REGISTO_APP = [
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Saúde', t: 'Marcar consulta não punha nada na ficha — o ecrã dizia «Use Marcar Consulta para a primeira» e usá-lo não punha lá nada' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Saúde', t: 'A consulta de uma criança aparecia na agenda das outras crianças, e a de um adulto aparecia ao outro' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Saúde', t: 'Marcar consulta deixava escolher o outro adulto, cuja ficha não se pode ver' },
+  { v: '1.8.0', d: '03/09/2026', k: 'novo', a: 'Saúde', t: 'Médico ou clínica ao marcar uma consulta — o nome passa a aparecer na ficha, no histórico e no PDF exportado' },
+  { v: '1.8.0', d: '03/09/2026', k: 'novo', a: 'Saúde', t: 'Nota ao marcar uma consulta, para o que é preciso levar ou saber' },
+  { v: '1.8.0', d: '03/09/2026', k: 'novo', a: 'Saúde', t: 'Marcar uma consulta diz quem a vai ver, antes de a marcar' },
+  { v: '1.8.0', d: '03/09/2026', k: 'alterado', a: 'Saúde', t: 'O botão passou a «Marcar e Pôr na Agenda», e o «Gerir» das especialidades está ao lado do título' },
+  { v: '1.8.0', d: '03/09/2026', k: 'corrigido', a: 'Saúde', t: 'O cartão de uma consulta não abria — «Resolvida», «Pendente», as notas e as receitas eram inalcançáveis' },
+  { v: '1.8.0', d: '03/09/2026', k: 'corrigido', a: 'Saúde', t: 'Uma criança recebia a sua própria ficha do servidor; era só a interface a esconder-lha' },
+  { v: '1.8.0', d: '03/09/2026', k: 'novo', a: 'Saúde', t: 'As consultas passam a ficar no servidor da casa — e só nele, nunca num servidor fora de casa' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Gestão da Casa', t: 'As abas tinham espaços mortos entre elas, e um toque ali não acertava em nenhuma' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Gestão da Casa', t: 'A faixa de abas cortava a última no telemóvel — «Especialidades» perdia o fim da palavra' },
   // ── 1.7.0 ─────────────────────────────────────────────────────────────────

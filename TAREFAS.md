@@ -62,49 +62,124 @@
 
 ## 8. SAÚDE
 
-Esta secção estava marcada como pendente de ponta a ponta e **não era verdade**:
-quase tudo já existia e ninguém tinha voltado aqui riscar. Auditada contra o
-código em 02/09/2026, ficheiro por ficheiro. O que fica por fazer está em baixo,
-e é bem menos do que parecia.
+### ⚠ Duas auditorias, e a primeira estava errada
+
+Esta secção estava marcada como pendente de ponta a ponta, o que era falso.
+Auditei-a em **02/09/2026** e marquei quase tudo como feito — e essa auditoria
+**também estava errada**, ao contrário.
+
+O erro tem nome: comparei o código consigo próprio. Para cada linha verifiquei
+que existia *alguma coisa*, em vez de comparar o ecrã com o protótipo. O
+`CLAUDE.md` diz, em letras: «abra-o num navegador antes de escrever qualquer
+ecrã» e «quando este ficheiro e o protótipo discordarem, o protótipo ganha».
+Não o abri.
+
+Reauditada em **03/09/2026** contra `design/Nossa Casa App.dc.html`, campo por
+campo. O que está feito continua feito; o que falta é bastante mais do que a
+lista anterior dizia.
+
+A prova mais dura está nos rascunhos:
+
+```
+protótipo    consDraft = { esp, doctor, day, time, note }    cinco campos
+implementado     form  = { member, date, time, specialty }   sem doctor, sem note
+protótipo    docDraft  = { kind, name, months }              a folha «Anexar»
+implementado     —                                           não existe
+```
+
+E o `doctor` é **lido em cinco sítios** — `FichaSaude.jsx:51`, `:111`, `:159`,
+`exportar-saude.js:113`, `ExportarSaude.jsx:169` — e escrito em **zero**. A app
+mostra «Dentista · Dr. Cardoso» para as sementes e nunca o pode mostrar para
+uma consulta a sério, porque não há onde escrever o nome.
+
+### Feito
 
 - [x] Saúde da Família — no Perfil, com o ícone `heartPulse`
 - [x] Ficha por pessoa — `src/screens/FichaSaude.jsx`
 - [x] Visibilidade (INVARIANTE #3) — a ficha de um adulto é só dele; as das
       crianças são visíveis aos adultos e invisíveis às próprias.
-      `podeVerSaude` em `src/store.jsx`, pura e com provas.
-      ⚠ A linha antiga dizia «privada para adultos, visível para crianças», que
-      é a regra ao contrário. Uma criança nunca vê a sua própria ficha.
+      `podeVerSaude` em `src/store.jsx`, pura e com provas, e a regra do
+      servidor com 16 provas em `provar-saude.mjs`.
+      ⚠ A linha original dizia «privada para adultos, visível para crianças»,
+      que é a regra ao contrário. Uma criança nunca vê a sua própria ficha.
 - [x] Arquivo clínico — procura e filtros, e o arquivo aparece acima de 5
       registos (`showArchive`)
-- [x] Marcar Consulta — gerir especialidades, agora com criar, **renomear** e
-      apagar, num sítio só
 - [x] Receitas — aviso 30 dias antes de expirar (`receitasAExpirarDe`)
 - [x] Notas do episódio — quantas quiser, com autor e data (`addHealthNote`)
 - [x] Ficha de saúde — o topo mostra o que exige decisão, acordeão por consulta
 - [x] Exportar em PDF — uma consulta, uma especialidade, ou tudo
+- [x] Gerir especialidades — criar, renomear e apagar, num sítio só, e o
+      renomear migra os episódios e o título do evento
 - [x] **Nenhum exame órfão** — a consulta É o evento. Marcar consulta cria o
-      episódio E o evento, ligados pelo `healthId`; os documentos gravam a
-      origem no mesmo campo.
-      ⚠ Esta era a que estava mesmo em falta, e em silêncio: o
-      `addHealthRecord` existia na loja e **nada o chamava**. Numa casa a sério
-      a ficha ficava vazia para sempre — o ecrã dizia «Use Marcar Consulta para
-      a primeira» e usar Marcar Consulta não punha lá nada.
+      episódio E o evento, ligados pelo `healthId`.
+      ⚠ Estava em falta e em silêncio: o `addHealthRecord` existia na loja e
+      **nada o chamava**. Numa casa a sério a ficha ficava vazia para sempre —
+      o ecrã dizia «Use Marcar Consulta para a primeira» e usar Marcar Consulta
+      não punha lá nada.
+- [x] O cartão de uma consulta abre.
+      ⚠ Não abria: `<Card onPress={...}>`, e o `Card` não aceita `onPress` —
+      ignorava-o em silêncio. Todo o interior era inalcançável: «Resolvida»,
+      «Pendente», as notas, as receitas. Descoberto porque o dono da casa
+      tocou em «Ação» e não aconteceu nada.
+- [x] Sincronizar as consultas — sobem se o servidor viver na casa. Ver a
+      última entrada desta secção.
 
-### O que falta
+### ⚠ O que falta em «Marcar Consulta», contra o protótipo
 
-- [ ] **PENDENTE:** Acrescentar um documento a uma ficha. O arquivo clínico
-      LÊ (`allHealthDocs`, com procura, filtros e a origem no `healthId`) e
-      nenhum ecrã ESCREVE. As sementes de `HEALTH_DOCS` são o único conteúdo
-      possível: numa casa a sério não há como juntar um relatório a uma
-      consulta.
-      ⚠ Antes de fazer isto: um documento com ficheiro anexo entra em
-      `anexos`, que o CLAUDE.md põe fora das coleções até os cinco pontos do
-      `db/postgres/README.md` estarem resolvidos. Um documento só com título e
-      tipo não tem esse problema, e é provavelmente por onde começar.
-- [ ] **PENDENTE:** Sincronizar a saúde. Continua deliberadamente fora do
-      servidor — `episodios_saude` e `anexos` não existem nas coleções nem na
-      camada de cliente. São dados clínicos de menores, categoria especial no
-      RGPD. Ver `docs/seguranca.html`.
+- [ ] **PENDENTE: Médico ou clínica.** Um campo, placeholder «Dr.ª Neves,
+      Centro de Saúde…», ícone `idcard`. O `addHealthRecord` da loja também não
+      o aceita. É o que desbloqueia os cinco sítios que já o leem.
+- [ ] **PENDENTE: Nota (opcional).** Um campo, placeholder «Jejum, levar
+      exames anteriores…», ícone `edit`. Não confundir com as notas do episódio
+      (`addHealthNote`), que são posteriores à consulta: esta é a nota de quem
+      marca, para si.
+- [ ] **PENDENTE: Dia e hora numa linha.** O protótipo tem UMA linha —
+      «Hoje · Quinta, 20/08 às 09:00» — que abre um selector. A implementação
+      tem dois campos, e a hora escreve-se à mão em «hh:mm».
+- [ ] **PENDENTE: O aviso de privacidade.** Caixa com `lock` vermelho: «A
+      consulta entra na sua Agenda como Só eu. Ninguém mais vê o motivo.» O
+      comportamento existe e está provado; o que falta é dizê-lo a quem marca.
+- [ ] **PENDENTE: O botão diz «Marcar e Pôr na Agenda».** Diz «Marcar
+      Consulta». O nome do protótipo é melhor: promete as duas coisas que
+      acontecem.
+- [ ] **PENDENTE: A especialidade é uma linha com chevron**, que abre a lista
+      com um visto no escolhido. Estão pastilhas em fila.
+- [ ] **PENDENTE: O «Gerir» é um botão ao lado do título**, não uma aba. E a
+      folha do protótipo não tem selector de membro — quem marca está dentro
+      de uma ficha, e é essa a pessoa (`healthWho`).
+
+### ⚠ O que falta por inteiro
+
+- [ ] **PENDENTE: a folha «Anexar».** Tipo (exame / receita / relatório) com
+      ícones, nome («Análises de sangue, receita do ferro…»), validade só se
+      for receita, e fotografia do documento. Não existe nada disto.
+      O arquivo clínico LÊ (`allHealthDocs`, com procura, filtros e a origem no
+      `healthId`) e **nenhum ecrã ESCREVE**: as sementes de `HEALTH_DOCS` são o
+      único conteúdo possível.
+      ⚠ A FOTOGRAFIA é a parte travada. Um ficheiro clínico de menor entra em
+      `anexos`, e é dessa peça que os cinco pontos do `db/postgres/README.md`
+      mais falam. Um documento só com tipo, nome e validade não tem esse
+      problema — é por onde começar, e a fotografia vem depois.
+- [ ] **PENDENTE: a folha «Gerir consulta».** No protótipo abre de uma
+      consulta e tem: notas, «Fotografia do exame ou receita», «Anexos desta
+      consulta», «Anexar Exame ou Receita» e **«Arquivar Consulta»** — com a
+      frase «Arquivar não apaga nada — os anexos ficam ligados e a consulta
+      volta com um toque». Só as notas existem, e dentro do cartão expandido.
+- [ ] **PENDENTE: arquivar uma consulta.** Não há `healthArchived` no estado
+      nem forma de arquivar. Hoje uma consulta ou está pendente ou está
+      resolvida, e o arquivo clínico é só a paginação acima de 5 registos.
+
+### A sincronização
+
+- [x] As **consultas** sobem, e só para um servidor que viva na casa —
+      `eEnderecoDeCasa` em `src/endereco.js`, com 38 provas, e o caminho todo
+      em `provar-saude-sobe.mjs`.
+- [ ] **PENDENTE: os anexos não sobem**, e é deliberado. `anexos` existe no
+      servidor com regras provadas, e o cliente não tem caminho de escrita. Um
+      ficheiro clínico de menor é categoria especial no RGPD — ver
+      `docs/seguranca.html` e os cinco pontos do `db/postgres/README.md`.
+      ⚠ E os cinco pontos só colapsam enquanto o servidor viver na casa.
+      Voltam todos no dia em que for exposto à internet.
 
 ## 9. EQUIPAMENTOS
 - [x] Equipamentos da Casa — garantias, fotos da fatura

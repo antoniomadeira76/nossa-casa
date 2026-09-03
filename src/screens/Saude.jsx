@@ -112,12 +112,28 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
     return (
       <Card
         t={t}
-        onPress={() => setExpandedRecord(expanded ? null : record.id)}
         style={{ borderLeftWidth: 3, borderLeftColor: corDoMembro(record.member, MEMBERS[record.member]?.cor) || t.accent }}
       >
         <View style={{ gap: S.md }}>
-          {/* Header da consulta */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+          {/* ⚠ O `Pressable` está DENTRO do cartão, e é o único sítio onde
+              pode estar. O `Card` não aceita `onPress` — nem nunca aceitou —
+              e ignorava-o em SILÊNCIO. Este cartão passava-lho, e o efeito era
+              todo o interior ficar inalcançável: o cartão nunca expandia, a
+              seta nunca mudava de sentido, e com ele ficavam por chegar os
+              botões «Resolvida» e «Pendente», as notas, as receitas e a
+              decisão de cada receita.
+              O `setHealthDecision`, o `addHealthNote`, o `addRecipe` e o
+              `setRecipeDecision` estavam todos escritos e nenhum tinha caminho
+              — a mesma forma de defeito do `addHealthRecord`.
+              Todos os outros ecrãs põem o `Pressable` dentro do `Card`; era a
+              Saúde a única fora do idioma. Descoberto porque o dono da casa
+              tocou em «Ação» e não aconteceu nada. */}
+          <Pressable accessibilityRole="button"
+            accessibilityLabel={`${record.specialty}, ${record.member}${needsDec ? ' · precisa de ação' : ''}`}
+            accessibilityState={{ expanded }}
+            accessibilityHint={expanded ? 'Toque para fechar' : 'Toque para ver notas, receitas e decidir'}
+            onPress={() => setExpandedRecord(expanded ? null : record.id)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, minHeight: 44 }}>
             <Icon name="heartPulse" size={20} color={corDoMembro(record.member, MEMBERS[record.member]?.cor) || t.accent} />
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={{ fontFamily: FONT.body, fontSize: 15, fontWeight: '500', color: t.text1 }}>
@@ -127,11 +143,15 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                 {record.member} · {dayLabel(record.day)}{record.time ? ` às ${record.time}` : ''}
               </Text>
             </View>
+            {/* Uma etiqueta, não um botão — e é a linha inteira que abre.
+                Fazer da pastilha um alvo próprio dava duas coisas tocáveis na
+                mesma linha e obrigava a adivinhar onde tocar (erro #6 do
+                CLAUDE.md). */}
             {needsDec && (
               <Pill label="Ação" bg={STATE.warnBg} fg={STATE.warn} border={STATE.warn} />
             )}
             <Icon name={expanded ? 'caretUp' : 'caretDown'} size={20} color={t.text3} />
-          </View>
+          </Pressable>
 
           {/* Conteúdo expandido */}
           {expanded && (
@@ -536,7 +556,7 @@ function MarcarConsulta({ t, user, membro, onClose }) {
   // Renomear deixava as consultas a apontar para um nome que já não existe.
   const st = useStore();
   const { s, set, addSpecialty, removeSpecialty, renameSpecialty, addHealthRecord,
-          membrosDaCasa, criancas, membros: MEMBERS } = st;
+          membrosDaCasa, criancas, membros: MEMBERS, oNome } = st;
 
   // ⚠ Só os membros cuja ficha quem está a marcar PODE ver. O selector
   // oferecia `membrosDaCasa` inteiro, o outro adulto incluído — e a ficha de um
@@ -545,7 +565,8 @@ function MarcarConsulta({ t, user, membro, onClose }) {
   // aparece: escrevia no escuro.
   const marcaveis = membrosDaCasa.filter(n => st.canSeeHealth(n, user));
   const [tab, setTab] = useState('nova');
-  const [form, setForm] = useState({ member: membro || criancas[0] || marcaveis[0], date: '', time: '', specialty: '' });
+  const [form, setForm] = useState({ member: membro || criancas[0] || marcaveis[0],
+    date: '', time: '', specialty: '', doctor: '', nota: '' });
   const [newSpecialty, setNewSpecialty] = useState('');
   // Esta lista era gerida em dois sítios — aqui e numa quinta aba da Gestão da
   // Casa. A da Gestão saiu, e com ela saiu o diálogo que PERGUNTAVA antes de
@@ -564,10 +585,15 @@ function MarcarConsulta({ t, user, membro, onClose }) {
   // agenda tinha uma consulta que não correspondia a episódio nenhum. O ecrã
   // dizia «Ainda não há nada nas fichas desta casa. Use Marcar Consulta para a
   // primeira» — e usar Marcar Consulta não punha lá nada.
+  // Quem decide a frase do aviso — e a visibilidade do evento, mais abaixo.
+  // Uma leitura, dois usos: se fossem duas, discordavam.
+  const paraCrianca = !!(MEMBERS[form.member] && MEMBERS[form.member].kid);
+
   const handleSaveConsultation = () => {
     if (!chaveDeDMY(form.date) || !form.specialty) return;
 
-    const id = addHealthRecord(form.member, form.date, form.specialty, form.time);
+    const id = addHealthRecord(form.member, form.date, form.specialty, form.time,
+      { doctor: form.doctor, nota: form.nota });
 
     // ⚠ A visibilidade do evento ESPELHA a da saúde (INVARIANTE #3), e não era
     // isso que fazia. Levava `shared: true` — o campo antigo, de antes dos três
@@ -583,7 +609,6 @@ function MarcarConsulta({ t, user, membro, onClose }) {
     //             `podeVerEvento` devolve verdade ao dono, portanto pôr a
     //             criança como dona mostrava-lhe a própria consulta.
     //   adulto    `so-eu`, e o dono é o adulto de quem é a consulta.
-    const paraCrianca = !!(MEMBERS[form.member] && MEMBERS[form.member].kid);
     set(s => ({
       added: [...(s.added || []), {
         id: 'ev-' + Date.now(),
@@ -646,6 +671,29 @@ function MarcarConsulta({ t, user, membro, onClose }) {
         {/* Nova Consulta Tab */}
         {tab === 'nova' && (
           <View style={{ gap: S.lg }}>
+            {/* «A consulta», com o «Gerir» ao lado — é onde o protótipo o põe.
+                ⚠ Por agora leva à aba «Especialidades», que continua ali em
+                cima. São dois caminhos para o mesmo sítio, e é dívida
+                assumida: o protótipo não tem abas nesta folha, e tirá-las é o
+                trabalho de mover as especialidades para uma folha própria.
+                Está no TAREFAS.md. Deixar duas portas é o mesmo defeito que os
+                atalhos do Início tinham, e não fica assim para sempre. */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+              <Text style={{ flex: 1, fontFamily: FONT.display, fontSize: 16,
+                fontWeight: '600', color: t.titulo || t.slate }}>
+                A consulta
+              </Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Gerir especialidades"
+                onPress={() => setTab('especialidades')}
+                style={{ minHeight: 44, minWidth: 44, paddingHorizontal: S.md,
+                  borderRadius: R.row, borderWidth: 1, borderColor: t.border,
+                  alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
+                  Gerir
+                </Text>
+              </Pressable>
+            </View>
+
             <View style={{ gap: S.sm }}>
               <Label t={t}>Membro</Label>
               <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
@@ -720,7 +768,81 @@ function MarcarConsulta({ t, user, membro, onClose }) {
               </View>
             </View>
 
-            <Primary t={t} label="Marcar Consulta" onPress={handleSaveConsultation} disabled={!form.date || !form.specialty} />
+            {/* ── Médico ou clínica ────────────────────────────────────────
+                ⚠ O campo que faltava e que a app já lia. O `h.doctor` aparece
+                em cinco sítios — a próxima consulta na ficha, cada linha do
+                histórico, o detalhe de cada documento, o PDF exportado e a
+                folha de exportação — e nunca havia onde o escrever. Mostrava
+                «Dentista · Dr. Cardoso» para as sementes e nada para uma
+                consulta a sério. */}
+            <View style={{ gap: S.sm }}>
+              <Label t={t}>Médico ou clínica</Label>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
+                minHeight: 44, paddingHorizontal: S.md, borderRadius: R.row,
+                borderWidth: 1, borderColor: t.border, backgroundColor: t.card }}>
+                <Icon name="idcard" size={19} color={t.text3} />
+                <TextInput
+                  value={form.doctor}
+                  onChangeText={(v) => setForm(f => ({ ...f, doctor: v }))}
+                  placeholder="Dr.ª Neves, Centro de Saúde…"
+                  placeholderTextColor={t.text3}
+                  accessibilityLabel="Médico ou clínica"
+                  style={{ flex: 1, minHeight: 44, fontFamily: FONT.body,
+                    fontSize: 15, color: t.text2 }}
+                />
+              </View>
+            </View>
+
+            {/* ── Nota (opcional) ──────────────────────────────────────────
+                A nota de quem MARCA: «jejum, levar exames anteriores». Não é o
+                `healthNotes`, que são as notas escritas depois da consulta,
+                cada uma com autor e data. */}
+            <View style={{ gap: S.sm }}>
+              <Label t={t}>Nota (opcional)</Label>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
+                minHeight: 44, paddingHorizontal: S.md, borderRadius: R.row,
+                borderWidth: 1, borderColor: t.border, backgroundColor: t.card }}>
+                <Icon name="edit" size={19} color={t.text3} />
+                <TextInput
+                  value={form.nota}
+                  onChangeText={(v) => setForm(f => ({ ...f, nota: v }))}
+                  placeholder="Jejum, levar exames anteriores…"
+                  placeholderTextColor={t.text3}
+                  accessibilityLabel="Nota da consulta"
+                  style={{ flex: 1, minHeight: 44, fontFamily: FONT.body,
+                    fontSize: 15, color: t.text2 }}
+                />
+              </View>
+            </View>
+
+            {/* ── O aviso da privacidade ───────────────────────────────────
+                O comportamento já existia e estava provado; faltava DIZÊ-LO a
+                quem marca.
+
+                ⚠ A frase não é a do protótipo tal e qual, e é de propósito. Lá
+                é fixa — «entra na sua Agenda como Só eu» — porque aquela folha
+                marca sempre para quem está a ver. Esta tem selector de membro,
+                e a visibilidade não é a mesma: a consulta de um adulto é
+                `so-eu`, a de uma criança é `adultos`. Copiar a frase fixa
+                dizia «só eu» ao marcar ao Léo, quando o outro adulto a vê —
+                metade das vezes seria mentira. */}
+            <View style={{ flexDirection: 'row', gap: S.md, padding: S.md,
+              borderRadius: R.row, backgroundColor: t.state.errBg,
+              borderWidth: 1, borderColor: t.state.err }}>
+              <Icon name="lock" size={19} color={t.state.err} />
+              <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 13,
+                lineHeight: 19, color: t.state.errDeep }}>
+                {paraCrianca
+                  ? `A consulta entra na Agenda como Só os adultos. ${oNome(form.member)} não a vê, nem as outras crianças.`
+                  : 'A consulta entra na sua Agenda como Só eu. Ninguém mais vê o motivo.'}
+              </Text>
+            </View>
+
+            {/* «Marcar e Pôr na Agenda», como no protótipo: promete as duas
+                coisas que acontecem, e são duas — o episódio na ficha e o
+                evento na agenda. Dizia só «Marcar Consulta». */}
+            <Primary t={t} label="Marcar e Pôr na Agenda" onPress={handleSaveConsultation}
+              disabled={!form.date || !form.specialty} />
           </View>
         )}
 

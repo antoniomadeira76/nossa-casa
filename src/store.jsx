@@ -1638,12 +1638,28 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // que estavam sempre vazios. Daí dizer «1 consulta» num cartão e «Sem
   // registos de saúde.» duas linhas abaixo. Uma forma só, e o problema não
   // volta a poder existir.
-  const addHealthRecord = (member, data, specialty, time) => {
+  // ⚠ `extra` e não mais dois argumentos posicionais. Já eram quatro; com o
+  // médico e a nota seriam seis, e uma chamada com seis posições é onde se
+  // trocam dois argumentos sem ninguém dar por isso.
+  //
+  // O `doctor` é o campo que a app LIA em cinco sítios e nunca escrevia —
+  // `FichaSaude.jsx:51`, `:111`, `:159`, `exportar-saude.js:113` e
+  // `ExportarSaude.jsx:169`. A app mostrava «Dentista · Dr. Cardoso» para as
+  // sementes e nunca o podia mostrar para uma consulta a sério.
+  //
+  // A `nota` é a de quem MARCA — «jejum, levar exames anteriores». Não
+  // confundir com o `healthNotes`, que são as notas escritas DEPOIS da
+  // consulta, cada uma com autor e data. Daí o singular.
+  // No servidor o campo chama-se `notas`, e a tradução faz-se no `sync`.
+  const addHealthRecord = (member, data, specialty, time, extra = {}) => {
     const id = 'hlth-' + Date.now();
     const day = chaveDeDMY(data) || data;
+    const doctor = String(extra.doctor || '').trim();
+    const nota = String(extra.nota || '').trim();
     set(x => ({
       health: [...(x.health || []), {
         id, member, day, specialty, time: time || '',
+        doctor, nota,
         createdAt: new Date().toISOString(),
       }],
     }));
@@ -1660,9 +1676,13 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     if (sync) {
       const ses = sync.sessao();
       const idServidor = idDoMembro(member);
+      // ⚠ `medico` e `notas` são os nomes das COLEÇÕES, não os da loja. O
+      // PocketBase ignora campos que não conhece em silêncio: mandar `doctor`
+      // e `nota` passava a escrita e deixava cair os dois dados.
       if (ses && idServidor) sync.episodioDeSaude({
         casa: ses.casa, membro: idServidor, especialidade: specialty,
         dia: day.replace(/^d/, ''), hora: time || '',
+        medico: doctor, notas: nota,
       }).catch(() => {});
     }
     return id;
