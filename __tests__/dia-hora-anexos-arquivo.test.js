@@ -67,6 +67,9 @@ const consultaAberta = (membro) => {
   const { r, loja } = abrir('Rita');
   tocar(r, 'marcar consulta');
   tocar(r, quem);
+  // ⚠ Dois toques: a especialidade deixou de ser pastilhas em fila e passou a
+  // ser uma linha que abre.
+  tocar(r, 'Escolher a especialidade');
   tocar(r, 'Dentista');
   TestRenderer.act(() => { campoData(r).props.onChange('d2026-09-20'); });
   tocar(r, 'Marcar e Pôr na Agenda');

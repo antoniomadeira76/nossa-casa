@@ -81,11 +81,20 @@ const escreverCampo = (r, rot, texto) => {
   TestRenderer.act(() => { campo.props.onChangeText(texto); });
 };
 
+// ⚠ Escolher a especialidade são DOIS toques desde que deixou de ser pastilhas
+// em fila: a linha abre, e a lista aparece por baixo. Eram pastilhas todas
+// visíveis — cabiam quatro, e com dez ocupavam meia folha e empurravam o botão
+// de marcar para fora do ecrã.
+const escolherEspecialidade = (r, esp) => {
+  tocar(r, 'Escolher a especialidade');
+  tocar(r, esp);
+};
+
 const marcar = ({ user, membro, especialidade, chave, medico, nota }) => {
   const { r, loja } = abrir(user);
   tocar(r, 'marcar consulta');
   if (membro) tocar(r, membro);
-  tocar(r, especialidade);
+  escolherEspecialidade(r, especialidade);
   escreverData(r, chave);
   if (medico) escreverCampo(r, 'Médico ou clínica', medico);
   if (nota) escreverCampo(r, 'Nota da consulta', nota);
@@ -125,7 +134,7 @@ describe('⚠ marcar consulta cria o episódio, não só o evento', () => {
   it('e o campo obrigatório é obrigatório: sem data não se cria nada', () => {
     const { r, loja } = abrir('Rita');
     tocar(r, 'marcar consulta');
-    tocar(r, 'Dentista');
+    escolherEspecialidade(r, 'Dentista');
     const antes = loja().s.health.length;
     // O botão está lá, mas a folha recusa sem data.
     if (alvos(r, 'Marcar Consulta').length) tocar(r, 'Marcar e Pôr na Agenda');
@@ -515,7 +524,7 @@ describe('⚠ o aviso da privacidade diz a verdade para cada membro', () => {
       tocar(r, 'marcar consulta');
       tocar(r, membro);
       const disseSoEu = junta(r.toJSON()).includes('Só eu');
-      tocar(r, 'Dentista');
+      escolherEspecialidade(r, 'Dentista');
       escreverData(r, 'd2026-09-20');
       tocar(r, 'Marcar e Pôr na Agenda');
       const ev = loja().s.added.find(e => e.tag === 'Saúde');
@@ -535,7 +544,7 @@ describe('o botão e o «Gerir», como no protótipo', () => {
     // desta prova falhou por isso, não por o rótulo estar errado.
     const { r } = abrir('Rita');
     tocar(r, 'marcar consulta');
-    tocar(r, 'Dentista');
+    escolherEspecialidade(r, 'Dentista');
     escreverData(r, 'd2026-09-20');
     expect(alvos(r, 'Marcar e Pôr na Agenda').length).toBeGreaterThan(0);
     expect(alvos(r, 'Marcar Consulta').length).toBe(0);
@@ -548,6 +557,48 @@ describe('o botão e o «Gerir», como no protótipo', () => {
     expect(junta(r.toJSON())).not.toContain('Nova especialidade');
     tocar(r, 'Gerir especialidades');
     expect(junta(r.toJSON())).toContain('Nova especialidade');
+  });
+
+  // ── A especialidade: uma linha que abre, não pastilhas em fila ────────────
+  it('⚠ a lista nasce FECHADA, e mostra o que está escolhido', () => {
+    // Eram pastilhas todas visíveis. Cabiam quatro; com dez ocupavam meia
+    // folha e empurravam o botão de marcar para fora do ecrã.
+    const { r } = abrir('Rita');
+    tocar(r, 'marcar consulta');
+    expect(alvos(r, 'Escolher a especialidade')).toHaveLength(1);
+    // Fechada: nenhuma especialidade é alvo enquanto não se abrir.
+    expect(alvos(r, 'Dentista')).toHaveLength(0);
+    expect(junta(r.toJSON())).toContain('Escolher a especialidade');
+
+    tocar(r, 'Escolher a especialidade');
+    expect(alvos(r, 'Dentista')).toHaveLength(1);
+    expect(alvos(r, 'Pediatria')).toHaveLength(1);
+  });
+
+  it('⚠ e escolher FECHA a lista, deixando o nome à vista', () => {
+    // Sem fechar, a lista ficava aberta por cima do resto do formulário e não
+    // havia sinal nenhum de que a escolha tinha pegado.
+    const { r } = abrir('Rita');
+    tocar(r, 'marcar consulta');
+    tocar(r, 'Escolher a especialidade');
+    tocar(r, 'Dentista');
+
+    expect(alvos(r, 'Pediatria')).toHaveLength(0);   // fechou
+    const linha = alvos(r, 'Escolher a especialidade')[0];
+    expect(junta(linha.props.children)).toContain('Dentista');
+  });
+
+  it('⚠ e a linha da escolha tem 44 — é o alvo mais usado desta folha', () => {
+    const { r } = abrir('Rita');
+    tocar(r, 'marcar consulta');
+    tocar(r, 'Escolher a especialidade');
+    for (const rot of ['Escolher a especialidade', 'Dentista']) {
+      const n = alvos(r, rot)[0];
+      const estilo = typeof n.props.style === 'function'
+        ? [].concat(n.props.style({ pressed: false })).filter(Boolean)
+        : [].concat(n.props.style).filter(Boolean);
+      expect(Object.assign({}, ...estilo).minHeight).toBeGreaterThanOrEqual(44);
+    }
   });
 
   it('⚠ e a folha de marcar já não tem abas — eram a segunda porta', () => {

@@ -833,6 +833,10 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
   const st = useStore();
   const { s, set, addHealthRecord, membros: MEMBERS, oNome } = st;
 
+  // A lista da especialidade está aberta? Só isto vive dentro da folha: é
+  // estado de interface e não faz falta nenhuma à volta das especialidades.
+  const [escolhendoEsp, setEscolhendoEsp] = useState(false);
+
   // Marcar uma consulta cria DUAS coisas, e é o «nenhum exame órfão» do
   // TAREFAS.md: o episódio na ficha e o evento na agenda, ligados.
   //
@@ -887,16 +891,31 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
       onClose={onClose}>
       <View style={{ gap: S.lg }}>
         {/* ⚠ Aqui havia uma faixa de abas — «Nova Consulta» e «Especialidades»
-            — E o «Gerir» aqui em baixo, os dois a levar ao mesmo sítio. Duas
-            portas para a mesma coisa é o defeito que os atalhos do Início
-            tinham. O protótipo não tem abas nesta folha: tem UM «Gerir», ao
-            lado do campo da especialidade, que abre uma folha própria. */}
+            — E o «Gerir», os dois a levar ao mesmo sítio. Duas portas para a
+            mesma coisa é o defeito que os atalhos do Início tinham. O
+            protótipo não tem abas nesta folha: tem UM «Gerir», que abre uma
+            folha própria.
+
+            ⚠ E o «Gerir» é AQUI, ao lado do título. Movi-o uma vez para junto
+            do campo da especialidade, com a prosa do registo do protótipo por
+            fundamento — «o Gerir ao lado do campo». A marcação diz outra
+            coisa, e é ela o protótipo: linha 3821, na mesma fila que «A
+            consulta». Quando as duas discordam, ganha o que está desenhado. */}
         <View style={{ gap: S.lg }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
               <Text style={{ flex: 1, fontFamily: FONT.display, fontSize: 16,
                 fontWeight: '600', color: t.titulo || t.slate }}>
                 A consulta
               </Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Gerir especialidades"
+                onPress={onGerirEspecialidades}
+                style={{ minHeight: 44, minWidth: 44, paddingHorizontal: S.md,
+                  borderRadius: R.row, borderWidth: 1, borderColor: t.border,
+                  alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
+                  Gerir
+                </Text>
+              </Pressable>
             </View>
 
             <View style={{ gap: S.sm }}>
@@ -940,49 +959,72 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
                 onHora={(v) => setForm(f => ({ ...f, time: v }))} />
             </View>
 
+            {/* ── A especialidade: uma linha que abre ──────────────────────
+                Eram pastilhas em fila, com quebra de linha. Com quatro
+                especialidades cabiam; com dez ocupavam meia folha e empurravam
+                o botão de marcar para fora do ecrã. O protótipo tem UMA linha
+                com o valor escolhido e um chevron, que abre a lista por baixo.
+
+                ⚠ A linha tem 44 e não os 52 do protótipo, e a etiqueta vive
+                FORA da caixa. É a forma dos dois campos que se seguem — médico
+                e nota — nesta mesma folha. Lá a etiqueta é interna, e daí os
+                52; copiar só este ficava a destoar dos vizinhos, que é pior do
+                que divergir por inteiro. */}
             <View style={{ gap: S.sm }}>
-              {/* A ÚNICA porta para as especialidades, ao lado do campo — é
-                  onde o protótipo a põe. Abre uma folha irmã; esta sai, e o
-                  que já estiver escrito fica, porque o rascunho vive acima. */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-                <View style={{ flex: 1 }}><Label t={t}>Especialidade</Label></View>
-                <Pressable accessibilityRole="button" accessibilityLabel="Gerir especialidades"
-                  onPress={onGerirEspecialidades}
-                  style={{ minHeight: 44, minWidth: 44, paddingHorizontal: S.md,
-                    borderRadius: R.row, borderWidth: 1, borderColor: t.border,
-                    alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
-                    Gerir
-                  </Text>
-                </Pressable>
-              </View>
-              <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-                {!(s.specialities || []).length ? (
-                  <Empty t={t} icon="heartPulse" title="Sem especialidades."
-                    hint="Toque em Gerir para criar a primeira." />
-                ) : null}
-                {(s.specialities || []).map(spec => (
+              <Label t={t}>Especialidade</Label>
+              {!(s.specialities || []).length ? (
+                <Empty t={t} icon="heartPulse" title="Sem especialidades."
+                  hint="Toque em Gerir para criar a primeira." />
+              ) : (
+                <View style={{ borderWidth: 1, borderColor: t.border,
+                  borderRadius: R.row, backgroundColor: t.card, overflow: 'hidden' }}>
                   <Pressable accessibilityRole="button"
-                    key={spec}
-                    accessibilityLabel={spec}
-                    accessibilityState={{ selected: form.specialty === spec }}
-                    onPress={() => setForm(f => ({ ...f, specialty: spec }))}
-                    style={{
-                      paddingHorizontal: S.md, minHeight: 44, borderRadius: R.pill,
-                      borderWidth: 1,
-                      borderColor: form.specialty === spec ? t.accent : t.border,
-                      backgroundColor: form.specialty === spec ? 'rgba(0,0,0,0.02)' : 'transparent',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Text style={{
-                      fontFamily: FONT.ui, fontSize: 12, color: form.specialty === spec ? t.accent : t.text3,
-                    }}>
-                      {spec}
+                    accessibilityLabel="Escolher a especialidade"
+                    accessibilityState={{ expanded: escolhendoEsp }}
+                    onPress={() => setEscolhendoEsp(v => !v)}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
+                      minHeight: 44, paddingHorizontal: S.md }}>
+                    <Icon name="heartPulse" size={19} color={t.text3} />
+                    <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15,
+                      color: form.specialty ? t.text2 : t.text3 }}>
+                      {form.specialty || 'Escolher a especialidade'}
                     </Text>
+                    <Icon name={escolhendoEsp ? 'caretUp' : 'caretDown'} size={18} color={t.text3} />
                   </Pressable>
-                ))}
-              </View>
+
+                  {escolhendoEsp ? (
+                    <View>
+                      {(s.specialities || []).map(spec => (
+                        // Uma linha, um destino (erro #6): tocar escolhe e
+                        // fecha. Sem nada mais tocável lá dentro.
+                        <Pressable accessibilityRole="button"
+                          key={spec}
+                          accessibilityLabel={spec}
+                          accessibilityState={{ selected: form.specialty === spec }}
+                          onPress={() => { setForm(f => ({ ...f, specialty: spec })); setEscolhendoEsp(false); }}
+                          // ⚠ `divider` e não `subtle`. Medido no navegador:
+                          // o `subtle` é #FAFAFA sobre uma caixa #FCFCFD —
+                          // contraste 1,02, ou seja linha nenhuma. O
+                          // `divider` é #F0F2F5, que é o cinza que o
+                          // protótipo usa aqui, e no modo escuro iguala a
+                          // borda. Escolhi a ficha uma casa acima da certa.
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
+                            minHeight: 44, paddingHorizontal: S.md,
+                            borderTopWidth: 1, borderTopColor: t.divider,
+                            backgroundColor: form.specialty === spec ? t.subtle : 'transparent' }}>
+                          <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13,
+                            color: form.specialty === spec ? t.accent : t.text2 }}>
+                            {spec}
+                          </Text>
+                          {form.specialty === spec ? (
+                            <Icon name="check" size={16} color={t.accent} />
+                          ) : null}
+                        </Pressable>
+                      ))}
+                    </View>
+                  ) : null}
+                </View>
+              )}
             </View>
 
             {/* ── Médico ou clínica ────────────────────────────────────────
