@@ -51,6 +51,8 @@ export const REGISTO_APP = [
   { v: '1.8.0', d: '03/09/2026', k: 'alterado', a: 'Saúde', t: 'O dia e a hora de uma consulta passaram a um só campo, e a hora escolhe-se em vez de se escrever' },
   { v: '1.8.0', d: '03/09/2026', k: 'novo', a: 'Saúde', t: 'Anexar um exame, uma receita ou um relatório a uma consulta' },
   { v: '1.8.0', d: '03/09/2026', k: 'novo', a: 'Saúde', t: 'Arquivar uma consulta — sai da lista, não se apaga, e volta com um toque' },
+  { v: '1.8.0', d: '03/09/2026', k: 'novo', a: 'Saúde', t: 'Fotografar o exame ou a receita, e a fotografia fica guardada no servidor da casa' },
+  { v: '1.8.0', d: '03/09/2026', k: 'novo', a: 'Saúde', t: 'Um anexo que ainda só existe no telemóvel diz «só aqui», em vez de parecer guardado' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Gestão da Casa', t: 'As abas tinham espaços mortos entre elas, e um toque ali não acertava em nenhuma' },
   { v: '1.8.0', d: '02/09/2026', k: 'corrigido', a: 'Gestão da Casa', t: 'A faixa de abas cortava a última no telemóvel — «Especialidades» perdia o fim da palavra' },
   // ── 1.7.0 ─────────────────────────────────────────────────────────────────

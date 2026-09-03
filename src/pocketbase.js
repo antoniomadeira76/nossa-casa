@@ -759,6 +759,56 @@ export const escrever = {
   },
 
   pendentes: async () => (await lerFila()).length,
+
+  // ── Uma escrita COM ficheiro ─────────────────────────────────────────────
+  //
+  // ⚠ Não passa pela fila, e não é uma opção: a fila serializa em JSON dentro
+  // do armazenamento local, e um ficheiro não é JSON. Enfiá-lo lá gravava
+  // `{}` e a escrita subia sem o anexo — em silêncio, que é o pior modo.
+  //
+  // Portanto isto é direto: ou há rede e sobe, ou rebenta e quem chama decide.
+  // No caso dos anexos de saúde, quem chama guarda a fotografia no dispositivo
+  // primeiro e marca-a como «por subir» — a fotografia nunca se perde por não
+  // haver rede, mas também não finge que já está no servidor.
+  //
+  // A URI vem do `expo-image-picker`. Na web é `blob:` ou `data:`; em nativo é
+  // `file://`, e o `FormData` do React Native sabe recebê-la como
+  // `{ uri, name, type }`.
+  //
+  // ⚠ A escolha é pelo ESQUEMA da URI, não pela plataforma — e não é
+  // preferência. Cheguei a escrever `Platform.OS === 'web'`, o que obriga a
+  // `import { Platform } from 'react-native'`, e isso REBENTOU todas as provas
+  // que correm em Node: o `index.js` do React Native usa sintaxe Flow que o
+  // Node não analisa, e o erro aponta para o RN, não para aqui. Este ficheiro
+  // importa de propósito só o armazenamento e o SDK — é o que o mantém
+  // provável contra um servidor.
+  //
+  // E o esquema é a pergunta certa de qualquer modo: `blob:`, `data:` e
+  // `http:` trazem-se com um `fetch`; `file://` não, em nenhum dos dois
+  // ambientes.
+  //
+  // `ficheiro.blob` é a terceira porta, para quem já tem os bytes — é por ela
+  // que a prova de aceitação em Node manda um ficheiro a sério.
+  async criarComFicheiro(colecao, dados, ficheiro) {
+    if (!estaLigado()) throw new Error('Sem ligação ao servidor.');
+    const fd = new FormData();
+    for (const [k, v] of Object.entries(dados || {})) {
+      if (v !== undefined && v !== null) fd.append(k, String(v));
+    }
+    if (ficheiro) {
+      const campo = ficheiro.campo || 'ficheiro';
+      const nome = ficheiro.nome || 'anexo.jpg';
+      const tipo = ficheiro.tipo || 'image/jpeg';
+      if (ficheiro.blob) {
+        fd.append(campo, ficheiro.blob, nome);
+      } else if (ficheiro.uri && /^(blob:|data:|https?:)/i.test(ficheiro.uri)) {
+        fd.append(campo, await (await fetch(ficheiro.uri)).blob(), nome);
+      } else if (ficheiro.uri) {
+        fd.append(campo, { uri: ficheiro.uri, name: nome, type: tipo });
+      }
+    }
+    return pb.collection(colecao).create(fd);
+  },
 };
 
 // ─── Tempo real ──────────────────────────────────────────────────────────────

@@ -188,22 +188,43 @@ uma consulta a sério, porque não há onde escrever o nome.
       por consulta obrigava a um segundo alvo na linha, e a linha já é o alvo
       que abre o cartão (erro #6 do CLAUDE.md). Fica aqui por se decidir, não
       por estar em falta.
-- [ ] **PENDENTE: a fotografia do documento.** É a única peça do protótipo que
-      falta por inteiro, e a que fica para o fim de propósito: um ficheiro
-      clínico de menor entra em `anexos`, e é dessa peça que os cinco pontos do
-      `db/postgres/README.md` mais falam. Decisão à parte, e consciente.
+- [x] **A fotografia do documento**, e ela SOBE — «sobe tudo», por decisão do
+      dono da casa em 03/09/2026, pelas mesmas condições do resto da saúde: só
+      para um servidor que viva na casa.
+      Escolhe-se pelo `expo-image-picker`, o mesmo caminho que a fatura de um
+      equipamento usa, para não haver dois modos de escolher uma imagem.
+      ⚠ A fotografia fica no dispositivo PRIMEIRO, com `porSubir: true`, e só
+      depois se tenta o carregamento. Um anexo não pode ir pela fila de
+      escritas — ela serializa em JSON e um ficheiro não é JSON — portanto o
+      carregamento é direto e pode falhar. Guardar antes de tentar é o que
+      impede a fotografia de se perder por não haver rede; o `porSubir` é o que
+      impede a app de fingir que ela já está no servidor, e o ecrã mostra-o
+      como «só aqui».
+      ⚠ E um anexo é uma RELAÇÃO para o episódio: foi por isso que o
+      `episodioDeSaude` passou a tentar direto antes de cair na fila. A fila
+      devolve quantas subiram, não o registo — uma consulta que fosse só pela
+      fila nunca aprendia o seu `id`, e o anexo não teria para onde apontar.
+      O ficheiro a atravessar a rede está provado em `provar-anexo-sobe.mjs`,
+      com 11 provas e um PNG a sério que volta a ser pedido e conferido byte a
+      byte.
 
 ### A sincronização
 
 - [x] As **consultas** sobem, e só para um servidor que viva na casa —
       `eEnderecoDeCasa` em `src/endereco.js`, com 38 provas, e o caminho todo
       em `provar-saude-sobe.mjs`.
-- [ ] **PENDENTE: os anexos não sobem**, e é deliberado. `anexos` existe no
-      servidor com regras provadas, e o cliente não tem caminho de escrita. Um
-      ficheiro clínico de menor é categoria especial no RGPD — ver
-      `docs/seguranca.html` e os cinco pontos do `db/postgres/README.md`.
-      ⚠ E os cinco pontos só colapsam enquanto o servidor viver na casa.
-      Voltam todos no dia em que for exposto à internet.
+- [x] **Os anexos sobem, com o ficheiro** — pelo mesmo travão. Um ficheiro
+      clínico de menor é categoria especial no RGPD, e é o dado mais difícil de
+      retirar de um servidor depois de lá estar; sobe porque o dono da casa
+      decidiu, e só para casa.
+      ⚠ Os cinco pontos só colapsam ENQUANTO o servidor viver na casa. Voltam
+      todos no dia em que for exposto à internet, e nesse dia é a fotografia
+      que fica pior. A condição está em código — `eEnderecoDeCasa` — e não numa
+      nota: se o endereço deixar de ser de casa, a saúde deixa de subir sozinha.
+- [ ] **PENDENTE: as notas, as receitas e as decisões não sobem**, e não é
+      escolha: não têm coleção no servidor. Não é que não subam — é que não há
+      para onde. Enquanto não houver, dizer que sincronizam era pior do que a
+      lacuna.
 
 ## 9. EQUIPAMENTOS
 - [x] Equipamentos da Casa — garantias, fotos da fatura

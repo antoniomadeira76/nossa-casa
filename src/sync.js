@@ -25,12 +25,17 @@
 // era um «não» inteiro, atrás de cinco pontos de conformidade — são dados
 // clínicos de menores, categoria especial no RGPD.
 //
-// Passou a ser uma CONDIÇÃO, em 03/09/2026: as consultas sobem se o servidor
-// viver na casa, e não sobem se ele estiver na internet. A regra é o
-// `eEnderecoDeCasa`, em `src/endereco.js`, e o travão é o `recusaSaude` no fim
-// deste ficheiro. As notas, as receitas e os documentos continuam a não subir —
-// um documento leva ficheiro anexo, e é dessa peça que os cinco pontos mais
-// falam.
+// Passou a ser uma CONDIÇÃO, em 03/09/2026: sobe se o servidor viver na casa, e
+// não sobe se ele estiver na internet. A regra é o `eEnderecoDeCasa`, em
+// `src/endereco.js`, e o travão é o `recusaSaude` no fim deste ficheiro.
+//
+// «Sobe tudo», por decisão do dono da casa no mesmo dia: as consultas E os
+// anexos, com a fotografia. O que fica de fora são as notas, as receitas e as
+// decisões, e não por escolha — não têm coleção no servidor.
+//
+// ⚠ Os dois sobem por caminhos DIFERENTES, e é uma restrição técnica: a
+// consulta vai pela fila e o anexo não pode, porque a fila serializa em JSON e
+// um ficheiro não é JSON. Ver `anexoDeSaude` e `criarComFicheiro`.
 
 // Sem extensão, que é como o Metro resolve.
 //
@@ -45,14 +50,19 @@ export { eEnderecoDeCasa, PORQUE_NAO_SOBE };
 
 // O que NUNCA sobe, aconteça o que acontecer.
 //
-// ⚠ `health` SAIU desta lista em 03/09/2026: os episódios sobem quando o
-// servidor vive na casa — ver `eEnderecoDeCasa` mais abaixo. As notas, as
-// receitas, as decisões e os documentos ficam, e não é esquecimento: um
-// documento leva ficheiro anexo, e um ficheiro clínico de menor é a peça de
-// que os cinco pontos do db/postgres/README.md mais falam. Sobe a consulta;
-// o que está pendurado nela, não.
+// ⚠ Duas saíram desta lista em 03/09/2026, e por razões diferentes:
+//
+//   `health`      os episódios sobem quando o servidor vive na casa. A
+//                 condição é o `eEnderecoDeCasa`, e o travão o `recusaSaude`.
+//   `healthDocs`  os anexos passaram a subir com a FOTOGRAFIA, por decisão do
+//                 dono da casa — «sobe tudo». Vão para `anexos`, com o
+//                 ficheiro, pelo mesmo travão.
+//
+// O que fica não é esquecimento: as notas, as receitas e as decisões não têm
+// coleção no servidor. Não é que não subam — é que não há para onde. Enquanto
+// não houver, dizer que sincronizam era pior do que a lacuna.
 export const NUNCA_SINCRONIZA = ['healthNotes', 'healthRecipes',
-  'healthDecisions', 'healthDocs', 'healthGone'];
+  'healthDecisions', 'healthGone'];
 
 export const ligado = () => servidor.estaLigado();
 
@@ -256,11 +266,54 @@ export function recusaSaude(colecao) {
 // A visibilidade não se decide aqui. As regras de `episodios_saude` são as do
 // servidor, com 16 provas em provar-saude.mjs — incluindo a que garante que uma
 // criança não recebe a sua própria ficha.
+// ⚠ Tenta DIRETO e só cai na fila se falhar, ao contrário do dinheiro. A razão
+// é o anexo: um anexo é uma relação para o episódio, e sem o `id` que o
+// servidor lhe deu não há relação nenhuma — o anexo ficaria órfão do outro
+// lado, que é o que o TAREFAS.md proíbe pelo nome.
+//
+// A fila não devolve o registo criado (devolve quantas subiram), portanto uma
+// consulta que vá só pela fila nunca aprende o seu `id`. Direto, aprende — e
+// sem rede continua a não se perder, porque a fila fica como rede de segurança.
+//
+// Devolve `{ id }` quando o servidor respondeu, ou `{ pendente: true }` quando
+// ficou na fila. Quem chama guarda o `id` se o houver.
 export async function episodioDeSaude({ casa, membro, especialidade, medico, dia, hora, notas }) {
   recusaSaude('episodios_saude');
-  return servidor.escrever.criar('episodios_saude', {
+  const linha = {
     casa, membro, especialidade, medico: medico || '', dia, hora: hora || '', notas: notas || '',
-  });
+  };
+  try {
+    const r = await servidor.pb.collection('episodios_saude').create(linha);
+    return { id: r.id };
+  } catch (e) {
+    await servidor.escrever.criar('episodios_saude', linha);
+    return { pendente: true };
+  }
+}
+
+// ─── Um anexo, com o ficheiro ────────────────────────────────────────────────
+//
+// ⚠ NÃO passa pela fila, ao contrário do episódio, e a razão é técnica e não de
+// desenho: a fila serializa em JSON e um ficheiro não é JSON. Ver
+// `criarComFicheiro` em `src/pocketbase.js`.
+//
+// Portanto isto ou sobe ou rebenta. Quem chama — o `addHealthDoc` da loja —
+// guarda a fotografia no dispositivo ANTES de tentar, e marca o documento como
+// «por subir» se falhar. A fotografia nunca se perde por não haver rede, e a
+// app não finge que já está no servidor.
+//
+// O `tipo` do servidor é minúsculo e sem acento (`exame`, `receita`,
+// `relatorio`) — é um `select` com esses três valores. A loja fala «Exame»,
+// «Receita», «Relatório». A tradução é aqui, e não nos dois sítios.
+const TIPO_NO_SERVIDOR = { Exame: 'exame', Receita: 'receita', 'Relatório': 'relatorio' };
+
+export async function anexoDeSaude({ casa, episodio, tipo, titulo, uri, blob, nome, mime }) {
+  recusaSaude('anexos');
+  if (!episodio) throw new Error('Um anexo sem episódio não se grava — seria um exame órfão.');
+  return servidor.escrever.criarComFicheiro('anexos', {
+    casa, episodio, titulo,
+    tipo: TIPO_NO_SERVIDOR[tipo] || 'exame',
+  }, (uri || blob) ? { campo: 'ficheiro', uri, blob, nome, tipo: mime } : null);
 }
 
 // O aspeto do próprio membro — a cor do avatar.

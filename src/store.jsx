@@ -1693,7 +1693,15 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         casa: ses.casa, membro: idServidor, especialidade: specialty,
         dia: day.replace(/^d/, ''), hora: time || '',
         medico: doctor, notas: nota,
-      }).catch(() => {});
+      })
+        // ⚠ Guardar o `id` do servidor não é arrumação: um anexo é uma relação
+        // para o episódio, e sem este `id` o anexo não tem para onde apontar.
+        // Quando a consulta fica na fila não há `id`, e o anexo espera — que é
+        // melhor do que subir solto.
+        .then((r) => { if (r && r.id) set(x => ({
+          health: (x.health || []).map(h => (h.id === id ? { ...h, idServidor: r.id } : h)),
+        })); })
+        .catch(() => {});
     }
     return id;
   };
@@ -1729,15 +1737,47 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     const kind = dados.kind || 'Exame';
     const title = String(dados.title || '').trim();
     if (!title) return null;
+    const foto = dados.foto || null;
+
+    // ⚠ A fotografia fica no dispositivo PRIMEIRO, e o `porSubir` diz a
+    // verdade sobre onde ela está.
+    //
+    // O anexo não pode passar pela fila de escritas — ela serializa em JSON e
+    // um ficheiro não é JSON — portanto o carregamento é direto e pode falhar.
+    // Guardar antes de tentar é o que impede a fotografia de se perder por não
+    // haver rede; o `porSubir` é o que impede a app de fingir que ela já está
+    // no servidor.
     set(x => ({
       healthDocs: [...(x.healthDocs || []), {
         id, healthId, member, kind, title,
         // Só as receitas têm prazo. Um exame com `expires` aparecia no
         // «Precisa de Si» como receita a expirar.
         ...(kind === 'Receita' && dados.expires ? { expires: dados.expires } : {}),
+        ...(foto ? { foto, porSubir: true } : {}),
         createdAt: new Date().toISOString(),
       }],
     }));
+
+    // E sobe — pelas mesmas condições do episódio: só para um servidor que
+    // viva na casa. O `recusaSaude` decide, e não este ficheiro.
+    if (sync && foto) {
+      const ses = sync.sessao();
+      if (ses) {
+        sync.anexoDeSaude({
+          casa: ses.casa,
+          // O episódio no SERVIDOR, não o id local. Sem ele o anexo ficaria
+          // órfão do outro lado, que é o que o TAREFAS.md proíbe.
+          episodio: (s.health || []).find(h => h.id === healthId)?.idServidor || null,
+          tipo: kind, titulo: title, uri: foto,
+          nome: `${title.replace(/[^\w.-]+/g, '-').slice(0, 40)}.jpg`,
+          mime: 'image/jpeg',
+        })
+          .then(() => set(x => ({
+            healthDocs: (x.healthDocs || []).map(d => (d.id === id ? { ...d, porSubir: false } : d)),
+          })))
+          .catch(() => {});   // fica `porSubir: true`, e o ecrã di-lo
+      }
+    }
     return id;
   };
 

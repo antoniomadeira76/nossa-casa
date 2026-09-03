@@ -127,17 +127,23 @@ describe('o que continua a nunca subir', () => {
   const bloco = sync.slice(sync.indexOf('export const NUNCA_SINCRONIZA'),
     sync.indexOf('export const ligado'));
 
-  it('⚠ os documentos e as notas ficam, mesmo com o servidor em casa', () => {
-    // Um documento leva ficheiro anexo, e um ficheiro clínico de menor é a
-    // peça de que os cinco pontos mais falam. Sobe a consulta; o que está
-    // pendurado nela, não.
-    for (const k of ['healthNotes', 'healthRecipes', 'healthDecisions', 'healthDocs', 'healthGone']) {
+  it('⚠ as notas, as receitas e as decisões ficam — não têm coleção no servidor', () => {
+    // Não é que não subam por escolha: é que não há para onde. Enquanto não
+    // houver coleção, dizer que sincronizam era pior do que a lacuna.
+    for (const k of ['healthNotes', 'healthRecipes', 'healthDecisions', 'healthGone']) {
       expect(bloco).toContain(`'${k}'`);
     }
   });
 
   it('e o `health` saiu da lista, porque agora sobe sob condição', () => {
     expect(bloco).not.toMatch(/'health'/);
+  });
+
+  it('⚠ e o `healthDocs` também saiu — «sobe tudo», com a fotografia', () => {
+    // Esta prova exigia o contrário até 03/09/2026, e mudou por decisão do
+    // dono da casa. Os anexos vão para `anexos`, com o ficheiro, pelo mesmo
+    // travão do `eEnderecoDeCasa`.
+    expect(bloco).not.toMatch(/'healthDocs'/);
   });
 
   it('a frase da recusa diz o porquê e onde ler mais', () => {

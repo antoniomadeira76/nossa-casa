@@ -105,7 +105,11 @@ await auth.entrarAdulto('rita@x.pt', 'palavra-longa-1');
 await prova('a Rita marca uma consulta ao Léo e ela fica no servidor', async () => {
   const r = await episodioDeSaude({
     casa: casa.id, membro: leo.id, especialidade: 'Dentista', dia: '2026-09-20', hora: '10:00' });
-  igual(r.pendentes, 0, 'ficou pendente em vez de subir');
+  // ⚠ Devolve `{ id }`, e não `{ enviadas, pendentes }`. Mudou quando o
+  // episódio passou a tentar DIRETO antes de cair na fila — sem o `id` que o
+  // servidor lhe dá, um anexo não tem para onde apontar. Esta prova exigia o
+  // `pendentes: 0` da fila e falhou por isso, não por a consulta não subir.
+  if (!r || !r.id) throw new Error('não devolveu id: ' + JSON.stringify(r));
   const cRita = await como('rita@x.pt', 'palavra-longa-1');
   const v = await cRita.collection('episodios_saude').getFullList();
   igual(v.length, 1);
@@ -192,9 +196,15 @@ await prova('os anexos não têm caminho de escrita no cliente — é isso que o
   }
 });
 
-await prova('as notas, as receitas e os documentos estão na lista do que nunca sobe', () => {
-  for (const k of ['healthNotes', 'healthRecipes', 'healthDecisions', 'healthDocs', 'healthGone']) {
+await prova('as notas, as receitas e as decisões estão na lista do que nunca sobe', () => {
+  // ⚠ O `healthDocs` SAIU desta lista em 03/09/2026: «sobe tudo», e os anexos
+  // vão para `anexos` com a fotografia. O que fica não é escolha — as notas,
+  // as receitas e as decisões não têm coleção no servidor.
+  for (const k of ['healthNotes', 'healthRecipes', 'healthDecisions', 'healthGone']) {
     if (!NUNCA_SINCRONIZA.includes(k)) throw new Error(`${k} saiu da lista`);
+  }
+  if (NUNCA_SINCRONIZA.includes('healthDocs')) {
+    throw new Error('healthDocs voltou à lista — os anexos sobem');
   }
 });
 

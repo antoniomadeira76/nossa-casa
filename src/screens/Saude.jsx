@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, FlatList } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, FlatList, Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import CampoData from '../CampoData';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro, STATE } from '../theme';
@@ -33,7 +34,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   const [recipeForm, setRecipeForm] = useState({ name: '', dosage: '', quantity: '', unit: '', expiresAt: '' });
   // A folha «Anexar»: de que consulta, e o que se está a escrever.
   const [anexoDe, setAnexoDe] = useState(null);
-  const [anexoForm, setAnexoForm] = useState({ kind: 'Exame', title: '', expires: '' });
+  const [anexoForm, setAnexoForm] = useState({ kind: 'Exame', title: '', expires: '', foto: null });
 
   // A visibilidade vem da loja. Havia aqui uma cópia própria, e era mais
   // permissiva: devolvia true para qualquer criança sem verificar se quem vê é
@@ -51,9 +52,9 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   // ⚠ As arquivadas saem daqui. Arquivar não apaga, mas uma consulta
   // arquivada não «precisa de ação» — se ficasse, arquivar não fazia nada ao
   // que o ecrã mostra em primeiro lugar, que é o único sítio onde se nota.
-  // ⚠  e não : o  tem um 
+  // ⚠ `eArquivada` e não `arquivada`: o `RecordCard` tem um `arquivada`
   // BOOLEANO, e dois nomes iguais com tipos diferentes no mesmo ficheiro é
-  // onde alguém escreve  sobre uma função e passa sempre.
+  // onde alguém escreve `if (arquivada)` sobre uma função e passa sempre.
   const eArquivada = (h) => st.estaArquivada(h.id);
   const activas = visibleRecords.filter(h => !eArquivada(h));
   const arquivadas = visibleRecords.filter(eArquivada).sort((x, y) => String(y.day||'').localeCompare(String(x.day||'')));
@@ -109,6 +110,15 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   // a expirar passava por válida durante essa semana. Agora conta como tudo
   // o resto — ver daysUntil em format.js.
   const getRecipeExpiration = (expiresAt) => daysUntil(expiresAt) ?? 0;
+
+  // O mesmo caminho que a fatura de um equipamento usa (FichaEquipamento.jsx),
+  // para não haver dois modos de escolher uma imagem nesta app.
+  const escolherFotoDoAnexo = async () => {
+    const r = await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
+    if (!r.canceled && r.assets && r.assets[0]) {
+      setAnexoForm(f => ({ ...f, foto: r.assets[0].uri }));
+    }
+  };
 
   const RecordCard = ({ record }) => {
     const expanded = expandedRecord === record.id;
@@ -426,11 +436,21 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                         {d.kind}{d.expires ? ` · válida até ${dayLabel(d.expires).replace('Hoje · ', '')}` : ''}
                       </Text>
                     </View>
+                    {/* ⚠ A app diz onde a fotografia está, e não finge. O anexo
+                        não pode ir pela fila de escritas, portanto o
+                        carregamento é direto e pode falhar — e falha quando não
+                        há rede ou quando a consulta ainda não chegou ao
+                        servidor, porque um anexo é uma relação para ela.
+                        Sem esta pastilha, uma fotografia que ficou só no
+                        telemóvel parecia estar guardada em casa. */}
+                    {d.foto && d.porSubir ? (
+                      <Pill label="só aqui" bg={STATE.warnBg} fg={STATE.warn} border={STATE.warn} />
+                    ) : null}
                   </View>
                 ))}
 
                 <AddButton t={t} label="Anexar Exame ou Receita"
-                  onPress={() => { setAnexoDe(record.id); setAnexoForm({ kind: 'Exame', title: '', expires: '' }); }} />
+                  onPress={() => { setAnexoDe(record.id); setAnexoForm({ kind: 'Exame', title: '', expires: '', foto: null }); }} />
 
                 {/* ── Arquivar ──────────────────────────────────────────
                     Arquivar NÃO apaga, e a frase do protótipo diz-o. É por
@@ -651,6 +671,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                   kind: anexoForm.kind,
                   title: anexoForm.title,
                   expires: anexoForm.expires || null,
+                  foto: anexoForm.foto || null,
                 });
                 setAnexoDe(null);
               }} />
@@ -708,10 +729,55 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
               </View>
             )}
 
+            {/* ── A fotografia do documento ─────────────────────────────
+                O mesmo caminho que a fatura de um equipamento usa — o
+                `expo-image-picker`, que já é dependência — para não haver dois
+                modos de escolher uma imagem nesta app.
+
+                ⚠ A fotografia fica no dispositivo primeiro e SÓ DEPOIS tenta
+                subir. Um anexo não pode ir pela fila de escritas (ela
+                serializa em JSON e um ficheiro não é JSON), portanto o
+                carregamento é direto e pode falhar. Guardar antes de tentar é
+                o que impede a fotografia de se perder por não haver rede.
+
+                E sobe pelas mesmas condições do resto da saúde: só para um
+                servidor que viva na casa. Quem decide é o `recusaSaude`. */}
+            <View style={{ gap: S.sm }}>
+              <Label t={t}>Fotografia do documento</Label>
+              {anexoForm.foto ? (
+                <View style={{ gap: S.sm }}>
+                  <Image source={{ uri: anexoForm.foto }}
+                    style={{ width: '100%', height: 160, borderRadius: R.row,
+                      borderWidth: 1, borderColor: t.border }}
+                    resizeMode="cover" />
+                  <Pressable accessibilityRole="button" accessibilityLabel="Tirar a fotografia"
+                    onPress={() => setAnexoForm(f => ({ ...f, foto: null }))}
+                    style={({ pressed }) => ({ minHeight: 44, borderRadius: R.row,
+                      borderWidth: 1, borderColor: t.border, alignItems: 'center',
+                      justifyContent: 'center', backgroundColor: pressed ? t.subtle : 'transparent' })}>
+                    <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
+                      Tirar a fotografia
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable accessibilityRole="button" accessibilityLabel="Fotografar o documento"
+                  onPress={escolherFotoDoAnexo}
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center',
+                    justifyContent: 'center', gap: S.md, minHeight: 44, borderRadius: R.row,
+                    borderWidth: 1, borderStyle: 'dashed', borderColor: t.border,
+                    backgroundColor: pressed ? t.subtle : 'transparent' })}>
+                  <Icon name="camera" size={19} color={t.text3} />
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
+                    Fotografe o exame ou a receita
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+
             <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 17, color: t.text3 }}>
-              Sem fotografia, por agora: um ficheiro clínico é categoria especial
-              no RGPD e fica para uma decisão à parte. O documento fica ligado a
-              esta consulta.
+              O documento fica ligado a esta consulta. A fotografia guarda-se no
+              dispositivo e sobe para o servidor da casa — nunca para fora dela.
             </Text>
           </View>
         </Sheet>
