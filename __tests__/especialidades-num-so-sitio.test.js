@@ -132,7 +132,21 @@ describe('⚠ a faixa de abas da Gestão cabe num telemóvel', () => {
   });
 });
 
-describe('⚠ apagar uma especialidade pergunta primeiro', () => {
+// ── E a segunda porta, que ficou aberta mais tempo ───────────────────────────
+//
+// Sair da Gestão não bastou. Dentro da Saúde as especialidades ficaram numa ABA
+// da folha «Marcar Consulta» — e havia um «Gerir» ao lado do título a levar à
+// mesma aba. Dois caminhos para o mesmo sítio, o defeito dos atalhos do Início
+// outra vez. O protótipo não tem abas nessa folha: tem um «Gerir» ao lado do
+// campo da especialidade, e uma folha PRÓPRIA por trás dele.
+//
+// ⚠ E com a folha veio a regra que faltava: uma especialidade só se apaga
+// quando não tem consultas. Isto apagava sempre, com um diálogo que prometia
+// que «as consultas já marcadas com ela ficam como estão» — ficavam, a apontar
+// em TEXTO para um nome que já não está em lado nenhum. Era o mesmo defeito que
+// obrigou o `renameSpecialty` a aprender a migrar os episódios, a entrar pela
+// porta do lado.
+describe('⚠ uma especialidade em uso não se apaga', () => {
   const Saude = require('../src/screens/Saude').default;
 
   const abrir = () => {
@@ -167,74 +181,54 @@ describe('⚠ apagar uma especialidade pergunta primeiro', () => {
     TestRenderer.act(() => { n.props.onPress(); });
   };
 
-  // Da lista de fichas até à gestão das especialidades, pelo caminho da app.
+  // Da lista de fichas até à gestão das especialidades, pelo caminho da app —
+  // que agora é UM caminho, e não dois.
   const atéÀsEspecialidades = () => {
     const r = abrir();
     tocar(r, 'marcar consulta');   // o rótulo é mesmo em minúscula
-    tocar(r, 'Especialidades');
+    tocar(r, 'Gerir especialidades');
     return r;
   };
 
-  it('a lista chega-se pela folha de marcar consulta', () => {
-    const texto = junta(atéÀsEspecialidades().toJSON());
-    expect(texto).toContain('Adicionar especialidade');
-    expect(texto).toContain('Pediatria');
-  });
-
-  it('⚠ o toque no lixo NÃO apaga — abre o diálogo', () => {
-    // Era isto que a saída da Gestão ia estragar: lá havia diálogo, aqui o
-    // toque apagava logo.
-    const r = atéÀsEspecialidades();
-    expect(junta(r.toJSON())).not.toContain('Apagar especialidade?');
-
-    tocar(r, 'Apagar Pediatria');
-    const texto = junta(r.toJSON());
-    expect(texto).toContain('Apagar especialidade?');
-    expect(texto).toContain('«Pediatria»');
-    expect(texto).toContain('Pediatria');   // continua na lista, por apagar
-  });
-
-  it('cancelar deixa a lista como estava', () => {
-    const r = atéÀsEspecialidades();
-    tocar(r, 'Apagar Pediatria');
-    tocar(r, 'Cancelar');
-    const texto = junta(r.toJSON());
-    expect(texto).not.toContain('Apagar especialidade?');
-    expect(texto).toContain('Pediatria');
-  });
-
-  // ⚠ A lista das especialidades é uma FATIA do ecrã, não o ecrã. A primeira
-  // versão desta prova pedia que a palavra «Pediatria» desaparecesse de todo o
-  // texto, e falhou — por bem: o Léo tem uma consulta de Pediatria em «Precisa
-  // de ação», e ela fica. Uma prova que exigisse o contrário estaria a exigir
-  // o oposto do que o diálogo promete.
-  const listaDeEspecialidades = (r) => {
-    const texto = junta(r.toJSON());
-    return texto.slice(texto.lastIndexOf('Adicionar especialidade'));
+  const escrever = (r, texto) => {
+    const campo = r.root.findAll(x => x.props && typeof x.props.onChangeText === 'function'
+      && x.props.placeholder === 'Ex.: Fisioterapia')[0];
+    expect(campo).toBeTruthy();
+    TestRenderer.act(() => { campo.props.onChangeText(texto); });
   };
 
-  it('e confirmar é que apaga — da lista', () => {
-    const r = atéÀsEspecialidades();
-    expect(listaDeEspecialidades(r)).toContain('Pediatria');
-    tocar(r, 'Apagar Pediatria');
-    tocar(r, 'Apagar');
-    expect(junta(r.toJSON())).not.toContain('Apagar especialidade?');
-    const lista = listaDeEspecialidades(r);
-    expect(lista).not.toContain('Pediatria');
-    expect(lista).toContain('Dentista');           // e só essa
-    expect(lista).toContain('Medicina geral');
+  it('a lista chega-se pelo «Gerir» da folha de marcar consulta', () => {
+    const texto = junta(atéÀsEspecialidades().toJSON());
+    expect(texto).toContain('Nova especialidade');
+    expect(texto).toContain('Pediatria');
   });
 
-  it('⚠ e a consulta já marcada com ela fica — é o que o diálogo promete', () => {
-    // O `health` guarda a especialidade como TEXTO. Apagá-la da lista não
-    // pode apagar a consulta do Léo, e a mensagem do diálogo diz isso em
-    // português antes de a pessoa decidir.
+  it('cada linha diz quantas consultas tem — é a conta que decide', () => {
+    // Nas sementes as quatro especialidades estão todas em uso, uma consulta
+    // cada. Sem esta linha o «Em uso» aparecia sem razão nenhuma à vista.
+    const texto = junta(atéÀsEspecialidades().toJSON());
+    expect(texto).toContain('1 consulta');
+  });
+
+  it('⚠ uma em uso não tem sequer alvo para apagar — diz «Em uso»', () => {
+    // Não é um botão que recusa: é a ausência do botão, com a razão escrita.
+    // Um alvo que não faz nada é pior do que nenhum.
     const r = atéÀsEspecialidades();
-    tocar(r, 'Apagar Pediatria');
-    tocar(r, 'Apagar');
-    const texto = junta(r.toJSON());
-    const antesDaLista = texto.slice(0, texto.lastIndexOf('Adicionar especialidade'));
-    expect(antesDaLista).toContain('Pediatria');
+    expect(junta(r.toJSON())).toContain('Em uso');
+    expect(alvo(r, 'Apagar Pediatria')).toBeFalsy();
+    expect(alvo(r, 'Apagar Dentista')).toBeFalsy();
+  });
+
+  it('uma sem consultas apaga-se ao toque, e sem diálogo nenhum', () => {
+    // Não há nada a confirmar: não desfaz trabalho de ninguém, e criar outra
+    // com o mesmo nome custa uma linha de texto.
+    const r = atéÀsEspecialidades();
+    escrever(r, 'Fisioterapia');
+    tocar(r, 'Criar Especialidade');
+    expect(junta(r.toJSON())).toContain('sem consultas');
+
+    tocar(r, 'Apagar Fisioterapia');
+    expect(junta(r.toJSON())).not.toContain('Fisioterapia');
   });
 
   it('⚠ o alvo do lixo tem 44, e não depende do `hitSlop` para os ter', () => {
@@ -242,7 +236,9 @@ describe('⚠ apagar uma especialidade pergunta primeiro', () => {
     // que o acompanhava é IGNORADO pela react-native-web — portanto na web o
     // alvo eram mesmo 34, medidos no navegador.
     const r = atéÀsEspecialidades();
-    const n = alvo(r, 'Apagar Pediatria');
+    escrever(r, 'Fisioterapia');
+    tocar(r, 'Criar Especialidade');
+    const n = alvo(r, 'Apagar Fisioterapia');
     expect(n).toBeTruthy();
     const estilo = typeof n.props.style === 'function'
       ? [].concat(n.props.style({ pressed: false })).filter(Boolean)
@@ -250,5 +246,56 @@ describe('⚠ apagar uma especialidade pergunta primeiro', () => {
     const junto = Object.assign({}, ...estilo);
     expect(junto.minWidth).toBeGreaterThanOrEqual(44);
     expect(junto.minHeight).toBeGreaterThanOrEqual(44);
+  });
+});
+
+describe('⚠ a conta das consultas não olha a quem vê', () => {
+  const React2 = require('react');
+  const { StoreProvider: SP, useStore: uS, DEMO } = require('../src/store');
+
+  const comLoja = () => {
+    let api = null;
+    const Sonda = () => { api = uS(); return null; };
+    TestRenderer.act(() => {
+      TestRenderer.create(React2.createElement(SP, null, React2.createElement(Sonda)));
+    });
+    return () => api;
+  };
+
+  it('a ficha da Rita é privada, mas «Medicina geral» conta na mesma', () => {
+    // ⚠ Se a conta filtrasse por visibilidade, o Tomás apagava «Medicina
+    // geral» — que só a Rita vê — e deixava a consulta dela órfã. A conta é
+    // sobre o NOME estar referido, não sobre quem o pode ler.
+    const loja = comLoja();
+    expect(loja().consultasDaEspecialidade('Medicina geral')).toBe(1);
+    expect(loja().removeSpecialty('Medicina geral'))
+      .toContain('não se apaga');
+    expect(loja().s.specialities).toContain('Medicina geral');
+  });
+
+  it('e a que ninguém usa apaga-se, devolvendo null', () => {
+    const loja = comLoja();
+    TestRenderer.act(() => { loja().addSpecialty('Fisioterapia'); });
+    expect(loja().consultasDaEspecialidade('Fisioterapia')).toBe(0);
+    let r;
+    TestRenderer.act(() => { r = loja().removeSpecialty('Fisioterapia'); });
+    expect(r).toBeNull();
+    expect(loja().s.specialities).not.toContain('Fisioterapia');
+  });
+
+  it('⚠ e criar uma repetida é recusado, em português', () => {
+    // Duas linhas iguais na lista não se distinguem ao marcar uma consulta.
+    const loja = comLoja();
+    expect(loja().addSpecialty('pediatria'))
+      .toBe('Já existe uma especialidade com esse nome.');
+    expect(loja().addSpecialty('   ')).toBe('A especialidade precisa de um nome.');
+  });
+
+  it('e as duas ficam no registo da casa, como o renomear já ficava', () => {
+    const loja = comLoja();
+    TestRenderer.act(() => { loja().addSpecialty('Fisioterapia'); });
+    expect(loja().s.registo[0].t).toBe('Especialidade criada: Fisioterapia');
+    TestRenderer.act(() => { loja().removeSpecialty('Fisioterapia'); });
+    expect(loja().s.registo[0].t).toBe('Especialidade apagada: Fisioterapia');
   });
 });

@@ -26,7 +26,7 @@
 - [ ] **PENDENTE:** Papéis — toque na pílula para mudar (Administração, confirmar mudança)
 - [ ] **PENDENTE:** Lojas — criar, renomear, apagar supermercados
 - [ ] **PENDENTE:** Membros e PIN — definir PIN das crianças (rejeita iguais, sequências)
-- [ ] **PENDENTE:** Especialidades — em Marcar Consulta
+- [x] Especialidades — em Marcar Consulta, no «Gerir» ao lado do campo (secção 8)
 
 ## 5. TAREFAS & PONTOS
 - [x] Tarefas — toque para concluir, pontos recalculam
@@ -108,8 +108,9 @@ uma consulta a sério, porque não há onde escrever o nome.
 - [x] Notas do episódio — quantas quiser, com autor e data (`addHealthNote`)
 - [x] Ficha de saúde — o topo mostra o que exige decisão, acordeão por consulta
 - [x] Exportar em PDF — uma consulta, uma especialidade, ou tudo
-- [x] Gerir especialidades — criar, renomear e apagar, num sítio só, e o
-      renomear migra os episódios e o título do evento
+- [x] Gerir especialidades — criar, renomear e apagar, numa folha própria e
+      numa porta só; o renomear migra os episódios e o título do evento, e uma
+      que tenha consultas não se apaga
 - [x] **Nenhum exame órfão** — a consulta É o evento. Marcar consulta cria o
       episódio E o evento, ligados pelo `healthId`.
       ⚠ Estava em falta e em silêncio: o `addHealthRecord` existia na loja e
@@ -151,14 +152,28 @@ uma consulta a sério, porque não há onde escrever o nome.
       compara a frase com a visibilidade do evento, membro a membro.
 - [x] **O botão diz «Marcar e Pôr na Agenda»** — promete as duas coisas que
       acontecem, e são duas: o episódio na ficha e o evento na agenda.
-- [x] **O «Gerir» é um botão ao lado do título.**
-      ⚠ Dívida assumida: leva à aba «Especialidades», que continua no topo da
-      folha. São duas portas para o mesmo sítio — o mesmo defeito que os
-      atalhos do Início tinham. Fica até as especialidades irem para folha
-      própria, e é isso que a linha seguinte pede.
-- [ ] **PENDENTE: as especialidades numa folha própria**, e a aba fora daqui. É
-      o que tira as duas portas. Leva com ela a linha com chevron para a
-      especialidade, que hoje são pastilhas em fila.
+- [x] **O «Gerir» é um botão ao lado do CAMPO da especialidade** — onde o
+      protótipo o põe — e é a única porta. A faixa de abas «Nova Consulta» /
+      «Especialidades» saiu: eram duas portas para o mesmo sítio, o mesmo
+      defeito que os atalhos do Início tinham.
+- [x] **As especialidades têm folha própria**, irmã da de marcar e nunca dentro
+      dela (a `Sheet` é um `Modal`; empilhá-los põe o rodapé em risco —
+      INVARIANTE #1). Fechar volta a marcar consulta.
+      - o rascunho da consulta subiu para o ecrã da Saúde, senão um formulário
+        meio preenchido perdia-se a caminho de acrescentar a especialidade que
+        falta — que é precisamente quando se lá vai
+      - criar uma deixa-a JÁ escolhida no rascunho, como no protótipo
+      - cada linha diz «3 consultas» ou «sem consultas»
+      - ⚠ **uma especialidade em uso não se apaga.** Apagava sempre, com um
+        diálogo que prometia que as consultas ficavam como estavam — ficavam,
+        a apontar em TEXTO para um nome que já não existe. É o defeito que
+        obrigou o `renameSpecialty` a migrar os episódios, a entrar pela porta
+        do lado. Agora a linha diz «Em uso» e não oferece alvo nenhum.
+      - ⚠ a linha NÃO é tocável, e no protótipo é: lá o apagar vive dentro dela
+        num alvo de ~28 px. As invariantes não cedem a medidas do protótipo
+        (#5, 44 px, e o erro #6 do CLAUDE.md).
+      - falta a linha com chevron para a especialidade — hoje são pastilhas em
+        fila, e o protótipo tem um selector que abre
 - [ ] **PENDENTE: sem selector de membro.** A folha do protótipo não o tem —
       quem marca está dentro de uma ficha, e é essa a pessoa (`healthWho`).
       Tirá-lo muda a navegação da Saúde, e é decisão à parte.

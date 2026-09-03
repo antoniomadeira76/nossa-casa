@@ -8,7 +8,6 @@ import { DE } from '../data';
 import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Tap, Avatar, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
-import Confirm from '../Confirm';
 import { pad2, plural, dayLabel, daysUntil, chaveDeDMY, dmyDeChave, TODAY_KEY } from '../format';
 
 export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMarcado }) {
@@ -16,16 +15,40 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   const { s, set, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, addHealthDoc, arquivarConsulta, membros: MEMBERS, membrosDaCasa } = st;
   const [membroDaFolha, setMembroDaFolha] = useState(null);  // pré-selecção ao marcar
 
+  const [sheet, setSheet] = useState(null);
+
+  // ── O rascunho da consulta vive AQUI, e não dentro da folha ────────────────
+  //
+  // ⚠ Estava dentro do `MarcarConsulta`, com um `useState` próprio. Enquanto as
+  // especialidades eram uma aba dessa mesma folha, isso chegava — a folha nunca
+  // desmontava. Agora «Gerir» abre uma folha IRMÃ, e a de marcar sai do ecrã:
+  // um formulário meio preenchido perdia-se a caminho de acrescentar a
+  // especialidade que faltava, que é precisamente quando se lá vai.
+  //
+  // É o que o protótipo faz — o `consDraft` dele está no estado do pai —, e é
+  // também o que permite que criar uma especialidade a deixe já escolhida no
+  // rascunho ao voltar.
+  const marcaveis = membrosDaCasa.filter(n => st.canSeeHealth(n, user));
+  const rascunhoVazio = (membro) => ({
+    member: membro || st.criancas[0] || marcaveis[0],
+    date: '', time: '', specialty: '', doctor: '', nota: '',
+  });
+  const [consulta, setConsulta] = useState(() => rascunhoVazio(null));
+
+  const abrirMarcacao = (membro) => {
+    setMembroDaFolha(membro || null);
+    setConsulta(rascunhoVazio(membro));
+    setSheet('consulta');
+  };
+
   // Quem toca em «marcar consulta» dentro de uma ficha volta para aqui com o
   // membro em mão. Sem isto a folha abria no valor por omissão, e vir da
   // ficha da Mia propunha o Léo.
   useEffect(() => {
     if (!marcarPara) return;
-    setMembroDaFolha(marcarPara);
-    setSheet('consulta');
+    abrirMarcacao(marcarPara);
     onMarcado?.();
   }, [marcarPara]);
-  const [sheet, setSheet] = useState(null);
   const [expandedRecord, setExpandedRecord] = useState(null);
   const [expandedNote, setExpandedNote] = useState(null);
   const [searchText, setSearchText] = useState('');
@@ -492,8 +515,21 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   const semNada = fichas.length > 0 && fichas.every(m =>
     st.healthOf(m, user).length === 0 && st.docsOf(m, user).length === 0);
 
+  // ── Duas folhas IRMÃS, nunca uma dentro da outra ───────────────────────────
+  //
+  // ⚠ A `Sheet` é um `Modal`. Encaixar outro por cima põe o rodapé em risco, e
+  // o INVARIANTE #1 já quebrou três vezes neste projeto. Por isso «Gerir» TROCA
+  // a folha em vez de empilhar — é também o que o protótipo faz, onde `sheet` é
+  // um valor só. Fechar as especialidades volta a marcar, com o rascunho como
+  // ficou, porque ele vive uma camada acima das duas.
   const folha = sheet === 'consulta'
-    ? <MarcarConsulta t={t} user={user} membro={membroDaFolha} onClose={() => setSheet(null)} />
+    ? <MarcarConsulta t={t} user={user} form={consulta} setForm={setConsulta}
+        marcaveis={marcaveis}
+        onGerirEspecialidades={() => setSheet('especialidades')}
+        onClose={() => setSheet(null)} />
+    : sheet === 'especialidades'
+    ? <GerirEspecialidades t={t} form={consulta} setForm={setConsulta}
+        onClose={() => setSheet('consulta')} />
     : null;
 
   return (
@@ -549,7 +585,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
         </View>
 
         {/* Botão Marcar Consulta */}
-        <AddButton t={t} label="marcar consulta" onPress={() => { setMembroDaFolha(null); setSheet('consulta'); }} />
+        <AddButton t={t} label="marcar consulta" onPress={() => abrirMarcacao(null)} />
 
         {/* Searchbar */}
         {showArchive && (
@@ -790,32 +826,12 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
 // por um setForm num estado que esta folha não lê — tem o seu próprio form —
 // portanto abrir a partir da ficha da Mia propunha o Léo, que é o valor por
 // omissão. Agora vem por prop.
-function MarcarConsulta({ t, user, membro, onClose }) {
-  // ⚠ Sem `renameSpecialty`, e de propósito: ele troca o nome na lista e não
-  // toca nos episódios de `health`, que guardam a especialidade como texto.
-  // Renomear deixava as consultas a apontar para um nome que já não existe.
+// O rascunho (`form`/`setForm`) e a lista de quem se pode marcar vêm de cima:
+// esta folha sai do ecrã quando se vai gerir as especialidades, e o que estiver
+// escrito tem de sobreviver à ida.
+function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidades, onClose }) {
   const st = useStore();
-  const { s, set, addSpecialty, removeSpecialty, renameSpecialty, addHealthRecord,
-          membrosDaCasa, criancas, membros: MEMBERS, oNome } = st;
-
-  // ⚠ Só os membros cuja ficha quem está a marcar PODE ver. O selector
-  // oferecia `membrosDaCasa` inteiro, o outro adulto incluído — e a ficha de um
-  // adulto é só dele (INVARIANTE #3). A Rita marcava uma consulta ao Tomás e
-  // ficava com um episódio que ela própria não vê e um evento que não lhe
-  // aparece: escrevia no escuro.
-  const marcaveis = membrosDaCasa.filter(n => st.canSeeHealth(n, user));
-  const [tab, setTab] = useState('nova');
-  const [form, setForm] = useState({ member: membro || criancas[0] || marcaveis[0],
-    date: '', time: '', specialty: '', doctor: '', nota: '' });
-  const [newSpecialty, setNewSpecialty] = useState('');
-  // Esta lista era gerida em dois sítios — aqui e numa quinta aba da Gestão da
-  // Casa. A da Gestão saiu, e com ela saiu o diálogo que PERGUNTAVA antes de
-  // apagar: aqui o toque apagava logo. Passou a perguntar, porque agora é o
-  // único sítio e um toque a mais não desfaz nada.
-  const [aApagar, setAApagar] = useState(null);
-  // Qual está a ser renomeada, e o que a loja recusou dizer em português.
-  const [aRenomear, setARenomear] = useState(null);
-  const [erroEsp, setErroEsp] = useState(null);
+  const { s, set, addHealthRecord, membros: MEMBERS, oNome } = st;
 
   // Marcar uma consulta cria DUAS coisas, e é o «nenhum exame órfão» do
   // TAREFAS.md: o episódio na ficha e o evento na agenda, ligados.
@@ -866,72 +882,21 @@ function MarcarConsulta({ t, user, membro, onClose }) {
   };
 
   return (
-    <Sheet t={t} title="Marcar Consulta" sub="Marcar consultas e gerir especialidades" onClose={onClose}>
+    <Sheet t={t} title="Marcar Consulta"
+      sub={form.member ? `Para ${form.member}` : 'Uma consulta e o evento na agenda'}
+      onClose={onClose}>
       <View style={{ gap: S.lg }}>
-        {/* Tabs */}
-        {/* ⚠ Estes dois eram `accessibilityRole="button"` SEM rótulo nenhum.
-            São abas, e agora são a entrada para o único sítio onde as
-            especialidades se gerem — o leitor de ecrã tem de as anunciar como
-            abas, e dizer qual está escolhida. Sem rótulo também não apareciam
-            em varredura nenhuma, que é como catorze alvos pequenos viveram
-            escondidos neste ecrã. */}
-        <View style={{ flexDirection: 'row', gap: S.sm }}>
-          <Pressable accessibilityRole="tab" accessibilityLabel="Nova Consulta"
-            accessibilityState={{ selected: tab === 'nova' }}
-            onPress={() => setTab('nova')}
-            style={{
-              flex: 1, minHeight: 44, justifyContent: 'center', borderBottomWidth: 2,
-              borderBottomColor: tab === 'nova' ? t.accent : 'transparent',
-            }}
-          >
-            <Text style={{
-              fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: tab === 'nova' ? t.accent : t.text3,
-              textAlign: 'center',
-            }}>
-              Nova Consulta
-            </Text>
-          </Pressable>
-          <Pressable accessibilityRole="tab" accessibilityLabel="Especialidades"
-            accessibilityState={{ selected: tab === 'especialidades' }}
-            onPress={() => setTab('especialidades')}
-            style={{
-              flex: 1, minHeight: 44, justifyContent: 'center', borderBottomWidth: 2,
-              borderBottomColor: tab === 'especialidades' ? t.accent : 'transparent',
-            }}
-          >
-            <Text style={{
-              fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: tab === 'especialidades' ? t.accent : t.text3,
-              textAlign: 'center',
-            }}>
-              Especialidades
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* Nova Consulta Tab */}
-        {tab === 'nova' && (
-          <View style={{ gap: S.lg }}>
-            {/* «A consulta», com o «Gerir» ao lado — é onde o protótipo o põe.
-                ⚠ Por agora leva à aba «Especialidades», que continua ali em
-                cima. São dois caminhos para o mesmo sítio, e é dívida
-                assumida: o protótipo não tem abas nesta folha, e tirá-las é o
-                trabalho de mover as especialidades para uma folha própria.
-                Está no TAREFAS.md. Deixar duas portas é o mesmo defeito que os
-                atalhos do Início tinham, e não fica assim para sempre. */}
+        {/* ⚠ Aqui havia uma faixa de abas — «Nova Consulta» e «Especialidades»
+            — E o «Gerir» aqui em baixo, os dois a levar ao mesmo sítio. Duas
+            portas para a mesma coisa é o defeito que os atalhos do Início
+            tinham. O protótipo não tem abas nesta folha: tem UM «Gerir», ao
+            lado do campo da especialidade, que abre uma folha própria. */}
+        <View style={{ gap: S.lg }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
               <Text style={{ flex: 1, fontFamily: FONT.display, fontSize: 16,
                 fontWeight: '600', color: t.titulo || t.slate }}>
                 A consulta
               </Text>
-              <Pressable accessibilityRole="button" accessibilityLabel="Gerir especialidades"
-                onPress={() => setTab('especialidades')}
-                style={{ minHeight: 44, minWidth: 44, paddingHorizontal: S.md,
-                  borderRadius: R.row, borderWidth: 1, borderColor: t.border,
-                  alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
-                  Gerir
-                </Text>
-              </Pressable>
             </View>
 
             <View style={{ gap: S.sm }}>
@@ -976,8 +941,26 @@ function MarcarConsulta({ t, user, membro, onClose }) {
             </View>
 
             <View style={{ gap: S.sm }}>
-              <Label t={t}>Especialidade</Label>
+              {/* A ÚNICA porta para as especialidades, ao lado do campo — é
+                  onde o protótipo a põe. Abre uma folha irmã; esta sai, e o
+                  que já estiver escrito fica, porque o rascunho vive acima. */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+                <View style={{ flex: 1 }}><Label t={t}>Especialidade</Label></View>
+                <Pressable accessibilityRole="button" accessibilityLabel="Gerir especialidades"
+                  onPress={onGerirEspecialidades}
+                  style={{ minHeight: 44, minWidth: 44, paddingHorizontal: S.md,
+                    borderRadius: R.row, borderWidth: 1, borderColor: t.border,
+                    alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
+                    Gerir
+                  </Text>
+                </Pressable>
+              </View>
               <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
+                {!(s.specialities || []).length ? (
+                  <Empty t={t} icon="heartPulse" title="Sem especialidades."
+                    hint="Toque em Gerir para criar a primeira." />
+                ) : null}
                 {(s.specialities || []).map(spec => (
                   <Pressable accessibilityRole="button"
                     key={spec}
@@ -1078,122 +1061,153 @@ function MarcarConsulta({ t, user, membro, onClose }) {
             <Primary t={t} label="Marcar e Pôr na Agenda" onPress={handleSaveConsultation}
               disabled={!form.date || !form.specialty} />
           </View>
-        )}
+        </View>
+    </Sheet>
+  );
+}
 
-        {/* Especialidades Tab */}
-        {tab === 'especialidades' && (
-          <View style={{ gap: S.lg }}>
-            {/* ── Um campo, dois trabalhos ────────────────────────────────
-                Acrescentar e renomear partilham o campo. Tocar no lápis de uma
-                linha traz o nome para aqui e o botão passa a visto; o
-                «Cancelar» aparece ao lado.
+// ── As especialidades, no único sítio onde se gerem ──────────────────────────
+//
+// Folha própria e IRMÃ da de marcar — nunca uma dentro da outra, porque a
+// `Sheet` é um `Modal` e empilhá-los põe o rodapé em risco (INVARIANTE #1).
+// Fechar volta a marcar consulta, com o rascunho como ficou.
+//
+// Um campo faz dois trabalhos: acrescentar e renomear. Tocar em «Renomear»
+// numa linha traz o nome para o campo e o botão muda de frase.
+function GerirEspecialidades({ t, form, setForm, onClose }) {
+  const st = useStore();
+  const { s, addSpecialty, removeSpecialty, renameSpecialty, consultasDaEspecialidade } = st;
 
-                ⚠ Não é uma folha dentro de outra, e é de propósito: isto já
-                está DENTRO da folha «Marcar Consulta», e a `Sheet` é um
-                `Modal` — encaixar outro por cima punha o rodapé em risco
-                (INVARIANTE #1, que já quebrou três vezes). O campo estava aqui
-                e não custa nada.
+  const [nome, setNome] = useState('');
+  const [aRenomear, setARenomear] = useState(null);
+  const [erro, setErro] = useState(null);
 
-                O renomear voltou depois de o `renameSpecialty` da loja passar
-                a migrar os episódios de `health` e o título do evento da
-                agenda. Antes trocava o nome na lista e mais nada, e por isso
-                foi retirado. */}
-            <View style={{ gap: S.sm }}>
-              <Label t={t}>{aRenomear ? `Renomear «${aRenomear}»` : 'Adicionar especialidade'}</Label>
-              <View style={{ flexDirection: 'row', gap: S.sm }}>
-                <TextInput
-                  value={newSpecialty}
-                  onChangeText={(v) => { setNewSpecialty(v); setErroEsp(null); }}
-                  placeholder="Ex: Cardiologia"
-                  placeholderTextColor={t.text3}
-                  style={{
-                    flex: 1, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
-                    fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
-                    borderColor: erroEsp ? t.state.err : t.border, backgroundColor: t.card,
-                  }}
-                />
-                {aRenomear ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel="Cancelar"
-                    onPress={() => { setARenomear(null); setNewSpecialty(''); setErroEsp(null); }}
-                    style={{ paddingHorizontal: S.md, minWidth: 44, minHeight: 44, borderRadius: R.row,
-                      borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon name="close" size={20} color={t.text3} />
-                  </Pressable>
-                ) : null}
-                <Pressable accessibilityRole="button"
-                  accessibilityLabel={aRenomear ? 'Guardar o nome' : 'Acrescentar especialidade'}
-                  onPress={() => {
-                    const nome = newSpecialty.trim();
-                    if (!nome) return;
-                    if (aRenomear) {
-                      // A loja devolve null ou uma frase em português.
-                      const erro = renameSpecialty(aRenomear, nome);
-                      if (erro) return setErroEsp(erro);
-                      setARenomear(null);
-                    } else {
-                      addSpecialty(nome);
-                    }
-                    setNewSpecialty('');
-                    setErroEsp(null);
-                  }}
-                  disabled={!newSpecialty.trim()}
-                  style={{
-                    paddingHorizontal: S.md, minWidth: 44, minHeight: 44, borderRadius: R.row, backgroundColor: t.accent,
-                    alignItems: 'center', justifyContent: 'center', opacity: !newSpecialty.trim() ? 0.5 : 1,
-                  }}
-                >
-                  <Icon name={aRenomear ? 'check' : 'plus'} size={20} color="#FFFFFF" />
-                </Pressable>
-              </View>
-              {erroEsp ? (
-                <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.errDeep }}>
-                  {erroEsp}
-                </Text>
-              ) : null}
-            </View>
+  const lista = s.specialities || [];
 
-            <View style={{ gap: S.md }}>
-              <Label t={t}>Especialidades</Label>
-              {!(s.specialities || []).length ? (
-                <Empty t={t} icon="heartPulse" title="Sem especialidades."
-                  hint="São as que aparecem ao marcar uma consulta." />
-              ) : null}
-              {(s.specialities || []).map(spec => (
-                <View key={spec} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: t.subtle, borderRadius: R.row }}>
-                  <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>
-                    {spec}
+  const guardar = () => {
+    const n = nome.trim();
+    if (!n) return;
+    if (aRenomear) {
+      const e = renameSpecialty(aRenomear, n);
+      if (e) return setErro(e);
+      // O rascunho segue o nome novo, senão a consulta que se estava a marcar
+      // ficava com uma especialidade que já não está na lista.
+      setForm(f => (f.specialty === aRenomear ? { ...f, specialty: n } : f));
+      setARenomear(null);
+    } else {
+      const e = addSpecialty(n);
+      if (e) return setErro(e);
+      // Criada, fica JÁ escolhida no rascunho — é o que o protótipo faz, e é a
+      // razão por que se veio aqui: faltava esta ao marcar.
+      setForm(f => ({ ...f, specialty: n }));
+    }
+    setNome('');
+    setErro(null);
+  };
+
+  const apagar = (esp) => {
+    const e = removeSpecialty(esp);
+    if (e) return setErro(e);
+    // Apagada a que estava escolhida, o rascunho fica sem especialidade — e o
+    // botão de marcar desliga-se sozinho, que é o correto.
+    setForm(f => (f.specialty === esp ? { ...f, specialty: '' } : f));
+    if (aRenomear === esp) { setARenomear(null); setNome(''); }
+    setErro(null);
+  };
+
+  return (
+    <Sheet t={t} title="Especialidades" sub={`${lista.length} na lista`}
+      onClose={onClose}>
+      <View style={{ gap: S.lg }}>
+        <View style={{ gap: S.sm }}>
+          {!lista.length ? (
+            <Empty t={t} icon="heartPulse" title="Sem especialidades."
+              hint="São as que aparecem ao marcar uma consulta." />
+          ) : null}
+          {lista.map(esp => {
+            const usadas = consultasDaEspecialidade(esp);
+            const aEditar = aRenomear === esp;
+            return (
+              // ⚠ A linha NÃO é tocável, e no protótipo é: lá a linha inteira
+              // renomeia e o apagar vive por dentro dela, num alvo de ~28 px.
+              // São os dois defeitos já documentados — o INVARIANTE #5 (44) e o
+              // erro #6 do CLAUDE.md (pílula tocável dentro de linha tocável).
+              // As invariantes não cedem a medidas do protótipo: aqui há duas
+              // ações, com 44 cada uma, e nenhuma linha a competir com elas.
+              <View key={esp} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
+                paddingHorizontal: S.md, paddingVertical: S.sm, minHeight: 56,
+                borderRadius: R.row, borderWidth: 1,
+                borderColor: aEditar ? t.accent : t.border }}>
+                <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                  <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>
+                    {esp}
                   </Text>
-                  {/* ⚠ Era um `Pressable` com `padding: S.sm` à volta de um ícone
-                      de 18 — 34 px de alvo, contra os 44 do INVARIANTE #5. E o
-                      `hitSlop={8}` que o acompanhava não salvava nada: a
-                      react-native-web IGNORA-O. Passou a `Tap`, que tem 44 por
-                      omissão e não depende do hitSlop para os ter. */}
-                  {/* O lápis traz o nome para o campo lá em cima. Duas
-                      pastilhas numa linha que não é tocável — a linha não tem
-                      destino próprio, portanto o erro #6 do CLAUDE.md («uma
-                      linha, um destino») não se aplica: aqui há duas ações e
-                      nenhuma linha a competir com elas. */}
-                  <Tap label={`Renomear ${spec}`}
-                    onPress={() => { setARenomear(spec); setNewSpecialty(spec); setErroEsp(null); }}>
-                    <Icon name="edit" size={18} color={t.text3} />
-                  </Tap>
-                  <Tap label={`Apagar ${spec}`} onPress={() => setAApagar(spec)}>
+                  {/* A conta que decide se ela se pode apagar, dita antes de
+                      alguém tentar. Sem isto o «Em uso» aparecia sem razão. */}
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>
+                    {usadas ? plural(usadas, 'consulta', 'consultas') : 'sem consultas'}
+                  </Text>
+                </View>
+                <Tap label={aEditar ? `A renomear ${esp}` : `Renomear ${esp}`}
+                  onPress={() => { setARenomear(esp); setNome(esp); setErro(null); }}>
+                  <Icon name="edit" size={18} color={aEditar ? t.accent : t.text3} />
+                </Tap>
+                {usadas ? (
+                  // Em uso: diz-se, e não se oferece. Um alvo que não faz nada
+                  // é pior do que nenhum — daí ser texto e não um `Tap`.
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600',
+                    color: t.text3, paddingHorizontal: S.sm }}>
+                    Em uso
+                  </Text>
+                ) : (
+                  <Tap label={`Apagar ${esp}`} onPress={() => apagar(esp)}>
                     <Icon name="trash" size={18} color={STATE.err} />
                   </Tap>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-      </View>
+                )}
+              </View>
+            );
+          })}
+        </View>
 
-      {aApagar && (
-        <Confirm t={t} destructive icon="trash"
-          title="Apagar especialidade?"
-          message={`«${aApagar}» deixa de aparecer ao marcar uma consulta. As consultas já marcadas com ela ficam como estão.`}
-          confirmLabel="Apagar" onCancel={() => setAApagar(null)}
-          onConfirm={() => { removeSpecialty(aApagar); setAApagar(null); }} />
-      )}
+        <View style={{ height: 1, backgroundColor: t.border }} />
+
+        <View style={{ gap: S.sm }}>
+          <Label t={t}>{aRenomear ? `Renomear «${aRenomear}»` : 'Nova especialidade'}</Label>
+          <View style={{ flexDirection: 'row', gap: S.sm }}>
+            <TextInput
+              value={nome}
+              onChangeText={(v) => { setNome(v); setErro(null); }}
+              placeholder="Ex.: Fisioterapia"
+              placeholderTextColor={t.text3}
+              style={{
+                flex: 1, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
+                fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
+                borderColor: erro ? t.state.err : t.border, backgroundColor: t.card,
+              }}
+            />
+            {aRenomear ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="Cancelar edição"
+                onPress={() => { setARenomear(null); setNome(''); setErro(null); }}
+                style={{ paddingHorizontal: S.md, minWidth: 44, minHeight: 44, borderRadius: R.row,
+                  borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="close" size={20} color={t.text3} />
+              </Pressable>
+            ) : null}
+          </View>
+          <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 18, color: t.text3 }}>
+            Uma especialidade só se apaga quando não tem consultas. Renomear
+            acompanha as consultas e o título do evento na agenda.
+          </Text>
+          {erro ? (
+            <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.errDeep }}>
+              {erro}
+            </Text>
+          ) : null}
+        </View>
+
+        <Primary t={t} label={aRenomear ? 'Guardar Nome' : 'Criar Especialidade'}
+          onPress={guardar} disabled={!nome.trim()} />
+      </View>
     </Sheet>
   );
 }

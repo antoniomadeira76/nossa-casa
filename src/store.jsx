@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useReducer, useRe
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES, HEALTH, HEALTH_DOCS, VAULT, DE } from './data';
 import { TODAY_KEY, TODAY, MONTHS, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY,
-         chaveRelativa } from './format';
+         chaveRelativa, plural } from './format';
 import { observacao, precosDe, estimativaDe, compararLojas } from './precos';
 // A camada do servidor entra por importação dinâmica, não estática. Duas
 // razões: o SDK do PocketBase é ESM e uma importação estática arrastava-o
@@ -1829,16 +1829,58 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     }));
   };
 
-  const addSpecialty = (name) => {
+  // Quantas consultas guardam este nome.
+  //
+  // ⚠ `allHealth()` e não `s.health`: as sementes são código e só o que se
+  // acrescenta é que se grava. Contar pelo gravado dizia «sem consultas» de uma
+  // especialidade com três à vista no ecrã — e essa é exactamente a conta que
+  // decide se ela se pode apagar.
+  const consultasDaEspecialidade = (nome) =>
+    allHealth().filter(h => h.specialty === nome).length;
+
+  // Devolvem null quando correm bem e uma frase em português quando não, como o
+  // `renameSpecialty` e o `renomearMembro`. Não rebentam: quem chama mostra a
+  // frase.
+  const addSpecialty = (nome) => {
+    const n = String(nome || '').trim();
+    if (!n) return 'A especialidade precisa de um nome.';
+    if (n.length > 40) return 'O nome não pode passar de 40 caracteres.';
+    // Sem acentos-cegos: «Pediatria» e «pediatria» são a mesma, e duas linhas
+    // iguais na lista não se distinguem ao marcar uma consulta.
+    if ((s.specialities || []).some(e => e.toLowerCase() === n.toLowerCase())) {
+      return 'Já existe uma especialidade com esse nome.';
+    }
     set(x => ({
-      specialities: [...(x.specialities || []), name],
+      specialities: [...(x.specialities || []), n],
+      registo: [{ at: Date.now(), t: `Especialidade criada: ${n}` }, ...(x.registo || [])],
     }));
+    return null;
   };
 
-  const removeSpecialty = (name) => {
+  // ⚠ Uma especialidade só se apaga quando não tem consultas.
+  //
+  // Isto apagava sempre, e o ecrã perguntava antes com uma mensagem que
+  // prometia que «as consultas já marcadas com ela ficam como estão». Ficavam —
+  // a apontar, em TEXTO, para um nome que já não está em lado nenhum. O
+  // `renameSpecialty` teve de aprender a migrar os episódios precisamente por
+  // este motivo, e apagar deixava-os órfãos pela porta do lado.
+  //
+  // A regra é a do protótipo, e a do `docs/especificacao-ecras.md`: apagar as
+  // que não têm consultas. Quem quiser tirar uma que está em uso renomeia-a,
+  // que leva as consultas atrás.
+  const removeSpecialty = (nome) => {
+    if (!(s.specialities || []).includes(nome)) {
+      return 'Essa especialidade não existe nesta casa.';
+    }
+    const usadas = consultasDaEspecialidade(nome);
+    if (usadas) {
+      return `«${nome}» tem ${plural(usadas, 'consulta', 'consultas')} e não se apaga. Renomeie-a — o nome novo vai com elas.`;
+    }
     set(x => ({
-      specialities: (x.specialities || []).filter(s => s !== name),
+      specialities: (x.specialities || []).filter(e => e !== nome),
+      registo: [{ at: Date.now(), t: `Especialidade apagada: ${nome}` }, ...(x.registo || [])],
     }));
+    return null;
   };
 
   // Renomear uma especialidade tem de LEVAR CONSIGO tudo o que guarda o nome —
@@ -1980,7 +2022,8 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // Health feature methods
     addHealthRecord, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision,
     addHealthDoc, arquivarConsulta, docsDaConsulta, estaArquivada,
-    addSpecialty, removeSpecialty, renameSpecialty, reordenarTarefas,
+    addSpecialty, removeSpecialty, renameSpecialty, consultasDaEspecialidade,
+    reordenarTarefas,
     // Google Calendar import
     importGoogleEvents,
   };

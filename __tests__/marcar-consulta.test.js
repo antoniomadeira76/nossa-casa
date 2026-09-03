@@ -207,23 +207,26 @@ describe('⚠ o selector só oferece fichas que quem marca pode ver', () => {
 });
 
 describe('renomear uma especialidade, pela interface', () => {
+  // ⚠ A porta mudou. Havia DUAS — uma aba «Especialidades» na folha de marcar e
+  // um «Gerir» ao lado do título, as duas para o mesmo sítio. Ficou uma: o
+  // «Gerir» ao lado do campo, que abre uma folha IRMÃ.
   const atéÀsEspecialidades = (user) => {
     const { r, loja } = abrir(user || 'Rita');
     tocar(r, 'marcar consulta');
-    tocar(r, 'Especialidades');
+    tocar(r, 'Gerir especialidades');
     return { r, loja };
   };
 
   const escrever = (r, texto) => {
     const campo = r.root.findAll(x => x.props && typeof x.props.onChangeText === 'function'
-      && x.props.placeholder === 'Ex: Cardiologia')[0];
+      && x.props.placeholder === 'Ex.: Fisioterapia')[0];
     expect(campo).toBeTruthy();
     TestRenderer.act(() => { campo.props.onChangeText(texto); });
   };
 
   it('o lápis traz o nome para o campo, e o rótulo diz o que se está a fazer', () => {
     const { r } = atéÀsEspecialidades();
-    expect(junta(r.toJSON())).toContain('Adicionar especialidade');
+    expect(junta(r.toJSON())).toContain('Nova especialidade');
     tocar(r, 'Renomear Pediatria');
     expect(junta(r.toJSON())).toContain('Renomear «Pediatria»');
   });
@@ -237,10 +240,10 @@ describe('renomear uma especialidade, pela interface', () => {
 
     // Guardar a consulta FECHA a folha — reabre-se para ir às especialidades.
     tocar(r, 'marcar consulta');
-    tocar(r, 'Especialidades');
+    tocar(r, 'Gerir especialidades');
     tocar(r, 'Renomear Pediatria');
     escrever(r, 'Puericultura');
-    tocar(r, 'Guardar o nome');
+    tocar(r, 'Guardar Nome');
 
     expect(loja().s.specialities).toContain('Puericultura');
     expect(loja().s.specialities).not.toContain('Pediatria');
@@ -252,8 +255,8 @@ describe('renomear uma especialidade, pela interface', () => {
     const { r, loja } = atéÀsEspecialidades();
     tocar(r, 'Renomear Pediatria');
     escrever(r, 'Outra coisa');
-    tocar(r, 'Cancelar');
-    expect(junta(r.toJSON())).toContain('Adicionar especialidade');
+    tocar(r, 'Cancelar edição');
+    expect(junta(r.toJSON())).toContain('Nova especialidade');
     expect(loja().s.specialities).toContain('Pediatria');
   });
 
@@ -262,8 +265,44 @@ describe('renomear uma especialidade, pela interface', () => {
     const { r } = atéÀsEspecialidades();
     tocar(r, 'Renomear Pediatria');
     escrever(r, 'x'.repeat(41));
-    tocar(r, 'Guardar o nome');
+    tocar(r, 'Guardar Nome');
     expect(junta(r.toJSON())).toContain('O nome não pode passar de 40 caracteres.');
+  });
+
+  // ── E a viagem de ida e volta, que é a razão de o rascunho ter subido ──────
+  it('⚠ o que já estava escrito sobrevive à ida às especialidades', () => {
+    // O rascunho vivia DENTRO da folha de marcar. Com as especialidades numa
+    // aba dessa mesma folha isso chegava, porque ela nunca desmontava. Agora
+    // «Gerir» troca a folha — e um formulário meio preenchido perdia-se
+    // exactamente no momento em que se vai lá: falta a especialidade.
+    const { r } = abrir('Rita');
+    tocar(r, 'marcar consulta');
+    tocar(r, 'Mia');
+    escreverData(r, 'd2026-09-20');
+
+    tocar(r, 'Gerir especialidades');
+    expect(junta(r.toJSON())).toContain('Nova especialidade');
+
+    tocar(r, 'Fechar');   // fechar as especialidades volta a marcar, não sai
+    // Voltou a marcar, com o membro que se tinha escolhido.
+    expect(junta(r.toJSON())).toContain('A consulta');
+    expect(junta(r.toJSON())).toContain('Para Mia');
+  });
+
+  it('⚠ e criar uma deixa-a JÁ escolhida no rascunho', () => {
+    // É a razão por que se lá foi. Sem isto a pessoa cria «Fisioterapia»,
+    // volta, e tem de a ir escolher outra vez à lista.
+    const { r, loja } = abrir('Rita');
+    tocar(r, 'marcar consulta');
+    escreverData(r, 'd2026-09-20');
+    tocar(r, 'Gerir especialidades');
+    escrever(r, 'Fisioterapia');
+    tocar(r, 'Criar Especialidade');
+    expect(loja().s.specialities).toContain('Fisioterapia');
+
+    tocar(r, 'Fechar');   // fechar as especialidades volta a marcar, não sai
+    // Escolhida: o botão de marcar exige data E especialidade, e está vivo.
+    expect(alvos(r, 'Marcar e Pôr na Agenda').length).toBeGreaterThan(0);
   });
 });
 
@@ -273,18 +312,30 @@ describe('⚠ os dois botões do campo têm 44 de LARGURA, não só de altura', 
   const path = require('path');
   const codigo = fs.readFileSync(path.join(__dirname, '..', 'src/screens/Saude.jsx'), 'utf8');
 
-  it('o de acrescentar e o de guardar declaram minWidth', () => {
+  it('o de cancelar a edição declara minWidth', () => {
     // Medido no navegador a 412: o de acrescentar dava 36 de largura. O
     // enchimento comprime-se porque o campo ao lado é `flex: 1`, e com o
-    // renomear activo há três coisas na linha em vez de duas.
+    // renomear activo havia três coisas na linha em vez de duas.
     //
-    // ⚠ Isto é anterior a esta alteração e viveu escondido porque a prova de
-    // alvos em `alvos-e-navegacao.test.js` confere `height`/`minHeight` e NÃO
-    // a largura. O INVARIANTE #5 não fala só de altura — está escrito lá.
+    // ⚠ Isto viveu escondido porque a prova de alvos em
+    // `alvos-e-navegacao.test.js` confere `height`/`minHeight` e NÃO a
+    // largura. O INVARIANTE #5 não fala só de altura — está escrito lá.
+    //
+    // Eram dois botões nesta linha; ficou um. O de guardar desceu para o fundo
+    // da folha como `Primary`, que tem 48 de altura e ocupa a largura toda —
+    // é o que o protótipo faz, e tira a compressão da origem.
     const i = codigo.indexOf("aRenomear ? `Renomear");
     expect(i).toBeGreaterThan(0);
     const bloco = codigo.slice(i, i + 3200);
-    expect((bloco.match(/minWidth: 44, minHeight: 44/g) || [])).toHaveLength(2);
+    expect((bloco.match(/minWidth: 44, minHeight: 44/g) || [])).toHaveLength(1);
+  });
+
+  it('⚠ e o «Gerir» também — é a única porta, e um ícone sozinho não a abre', () => {
+    const i = codigo.indexOf('accessibilityLabel="Gerir especialidades"');
+    expect(i).toBeGreaterThan(0);
+    const bloco = codigo.slice(i, i + 400);
+    expect(bloco).toMatch(/minHeight: 44/);
+    expect(bloco).toMatch(/minWidth: 44/);
   });
 });
 
@@ -490,12 +541,24 @@ describe('o botão e o «Gerir», como no protótipo', () => {
     expect(alvos(r, 'Marcar Consulta').length).toBe(0);
   });
 
-  it('e o «Gerir» está ao lado do título, e leva às especialidades', () => {
+  it('e o «Gerir» leva às especialidades — sendo a ÚNICA porta', () => {
     const { r } = abrir('Rita');
     tocar(r, 'marcar consulta');
     expect(junta(r.toJSON())).toContain('A consulta');
-    expect(junta(r.toJSON())).not.toContain('Adicionar especialidade');
+    expect(junta(r.toJSON())).not.toContain('Nova especialidade');
     tocar(r, 'Gerir especialidades');
-    expect(junta(r.toJSON())).toContain('Adicionar especialidade');
+    expect(junta(r.toJSON())).toContain('Nova especialidade');
+  });
+
+  it('⚠ e a folha de marcar já não tem abas — eram a segunda porta', () => {
+    // Havia uma faixa com «Nova Consulta» e «Especialidades» E o «Gerir», os
+    // dois para o mesmo sítio. É o mesmo defeito dos atalhos do Início.
+    const { r } = abrir('Rita');
+    tocar(r, 'marcar consulta');
+    const abas = r.root.findAll(x => x.props && x.props.accessibilityRole === 'tab');
+    expect(abas).toEqual([]);
+    // E nenhum outro alvo leva lá, tirando o «Gerir».
+    expect(alvos(r, 'Especialidades').length).toBe(0);
+    expect(alvos(r, 'Gerir especialidades').length).toBe(1);
   });
 });

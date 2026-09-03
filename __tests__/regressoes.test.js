@@ -519,14 +519,37 @@ describe('Saúde — o ecrã e a loja contam a mesma coisa', () => {
   // ficha → App → Saúde; sem isso voltava a abrir no predefinido, e foi o
   // que aconteceu ao fazer esse refactor.
   it('o marcar consulta recebe o membro de onde foi aberto', () => {
-    expect(saude).toMatch(/<MarcarConsulta[^>]*membro=\{membroDaFolha\}/s);
     // O que interessa é a precedência: o membro por onde a folha foi aberta
     // ganha ao valor por omissão. Este teste exigia o nome literal `'Léo'` e
     // partiu-se quando o valor por omissão passou a ser a primeira criança da
     // casa — que é o mesmo em Bengui, mas já não é um nome escrito à mão.
     expect(saude).toMatch(/member: membro \|\|/);
     expect(read('App.jsx')).toMatch(/setMarcarPara\(ficha\)/);
-    expect(saude).toMatch(/setMembroDaFolha\(marcarPara\)/);
+    expect(saude).toMatch(/abrirMarcacao\(marcarPara\)/);
+  });
+
+  // ⚠ O rascunho da consulta SUBIU para o ecrã quando as especialidades
+  // passaram a ter folha própria: «Gerir» troca a folha, e um formulário meio
+  // preenchido perdia-se a caminho de acrescentar a especialidade que falta.
+  //
+  // Isto guarda a consequência: quem abrir a folha tem de passar pelo
+  // `abrirMarcacao`, que semeia o rascunho. Um `setSheet('consulta')` solto
+  // abria a folha por cima do rascunho anterior — com o membro errado, que é
+  // exactamente o defeito que a prova acima existe para apanhar.
+  it('⚠ e ninguém abre a folha sem semear o rascunho', () => {
+    const c = semComentarios(saude);
+    const linhas = c.split('\n').filter(l => l.includes("setSheet('consulta')"));
+
+    // São duas, e são estas duas:
+    //   a de dentro do `abrirMarcacao`, que semeia
+    //   a do `onClose` das especialidades, que VOLTA — e que não pode semear,
+    //   senão a viagem apagava o formulário, que é o defeito ao contrário
+    expect(linhas).toHaveLength(2);
+    expect(linhas.filter(l => l.includes('onClose'))).toHaveLength(1);
+
+    const i = c.indexOf('const abrirMarcacao');
+    expect(i).toBeGreaterThan(0);
+    expect(c.slice(i, c.indexOf("setSheet('consulta')", i))).toContain('setConsulta(');
   });
 
   // A ficha de um membro desenhava um cabeçalho próprio dentro do conteúdo, e
