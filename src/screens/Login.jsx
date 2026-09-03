@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ImageBackground } from 'react-native';
+import { View, Text, Pressable, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { S, R, FONT, elev, corDoMembro } from '../theme';
+import { S, R, FONT, elev, corDoMembro, LARGURA_APP } from '../theme';
 import Icon, { Marca, GoogleG as G } from '../Icon';
 import { FEM } from '../data';
 import { useStore } from '../store';
@@ -93,11 +93,49 @@ export default function Login({ t, onEnter }) {
     setPin(pin + k);
   };
 
+  // ── A janela, e a coluna dentro dela ───────────────────────────────────────
+  //
+  // ⚠ Isto era um `ImageBackground` com `flex: 1` e mais nada, e tinha DOIS
+  // defeitos que são o mesmo:
+  //
+  // 1. A fotografia mandava na disposição com o TAMANHO NATURAL dela. Medido
+  //    no navegador: a camada da imagem a 1920×1280 dentro de uma janela de
+  //    1400×800, e por isso a sobrar para fora dela por todos os lados menos
+  //    um — «o fundo não cobre o fundo todo».
+  //    Agora a fotografia é uma camada ABSOLUTA que preenche a raiz, e o
+  //    `cover` tem uma caixa definida onde caber.
+  //
+  // 2. O conteúdo não tinha COLUNA. Medido: o painel do «Bem-vindo» ia de 16 a
+  //    1384 numa janela de 1400. O resto da app vive numa coluna de
+  //    `LARGURA_APP` centrada — o `App.jsx` fá-lo na própria raiz — e o Login
+  //    é devolvido ANTES dela, portanto nunca a teve.
+  //
+  // A fotografia e a marca ficam de fora da coluna, a cobrir a janela: é o que
+  // as referências mostram. O título entra NA coluna, com o painel — encostado
+  // à borda da janela ficava a olhar para o vazio num monitor.
   return (
-    <ImageBackground source={require('../../assets/login-bg.png')} resizeMode="cover" style={{ flex: 1, backgroundColor: t.chrome }}>
+    <View style={{ flex: 1, width: '100%', backgroundColor: t.chrome }}>
+      {/* ⚠ `width` e `height` a 100%, e não só o `inset: 0`. A
+          react-native-web acrescenta ao estilo as dimensões INTRÍNSECAS do
+          ficheiro que o `require` resolveu, e elas GANHAM ao preenchimento
+          absoluto: com o `inset` sozinho saía `position: absolute; inset: 0px;
+          height: 1280px; width: 1920px`. Os 100% substituem-nas, e o `inset`
+          fica porque é ele que ancora. Depois: 412×915 e 1400×800, os dois
+          exactos, `background-size: cover`, sem scroll horizontal.
+
+          E ao medir isto no navegador, não meça o `<img>`: na
+          react-native-web o `<img>` é a camada de acessibilidade e tem
+          `opacity: 0`. O que se vê é um `div` irmão com `background-image` e
+          `background-size`. O `object-fit` do `<img>` não quer dizer nada —
+          diz `fill` mesmo quando está tudo bem, e enganou-me. */}
+      <Image source={require('../../assets/login-bg.png')} resizeMode="cover"
+        accessibilityIgnoresInvertColors
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          width: '100%', height: '100%' }} />
       <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} />
       <Marca size={320} opacity={0.14} style={{ position: 'absolute', top: 100, alignSelf: 'center' }} />
 
+      <View style={{ flex: 1, width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto' }}>
       <View style={{ position: 'absolute', top: insets.top + 30, left: 16, gap: 4 }}>
         <Text style={{ fontFamily: FONT.display, fontSize: 32, fontWeight: '500', color: '#FFFFFF', letterSpacing: 0.25 }}>Nossa Casa</Text>
         <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Família {nomeDaCasa} · agenda, tarefas e dinheiro</Text>
@@ -281,6 +319,7 @@ export default function Login({ t, onEnter }) {
           </View>
         )}
       </View>
-    </ImageBackground>
+      </View>
+    </View>
   );
 }
