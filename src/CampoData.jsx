@@ -49,7 +49,35 @@ const grelhaDoMes = (y, m) => {
   return linhas;
 };
 
-export default function CampoData({ t, valor, onChange, placeholder = 'dd/mm/aaaa', minimo, maximo }) {
+// ── A hora, quando o campo também a pede ─────────────────────────────────────
+//
+// `hora` e `onHora` são opcionais: sem eles este componente é exactamente o que
+// era, e os ecrãs que já o usam não mudam nada.
+//
+// Com eles, o dia e a hora passam a ser UM controlo — que é o ponto 5 da
+// revalidação da Saúde. Estavam dois: um `CampoData` e um `TextInput` com
+// placeholder «hh:mm», e a hora escrevia-se à mão em todos os ecrãs da app.
+//
+// ⚠ O que NÃO se faz aqui é trocar o campo de texto da data por uma linha de
+// resumo, como o protótipo mostra. A app decidiu o contrário e registou-o na
+// 1.6.0 — «datas escrevem-se à mão ou escolhem-se no calendário, em todos os
+// ecrãs» — e desfazer isso num ecrã só deixava a app com duas maneiras de
+// escrever uma data. O que o ponto 5 pede em substância é que o dia e a hora
+// sejam uma coisa, e que a hora não seja texto livre. É isso que está feito.
+const HORAS = Array.from({ length: 24 }, (_, i) => i);
+const MINUTOS = [0, 15, 30, 45];
+const doisDigitos = (n) => String(n).padStart(2, '0');
+const partesDaHora = (hhmm) => {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || '').trim());
+  if (!m) return null;
+  const [h, min] = [+m[1], +m[2]];
+  if (h > 23 || min > 59) return null;
+  return { h, min };
+};
+
+export default function CampoData({ t, valor, onChange, placeholder = 'dd/mm/aaaa',
+  minimo, maximo, hora, onHora }) {
+  const comHora = typeof onHora === 'function';
   const [texto, setTexto] = useState(paraTexto(valor));
   const [aberto, setAberto] = useState(false);
   const inicial = parseKey(valor) || TODAY;
@@ -80,8 +108,16 @@ export default function CampoData({ t, valor, onChange, placeholder = 'dd/mm/aaa
     const chave = dkey(mes.y, mes.m, dia);
     setTexto(paraTexto(chave));
     onChange(chave);
-    setAberto(false);
+    // ⚠ Com hora, o painel FICA aberto: escolher o dia e ver o painel fechar
+    // antes de se poder escolher a hora obrigava a reabri-lo, e a segunda
+    // metade do controlo parecia não existir.
+    if (!comHora) setAberto(false);
   };
+
+  // A hora actual do campo, ou 09:00 — que é a hora com que uma consulta se
+  // marca mais vezes, e é a que o protótipo mostra.
+  const hp = partesDaHora(hora) || { h: 9, min: 0 };
+  const porHora = (h, min) => onHora(`${doisDigitos(h)}:${doisDigitos(min)}`);
 
   const escritoMasInvalido = texto.length === 10 && !diaValido(texto);
   const foraDoIntervalo = (chave) =>
@@ -89,9 +125,18 @@ export default function CampoData({ t, valor, onChange, placeholder = 'dd/mm/aaa
 
   // O que a caixa diz por baixo. Um campo de data tem três estados que valem a
   // pena distinguir, e antes tinha um: silêncio, ou vermelho.
+  const horaValida = comHora ? !!partesDaHora(hora) : true;
   const legenda = escritoMasInvalido ? { texto: 'Esse dia não existe nesse mês.', cor: t.state.err }
-    : valor ? { texto: dayLabel(valor).replace('Hoje · ', 'Hoje, '), cor: t.text3 }
-    : { texto: 'Escreva a data, ou toque no calendário.', cor: t.text3 };
+    : (comHora && hora && !horaValida) ? { texto: 'Essa hora não existe.', cor: t.state.err }
+    : valor ? {
+      // «Hoje, Quinta, 03/09 às 09:00» — o dia e a hora numa frase, que é o
+      // que o protótipo mostra na linha de resumo.
+      texto: dayLabel(valor).replace('Hoje · ', 'Hoje, ')
+        + (comHora && horaValida && hora ? ` às ${hora}` : ''),
+      cor: t.text3,
+    }
+    : { texto: comHora ? 'Escreva o dia, ou toque no calendário para o dia e a hora.'
+                       : 'Escreva a data, ou toque no calendário.', cor: t.text3 };
 
   return (
     <View style={{ gap: S.md }}>
@@ -202,6 +247,63 @@ export default function CampoData({ t, valor, onChange, placeholder = 'dd/mm/aaa
               </View>
             ))}
           </View>
+
+          {/* ── A hora, por baixo do calendário ──────────────────────────
+              «Calendário em cima, hora em baixo», que é a forma que o
+              TAREFAS.md descreve para este controlo.
+
+              ⚠ Um contador para a hora e pastilhas para os minutos, e não um
+              rolo. Um rolo é um gesto novo numa app que não tem nenhum, e as
+              24 horas em pastilhas não cabem nos 380 px úteis — foi medido.
+              Assim são cinco alvos, todos de 44, e sem gesto novo.
+
+              Os minutos são os quartos de hora. Quem precisar de 09:07 escreve
+              no campo de texto lá em cima, que continua a aceitar tudo. */}
+          {comHora ? (
+            <View style={{ gap: S.md, borderTopWidth: 1, borderTopColor: t.divider, paddingTop: 14 }}>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.slate }}>
+                Hora
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+                <Tap label="Hora anterior"
+                  onPress={() => porHora((hp.h + 23) % 24, hp.min)}
+                  style={{ borderRadius: R.row, borderWidth: 1, borderColor: t.border }}>
+                  <Icon name="caretLeft" size={18} color={t.text2} />
+                </Tap>
+                <Text style={{ flex: 1, textAlign: 'center', fontFamily: FONT.display,
+                  fontSize: 22, fontWeight: '600', color: t.text1 }}>
+                  {doisDigitos(hp.h)}:{doisDigitos(hp.min)}
+                </Text>
+                <Tap label="Hora seguinte"
+                  onPress={() => porHora((hp.h + 1) % 24, hp.min)}
+                  style={{ borderRadius: R.row, borderWidth: 1, borderColor: t.border }}>
+                  <Icon name="caretRight" size={18} color={t.text2} />
+                </Tap>
+              </View>
+              <View style={{ flexDirection: 'row', gap: S.sm }}>
+                {MINUTOS.map(min => {
+                  const escolhido = hp.min === min;
+                  return (
+                    <Pressable key={min} onPress={() => porHora(hp.h, min)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${doisDigitos(hp.h)}:${doisDigitos(min)}`}
+                      accessibilityState={{ selected: escolhido }}
+                      style={({ pressed }) => ({
+                        flex: 1, minHeight: 44, borderRadius: R.row, borderWidth: 1,
+                        alignItems: 'center', justifyContent: 'center',
+                        borderColor: escolhido ? t.accent : t.border,
+                        backgroundColor: escolhido ? t.accent : pressed ? t.subtle : 'transparent',
+                      })}>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 14, fontWeight: '600',
+                        color: escolhido ? '#FFFFFF' : t.text2 }}>
+                        :{doisDigitos(min)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
 
           {/* Hoje a um toque. Numa app de casa a data que mais se escolhe é a
               de agora, e chegar-lhe obrigava a navegar de volta se já se tivesse

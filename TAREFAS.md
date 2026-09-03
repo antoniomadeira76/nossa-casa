@@ -124,50 +124,74 @@ uma consulta a sério, porque não há onde escrever o nome.
 - [x] Sincronizar as consultas — sobem se o servidor viver na casa. Ver a
       última entrada desta secção.
 
-### ⚠ O que falta em «Marcar Consulta», contra o protótipo
+### «Marcar Consulta», contra o protótipo
 
-- [ ] **PENDENTE: Médico ou clínica.** Um campo, placeholder «Dr.ª Neves,
-      Centro de Saúde…», ícone `idcard`. O `addHealthRecord` da loja também não
-      o aceita. É o que desbloqueia os cinco sítios que já o leem.
-- [ ] **PENDENTE: Nota (opcional).** Um campo, placeholder «Jejum, levar
-      exames anteriores…», ícone `edit`. Não confundir com as notas do episódio
-      (`addHealthNote`), que são posteriores à consulta: esta é a nota de quem
-      marca, para si.
-- [ ] **PENDENTE: Dia e hora numa linha.** O protótipo tem UMA linha —
-      «Hoje · Quinta, 20/08 às 09:00» — que abre um selector. A implementação
-      tem dois campos, e a hora escreve-se à mão em «hh:mm».
-- [ ] **PENDENTE: O aviso de privacidade.** Caixa com `lock` vermelho: «A
-      consulta entra na sua Agenda como Só eu. Ninguém mais vê o motivo.» O
-      comportamento existe e está provado; o que falta é dizê-lo a quem marca.
-- [ ] **PENDENTE: O botão diz «Marcar e Pôr na Agenda».** Diz «Marcar
-      Consulta». O nome do protótipo é melhor: promete as duas coisas que
-      acontecem.
-- [ ] **PENDENTE: A especialidade é uma linha com chevron**, que abre a lista
-      com um visto no escolhido. Estão pastilhas em fila.
-- [ ] **PENDENTE: O «Gerir» é um botão ao lado do título**, não uma aba. E a
-      folha do protótipo não tem selector de membro — quem marca está dentro
-      de uma ficha, e é essa a pessoa (`healthWho`).
+- [x] **Médico ou clínica.** Placeholder «Dr.ª Neves, Centro de Saúde…», ícone
+      `idcard`. É o campo que desbloqueou os cinco sítios que já o leem — a
+      próxima consulta na ficha, cada linha do histórico, o detalhe de cada
+      documento, a folha de exportação e o PDF.
+- [x] **Nota (opcional).** Placeholder «Jejum, levar exames anteriores…», ícone
+      `edit`. Fica como `nota` (singular) na loja e `notas` no servidor, para
+      não se confundir com o `healthNotes` — as notas escritas DEPOIS da
+      consulta, cada uma com autor e data.
+- [x] **Dia e hora, um controlo.** O protótipo tem UMA linha —
+      «Hoje · Quinta, 20/08 às 09:00» — que abre um selector. Eram dois campos,
+      e a hora escrevia-se à mão em «hh:mm» — nada impedia «25:99».
+      Agora o calendário traz a hora por baixo e a legenda diz a frase inteira.
+      ⚠ O campo de TEXTO da data fica: a app decidiu na 1.6.0 que «datas
+      escrevem-se à mão ou escolhem-se no calendário, em TODOS os ecrãs», e
+      trocar isso num ecrã só dava duas maneiras de escrever uma data.
+- [x] **O aviso de quem vê a consulta.** Caixa com `lock` vermelho. O
+      comportamento existia e estava provado; faltava dizê-lo a quem marca.
+      ⚠ A frase NÃO é a do protótipo tal e qual. Lá é fixa — «entra na sua
+      Agenda como Só eu» — porque aquela folha marca sempre para quem está a
+      ver. Esta tem selector de membro, e a visibilidade não é a mesma: a de um
+      adulto é `so-eu`, a de uma criança é `adultos`. Copiar a frase fixa dizia
+      «só eu» ao marcar ao Léo, quando o outro adulto a vê. Há uma prova que
+      compara a frase com a visibilidade do evento, membro a membro.
+- [x] **O botão diz «Marcar e Pôr na Agenda»** — promete as duas coisas que
+      acontecem, e são duas: o episódio na ficha e o evento na agenda.
+- [x] **O «Gerir» é um botão ao lado do título.**
+      ⚠ Dívida assumida: leva à aba «Especialidades», que continua no topo da
+      folha. São duas portas para o mesmo sítio — o mesmo defeito que os
+      atalhos do Início tinham. Fica até as especialidades irem para folha
+      própria, e é isso que a linha seguinte pede.
+- [ ] **PENDENTE: as especialidades numa folha própria**, e a aba fora daqui. É
+      o que tira as duas portas. Leva com ela a linha com chevron para a
+      especialidade, que hoje são pastilhas em fila.
+- [ ] **PENDENTE: sem selector de membro.** A folha do protótipo não o tem —
+      quem marca está dentro de uma ficha, e é essa a pessoa (`healthWho`).
+      Tirá-lo muda a navegação da Saúde, e é decisão à parte.
 
-### ⚠ O que falta por inteiro
+### Os anexos e o arquivo
 
-- [ ] **PENDENTE: a folha «Anexar».** Tipo (exame / receita / relatório) com
-      ícones, nome («Análises de sangue, receita do ferro…»), validade só se
-      for receita, e fotografia do documento. Não existe nada disto.
-      O arquivo clínico LÊ (`allHealthDocs`, com procura, filtros e a origem no
-      `healthId`) e **nenhum ecrã ESCREVE**: as sementes de `HEALTH_DOCS` são o
-      único conteúdo possível.
-      ⚠ A FOTOGRAFIA é a parte travada. Um ficheiro clínico de menor entra em
-      `anexos`, e é dessa peça que os cinco pontos do `db/postgres/README.md`
-      mais falam. Um documento só com tipo, nome e validade não tem esse
-      problema — é por onde começar, e a fotografia vem depois.
-- [ ] **PENDENTE: a folha «Gerir consulta».** No protótipo abre de uma
-      consulta e tem: notas, «Fotografia do exame ou receita», «Anexos desta
-      consulta», «Anexar Exame ou Receita» e **«Arquivar Consulta»** — com a
-      frase «Arquivar não apaga nada — os anexos ficam ligados e a consulta
-      volta com um toque». Só as notas existem, e dentro do cartão expandido.
-- [ ] **PENDENTE: arquivar uma consulta.** Não há `healthArchived` no estado
-      nem forma de arquivar. Hoje uma consulta ou está pendente ou está
-      resolvida, e o arquivo clínico é só a paginação acima de 5 registos.
+- [x] **A folha «Anexar».** Tipo (exame / receita / relatório) com ícones, nome
+      («Análises de sangue, receita do ferro…») e validade só se for receita.
+      O documento fica ligado à consulta pelo `healthId` — «nenhum exame
+      órfão» — e trocar de tipo limpa a validade, senão um exame com prazo
+      aparecia no «Precisa de Si» como receita a expirar.
+      O arquivo clínico já LIA (`allHealthDocs`, com procura, filtros e a
+      origem) e nada ESCREVIA: as sementes eram o único conteúdo possível.
+- [x] **Arquivar uma consulta.** `healthArchived` no estado, e uma terceira
+      secção «Arquivadas» — e não um esconderijo: arquivar não apaga, portanto
+      a consulta tem de continuar a chegar-se. A frase do protótipo está no
+      ecrã e é verdade: «os anexos ficam ligados e a consulta volta com um
+      toque».
+      ⚠ E fiz aqui um defeito que já estava documentado no `store.jsx`: pus o
+      `healthArchived` nas `DATA_KEYS` e o valor por omissão só no `BLANK()`,
+      não no `DEMO()`. A mesma prova de fumo que o tinha apanhado antes
+      apanhou-o outra vez.
+- [ ] **PENDENTE: a folha «Gerir consulta».** No protótipo os anexos e o
+      arquivar vivem numa folha que abre da consulta. Aqui vivem DENTRO do
+      cartão expandido, onde as notas já estavam.
+      ⚠ É divergência de estrutura, não de conteúdo, e é deliberada: uma folha
+      por consulta obrigava a um segundo alvo na linha, e a linha já é o alvo
+      que abre o cartão (erro #6 do CLAUDE.md). Fica aqui por se decidir, não
+      por estar em falta.
+- [ ] **PENDENTE: a fotografia do documento.** É a única peça do protótipo que
+      falta por inteiro, e a que fica para o fim de propósito: um ficheiro
+      clínico de menor entra em `anexos`, e é dessa peça que os cinco pontos do
+      `db/postgres/README.md` mais falam. Decisão à parte, e consciente.
 
 ### A sincronização
 

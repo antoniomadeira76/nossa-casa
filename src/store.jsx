@@ -249,6 +249,7 @@ const DATA_KEYS = [
   'eventGone', 'eventEdits', 'roles', 'pins', 'pointValue', 'payDay', 'splitHalf',
   'rendimento', 'stores', 'shopPlan', 'shopHistory', 'precos', 'precoPago', 'health', 'specialities', 'equipCats', 'registo',
   'recurringReset', 'healthNotes', 'healthRecipes', 'healthDecisions', 'healthDocs', 'healthGone',
+  'healthArchived',
   'googleCalendarImported', // Google Calendar imports
   'membros', 'nomeDaCasa', 'deDemonstracao',
 ];
@@ -564,6 +565,11 @@ export const DEMO = () => ({
   // uma forma cara de não ter a forma certa. Apanhado por um teste de fumo.
   healthDocs: [],    // documentos acrescentados a uma ficha
   healthGone: {},    // fichas apagadas
+  // ⚠ E fiz o mesmo com esta, no dia em que a escrevi: pus `healthArchived`
+  // nas DATA_KEYS e o valor por omissão só no `BLANK()`. O comentário acima
+  // descreve o defeito, e a mesma prova de fumo apanhou-o outra vez. Uma
+  // consulta arquivada é `{ id: true }`; arquivar não apaga nada.
+  healthArchived: {},
   googleCalendarImported: {}, // eventId -> true (track which Google Calendar events were imported)
 
   // Quem vive nesta casa. Era uma constante importada de data.js, e a app
@@ -598,7 +604,7 @@ export const BLANK = () => ({
   ...DEMO(), done: {}, urg: {}, due: {}, vaultMoves: [],
   clearedSeeds: true, shopHistory: [], health: [],
   healthNotes: {}, healthRecipes: {}, healthDecisions: {}, googleCalendarImported: {},
-  healthDocs: [], healthGone: {},
+  healthDocs: [], healthGone: {}, healthArchived: {},
   ...SEM_DINHEIRO_SEMEADO(),
 });
 
@@ -1019,6 +1025,10 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     ? allHealth().filter(h => h.member === member).sort((a, b) => (b.day || '').localeCompare(a.day || ''))
     : []);
   const allHealthDocs = () => [...(s.clearedSeeds ? [] : HEALTH_DOCS), ...(s.healthDocs || [])];
+  // Os documentos de UMA consulta. O  é a origem, e é o que o
+  // TAREFAS.md chama «nenhum exame órfão».
+  const docsDaConsulta = (healthId) => allHealthDocs().filter(d => d.healthId === healthId);
+  const estaArquivada = (healthId) => !!(s.healthArchived || {})[healthId];
   const docsOf = (member, viewer) => (canSeeHealth(member, viewer)
     ? allHealthDocs().filter(d => d.member === member)
     : []);
@@ -1702,6 +1712,49 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     }));
   };
 
+  // ── Um documento numa ficha ─────────────────────────────────────────────
+  //
+  // O arquivo clínico LIA (`allHealthDocs`, com procura, filtros e a origem no
+  // `healthId`) e nada ESCREVIA: as sementes de `HEALTH_DOCS` eram o único
+  // conteúdo possível. Numa casa a sério não havia como juntar um relatório a
+  // uma consulta.
+  //
+  // ⚠ Sem ficheiro. O `expires` só existe para receitas, e é ele que põe a
+  // linha no «Precisa de Si» do Início — ver `receitasAExpirarDe`. A
+  // FOTOGRAFIA do documento é outra coisa e fica de fora: um ficheiro clínico
+  // de menor entra em `anexos`, e é dessa peça que os cinco pontos do
+  // db/postgres/README.md mais falam.
+  const addHealthDoc = (healthId, member, dados = {}) => {
+    const id = 'doc-' + Date.now();
+    const kind = dados.kind || 'Exame';
+    const title = String(dados.title || '').trim();
+    if (!title) return null;
+    set(x => ({
+      healthDocs: [...(x.healthDocs || []), {
+        id, healthId, member, kind, title,
+        // Só as receitas têm prazo. Um exame com `expires` aparecia no
+        // «Precisa de Si» como receita a expirar.
+        ...(kind === 'Receita' && dados.expires ? { expires: dados.expires } : {}),
+        createdAt: new Date().toISOString(),
+      }],
+    }));
+    return id;
+  };
+
+  // ── Arquivar uma consulta ───────────────────────────────────────────────
+  //
+  // Arquivar NÃO apaga: os anexos ficam ligados e a consulta volta com um
+  // toque. É por isso que é um sinalizador e não uma remoção — o `healthGone`
+  // é que apaga, e é outra coisa.
+  //
+  // Uma consulta arquivada sai da lista principal e do «precisa de ação», e
+  // continua no arquivo clínico. Quem decide isso é o ecrã; a loja só guarda.
+  const arquivarConsulta = (healthId, arquivar = true) => {
+    set(x => ({
+      healthArchived: { ...(x.healthArchived || {}), [healthId]: !!arquivar },
+    }));
+  };
+
   const addRecipe = (healthId, name, dosage, quantity, unit, expiresAt) => {
     set(x => ({
       healthRecipes: {
@@ -1886,6 +1939,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     startBlank: () => set(BLANK()),
     // Health feature methods
     addHealthRecord, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision,
+    addHealthDoc, arquivarConsulta, docsDaConsulta, estaArquivada,
     addSpecialty, removeSpecialty, renameSpecialty, reordenarTarefas,
     // Google Calendar import
     importGoogleEvents,

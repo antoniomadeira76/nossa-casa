@@ -12,7 +12,7 @@ import { pad2, plural, dayLabel, daysUntil, chaveDeDMY, dmyDeChave, TODAY_KEY } 
 
 export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMarcado }) {
   const st = useStore();
-  const { s, set, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, membros: MEMBERS, membrosDaCasa } = st;
+  const { s, set, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, addHealthDoc, arquivarConsulta, membros: MEMBERS, membrosDaCasa } = st;
   const [membroDaFolha, setMembroDaFolha] = useState(null);  // pré-selecção ao marcar
 
   // Quem toca em «marcar consulta» dentro de uma ficha volta para aqui com o
@@ -31,6 +31,9 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   const [memberFilter, setMemberFilter] = useState(null);
   const [newNoteForm, setNewNoteForm] = useState({ text: '' });
   const [recipeForm, setRecipeForm] = useState({ name: '', dosage: '', quantity: '', unit: '', expiresAt: '' });
+  // A folha «Anexar»: de que consulta, e o que se está a escrever.
+  const [anexoDe, setAnexoDe] = useState(null);
+  const [anexoForm, setAnexoForm] = useState({ kind: 'Exame', title: '', expires: '' });
 
   // A visibilidade vem da loja. Havia aqui uma cópia própria, e era mais
   // permissiva: devolvia true para qualquer criança sem verificar se quem vê é
@@ -45,8 +48,18 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   // «1 consulta» duas linhas acima.
   const visibleRecords = st.allHealth().filter(h => podeVer(h.member));
 
+  // ⚠ As arquivadas saem daqui. Arquivar não apaga, mas uma consulta
+  // arquivada não «precisa de ação» — se ficasse, arquivar não fazia nada ao
+  // que o ecrã mostra em primeiro lugar, que é o único sítio onde se nota.
+  // ⚠  e não : o  tem um 
+  // BOOLEANO, e dois nomes iguais com tipos diferentes no mesmo ficheiro é
+  // onde alguém escreve  sobre uma função e passa sempre.
+  const eArquivada = (h) => st.estaArquivada(h.id);
+  const activas = visibleRecords.filter(h => !eArquivada(h));
+  const arquivadas = visibleRecords.filter(eArquivada).sort((x, y) => String(y.day||'').localeCompare(String(x.day||'')));
+
   // Determina o que precisa de decisão (topo do acordeão)
-  const needsDecision = visibleRecords.filter(h => {
+  const needsDecision = activas.filter(h => {
     const decision = s.healthDecisions[h.id];
     return !decision || decision.status !== 'resolvido';
   });
@@ -57,7 +70,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   const porData = (a, b) => String(b.day || '').localeCompare(String(a.day || ''));
   const decisionsSorted = [
     ...needsDecision.sort(porData),
-    ...visibleRecords.filter(h => !needsDecision.includes(h)).sort(porData),
+    ...activas.filter(h => !needsDecision.includes(h)).sort(porData),
   ];
 
   // Filtrar com base em search e member
@@ -103,6 +116,8 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
     const recipes = s.healthRecipes[record.id] || [];
     const decision = s.healthDecisions[record.id];
     const needsDec = !decision || decision.status !== 'resolvido';
+    const anexos = st.docsDaConsulta(record.id);
+    const arquivada = st.estaArquivada(record.id);
 
     const recipeWarnings = recipes.filter(r => {
       const days = getRecipeExpiration(r.expiresAt);
@@ -381,6 +396,62 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                   </View>
                 </View>
               )}
+
+              {/* ── Os anexos desta consulta ──────────────────────────────
+                  No protótipo isto vive numa folha «Gerir consulta» que abre
+                  da consulta. Aqui vive DENTRO do cartão expandido, onde as
+                  notas já estavam.
+
+                  ⚠ É uma divergência de estrutura, não de conteúdo, e é
+                  deliberada: uma folha por consulta obrigava a um segundo alvo
+                  na linha, e a linha já é o alvo que abre o cartão (erro #6 do
+                  CLAUDE.md, «uma linha, um destino»). O conteúdo é o do
+                  protótipo — anexos, anexar, arquivar. */}
+              <View style={{ gap: S.sm, paddingTop: S.md, borderTopWidth: 1, borderTopColor: t.divider }}>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.slate }}>
+                  Anexos desta consulta ({anexos.length})
+                </Text>
+                {anexos.length === 0 ? (
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
+                    Sem anexos. Junte o exame, a receita ou o relatório.
+                  </Text>
+                ) : anexos.map(d => (
+                  <View key={d.id} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
+                    paddingHorizontal: S.md, paddingVertical: S.sm,
+                    backgroundColor: t.subtle, borderRadius: R.row }}>
+                    <Icon name={d.kind === 'Receita' ? 'fileText' : 'fileDone'} size={18} color={t.text3} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>{d.title}</Text>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>
+                        {d.kind}{d.expires ? ` · válida até ${dayLabel(d.expires).replace('Hoje · ', '')}` : ''}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+
+                <AddButton t={t} label="Anexar Exame ou Receita"
+                  onPress={() => { setAnexoDe(record.id); setAnexoForm({ kind: 'Exame', title: '', expires: '' }); }} />
+
+                {/* ── Arquivar ──────────────────────────────────────────
+                    Arquivar NÃO apaga, e a frase do protótipo diz-o. É por
+                    isso que é um sinalizador e não uma remoção: o `healthGone`
+                    é que apaga, e é outra coisa. */}
+                <Pressable accessibilityRole="button"
+                  accessibilityLabel={`${arquivada ? 'Desarquivar' : 'Arquivar'} a consulta de ${record.specialty}`}
+                  onPress={() => arquivarConsulta(record.id, !arquivada)}
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center',
+                    justifyContent: 'center', gap: S.md, minHeight: 44, borderRadius: R.row,
+                    borderWidth: 1, borderColor: t.border,
+                    backgroundColor: pressed ? t.subtle : 'transparent' })}>
+                  <Icon name="fileDone" size={18} color={t.text3} />
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
+                    {arquivada ? 'Desarquivar Consulta' : 'Arquivar Consulta'}
+                  </Text>
+                </Pressable>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 17, color: t.text3 }}>
+                  Arquivar não apaga nada — os anexos ficam ligados e a consulta volta com um toque.
+                </Text>
+              </View>
             </View>
           )}
         </View>
@@ -526,11 +597,27 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
               </View>
             )}
 
-            {filtered.length - needsDecision.length > 0 && (
+            {filtered.filter(h => !needsDecision.includes(h)).length > 0 && (
               <View>
                 <SectionTitle t={t}>Arquivo clínico</SectionTitle>
                 <View style={{ gap: S.md }}>
                   {filtered.filter(h => !needsDecision.includes(h)).map(record => (
+                    <RecordCard key={record.id} record={record} />
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* ── As arquivadas ────────────────────────────────────────────
+                Uma terceira secção, e não um esconderijo: arquivar não apaga,
+                portanto a consulta tem de continuar a chegar-se. Sem esta
+                secção, arquivar era o mesmo que perder — e a frase do
+                protótipo promete que «volta com um toque». */}
+            {arquivadas.length > 0 && (
+              <View>
+                <SectionTitle t={t}>Arquivadas ({arquivadas.length})</SectionTitle>
+                <View style={{ gap: S.md }}>
+                  {arquivadas.map(record => (
                     <RecordCard key={record.id} record={record} />
                   ))}
                 </View>
@@ -542,6 +629,93 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
 
       {/* Sheet: Marcar Consulta */}
       {folha}
+
+      {/* ── A folha «Anexar» ────────────────────────────────────────────────
+          Tipo, nome, e a validade só se for receita. É o que o protótipo
+          mostra, menos uma coisa: a FOTOGRAFIA do documento.
+
+          ⚠ A fotografia não está aqui e não é esquecimento. Um ficheiro
+          clínico de menor entra em `anexos`, e é dessa peça que os cinco
+          pontos do db/postgres/README.md mais falam. Sem ficheiro, um
+          documento é um título e um tipo — e isso já dá conteúdo ao arquivo
+          clínico, que até hoje só podia mostrar as sementes. */}
+      {anexoDe && (
+        <Sheet t={t} title="Anexar" sub="Exame, receita ou relatório"
+          onClose={() => setAnexoDe(null)}
+          action={
+            <Primary t={t} label="Anexar" disabled={!anexoForm.title.trim()}
+              onPress={() => {
+                const consulta = st.allHealth().find(h => h.id === anexoDe);
+                if (!consulta) return setAnexoDe(null);
+                addHealthDoc(anexoDe, consulta.member, {
+                  kind: anexoForm.kind,
+                  title: anexoForm.title,
+                  expires: anexoForm.expires || null,
+                });
+                setAnexoDe(null);
+              }} />
+          }>
+          <View style={{ gap: S.lg }}>
+            <View style={{ gap: S.sm }}>
+              <Label t={t}>Tipo</Label>
+              <View style={{ flexDirection: 'row', gap: S.sm }}>
+                {[['Exame', 'fileDone'], ['Receita', 'fileText'], ['Relatório', 'fileAdd']].map(([k, icone]) => {
+                  const escolhido = anexoForm.kind === k;
+                  return (
+                    <Pressable key={k} accessibilityRole="button" accessibilityLabel={k}
+                      accessibilityState={{ selected: escolhido }}
+                      onPress={() => setAnexoForm(f => ({ ...f, kind: k,
+                        // Só as receitas têm prazo. Trocar de tipo tem de
+                        // limpar a validade, senão um exame ficava com data e
+                        // aparecia no «Precisa de Si» como receita a expirar.
+                        expires: k === 'Receita' ? f.expires : '' }))}
+                      style={({ pressed }) => ({
+                        flex: 1, minHeight: 44, borderRadius: R.row, borderWidth: 1,
+                        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.sm,
+                        borderColor: escolhido ? t.accent : t.border,
+                        backgroundColor: escolhido ? t.subtle : pressed ? t.subtle : 'transparent',
+                      })}>
+                      <Icon name={icone} size={18} color={escolhido ? t.accent : t.text3} />
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600',
+                        color: escolhido ? t.accent : t.text3 }}>{k}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View style={{ gap: S.sm }}>
+              <Label t={t}>Nome</Label>
+              <TextInput
+                value={anexoForm.title}
+                onChangeText={(v) => setAnexoForm(f => ({ ...f, title: v }))}
+                placeholder="Análises de sangue, receita do ferro…"
+                placeholderTextColor={t.text3}
+                accessibilityLabel="Nome do documento"
+                style={{ minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
+                  fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
+                  borderColor: t.border, backgroundColor: t.card }}
+              />
+            </View>
+
+            {/* A validade só aparece para receitas — é ela que põe a linha no
+                «Precisa de Si» do Início, 30 dias antes. */}
+            {anexoForm.kind === 'Receita' && (
+              <View style={{ gap: S.sm }}>
+                <Label t={t}>Validade da receita</Label>
+                <CampoData t={t} valor={anexoForm.expires || null}
+                  onChange={(k) => setAnexoForm(f => ({ ...f, expires: k || '' }))} />
+              </View>
+            )}
+
+            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 17, color: t.text3 }}>
+              Sem fotografia, por agora: um ficheiro clínico é categoria especial
+              no RGPD e fica para uma decisão à parte. O documento fica ligado a
+              esta consulta.
+            </Text>
+          </View>
+        </Sheet>
+      )}
     </>
   );
 }
@@ -721,24 +895,18 @@ function MarcarConsulta({ t, user, membro, onClose }) {
               </View>
             </View>
 
+            {/* ── Dia e hora, UM controlo ──────────────────────────────────
+                Eram dois: um `CampoData` e um campo de texto com placeholder
+                «hh:mm». A hora escrevia-se à mão, e nada impedia «25:99» de
+                ser gravado — o `handleSaveConsultation` só exigia a data.
+                Agora o calendário traz a hora por baixo, e a legenda diz a
+                frase inteira: «Hoje, Quinta, 03/09 às 09:00». */}
             <View style={{ gap: S.sm }}>
-              <Label t={t}>Data</Label>
+              <Label t={t}>Dia e hora</Label>
               <CampoData t={t} valor={chaveDeDMY(form.date)}
-                onChange={(k) => setForm(f => ({ ...f, date: dmyDeChave(k) }))} />
-            </View>
-
-            <View style={{ gap: S.sm }}>
-              <Label t={t}>Hora</Label>
-              <TextInput
-                value={form.time}
-                onChangeText={(v) => setForm(f => ({ ...f, time: v }))}
-                placeholder="hh:mm"
-                style={{
-                  minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
-                  fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
-                  borderColor: t.border, backgroundColor: t.card,
-                }}
-              />
+                onChange={(k) => setForm(f => ({ ...f, date: dmyDeChave(k) }))}
+                hora={form.time}
+                onHora={(v) => setForm(f => ({ ...f, time: v }))} />
             </View>
 
             <View style={{ gap: S.sm }}>
