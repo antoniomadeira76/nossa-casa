@@ -81,9 +81,34 @@
         feita a tarefa de uma criança. A marcação era recusada, caía na fila, e
         ficava feita no telefone dela e por fazer no dele — **em silêncio**.
         Apanhado pela prova de ponta a ponta.
-      - **falta ainda**: alterar uma tarefa pelo lápis, a ordem à mão
-        (`taskOrder`), o `pending`/confirmação, e os eventos criados fora da
-        Saúde.
+      - ⚠ **e eu disse mais do que era verdade.** O commit `b0cd9d2` afirma que
+        «as tarefas e a agenda passam a viver na base de dados». A LEITURA da
+        agenda passou — os eventos do servidor apareciam — e **nada escrevia
+        lá**: o `sync.eventoDaCasa` existia e ninguém o chamava. Corrigido em
+        05/09/2026, com um guarda para o género de defeito (abaixo).
+      - **falta ainda**: a ordem à mão (`taskOrder`).
+- [x] ⚠ **Nenhuma função de escrita fica sem quem a chame** — o guarda em
+      `__tests__/nenhuma-escrita-sem-quem-a-chame.test.js`, escrito em
+      05/09/2026 depois de contar quantas havia. Eram **oito**:
+      | função | consequência |
+      |---|---|
+      | `despesa` | as despesas nunca chegavam ao servidor |
+      | `acerto` | nem o acerto de contas entre os adultos |
+      | `eventoDaCasa` | escrita por mim no dia anterior, nunca ligada |
+      | `alterarEvento` | editar um evento ficava num telefone |
+      | `alterarTarefa` | reatribuir uma tarefa também |
+      | `confirmarTarefaFeita` | os pontos ficavam por confirmar para sempre |
+      | `receitaDeSaude` | a receita não chegava a quem ia à farmácia |
+      | `decisaoDeSaude` | idem |
+
+      É o mesmo padrão que este projeto já nomeou duas vezes — «o mesmo andaime
+      sem obra que as tarefas tinham», sobre o `itemGone`, e o `addHealthRecord`
+      que existia e nada chamava. Uma função de escrita sem chamador **não dá
+      erro nenhum**: as provas do servidor passam, porque chamam-na
+      diretamente, e a app não a usa.
+
+      O guarda LÊ as exportações do `sync.js` em vez de as listar à mão — uma
+      lista escrita à mão envelhece na próxima função que alguém escrever.
 - [x] **As REGRAS DA CASA sobem** (04/09/2026): o valor do ponto, o dia de
       pagamento, a divisão a meias, o interruptor dos pontos, o rendimento, os
       **papéis** e os **PINs**. **19 provas** em `provar-regras-da-casa.mjs`.

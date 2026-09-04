@@ -25,7 +25,7 @@ const URG = [
 export default function Tarefas({ t, user, abrir }) {
   const st = useStore();
   const { s, set, allTasks, kidPts, dueOf, isRecurring, removerTarefa, membros: MEMBERS,
-          membrosDaCasa, criancas, pontosNasTarefas } = st;
+          membrosDaCasa, criancas, pontosNasTarefas, editarTarefa } = st;
   const [filter, setFilter] = useState('Todos');
   const [manage, setManage] = useState(abrir || null);
   React.useEffect(() => { if (abrir) setManage(abrir); }, [abrir]);
@@ -283,7 +283,7 @@ export default function Tarefas({ t, user, abrir }) {
             <Label t={t}>Atribuir a</Label>
             <Segmented t={t} small value={task.who}
               options={membrosDaCasa.map(n => ({ value: n, label: n }))}
-              onChange={(v) => set(x => ({ taskEdits: { ...x.taskEdits, [task.id]: { ...(x.taskEdits[task.id] || {}), who: v } } }))} />
+              onChange={(v) => editarTarefa(task.id, { who: v })} />
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: t.subtle,

@@ -77,7 +77,7 @@ function GrelhaEnvelopes({ t, envelopes, livre, escolhido, onEscolher }) {
 
 export default function Dinheiro({ t, user, onEquip }) {
   const st = useStore();
-  const { s, set, envelopes, budget, spent, remaining, allEquip, isAdmin, membros: MEMBERS, adultos, criancas, acerto, acertado, pagarAcerto, oNome, aoNome, moverEntreEnvelopes } = st;
+  const { s, set, envelopes, budget, spent, remaining, allEquip, isAdmin, membros: MEMBERS, adultos, criancas, acerto, acertado, pagarAcerto, oNome, aoNome, moverEntreEnvelopes, registarDespesa } = st;
   const [sheet, setSheet] = useState(null);
   const [mv, setMv] = useState({ from: 0, to: 3, amount: 0 });
   const [exp, setExp] = useState({ amount: 0, env: 0, payer: user, split: true });
@@ -112,8 +112,12 @@ export default function Dinheiro({ t, user, onEquip }) {
       amount = settle.customAmount;
     }
 
+    // ⚠ Quem paga a quem vai junto: sem isso o acerto não podia subir, e
+    // ficava no telefone de quem carregou no botão enquanto o outro continuava
+    // a ver a dívida por pagar. É dinheiro entre duas pessoas.
     pagarAcerto(amount, settle.mode === 'all' ? 'Acerto total'
-      : settle.mode === 'half' ? 'Metade' : 'Valor à escolha');
+      : settle.mode === 'half' ? 'Metade' : 'Valor à escolha',
+      acerto && acerto.devedor, acerto && acerto.credor);
     setSheet(null);
     setSettle({ mode: 'all', customAmount: 0 });
   };
@@ -423,11 +427,16 @@ export default function Dinheiro({ t, user, onEquip }) {
           onClose={() => setSheet(null)}
           action={<Primary t={t} disabled={exp.amount <= 0} label="Registar Despesa"
             onPress={() => {
-              set(x => ({
-                registered: x.registered + (envelopes[exp.env].name === 'Mercearia' ? exp.amount : 0),
-                envMove: x.envMove,
-                acertoMovs: [],
-              }));
+              // ⚠ Pela loja, que também a manda para o servidor. Isto somava
+              // ao `registered` local e mais nada — as despesas nunca
+              // chegavam ao servidor, e cada telefone contava só o que ele
+              // próprio tinha gasto.
+              registarDespesa({
+                envelope: envelopes[exp.env].name,
+                valor: exp.amount,
+                pagador: exp.payer,
+                divideMeias: exp.split,
+              });
               setSheet(null); setExp(e => ({ ...e, amount: 0 }));
             }} />}>
           <View style={{ gap: S.md }}>

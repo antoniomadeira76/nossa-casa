@@ -965,19 +965,19 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
     //             `podeVerEvento` devolve verdade ao dono, portanto pôr a
     //             criança como dona mostrava-lhe a própria consulta.
     //   adulto    `so-eu`, e o dono é o adulto de quem é a consulta.
-    set(s => ({
-      added: [...(s.added || []), {
-        id: 'ev-' + Date.now(),
-        day: chaveDeDMY(form.date),
-        time: form.time || '10:00',
-        title: `Consulta ${form.specialty}`,
-        who: `${form.member} · Consulta de saúde`,
-        owner: paraCrianca ? user : form.member,
-        visibilidade: paraCrianca ? 'adultos' : 'so-eu',
-        tag: 'Saúde',
-        healthId: id,        // o episódio a que este evento pertence
-      }],
-    }));
+    // ⚠ Pelo `criarEvento` da loja, que também o manda para o servidor. Isto
+    // era um `set` direto: o evento ficava neste telefone, e a consulta na
+    // agenda do outro adulto não existia.
+    st.criarEvento({
+      day: chaveDeDMY(form.date),
+      time: form.time || '10:00',
+      title: `Consulta ${form.specialty}`,
+      who: `${form.member} · Consulta de saúde`,
+      owner: paraCrianca ? user : form.member,
+      visibilidade: paraCrianca ? 'adultos' : 'so-eu',
+      tag: 'Saúde',
+      healthId: id,        // o episódio a que este evento pertence
+    });
     onClose();
   };
 

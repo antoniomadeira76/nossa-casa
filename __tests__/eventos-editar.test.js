@@ -124,7 +124,24 @@ describe('A agenda da Google: convida, não invade', () => {
   // Se a Google falhar, o evento não pode desaparecer: uma rede não apaga o
   // que uma pessoa escreveu.
   test('a app guarda primeiro, e a Google depois', () => {
-    expect(folha).toMatch(/set\(s => \(\{[\s\S]{0,80}added: \[\.\.\.\(s\.added \|\| \[\]\), event\][\s\S]{0,40}\}\)\);[\s\S]{0,200}servidor\.google\.criarEvento/);
+    // ⚠ A forma mudou em 05/09/2026 e a propriedade não: a escrita local
+    // deixou de ser um `set({ added: [...] })` na folha e passa pelo
+    // `criarEvento` da loja, que também o manda para o SERVIDOR DA CASA — o
+    // `sync.eventoDaCasa` existia e ninguém o chamava.
+    //
+    // O que esta prova protege continua a ser a ORDEM: a app guarda, e só
+    // depois vai à Google. Prende-se às posições, não ao texto de uma delas.
+    const guardaCa = folha.indexOf('criarEvento(event)');
+    const vaiAGoogle = folha.indexOf('servidor.google.criarEvento');
+    expect(guardaCa).toBeGreaterThan(0);
+    expect(vaiAGoogle).toBeGreaterThan(0);
+    expect(guardaCa).toBeLessThan(vaiAGoogle);
+  });
+
+  test('⚠ e a folha já não escreve no `added` por si', () => {
+    // Uma escrita numa folha é uma escrita sem sítio onde a sincronização
+    // possa viver — e o evento ficava só neste telefone.
+    expect(folha).not.toMatch(/added: \[\.\.\.\(s\.added \|\| \[\]\), event\]/);
   });
 
   // Sem o identificador da Google, editar na app deixava a agenda a dizer

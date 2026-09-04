@@ -1165,10 +1165,24 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // Pagar parte ou a totalidade do acerto. Um movimento, somado — nunca
   // `settled = true`. Dois telefones a acertar metade cada um dão a conta
   // saldada; a escrita de um booleano dava metade paga e a dívida fechada.
-  const pagarAcerto = (valor, nota) => {
+  const pagarAcerto = (valor, nota, de, para) => {
     const v = Math.round(Number(valor) * 100) / 100;
     if (!(v > 0)) return;
     set(x => ({ acertoMovs: [...(x.acertoMovs || []), { valor: v, data: TODAY_KEY, nota: nota || '' }] }));
+
+    // ⚠ E sobe. O `sync.acerto` existia e ninguém o chamava: o acerto entre os
+    // dois adultos ficava no telefone de quem carregou no botão, e o outro
+    // continuava a ver a dívida por pagar. É dinheiro entre duas pessoas — o
+    // sítio onde discordar dói mais.
+    if (sync) {
+      const ses = sync.sessao();
+      const idDe = idDoMembro(de);
+      const idPara = idDoMembro(para);
+      if (ses && idDe && idPara) sync.acerto({
+        casa: ses.casa, de: idDe, para: idPara, valor: v,
+        data: TODAY_KEY.replace(/^d/, ''),
+      }).catch(() => {});
+    }
   };
 
   // Acrescenta um movimento. Nunca substitui o saldo.
@@ -1265,6 +1279,100 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       registo: [{ t: `A tarefa «${t.title}» foi apagada`, at: Date.now() }, ...x.registo],
     };
   });
+
+  // ── Criar um evento na agenda ───────────────────────────────────────────
+  //
+  // ⚠ O `sync.eventoDaCasa` existia e NINGUÉM o chamava. Escrevi-o em
+  // 04/09/2026 e escrevi na mensagem do commit que «a agenda passa a viver na
+  // base de dados» — a LEITURA passou, e por isso os eventos do servidor
+  // apareciam. Nada escrevia lá. A frase dizia mais do que era verdade.
+  //
+  // Três sítios criavam eventos com `set({ added: [...] })` direto: a folha de
+  // agendar, a marcação de consulta e a importação da Google. Passam todos por
+  // aqui.
+  //
+  // Devolve o `id` local, para quem chama poder ligar-lhe outra coisa — é o
+  // que a consulta faz com o `healthId`.
+  const criarEvento = ({ day, time, title, who, owner, visibilidade, tag, healthId, id }) => {
+    const idLocal = id || ('ev-' + Date.now());
+    set(x => ({
+      added: [...(x.added || []), {
+        id: idLocal, day, time: time || '', title, who: who || '',
+        owner, visibilidade: visibilidade || 'so-eu', tag: tag || '',
+        ...(healthId ? { healthId } : {}),
+      }],
+    }));
+
+    if (sync) {
+      const ses = sync.sessao();
+      const autor = idDoMembro(owner);
+      // O `responsavel` é opcional; o `who` da loja é uma frase («Léo ·
+      // Consulta de saúde»), portanto só se manda quando é mesmo um membro.
+      const responsavel = idDoMembro(who);
+      if (ses && autor) sync.eventoDaCasa({
+        casa: ses.casa, dia: day, hora: time, titulo: title,
+        responsavel, autor, visibilidade: visibilidade || 'so-eu',
+        etiqueta: tag || '',
+        // ⚠ O `healthId` local não serve: o servidor quer o id DELE. Só se
+        // manda quando a consulta já subiu e aprendeu o seu.
+        episodio: healthId ? episodioNoServidor(healthId) : null,
+      })
+        .then((r) => { if (r && r.id) set(x => ({
+          added: (x.added || []).map(e => (e.id === idLocal ? { ...e, idServidor: r.id } : e)),
+        })); })
+        .catch(() => {});
+    }
+    return idLocal;
+  };
+
+  const eventoNoServidor = (id) =>
+    ((s.added || []).find(e => e.id === id) || {}).idServidor || null;
+
+  const alterarEventoDaCasa = (id, campos) => {
+    set(x => ({ added: (x.added || []).map(e => (e.id === id ? { ...e, ...campos } : e)) }));
+    const noServidor = eventoNoServidor(id);
+    if (sync && noServidor) sync.alterarEvento(noServidor, {
+      ...(campos.day !== undefined ? { dia: campos.day } : {}),
+      ...(campos.time !== undefined ? { hora: campos.time } : {}),
+      ...(campos.title !== undefined ? { titulo: campos.title } : {}),
+      ...(campos.visibilidade !== undefined ? { visibilidade: campos.visibilidade } : {}),
+    }).catch(() => {});
+  };
+
+  // ── Registar uma despesa ────────────────────────────────────────────────
+  //
+  // ⚠ O `sync.despesa` existia e NINGUÉM o chamava. A app somava ao
+  // `registered` local e mais nada: as despesas nunca chegavam ao servidor, e
+  // o orçamento de cada telefone contava só o que ele próprio tinha gasto.
+  //
+  // É o mesmo «andaime sem obra» que o `itemGone` e o `addHealthRecord` já
+  // tinham tido — uma função de escrita sem chamador não dá erro nenhum, e as
+  // provas do servidor passam porque chamam-na diretamente.
+  //
+  // ⚠ E é uma INSERÇÃO, nunca a substituição de um total. Corrigir uma despesa
+  // é anular e recriar: a coleção não tem `updateRule` nem `deleteRule`.
+  const registarDespesa = ({ envelope, valor, descricao, pagador, divideMeias, dia = TODAY_KEY }) => {
+    const v = Math.round(Number(valor) * 100) / 100;
+    if (!(v > 0)) return;
+
+    set(x => ({
+      registered: x.registered + (envelope === 'Mercearia' ? v : 0),
+      acertoMovs: [],
+    }));
+
+    if (sync) {
+      const ses = sync.sessao();
+      const idEnv = envelopeNoServidor(envelope);
+      const idPagador = idDoMembro(pagador);
+      // Sem envelopes do servidor a despesa não tem onde entrar: a casa ainda
+      // corre com as sementes, e fica local.
+      if (ses && idEnv && idPagador) sync.despesa({
+        casa: ses.casa, envelope: idEnv, valor: v, pagador: idPagador,
+        descricao: descricao || '', data: dia.replace(/^d/, ''),
+        divideMeias: divideMeias !== false,
+      }).catch(() => {});
+    }
+  };
 
   // ── Mover dinheiro entre envelopes ──────────────────────────────────────
   //
@@ -1463,6 +1571,28 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     return id;
   };
 
+  // ── Editar uma tarefa ───────────────────────────────────────────────────
+  //
+  // ⚠ As alterações vivem num mapa `taskEdits` porque uma SEMENTE não se pode
+  // editar no sítio. Uma tarefa que veio do servidor não é semente: essa
+  // altera-se lá, e é o que a segunda metade faz.
+  //
+  // O `sync.alterarTarefa` existia e ninguém o chamava — a folha de gerir
+  // escrevia direto no `taskEdits`, e reatribuir uma tarefa ficava no telefone
+  // de quem a reatribuiu.
+  const editarTarefa = (id, campos) => {
+    set(x => ({
+      taskEdits: { ...x.taskEdits, [id]: { ...(x.taskEdits[id] || {}), ...campos } },
+    }));
+    const noServidor = tarefaNoServidor(id);
+    if (sync && noServidor) sync.alterarTarefa(noServidor, {
+      ...(campos.title !== undefined ? { titulo: campos.title } : {}),
+      ...(campos.who !== undefined ? { atribuidoA: idDoMembro(campos.who) } : {}),
+      ...(campos.pts !== undefined ? { pontos: campos.pts } : {}),
+      ...(campos.recur !== undefined ? { recorrencia: campos.recur } : {}),
+    }).catch(() => {});
+  };
+
   // O `id` de uma tarefa no servidor. Nulo enquanto ela for só local.
   const tarefaNoServidor = (id) =>
     (allTasks().find(t => t.id === id) || {}).idServidor || null;
@@ -1522,9 +1652,19 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     const hoje = TODAY_KEY.replace(/^d/, '');
     if (ficouFeita) {
       sync.marcarTarefaFeita({ casa: ses.casa, tarefa, dia: TODAY_KEY, marcadaPor: ses.membro })
-        .then((r) => { if (r && r.id) set(x => ({
-          feitas: { ...x.feitas, [`${tarefa}|${hoje}`]: { id: r.id, confirmada: false } },
-        })); })
+        .then((r) => { if (r && r.id) {
+          set(x => ({
+            feitas: { ...x.feitas, [`${tarefa}|${hoje}`]: { id: r.id, confirmada: !byChild } },
+          }));
+          // ⚠ Quando é um ADULTO a dar por feita, isso É a confirmação — e é
+          // ela que faz os pontos contarem. O campo `confirmada_em` estava no
+          // esquema desde o início e nada o escrevia: os pontos de todas as
+          // crianças ficavam por confirmar para sempre.
+          //
+          // Uma criança a marcar não confirma nada: fica `pending` na app, e
+          // no servidor a linha fica sem `confirmada_em`. É a mesma regra.
+          if (!byChild) sync.confirmarTarefaFeita(r.id, ses.membro).catch(() => {});
+        } })
         .catch(() => {});
     } else {
       const linha = (s.feitas || {})[`${tarefa}|${hoje}`];
@@ -1547,16 +1687,35 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // Os remendos vão para `eventEdits` em vez de reescreverem o evento: as
   // sementes vivem no código e não se podem alterar, e um evento criado na app
   // é tratado da mesma maneira para não haver dois caminhos.
-  const editarEvento = (id, campos) => set(x => ({
-    eventEdits: { ...x.eventEdits, [id]: { ...(x.eventEdits[id] || {}), ...campos } },
-  }));
+  // ⚠ As alterações vivem num mapa `eventEdits` porque uma SEMENTE não se pode
+  // editar no sítio. Um evento que veio do servidor não é semente: esse
+  // altera-se lá, e é o que a segunda metade faz.
+  const editarEvento = (id, campos) => {
+    set(x => ({
+      eventEdits: { ...x.eventEdits, [id]: { ...(x.eventEdits[id] || {}), ...campos } },
+    }));
+    const noServidor = eventoNoServidor(id);
+    if (sync && noServidor) sync.alterarEvento(noServidor, {
+      ...(campos.day !== undefined ? { dia: campos.day } : {}),
+      ...(campos.time !== undefined ? { hora: campos.time } : {}),
+      ...(campos.title !== undefined ? { titulo: campos.title } : {}),
+      ...(campos.visibilidade !== undefined ? { visibilidade: campos.visibilidade } : {}),
+    }).catch(() => {});
+  };
 
   // Apagar é marcar como ido, não tirar da lista. As sementes não se conseguem
   // remover de outra maneira, e assim os dois casos comportam-se igual.
-  const removerEvento = (id) => set(x => ({
-    eventGone: { ...x.eventGone, [id]: true },
-    registo: [{ t: 'Um evento foi apagado da agenda', at: Date.now() }, ...x.registo],
-  }));
+  //
+  // ⚠ Mas um evento do SERVIDOR apaga-se lá: marcá-lo como ido só neste
+  // telefone deixava-o na agenda do outro adulto para sempre.
+  const removerEvento = (id) => {
+    const noServidor = eventoNoServidor(id);
+    if (sync && noServidor) sync.apagarEvento(noServidor).catch(() => {});
+    set(x => ({
+      eventGone: { ...x.eventGone, [id]: true },
+      registo: [{ t: 'Um evento foi apagado da agenda', at: Date.now() }, ...x.registo],
+    }));
+  };
 
   // Os eventos da casa que JÁ NÃO EXISTEM na agenda da Google.
   //
@@ -2276,18 +2435,41 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     }));
   };
 
+  // ⚠ O `sync.receitaDeSaude` existia desde 04/09/2026 e ninguém o chamava.
+  // Escrevi a coleção, escrevi a função, e não liguei nem uma nem outra: a
+  // receita ficava no telefone de quem a escreveu, e o outro adulto que fosse
+  // à farmácia não a via. Apanhado pelo guarda em
+  // `__tests__/nenhuma-escrita-sem-quem-a-chame.test.js`.
   const addRecipe = (healthId, name, dosage, quantity, unit, expiresAt) => {
+    const idLocal = 'rx-' + Date.now();
     set(x => ({
       healthRecipes: {
         ...x.healthRecipes,
         [healthId]: [...(x.healthRecipes[healthId] || []), {
-          id: 'rx-' + Date.now(),
+          id: idLocal,
           name, dosage, quantity, unit,
           expiresAt,
           decision: null,
         }],
       },
     }));
+
+    if (sync) {
+      const ses = sync.sessao();
+      const episodio = episodioNoServidor(healthId);
+      if (ses && episodio) sync.receitaDeSaude({
+        casa: ses.casa, episodio, nome: name, dose: dosage,
+        quantidade: quantity, unidade: unit, expiraEm: expiresAt,
+      })
+        .then((r) => { if (r && r.id) set(x => ({
+          healthRecipes: {
+            ...x.healthRecipes,
+            [healthId]: (x.healthRecipes[healthId] || []).map(o => (
+              o.id === idLocal ? { ...o, idServidor: r.id } : o)),
+          },
+        })); })
+        .catch(() => {});
+    }
   };
 
   const setRecipeDecision = (healthId, recipeId, decision) => {
@@ -2301,6 +2483,10 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     }));
   };
 
+  // ⚠ Idem. E aqui a coleção tem um ÍNDICE ÚNICO por episódio, de propósito:
+  // uma decisão é um ESTADO, não um movimento, e não se pode somar. Dois
+  // telefones que decidam ao mesmo tempo encontram-se no servidor em vez de
+  // criarem uma linha cada um — é o `decisaoDeSaude` que trata disso.
   const setHealthDecision = (healthId, type, status, note) => {
     set(x => ({
       healthDecisions: {
@@ -2308,6 +2494,14 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         [healthId]: { type, status, note, updatedAt: new Date().toISOString() },
       },
     }));
+
+    if (sync) {
+      const ses = sync.sessao();
+      const episodio = episodioNoServidor(healthId);
+      if (ses && episodio) sync.decisaoDeSaude({
+        casa: ses.casa, episodio, tipo: type, estado: status, nota: note,
+      }).catch(() => {});
+    }
   };
 
   // Quantas consultas guardam este nome.
@@ -2517,8 +2711,9 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
     garantiasAExpirar, receitasAExpirar, consultasProximas,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring, definirAvatar, trazerFotografia,
-    removerTarefa, criarTarefa, tarefaNoServidor, mudarRegraDaCasa, mudarListaDaCasa,
-    moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope,
+    removerTarefa, criarTarefa, editarTarefa, tarefaNoServidor, mudarRegraDaCasa, mudarListaDaCasa,
+    moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope, registarDespesa,
+    criarEvento, alterarEventoDaCasa, eventoNoServidor,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
     lerDoServidor,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),

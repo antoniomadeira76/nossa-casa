@@ -14,7 +14,7 @@ import * as servidor from '../pocketbase';
 // ganha um campo, a outra não — e depois um evento criado e um evento editado
 // já não são a mesma coisa.
 export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
-  const { set, s, adultos, membros: MEMBROS, editarEvento, removerEvento } = useStore();
+  const { set, s, adultos, membros: MEMBROS, editarEvento, removerEvento, criarEvento } = useStore();
   const aEditar = !!evento;
   const [aApagar, setAApagar] = useState(false);
   const [naGoogle, setNaGoogle] = useState(servidor.google.disponivel());
@@ -192,8 +192,16 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
       manual: true,
     };
 
+    // ⚠ Pelo `criarEvento` da loja, que também o manda para o servidor. Isto
+    // era um `set` direto, e o evento ficava só neste telefone.
+    //
+    // Os campos que só a app usa — `responsaveis`, `manual` — ficam no estado
+    // local: o servidor tem um `responsavel` só, e a lista de vários é forma
+    // desta app. Não se perde nada, e não se inventa um campo lá.
+    criarEvento(event);
     set(s => ({
-      added: [...(s.added || []), event],
+      added: (s.added || []).map(e => (e.id === event.id
+        ? { ...e, responsaveis: form.responsaveis, manual: true } : e)),
     }));
 
     if (naGoogle && servidor.google.disponivel()) {
