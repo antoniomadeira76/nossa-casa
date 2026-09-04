@@ -243,7 +243,7 @@ const BACKUPS_ANTIGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(n => `${KEY}.ant
 const DATA_KEYS = [
   'done', 'pending', 'status', 'registered', 'acertoMovs', 'vaultMoves', 'paidPts', 'extraLog',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
-  'newItems', 'itemGone',
+  'newItems', 'itemGone', 'feitas',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'importDone', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'pointValue', 'payDay', 'splitHalf',
@@ -518,6 +518,9 @@ export const DEMO = () => ({
   paidPts: Object.fromEntries(Object.keys(MEMBERS).filter(n => MEMBERS[n].kid).map(n => [n, 0])),
   extraLog: {},
   envMove: {}, added: [], newTasks: [], taskEdits: {}, taskGone: {}, taskOrder: {},
+  // As linhas de `tarefas_feitas` que o servidor tem, por «tarefa|dia». É o
+  // que permite DESMARCAR: sem o id da linha não há o que apagar do outro lado.
+  feitas: {},
   pontosDeTarefasApagadas: [],
   newItems: [], itemGone: {}, newEquip: [], equipGone: {}, equipEdits: {},
   schemeByUser: {}, themeByUser: {}, importDone: {},
@@ -715,6 +718,33 @@ export function StoreProvider({ children }) {
       // coisa vista de outro sítio, e o servidor tem os dos dois telemóveis.
       // Um saldo nunca é escrito — continua a ser a soma.
       if (casa.vaultMoves.length) set({ vaultMoves: casa.vaultMoves });
+
+      // ── A agenda e as tarefas do servidor ─────────────────────────────────
+      //
+      // Substituem as locais, pela mesma razão do cofre: são a mesma coisa
+      // vista de outro sítio, e o servidor tem as dos dois telemóveis. Até
+      // 04/09/2026 nada disto subia — as tarefas e a agenda viviam só no
+      // telefone de quem as escreveu, e dois telefones nunca se viam.
+      //
+      // ⚠ Substitui-se apenas quando o servidor TEM alguma coisa. Uma casa
+      // acabada de ligar responde com listas vazias, e apagar o que a pessoa
+      // escreveu antes de ligar seria perder trabalho por ter ligado.
+      //
+      // ⚠ E `urg`/`due` são FUNDIDOS, não substituídos: são mapas indexados por
+      // id e há tarefas locais ainda por subir cujas entradas não podem
+      // desaparecer. As chaves do servidor ganham, porque são as partilhadas.
+      if ((casa.added || []).length) set({ added: casa.added });
+      if ((casa.newTasks || []).length) {
+        set(x => ({
+          newTasks: casa.newTasks,
+          urg: { ...x.urg, ...casa.urg },
+          due: { ...x.due, ...casa.due },
+          // O `done` do servidor é o de HOJE. Funde-se, senão uma tarefa
+          // marcada neste telefone e ainda por subir voltava a por fazer.
+          done: { ...x.done, ...casa.done },
+          feitas: casa.feitas || {},
+        }));
+      }
       return true;
     } catch (e) {
       return false;     // servidor indisponível — a app fica local
@@ -1161,7 +1191,15 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // As criadas na app saem de `newTasks`; as da semente não podem sair de lá —
   // vêm de um ficheiro — e por isso ficam marcadas no `taskGone`. Duas formas
   // de desaparecer porque há duas formas de existir.
-  const removerTarefa = (id) => set(x => {
+  const removerTarefa = (id) => {
+    // ⚠ O `id` do servidor lê-se ANTES de o `set` correr — depois dele a
+    // tarefa já não está na lista e não há de onde o tirar.
+    const noServidor = tarefaNoServidor(id);
+    if (sync && noServidor) sync.apagarTarefa(noServidor).catch(() => {});
+    return removerTarefaLocal(id);
+  };
+
+  const removerTarefaLocal = (id) => set(x => {
     const t = allTasks().find(y => y.id === id);
     if (!t) return {};
 
@@ -1185,9 +1223,52 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     };
   });
 
+  // ── Criar uma tarefa ────────────────────────────────────────────────────
+  //
+  // ⚠ Isto vivia dentro da folha «Nova Tarefa», que escrevia direto no `set`.
+  // Enquanto nada subia, dava no mesmo; a partir do momento em que sobe, uma
+  // escrita na folha é uma escrita sem sítio onde a sincronização possa viver —
+  // e a folha seguinte que alguém acrescentasse esquecia-se dela.
+  const criarTarefa = ({ title, who, recur, pts, urg: urgencia, dueKey, dueTime }) => {
+    const t = String(title || '').trim();
+    if (!t) return null;
+    const id = 'tsk-' + Date.now();
+    set(x => ({
+      newTasks: [...(x.newTasks || []), { id, title: t, who, recur, pts: Number(pts) || 0 }],
+      urg: { ...x.urg, [id]: Number.isFinite(Number(urgencia)) ? Number(urgencia) : 1 },
+      due: dueKey ? { ...x.due, [id]: { key: dueKey, time: dueTime || '18:00' } } : x.due,
+    }));
+
+    if (sync) {
+      const ses = sync.sessao();
+      const atribuidoA = idDoMembro(who);
+      if (ses) sync.tarefaDaCasa({
+        casa: ses.casa, titulo: t, atribuidoA,
+        recorrencia: recur, pontos: Number(pts) || 0,
+        urgencia, prazo: dueKey || null,
+      })
+        // O id do servidor guarda-se para que marcar, alterar e apagar tenham
+        // para onde ir. Sem ele, a tarefa fica partilhada e imutável.
+        .then((r) => { if (r && r.id) set(x => ({
+          newTasks: (x.newTasks || []).map(n => (n.id === id ? { ...n, idServidor: r.id } : n)),
+        })); })
+        .catch(() => {});
+    }
+    return id;
+  };
+
+  // O `id` de uma tarefa no servidor. Nulo enquanto ela for só local.
+  const tarefaNoServidor = (id) =>
+    (allTasks().find(t => t.id === id) || {}).idServidor || null;
+
   // Tarefa: por fazer → (criança) a confirmar → (adulto) concluída
   // Recorrentes: rastrear quando foram resetadas hoje para reassumir amanhã
-  const tapTask = (id, byChild) => set(x => {
+  //
+  // ⚠ O cálculo do estado seguinte saiu de dentro do `set` para uma função
+  // pura, e é de propósito: a decisão do que SOBE depende do estado que vai
+  // ficar, e recalculá-la à parte era escrever a mesma lógica duas vezes — com
+  // a segunda a ficar mais fraca, como já aconteceu com o `canSeeHealth`.
+  const proximoEstadoDaTarefa = (x, id, byChild) => {
     const task = allTasks().find(t => t.id === id);
     const done = !!x.done[id], pend = !!x.pending[id];
     const isRecur = task && isRecurring(task);
@@ -1209,7 +1290,47 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       pending: { ...x.pending, [id]: false },
       ...(isRecur && !done ? { recurringReset: { ...x.recurringReset, [id]: TODAY_KEY } } : {}),
     };
-  });
+  };
+
+  const tapTask = (id, byChild) => {
+    const patch = proximoEstadoDaTarefa(s, id, byChild);
+    set(patch);
+
+    // ── E sobe, como uma LINHA ────────────────────────────────────────────
+    //
+    // ⚠ Marcar CRIA uma linha em `tarefas_feitas`; desmarcar APAGA-A. Nunca se
+    // escreve um booleano «feita» na tarefa — é o INVARIANTE #2, e o servidor
+    // tem um índice único em (tarefa, dia) que faz dois telefones colidirem em
+    // vez de se anularem.
+    //
+    // Se `done` não muda (o caminho da criança, que só põe `pending`), não há
+    // nada a subir: a confirmação é outra coisa e ainda não está ligada.
+    if (!sync || !('done' in patch)) return;
+    const ficouFeita = !!patch.done[id];
+    if (ficouFeita === !!s.done[id]) return;
+
+    const ses = sync.sessao();
+    const tarefa = tarefaNoServidor(id);
+    if (!ses || !tarefa) return;          // tarefa ainda só local: nada a subir
+
+    const hoje = TODAY_KEY.replace(/^d/, '');
+    if (ficouFeita) {
+      sync.marcarTarefaFeita({ casa: ses.casa, tarefa, dia: TODAY_KEY, marcadaPor: ses.membro })
+        .then((r) => { if (r && r.id) set(x => ({
+          feitas: { ...x.feitas, [`${tarefa}|${hoje}`]: { id: r.id, confirmada: false } },
+        })); })
+        .catch(() => {});
+    } else {
+      const linha = (s.feitas || {})[`${tarefa}|${hoje}`];
+      if (!linha) return;
+      sync.desmarcarTarefaFeita(linha.id)
+        .then(() => set(x => {
+          const { [`${tarefa}|${hoje}`]: fora, ...resto } = x.feitas || {};
+          return { feitas: resto };
+        }))
+        .catch(() => {});
+    }
+  };
 
   // Editar e apagar um evento.
   //
@@ -2136,7 +2257,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
     garantiasAExpirar, receitasAExpirar, consultasProximas,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring, definirAvatar, trazerFotografia,
-    removerTarefa,
+    removerTarefa, criarTarefa, tarefaNoServidor,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
     lerDoServidor,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),

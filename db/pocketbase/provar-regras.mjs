@@ -25,8 +25,13 @@ const leo   = await membro('Leo',   'crianca', { password: '1357', passwordConfi
 const envelope = await admin.collection('envelopes').create({ casa: casa.id, nome: 'Mercearia', limite_base: 550 });
 await admin.collection('despesas').create({ casa: casa.id, envelope: envelope.id, valor: 12.5, pagador: tomas.id, descricao: 'Pão', idem_key: 'd1' });
 await admin.collection('cofre_movimentos').create({ casa: casa.id, membro: leo.id, tipo: 'semanada', valor: 1.6, idem_key: 'c1' });
-await admin.collection('eventos').create({ casa: casa.id, dia: '2026-08-20', titulo: 'Consulta do Tomás', autor: tomas.id, partilhado: false });
-await admin.collection('eventos').create({ casa: casa.id, dia: '2026-08-20', titulo: 'Ballet da Mia', autor: rita.id, partilhado: true });
+// ⚠ `visibilidade` e não `partilhado`. O booleano SAIU em 04/09/2026 — a app
+// tem três níveis e ele só sabia dizer dois — e estas duas linhas ficaram a
+// escrever um campo que já não existe. O PocketBase ignora campos que não
+// conhece EM SILÊNCIO: as duas provas abaixo continuaram verdes a testar
+// eventos sem visibilidade nenhuma. É a armadilha que o db/README.md nomeia.
+await admin.collection('eventos').create({ casa: casa.id, dia: '2026-08-20', titulo: 'Consulta do Tomás', autor: tomas.id, visibilidade: 'so-eu' });
+await admin.collection('eventos').create({ casa: casa.id, dia: '2026-08-20', titulo: 'Ballet da Mia', autor: rita.id, visibilidade: 'familia' });
 // Casa vizinha, para provar o isolamento
 const vizinho = await admin.collection('membros').create({
   nome: 'Estranho', login: `${outraCasa.id}_estranho`, casa: outraCasa.id, papel: 'admin',
@@ -83,8 +88,12 @@ await prova('evento privado do Tomás não chega à Rita', async () => {
   igual(evs.length, 1, evs.map(e => e.titulo).join('/'));
   igual(evs[0].titulo, 'Ballet da Mia');
 });
-await prova('o próprio autor vê o seu evento privado', async () =>
-  igual((await cTomas.collection('eventos').getFullList()).length, 2));
+await prova('o próprio autor vê o seu evento privado', async () => {
+  const evs = await cTomas.collection('eventos').getFullList();
+  // O dele («so-eu», de que é autor) e o da família. Dois.
+  igual(evs.length, 2, evs.map(e => e.titulo).join('/'));
+  if (!evs.some(e => e.titulo === 'Consulta do Tomás')) throw new Error('não vê o seu');
+});
 
 await prova('a criança vê o SEU cofre', async () =>
   igual((await cLeo.collection('cofre_movimentos').getFullList()).length, 1));

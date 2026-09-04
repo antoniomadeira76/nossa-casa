@@ -14,7 +14,7 @@ const URG_OPTS = [
 ];
 
 export default function NovaTarefa({ t, user, onClose }) {
-  const { set, membrosDaCasa, membros: MEMBROS, pontosNasTarefas } = useStore();
+  const { criarTarefa, membrosDaCasa, membros: MEMBROS, pontosNasTarefas } = useStore();
   const [form, setForm] = useState({
     title: '',
     who: user,
@@ -25,22 +25,12 @@ export default function NovaTarefa({ t, user, onClose }) {
     dueTime: '18:00',
   });
 
+  // ⚠ A escrita saiu daqui para o `criarTarefa` da loja. Esta folha escrevia
+  // direto no `set`, e enquanto nada subia dava no mesmo — a partir do momento
+  // em que uma tarefa vai para o servidor, uma escrita numa folha é uma escrita
+  // sem sítio onde a sincronização possa viver.
   const handleSave = () => {
-    if (!form.title.trim()) return;
-
-    const id = 'tsk-' + Date.now();
-    set(s => ({
-      newTasks: [...(s.newTasks || []), {
-        id,
-        title: form.title,
-        who: form.who,
-        recur: form.recur,
-        pts: form.pts,
-      }],
-      urg: { ...s.urg, [id]: form.urg },
-      due: form.dueKey ? { ...s.due, [id]: { key: form.dueKey, time: form.dueTime } } : s.due,
-    }));
-
+    if (!criarTarefa(form)) return;
     onClose();
   };
 

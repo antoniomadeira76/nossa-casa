@@ -104,6 +104,28 @@ export const membrosDoServidor = (linhas) => Object.fromEntries(
     figura: m.figura || null,
   }]));
 
+// ── Duas traduções de data, e são as duas o mesmo defeito à espera ──────────
+//
+// O servidor devolve datas ISO («2026-09-20 10:00:00.000Z»); a loja usa chaves
+// («d2026-09-20»). Uma tradução em cada sentido, num sítio só, para não haver
+// dois `slice(0, 10)` a divergir.
+const chaveDeISO = (iso) => {
+  const d = String(iso || '').slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? `d${d}` : null;
+};
+const isoDeChave = (chave) => String(chave || '').replace(/^d/, '') || null;
+
+// A recorrência: a loja fala português corrido, o servidor tem um `select`.
+//
+// ⚠ Se esta tabela ficar incompleta, o PocketBase recusa o valor — ao contrário
+// dos campos desconhecidos, que ele ignora em silêncio. Uma recusa é melhor
+// notícia, mas continua a ser uma tarefa que não sobe.
+const RECORRENCIA_NO_SERVIDOR = {
+  'Uma vez': 'uma_vez', 'Todos os dias': 'diaria', 'Dias de semana': 'dias_semana',
+};
+const RECORRENCIA_NA_LOJA = Object.fromEntries(
+  Object.entries(RECORRENCIA_NO_SERVIDOR).map(([a, b]) => [b, a]));
+
 export async function puxarCasa() {
   if (!ligado()) return null;
   const casa = await servidor.ler.casa();
@@ -130,9 +152,82 @@ export async function puxarCasa() {
 
   const aCasa = (casa.casas || [])[0] || null;
 
+  // ── A agenda ──────────────────────────────────────────────────────────────
+  //
+  // ⚠ NÃO se filtra nada aqui por visibilidade. Quem decide que eventos
+  // existem para quem pergunta são as regras da coleção — três níveis, com 11
+  // provas em provar-agenda-e-tarefas.mjs. Se este código filtrasse, o dado
+  // privado já teria chegado ao dispositivo, que é o INVARIANTE #3 ao
+  // contrário.
+  const added = (casa.eventos || []).map(e => ({
+    // O id É o do servidor. As sobreposições da loja (`eventEdits`,
+    // `eventGone`) são mapas indexados por id, e usar o mesmo id nos dois
+    // lados é o que as faz continuar a funcionar sem mudar um ecrã.
+    id: e.id,
+    idServidor: e.id,
+    day: chaveDeISO(e.dia),
+    time: e.hora || '',
+    title: e.titulo,
+    who: nomeDoMembro[e.responsavel] || '',
+    owner: nomeDoMembro[e.autor] || '',
+    visibilidade: e.visibilidade || 'so-eu',
+    tag: e.etiqueta || '',
+    // A consulta a que pertence, quando é de saúde.
+    ...(e.episodio ? { healthId: e.episodio } : {}),
+  })).filter(e => e.day);
+
+  // ── As tarefas ────────────────────────────────────────────────────────────
+  //
+  // A tarefa vem numa linha, mas a app lê a urgência e o prazo de MAPAS
+  // (`s.urg[id]`, `s.due[id]`). Enche-se os dois, com o id do servidor por
+  // chave: os ecrãs não mudam nada e a ordenação continua a funcionar.
+  const newTasks = (casa.tarefas || []).map(t => ({
+    id: t.id,
+    idServidor: t.id,
+    title: t.titulo,
+    who: nomeDoMembro[t.atribuido_a] || '',
+    recur: RECORRENCIA_NA_LOJA[t.recorrencia] || 'Uma vez',
+    pts: Number(t.pontos) || 0,
+  }));
+
+  const urg = {};
+  const due = {};
+  for (const t of casa.tarefas || []) {
+    // 1 é «normal», que é o que a loja usa por omissão.
+    urg[t.id] = Number.isFinite(Number(t.urgencia)) ? Number(t.urgencia) : 1;
+    const chave = chaveDeISO(t.prazo);
+    if (chave) due[t.id] = { key: chave, time: String(t.prazo).slice(11, 16) || '18:00' };
+  }
+
+  // ── E o que está feito HOJE ───────────────────────────────────────────────
+  //
+  // ⚠ `tarefas_feitas` é ADITIVA — uma linha por (tarefa, dia), com índice
+  // único no servidor. É o INVARIANTE #2 em estrutura: dois telefones que
+  // marquem a mesma tarefa no mesmo dia colidem no índice em vez de se
+  // anularem.
+  //
+  // A loja tem `done[id]`, que é «feita hoje» — o `recurringReset` limpa-o à
+  // meia-noite. Portanto só as linhas de hoje entram.
+  const hoje = new Date().toISOString().slice(0, 10);
+  const done = {};
+  const feitas = {};
+  for (const f of casa.tarefas_feitas || []) {
+    const dia = String(f.data || '').slice(0, 10);
+    // Guarda-se o id da LINHA para se poder desmarcar: sem ele, desmarcar no
+    // servidor não tinha o que apagar.
+    feitas[`${f.tarefa}|${dia}`] = { id: f.id, confirmada: !!f.confirmada_em };
+    if (dia === hoje) done[f.tarefa] = true;
+  }
+
   return {
     vaultMoves,
     registered,
+    added,
+    newTasks,
+    urg,
+    due,
+    done,
+    feitas,
     // O servidor manda: se responder, é esta a casa e são estes os membros.
     // Sem servidor, a app fica com a família de demonstração — e diz-o.
     membros: membrosDoServidor(casa.membros),
@@ -181,6 +276,135 @@ export async function acerto({ casa, de, para, valor, data }) {
   if (!ligado()) return { enviadas: 0, pendentes: 0 };
   return servidor.escrever.criar('acertos', {
     casa, de_membro: de, para_membro: para, valor, data,
+  });
+}
+
+// ─── A agenda e as tarefas ───────────────────────────────────────────────────
+//
+// ⚠ Estas tentam DIRETO e só caem na fila se falhar, como o episódio de saúde
+// e ao contrário do dinheiro. A razão é a mesma: quem chama precisa do `id` que
+// o servidor deu, para depois poder alterar e apagar. A fila devolve quantas
+// subiram, não o registo — uma tarefa que fosse só pela fila nunca aprendia o
+// seu id, e ficava a ser um objeto local disfarçado de partilhado.
+//
+// Sem rede continuam a não se perder: a fila fica como rede de segurança.
+const criarOuEnfileirarCasa = async (colecao, linha) => {
+  if (!ligado()) return { pendente: true };
+  try {
+    const r = await servidor.pb.collection(colecao).create(linha);
+    return { id: r.id };
+  } catch (e) {
+    await servidor.escrever.criar(colecao, linha);
+    return { pendente: true };
+  }
+};
+
+// ⚠ Os nomes são os das COLEÇÕES. `titulo` e não `title`, `atribuido_a` e não
+// `who`, `etiqueta` e não `tag`. O PocketBase ignora em silêncio o que não
+// conhece — foi assim que o `medico` e as `notas` de uma consulta caíram.
+export async function eventoDaCasa({ casa, dia, hora, titulo, responsavel, autor, visibilidade, etiqueta, episodio }) {
+  return criarOuEnfileirarCasa('eventos', {
+    casa,
+    dia: isoDeChave(dia),
+    hora: hora || '',
+    titulo,
+    responsavel: responsavel || null,
+    autor,
+    // O servidor tem um `select` com os três; sem valor, o mais restritivo.
+    visibilidade: visibilidade || 'so-eu',
+    etiqueta: etiqueta || '',
+    episodio: episodio || null,
+  });
+}
+
+export async function alterarEvento(idNoServidor, campos) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  const linha = {};
+  if ('dia' in campos) linha.dia = isoDeChave(campos.dia);
+  if ('hora' in campos) linha.hora = campos.hora || '';
+  if ('titulo' in campos) linha.titulo = campos.titulo;
+  if ('visibilidade' in campos) linha.visibilidade = campos.visibilidade;
+  if ('responsavel' in campos) linha.responsavel = campos.responsavel || null;
+  return servidor.pb.collection('eventos').update(idNoServidor, linha);
+}
+
+export async function apagarEvento(idNoServidor) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('eventos').delete(idNoServidor);
+}
+
+export async function tarefaDaCasa({ casa, titulo, atribuidoA, recorrencia, pontos, urgencia, prazo }) {
+  return criarOuEnfileirarCasa('tarefas', {
+    casa,
+    titulo,
+    atribuido_a: atribuidoA || null,
+    recorrencia: RECORRENCIA_NO_SERVIDOR[recorrencia] || 'uma_vez',
+    // ⚠ Os pontos podem ser 0 — são opcionais desde 04/09/2026 — e o servidor
+    // aceita 0 a 20. Um `|| 0` aqui é correto; um `|| 1` seria pôr pontos onde
+    // ninguém os pediu.
+    pontos: Number(pontos) || 0,
+    urgencia: Number.isFinite(Number(urgencia)) ? Number(urgencia) : 1,
+    prazo: prazo ? isoDeChave(prazo) : null,
+  });
+}
+
+export async function alterarTarefa(idNoServidor, campos) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  const linha = {};
+  if ('titulo' in campos) linha.titulo = campos.titulo;
+  if ('atribuidoA' in campos) linha.atribuido_a = campos.atribuidoA || null;
+  if ('pontos' in campos) linha.pontos = Number(campos.pontos) || 0;
+  if ('urgencia' in campos) linha.urgencia = Number(campos.urgencia) || 0;
+  if ('recorrencia' in campos) linha.recorrencia = RECORRENCIA_NO_SERVIDOR[campos.recorrencia] || 'uma_vez';
+  if ('prazo' in campos) linha.prazo = campos.prazo ? isoDeChave(campos.prazo) : null;
+  return servidor.pb.collection('tarefas').update(idNoServidor, linha);
+}
+
+export async function apagarTarefa(idNoServidor) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('tarefas').delete(idNoServidor);
+}
+
+// ── Marcar e desmarcar uma tarefa ────────────────────────────────────────────
+//
+// ⚠ Marcar CRIA UMA LINHA; desmarcar APAGA-A. Nunca se escreve um booleano
+// «feita» na tarefa, e é o INVARIANTE #2: dois telefones que marquem a mesma
+// tarefa no mesmo dia colidem no índice único em vez de se anularem, e o
+// histórico de quem fez o quê e quando fica.
+//
+// Uma colisão no índice NÃO é erro para quem chama: quer dizer que já estava
+// marcada, que é o estado que se pediu. Devolve-se o que lá está.
+export async function marcarTarefaFeita({ casa, tarefa, dia, marcadaPor }) {
+  if (!ligado()) return { pendente: true };
+  const data = isoDeChave(dia);
+  try {
+    const r = await servidor.pb.collection('tarefas_feitas').create({
+      casa, tarefa, data, marcada_por: marcadaPor });
+    return { id: r.id };
+  } catch (e) {
+    // Já marcada por outro telefone? Procura-se a linha e devolve-se.
+    const ja = await servidor.pb.collection('tarefas_feitas')
+      .getFirstListItem(`tarefa="${tarefa}" && data>="${data} 00:00:00" && data<="${data} 23:59:59"`)
+      .catch(() => null);
+    if (ja) return { id: ja.id, jaEstava: true };
+    await servidor.escrever.criar('tarefas_feitas', {
+      casa, tarefa, data, marcada_por: marcadaPor });
+    return { pendente: true };
+  }
+}
+
+export async function desmarcarTarefaFeita(idDaLinha) {
+  if (!ligado() || !idDaLinha) return { pendente: true };
+  return servidor.pb.collection('tarefas_feitas').delete(idDaLinha);
+}
+
+// A confirmação de um adulto é o que faz os pontos contarem — está no esquema
+// desde o início (`confirmada_em`) e a app ainda não a usa. Fica a porta
+// aberta, e uma criança não a pode empurrar: a regra exige adulto.
+export async function confirmarTarefaFeita(idDaLinha, porQuem) {
+  if (!ligado() || !idDaLinha) return { pendente: true };
+  return servidor.pb.collection('tarefas_feitas').update(idDaLinha, {
+    confirmada_por: porQuem, confirmada_em: new Date().toISOString(),
   });
 }
 

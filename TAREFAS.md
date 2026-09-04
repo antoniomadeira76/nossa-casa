@@ -30,6 +30,39 @@
 
 ## 5. TAREFAS & PONTOS
 - [x] Tarefas — toque para concluir, pontos recalculam
+- [x] **As tarefas e a agenda SOBEM** (04/09/2026). Até aqui a base de dados
+      tinha 31 coleções e o cliente escrevia em **10**: as tarefas e a agenda —
+      as duas coisas para que a app mais serve — viviam só no telefone de quem
+      as escreveu, e dois telefones nunca se viam.
+      - `tarefas`, `tarefas_feitas` e `eventos`, com **30 provas de regra** e
+        **13 de ponta a ponta** pelo cliente a sério contra o servidor a sério
+      - ⚠ **marcar é ADITIVO**: cria uma linha em `tarefas_feitas`, e desmarcar
+        apaga-a. Nunca um booleano «feita» na tarefa. O índice único em
+        (tarefa, dia) faz dois telefones **colidirem em vez de se anularem**, e
+        uma colisão quer dizer «já estava marcada» — que é o estado pedido.
+      - ⚠ os `eventos` tinham `partilhado`, um BOOLEANO, e a app tem **três**
+        níveis. O do meio é o que mais importa: a consulta de uma criança entra
+        como «adultos», e com um booleano ou a criança passava a vê-la, ou o
+        outro adulto deixava de a ver. Passou a `select`, e a regra do servidor
+        é a tradução literal do `podeVerEvento`.
+      - a folha «Nova Tarefa» deixou de escrever direto na loja: uma escrita
+        numa folha é uma escrita sem sítio onde a sincronização possa viver
+      - ⚠ **três buracos de casa-cruzada**, todos com a mesma forma: uma regra
+        que fala de uma RELAÇÃO tem de perguntar de que casa é a relação, não
+        de que casa se diz a linha. O `casa` da linha é escolhido por quem
+        escreve. Apareceu em `eventos.responsavel`, `eventos.episodio`,
+        `tarefas.atribuido_a` e `tarefas_feitas.tarefa` — e este último só se
+        viu depois de eu alargar a regra a «ou é adulto», porque a vizinha de
+        outra casa **também** é adulta. A regra apertada escondia-o.
+      - ⚠ e a regra do `tarefas_feitas` era mais apertada do que a app: dizia
+        «só a tarefa a si atribuída», e o `tapTask` deixa um adulto dar por
+        feita a tarefa de uma criança. A marcação era recusada, caía na fila, e
+        ficava feita no telefone dela e por fazer no dele — **em silêncio**.
+        Apanhado pela prova de ponta a ponta.
+      - **falta ainda**: alterar uma tarefa pelo lápis, a ordem à mão
+        (`taskOrder`), o `pending`/confirmação, e os eventos criados fora da
+        Saúde. E as outras nove coleções sem escrita: compras, orçamento,
+        equipamentos, lojas, preferências.
 - [x] **Os pontos são OPCIONAIS** (04/09/2026, a pedido do dono da casa):
       «atribuir pontos a tarefas deve ser opcional — poder ligar e desligar, e
       se estiver ligado pode-se atribuir qualquer valor, mesmo 0 €».

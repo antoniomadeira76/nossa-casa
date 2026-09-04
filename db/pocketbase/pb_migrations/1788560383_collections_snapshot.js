@@ -1261,7 +1261,7 @@ migrate((app) => {
       "viewRule": null
     },
     {
-      "createRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\" && autor = @request.auth.id",
+      "createRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\" && autor = @request.auth.id && (responsavel = \"\" || responsavel.casa = @request.auth.casa) && (episodio = \"\" || episodio.casa = @request.auth.casa)",
       "deleteRule": "casa = @request.auth.casa && autor = @request.auth.id",
       "fields": [
         {
@@ -1366,25 +1366,60 @@ migrate((app) => {
         {
           "help": "",
           "hidden": false,
-          "id": "bool2964026003",
-          "name": "partilhado",
+          "id": "select3496594808",
+          "maxSelect": 1,
+          "name": "visibilidade",
           "presentable": false,
           "required": false,
           "system": false,
-          "type": "bool"
+          "type": "select",
+          "values": [
+            "so-eu",
+            "adultos",
+            "familia"
+          ]
+        },
+        {
+          "autogeneratePattern": "",
+          "help": "",
+          "hidden": false,
+          "id": "text1834788410",
+          "max": 0,
+          "min": 0,
+          "name": "etiqueta",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": false,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "cascadeDelete": true,
+          "collectionId": "pbc_1762889172",
+          "help": "",
+          "hidden": false,
+          "id": "relation3311488414",
+          "maxSelect": 1,
+          "minSelect": 0,
+          "name": "episodio",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "relation"
         }
       ],
       "id": "pbc_4201693797",
       "indexes": [],
-      "listRule": "casa = @request.auth.casa && (partilhado = true || autor = @request.auth.id)",
+      "listRule": "casa = @request.auth.casa && (autor = @request.auth.id || visibilidade = \"familia\" || (visibilidade = \"adultos\" && @request.auth.papel != \"crianca\"))",
       "name": "eventos",
       "system": false,
       "type": "base",
-      "updateRule": "casa = @request.auth.casa && autor = @request.auth.id",
-      "viewRule": "casa = @request.auth.casa && (partilhado = true || autor = @request.auth.id)"
+      "updateRule": "casa = @request.auth.casa && autor = @request.auth.id && (responsavel = \"\" || responsavel.casa = @request.auth.casa) && (episodio = \"\" || episodio.casa = @request.auth.casa)",
+      "viewRule": "casa = @request.auth.casa && (autor = @request.auth.id || visibilidade = \"familia\" || (visibilidade = \"adultos\" && @request.auth.papel != \"crianca\"))"
     },
     {
-      "createRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\"",
+      "createRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\" && (atribuido_a = \"\" || atribuido_a.casa = @request.auth.casa)",
       "deleteRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\"",
       "fields": [
         {
@@ -1506,12 +1541,12 @@ migrate((app) => {
       "name": "tarefas",
       "system": false,
       "type": "base",
-      "updateRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\"",
+      "updateRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\" && (atribuido_a = \"\" || atribuido_a.casa = @request.auth.casa)",
       "viewRule": "casa = @request.auth.casa"
     },
     {
-      "createRule": "casa = @request.auth.casa && marcada_por = @request.auth.id && tarefa.atribuido_a = @request.auth.id",
-      "deleteRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\"",
+      "createRule": "casa = @request.auth.casa && tarefa.casa = @request.auth.casa && marcada_por = @request.auth.id && (tarefa.atribuido_a = @request.auth.id || @request.auth.papel != \"crianca\")",
+      "deleteRule": "casa = @request.auth.casa && tarefa.casa = @request.auth.casa && @request.auth.papel != \"crianca\"",
       "fields": [
         {
           "autogeneratePattern": "[a-z0-9]{15}",
@@ -1617,7 +1652,7 @@ migrate((app) => {
       "name": "tarefas_feitas",
       "system": false,
       "type": "base",
-      "updateRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\"",
+      "updateRule": "casa = @request.auth.casa && tarefa.casa = @request.auth.casa && @request.auth.papel != \"crianca\"",
       "viewRule": "casa = @request.auth.casa"
     },
     {
@@ -3871,7 +3906,7 @@ migrate((app) => {
           "collectionId": "pbc_3006363748",
           "help": "",
           "hidden": false,
-          "id": "_clone_kn22",
+          "id": "_clone_a9ks",
           "maxSelect": 1,
           "minSelect": 0,
           "name": "casa",
@@ -3940,7 +3975,7 @@ migrate((app) => {
           "collectionId": "pbc_3006363748",
           "help": "",
           "hidden": false,
-          "id": "_clone_pEPc",
+          "id": "_clone_DuvE",
           "maxSelect": 1,
           "minSelect": 0,
           "name": "casa",
@@ -3953,7 +3988,7 @@ migrate((app) => {
           "autogeneratePattern": "",
           "help": "",
           "hidden": false,
-          "id": "_clone_LVsf",
+          "id": "_clone_NMdy",
           "max": 0,
           "min": 0,
           "name": "nome",
@@ -4024,7 +4059,7 @@ migrate((app) => {
           "collectionId": "pbc_3006363748",
           "help": "",
           "hidden": false,
-          "id": "_clone_EtI9",
+          "id": "_clone_As8p",
           "maxSelect": 1,
           "minSelect": 0,
           "name": "casa",
@@ -4093,7 +4128,7 @@ migrate((app) => {
           "collectionId": "pbc_3006363748",
           "help": "",
           "hidden": false,
-          "id": "_clone_dRfV",
+          "id": "_clone_c4XM",
           "maxSelect": 1,
           "minSelect": 0,
           "name": "casa",

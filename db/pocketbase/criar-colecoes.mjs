@@ -50,10 +50,15 @@ const NOSSAS = [
   // «existing reference» e deixa a base a meio — foi o que a
   // `credenciais_agenda` ensinou.
   'notas_saude', 'receitas_saude', 'decisoes_saude',
+  // ⚠ `eventos` subiu para AQUI, antes dos `episodios_saude`. Ganhou uma
+  // relação para eles («a agenda aprende a saúde»), e uma coleção não se apaga
+  // enquanto outra a referir: em baixo na lista, a limpeza parava com «existing
+  // reference in eventos». É o mesmo erro que a `credenciais_agenda` ensinou.
+  'eventos',
   'anexos', 'episodios_saude', 'especialidades', 'manutencoes', 'categorias_equip',
   'metas', 'acertos', 'transferencias', 'artigos', 'listas_compras', 'lojas',
   'meses', 'preferencias', 'equipamentos', 'cofre_movimentos', 'despesas',
-  'envelopes', 'tarefas_feitas', 'tarefas', 'eventos', 'membros', 'casas'];
+  'envelopes', 'tarefas_feitas', 'tarefas', 'membros', 'casas'];
 
 // ── Uma casa habitada não se apaga ───────────────────────────────────────────
 //
@@ -232,6 +237,52 @@ const ADULTO = '@request.auth.papel != "crianca"';
 const ADMIN = '@request.auth.papel = "admin"';
 
 // ── Agenda ───────────────────────────────────────────────────────────────────
+//
+// ⚠ Isto tinha `partilhado`, um BOOLEANO, e a app tem TRÊS níveis desde que os
+// eventos ganharam o `visibilidade`: `so-eu`, `adultos`, `familia`. O booleano
+// não sabe dizer o do meio, e o do meio é o que mais importa:
+//
+//   a consulta de uma criança entra na agenda como «adultos» — os dois adultos
+//   vêem-na, a criança não, e é isso que o ecrã da Saúde promete em letras.
+//
+// Com um booleano, essa consulta ou passava a `partilhado: true` e a criança
+// via a própria consulta, ou ficava em `false` e o outro adulto deixava de a
+// ver. As duas hipóteses são erradas, e a primeira é uma fuga.
+//
+// Por isso o campo é um `select` com os três valores, e a regra abaixo é a
+// TRADUÇÃO LITERAL do `podeVerEvento` do cliente:
+//
+//   o dono vê sempre o seu           autor = @request.auth.id
+//   `familia`  qualquer membro       visibilidade = "familia"
+//   `adultos`  só quem não é criança visibilidade = "adultos" && papel != crianca
+//   `so-eu`    mais ninguém          (nenhum dos ramos acima)
+//
+// Não havia dados a migrar: nada escrevia nesta coleção. O `partilhado` sai em
+// vez de ficar a acumular um segundo sítio onde a visibilidade vive.
+const EVENTO_VISIVEL = `${DA_CASA} && (autor = @request.auth.id`
+  + ` || visibilidade = "familia"`
+  + ` || (visibilidade = "adultos" && ${ADULTO}))`;
+
+// ⚠ E as RELAÇÕES têm de ser da mesma casa, não só a linha.
+//
+// O `casa` da linha é escolhido por quem escreve, e sozinho não prova nada — é
+// o buraco que os anexos tinham desde o primeiro dia. Aqui há duas relações que
+// apontam para dentro da casa, e as provas mostraram que as duas passavam:
+//
+//   `responsavel`  uma adulta de outra casa punha o nome do Léo num evento dela
+//   `episodio`     e ligava um evento dela a uma consulta desta casa
+//
+// Nenhuma das duas devolvia dados nossos — mas as duas escrevem no nosso lado
+// da relação a partir de fora, e é a mesma forma de defeito. Uma relação vazia
+// passa: `= ""` é como o PocketBase diz «não preenchida».
+//
+// ⚠ Em DUAS partes, e é obrigatório: a regra não pode nomear um campo que a
+// coleção ainda não tem. O `episodio` só se acrescenta mais abaixo, e pôr o
+// `episodio = ""` aqui rebentava com «invalid left operand "episodio" —
+// unknown field». A segunda metade entra com o campo.
+const RESPONSAVEL_DA_CASA = `(responsavel = "" || responsavel.casa = @request.auth.casa)`;
+const EPISODIO_DA_CASA = `(episodio = "" || episodio.casa = @request.auth.casa)`;
+
 await criar({
   name: 'eventos', type: 'base',
   fields: [
@@ -239,16 +290,31 @@ await criar({
     data('dia', { required: true }),
     txt('hora'),
     txt('titulo', { required: true }),
+    // Quem o evento diz respeito — o «quem» da linha da agenda.
     rel('responsavel', ids.membros),
+    // O DONO. O `podeVerEvento` do cliente chama-lhe `owner`, e é ele que a
+    // regra usa: numa consulta de criança o dono é o adulto que marcou, de
+    // propósito, senão a criança veria a própria consulta por ser dona dela.
     rel('autor', ids.membros, { required: true }),
-    bool('partilhado'),
+    sel('visibilidade', ['so-eu', 'adultos', 'familia']),
+    txt('etiqueta'),
+    // ⚠ O `episodio` NÃO está aqui, e não é esquecimento: os
+    // `episodios_saude` só se criam mais abaixo neste ficheiro, portanto o
+    // `ids.episodios_saude` ainda é `undefined` nesta linha — e o PocketBase
+    // aceitaria uma relação para o vazio sem se queixar. O campo acrescenta-se
+    // depois de eles existirem; procure «a agenda aprende a saúde».
   ],
   // §5: um evento privado de outro membro NÃO é devolvido. Filtrar no cliente
   // era vazar com atraso.
-  listRule: `${DA_CASA} && (partilhado = true || autor = @request.auth.id)`,
-  viewRule: `${DA_CASA} && (partilhado = true || autor = @request.auth.id)`,
-  createRule: `${DA_CASA} && ${ADULTO} && autor = @request.auth.id`,
-  updateRule: `${DA_CASA} && autor = @request.auth.id`,
+  listRule: EVENTO_VISIVEL,
+  viewRule: EVENTO_VISIVEL,
+  // ⚠ Criar exige ADULTO e ser o próprio autor. Uma criança não põe eventos na
+  // agenda da casa, e ninguém cria um evento em nome de outra pessoa.
+  createRule: `${DA_CASA} && ${ADULTO} && autor = @request.auth.id && ${RESPONSAVEL_DA_CASA}`,
+  // Alterar e apagar: só o dono. É mais apertado do que o cliente, que deixa
+  // qualquer adulto corrigir a hora de uma reunião de pais — e essa folga fica
+  // por decidir, não se abre aqui por omissão.
+  updateRule: `${DA_CASA} && autor = @request.auth.id && ${RESPONSAVEL_DA_CASA}`,
   deleteRule: `${DA_CASA} && autor = @request.auth.id`,
 });
 
@@ -265,8 +331,12 @@ await criar({
     data('prazo'),
   ],
   listRule: DA_CASA, viewRule: DA_CASA,
-  createRule: `${DA_CASA} && ${ADULTO}`,
-  updateRule: `${DA_CASA} && ${ADULTO}`,
+  // ⚠ `atribuido_a` tem de ser da casa, não só a linha. Sem isto, uma adulta de
+  // outra casa atribuía uma tarefa a uma criança desta — a mesma forma de
+  // defeito dos anexos e dos eventos, na terceira coleção. Provado em
+  // provar-agenda-e-tarefas.mjs.
+  createRule: `${DA_CASA} && ${ADULTO} && (atribuido_a = "" || atribuido_a.casa = @request.auth.casa)`,
+  updateRule: `${DA_CASA} && ${ADULTO} && (atribuido_a = "" || atribuido_a.casa = @request.auth.casa)`,
   deleteRule: `${DA_CASA} && ${ADULTO}`,
 });
 
@@ -283,11 +353,33 @@ await criar({
   ],
   indexes: ['CREATE UNIQUE INDEX idx_tarefa_dia ON tarefas_feitas (tarefa, data)'],
   listRule: DA_CASA, viewRule: DA_CASA,
-  // §4: qualquer membro conclui, mas só a si atribuída.
-  createRule: `${DA_CASA} && marcada_por = @request.auth.id && tarefa.atribuido_a = @request.auth.id`,
+  // §4: qualquer membro conclui, mas só a si atribuída — E um adulto conclui
+  // qualquer uma.
+  //
+  // ⚠ A segunda metade faltava, e a app fazia-a: o `tapTask` deixa um adulto
+  // dar uma tarefa por feita, seja de quem for, e é assim que uma mãe marca a
+  // tarefa que viu o filho fazer. Sem ela, a marcação de um adulto sobre a
+  // tarefa de uma criança era recusada pelo servidor e caía na fila — ficava
+  // marcada no telefone dela e por fazer no dele, em silêncio. Apanhado pela
+  // prova de ponta a ponta em 04/09/2026.
+  //
+  // O `marcada_por = @request.auth.id` fica em qualquer caso: ninguém marca em
+  // nome de outra pessoa, e é isso que impede uma criança de marcar a tarefa da
+  // irmã assinando com o nome dela.
+  // ⚠ `tarefa.casa` e não só `casa`. Pela TERCEIRA vez o mesmo defeito de
+  // forma: o `casa` da linha é escolhido por quem escreve e não prova nada.
+  // Aconteceu nos anexos, nos eventos, e aqui — e aqui só apareceu depois de
+  // eu alargar a regra a «ou é adulto», porque a vizinha de outra casa TAMBÉM
+  // é adulta. A regra apertada escondia-o.
+  //
+  // A lição, escrita onde se lê: quando uma regra fala de uma RELAÇÃO, tem de
+  // perguntar de que casa é a relação, não de que casa se diz a linha.
+  createRule: `${DA_CASA} && tarefa.casa = @request.auth.casa`
+    + ` && marcada_por = @request.auth.id`
+    + ` && (tarefa.atribuido_a = @request.auth.id || ${ADULTO})`,
   // a confirmação que valida os pontos exige adulto
-  updateRule: `${DA_CASA} && ${ADULTO}`,
-  deleteRule: `${DA_CASA} && ${ADULTO}`,
+  updateRule: `${DA_CASA} && tarefa.casa = @request.auth.casa && ${ADULTO}`,
+  deleteRule: `${DA_CASA} && tarefa.casa = @request.auth.casa && ${ADULTO}`,
 });
 
 // ── Dinheiro ─────────────────────────────────────────────────────────────────
@@ -565,6 +657,34 @@ await criar({
   updateRule: `${DA_CASA} && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
   deleteRule: `${DA_CASA} && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
 });
+
+// ── A agenda aprende a saúde ─────────────────────────────────────────────────
+//
+// O campo que faltava aos `eventos`, acrescentado agora que os
+// `episodios_saude` existem. É o «nenhum exame órfão» dito ao contrário: a
+// consulta É o evento, e o cliente já os liga pelo `healthId` — sem este campo
+// a ligação perdia-se ao subir, e do outro lado ficava um evento «Consulta
+// Dentista» que não correspondia a episódio nenhum.
+//
+// ⚠ Acrescenta-se por `update` e não na criação porque a ordem deste ficheiro
+// põe os eventos primeiro. E o `eventos` teve de subir na lista de limpeza
+// (`NOSSAS`), para ser apagado ANTES do `episodios_saude` que agora refere —
+// senão a limpeza para com «existing reference in eventos», que é o mesmo erro
+// que a `credenciais_agenda` ensinou.
+{
+  const ev = (await pb.collections.getFullList()).find(x => x.name === 'eventos');
+  await pb.collections.update(ev.id, {
+    fields: [...ev.fields,
+      rel('episodio', ids.episodios_saude, { cascadeDelete: true })],
+    // ⚠ E as regras de escrita ganham AGORA a segunda metade do guarda das
+    // relações. Sem esta linha, o campo existia e ninguém verificava de que
+    // casa era o episódio — que é precisamente o buraco que se está a fechar.
+    createRule: `${DA_CASA} && ${ADULTO} && autor = @request.auth.id`
+      + ` && ${RESPONSAVEL_DA_CASA} && ${EPISODIO_DA_CASA}`,
+    updateRule: `${DA_CASA} && autor = @request.auth.id`
+      + ` && ${RESPONSAVEL_DA_CASA} && ${EPISODIO_DA_CASA}`,
+  });
+}
 
 // ── O que pende de um episódio ───────────────────────────────────────────────
 //
