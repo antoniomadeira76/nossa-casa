@@ -87,6 +87,27 @@
         lá**: o `sync.eventoDaCasa` existia e ninguém o chamava. Corrigido em
         05/09/2026, com um guarda para o género de defeito (abaixo).
       - **falta ainda**: a ordem à mão (`taskOrder`).
+- [x] ⚠ **Toda a relação para dentro da casa está ancorada à casa** — o guarda
+      em `db/pocketbase/provar-relacoes-ancoradas.mjs`, escrito em 05/09/2026
+      depois de o dono da casa perguntar o óbvio: «quando verificas isto várias
+      vezes, não achas que vale a pena olhar com muito mais atenção e resolver
+      de vez?»
+      Eu tinha corrigido a MESMA falha **cinco vezes**, uma de cada vez, sempre
+      depois de uma prova a apanhar por acaso. O levantamento completo mostrou
+      **doze** relações; **três** ainda estavam soltas — `listas_compras.loja`,
+      `artigos.lista`, `manutencoes.equipamento` — e duas delas exploráveis.
+      - o guarda tem **duas metades**, e são precisas as duas: a **estática**
+        enumera as coleções do servidor e exige a âncora (é completa — apanha a
+        coleção que ainda não existe); a **dinâmica** monta duas casas e ataca
+        mesmo, uma tentativa por relação (é a que prova que a regra faz o que
+        diz). A estática sozinha aceitava uma regra que menciona a âncora sem a
+        impor; a dinâmica sozinha só cobre o que eu me lembrei de tentar.
+      - ⚠ e ele apanhou **dois defeitos meus**: faltava-me um ataque ao
+        `transferencias.para_envelope`, e a primeira versão da metade estática
+        juntava a `createRule` e a `updateRule` num texto só — a âncora numa
+        salvava a outra. Confere-se cada regra sozinha.
+      - corre **primeiro** no `db:provar`: se as âncoras estiverem mal, o resto
+        não interessa.
 - [x] ⚠ **Nenhuma função de escrita fica sem quem a chame** — o guarda em
       `__tests__/nenhuma-escrita-sem-quem-a-chame.test.js`, escrito em
       05/09/2026 depois de contar quantas havia. Eram **oito**:

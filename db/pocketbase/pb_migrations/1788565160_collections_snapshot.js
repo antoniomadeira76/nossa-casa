@@ -2401,7 +2401,7 @@ migrate((app) => {
       "viewRule": "casa = @request.auth.casa"
     },
     {
-      "createRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\"",
+      "createRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\" && (loja = \"\" || loja.casa = @request.auth.casa) && (comprador = \"\" || comprador.casa = @request.auth.casa)",
       "deleteRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\"",
       "fields": [
         {
@@ -2492,11 +2492,11 @@ migrate((app) => {
       "name": "listas_compras",
       "system": false,
       "type": "base",
-      "updateRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\"",
+      "updateRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\" && (loja = \"\" || loja.casa = @request.auth.casa) && (comprador = \"\" || comprador.casa = @request.auth.casa)",
       "viewRule": "casa = @request.auth.casa"
     },
     {
-      "createRule": "casa = @request.auth.casa",
+      "createRule": "casa = @request.auth.casa && (lista = \"\" || lista.casa = @request.auth.casa) && (pedido_por = \"\" || pedido_por.casa = @request.auth.casa)",
       "deleteRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\"",
       "fields": [
         {
@@ -2643,7 +2643,7 @@ migrate((app) => {
       "name": "artigos",
       "system": false,
       "type": "base",
-      "updateRule": "casa = @request.auth.casa",
+      "updateRule": "casa = @request.auth.casa && (lista = \"\" || lista.casa = @request.auth.casa) && (pedido_por = \"\" || pedido_por.casa = @request.auth.casa)",
       "viewRule": "casa = @request.auth.casa"
     },
     {
@@ -3193,7 +3193,7 @@ migrate((app) => {
       "viewRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\""
     },
     {
-      "createRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\"",
+      "createRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\" && (equipamento = \"\" || equipamento.casa = @request.auth.casa)",
       "deleteRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\"",
       "fields": [
         {
@@ -3285,7 +3285,7 @@ migrate((app) => {
       "name": "manutencoes",
       "system": false,
       "type": "base",
-      "updateRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\"",
+      "updateRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\" && (equipamento = \"\" || equipamento.casa = @request.auth.casa)",
       "viewRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\""
     },
     {
@@ -3916,7 +3916,7 @@ migrate((app) => {
           "collectionId": "pbc_3006363748",
           "help": "",
           "hidden": false,
-          "id": "_clone_Tk9o",
+          "id": "_clone_f0O8",
           "maxSelect": 1,
           "minSelect": 0,
           "name": "casa",
@@ -3985,7 +3985,7 @@ migrate((app) => {
           "collectionId": "pbc_3006363748",
           "help": "",
           "hidden": false,
-          "id": "_clone_wuwi",
+          "id": "_clone_2fBY",
           "maxSelect": 1,
           "minSelect": 0,
           "name": "casa",
@@ -3998,7 +3998,7 @@ migrate((app) => {
           "autogeneratePattern": "",
           "help": "",
           "hidden": false,
-          "id": "_clone_Vt8v",
+          "id": "_clone_FBJQ",
           "max": 0,
           "min": 0,
           "name": "nome",
@@ -4069,7 +4069,7 @@ migrate((app) => {
           "collectionId": "pbc_3006363748",
           "help": "",
           "hidden": false,
-          "id": "_clone_mG8i",
+          "id": "_clone_XroN",
           "maxSelect": 1,
           "minSelect": 0,
           "name": "casa",
@@ -4138,7 +4138,7 @@ migrate((app) => {
           "collectionId": "pbc_3006363748",
           "help": "",
           "hidden": false,
-          "id": "_clone_rkax",
+          "id": "_clone_X9OT",
           "maxSelect": 1,
           "minSelect": 0,
           "name": "casa",

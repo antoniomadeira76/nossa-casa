@@ -268,6 +268,21 @@ await pb.collections.update(ids.casas, {
 
 // Atalhos usados em quase todas as regras.
 const DA_CASA = 'casa = @request.auth.casa';
+
+// ⚠ O `DA_CASA` sozinho NÃO CHEGA quando a linha tem relações.
+//
+// O campo `casa` é escolhido por quem escreve: uma regra que verifique só a
+// etiqueta que o autor pôs deixa apontar as relações para dentro de outra casa.
+// Este defeito apareceu CINCO vezes entre 04 e 05/09/2026, sempre com a mesma
+// forma, e sempre encontrado por acaso — até o dono da casa perguntar porque é
+// que eu não olhava com atenção e resolvia de vez.
+//
+// A resposta é esta função, e a prova genérica em
+// `provar-relacoes-ancoradas.mjs`, que ENUMERA as coleções em vez de as listar.
+//
+// Uma relação vazia passa: `= ""` é como o PocketBase diz «não preenchida».
+const daCasaTambem = (...campos) =>
+  campos.map(c => `(${c} = "" || ${c}.casa = @request.auth.casa)`).join(' && ');
 const ADULTO = '@request.auth.papel != "crianca"';
 const ADMIN = '@request.auth.papel = "admin"';
 
@@ -548,7 +563,9 @@ await criar({
   ],
   // A lista é de todos: as crianças também pedem artigos.
   listRule: DA_CASA, viewRule: DA_CASA,
-  createRule: `${DA_CASA} && ${ADULTO}`, updateRule: `${DA_CASA} && ${ADULTO}`, deleteRule: `${DA_CASA} && ${ADULTO}`,
+  createRule: `${DA_CASA} && ${ADULTO} && ${daCasaTambem('loja', 'comprador')}`,
+  updateRule: `${DA_CASA} && ${ADULTO} && ${daCasaTambem('loja', 'comprador')}`,
+  deleteRule: `${DA_CASA} && ${ADULTO}`,
 });
 
 await criar({
@@ -566,7 +583,9 @@ await criar({
   // O estado vive na linha do artigo. Se fosse uma lista de identificadores
   // confirmados, dois telefones na mesma loja anulavam-se; assim, fundem-se.
   listRule: DA_CASA, viewRule: DA_CASA,
-  createRule: DA_CASA, updateRule: DA_CASA, deleteRule: `${DA_CASA} && ${ADULTO}`,
+  createRule: `${DA_CASA} && ${daCasaTambem('lista', 'pedido_por')}`,
+  updateRule: `${DA_CASA} && ${daCasaTambem('lista', 'pedido_por')}`,
+  deleteRule: `${DA_CASA} && ${ADULTO}`,
 });
 
 // ── Dinheiro, o resto ────────────────────────────────────────────────────────
@@ -646,7 +665,9 @@ await criar({
     txt('descricao', { required: true }), data('a_fazer_ate'), data('feita_em'),
   ],
   listRule: `${DA_CASA} && ${ADULTO}`, viewRule: `${DA_CASA} && ${ADULTO}`,
-  createRule: `${DA_CASA} && ${ADULTO}`, updateRule: `${DA_CASA} && ${ADULTO}`, deleteRule: `${DA_CASA} && ${ADULTO}`,
+  createRule: `${DA_CASA} && ${ADULTO} && ${daCasaTambem('equipamento')}`,
+  updateRule: `${DA_CASA} && ${ADULTO} && ${daCasaTambem('equipamento')}`,
+  deleteRule: `${DA_CASA} && ${ADULTO}`,
 });
 
 // ── Saúde ────────────────────────────────────────────────────────────────────
