@@ -428,6 +428,29 @@ export const auth = {
     return d;
   },
 
+  // O PIN de uma criança, definido por quem administra a casa.
+  //
+  // Também por uma rota, e pela mesma família de razões do aspeto — mas a razão
+  // exacta é outra: o PocketBase exige `oldPassword` para mudar uma
+  // palavra-passe pela coleção, mesmo a quem administra. Quem põe o PIN de uma
+  // criança de sete anos é o pai, e ele não sabe o PIN antigo — o objetivo é
+  // muitas vezes não saber.
+  //
+  // A rota verifica a qualidade do PIN OUTRA VEZ, do lado do servidor, e recusa
+  // um membro de outra casa ou que não seja criança. Ver
+  // `db/pocketbase/pb_hooks/pin.pb.js`.
+  async definirPin(membroId, pin) {
+    if (!estaLigado()) throw new Error('Servidor não configurado.');
+    const r = await fetch(`${URL.replace(/\/+$/, '')}/api/casa/pin`, {
+      method: 'POST',
+      headers: { Authorization: pb.authStore.token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ membro: membroId, pin: String(pin || '') }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.message || 'Não foi possível definir o PIN.');
+    return d;
+  },
+
   erroDaFotografia: () => erroDaFotografia,
 
   sair: () => { if (estaLigado()) { pb.authStore.clear(); esquecerToken(); agendaLigada = null; } },

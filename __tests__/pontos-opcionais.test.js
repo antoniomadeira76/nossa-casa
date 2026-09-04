@@ -160,8 +160,30 @@ describe('a Gestão da Casa', () => {
     const fs = require('fs');
     const path = require('path');
     const codigo = fs.readFileSync(path.join(__dirname, '..', 'src/screens/Gestao.jsx'), 'utf8');
-    expect(codigo).toContain('pointValue: Math.max(0, +(x.pointValue - 0.05)');
-    expect(codigo).not.toContain('Math.max(0.01, +(x.pointValue');
+    expect(codigo).toMatch(/pointValue: Math\.max\(0, \+\(s\.pointValue - 0\.05\)/);
+    expect(codigo).not.toMatch(/Math\.max\(0\.01,/);
+  });
+
+  it('⚠ e o SERVIDOR aceita o mesmo mínimo — senão a escolha era recusada', () => {
+    // Eu baixei o mínimo no ecrã em 04/09/2026 e deixei o servidor em 0,01. A
+    // escolha de 0 € era aceite no telefone e recusada ao subir: a mesma forma
+    // de falha silenciosa do `tarefas_feitas`, onde a regra era mais apertada
+    // do que a app. Os dois lados têm de dizer a mesma coisa.
+    const fs = require('fs');
+    const path = require('path');
+    const esquema = fs.readFileSync(
+      path.join(__dirname, '..', 'db/pocketbase/criar-colecoes.mjs'), 'utf8');
+    expect(esquema).toMatch(/num\('valor_ponto', \{ min: 0, max: 5 \}\)/);
+  });
+
+  it('⚠ e a mudança passa pela loja, não por um `set` solto no ecrã', () => {
+    // Uma regra da casa mudada com `set(...)` fica no telefone de quem a mudou.
+    const fs = require('fs');
+    const path = require('path');
+    const codigo = fs.readFileSync(path.join(__dirname, '..', 'src/screens/Gestao.jsx'), 'utf8');
+    for (const regra of ['pointValue', 'payDay', 'splitHalf', 'pontosLigados']) {
+      expect(codigo).toMatch(new RegExp(`mudarRegraDaCasa\\(\\{ ${regra}`));
+    }
   });
 });
 

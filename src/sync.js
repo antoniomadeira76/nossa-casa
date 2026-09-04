@@ -219,9 +219,30 @@ export async function puxarCasa() {
     if (dia === hoje) done[f.tarefa] = true;
   }
 
+  // ── As regras da casa ─────────────────────────────────────────────────────
+  //
+  // Viviam só no telefone de quem as mudou: a Rita desligava os pontos e o
+  // Tomás continuava a vê-los; ela mudava o valor do ponto e os dois telefones
+  // pagavam semanadas diferentes.
+  //
+  // ⚠ `?? ` e não `||`. O `divide_meias` a false e o `valor_ponto` a 0 são
+  // valores VÁLIDOS — com `||` os dois viravam o valor por omissão, e desligar
+  // a divisão a meias no servidor não pegava no cliente. É o mesmo cuidado que
+  // o `pontos_ligados` precisa, e por isso ele também está aqui.
+  const regras = aCasa ? {
+    rendimento: Number(aCasa.rendimento_mensal) || 0,
+    pointValue: Number(aCasa.valor_ponto ?? 0.1),
+    payDay: Number(aCasa.dia_pagamento ?? 0),
+    splitHalf: aCasa.divide_meias !== false,
+    // Ausente lê-se como ligado: é o que a app fazia antes de o campo existir,
+    // e um `!!` desligava os pontos a quem já os usava, em silêncio.
+    pontosLigados: aCasa.pontos_ligados !== false,
+  } : null;
+
   return {
     vaultMoves,
     registered,
+    regras,
     added,
     newTasks,
     urg,
@@ -419,6 +440,35 @@ export async function confirmarTarefaFeita(idDaLinha, porQuem) {
 // `membros.createRule` exigem administração da mesma casa, e há cinco provas
 // em provar-regras.mjs. Repetir a verificação neste ficheiro daria a impressão
 // errada de que é o cliente que protege.
+
+// ── As regras da casa, para o servidor ───────────────────────────────────────
+//
+// ⚠ Os nomes são os da COLEÇÃO: `valor_ponto`, `dia_pagamento`,
+// `divide_meias`, `pontos_ligados`, `rendimento_mensal`. A loja fala
+// `pointValue`, `payDay`, `splitHalf`, `pontosLigados`, `rendimento`. A
+// tradução é aqui, num sítio só — e o PocketBase ignora em silêncio o que não
+// conhece, portanto um nome errado aqui é uma regra que a casa julga ter
+// mudado e não mudou.
+const REGRA_NO_SERVIDOR = {
+  rendimento: 'rendimento_mensal',
+  pointValue: 'valor_ponto',
+  payDay: 'dia_pagamento',
+  splitHalf: 'divide_meias',
+  pontosLigados: 'pontos_ligados',
+};
+
+export async function regrasDaCasa(casaId, campos) {
+  if (!ligado() || !casaId) return { pendente: true };
+  const linha = {};
+  for (const [naLoja, noServidor] of Object.entries(REGRA_NO_SERVIDOR)) {
+    if (naLoja in campos) linha[noServidor] = campos[naLoja];
+  }
+  if (!Object.keys(linha).length) return { pendente: true };
+  // ⚠ Direto, sem fila. Uma regra da casa é um ESTADO, não um movimento: duas
+  // alterações fora de ordem deixavam a antiga a ganhar, e a fila só sabe
+  // criar. Sem rede fica no telefone e sobe na próxima — que é honesto.
+  return servidor.pb.collection('casas').update(casaId, linha);
+}
 
 export async function renomearCasa(casaId, nome) {
   if (!ligado()) throw new Error('Sem ligação ao servidor.');
@@ -640,4 +690,8 @@ export async function decisaoDeSaude({ casa, episodio, tipo, estado, nota }) {
 // conhece esta porta: importa o `./sync` em atraso e nunca o cliente. Manter a
 // regra poupa à loja saber que servidor está do outro lado.
 export const guardarAspeto = (campos) => servidor.auth.guardarAspeto(campos);
+// O PIN de uma criança vai por uma ROTA, não por um update da coleção: o
+// PocketBase exige `oldPassword` para mudar uma palavra-passe, e quem põe o PIN
+// de uma criança não sabe o antigo. Ver `pb_hooks/pin.pb.js`.
+export const definirPin = (membroId, pin) => servidor.auth.definirPin(membroId, pin);
 export const trazerFotografiaDaGoogle = () => servidor.auth.trazerFotografiaDaGoogle();

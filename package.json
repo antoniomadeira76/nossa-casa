@@ -9,7 +9,7 @@
     "test": "jest",
     "test:smoke": "jest __tests__/smoke.test.js",
     "referencias": "node scripts/recapturar-referencias.mjs docs/referencia && node scripts/folha-de-contacto.mjs docs/referencia docs/referencia/todos-os-ecras.png",
-    "db:provar": "node db/pocketbase/provar-regras.mjs && node db/pocketbase/provar-hooks.mjs && node db/pocketbase/provar-saude.mjs && node db/pocketbase/provar-saude-sobe.mjs && node db/pocketbase/provar-anexo-sobe.mjs && node db/pocketbase/provar-notas-saude.mjs && node db/pocketbase/provar-agenda-e-tarefas.mjs && node db/pocketbase/provar-agenda-e-tarefas-pela-app.mjs && node db/pocketbase/provar-cliente.mjs && node db/pocketbase/provar-dois-telemoveis.mjs && node db/pocketbase/provar-gerir-casa.mjs && node db/pocketbase/provar-gerir-casa-pela-app.mjs && node db/pocketbase/provar-agenda-google.mjs",
+    "db:provar": "node db/pocketbase/provar-regras.mjs && node db/pocketbase/provar-hooks.mjs && node db/pocketbase/provar-saude.mjs && node db/pocketbase/provar-saude-sobe.mjs && node db/pocketbase/provar-anexo-sobe.mjs && node db/pocketbase/provar-notas-saude.mjs && node db/pocketbase/provar-agenda-e-tarefas.mjs && node db/pocketbase/provar-agenda-e-tarefas-pela-app.mjs && node db/pocketbase/provar-regras-da-casa.mjs && node db/pocketbase/provar-cliente.mjs && node db/pocketbase/provar-dois-telemoveis.mjs && node db/pocketbase/provar-gerir-casa.mjs && node db/pocketbase/provar-gerir-casa-pela-app.mjs && node db/pocketbase/provar-agenda-google.mjs",
     "db:servir": "pocketbase serve --http=127.0.0.1:8095 --migrationsDir db/pocketbase/pb_migrations --hooksDir db/pocketbase/pb_hooks",
     "db:colecoes": "node db/pocketbase/criar-colecoes.mjs",
     "db:google": "node db/pocketbase/configurar-google.mjs"

@@ -61,8 +61,30 @@
         Apanhado pela prova de ponta a ponta.
       - **falta ainda**: alterar uma tarefa pelo lápis, a ordem à mão
         (`taskOrder`), o `pending`/confirmação, e os eventos criados fora da
-        Saúde. E as outras nove coleções sem escrita: compras, orçamento,
-        equipamentos, lojas, preferências.
+        Saúde.
+- [x] **As REGRAS DA CASA sobem** (04/09/2026): o valor do ponto, o dia de
+      pagamento, a divisão a meias, o interruptor dos pontos, o rendimento, os
+      **papéis** e os **PINs**. **19 provas** em `provar-regras-da-casa.mjs`.
+      - ⚠ o papel e o PIN eram os mais graves da lista, porque não são
+        aparência: decidem o que o servidor DEVOLVE. A Rita promovia o Tomás e
+        o servidor continuava a recusar-lhe a Gestão; punha o PIN do Léo e ele
+        não entrava no telemóvel dele.
+      - ⚠ o **PIN vai por uma ROTA** (`pb_hooks/pin.pb.js`), não por um update
+        da coleção: o PocketBase exige `oldPassword` para mudar uma
+        palavra-passe, e quem põe o PIN de uma criança de sete anos não sabe o
+        antigo — o objetivo é muitas vezes não saber. A app fazia o update e
+        apanhava a recusa num `.catch(() => {})`: **falhava em silêncio**. A
+        rota valida a qualidade do PIN outra vez do lado do servidor, recusa um
+        adulto, e recusa uma criança de outra casa.
+      - ⚠ o `valor_ponto` do servidor tinha `min: 0.01` e eu tinha baixado o
+        ecrã a 0 no dia anterior: a escolha de 0 € era aceite no telefone e
+        recusada ao subir. Mesma forma de falha silenciosa do `tarefas_feitas`.
+      - ⚠ e um defeito no próprio `criar-colecoes.mjs`: numa casa habitada, o
+        `casas` e o `membros` são **preservados** — e «preservado» estava a
+        significar «intocado». Os campos novos nunca lhes chegavam. Corri o
+        script, ele disse «criadas», e nem o `pontos_ligados` nem o mínimo do
+        `valor_ponto` estavam lá. Numa base vazia funcionava; na casa a sério —
+        a única que interessa — não fazia nada.
 - [x] **Os pontos são OPCIONAIS** (04/09/2026, a pedido do dono da casa):
       «atribuir pontos a tarefas deve ser opcional — poder ligar e desligar, e
       se estiver ligado pode-se atribuir qualquer valor, mesmo 0 €».

@@ -26,7 +26,7 @@ const campo = (t) => ({
 
 export default function Gestao({ t, user, onClose }) {
   const { s, set, isAdmin, budget, spent, envelopes, pinError, setPin, canChangeRole, setRole,
-          kidPts, pontosNasTarefas, membros: MEMBERS, nomeDaCasa, podeGerirCasa,
+          kidPts, pontosNasTarefas, mudarRegraDaCasa, membros: MEMBERS, nomeDaCasa, podeGerirCasa,
           renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro } = useStore();
   const [tab, setTab] = useState('orcamento');
   const [sheetOpen, setSheetOpen] = useState(null);
@@ -141,7 +141,7 @@ export default function Gestao({ t, user, onClose }) {
             </Text>
           </View>
           <Toggle t={t} on={pontosNasTarefas} label="Atribuir pontos às tarefas"
-            onPress={() => set(x => ({ pontosLigados: x.pontosLigados === false }))} />
+            onPress={() => mudarRegraDaCasa({ pontosLigados: !pontosNasTarefas })} />
         </View>
 
         {pontosNasTarefas ? (
@@ -151,14 +151,14 @@ export default function Gestao({ t, user, onClose }) {
           {/* ⚠ Mínimo 0, e não 0,01. Uma casa pode querer os pontos como
               contagem e não como dinheiro: «cinco pontos» sem euros atrás. O
               0,01 obrigava a que valessem sempre algo. */}
-          <Tap label="Menos 0,05 €" onPress={() => set(x => ({ pointValue: Math.max(0, +(x.pointValue - 0.05).toFixed(2)) }))}
+          <Tap label="Menos 0,05 €" onPress={() => mudarRegraDaCasa({ pointValue: Math.max(0, +(s.pointValue - 0.05).toFixed(2)) })}
             style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row }}>
             <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.accent }}>−</Text>
           </Tap>
           <Text style={{ flex: 1, textAlign: 'center', fontFamily: FONT.display, fontSize: 18, color: t.text2 }}>
             {EUR(s.pointValue)}
           </Text>
-          <Tap label="Mais 0,05 €" onPress={() => set(x => ({ pointValue: Math.min(5, +(x.pointValue + 0.05).toFixed(2)) }))}
+          <Tap label="Mais 0,05 €" onPress={() => mudarRegraDaCasa({ pointValue: Math.min(5, +(s.pointValue + 0.05).toFixed(2)) })}
             style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row }}>
             <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.accent }}>+</Text>
           </Tap>
@@ -178,7 +178,7 @@ export default function Gestao({ t, user, onClose }) {
         <Label t={t}>Pagar às</Label>
         <Segmented t={t} small value={s.payDay}
           options={['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((d, i) => ({ value: i, label: d }))}
-          onChange={(v) => set({ payDay: v })} />
+          onChange={(v) => mudarRegraDaCasa({ payDay: v })} />
         </>
         ) : null}
       </View>
@@ -195,7 +195,7 @@ export default function Gestao({ t, user, onClose }) {
             </Text>
           </View>
           <Toggle t={t} on={s.splitHalf} label="Dividir a meias"
-            onPress={() => set(x => ({ splitHalf: !x.splitHalf }))} />
+            onPress={() => mudarRegraDaCasa({ splitHalf: !s.splitHalf })} />
         </View>
       </View>
 

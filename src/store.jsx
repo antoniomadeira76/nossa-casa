@@ -733,6 +733,14 @@ export function StoreProvider({ children }) {
       // ⚠ E `urg`/`due` são FUNDIDOS, não substituídos: são mapas indexados por
       // id e há tarefas locais ainda por subir cujas entradas não podem
       // desaparecer. As chaves do servidor ganham, porque são as partilhadas.
+      // ── As regras da casa ─────────────────────────────────────────────────
+      //
+      // O servidor manda: são regras da CASA, não deste telefone. Até
+      // 04/09/2026 viviam só no telefone de quem as mudou — a Rita desligava os
+      // pontos e o Tomás continuava a vê-los, e os dois telefones pagavam
+      // semanadas de valores diferentes sem nenhum deles saber.
+      if (casa.regras) set(casa.regras);
+
       if ((casa.added || []).length) set({ added: casa.added });
       if ((casa.newTasks || []).length) {
         set(x => ({
@@ -1223,6 +1231,22 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     };
   });
 
+  // ── Mudar uma regra da casa ─────────────────────────────────────────────
+  //
+  // Uma porta só para o valor do ponto, o dia de pagamento, a divisão a meias,
+  // o interruptor dos pontos e o rendimento. A Gestão chamava `set(...)`
+  // direto, e enquanto nada subia dava no mesmo — a partir do momento em que
+  // sobe, cada `set` solto é uma regra que fica num telefone.
+  //
+  // ⚠ Recebe os nomes da LOJA e traduz-se no `sync`, num sítio só.
+  const mudarRegraDaCasa = (campos) => {
+    set(campos);
+    if (sync) {
+      const ses = sync.sessao();
+      if (ses && ses.casa) sync.regrasDaCasa(ses.casa, campos).catch(() => {});
+    }
+  };
+
   // ── Criar uma tarefa ────────────────────────────────────────────────────
   //
   // ⚠ Isto vivia dentro da folha «Nova Tarefa», que escrevia direto no `set`.
@@ -1479,14 +1503,27 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     return true;
   };
 
-  const setRole = (name, role) => set(x => {
-    const admins = Object.entries(x.roles).filter(([n, r]) => r === 'admin' && n !== name);
-    if (x.roles[name] === 'admin' && role !== 'admin' && admins.length === 0) return {};
-    return {
+  const setRole = (name, role) => {
+    // A recusa calcula-se ANTES: uma casa não fica sem administração, e se
+    // ficasse o servidor recusava de qualquer modo (há um hook para isso).
+    // Recusar aqui evita mandar uma escrita que se sabe que vai voltar.
+    const admins = Object.entries(s.roles).filter(([n, r]) => r === 'admin' && n !== name);
+    if (s.roles[name] === 'admin' && role !== 'admin' && admins.length === 0) return;
+
+    set(x => ({
       roles: { ...x.roles, [name]: role },
       registo: [{ t: `${name} passou a ${role === 'admin' ? 'administração' : 'adulto'}`, at: Date.now() }, ...x.registo],
-    };
-  });
+    }));
+
+    // ⚠ E sobe. O papel é o que decide quem vê o orçamento, quem gere a casa e
+    // quem lê as fichas de saúde — vive nas REGRAS do servidor, e mudá-lo só
+    // no telefone não mudava nada de facto. A Rita promovia o Tomás e o
+    // servidor continuava a recusar-lhe a Gestão.
+    if (sync) {
+      const id = idDoMembro(name);
+      if (id) sync.editarMembro(id, { papel: role }).catch(() => {});
+    }
+  };
 
   // O avatar do próprio membro: a fotografia da conta, ou a inicial numa cor.
   //
@@ -1565,6 +1602,24 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     const err = pinError(name, pin);
     if (err) return err;
     set(x => ({ pins: { ...x.pins, [name]: resumoPin(name, pin) } }));
+
+    // ⚠ E sobe — como PALAVRA-PASSE do membro, não como resumo.
+    //
+    // O resumo local (`resumoPin`) serve a entrada sem servidor, e é isso e
+    // nada mais: o comentário dele di-lo, «não é criptografia». O PIN a sério
+    // é a palavra-passe da criança no PocketBase, com bcrypt feito pelo
+    // servidor — é assim que o §3.2 fica satisfeito sem escrever criptografia
+    // nenhuma, e o valor correto nunca chega a outro dispositivo.
+    //
+    // Sem isto, o PIN definido no telefone da Rita não deixava a criança
+    // entrar no dela: um lado tinha o resumo novo, o servidor o antigo.
+    if (sync) {
+      const id = idDoMembro(name);
+      // ⚠ Pela ROTA, e não por `editarMembro`. A coleção exige `oldPassword`
+      // e recusava — «Cannot be blank» — em silêncio, porque isto é um
+      // `.catch(() => {})`. Apanhado pela prova das regras da casa.
+      if (id) sync.definirPin(id, pin).catch(() => {});
+    }
     return null;
   };
 
@@ -2257,7 +2312,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
     garantiasAExpirar, receitasAExpirar, consultasProximas,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring, definirAvatar, trazerFotografia,
-    removerTarefa, criarTarefa, tarefaNoServidor,
+    removerTarefa, criarTarefa, tarefaNoServidor, mudarRegraDaCasa,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
     lerDoServidor,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),

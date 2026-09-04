@@ -117,19 +117,54 @@ const criar = async (def) => {
   return c;
 };
 
+// ── Uma coleção preservada continua a receber o esquema ──────────────────────
+//
+// ⚠ Isto faltava, e é um defeito com forma de silêncio. Numa casa habitada, o
+// `casas` e o `membros` são PRESERVADOS — não se apagam, para não levar a conta
+// de quem lá vive e a autorização da agenda. Mas «preservado» estava a
+// significar «intocado»: os campos novos que este ficheiro define nunca lhes
+// chegavam.
+//
+// Encontrei-o em 04/09/2026 ao acrescentar `pontos_ligados` ao `casas` e ao
+// baixar o mínimo do `valor_ponto`. Corri o script, ele disse «criadas», e as
+// duas alterações não estavam lá. Numa base vazia funcionava; na casa a sério —
+// a única que interessa — não fazia nada.
+//
+// Agora os campos aplicam-se por `update` quando a coleção é preservada, tal
+// como as regras do `membros` já se aplicavam. Fundem-se pelo nome: o que já lá
+// está mantém-se, o que é novo entra, e o que mudou de limites é substituído.
+const aplicarCampos = async (nome, campos) => {
+  const c = (await pb.collections.getFullList()).find(x => x.name === nome);
+  if (!c) return;
+  const porNome = new Map(c.fields.map(f => [f.name, f]));
+  for (const novo of campos) porNome.set(novo.name, { ...porNome.get(novo.name), ...novo });
+  await pb.collections.update(c.id, { fields: [...porNome.values()] });
+  ids[nome] = c.id;
+};
+
 // ── A casa ───────────────────────────────────────────────────────────────────
 // Sem regras ainda: membros ainda não existe para as poder referir.
-if (!casaHabitada) await criar({
-  name: 'casas', type: 'base',
-  fields: [
+const CAMPOS_DA_CASA = [
     txt('nome', { required: true }),
     num('rendimento_mensal', { min: 0 }),
     // §4: o valor do ponto é validado no SERVIDOR, não só no campo.
-    num('valor_ponto', { min: 0.01, max: 5 }),
+    //
+    // ⚠ Mínimo 0, e não 0,01. Os pontos passaram a ser opcionais em
+    // 04/09/2026, e com eles o valor pode ser zero: uma casa pode querer os
+    // pontos como CONTAGEM e não como dinheiro. Eu baixei o mínimo no ecrã e
+    // deixei o servidor em 0,01 — a escolha de 0 € era aceite no telefone e
+    // recusada ao subir, que é a mesma forma de falha silenciosa do
+    // `tarefas_feitas`. Os dois lados dizem agora a mesma coisa.
+    num('valor_ponto', { min: 0, max: 5 }),
     num('dia_pagamento', { min: 0, max: 6, onlyInt: true }),
     bool('divide_meias'),
-  ],
-});
+    // O interruptor dos pontos. Ausente lê-se como LIGADO, do lado do cliente,
+    // porque é o que a app fazia antes de ele existir.
+    bool('pontos_ligados'),
+];
+
+if (casaHabitada) await aplicarCampos('casas', CAMPOS_DA_CASA);
+else await criar({ name: 'casas', type: 'base', fields: CAMPOS_DA_CASA });
 
 // ── Membros ──────────────────────────────────────────────────────────────────
 // Coleção de AUTENTICAÇÃO. É a peça central da tradução: o PocketBase já faz
