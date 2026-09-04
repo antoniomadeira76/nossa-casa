@@ -85,6 +85,24 @@
         script, ele disse «criadas», e nem o `pontos_ligados` nem o mínimo do
         `valor_ponto` estavam lá. Numa base vazia funcionava; na casa a sério —
         a única que interessa — não fazia nada.
+- [x] **As três listas da casa sobem** — especialidades, categorias de
+      equipamento e lojas. Têm a mesma forma no servidor (`casa`, `nome`) e por
+      isso levam uma tradução só: três funções, não três cópias de três.
+      - a loja continua a guardá-las como listas de **texto** — é o que oito
+        ecrãs leem — e um mapa `nome → id` à parte é o que permite renomear e
+        apagar do lado do servidor
+      - ⚠ **renomear guarda a linha.** O `mudarListaDaCasa` compara a lista
+        antes e depois, e um a sair com um a entrar **na mesma posição** é um
+        renomear, não apagar-e-criar. A diferença importa: uma loja apagada
+        leva atrás — ou trava — as listas de compras que a referem, e voltaria
+        com id novo e sem histórico.
+      - ⚠ e uma **fusão** de especialidades não é um renomear: quando o nome
+        novo já existe, a linha antiga **apaga-se**. Renomeá-la deixava duas
+        linhas com o mesmo nome, que é o defeito que a fusão existe para evitar.
+      - ⚠ divergência conhecida e por decidir: o servidor exige **administração**
+        para mexer nestas listas, e a app deixa qualquer adulto criar uma
+        especialidade. Se um adulto que não administra criar uma, ela fica no
+        telefone dele.
 - [x] **Os pontos são OPCIONAIS** (04/09/2026, a pedido do dono da casa):
       «atribuir pontos a tarefas deve ser opcional — poder ligar e desligar, e
       se estiver ligado pode-se atribuir qualquer valor, mesmo 0 €».

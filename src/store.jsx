@@ -243,7 +243,7 @@ const BACKUPS_ANTIGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(n => `${KEY}.ant
 const DATA_KEYS = [
   'done', 'pending', 'status', 'registered', 'acertoMovs', 'vaultMoves', 'paidPts', 'extraLog',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
-  'newItems', 'itemGone', 'feitas',
+  'newItems', 'itemGone', 'feitas', 'listasIds',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'importDone', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'pointValue', 'payDay', 'splitHalf',
@@ -518,6 +518,9 @@ export const DEMO = () => ({
   paidPts: Object.fromEntries(Object.keys(MEMBERS).filter(n => MEMBERS[n].kid).map(n => [n, 0])),
   extraLog: {},
   envMove: {}, added: [], newTasks: [], taskEdits: {}, taskGone: {}, taskOrder: {},
+  // `nome → id` das três listas da casa, por lista. É o que permite renomear e
+  // apagar do lado do servidor sem mudar a forma que os ecrãs leem.
+  listasIds: {},
   // As linhas de `tarefas_feitas` que o servidor tem, por «tarefa|dia». É o
   // que permite DESMARCAR: sem o id da linha não há o que apagar do outro lado.
   feitas: {},
@@ -740,6 +743,13 @@ export function StoreProvider({ children }) {
       // pontos e o Tomás continuava a vê-los, e os dois telefones pagavam
       // semanadas de valores diferentes sem nenhum deles saber.
       if (casa.regras) set(casa.regras);
+
+      // As três listas da casa — especialidades, categorias de equipamento e
+      // lojas. Substituem as locais quando o servidor tem alguma: são da casa,
+      // não deste telefone.
+      if (Object.keys(casa.listas || {}).length) {
+        set(x => ({ ...casa.listas, listasIds: { ...x.listasIds, ...casa.listasIds } }));
+      }
 
       if ((casa.added || []).length) set({ added: casa.added });
       if ((casa.newTasks || []).length) {
@@ -1230,6 +1240,80 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       registo: [{ t: `A tarefa «${t.title}» foi apagada`, at: Date.now() }, ...x.registo],
     };
   });
+
+  // ── As três listas da casa ──────────────────────────────────────────────
+  //
+  // Especialidades, categorias de equipamento e lojas. Uma porta só: as três
+  // têm a mesma forma no servidor, e três caminhos separados eram três sítios
+  // onde a quarta lista se ia esquecer.
+  //
+  // A loja continua a guardá-las como listas de TEXTO — é o que os ecrãs leem —
+  // e o `listasIds` guarda o `nome → id` que permite renomear e apagar lá.
+  const idNaLista = (chave, nome) => ((s.listasIds || {})[chave] || {})[nome] || null;
+
+  const listaAcrescenta = (chave, nome) => {
+    const n = String(nome || '').trim();
+    if (!n) return;
+    if (sync) {
+      const ses = sync.sessao();
+      if (ses) sync.acrescentarNaLista(chave, { casa: ses.casa, nome: n })
+        // O id guarda-se para que renomear e apagar tenham para onde ir.
+        .then((r) => { if (r && r.id) set(x => ({
+          listasIds: { ...x.listasIds, [chave]: { ...(x.listasIds || {})[chave], [n]: r.id } },
+        })); })
+        .catch(() => {});
+    }
+  };
+
+  const listaRenomeia = (chave, antigo, novo) => {
+    const id = idNaLista(chave, antigo);
+    if (sync && id) sync.renomearNaLista(chave, id, novo).catch(() => {});
+    // O mapa segue o nome, senão a segunda alteração não encontrava o id.
+    set(x => {
+      const mapa = { ...((x.listasIds || {})[chave] || {}) };
+      if (mapa[antigo]) { mapa[novo] = mapa[antigo]; delete mapa[antigo]; }
+      return { listasIds: { ...x.listasIds, [chave]: mapa } };
+    });
+  };
+
+  const listaApaga = (chave, nome) => {
+    const id = idNaLista(chave, nome);
+    if (sync && id) sync.apagarDaLista(chave, id).catch(() => {});
+    set(x => {
+      const mapa = { ...((x.listasIds || {})[chave] || {}) };
+      delete mapa[nome];
+      return { listasIds: { ...x.listasIds, [chave]: mapa } };
+    });
+  };
+
+  // Para as listas que os ecrãs ainda mudam por `set`: muda e sobe, numa vez.
+  //
+  // Descobre-se o que mudou comparando as duas listas — é mais simples do que
+  // pedir a quem chama que o diga, e não há como enganar-se sobre a operação.
+  const mudarListaDaCasa = (chave, proxima) => {
+    const antes = s[chave] || [];
+    set({ [chave]: proxima });
+
+    const entraram = proxima.filter(n => !antes.includes(n));
+    const sairam = antes.filter(n => !proxima.includes(n));
+
+    // ⚠ Um a sair e um a entrar é um RENOMEAR, não apagar-e-criar. A diferença
+    // importa: uma loja apagada leva atrás — ou trava — as listas de compras
+    // que a referem, e voltaria com id novo e sem histórico. O renomear guarda
+    // a linha e muda-lhe o nome.
+    //
+    // A posição confirma-o: renomear troca o nome NO SÍTIO, e criar acrescenta
+    // ao fim. Sem esta segunda condição, apagar um e criar outro na mesma
+    // gravação passava por renomear.
+    if (entraram.length === 1 && sairam.length === 1
+        && proxima.indexOf(entraram[0]) === antes.indexOf(sairam[0])) {
+      listaRenomeia(chave, sairam[0], entraram[0]);
+      return;
+    }
+
+    for (const nome of entraram) listaAcrescenta(chave, nome);
+    for (const nome of sairam) listaApaga(chave, nome);
+  };
 
   // ── Mudar uma regra da casa ─────────────────────────────────────────────
   //
@@ -2153,6 +2237,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       specialities: [...(x.specialities || []), n],
       registo: [{ at: Date.now(), t: `Especialidade criada: ${n}` }, ...(x.registo || [])],
     }));
+    listaAcrescenta('specialities', n);
     return null;
   };
 
@@ -2179,6 +2264,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       specialities: (x.specialities || []).filter(e => e !== nome),
       registo: [{ at: Date.now(), t: `Especialidade apagada: ${nome}` }, ...(x.registo || [])],
     }));
+    listaApaga('specialities', nome);
     return null;
   };
 
@@ -2235,6 +2321,14 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         ? `A especialidade ${antigo} passou a contar como ${alvo}`
         : `A especialidade ${antigo} passou a chamar-se ${alvo}` }, ...(x.registo || [])],
     }));
+
+    // ⚠ Uma FUSÃO não é um renomear: quando o nome novo já existe, a antiga
+    // desaparece da lista e as consultas passam a contar na que fica. Do lado
+    // do servidor isso é apagar a linha antiga, não renomeá-la — renomeá-la
+    // deixava duas linhas com o mesmo nome, que é o defeito que a fusão existe
+    // para evitar.
+    if (existente) listaApaga('specialities', antigo);
+    else listaRenomeia('specialities', antigo, alvo);
     return null;
   };
 
@@ -2312,7 +2406,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
     garantiasAExpirar, receitasAExpirar, consultasProximas,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring, definirAvatar, trazerFotografia,
-    removerTarefa, criarTarefa, tarefaNoServidor, mudarRegraDaCasa,
+    removerTarefa, criarTarefa, tarefaNoServidor, mudarRegraDaCasa, mudarListaDaCasa,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
     lerDoServidor,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),

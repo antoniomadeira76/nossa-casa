@@ -240,5 +240,81 @@ await prova('⚠ e quem não administra não define PIN nenhum', async () => {
   igual(r.ok, false, 'estado ' + r.status);
 });
 
+// ═════════════════════════════════════════════════════════════════════════════
+console.log('\n── as três listas da casa ──');
+
+// A Rita voltou a ser a única administradora; entra-se outra vez para o `sync`
+// ter a sessão dela.
+await auth.entrarAdulto('rita@x.pt', 'palavra-longa-1');
+
+for (const [chave, colecao] of Object.entries(sync.LISTA_NO_SERVIDOR)) {
+  await prova(`«${chave}» acrescenta uma linha em \`${colecao}\``, async () => {
+    const r = await sync.acrescentarNaLista(chave, { casa: daRita.casa, nome: 'Fisioterapia' });
+    if (!r || !r.id) throw new Error('não devolveu id: ' + JSON.stringify(r));
+    igual((await admin.collection(colecao).getOne(r.id)).nome, 'Fisioterapia');
+
+    // ⚠ Renomear GUARDA a linha. Apagar e criar dava id novo e sem histórico —
+    // e numa loja levava atrás as listas de compras que a referem.
+    await sync.renomearNaLista(chave, r.id, 'Fisioterapia geral');
+    const depois = await admin.collection(colecao).getOne(r.id);
+    igual(depois.nome, 'Fisioterapia geral');
+    igual(depois.id, r.id, 'a linha mudou de id — foi apagada e recriada');
+
+    await sync.apagarDaLista(chave, r.id);
+    await recusado(() => admin.collection(colecao).getOne(r.id));
+  });
+}
+
+await prova('⚠ e o `puxarCasa` traz as três como listas de TEXTO', async () => {
+  // É a forma que oito ecrãs leem. Mudá-la para objetos com id obrigava a
+  // mexer neles todos por uma razão que não é deles — daí o mapa à parte.
+  const ids = {};
+  for (const [chave, colecao] of Object.entries(sync.LISTA_NO_SERVIDOR)) {
+    const r = await admin.collection(colecao).create({ casa: casa.id, nome: 'Um nome' });
+    ids[chave] = r.id;
+  }
+  const lida = await sync.puxarCasa();
+  for (const chave of Object.keys(sync.LISTA_NO_SERVIDOR)) {
+    if (!Array.isArray(lida.listas[chave])) throw new Error(`${chave} não veio como lista`);
+    igual(lida.listas[chave].includes('Um nome'), true, chave);
+    igual(typeof lida.listas[chave][0], 'string', chave);
+    // E o mapa `nome → id`, que é o que permite renomear e apagar.
+    igual(lida.listasIds[chave]['Um nome'], ids[chave], chave);
+  }
+});
+
+await prova('⚠ quem não administra não mexe nas listas', async () => {
+  // Mais apertado do que a app, que deixa qualquer adulto criar uma
+  // especialidade. Fica dito: é divergência conhecida.
+  await recusado(() => doTomas.collection('especialidades').create({
+    casa: casa.id, nome: 'Cardiologia' }));
+});
+
+await prova('⚠ e ninguém acrescenta à lista de OUTRA casa', async () => {
+  // ⚠ Esta prova pedia um `recusado(...)` e falhou por bem: o
+  // `acrescentarNaLista` cai na FILA quando o servidor recusa, e devolve
+  // `{ pendente: true }` em vez de rebentar. É a mesma armadilha que o
+  // `provar-anexo-sobe.mjs` já documenta — um `recusado()` que passa com
+  // qualquer erro, ou que não vê erro nenhum, não distingue recusa de nada.
+  //
+  // O que interessa é a LINHA não existir do outro lado, e é isso que se mede.
+  const outra = await admin.collection('casas').create({
+    nome: PREFIXO + 'Vizinha', valor_ponto: 0.1 });
+  await sync.acrescentarNaLista('specialities', { casa: outra.id, nome: 'Intrusa' });
+
+  const dela = (await admin.collection('especialidades').getFullList())
+    .filter(e => e.casa === outra.id);
+  igual(dela.length, 0, dela.map(e => e.nome).join(','));
+});
+
+await prova('⚠ e uma escrita recusada NÃO fica a repetir-se para sempre', async () => {
+  // A fila é uma rede de segurança para falhas de REDE. Uma recusa de
+  // permissão nunca vai passar, e uma fila que a guarde tenta-a a cada
+  // arranque, para sempre. Isto mede quantas lá ficaram.
+  const p = await sync.pendentes();
+  const n = typeof p === 'number' ? p : (p && p.length) || 0;
+  if (n > 5) throw new Error(`a fila tem ${n} escritas presas`);
+});
+
 console.log(`\n${ok} provas passaram, ${mau} falharam.`);
 process.exit(mau ? 1 : 0);

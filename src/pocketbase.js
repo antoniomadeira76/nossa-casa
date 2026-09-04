@@ -463,7 +463,10 @@ export const auth = {
 // Nenhuma leitura leva filtro por casa: as regras já o impõem, e repeti-lo aqui
 // daria a impressão errada de que é o cliente que protege.
 const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
-  'envelopes', 'despesas', 'cofre_movimentos', 'equipamentos'];
+  'envelopes', 'despesas', 'cofre_movimentos', 'equipamentos',
+  // As três listas da casa. Têm a mesma forma — casa e nome — e por isso levam
+  // uma tradução só, no `sync`.
+  'especialidades', 'categorias_equip', 'lojas'];
 
 export const ler = {
   async casa() {

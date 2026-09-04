@@ -26,7 +26,7 @@ const campo = (t) => ({
 
 export default function Gestao({ t, user, onClose }) {
   const { s, set, isAdmin, budget, spent, envelopes, pinError, setPin, canChangeRole, setRole,
-          kidPts, pontosNasTarefas, mudarRegraDaCasa, membros: MEMBERS, nomeDaCasa, podeGerirCasa,
+          kidPts, pontosNasTarefas, mudarRegraDaCasa, mudarListaDaCasa, membros: MEMBERS, nomeDaCasa, podeGerirCasa,
           renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro } = useStore();
   const [tab, setTab] = useState('orcamento');
   const [sheetOpen, setSheetOpen] = useState(null);
@@ -940,9 +940,7 @@ export default function Gestao({ t, user, onClose }) {
           action={
             <Primary t={t} label="Adicionar" onPress={() => {
               if (input.trim()) {
-                set(s => ({
-                  stores: [...s.stores, input.trim()],
-                }));
+                mudarListaDaCasa('stores', [...s.stores, input.trim()]);
                 setSheetOpen(null);
                 setInput('');
               }
@@ -983,9 +981,11 @@ export default function Gestao({ t, user, onClose }) {
             <View style={{ gap: S.md }}>
               <Primary t={t} label="Renomear" onPress={() => {
                 if (input.trim()) {
-                  set(s => ({
-                    stores: s.stores.map((shop, i) => i === selectedEnvelope ? input.trim() : shop),
-                  }));
+                  // O renomear mantém a POSIÇÃO, e é isso que o distingue de
+                  // apagar-e-criar quando a loja compara as duas listas — uma
+                  // loja apagada leva atrás as listas de compras que a referem.
+                  mudarListaDaCasa('stores',
+                    s.stores.map((shop, i) => (i === selectedEnvelope ? input.trim() : shop)));
                   setSheetOpen(null);
                   setSelectedEnvelope(null);
                   setInput('');
@@ -1037,9 +1037,7 @@ export default function Gestao({ t, user, onClose }) {
                   <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.text2, textAlign: 'center' }}>Cancelar</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" onPress={() => {
-                  set(s => ({
-                    stores: s.stores.filter((_, i) => i !== selectedEnvelope),
-                  }));
+                  mudarListaDaCasa('stores', s.stores.filter((_, i) => i !== selectedEnvelope));
                   setModal(null);
                   setSheetOpen(null);
                   setSelectedEnvelope(null);

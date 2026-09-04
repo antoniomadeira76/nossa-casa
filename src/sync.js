@@ -126,6 +126,13 @@ const RECORRENCIA_NO_SERVIDOR = {
 const RECORRENCIA_NA_LOJA = Object.fromEntries(
   Object.entries(RECORRENCIA_NO_SERVIDOR).map(([a, b]) => [b, a]));
 
+// As três listas da casa, e a coleção de cada uma. A chave é a da LOJA.
+export const LISTA_NO_SERVIDOR = {
+  specialities: 'especialidades',
+  equipCats: 'categorias_equip',
+  stores: 'lojas',
+};
+
 export async function puxarCasa() {
   if (!ligado()) return null;
   const casa = await servidor.ler.casa();
@@ -239,10 +246,30 @@ export async function puxarCasa() {
     pontosLigados: aCasa.pontos_ligados !== false,
   } : null;
 
+  // ── As três listas da casa ────────────────────────────────────────────────
+  //
+  // Especialidades médicas, categorias de equipamento e lojas. Têm todas a
+  // mesma forma no servidor — `casa` e `nome` — e por isso uma tradução só.
+  //
+  // ⚠ A loja guarda-as como listas de TEXTO, e é isso que todos os ecrãs leem.
+  // Mudar isso para objetos com id obrigava a mexer em oito ecrãs por uma razão
+  // que não é deles. Em vez disso guarda-se um mapa `nome → id` à parte, que é
+  // o que permite renomear e apagar do lado do servidor.
+  const listas = {};
+  const listasIds = {};
+  for (const [naLoja, colecao] of Object.entries(LISTA_NO_SERVIDOR)) {
+    const linhas = casa[colecao] || [];
+    if (!linhas.length) continue;
+    listas[naLoja] = linhas.map(l => l.nome);
+    listasIds[naLoja] = Object.fromEntries(linhas.map(l => [l.nome, l.id]));
+  }
+
   return {
     vaultMoves,
     registered,
     regras,
+    listas,
+    listasIds,
     added,
     newTasks,
     urg,
@@ -440,6 +467,38 @@ export async function confirmarTarefaFeita(idDaLinha, porQuem) {
 // `membros.createRule` exigem administração da mesma casa, e há cinco provas
 // em provar-regras.mjs. Repetir a verificação neste ficheiro daria a impressão
 // errada de que é o cliente que protege.
+
+// ── As três listas da casa, para o servidor ──────────────────────────────────
+//
+// Uma função por operação e não uma por lista: as três coleções têm a mesma
+// forma, e três cópias de cada função eram três sítios onde a quarta lista que
+// alguém acrescentasse se ia esquecer.
+//
+// ⚠ Todas exigem ADMINISTRAÇÃO no servidor (`createRule: casa && admin`), e é
+// mais apertado do que a app — que deixa qualquer adulto criar uma
+// especialidade. É divergência conhecida e fica dita: se um adulto que não
+// administra criar uma, ela fica no telefone dele. Corrigir isto é escolher um
+// dos dois lados, e é decisão do dono da casa.
+const colecaoDaLista = (chave) => {
+  const c = LISTA_NO_SERVIDOR[chave];
+  if (!c) throw new Error(`Lista desconhecida: ${chave}`);
+  return c;
+};
+
+export async function acrescentarNaLista(chave, { casa, nome }) {
+  if (!ligado()) return { pendente: true };
+  return criarOuEnfileirarCasa(colecaoDaLista(chave), { casa, nome });
+}
+
+export async function renomearNaLista(chave, id, nome) {
+  if (!ligado() || !id) return { pendente: true };
+  return servidor.pb.collection(colecaoDaLista(chave)).update(id, { nome });
+}
+
+export async function apagarDaLista(chave, id) {
+  if (!ligado() || !id) return { pendente: true };
+  return servidor.pb.collection(colecaoDaLista(chave)).delete(id);
+}
 
 // ── As regras da casa, para o servidor ───────────────────────────────────────
 //
