@@ -48,7 +48,7 @@ function KidTaskRow({ t, task, kid, onPress }) {
         }}>{task.meta}</Text> : null}
       </View>
 
-      {task.pts > 0 ? (
+      {useStore().pontosNasTarefas && task.pts > 0 ? (
         <Pill label={`${task.pts} pt`} fg={t.text2} bg={t.subtle} border={t.border} />
       ) : null}
     </Pressable>
@@ -134,6 +134,9 @@ function KidTasksView({ t, kid, tasks }) {
             }}>{todayTasks.length}</Text>
           </View>
 
+          {/* Sem pontos, o cartão sai e o «Por fazer hoje» fica com a
+              largura toda — em vez de um número vazio ao lado dele. */}
+          {st.pontosNasTarefas ? (
           <View style={{
             flex: 1, backgroundColor: t.card, borderRadius: R.card,
             borderWidth: 1, borderColor: t.border,
@@ -147,6 +150,7 @@ function KidTasksView({ t, kid, tasks }) {
               fontFamily: FONT.display, fontSize: 26, fontWeight: '600', color: t.text2,
             }}>{weekPts}</Text>
           </View>
+          ) : null}
         </View>
       </View>
 
@@ -205,7 +209,10 @@ function KidVaultView({ t, kid }) {
           fontFamily: FONT.display, fontSize: 38, fontWeight: '400',
           color: t.text1, lineHeight: 46,
         }}>{EUR(balance)}</Text>
-        {pending > 0 ? (
+        {/* ⚠ E só se os pontos valerem euros. A 0 € isto prometia «Mais
+            0,00 € quando a semanada for paga», que é uma promessa vazia dita a
+            uma criança. */}
+        {st.pontosNasTarefas && pending > 0 && s.pointValue > 0 ? (
           <Text style={{
             fontFamily: FONT.ui, fontSize: 12.5, color: t.text3,
           }}>Mais {EUR(pendingEur)} quando a semanada for paga.</Text>
@@ -318,8 +325,10 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
             fontFamily: FONT.ui, fontSize: 12, color: onC,
           }}>
             {(() => {
+              const noCofre = `${EUR(st.vaultOf(kid))} no cofre`;
+              if (!st.pontosNasTarefas) return noCofre;
               const p = (st.kidPts[kid] ?? 0) - (s.paidPts[kid] ?? 0);
-              return `${plural(p, 'ponto', 'pontos')} por pagar · ${EUR(st.vaultOf(kid))} no cofre`;
+              return `${plural(p, 'ponto', 'pontos')} por pagar · ${noCofre}`;
             })()}
           </Text>
         </View>

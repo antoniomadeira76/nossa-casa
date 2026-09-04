@@ -12,7 +12,8 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
   const st = useStore();
   const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring,
           garantiasAExpirar, receitasAExpirar, consultasProximas, membros: MEMBERS,
-          acerto, acertado, artigo, oNome, aoNome, podeVerEvento } = st;
+          acerto, acertado, artigo, oNome, aoNome, podeVerEvento,
+          pontosNasTarefas } = st;
 
   // Era `const hour = 9`, e a app dizia «Bom dia» às onze da noite.
   const hora = agoraNaApp().getHours();
@@ -196,7 +197,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
                     : pend ? 'Feito — a aguardar confirmação'
                     : subtituloDaTarefa(x, d)}
                   right={<>
-                    {x.pts > 0 && !done ? <Pill label={`${x.pts} pt`} fg={t.state.warnDeep} bg={t.state.warnBg} border={t.state.warn} /> : null}
+                    {pontosNasTarefas && x.pts > 0 && !done ? <Pill label={`${x.pts} pt`} fg={t.state.warnDeep} bg={t.state.warnBg} border={t.state.warn} /> : null}
                   </>}
                   icon={done ? 'checkCircle' : pend ? 'clock' : 'infoCircle'} />
               </Card>

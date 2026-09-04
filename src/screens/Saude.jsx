@@ -53,7 +53,8 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   const [expandedNote, setExpandedNote] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [memberFilter, setMemberFilter] = useState(null);
-  const [newNoteForm, setNewNoteForm] = useState({ text: '' });
+  // Um rascunho de nota POR consulta, não um só para todas — ver `handleAddNote`.
+  const [newNoteForm, setNewNoteForm] = useState({});
   const [recipeForm, setRecipeForm] = useState({ name: '', dosage: '', quantity: '', unit: '', expiresAt: '' });
   // A folha «Anexar»: de que consulta, e o que se está a escrever.
   const [anexoDe, setAnexoDe] = useState(null);
@@ -115,11 +116,49 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   // Mostrar archive quando > 5 registos
   const showArchive = visibleRecords.length > 5;
 
+  // ── As notas: sempre à mão, e alteráveis ──────────────────────────────────
+  //
+  // ⚠ O rascunho é POR CONSULTA. Era um só — `newNoteForm.text` — e enquanto o
+  // campo estava escondido atrás de um «Adicionar nota» isso passava. Com o
+  // campo sempre visível, o que se escrevesse numa consulta aparecia na outra
+  // ao mudar de cartão.
+  const [notaEmEdicao, setNotaEmEdicao] = useState(null);   // { healthId, notaId }
+  const [textoEmEdicao, setTextoEmEdicao] = useState('');
+  const [erroDaNota, setErroDaNota] = useState(null);
+
+  const rascunhoDe = (healthId) => (newNoteForm[healthId] || '');
+
   const handleAddNote = (healthId) => {
-    if (!newNoteForm.text.trim()) return;
-    addHealthNote(healthId, user, newNoteForm.text);
-    setNewNoteForm({ text: '' });
-    setExpandedNote(null);
+    const erro = addHealthNote(healthId, user, rascunhoDe(healthId));
+    if (erro) return setErroDaNota(erro);
+    setNewNoteForm(f => ({ ...f, [healthId]: '' }));
+    setErroDaNota(null);
+  };
+
+  const comecarAEditar = (healthId, nota) => {
+    setNotaEmEdicao({ healthId, notaId: nota.id });
+    setTextoEmEdicao(nota.text);
+    setErroDaNota(null);
+  };
+
+  const pararDeEditar = () => {
+    setNotaEmEdicao(null);
+    setTextoEmEdicao('');
+    setErroDaNota(null);
+  };
+
+  const guardarAEdicao = () => {
+    const { healthId, notaId } = notaEmEdicao;
+    const erro = st.editarNotaSaude(healthId, notaId, textoEmEdicao, user);
+    if (erro) return setErroDaNota(erro);
+    pararDeEditar();
+  };
+
+  const apagarNota = (healthId, notaId) => {
+    const erro = st.apagarNotaSaude(healthId, notaId, user);
+    if (erro) return setErroDaNota(erro);
+    if (notaEmEdicao && notaEmEdicao.notaId === notaId) pararDeEditar();
+    setErroDaNota(null);
   };
 
   const handleAddRecipe = (healthId) => {
@@ -346,61 +385,118 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                     Sem notas ainda.
                   </Text>
                 )}
-                {notes.map(note => (
-                  <View key={note.id} style={{ gap: 4, padding: S.md, backgroundColor: t.subtle, borderRadius: R.row }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3, fontWeight: '600' }}>
-                        {note.author} · {note.date.split('T')[0]}
-                      </Text>
+                {notes.map(note => {
+                  const aEditar = notaEmEdicao
+                    && notaEmEdicao.healthId === record.id
+                    && notaEmEdicao.notaId === note.id;
+                  // ⚠ Só quem escreveu. Uma nota é o relato de uma pessoa
+                  // sobre o que ouviu na consulta; o outro adulto reescrevê-la
+                  // em silêncio é pior do que não a poder corrigir. A loja
+                  // recusa de qualquer modo — isto é só não oferecer o alvo.
+                  const minha = note.author === user;
+                  return (
+                    <View key={note.id} style={{ gap: 4, padding: S.md,
+                      backgroundColor: t.subtle, borderRadius: R.row,
+                      borderWidth: aEditar ? 1 : 0, borderColor: t.accent }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.sm }}>
+                        <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 11, color: t.text3, fontWeight: '600' }}>
+                          {note.author} · {note.date.split('T')[0]}
+                          {note.editadaEm ? ' · alterada' : ''}
+                        </Text>
+                        {minha && !aEditar ? (
+                          <>
+                            <Tap label={`Alterar a nota de ${note.author}`}
+                              onPress={() => comecarAEditar(record.id, note)}>
+                              <Icon name="edit" size={16} color={t.text3} />
+                            </Tap>
+                            <Tap label={`Apagar a nota de ${note.author}`}
+                              onPress={() => apagarNota(record.id, note.id)}>
+                              <Icon name="trash" size={16} color={STATE.err} />
+                            </Tap>
+                          </>
+                        ) : null}
+                      </View>
+
+                      {aEditar ? (
+                        // Altera-se no lugar, sem folha nem diálogo: o texto
+                        // fica onde estava e o resto da consulta continua à
+                        // vista.
+                        <View style={{ gap: S.md }}>
+                          <TextInput
+                            value={textoEmEdicao}
+                            onChangeText={(v) => { setTextoEmEdicao(v); setErroDaNota(null); }}
+                            accessibilityLabel="Texto da nota"
+                            placeholder="Escrever nota…"
+                            placeholderTextColor={t.text3}
+                            multiline
+                            style={{ minHeight: 80, paddingHorizontal: S.md, paddingVertical: S.md,
+                              fontFamily: FONT.body, fontSize: 13, color: t.text2,
+                              borderRadius: R.row, borderWidth: 1, borderColor: t.border,
+                              backgroundColor: t.card, textAlignVertical: 'top' }}
+                          />
+                          <View style={{ flexDirection: 'row', gap: S.sm }}>
+                            <Pressable accessibilityRole="button" accessibilityLabel="Guardar a alteração"
+                              onPress={guardarAEdicao}
+                              disabled={!textoEmEdicao.trim()}
+                              style={{ flex: 1, minHeight: 44, minWidth: 44, borderRadius: R.row,
+                                backgroundColor: t.accent, alignItems: 'center', justifyContent: 'center',
+                                opacity: !textoEmEdicao.trim() ? 0.5 : 1 }}>
+                              <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>
+                                Guardar
+                              </Text>
+                            </Pressable>
+                            <Pressable accessibilityRole="button" accessibilityLabel="Cancelar a alteração"
+                              onPress={pararDeEditar}
+                              style={{ minHeight: 44, minWidth: 44, paddingHorizontal: S.md, borderRadius: R.row,
+                                borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}>
+                              <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
+                                Cancelar
+                              </Text>
+                            </Pressable>
+                          </View>
+                        </View>
+                      ) : (
+                        <Text style={{ fontFamily: FONT.body, fontSize: 13, color: t.text2, lineHeight: 18 }}>
+                          {note.text}
+                        </Text>
+                      )}
                     </View>
-                    <Text style={{ fontFamily: FONT.body, fontSize: 13, color: t.text2, lineHeight: 18 }}>
-                      {note.text}
-                    </Text>
-                  </View>
-                ))}
+                  );
+                })}
 
-                {/* Adicionar nota */}
-                <Pressable accessibilityRole="button"
-                  onPress={() => setExpandedNote(expandedNote === `note-${record.id}` ? null : `note-${record.id}`)}
-                  style={{ paddingVertical: S.sm, paddingHorizontal: S.md, gap: S.sm, flexDirection: 'row', alignItems: 'center' }}
-                >
-                  <Icon name="plus" size={16} color={t.accent} />
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.accent }}>
-                    Adicionar nota
+                {/* ── O campo, sempre presente ────────────────────────────────
+                    ⚠ Estava atrás de um «Adicionar nota» que o revelava. Uma
+                    nota escreve-se na sala de espera e corrige-se depois — dois
+                    toques para começar a escrever é um a mais. É também o que o
+                    protótipo faz: campo e `+` numa linha, sempre à vista. */}
+                <View style={{ flexDirection: 'row', gap: S.sm, alignItems: 'flex-start' }}>
+                  <TextInput
+                    value={rascunhoDe(record.id)}
+                    onChangeText={(v) => { setNewNoteForm(f => ({ ...f, [record.id]: v })); setErroDaNota(null); }}
+                    accessibilityLabel="Acrescentar uma nota"
+                    placeholder="Acrescentar uma nota…"
+                    placeholderTextColor={t.text3}
+                    multiline
+                    style={{ flex: 1, minHeight: 44, paddingHorizontal: S.md, paddingVertical: S.md,
+                      fontFamily: FONT.body, fontSize: 13, color: t.text2,
+                      borderRadius: R.row, borderWidth: 1, borderColor: t.border,
+                      backgroundColor: t.card, textAlignVertical: 'top' }}
+                  />
+                  <Pressable accessibilityRole="button" accessibilityLabel="Guardar nota"
+                    onPress={() => handleAddNote(record.id)}
+                    disabled={!rascunhoDe(record.id).trim()}
+                    style={{ minHeight: 44, minWidth: 44, borderRadius: R.row,
+                      backgroundColor: t.accent, alignItems: 'center', justifyContent: 'center',
+                      opacity: !rascunhoDe(record.id).trim() ? 0.5 : 1 }}>
+                    <Icon name="plus" size={19} color="#FFFFFF" />
+                  </Pressable>
+                </View>
+
+                {erroDaNota ? (
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.errDeep }}>
+                    {erroDaNota}
                   </Text>
-                </Pressable>
-
-                {expandedNote === `note-${record.id}` && (
-                  <View style={{ gap: S.md }}>
-                    <TextInput
-                      value={newNoteForm.text}
-                      onChangeText={(v) => setNewNoteForm({ text: v })}
-                      placeholder="Escrever nota..."
-                      placeholderTextColor={t.text3}
-                      multiline
-                      numberOfLines={3}
-                      style={{
-                        minHeight: 80, paddingHorizontal: S.md, paddingVertical: S.md,
-                        fontFamily: FONT.body, fontSize: 13, color: t.text2,
-                        borderRadius: R.row, borderWidth: 1, borderColor: t.border,
-                        backgroundColor: t.card, textAlignVertical: 'top',
-                      }}
-                    />
-                    <Pressable accessibilityRole="button"
-                      onPress={() => handleAddNote(record.id)}
-                      disabled={!newNoteForm.text.trim()}
-                      style={{
-                        paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: t.accent,
-                        borderRadius: R.row, minHeight: 44, justifyContent: 'center',
-                        opacity: !newNoteForm.text.trim() ? 0.5 : 1,
-                      }}
-                    >
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: '#FFFFFF', textAlign: 'center' }}>
-                        Guardar nota
-                      </Text>
-                    </Pressable>
-                  </View>
-                )}
+                ) : null}
               </View>
 
               {/* Decisão/Ação necessária */}

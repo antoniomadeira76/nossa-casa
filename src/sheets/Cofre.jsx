@@ -40,7 +40,7 @@ function Movimento({ t, m }) {
 // compõem, e as duas ações que acrescentam parcelas novas.
 export default function Cofre({ t, kid, onClose }) {
   const st = useStore();
-  const { s, vaultOf, vaultMoves, vaultAdd, kidPts } = st;
+  const { s, vaultOf, vaultMoves, vaultAdd, kidPts, pontosNasTarefas } = st;
 
   const saldo = vaultOf(kid);
   const moves = vaultMoves(kid);
@@ -75,12 +75,19 @@ export default function Cofre({ t, kid, onClose }) {
   return (
     <Sheet t={t} onClose={onClose}
       title={`Cofre ${st.deNome(kid)} ${kid}`}
-      sub={`1 pt = ${EUR(s.pointValue)} · pago ${WD[s.payDay].toLowerCase()}s`}
+      // ⚠ Sem pontos não há câmbio a anunciar, e a 0 € o câmbio não diz
+      // nada. Um cofre sem semanada continua a ser um cofre: os bónus não são
+      // pontos, e é por isso que esta folha não desaparece toda.
+      sub={!pontosNasTarefas ? 'Bónus e movimentos'
+        : s.pointValue > 0 ? `1 pt = ${EUR(s.pointValue)} · pago ${WD[s.payDay].toLowerCase()}s`
+        : `Pontos sem valor em euros · pago ${WD[s.payDay].toLowerCase()}s`}
       leading={<Avatar {...avatarDe(kid, st.membros[kid], t.text3)} size={40} />}
       action={
         <View style={{ gap: S.md }}>
+          {pontosNasTarefas ? (
           <Acao filled label={`Pagar Semanada · ${EUR(porPagar)}`}
             onPress={pagarSemanada} disabled={porPagar <= 0} />
+          ) : null}
           <Acao label={`Dar Bónus de ${EUR(bonus)}`} icon="smile" onPress={darBonus} />
         </View>
       }>

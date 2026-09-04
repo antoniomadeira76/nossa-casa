@@ -45,6 +45,11 @@ const NOSSAS = [
   // vistas primeiro: dependem das coleções de base
   'v_cofre_saldo', 'v_envelope_gasto', 'v_acerto_saldo', 'v_pontos_por_pagar',
   'credenciais_agenda',
+  // ⚠ As três novas ANTES dos `episodios_saude`: apagam-se pela ordem inversa
+  // das relações, e as três apontam para ele. Fora de ordem, a limpeza para com
+  // «existing reference» e deixa a base a meio — foi o que a
+  // `credenciais_agenda` ensinou.
+  'notas_saude', 'receitas_saude', 'decisoes_saude',
   'anexos', 'episodios_saude', 'especialidades', 'manutencoes', 'categorias_equip',
   'metas', 'acertos', 'transferencias', 'artigos', 'listas_compras', 'lojas',
   'meses', 'preferencias', 'equipamentos', 'cofre_movimentos', 'despesas',
@@ -206,7 +211,13 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   });
   console.log('OAuth do Google: ativado');
 } else {
-  console.log('OAuth do Google: sem credenciais no ambiente — fica desativado');
+  // ⚠ Isto dizia «fica desativado», e é falso: este ramo não faz NADA. O que
+  // já estivesse configurado na coleção `membros` fica como estava — e numa
+  // casa habitada a coleção é preservada, portanto a entrada pela Google
+  // continua a funcionar. A frase antiga fez-me acreditar que eu tinha
+  // desligado a entrada do dono da casa, em 04/09/2026, e ir confirmar custou
+  // uma volta. Uma mensagem que descreve o que o código não fez é um defeito.
+  console.log('OAuth do Google: sem credenciais no ambiente — deixo como está');
 }
 
 await pb.collections.update(ids.casas, {
@@ -555,8 +566,33 @@ await criar({
   deleteRule: `${DA_CASA} && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
 });
 
-// Anexos: exames, receitas e relatórios. Herdam a visibilidade do episódio a
-// que pertencem — nunca soltos, para não haver um caminho por onde escapem.
+// ── O que pende de um episódio ───────────────────────────────────────────────
+//
+// Anexos, notas, receitas e decisões. Todos herdam a visibilidade do episódio a
+// que pertencem — nunca soltos, para não haver um caminho por onde escapem — e
+// todos usam ESTA condição, uma só, e não uma cópia por coleção.
+//
+// ⚠ `episodio.casa` e não `casa`. Custou um buraco a sério, encontrado pela
+// prova nova em 04/09/2026 e presente nos `anexos` desde o primeiro dia:
+//
+//   a regra era `casa = @request.auth.casa && adulto && (episodio.membro = eu
+//   || episodio.membro.papel = "crianca")`
+//
+// O `casa` é o da PRÓPRIA LINHA, e quem escreve escolhe-o. Uma adulta de outra
+// casa punha a casa dela na linha, apontava o `episodio` para a consulta de uma
+// criança desta, e passava: é adulta, e a criança é criança. A regra nunca
+// perguntava de que casa era o EPISÓDIO.
+//
+// Ler a consulta ela não conseguia. Pendurar-lhe um exame conseguia — e depois
+// lê-lo, porque o anexo era dela. Onze provas dos anexos nunca tentaram isto.
+//
+// Prendendo ao `episodio.casa`, o vínculo é ao dado e não à etiqueta que quem
+// escreve põe na linha. O `casa` da linha fica, por ser útil a consultas e por
+// ser o que o `cascadeDelete` da casa usa — mas já não é ele que autoriza.
+const PELO_EPISODIO =
+  `episodio.casa = @request.auth.casa && ${ADULTO}`
+  + ` && (episodio.membro = @request.auth.id || episodio.membro.papel = "crianca")`;
+
 await criar({
   name: 'anexos', type: 'base',
   fields: [
@@ -566,11 +602,96 @@ await criar({
     txt('titulo', { required: true }),
     fich('ficheiro'),
   ],
-  listRule: `${DA_CASA} && ${ADULTO} && (episodio.membro = @request.auth.id || episodio.membro.papel = "crianca")`,
-  viewRule: `${DA_CASA} && ${ADULTO} && (episodio.membro = @request.auth.id || episodio.membro.papel = "crianca")`,
-  createRule: `${DA_CASA} && ${ADULTO} && (episodio.membro = @request.auth.id || episodio.membro.papel = "crianca")`,
-  updateRule: `${DA_CASA} && ${ADULTO} && (episodio.membro = @request.auth.id || episodio.membro.papel = "crianca")`,
-  deleteRule: `${DA_CASA} && ${ADULTO} && (episodio.membro = @request.auth.id || episodio.membro.papel = "crianca")`,
+  listRule: PELO_EPISODIO,
+  viewRule: PELO_EPISODIO,
+  createRule: PELO_EPISODIO,
+  updateRule: PELO_EPISODIO,
+  deleteRule: PELO_EPISODIO,
+});
+
+// ── O que pende de uma consulta: notas, receitas e decisões ──────────────────
+//
+// Estas três viviam SÓ no dispositivo — `healthNotes`, `healthRecipes` e
+// `healthDecisions` na loja — e não por escolha de privacidade: não tinham para
+// onde ir. A consulta e os anexos sobem desde 03/09/2026; a nota que a Rita
+// escreve no telefone dela não chegava ao Tomás, e não por ser privada, mas por
+// não sair daquele telefone.
+//
+// ⚠ Usam o `PELO_EPISODIO` definido acima, o mesmo dos `anexos` — não uma cópia
+// dele. Uma nota de uma consulta é o mesmo dado clínico que a consulta: se a
+// ficha não é visível, a nota também não pode ser. Escrever a condição outra
+// vez era criar um segundo sítio onde ela pode divergir, e foi assim que a
+// criança chegou a ler a própria ficha.
+//
+// As notas de uma consulta.
+//
+// ⚠ Só o AUTOR altera ou apaga a sua nota, e a regra é do servidor — não é o
+// cliente a esconder o lápis. Uma nota é o relato de uma pessoa sobre o que
+// ouviu na consulta; o outro adulto reescrevê-la em silêncio é pior do que não
+// a poder corrigir. E `autor = @request.auth.id` na criação impede escrever uma
+// nota em nome de outra pessoa, que seria a mesma coisa pela porta do lado.
+await criar({
+  name: 'notas_saude', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('episodio', ids.episodios_saude, { required: true, cascadeDelete: true }),
+    rel('autor', ids.membros, { required: true }),
+    txt('texto', { required: true, max: 2000 }),
+    data('editada_em'),
+  ],
+  listRule: PELO_EPISODIO,
+  viewRule: PELO_EPISODIO,
+  createRule: `${PELO_EPISODIO} && autor = @request.auth.id`,
+  updateRule: `${PELO_EPISODIO} && autor = @request.auth.id`,
+  deleteRule: `${PELO_EPISODIO} && autor = @request.auth.id`,
+});
+
+// As receitas de uma consulta, com a decisão de cada uma.
+//
+// A `decisao` é o que o adulto decidiu fazer com ela — comprar, já tem, não
+// comprar — e é por receita, não por consulta.
+await criar({
+  name: 'receitas_saude', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('episodio', ids.episodios_saude, { required: true, cascadeDelete: true }),
+    txt('nome', { required: true }),
+    txt('dose'),
+    txt('quantidade'),
+    txt('unidade'),
+    data('expira_em'),
+    txt('decisao'),
+  ],
+  listRule: PELO_EPISODIO,
+  viewRule: PELO_EPISODIO,
+  createRule: PELO_EPISODIO,
+  updateRule: PELO_EPISODIO,
+  deleteRule: PELO_EPISODIO,
+});
+
+// A decisão sobre a consulta: resolvida, ou por resolver.
+//
+// ⚠ Uma por episódio, e o `episodio` é ÚNICO por isso. Sem a unicidade, dois
+// telefones que decidam ao mesmo tempo criavam duas linhas e o ecrã escolhia
+// uma ao acaso — o mesmo problema que os saldos têm, e aqui a resposta não pode
+// ser somar: uma decisão é um estado, não um movimento. Então prende-se no
+// servidor, que é o único sítio onde os dois telefones se encontram.
+await criar({
+  name: 'decisoes_saude', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('episodio', ids.episodios_saude, { required: true, cascadeDelete: true }),
+    txt('tipo'),
+    sel('estado', ['resolvido', 'pendente']),
+    txt('nota'),
+    data('atualizada_em'),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_decisao_por_episodio ON decisoes_saude (episodio)'],
+  listRule: PELO_EPISODIO,
+  viewRule: PELO_EPISODIO,
+  createRule: PELO_EPISODIO,
+  updateRule: PELO_EPISODIO,
+  deleteRule: PELO_EPISODIO,
 });
 
 // ── Vistas: os saldos ────────────────────────────────────────────────────────

@@ -74,6 +74,12 @@ const escreverData = (r, chave) => {
   TestRenderer.act(() => { campo.props.onChange(chave); });
 };
 
+// ⚠ `{ deep: false }`: sem isto vêm DOIS por cada campo — o `TextInput` e o
+// elemento que ele desenha por dentro, com os mesmos adereços.
+const campos = (r, rot) => r.root.findAll(x => x.props
+  && typeof x.props.onChangeText === 'function'
+  && x.props.accessibilityLabel === rot, { deep: false });
+
 const escreverCampo = (r, rot, texto) => {
   const campo = r.root.findAll(x => x.props && typeof x.props.onChangeText === 'function'
     && x.props.accessibilityLabel === rot)[0];
@@ -409,7 +415,13 @@ describe('⚠ o cartão de uma consulta abre, e o que está dentro é alcançáv
     const texto = junta(r.toJSON());
     expect(texto).toContain('Resolvida');
     expect(texto).toContain('Pendente');
-    expect(texto).toContain('Adicionar nota');
+    // ⚠ O campo da nota está LÁ, sem mais nenhum toque. Havia um «Adicionar
+    // nota» que o revelava, e escrever passava a custar dois toques — numa
+    // sala de espera, é um a mais.
+    expect(alvos(r, 'Guardar nota').length + campos(r, 'Acrescentar uma nota').length)
+      .toBeGreaterThan(0);
+    expect(campos(r, 'Acrescentar uma nota')).toHaveLength(1);
+    expect(texto).not.toContain('Adicionar nota');
   });
 
   it('⚠ e «Resolvida» grava a decisão — o botão tinha para onde ir e não chegava lá', () => {

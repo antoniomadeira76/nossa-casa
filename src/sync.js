@@ -58,11 +58,14 @@ export { eEnderecoDeCasa, PORQUE_NAO_SOBE };
 //                 dono da casa — «sobe tudo». Vão para `anexos`, com o
 //                 ficheiro, pelo mesmo travão.
 //
-// O que fica não é esquecimento: as notas, as receitas e as decisões não têm
-// coleção no servidor. Não é que não subam — é que não há para onde. Enquanto
-// não houver, dizer que sincronizam era pior do que a lacuna.
-export const NUNCA_SINCRONIZA = ['healthNotes', 'healthRecipes',
-  'healthDecisions', 'healthGone'];
+// E mais três saíram em 04/09/2026, pela razão que aqui estava escrita: não
+// tinham coleção no servidor. «Não é que não subam — é que não há para onde.»
+// Agora há: `notas_saude`, `receitas_saude` e `decisoes_saude`, com 24 provas
+// em `provar-notas-saude.mjs` e a MESMA condição de visibilidade dos anexos.
+//
+// O que fica é o `healthGone` — uma lista de ids apagados localmente, que é
+// estado de dispositivo e não dado da casa.
+export const NUNCA_SINCRONIZA = ['healthGone'];
 
 export const ligado = () => servidor.estaLigado();
 
@@ -251,8 +254,14 @@ export const saudeSincroniza = () => ligado() && eEnderecoDeCasa(servidor.endere
 // Uma rede de segurança, não uma decisão de desenho: qualquer escrita de saúde
 // passa por aqui, e se o servidor não for de casa isto rebenta — em testes
 // antes de rebentar na vida de alguém.
+// ⚠ A lista é EXPLÍCITA e não um `/saude/.test(colecao)`. Uma coleção nova de
+// saúde tem de ser acrescentada aqui à mão, e é isso que se quer: o travão que
+// se aplica sozinho a nomes que combinam é o travão que um dia deixa passar
+// `anexos`, que não tem «saude» no nome.
+const SAUDE = ['episodios_saude', 'anexos', 'notas_saude', 'receitas_saude', 'decisoes_saude'];
+
 export function recusaSaude(colecao) {
-  if (colecao === 'episodios_saude' || colecao === 'anexos') {
+  if (SAUDE.includes(colecao)) {
     if (!saudeSincroniza()) throw new Error(PORQUE_NAO_SOBE);
   }
   return colecao;
@@ -314,6 +323,91 @@ export async function anexoDeSaude({ casa, episodio, tipo, titulo, uri, blob, no
     casa, episodio, titulo,
     tipo: TIPO_NO_SERVIDOR[tipo] || 'exame',
   }, (uri || blob) ? { campo: 'ficheiro', uri, blob, nome, tipo: mime } : null);
+}
+
+// ─── O que pende de uma consulta: notas, receitas e decisões ─────────────────
+//
+// ⚠ Estas TRÊS passam pela fila, ao contrário do anexo, e podem: não levam
+// ficheiro nenhum, e portanto serializam em JSON sem problema. Uma nota escrita
+// no corredor do hospital, sem rede, não se perde por isso.
+//
+// Mas tentam DIRETO primeiro, como o episódio, e pela mesma razão: a nota
+// precisa de aprender o seu `id` no servidor para depois se poder alterar. Uma
+// nota que fosse só pela fila ficava lá, correta, e inalterável do outro lado.
+//
+// Devolvem `{ id }` quando o servidor respondeu, `{ pendente: true }` quando
+// ficaram na fila. Quem chama guarda o `id` se o houver.
+const criarOuEnfileirar = async (colecao, linha) => {
+  recusaSaude(colecao);
+  try {
+    const r = await servidor.pb.collection(colecao).create(linha);
+    return { id: r.id };
+  } catch (e) {
+    await servidor.escrever.criar(colecao, linha);
+    return { pendente: true };
+  }
+};
+
+export async function notaDeSaude({ casa, episodio, autor, texto }) {
+  if (!episodio) throw new Error('Uma nota sem consulta não se grava — não seria de nada.');
+  // ⚠ O `autor` vai e é obrigatório: o servidor exige `autor = @request.auth.id`
+  // na criação, e sem ele a escrita é recusada. É de propósito — sem essa
+  // condição bastava criar a nota já assinada por outra pessoa, e a regra que
+  // diz «só o autor altera» não valia nada.
+  if (!autor) throw new Error('Uma nota tem de ter autor — é ele quem a pode alterar.');
+  return criarOuEnfileirar('notas_saude', { casa, episodio, autor, texto: texto || '' });
+}
+
+// Alterar e apagar são DIRETOS, sem fila.
+//
+// ⚠ E é uma decisão, não um esquecimento: a fila só sabe criar. Enfileirar uma
+// alteração exigia guardar a ordem entre criar e alterar, e duas alterações da
+// mesma nota fora de ordem deixavam o texto antigo a ganhar. Sem rede, a
+// alteração fica só no dispositivo e sobe na próxima — que é o mesmo que
+// acontece hoje, e é honesto.
+export async function alterarNotaDeSaude(idNoServidor, texto) {
+  recusaSaude('notas_saude');
+  if (!idNoServidor) return { pendente: true };
+  return servidor.pb.collection('notas_saude').update(idNoServidor, {
+    texto, editada_em: new Date().toISOString(),
+  });
+}
+
+export async function apagarNotaDeSaude(idNoServidor) {
+  recusaSaude('notas_saude');
+  if (!idNoServidor) return { pendente: true };
+  return servidor.pb.collection('notas_saude').delete(idNoServidor);
+}
+
+export async function receitaDeSaude({ casa, episodio, nome, dose, quantidade, unidade, expiraEm, decisao }) {
+  if (!episodio) throw new Error('Uma receita sem consulta não se grava.');
+  return criarOuEnfileirar('receitas_saude', {
+    casa, episodio, nome, dose: dose || '', quantidade: quantidade || '',
+    unidade: unidade || '', expira_em: expiraEm || null, decisao: decisao || '',
+  });
+}
+
+// A decisão de uma consulta é UMA. O servidor tem um índice único no
+// `episodio`, portanto criar a segunda é recusado — e é isso que faz dois
+// telefones concordarem em vez de criarem uma linha cada um.
+//
+// Daí o `atualizar` em vez de `criar`: procura-se a que existe e altera-se.
+export async function decisaoDeSaude({ casa, episodio, tipo, estado, nota }) {
+  recusaSaude('decisoes_saude');
+  if (!episodio) throw new Error('Uma decisão sem consulta não se grava.');
+  const linha = {
+    casa, episodio, tipo: tipo || '', estado: estado || 'pendente',
+    nota: nota || '', atualizada_em: new Date().toISOString(),
+  };
+  try {
+    const ja = await servidor.pb.collection('decisoes_saude')
+      .getFirstListItem(`episodio="${episodio}"`).catch(() => null);
+    if (ja) return { id: (await servidor.pb.collection('decisoes_saude').update(ja.id, linha)).id };
+    return { id: (await servidor.pb.collection('decisoes_saude').create(linha)).id };
+  } catch (e) {
+    await servidor.escrever.criar('decisoes_saude', linha);
+    return { pendente: true };
+  }
 }
 
 // O aspeto do próprio membro — a cor do avatar.

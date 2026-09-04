@@ -19,6 +19,11 @@ ios/
 # PocketBase — o binário e os dados não pertencem ao repositório.
 # Ancorados à raiz: sem a barra, `pocketbase` apanhava db/pocketbase/ inteira.
 pb_data/
+# ⚠ E qualquer CÓPIA dela. O `pb_data/` sozinho não apanhava
+# `pb_data.antes-das-notas/`, e uma cópia de segurança tem exatamente o mesmo
+# conteúdo do original: a casa, os membros, os episódios de saúde e a linha das
+# credenciais da Google. Este repositório é público.
+pb_data*/
 /pocketbase
 /pocketbase.exe
 

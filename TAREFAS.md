@@ -30,6 +30,28 @@
 
 ## 5. TAREFAS & PONTOS
 - [x] Tarefas — toque para concluir, pontos recalculam
+- [x] **Os pontos são OPCIONAIS** (04/09/2026, a pedido do dono da casa):
+      «atribuir pontos a tarefas deve ser opcional — poder ligar e desligar, e
+      se estiver ligado pode-se atribuir qualquer valor, mesmo 0 €».
+      - um interruptor em Gestão da Casa → Semanada. Ligado por omissão, porque
+        é o que a app fazia — e **ausente lê-se como ligado**, senão uma casa
+        gravada antes disto ficava sem pontos, em silêncio, ao actualizar.
+      - o valor do ponto desce a **0 €**; o mínimo era 0,01 €, o que obrigava os
+        pontos a valer sempre algo. A zero, contam e não valem dinheiro — e as
+        frases que falavam de euros dão lugar a frases que não mentem, em quatro
+        sítios.
+      - desligado, sai do ecrã: a semanada das crianças, as pastilhas de pontos
+        nas tarefas e no Início, o campo «Pontos de bónus» ao criar uma tarefa,
+        o cartão «Pontos da semana» no modo criança, e o «Pagar Semanada» no
+        cofre. O cofre **fica** — um bónus não é um ponto.
+      - ⚠ **desligar não apaga nada.** Os pontos são somas de movimentos
+        (INVARIANTE #2) e ficam onde estão; voltar a ligar traz os mesmos
+        números. Há uma prova que desliga, confere o estado, liga e exige a
+        igualdade — porque «limpar ao desligar» seria perda de dados
+        disfarçada de arrumação.
+      - ⚠ e uma prova apanhou um defeito visual meu: o `Toggle` desenha **só** o
+        interruptor (o `label` dele é o rótulo de acessibilidade), e eu tinha-o
+        posto sem texto ao lado. Ficava um interruptor sem nome.
 - [ ] **PENDENTE:** Nova Tarefa — com toggle de partilha
 - [ ] **PENDENTE:** Lápis na tarefa — reatribuir, mudar pontos, remover
 - [ ] **PENDENTE:** Recorrência — "feita hoje · volta amanhã"
@@ -105,7 +127,27 @@ uma consulta a sério, porque não há onde escrever o nome.
 - [x] Arquivo clínico — procura e filtros, e o arquivo aparece acima de 5
       registos (`showArchive`)
 - [x] Receitas — aviso 30 dias antes de expirar (`receitasAExpirarDe`)
-- [x] Notas do episódio — quantas quiser, com autor e data (`addHealthNote`)
+- [x] Notas do episódio — quantas quiser, com autor e data (`addHealthNote`),
+      **sempre à mão e alteráveis** (04/09/2026, a pedido do dono da casa)
+      - o campo de escrita está sempre presente. Estava atrás de um «Adicionar
+        nota» que o revelava, e escrever custava dois toques — uma nota de
+        consulta escreve-se na sala de espera.
+      - **alterar e apagar**, que não existiam: uma gralha ficava lá para
+        sempre, e acrescentar o que faltava obrigava a uma segunda nota a dizer
+        «na anterior queria dizer…»
+      - ⚠ mexe-se numa nota pelo `id`, nunca pela posição. Dois telefones que
+        acrescentem uma nota cada um produzem listas com ordens diferentes, e um
+        `editar(indice)` alterava a nota errada no segundo — é a mesma razão do
+        INVARIANTE #2.
+      - ⚠ e o `id` era `'note-' + Date.now()`: duas notas no mesmo milissegundo
+        ficavam com o **mesmo** id, e editar uma alterava as duas. Não era
+        hipótese remota — a primeira prova a acrescentar duas notas seguidas
+        caiu lá dentro.
+      - **só quem escreveu altera ou apaga**, no cliente e no servidor. Uma nota
+        é o relato de uma pessoa sobre o que ouviu; o outro adulto reescrevê-la
+        em silêncio é pior do que não a poder corrigir.
+      - a data em que foi escrita não se perde ao corrigir — a alteração fica
+        num campo próprio (`editadaEm`)
 - [x] Ficha de saúde — o topo mostra o que exige decisão, acordeão por consulta
 - [x] Exportar em PDF — uma consulta, uma especialidade, ou tudo
 - [x] Gerir especialidades — criar, renomear e apagar, numa folha própria e
@@ -199,10 +241,31 @@ uma consulta a sério, porque não há onde escrever o nome.
 - [ ] **PENDENTE: a folha «Gerir consulta».** No protótipo os anexos e o
       arquivar vivem numa folha que abre da consulta. Aqui vivem DENTRO do
       cartão expandido, onde as notas já estavam.
-      ⚠ É divergência de estrutura, não de conteúdo, e é deliberada: uma folha
-      por consulta obrigava a um segundo alvo na linha, e a linha já é o alvo
-      que abre o cartão (erro #6 do CLAUDE.md). Fica aqui por se decidir, não
-      por estar em falta.
+
+      ⚠ **A justificação que estava aqui era falsa**, e ficou por escrito duas
+      semanas: dizia que «uma folha por consulta obrigava a um segundo alvo na
+      linha, e a linha já é o alvo que abre o cartão (erro #6)». Fui ver o
+      protótipo em 04/09/2026: a linha dele **substitui** o acordeão —
+      `open: () => this.setState({ healthSel: c.id, sheet: 'consulta' })`,
+      linha 6551. Um alvo só. Não há conflito nenhum com as invariantes.
+
+      Fica pendente por **preferência**, e a preferência tem agora um argumento
+      a favor do acordeão: o dono da casa pediu que as notas estejam «sempre à
+      mão» para poder alterar e acrescentar texto. No acordeão estão à vista na
+      lista; numa folha ficam um toque mais longe.
+
+      ⚠ E ao ir ver, encontrei divergências maiores do que esta folha. Medido no
+      protótipo:
+
+      | | a app | o protótipo |
+      |---|---|---|
+      | «Precisa de ação» | uma secção no topo | **não existe** (0 ocorrências) |
+      | Resolvida / Pendente | botões na consulta | **não existe** (0 ocorrências) |
+      | Arquivadas | terceira secção | um **filtro** (`hFilter === 'arquivadas'`) |
+
+      A decisão «resolvida/pendente» e o «Precisa de ação» são coisas que a app
+      tem e o desenho não. Podem ser boas — mas não vieram do protótipo, e isso
+      muda a conversa de «implementar o que falta» para «decidir o que fica».
 - [x] **A fotografia do documento**, e ela SOBE — «sobe tudo», por decisão do
       dono da casa em 03/09/2026, pelas mesmas condições do resto da saúde: só
       para um servidor que viva na casa.
@@ -236,10 +299,30 @@ uma consulta a sério, porque não há onde escrever o nome.
       todos no dia em que for exposto à internet, e nesse dia é a fotografia
       que fica pior. A condição está em código — `eEnderecoDeCasa` — e não numa
       nota: se o endereço deixar de ser de casa, a saúde deixa de subir sozinha.
-- [ ] **PENDENTE: as notas, as receitas e as decisões não sobem**, e não é
-      escolha: não têm coleção no servidor. Não é que não subam — é que não há
-      para onde. Enquanto não houver, dizer que sincronizam era pior do que a
-      lacuna.
+- [x] **As notas, as receitas e as decisões sobem** — `notas_saude`,
+      `receitas_saude` e `decisoes_saude`, com **24 provas** em
+      `provar-notas-saude.mjs` e pelo mesmo travão do `eEnderecoDeCasa`.
+      Esta linha dizia «não têm coleção no servidor: não é que não subam, é que
+      não há para onde». Passaram a ter, em 04/09/2026.
+      - a visibilidade é a **mesma** dos anexos, e é a condição literal, não uma
+        cópia dela: uma nota de uma consulta é o mesmo dado clínico que a
+        consulta, e um segundo sítio onde a regra vive é um sítio onde ela pode
+        divergir. Foi assim que a criança chegou a ler a própria ficha.
+      - **só o autor altera ou apaga a sua nota**, e a regra é do servidor —
+        `autor = @request.auth.id`, também na criação, senão bastava criar a
+        nota já assinada por outra pessoa
+      - a decisão tem **índice único** por episódio: é um estado, não um
+        movimento, e não se pode somar. Dois telefones que decidam ao mesmo
+        tempo encontram-se no servidor em vez de criarem uma linha cada um.
+      - ⚠ **e uma prova nova encontrou um buraco que era anterior a tudo
+        isto.** A regra dos anexos dizia `casa = @request.auth.casa && adulto
+        && (episodio.membro = eu || episodio.membro.papel = "crianca")`. O
+        `casa` é o da PRÓPRIA LINHA, e quem escreve escolhe-o: uma adulta de
+        outra casa punha a casa dela na linha, apontava o `episodio` para a
+        consulta de uma criança desta, e passava. Ler a consulta não conseguia;
+        pendurar-lhe um exame conseguia — e depois lê-lo, porque o anexo era
+        dela. **Onze provas dos anexos nunca tentaram isto.** Corrigido para
+        `episodio.casa = @request.auth.casa`, nas quatro coleções.
 
 ## 9. EQUIPAMENTOS
 - [x] Equipamentos da Casa — garantias, fotos da fatura

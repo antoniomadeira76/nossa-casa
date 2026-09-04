@@ -196,15 +196,26 @@ await prova('os anexos não têm caminho de escrita no cliente — é isso que o
   }
 });
 
-await prova('as notas, as receitas e as decisões estão na lista do que nunca sobe', () => {
-  // ⚠ O `healthDocs` SAIU desta lista em 03/09/2026: «sobe tudo», e os anexos
-  // vão para `anexos` com a fotografia. O que fica não é escolha — as notas,
-  // as receitas e as decisões não têm coleção no servidor.
-  for (const k of ['healthNotes', 'healthRecipes', 'healthDecisions', 'healthGone']) {
-    if (!NUNCA_SINCRONIZA.includes(k)) throw new Error(`${k} saiu da lista`);
+await prova('⚠ só o `healthGone` fica na lista do que nunca sobe', () => {
+  // Esta lista foi encurtando, e cada saída tem data e razão:
+  //
+  //   03/09/2026  `health` — os episódios sobem quando o servidor é de casa
+  //   03/09/2026  `healthDocs` — «sobe tudo», e os anexos vão com a fotografia
+  //   04/09/2026  `healthNotes`, `healthRecipes`, `healthDecisions` — passaram
+  //               a ter coleção (`notas_saude`, `receitas_saude`,
+  //               `decisoes_saude`), com 24 provas em provar-notas-saude.mjs
+  //
+  // ⚠ Esta prova exigia o contrário das três últimas, e a razão escrita era
+  // «não têm coleção no servidor: não é que não subam, é que não há para
+  // onde». Passou a haver. Uma prova que exige uma lacuna cumpre-se apagando-a
+  // no dia em que a lacuna fecha, não mantendo-a.
+  for (const k of ['health', 'healthDocs', 'healthNotes', 'healthRecipes', 'healthDecisions']) {
+    if (NUNCA_SINCRONIZA.includes(k)) throw new Error(`${k} voltou à lista — mas sobe`);
   }
-  if (NUNCA_SINCRONIZA.includes('healthDocs')) {
-    throw new Error('healthDocs voltou à lista — os anexos sobem');
+  // O que fica é estado de dispositivo, não dado da casa: uma lista de ids
+  // apagados neste telefone.
+  if (!NUNCA_SINCRONIZA.includes('healthGone')) {
+    throw new Error('o healthGone saiu da lista, e é estado de dispositivo');
   }
 });
 

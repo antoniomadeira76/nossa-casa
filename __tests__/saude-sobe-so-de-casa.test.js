@@ -88,12 +88,28 @@ describe('⚠ o travão existe, e chama a regra em vez de a repetir', () => {
     expect(sync).toMatch(/export const saudeSincroniza = \(\) =>\s*ligado\(\) && eEnderecoDeCasa\(servidor\.enderecoDoServidor\(\)\)/);
   });
 
-  it('e o `recusaSaude` pergunta-lhe, para as duas coleções', () => {
-    const i = sync.indexOf('export function recusaSaude');
+  it('e o `recusaSaude` pergunta-lhe, para TODAS as coleções de saúde', () => {
+    const i = sync.indexOf('const SAUDE = [');
     expect(i).toBeGreaterThan(0);
-    const bloco = sync.slice(i, i + 320);
-    expect(bloco).toContain("colecao === 'episodios_saude' || colecao === 'anexos'");
+    const lista = sync.slice(i, sync.indexOf(']', i));
+    // ⚠ As cinco, pelo nome. Eram duas até 04/09/2026; as notas, as receitas e
+    // as decisões passaram a ter coleção e entraram no travão no mesmo dia.
+    for (const c of ['episodios_saude', 'anexos', 'notas_saude',
+                     'receitas_saude', 'decisoes_saude']) {
+      expect(lista).toContain(`'${c}'`);
+    }
+
+    const j = sync.indexOf('export function recusaSaude');
+    const bloco = sync.slice(j, j + 320);
+    expect(bloco).toContain('SAUDE.includes(colecao)');
     expect(bloco).toMatch(/if \(!saudeSincroniza\(\)\) throw new Error\(PORQUE_NAO_SOBE\)/);
+  });
+
+  it('⚠ e a lista é escrita à mão, não adivinhada pelo nome', () => {
+    // Um `/saude/.test(colecao)` apanhava as quatro com «saude» no nome e
+    // deixava passar `anexos` — que é a que leva os ficheiros clínicos.
+    const j = sync.indexOf('export function recusaSaude');
+    expect(sync.slice(j, j + 320)).not.toMatch(/test\(colecao\)|colecao\.includes\('saude'\)/);
   });
 
   it('⚠ e a escrita de um episódio passa pelo travão ANTES de tocar na fila', () => {
@@ -127,12 +143,19 @@ describe('o que continua a nunca subir', () => {
   const bloco = sync.slice(sync.indexOf('export const NUNCA_SINCRONIZA'),
     sync.indexOf('export const ligado'));
 
-  it('⚠ as notas, as receitas e as decisões ficam — não têm coleção no servidor', () => {
-    // Não é que não subam por escolha: é que não há para onde. Enquanto não
-    // houver coleção, dizer que sincronizam era pior do que a lacuna.
-    for (const k of ['healthNotes', 'healthRecipes', 'healthDecisions', 'healthGone']) {
-      expect(bloco).toContain(`'${k}'`);
+  it('⚠ as notas, as receitas e as decisões SAÍRAM — já têm coleção', () => {
+    // Esta prova exigia o contrário até 04/09/2026, e a razão escrita era «não
+    // têm coleção no servidor: não é que não subam, é que não há para onde».
+    // Passou a haver — `notas_saude`, `receitas_saude`, `decisoes_saude`, com
+    // 24 provas em `provar-notas-saude.mjs`. Uma prova que exija uma lacuna
+    // cumpre-se apagando-a no dia em que a lacuna fecha.
+    for (const k of ['healthNotes', 'healthRecipes', 'healthDecisions']) {
+      expect(bloco).not.toContain(`'${k}'`);
     }
+  });
+
+  it('e fica o `healthGone`, que é estado de dispositivo e não dado da casa', () => {
+    expect(bloco).toContain("'healthGone'");
   });
 
   it('e o `health` saiu da lista, porque agora sobe sob condição', () => {

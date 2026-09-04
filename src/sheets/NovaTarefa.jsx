@@ -14,7 +14,7 @@ const URG_OPTS = [
 ];
 
 export default function NovaTarefa({ t, user, onClose }) {
-  const { set, membrosDaCasa, membros: MEMBROS } = useStore();
+  const { set, membrosDaCasa, membros: MEMBROS, pontosNasTarefas } = useStore();
   const [form, setForm] = useState({
     title: '',
     who: user,
@@ -80,6 +80,10 @@ export default function NovaTarefa({ t, user, onClose }) {
         />
       </View>
 
+      {/* ⚠ Só se os pontos estiverem ligados. Com eles desligados, o campo
+          pedia um número que a app não usava em lado nenhum — e a tarefa
+          nascia com `pts` a 0, que é o que o `form` já traz. */}
+      {pontosNasTarefas ? (
       <View style={{ gap: S.sm }}>
         <Label t={t}>Pontos de bónus</Label>
         <TextInput
@@ -95,6 +99,7 @@ export default function NovaTarefa({ t, user, onClose }) {
           }}
         />
       </View>
+      ) : null}
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Urgência</Label>

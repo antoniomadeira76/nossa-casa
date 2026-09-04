@@ -25,7 +25,7 @@ const URG = [
 export default function Tarefas({ t, user, abrir }) {
   const st = useStore();
   const { s, set, allTasks, kidPts, dueOf, isRecurring, removerTarefa, membros: MEMBERS,
-          membrosDaCasa, criancas } = st;
+          membrosDaCasa, criancas, pontosNasTarefas } = st;
   const [filter, setFilter] = useState('Todos');
   const [manage, setManage] = useState(abrir || null);
   React.useEffect(() => { if (abrir) setManage(abrir); }, [abrir]);
@@ -68,11 +68,13 @@ export default function Tarefas({ t, user, abrir }) {
         })}
       </View>
 
-      {criancas.length === 0 ? null : (
+      {criancas.length === 0 || !pontosNasTarefas ? null : (
       <View>
         <SectionTitle t={t}>Semanada das Crianças</SectionTitle>
         <Card t={t} style={{ gap: S.lg }}>
-          <Label t={t}>1 pt = {EUR(s.pointValue)}</Label>
+          {/* A 0 EUR os pontos contam e nao valem dinheiro — a linha do
+              cambio nao teria sentido. */}
+          <Label t={t}>{s.pointValue > 0 ? `1 pt = ${EUR(s.pointValue)}` : 'Pontos sem valor em euros'}</Label>
           <View style={{ flexDirection: 'row', gap: S.md }}>
             {criancas.map(k => {
               // ⚠ Sem os valores por omissão, uma criança acrescentada à
@@ -96,7 +98,9 @@ export default function Tarefas({ t, user, abrir }) {
                     <Icon name="caretRight" size={16} color={t.text3} />
                   </View>
                   <Text style={{ fontFamily: FONT.display, fontSize: 20, color: t.text2 }}>{pend} pt</Text>
+                  {s.pointValue > 0 ? (
                   <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{EUR(pend * s.pointValue)} por pagar</Text>
+                  ) : null}
                   <View style={{ height: 1, backgroundColor: t.divider }} />
                   <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.state.okDeep }}>
                     No cofre {EUR(st.vaultOf(k))}
@@ -190,7 +194,7 @@ export default function Tarefas({ t, user, abrir }) {
                       </View>
                       {/* Pastilha contornada, como na referência: o amarelo
                           cheio competia com o distintivo da urgência. */}
-                      {x.pts > 0 && !done ? <Pill label={`${x.pts} pt`} fg={t.text2} bg={t.card} border={t.border} /> : null}
+                      {pontosNasTarefas && x.pts > 0 && !done ? <Pill label={`${x.pts} pt`} fg={t.text2} bg={t.card} border={t.border} /> : null}
                     </Pressable>
                     <Tap onPress={() => setManage(x.id)} label={`Gerir ${x.title}`} size={44}>
                       <Icon name="edit" size={20} color={t.text3} />

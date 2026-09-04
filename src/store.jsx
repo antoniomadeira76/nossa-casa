@@ -246,7 +246,7 @@ const DATA_KEYS = [
   'newItems', 'itemGone',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'importDone', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
-  'eventGone', 'eventEdits', 'roles', 'pins', 'pointValue', 'payDay', 'splitHalf',
+  'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'pointValue', 'payDay', 'splitHalf',
   'rendimento', 'stores', 'shopPlan', 'shopHistory', 'precos', 'precoPago', 'health', 'specialities', 'equipCats', 'registo',
   'recurringReset', 'healthNotes', 'healthRecipes', 'healthDecisions', 'healthDocs', 'healthGone',
   'healthArchived',
@@ -532,6 +532,23 @@ export const DEMO = () => ({
   clearedSeeds: false, eventGone: {}, eventEdits: {},
   roles: { ...ROLES },
   pins: {},                       // sem PIN de fábrica — o adulto define
+  // ── Os pontos são opcionais ────────────────────────────────────────────────
+  //
+  // Nem toda a casa quer pagar tarefas. Ligado por omissão porque é o que a app
+  // fazia até 04/09/2026 e desligá-lo a quem já o usa seria uma surpresa.
+  //
+  // ⚠ Desligar NÃO apaga nada. Os pontos são somas de movimentos (INVARIANTE
+  // #2) e continuam lá; o que muda é o que se mostra e o que se pede ao criar
+  // uma tarefa. Voltar a ligar traz tudo de volta ao estado exacto — e há uma
+  // prova só para isso, porque a tentação de «limpar ao desligar» é real e
+  // seria perda de dados disfarçada de arrumação.
+  //
+  // ⚠ Vai no DEMO e não no BLANK. O `BLANK()` espalha o `DEMO()`, portanto isto
+  // chega aos dois — e pôr o valor só no BLANK é um defeito que já foi cometido
+  // duas vezes neste ficheiro, com o `healthArchived`.
+  pontosLigados: true,
+  // Mínimo 0, e não 0,01: uma casa pode querer os pontos como contagem e não
+  // como dinheiro — «cinco pontos» sem euros por trás.
   pointValue: 0.10, payDay: 0, splitHalf: true,
   rendimento: 3200,              // o que entra por mês; os envelopes saem daqui
   stores: ['Continente de Belém', 'Pingo Doce da Ajuda', 'Mercado de Alcântara'],
@@ -607,6 +624,20 @@ export const BLANK = () => ({
   healthDocs: [], healthGone: {}, healthArchived: {},
   ...SEM_DINHEIRO_SEMEADO(),
 });
+
+// ── O `id` de uma nota de saúde ──────────────────────────────────────────────
+//
+// ⚠ Era `'note-' + Date.now()`, e passou a haver quem mexa numa nota PELO id —
+// editar e apagar. Duas notas acrescentadas no mesmo milissegundo ficavam com
+// o mesmo id, e editar uma alterava as duas. Não é hipótese remota: qualquer
+// prova que acrescente duas notas seguidas cai lá dentro, e na app basta um
+// toque duplo.
+//
+// O contador vive fora do estado de propósito — não é dado da casa, não se
+// grava, e não tem de sobreviver a nada. Só tem de não repetir dentro da mesma
+// sessão, e o `Date.now()` à frente resolve o resto.
+let contadorDeNotas = 0;
+const idDeNota = () => `note-${Date.now()}-${++contadorDeNotas}`;
 
 const Ctx = createContext(null);
 const reducer = (s, patch) => ({ ...s, ...(typeof patch === 'function' ? patch(s) : patch) });
@@ -1706,18 +1737,110 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     return id;
   };
 
+  // ── As notas de uma consulta ──────────────────────────────────────────────
+  //
+  // Estão sempre à mão e alteram-se: o que o médico disse escreve-se à pressa
+  // na sala de espera e corrige-se depois. Até aqui só havia `addHealthNote` —
+  // uma nota com um erro de escrita ficava lá para sempre.
+  //
+  // ⚠ Mexe-se numa nota pelo `id`, NUNCA pela posição na lista. Dois telefones
+  // que acrescentem uma nota cada um à mesma consulta produzem listas com
+  // ordens diferentes, e um `editar(indice)` alterava a nota errada no segundo
+  // telefone. É a mesma razão do INVARIANTE #2.
+  // O `idServidor` de uma consulta — é a ele que a nota se pende.
+  const episodioNoServidor = (healthId) =>
+    (allHealth().find(h => h.id === healthId) || {}).idServidor || null;
+
   const addHealthNote = (healthId, author, text) => {
+    const t = String(text || '').trim();
+    if (!t) return 'A nota não pode ficar vazia.';
+    const idLocal = idDeNota();
     set(x => ({
       healthNotes: {
         ...x.healthNotes,
         [healthId]: [...(x.healthNotes[healthId] || []), {
-          id: 'note-' + Date.now(),
+          id: idLocal,
           author,
           date: new Date().toISOString(),
-          text,
+          text: t,
         }],
       },
     }));
+
+    // A nota sobe, e só para um servidor que viva na casa: o `notaDeSaude`
+    // chama o `recusaSaude`, portanto a condição é imposta no sync e não
+    // repetida aqui. Falhar não estraga o ecrã, que já tem a nota.
+    //
+    // ⚠ Sem `idServidor` do episódio a nota NÃO sobe, e é o correcto: uma nota
+    // é uma relação para a consulta, e sem ela ficava órfã do outro lado. A
+    // consulta aprende o seu id quando subir, e a nota fica local até lá.
+    if (sync) {
+      const ses = sync.sessao();
+      const episodio = episodioNoServidor(healthId);
+      const autor = idDoMembro(author);
+      if (ses && episodio && autor) sync.notaDeSaude({
+        casa: ses.casa, episodio, autor, texto: t,
+      })
+        // O id do servidor guarda-se para que ALTERAR e APAGAR tenham para
+        // onde ir. Sem ele, a correcção ficava só neste telefone.
+        .then((r) => { if (r && r.id) set(x => ({
+          healthNotes: {
+            ...x.healthNotes,
+            [healthId]: (x.healthNotes[healthId] || []).map(n => (
+              n.id === idLocal ? { ...n, idServidor: r.id } : n)),
+          },
+        })); })
+        .catch(() => {});
+    }
+    return null;
+  };
+
+  // Devolvem null quando correm bem e uma frase em português quando não, como
+  // o `renameSpecialty`.
+  //
+  // ⚠ Só quem escreveu a nota a altera ou apaga. Uma nota é o relato de uma
+  // pessoa sobre o que ouviu na consulta; o outro adulto reescrevê-la em
+  // silêncio seria pior do que não a poder corrigir. `quem` é obrigatório
+  // precisamente para isto não se poder esquecer.
+  const notaDaConsulta = (healthId, notaId) =>
+    ((s.healthNotes || {})[healthId] || []).find(n => n.id === notaId) || null;
+
+  const editarNotaSaude = (healthId, notaId, texto, quem) => {
+    const n = notaDaConsulta(healthId, notaId);
+    if (!n) return 'Essa nota já não existe.';
+    if (n.author !== quem) return 'Só quem escreveu a nota a pode alterar.';
+    const t = String(texto || '').trim();
+    if (!t) return 'A nota não pode ficar vazia.';
+    if (t.length > 2000) return 'A nota não pode passar de 2000 caracteres.';
+    if (t === n.text) return null;                   // nada a fazer
+    set(x => ({
+      healthNotes: {
+        ...x.healthNotes,
+        [healthId]: (x.healthNotes[healthId] || []).map(o => (
+          // `editadaEm` e não sobrescrever a `date`: a data em que a nota foi
+          // escrita é o que a situa na consulta, e perdê-la ao corrigir uma
+          // gralha apagava a única pista de quando aquilo foi dito.
+          o.id === notaId ? { ...o, text: t, editadaEm: new Date().toISOString() } : o)),
+      },
+    }));
+    // A alteração sobe se a nota já lá estiver. `n.idServidor` só existe depois
+    // de ela ter subido; sem ele não há o que alterar do outro lado.
+    if (sync && n.idServidor) sync.alterarNotaDeSaude(n.idServidor, t).catch(() => {});
+    return null;
+  };
+
+  const apagarNotaSaude = (healthId, notaId, quem) => {
+    const n = notaDaConsulta(healthId, notaId);
+    if (!n) return 'Essa nota já não existe.';
+    if (n.author !== quem) return 'Só quem escreveu a nota a pode apagar.';
+    set(x => ({
+      healthNotes: {
+        ...x.healthNotes,
+        [healthId]: (x.healthNotes[healthId] || []).filter(o => o.id !== notaId),
+      },
+    }));
+    if (sync && n.idServidor) sync.apagarNotaDeSaude(n.idServidor).catch(() => {});
+    return null;
   };
 
   // ── Um documento numa ficha ─────────────────────────────────────────────
@@ -2020,10 +2143,17 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     resetDemo: () => { AsyncStorage.removeItem(KEY).catch(() => {}); set(DEMO()); },
     startBlank: () => set(BLANK()),
     // Health feature methods
-    addHealthRecord, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision,
+    addHealthRecord, addHealthNote, editarNotaSaude, apagarNotaSaude, notaDaConsulta,
+    addRecipe, setRecipeDecision, setHealthDecision,
     addHealthDoc, arquivarConsulta, docsDaConsulta, estaArquivada,
     addSpecialty, removeSpecialty, renameSpecialty, consultasDaEspecialidade,
     reordenarTarefas,
+    // ⚠ UMA leitura da bandeira, e não `s.pontosLigados !== false` repetido em
+    // seis ecrãs. O `!== false` é preciso porque uma casa gravada antes de
+    // 04/09/2026 não tem o campo, e ausente significa LIGADO — era o que a app
+    // fazia. Um `!!s.pontosLigados` desligava os pontos a quem já os usava, em
+    // silêncio, ao actualizar.
+    pontosNasTarefas: s.pontosLigados !== false,
     // Google Calendar import
     importGoogleEvents,
   };

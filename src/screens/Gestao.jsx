@@ -26,7 +26,7 @@ const campo = (t) => ({
 
 export default function Gestao({ t, user, onClose }) {
   const { s, set, isAdmin, budget, spent, envelopes, pinError, setPin, canChangeRole, setRole,
-          kidPts, membros: MEMBERS, nomeDaCasa, podeGerirCasa,
+          kidPts, pontosNasTarefas, membros: MEMBERS, nomeDaCasa, podeGerirCasa,
           renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro } = useStore();
   const [tab, setTab] = useState('orcamento');
   const [sheetOpen, setSheetOpen] = useState(null);
@@ -118,11 +118,40 @@ export default function Gestao({ t, user, onClose }) {
           vivem aqui, não no Perfil. Estavam numa folha separada dentro do Perfil,
           e a linha «Rendimento, envelopes, semanada, membros» abria só metade
           disso. Uma casa, um sítio onde se muda as suas regras. */}
+      {/* ── Semanada: e os pontos são opcionais ──────────────────────────────
+          ⚠ Desligar NÃO apaga nada. Os pontos são somas de movimentos
+          (INVARIANTE #2) e ficam onde estão; o que desaparece é o que se
+          mostra e o que se pede ao criar uma tarefa. Voltar a ligar traz tudo
+          de volta, e é isso que a frase por baixo do interruptor promete. */}
       <View style={{ gap: S.md }}>
         <SectionTitle t={t}>Semanada</SectionTitle>
+
+        {/* ⚠ O `Toggle` desenha SÓ o interruptor — o `label` dele é o rótulo
+            de acessibilidade, não texto no ecrã. Sem esta linha ao lado ficava
+            um interruptor sem nome, e foi uma prova que o apanhou. É o mesmo
+            arranjo do «Dividir a meias», mais abaixo neste ficheiro. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: t.subtle,
+          borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14 }}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>Atribuir pontos às tarefas</Text>
+            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+              {pontosNasTarefas
+                ? 'As tarefas valem pontos, e os pontos viram semanada. Desligar esconde-os — não apaga nada, e voltar a ligar traz tudo de volta.'
+                : 'As tarefas não têm pontos. O que já estava contado fica guardado e volta se ligar outra vez.'}
+            </Text>
+          </View>
+          <Toggle t={t} on={pontosNasTarefas} label="Atribuir pontos às tarefas"
+            onPress={() => set(x => ({ pontosLigados: x.pontosLigados === false }))} />
+        </View>
+
+        {pontosNasTarefas ? (
+        <>
         <Label t={t}>Quanto vale um ponto</Label>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-          <Tap label="Menos 0,05 €" onPress={() => set(x => ({ pointValue: Math.max(0.01, +(x.pointValue - 0.05).toFixed(2)) }))}
+          {/* ⚠ Mínimo 0, e não 0,01. Uma casa pode querer os pontos como
+              contagem e não como dinheiro: «cinco pontos» sem euros atrás. O
+              0,01 obrigava a que valessem sempre algo. */}
+          <Tap label="Menos 0,05 €" onPress={() => set(x => ({ pointValue: Math.max(0, +(x.pointValue - 0.05).toFixed(2)) }))}
             style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row }}>
             <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.accent }}>−</Text>
           </Tap>
@@ -139,7 +168,10 @@ export default function Gestao({ t, user, onClose }) {
             const porPagar = Object.keys(MEMBERS)
               .filter(n => MEMBERS[n].kid)
               .reduce((a, n) => a + ((kidPts?.[n] || 0) - (s.paidPts?.[n] || 0)), 0);
-            return `Os ${porPagar} pontos por pagar valem ${EUR(porPagar * s.pointValue)}.`;
+            // A 0 € a frase do dinheiro não diz nada — diz-se só a contagem.
+            return s.pointValue > 0
+              ? `Os ${porPagar} pontos por pagar valem ${EUR(porPagar * s.pointValue)}.`
+              : `Há ${porPagar} pontos por pagar. A zero, os pontos contam e não valem dinheiro.`;
           })()}
         </Text>
 
@@ -147,6 +179,8 @@ export default function Gestao({ t, user, onClose }) {
         <Segmented t={t} small value={s.payDay}
           options={['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((d, i) => ({ value: i, label: d }))}
           onChange={(v) => set({ payDay: v })} />
+        </>
+        ) : null}
       </View>
 
       <View style={{ gap: S.md }}>
