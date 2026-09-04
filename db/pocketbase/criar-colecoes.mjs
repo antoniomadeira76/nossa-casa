@@ -452,7 +452,12 @@ await criar({
   indexes: ['CREATE UNIQUE INDEX idx_despesa_idem ON despesas (casa, idem_key)'],
   listRule: `${DA_CASA} && ${ADULTO}`,
   viewRule: `${DA_CASA} && ${ADULTO}`,
-  createRule: `${DA_CASA} && ${ADULTO} && pagador.papel != "crianca"`,
+  // ⚠ `envelope.casa` e `pagador.casa`, e não só o `casa` da linha. Pela QUINTA
+  // vez o mesmo defeito de forma: o `casa` da linha é escolhido por quem
+  // escreve e não prova nada. Uma adulta de outra casa lançava uma despesa
+  // contra um envelope DESTA — e o orçamento desta casa mostrava-a gasta.
+  createRule: `${DA_CASA} && ${ADULTO} && pagador.papel != "crianca"`
+    + ` && envelope.casa = @request.auth.casa && pagador.casa = @request.auth.casa`,
   updateRule: null,     // não se edita uma despesa; anula-se
   deleteRule: null,
 });
@@ -589,7 +594,12 @@ await criar({
   ],
   indexes: ['CREATE UNIQUE INDEX idx_transf_idem ON transferencias (casa, idem_key)'],
   listRule: `${DA_CASA} && ${ADULTO}`, viewRule: `${DA_CASA} && ${ADULTO}`,
-  createRule: `${DA_CASA} && ${ADMIN} && por = @request.auth.id`,
+  // ⚠ Os DOIS envelopes têm de ser da casa. Sem isto, uma administradora de
+  // outra casa movia dinheiro entre os envelopes desta — apanhado pela prova do
+  // orçamento em 05/09/2026, e é a quinta vez que este defeito aparece.
+  createRule: `${DA_CASA} && ${ADMIN} && por = @request.auth.id`
+    + ` && de_envelope.casa = @request.auth.casa`
+    + ` && para_envelope.casa = @request.auth.casa`,
   updateRule: null, deleteRule: null,
 });
 

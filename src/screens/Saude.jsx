@@ -624,7 +624,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
         onGerirEspecialidades={() => setSheet('especialidades')}
         onClose={() => setSheet(null)} />
     : sheet === 'especialidades'
-    ? <GerirEspecialidades t={t} form={consulta} setForm={setConsulta}
+    ? <GerirEspecialidades t={t} user={user} form={consulta} setForm={setConsulta}
         onClose={() => setSheet('consulta')} />
     : null;
 
@@ -1003,6 +1003,10 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
                 fontWeight: '600', color: t.titulo || t.slate }}>
                 A consulta
               </Text>
+              {/* Só a quem administra: as listas da casa são dele, e é o
+                  servidor que o impõe. Oferecer o botão a quem não pode era
+                  prometer uma porta que se abre para uma recusa. */}
+              {st.isAdmin(user) ? (
               <Pressable accessibilityRole="button" accessibilityLabel="Gerir especialidades"
                 onPress={onGerirEspecialidades}
                 style={{ minHeight: 44, minWidth: 44, paddingHorizontal: S.md,
@@ -1012,6 +1016,7 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
                   Gerir
                 </Text>
               </Pressable>
+              ) : null}
             </View>
 
             <View style={{ gap: S.sm }}>
@@ -1070,7 +1075,9 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
               <Label t={t}>Especialidade</Label>
               {!(s.specialities || []).length ? (
                 <Empty t={t} icon="heartPulse" title="Sem especialidades."
-                  hint="Toque em Gerir para criar a primeira." />
+                  hint={st.isAdmin(user)
+                    ? 'Toque em Gerir para criar a primeira.'
+                    : 'Peça a quem administra a casa para criar a primeira.'} />
               ) : (
                 <View style={{ borderWidth: 1, borderColor: t.border,
                   borderRadius: R.row, backgroundColor: t.card, overflow: 'hidden' }}>
@@ -1212,9 +1219,13 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
 //
 // Um campo faz dois trabalhos: acrescentar e renomear. Tocar em «Renomear»
 // numa linha traz o nome para o campo e o botão muda de frase.
-function GerirEspecialidades({ t, form, setForm, onClose }) {
+function GerirEspecialidades({ t, user, form, setForm, onClose }) {
   const st = useStore();
   const { s, addSpecialty, removeSpecialty, renameSpecialty, consultasDaEspecialidade } = st;
+  // ⚠ Quem não administra a casa não gere as listas dela — é o que o SERVIDOR
+  // diz, por decisão do dono da casa em 05/09/2026. A loja recusa de qualquer
+  // modo; isto é não oferecer o alvo, e dizer porquê.
+  const administra = st.isAdmin(user);
 
   const [nome, setNome] = useState('');
   const [aRenomear, setARenomear] = useState(null);
@@ -1226,14 +1237,14 @@ function GerirEspecialidades({ t, form, setForm, onClose }) {
     const n = nome.trim();
     if (!n) return;
     if (aRenomear) {
-      const e = renameSpecialty(aRenomear, n);
+      const e = renameSpecialty(aRenomear, n, user);
       if (e) return setErro(e);
       // O rascunho segue o nome novo, senão a consulta que se estava a marcar
       // ficava com uma especialidade que já não está na lista.
       setForm(f => (f.specialty === aRenomear ? { ...f, specialty: n } : f));
       setARenomear(null);
     } else {
-      const e = addSpecialty(n);
+      const e = addSpecialty(n, user);
       if (e) return setErro(e);
       // Criada, fica JÁ escolhida no rascunho — é o que o protótipo faz, e é a
       // razão por que se veio aqui: faltava esta ao marcar.
@@ -1244,7 +1255,7 @@ function GerirEspecialidades({ t, form, setForm, onClose }) {
   };
 
   const apagar = (esp) => {
-    const e = removeSpecialty(esp);
+    const e = removeSpecialty(esp, user);
     if (e) return setErro(e);
     // Apagada a que estava escolhida, o rascunho fica sem especialidade — e o
     // botão de marcar desliga-se sozinho, que é o correto.

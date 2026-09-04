@@ -859,7 +859,7 @@ migrate((app) => {
           "hidden": false,
           "id": "number939973662",
           "max": 5,
-          "min": 0.01,
+          "min": 0,
           "name": "valor_ponto",
           "onlyInt": false,
           "presentable": false,
@@ -1752,7 +1752,7 @@ migrate((app) => {
       "viewRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\""
     },
     {
-      "createRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\" && pagador.papel != \"crianca\"",
+      "createRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\" && pagador.papel != \"crianca\" && envelope.casa = @request.auth.casa && pagador.casa = @request.auth.casa",
       "deleteRule": null,
       "fields": [
         {
@@ -2738,7 +2738,7 @@ migrate((app) => {
       "viewRule": "casa = @request.auth.casa && @request.auth.papel != \"crianca\""
     },
     {
-      "createRule": "casa = @request.auth.casa && @request.auth.papel = \"admin\" && por = @request.auth.id",
+      "createRule": "casa = @request.auth.casa && @request.auth.papel = \"admin\" && por = @request.auth.id && de_envelope.casa = @request.auth.casa && para_envelope.casa = @request.auth.casa",
       "deleteRule": null,
       "fields": [
         {
@@ -3916,7 +3916,7 @@ migrate((app) => {
           "collectionId": "pbc_3006363748",
           "help": "",
           "hidden": false,
-          "id": "_clone_5wmF",
+          "id": "_clone_Tk9o",
           "maxSelect": 1,
           "minSelect": 0,
           "name": "casa",
@@ -3985,7 +3985,7 @@ migrate((app) => {
           "collectionId": "pbc_3006363748",
           "help": "",
           "hidden": false,
-          "id": "_clone_HWmV",
+          "id": "_clone_wuwi",
           "maxSelect": 1,
           "minSelect": 0,
           "name": "casa",
@@ -3998,7 +3998,7 @@ migrate((app) => {
           "autogeneratePattern": "",
           "help": "",
           "hidden": false,
-          "id": "_clone_HzPM",
+          "id": "_clone_Vt8v",
           "max": 0,
           "min": 0,
           "name": "nome",
@@ -4069,7 +4069,7 @@ migrate((app) => {
           "collectionId": "pbc_3006363748",
           "help": "",
           "hidden": false,
-          "id": "_clone_FNNW",
+          "id": "_clone_mG8i",
           "maxSelect": 1,
           "minSelect": 0,
           "name": "casa",
@@ -4138,7 +4138,7 @@ migrate((app) => {
           "collectionId": "pbc_3006363748",
           "help": "",
           "hidden": false,
-          "id": "_clone_bKFs",
+          "id": "_clone_rkax",
           "maxSelect": 1,
           "minSelect": 0,
           "name": "casa",

@@ -90,9 +90,13 @@ const TEXTO_LIVRE = [
   '.registo[0].t',
 ];
 
-const renomear = (loja, a, b) => {
+// ⚠ `'Rita'` — quem administra a casa de demonstração. As três funções das
+// especialidades passaram a exigir administração em 05/09/2026, por decisão do
+// dono da casa: «manda o servidor», e o servidor exige-a
+// (`createRule: casa && admin`). Sem o `quem` a chamada é recusada.
+const renomear = (loja, a, b, quem = 'Rita') => {
   let r;
-  TestRenderer.act(() => { r = loja().renameSpecialty(a, b); });
+  TestRenderer.act(() => { r = loja().renameSpecialty(a, b, quem); });
   return r;
 };
 
@@ -168,6 +172,42 @@ describe('e diz o que está mal, em português, como o `renomearMembro`', () => 
     const loja = comLoja(cheio());
     expect(renomear(loja, 'Pediatria', 'Pediatria')).toBeNull();
     expect(loja().s.specialities).toEqual(['Medicina geral', 'Pediatria', 'Dentista']);
+  });
+});
+
+describe('⚠ e só quem administra a casa lhes mexe', () => {
+  // O servidor exige administração para as três listas da casa. A app deixava
+  // qualquer adulto criar uma especialidade — e a dele ficava no telefone dele,
+  // recusada ao subir e sem uma palavra. A app passou a dizer o mesmo, e a
+  // dizê-lo ANTES de tentar.
+  it('o Tomás, que é adulto e não administra, é recusado nas três', () => {
+    const loja = comLoja(cheio());
+    const frase = 'Só quem administra a casa pode gerir as especialidades.';
+    expect(loja().addSpecialty('Cardiologia', 'Tomás')).toBe(frase);
+    expect(loja().removeSpecialty('Pediatria', 'Tomás')).toBe(frase);
+    expect(renomear(loja, 'Pediatria', 'Puericultura', 'Tomás')).toBe(frase);
+    // E nada mudou.
+    expect(loja().s.specialities).toEqual(['Medicina geral', 'Pediatria', 'Dentista']);
+  });
+
+  it('⚠ e sem dizer QUEM também — um esquecimento não abre a porta', () => {
+    const loja = comLoja(cheio());
+    expect(loja().addSpecialty('Cardiologia')).toBeTruthy();
+    expect(loja().removeSpecialty('Pediatria')).toBeTruthy();
+    // ⚠ A função DIRETA, não o ajudante: ele tem `'Rita'` por omissão, e um
+    // `undefined` passado por cima dele nunca chegava à loja. A prova passava
+    // sem nunca ter testado o esquecimento.
+    expect(loja().renameSpecialty('Pediatria', 'Puericultura')).toBeTruthy();
+    expect(loja().s.specialities).toEqual(['Medicina geral', 'Pediatria', 'Dentista']);
+  });
+
+  it('mas a Rita, que administra, faz as três', () => {
+    const loja = comLoja(cheio());
+    TestRenderer.act(() => { expect(loja().addSpecialty('Cardiologia', 'Rita')).toBeNull(); });
+    expect(loja().s.specialities).toContain('Cardiologia');
+    TestRenderer.act(() => { expect(loja().removeSpecialty('Cardiologia', 'Rita')).toBeNull(); });
+    expect(loja().s.specialities).not.toContain('Cardiologia');
+    expect(renomear(loja, 'Pediatria', 'Puericultura')).toBeNull();
   });
 });
 

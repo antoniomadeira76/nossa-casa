@@ -264,12 +264,43 @@ export async function puxarCasa() {
     listasIds[naLoja] = Object.fromEntries(linhas.map(l => [l.nome, l.id]));
   }
 
+  // ── O orçamento ───────────────────────────────────────────────────────────
+  //
+  // Os envelopes eram SEMENTES NO CÓDIGO (`ENV_BASE`): a lista nunca veio do
+  // servidor, e criar um envelope acrescentava uma chave a um mapa de limites.
+  const envelopesDaCasa = (casa.envelopes || []).map(e => ({
+    id: e.id,
+    name: e.nome,
+    limit: Number(e.limite_base) || 0,
+    color: e.cor || null,
+  }));
+
+  // ⚠ E o `envMove` — o ajuste de cada envelope dentro do mês — era um SALDO
+  // ESCRITO: um mapa `nome → número` que cada telefone reescrevia por inteiro.
+  // É o INVARIANTE #2 ao contrário, e a consequência é a do CLAUDE.md: se a
+  // Rita mover 50 € da Mercearia para o Lazer e o Tomás mover 30 € do Lazer
+  // para a Casa, o último a gravar apaga o outro.
+  //
+  // Passa a ser a SOMA das `transferencias`, que são aditivas e têm chave de
+  // idempotência. Uma soma não se anula.
+  const nomeDoEnvelope = Object.fromEntries(envelopesDaCasa.map(e => [e.id, e.name]));
+  const envMove = {};
+  for (const t of casa.transferencias || []) {
+    const de = nomeDoEnvelope[t.de_envelope];
+    const para = nomeDoEnvelope[t.para_envelope];
+    const valor = Number(t.valor) || 0;
+    if (de) envMove[de] = (envMove[de] || 0) - valor;
+    if (para) envMove[para] = (envMove[para] || 0) + valor;
+  }
+
   return {
     vaultMoves,
     registered,
     regras,
     listas,
     listasIds,
+    envelopesDaCasa,
+    envMove,
     added,
     newTasks,
     urg,
@@ -498,6 +529,31 @@ export async function renomearNaLista(chave, id, nome) {
 export async function apagarDaLista(chave, id) {
   if (!ligado() || !id) return { pendente: true };
   return servidor.pb.collection(colecaoDaLista(chave)).delete(id);
+}
+
+// ── Os envelopes, para o servidor ────────────────────────────────────────────
+//
+// ⚠ O envelope é a DEFINIÇÃO — nome, limite, cor. O que se move entre eles não
+// se escreve aqui: vai por `transferenciaEntreEnvelopes`, que é aditiva. Pôr um
+// «saldo» no envelope era o INVARIANTE #2 ao contrário.
+export async function criarEnvelope({ casa, nome, limite, cor }) {
+  return criarOuEnfileirarCasa('envelopes', {
+    casa, nome, limite_base: Number(limite) || 0, cor: cor || '',
+  });
+}
+
+export async function alterarEnvelope(idNoServidor, campos) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  const linha = {};
+  if ('nome' in campos) linha.nome = campos.nome;
+  if ('limite' in campos) linha.limite_base = Number(campos.limite) || 0;
+  if ('cor' in campos) linha.cor = campos.cor || '';
+  return servidor.pb.collection('envelopes').update(idNoServidor, linha);
+}
+
+export async function apagarEnvelope(idNoServidor) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('envelopes').delete(idNoServidor);
 }
 
 // ── As regras da casa, para o servidor ───────────────────────────────────────

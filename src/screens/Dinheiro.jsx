@@ -77,7 +77,7 @@ function GrelhaEnvelopes({ t, envelopes, livre, escolhido, onEscolher }) {
 
 export default function Dinheiro({ t, user, onEquip }) {
   const st = useStore();
-  const { s, set, envelopes, budget, spent, remaining, allEquip, isAdmin, membros: MEMBERS, adultos, criancas, acerto, acertado, pagarAcerto, oNome, aoNome } = st;
+  const { s, set, envelopes, budget, spent, remaining, allEquip, isAdmin, membros: MEMBERS, adultos, criancas, acerto, acertado, pagarAcerto, oNome, aoNome, moverEntreEnvelopes } = st;
   const [sheet, setSheet] = useState(null);
   const [mv, setMv] = useState({ from: 0, to: 3, amount: 0 });
   const [exp, setExp] = useState({ amount: 0, env: 0, payer: user, split: true });
@@ -380,11 +380,12 @@ export default function Dinheiro({ t, user, onEquip }) {
             action={<Primary t={t} disabled={over || mv.amount <= 0}
               label={over ? 'Valor Indisponível' : mv.amount <= 0 ? 'Escreva um valor' : 'Confirmar Movimento'}
               onPress={() => {
-                set(x => ({ envMove: {
-                  ...x.envMove,
-                  [envelopes[mv.from].name]: (x.envMove[envelopes[mv.from].name] || 0) - mv.amount,
-                  [envelopes[mv.to].name]: (x.envMove[envelopes[mv.to].name] || 0) + mv.amount,
-                } }));
+                // ⚠ Uma TRANSFERÊNCIA, não um saldo escrito. Isto era um
+                // `set` que reescrevia o mapa `envMove` por inteiro — e dois
+                // telemóveis a mover dinheiro no mesmo mês anulavam-se, que é
+                // o INVARIANTE #2 ao contrário e o que ele existe para
+                // impedir.
+                moverEntreEnvelopes(envelopes[mv.from].name, envelopes[mv.to].name, mv.amount);
                 setSheet(null); setMv(m => ({ ...m, amount: 0 }));
               }} />}>
             <View style={{ gap: S.md }}>

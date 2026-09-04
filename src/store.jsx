@@ -243,7 +243,7 @@ const BACKUPS_ANTIGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(n => `${KEY}.ant
 const DATA_KEYS = [
   'done', 'pending', 'status', 'registered', 'acertoMovs', 'vaultMoves', 'paidPts', 'extraLog',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
-  'newItems', 'itemGone', 'feitas', 'listasIds',
+  'newItems', 'itemGone', 'feitas', 'listasIds', 'envelopesDaCasa',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'importDone', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'pointValue', 'payDay', 'splitHalf',
@@ -521,6 +521,9 @@ export const DEMO = () => ({
   // `nome → id` das três listas da casa, por lista. É o que permite renomear e
   // apagar do lado do servidor sem mudar a forma que os ecrãs leem.
   listasIds: {},
+  // Os envelopes da casa, quando vêm do servidor. Vazio = corre com as
+  // sementes do `ENV_BASE`, como antes de haver servidor.
+  envelopesDaCasa: [],
   // As linhas de `tarefas_feitas` que o servidor tem, por «tarefa|dia». É o
   // que permite DESMARCAR: sem o id da linha não há o que apagar do outro lado.
   feitas: {},
@@ -749,6 +752,16 @@ export function StoreProvider({ children }) {
       // não deste telefone.
       if (Object.keys(casa.listas || {}).length) {
         set(x => ({ ...casa.listas, listasIds: { ...x.listasIds, ...casa.listasIds } }));
+      }
+
+      // ── Os envelopes, e o que se moveu entre eles ─────────────────────────
+      //
+      // ⚠ O `envMove` do servidor SUBSTITUI o local, e é a diferença que
+      // importa: ele é a SOMA das transferências, não um mapa que cada telefone
+      // reescreve. Fundi-lo com o local voltava a somar duas vezes o que este
+      // telefone já mandou.
+      if ((casa.envelopesDaCasa || []).length) {
+        set({ envelopesDaCasa: casa.envelopesDaCasa, envMove: casa.envMove || {} });
       }
 
       if ((casa.added || []).length) set({ added: casa.added });
@@ -1082,10 +1095,22 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   const budget = s.monthLimits
     ? Object.values(s.monthLimits).reduce((a, b) => a + b, 0)
     : ENV_BASE.reduce((a, e) => a + e.limit, 0);
-  const envelopes = ENV_BASE.map(e => ({
+  // ⚠ A lista dos envelopes vem do SERVIDOR quando há um. Eram sementes no
+  // código (`ENV_BASE`) e mais nada: a lista da casa não existia em lado
+  // nenhum, e «criar um envelope» era acrescentar uma chave a um mapa de
+  // limites — que o `map` abaixo nem sequer via.
+  //
+  // Sem servidor, as sementes ficam: a app tem de correr sem rede, e corria
+  // assim antes de haver servidor.
+  const baseDeEnvelopes = (s.envelopesDaCasa || []).length
+    ? s.envelopesDaCasa.map(e => ({ ...e, used: 0 }))
+    : ENV_BASE;
+
+  const envelopes = baseDeEnvelopes.map(e => ({
     ...e,
     used: (s.monthZero ? 0 : e.used) + (e.name === 'Mercearia' ? s.registered : 0),
-    limit: (s.monthLimits ? s.monthLimits[e.name] : e.limit) + (s.envMove[e.name] || 0),
+    limit: (s.monthLimits && s.monthLimits[e.name] !== undefined
+      ? s.monthLimits[e.name] : e.limit) + (s.envMove[e.name] || 0),
   }));
 
   // O gasto é a soma dos envelopes, nunca um número à parte. Estava escrito à
@@ -1240,6 +1265,79 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       registo: [{ t: `A tarefa «${t.title}» foi apagada`, at: Date.now() }, ...x.registo],
     };
   });
+
+  // ── Mover dinheiro entre envelopes ──────────────────────────────────────
+  //
+  // ⚠ Isto era `set({ envMove: { ...x.envMove, [de]: -v, [para]: +v } })` — um
+  // SALDO ESCRITO, e o INVARIANTE #2 ao contrário. A consequência é a que o
+  // CLAUDE.md descreve: se a Rita mover 50 € da Mercearia para o Lazer e o
+  // Tomás mover 30 € do Lazer para a Casa, o último a gravar apaga o outro.
+  //
+  // Passa a ser uma TRANSFERÊNCIA — uma linha, aditiva, com chave de
+  // idempotência — e o `envMove` que os ecrãs leem é a soma delas. Localmente
+  // continua a somar-se ao mapa, para a app funcionar sem rede; a diferença é
+  // que o servidor manda quando responde.
+  const moverEntreEnvelopes = (deNome, paraNome, valor) => {
+    const v = Number(valor) || 0;
+    if (v <= 0 || deNome === paraNome) return;
+
+    set(x => ({
+      envMove: {
+        ...x.envMove,
+        [deNome]: (x.envMove[deNome] || 0) - v,
+        [paraNome]: (x.envMove[paraNome] || 0) + v,
+      },
+    }));
+
+    if (sync) {
+      const ses = sync.sessao();
+      const idDe = (s.envelopesDaCasa || []).find(e => e.name === deNome);
+      const idPara = (s.envelopesDaCasa || []).find(e => e.name === paraNome);
+      // Sem envelopes do servidor não há para onde mandar a transferência — a
+      // casa ainda corre com as sementes, e o movimento fica local.
+      if (ses && idDe && idPara) sync.transferenciaEntreEnvelopes({
+        casa: ses.casa, de: idDe.id, para: idPara.id, valor: v,
+        mes: TODAY_KEY.replace(/^d/, ''), por: ses.membro,
+      }).catch(() => {});
+    }
+  };
+
+  // ── Os envelopes: criar, alterar e apagar ───────────────────────────────
+  const envelopeNoServidor = (nome) =>
+    ((s.envelopesDaCasa || []).find(e => e.name === nome) || {}).id || null;
+
+  const criarEnvelope = (nome, limite = 500) => {
+    const n = String(nome || '').trim();
+    if (!n) return;
+    set(x => ({ monthLimits: { ...(x.monthLimits || {}), [n]: limite } }));
+    if (sync) {
+      const ses = sync.sessao();
+      if (ses) sync.criarEnvelope({ casa: ses.casa, nome: n, limite })
+        .then((r) => { if (r && r.id) set(x => ({
+          envelopesDaCasa: [...(x.envelopesDaCasa || []),
+            { id: r.id, name: n, limit: limite, color: null }],
+        })); })
+        .catch(() => {});
+    }
+  };
+
+  const alterarEnvelope = (nome, campos) => {
+    const id = envelopeNoServidor(nome);
+    if (sync && id) sync.alterarEnvelope(id, campos).catch(() => {});
+    // O nome muda no mapa local também, senão o ajuste ficava órfão.
+    if (campos.nome && campos.nome !== nome) {
+      set(x => ({
+        envelopesDaCasa: (x.envelopesDaCasa || []).map(e => (
+          e.name === nome ? { ...e, name: campos.nome } : e)),
+      }));
+    }
+  };
+
+  const apagarEnvelope = (nome) => {
+    const id = envelopeNoServidor(nome);
+    if (sync && id) sync.apagarEnvelope(id).catch(() => {});
+    set(x => ({ envelopesDaCasa: (x.envelopesDaCasa || []).filter(e => e.name !== nome) }));
+  };
 
   // ── As três listas da casa ──────────────────────────────────────────────
   //
@@ -2224,7 +2322,18 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // Devolvem null quando correm bem e uma frase em português quando não, como o
   // `renameSpecialty` e o `renomearMembro`. Não rebentam: quem chama mostra a
   // frase.
-  const addSpecialty = (nome) => {
+  // ⚠ `quem` é obrigatório, e é a resposta a uma divergência que o dono da casa
+  // decidiu em 05/09/2026: o SERVIDOR manda. A regra das três listas exige
+  // administração (`createRule: casa && admin`), e a app deixava qualquer
+  // adulto criar uma especialidade — a dele ficava no telefone dele, recusada
+  // ao subir e sem uma palavra.
+  //
+  // Agora a app diz o mesmo que o servidor, e di-lo ANTES de tentar. Sem o
+  // `quem` a chamada não passa: um esquecimento não pode abrir a porta.
+  const SO_ADMIN = 'Só quem administra a casa pode gerir as especialidades.';
+
+  const addSpecialty = (nome, quem) => {
+    if (!isAdmin(quem)) return SO_ADMIN;
     const n = String(nome || '').trim();
     if (!n) return 'A especialidade precisa de um nome.';
     if (n.length > 40) return 'O nome não pode passar de 40 caracteres.';
@@ -2252,7 +2361,8 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // A regra é a do protótipo, e a do `docs/especificacao-ecras.md`: apagar as
   // que não têm consultas. Quem quiser tirar uma que está em uso renomeia-a,
   // que leva as consultas atrás.
-  const removeSpecialty = (nome) => {
+  const removeSpecialty = (nome, quem) => {
+    if (!isAdmin(quem)) return SO_ADMIN;
     if (!(s.specialities || []).includes(nome)) {
       return 'Essa especialidade não existe nesta casa.';
     }
@@ -2288,7 +2398,8 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   //
   // Devolve null quando corre bem e uma frase em português quando não, como o
   // `renomearMembro`.
-  const renameSpecialty = (antigo, novo) => {
+  const renameSpecialty = (antigo, novo, quem) => {
+    if (!isAdmin(quem)) return SO_ADMIN;
     const lista = s.specialities || [];
     if (!lista.includes(antigo)) return 'Essa especialidade não existe nesta casa.';
     const n = String(novo || '').trim();
@@ -2407,6 +2518,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     garantiasAExpirar, receitasAExpirar, consultasProximas,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring, definirAvatar, trazerFotografia,
     removerTarefa, criarTarefa, tarefaNoServidor, mudarRegraDaCasa, mudarListaDaCasa,
+    moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
     lerDoServidor,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),

@@ -26,7 +26,8 @@ const campo = (t) => ({
 
 export default function Gestao({ t, user, onClose }) {
   const { s, set, isAdmin, budget, spent, envelopes, pinError, setPin, canChangeRole, setRole,
-          kidPts, pontosNasTarefas, mudarRegraDaCasa, mudarListaDaCasa, membros: MEMBERS, nomeDaCasa, podeGerirCasa,
+          kidPts, pontosNasTarefas, mudarRegraDaCasa, mudarListaDaCasa,
+          criarEnvelope, alterarEnvelope, apagarEnvelope, membros: MEMBERS, nomeDaCasa, podeGerirCasa,
           renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro } = useStore();
   const [tab, setTab] = useState('orcamento');
   const [sheetOpen, setSheetOpen] = useState(null);
@@ -738,21 +739,24 @@ export default function Gestao({ t, user, onClose }) {
                 const newLimit = parseFloat(limitInput.replace(',', '.'));
                 if (isNaN(newLimit) || newLimit <= 0) return;
 
+                const oldName = selectedEnvelope;
+                const newName = input.trim();
                 set(s => {
-                  const oldName = selectedEnvelope;
-                  const newName = input.trim();
                   const newLimits = { ...s.monthLimits };
-                  if (newLimits[oldName] !== undefined) {
-                    newLimits[newName] = newLimit;
-                    delete newLimits[oldName];
-                  }
+                  newLimits[newName] = newLimit;
+                  if (oldName !== newName) delete newLimits[oldName];
+                  // ⚠ O ajuste do mês acompanha o nome. Se ficasse na chave
+                  // antiga, o dinheiro movido para este envelope desaparecia
+                  // do ecrã ao renomeá-lo.
                   const newMoves = { ...s.envMove };
-                  if (newMoves[oldName] !== undefined) {
+                  if (newMoves[oldName] !== undefined && oldName !== newName) {
                     newMoves[newName] = newMoves[oldName];
                     delete newMoves[oldName];
                   }
                   return { monthLimits: newLimits, envMove: newMoves };
                 });
+                // E sobe: o envelope é da casa, não deste telemóvel.
+                alterarEnvelope(oldName, { nome: newName, limite: newLimit });
                 setSheetOpen(null);
                 setSelectedEnvelope(null);
                 setInput('');
@@ -813,9 +817,7 @@ export default function Gestao({ t, user, onClose }) {
           action={
             <Primary t={t} label="Criar" onPress={() => {
               if (input.trim()) {
-                set(s => ({
-                  monthLimits: { ...(s.monthLimits || {}), [input.trim()]: 500 },
-                }));
+                criarEnvelope(input.trim(), 500);
                 setSheetOpen(null);
                 setInput('');
               }

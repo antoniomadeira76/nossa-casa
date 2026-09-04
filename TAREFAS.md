@@ -16,6 +16,28 @@
 - [x] Acertar Contas — pagamento parcial (Tudo, Metade, Valor)
 - [ ] **PENDENTE:** Limite de um envelope — toque para mudar contra rendimento
 - [ ] **PENDENTE:** Mover Dinheiro — toque no envelope ou botão Mover
+- [x] **O ORÇAMENTO vive na base de dados** (05/09/2026), com **13 provas** em
+      `provar-orcamento.mjs`.
+      - os envelopes eram **sementes no código** (`ENV_BASE`): a lista da casa
+        não existia em lado nenhum, e «criar um envelope» acrescentava uma
+        chave a um mapa de limites — que o ecrã nem sequer lia. Agora vêm do
+        servidor quando há um, e as sementes ficam para quem corre sem rede.
+      - ⚠ **e o `envMove` era um SALDO ESCRITO.** Um mapa `nome → número` que
+        cada telefone reescrevia por inteiro: se a Rita movesse 50 € da
+        Mercearia para o Lazer e o Tomás 30 € do Lazer para a Casa, o último a
+        gravar apagava o outro. É o INVARIANTE #2 ao contrário, e o CLAUDE.md
+        descreve esta consequência exacta — «a diferença entre uma app que
+        funciona a dois e uma que perde dinheiro».
+        Passou a ser a **soma das `transferencias`**, que são aditivas e têm
+        chave de idempotência. Há uma prova que move dos dois telemóveis e
+        exige que as duas contem, e outra que exige que a soma de todos os
+        ajustes seja **zero** — mover dinheiro redistribui, não cria.
+      - ⚠ **quinto** buraco de casa-cruzada, e nos dois sítios onde há dinheiro:
+        `transferencias.de_envelope`/`para_envelope` e `despesas.envelope`. Uma
+        adulta de outra casa movia dinheiro entre os envelopes desta, e lançava
+        despesas contra eles — e o orçamento desta família mostrava-as gastas.
+      - **falta**: os limites do mês (`meses.limites`), o abrir e o fechar do
+        mês, e o apagar de um envelope pela interface.
 - [x] Dinheiro — ver envelope Mercearia após compras
 - [x] Marcar como Pago — acertar contas
 - [ ] **PENDENTE:** Abrir o mês — distribuir rendimento e reiniciar
@@ -99,10 +121,12 @@
       - ⚠ e uma **fusão** de especialidades não é um renomear: quando o nome
         novo já existe, a linha antiga **apaga-se**. Renomeá-la deixava duas
         linhas com o mesmo nome, que é o defeito que a fusão existe para evitar.
-      - ⚠ divergência conhecida e por decidir: o servidor exige **administração**
-        para mexer nestas listas, e a app deixa qualquer adulto criar uma
-        especialidade. Se um adulto que não administra criar uma, ela fica no
-        telefone dele.
+      - ✅ **decidido em 05/09/2026: manda o servidor.** Só quem administra a
+        casa cria, renomeia ou apaga uma especialidade — e a app diz agora o
+        mesmo, e di-lo ANTES de tentar. As três funções exigem `quem`, e sem
+        ele a chamada é recusada: um esquecimento não abre a porta. A quem não
+        administra, o botão «Gerir» não aparece, e o estado vazio diz-lhe a
+        quem pedir.
 - [x] **Os pontos são OPCIONAIS** (04/09/2026, a pedido do dono da casa):
       «atribuir pontos a tarefas deve ser opcional — poder ligar e desligar, e
       se estiver ligado pode-se atribuir qualquer valor, mesmo 0 €».

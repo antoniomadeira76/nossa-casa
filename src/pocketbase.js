@@ -464,6 +464,10 @@ export const auth = {
 // daria a impressão errada de que é o cliente que protege.
 const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
   'envelopes', 'despesas', 'cofre_movimentos', 'equipamentos',
+  // ⚠ As transferências são ADITIVAS, e é delas que o ajuste de cada envelope
+  // se calcula. Sem as ler, o `envMove` da loja ficava a ser um saldo escrito —
+  // que é o INVARIANTE #2 ao contrário.
+  'transferencias',
   // As três listas da casa. Têm a mesma forma — casa e nome — e por isso levam
   // uma tradução só, no `sync`.
   'especialidades', 'categorias_equip', 'lojas'];

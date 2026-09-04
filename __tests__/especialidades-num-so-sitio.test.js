@@ -268,17 +268,17 @@ describe('⚠ a conta das consultas não olha a quem vê', () => {
     // sobre o NOME estar referido, não sobre quem o pode ler.
     const loja = comLoja();
     expect(loja().consultasDaEspecialidade('Medicina geral')).toBe(1);
-    expect(loja().removeSpecialty('Medicina geral'))
+    expect(loja().removeSpecialty('Medicina geral', 'Rita'))
       .toContain('não se apaga');
     expect(loja().s.specialities).toContain('Medicina geral');
   });
 
   it('e a que ninguém usa apaga-se, devolvendo null', () => {
     const loja = comLoja();
-    TestRenderer.act(() => { loja().addSpecialty('Fisioterapia'); });
+    TestRenderer.act(() => { loja().addSpecialty('Fisioterapia', 'Rita'); });
     expect(loja().consultasDaEspecialidade('Fisioterapia')).toBe(0);
     let r;
-    TestRenderer.act(() => { r = loja().removeSpecialty('Fisioterapia'); });
+    TestRenderer.act(() => { r = loja().removeSpecialty('Fisioterapia', 'Rita'); });
     expect(r).toBeNull();
     expect(loja().s.specialities).not.toContain('Fisioterapia');
   });
@@ -286,16 +286,16 @@ describe('⚠ a conta das consultas não olha a quem vê', () => {
   it('⚠ e criar uma repetida é recusado, em português', () => {
     // Duas linhas iguais na lista não se distinguem ao marcar uma consulta.
     const loja = comLoja();
-    expect(loja().addSpecialty('pediatria'))
+    expect(loja().addSpecialty('pediatria', 'Rita'))
       .toBe('Já existe uma especialidade com esse nome.');
-    expect(loja().addSpecialty('   ')).toBe('A especialidade precisa de um nome.');
+    expect(loja().addSpecialty('   ', 'Rita')).toBe('A especialidade precisa de um nome.');
   });
 
   it('e as duas ficam no registo da casa, como o renomear já ficava', () => {
     const loja = comLoja();
-    TestRenderer.act(() => { loja().addSpecialty('Fisioterapia'); });
+    TestRenderer.act(() => { loja().addSpecialty('Fisioterapia', 'Rita'); });
     expect(loja().s.registo[0].t).toBe('Especialidade criada: Fisioterapia');
-    TestRenderer.act(() => { loja().removeSpecialty('Fisioterapia'); });
+    TestRenderer.act(() => { loja().removeSpecialty('Fisioterapia', 'Rita'); });
     expect(loja().s.registo[0].t).toBe('Especialidade apagada: Fisioterapia');
   });
 });
