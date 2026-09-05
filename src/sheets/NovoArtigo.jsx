@@ -6,7 +6,7 @@ import { Label, Choice, Toggle, Primary } from '../ui';
 import { SECTIONS } from '../data';
 
 export default function NovoArtigo({ t, user, onClose }) {
-  const { set } = useStore();
+  const { criarArtigo } = useStore();
   const [form, setForm] = useState({
     label: '',
     section: 0,
@@ -17,19 +17,16 @@ export default function NovoArtigo({ t, user, onClose }) {
   const handleSave = () => {
     if (!form.label.trim()) return;
 
-    const id = 'art-' + Date.now();
-    const item = {
-      id,
-      s: form.section,
+    // ⚠ Pelo `criarArtigo` da loja, que também o manda para o servidor. Isto
+    // era um `set` direto, e o artigo ficava só neste telefone — numa lista de
+    // compras que é, por natureza, de duas pessoas.
+    criarArtigo({
       label: form.label,
+      section: form.section,
       est: form.est || 0,
       staple: form.staple,
-      by: `Adicionado por ${user} · ${new Date().toLocaleDateString('pt-PT')}`,
-    };
-
-    set(s => ({
-      newItems: [...(s.newItems || []), item],
-    }));
+      by: user,
+    });
 
     onClose();
   };

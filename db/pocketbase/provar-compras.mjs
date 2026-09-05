@@ -1,0 +1,228 @@
+// As compras na base de dados — e dois telemóveis na mesma loja.
+//
+//   node db/pocketbase/provar-compras.mjs
+//
+// ── O defeito, que o próprio esquema já avisava ──────────────────────────────
+//
+// O comentário da coleção `artigos`, escrito antes de eu lá chegar:
+//
+//   «O estado vive na linha do artigo. Se fosse uma lista de identificadores
+//    confirmados, dois telefones na mesma loja anulavam-se; assim, fundem-se.»
+//
+// O cliente tinha exactamente a lista que o comentário proíbe: um mapa `status`
+// que cada telefone reescrevia por inteiro. Dois adultos a dividir os
+// corredores — um nos frescos, outro na mercearia — anulavam o trabalho um do
+// outro, e o último a gravar ganhava.
+//
+// É a terceira vez que este projeto encontra a mesma forma: o `envMove` do
+// orçamento, o `done` das tarefas, e agora o `status` das compras. Todas as
+// três estão agora em linhas.
+import PocketBase from 'pocketbase';
+import { registerHooks } from 'node:module';
+import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
+
+registerHooks({
+  resolve(especificador, contexto, seguinte) {
+    try { return seguinte(especificador, contexto); }
+    catch (e) {
+      if (especificador.startsWith('.') && !/\.[cm]?jsx?$/.test(especificador)) {
+        return seguinte(especificador + '.js', contexto);
+      }
+      throw e;
+    }
+  },
+});
+
+const { configurar, auth } = await import('../../src/pocketbase.js');
+const sync = await import('../../src/sync.js');
+
+const memoria = new Map();
+configurar({
+  url: URL,
+  storage: {
+    getItem: async (k) => (memoria.has(k) ? memoria.get(k) : null),
+    setItem: async (k, v) => { memoria.set(k, v); },
+    removeItem: async (k) => { memoria.delete(k); },
+  },
+});
+
+let ok = 0, mau = 0;
+const prova = async (n, f) => {
+  try { await f(); console.log(`  ✓ ${n}`); ok++; }
+  catch (e) { console.log(`  ✕ ${n}\n      ${e.message}`); mau++; }
+};
+const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
+const recusado = async (f) => {
+  try { await f(); throw new Error('PASSOU — devia ter sido recusado'); }
+  catch (e) { if (/PASSOU/.test(e.message)) throw e; }
+};
+
+// ── A casa ───────────────────────────────────────────────────────────────────
+const { pb: admin } = await comecar();
+const casa = await admin.collection('casas').create({ nome: PREFIXO + 'Bengui', valor_ponto: 0.1 });
+const mk = (nome, papel, extra) => admin.collection('membros').create({
+  nome, login: `${casa.id}_${nome}`, casa: casa.id, papel, verified: true, ...extra });
+const s = (p) => ({ password: p, passwordConfirm: p });
+
+const rita  = await mk('Rita',  'admin',   { email: 'rita@x.pt',  ...s('palavra-longa-1') });
+const tomas = await mk('Tomas', 'adulto',  { email: 'tomas@x.pt', ...s('palavra-longa-2') });
+const leo   = await mk('Leo',   'crianca', { ...s('1357') });
+
+await auth.entrarAdulto('rita@x.pt', 'palavra-longa-1');
+const daRita = sync.sessao();
+
+const telemovel = async (id, senha) => {
+  const c = new PocketBase(URL);
+  await c.collection('membros').authWithPassword(id, senha);
+  return c;
+};
+const doTomas = await telemovel('tomas@x.pt', 'palavra-longa-2');
+
+// ═════════════════════════════════════════════════════════════════════════════
+console.log('\n── a ida às compras, e os artigos dela ──');
+
+let loja = null, lista = null;
+
+await prova('a Rita abre uma ida às compras', async () => {
+  loja = (await sync.acrescentarNaLista('stores', { casa: daRita.casa, nome: 'Continente' })).id;
+  const r = await sync.listaDeCompras({
+    casa: daRita.casa, loja, comprador: daRita.membro, planeadaPara: 'd2026-09-28' });
+  if (!r || !r.id) throw new Error('não devolveu id: ' + JSON.stringify(r));
+  lista = r.id;
+  const l = await admin.collection('listas_compras').getOne(lista);
+  igual(l.loja, loja);
+  igual(l.comprador, daRita.membro);
+  igual(String(l.planeada_para).slice(0, 10), '2026-09-28');
+  igual(!!l.fechada_em, false, 'nasceu fechada');
+});
+
+let banana = null, leite = null;
+
+await prova('⚠ e os artigos vão para a linha, com todos os campos', async () => {
+  const r = await sync.artigoDeCompras({
+    casa: daRita.casa, lista, rotulo: 'Bananas', seccao: 0,
+    pedidoPor: daRita.membro, habitual: true, estimativa: 1.8 });
+  banana = r.id;
+  const a = await admin.collection('artigos').getOne(banana);
+  // `rotulo` e não `label`; `seccao` e não `s`. O PocketBase ignora em
+  // silêncio o que não conhece.
+  igual(a.rotulo, 'Bananas');
+  igual(a.seccao, 0);
+  igual(a.habitual, true);
+  igual(a.estimativa, 1.8);
+  igual(a.estado, 'por_comprar');
+});
+
+await prova('e o telemóvel do Tomás vê-os', async () => {
+  leite = (await sync.artigoDeCompras({
+    casa: daRita.casa, lista, rotulo: 'Leite', seccao: 1 })).id;
+  const v = await doTomas.collection('artigos').getFullList();
+  igual(v.filter(a => a.lista === lista).length, 2);
+});
+
+await prova('⚠ uma CRIANÇA também vê a lista, e pode pedir', async () => {
+  // A lista é de todos: as crianças também pedem artigos. É a regra escrita
+  // na coleção, e não um descuido.
+  const doLeo = await telemovel(leo.login, '1357');
+  igual((await doLeo.collection('artigos').getFullList()).length, 2);
+  const r = await doLeo.collection('artigos').create({
+    casa: casa.id, lista, rotulo: 'Cereais', seccao: 2, pedido_por: leo.id });
+  igual(r.rotulo, 'Cereais');
+  await admin.collection('artigos').delete(r.id);
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+console.log('\n── ⚠ e dois telemóveis na mesma loja NÃO se anulam ──');
+
+await prova('a Rita apanha as bananas', async () => {
+  await sync.marcarArtigo(banana, 'done', 1.75);
+  const a = await admin.collection('artigos').getOne(banana);
+  igual(a.estado, 'confirmado');
+  igual(a.preco_real, 1.75);
+});
+
+await prova('o Tomás marca o leite como sem stock, do telemóvel dele', async () => {
+  await doTomas.collection('artigos').update(leite, { estado: 'sem_stock' });
+  igual((await admin.collection('artigos').getOne(leite)).estado, 'sem_stock');
+});
+
+await prova('⚠ e as DUAS marcações ficam — cada um alterou a sua linha', async () => {
+  // É aqui que a lista partilhada falhava: quem gravasse por último reescrevia
+  // o mapa inteiro e apagava o trabalho do outro.
+  const lida = await sync.puxarCasa();
+  igual(lida.status[banana], 'done', JSON.stringify(lida.status));
+  igual(lida.status[leite], 'sem stock', JSON.stringify(lida.status));
+});
+
+await prova('⚠ e o `puxarCasa` traduz os estados de volta para a forma da loja', async () => {
+  // O servidor tem `por_comprar | confirmado | sem_stock`; a loja fala
+  // `open | done | sem stock`. Uma tabela só, nos dois sentidos.
+  const lida = await sync.puxarCasa();
+  const b = (lida.newItems || []).find(a => a.id === banana);
+  if (!b) throw new Error('a banana não veio');
+  igual(b.label, 'Bananas');
+  igual(b.section, 0);
+  igual(b.habitual, true);
+  // E o plano: a loja pelo ÍNDICE na lista `stores`, que é o que o ecrã lê.
+  igual(lida.shopPlan.who, 'Rita');
+  igual(lida.shopPlan.day, 'd2026-09-28');
+  igual(lida.shopPlan.idServidor, lista);
+});
+
+await prova('desmarcar volta a `por_comprar`', async () => {
+  await sync.marcarArtigo(banana, 'open');
+  igual((await admin.collection('artigos').getOne(banana)).estado, 'por_comprar');
+  const lida = await sync.puxarCasa();
+  // `open` não entra no mapa: é a ausência que quer dizer «por comprar».
+  igual(lida.status[banana], undefined);
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+console.log('\n── fechar a conta fecha a ida ──');
+
+await prova('⚠ a lista fechada deixa de ser a aberta', async () => {
+  await sync.alterarListaDeCompras(lista, { fechadaEm: 'd2026-09-28' });
+  const lida = await sync.puxarCasa();
+  igual(lida.shopPlan, null, 'a lista fechada continua a ser a aberta');
+  // E os artigos dela não vêm mais — a próxima ida nasce vazia sem ninguém
+  // apagar nada.
+  igual((lida.newItems || []).length, 0);
+});
+
+await prova('e a ida seguinte é uma lista nova', async () => {
+  const r = await sync.listaDeCompras({ casa: daRita.casa, loja, comprador: daRita.membro });
+  const lida = await sync.puxarCasa();
+  igual(lida.shopPlan.idServidor, r.id);
+  igual((lida.newItems || []).length, 0);
+  // A fechada fica: é o histórico.
+  igual((await admin.collection('listas_compras').getFullList())
+    .filter(l => l.casa === casa.id).length, 2);
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+console.log('\n── e nada disto atravessa casas ──');
+
+await prova('⚠ apagar a lista leva os artigos dela', async () => {
+  // `cascadeDelete` na relação. Sem isso ficavam artigos a apontar para uma
+  // lista que já não existe — invisíveis, e a acumular.
+  const l = await admin.collection('listas_compras').create({ casa: casa.id, loja });
+  const a = await admin.collection('artigos').create({ casa: casa.id, lista: l.id, rotulo: 'X' });
+  await admin.collection('listas_compras').delete(l.id);
+  await recusado(() => admin.collection('artigos').getOne(a.id));
+});
+
+await prova('⚠ a vizinha não vê nem escreve nas compras desta casa', async () => {
+  const outra = await admin.collection('casas').create({ nome: PREFIXO + 'Outra', valor_ponto: 0.1 });
+  const nela = await admin.collection('membros').create({
+    nome: 'Vizinha', login: `${outra.id}_Vizinha`, casa: outra.id, papel: 'admin',
+    email: 'viz-compras@x.pt', ...s('palavra-longa-9'), verified: true });
+  const cVizinha = await telemovel('viz-compras@x.pt', 'palavra-longa-9');
+
+  igual((await cVizinha.collection('artigos').getFullList()).length, 0);
+  igual((await cVizinha.collection('listas_compras').getFullList()).length, 0);
+  // E não marca um artigo nosso como apanhado.
+  await recusado(() => cVizinha.collection('artigos').update(leite, { estado: 'confirmado' }));
+});
+
+console.log(`\n${ok} provas passaram, ${mau} falharam.`);
+process.exit(mau ? 1 : 0);

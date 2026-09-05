@@ -21,7 +21,7 @@ const diaDaSemana = (k) => {
 
 export default function Compras({ t, user, onModoCompras }) {
   const st = useStore();
-  const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas, removerArtigo } = st;
+  const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas, removerArtigo, marcarArtigo, mudarPlanoDeCompras } = st;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [aApagar, setAApagar] = useState(null);
 
@@ -58,9 +58,8 @@ export default function Compras({ t, user, onModoCompras }) {
 
   const listPg = usePaged(items, 5);
 
-  const toggle = (id) => set(x => ({
-    status: { ...x.status, [id]: (x.status[id] || 'open') === 'done' ? 'open' : 'done' },
-  }));
+  // Pelo `marcarArtigo` da loja, que altera a LINHA do artigo no servidor.
+  const toggle = (id) => marcarArtigo(id, 'done');
 
   return (
     <>
@@ -145,9 +144,7 @@ export default function Compras({ t, user, onModoCompras }) {
           </View>
           {comparacao.loja !== loja ? (
             <Pressable
-              onPress={() => set(x => ({
-                shopPlan: { ...x.shopPlan, store: x.stores.indexOf(comparacao.loja) },
-              }))}
+              onPress={() => mudarPlanoDeCompras({ store: s.stores.indexOf(comparacao.loja) })}
               accessibilityRole="button"
               accessibilityLabel={`Passar as compras para o ${comparacao.loja}`}
               style={({ pressed }) => ({ minHeight: 44, borderRadius: R.row, borderWidth: 1,

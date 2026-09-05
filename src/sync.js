@@ -293,6 +293,43 @@ export async function puxarCasa() {
     if (para) envMove[para] = (envMove[para] || 0) + valor;
   }
 
+  // ── As compras ────────────────────────────────────────────────────────────
+  //
+  // A lista ABERTA é a que não tem `fechada_em`. Pode não haver nenhuma — a
+  // casa entre duas idas às compras não tem lista, e isso é um estado válido.
+  const aberta = (casa.listas_compras || []).find(l => !l.fechada_em) || null;
+  const nomeDaLoja = Object.fromEntries((casa.lojas || []).map(l => [l.id, l.nome]));
+
+  const artigosDaLista = (casa.artigos || []).filter(a => aberta && a.lista === aberta.id);
+
+  const newItems = artigosDaLista.map(a => ({
+    id: a.id,
+    idServidor: a.id,
+    label: a.rotulo,
+    section: Number(a.seccao) || 0,
+    habitual: !!a.habitual,
+    est: Number(a.estimativa) || 0,
+  }));
+
+  // ⚠ O `estado` vem DA LINHA de cada artigo, e não de uma lista à parte. É
+  // isso que faz dois telefones na mesma loja fundirem-se em vez de se
+  // anularem — o comentário da coleção `artigos` já o dizia antes de eu o
+  // fazer errado.
+  const status = {};
+  for (const a of artigosDaLista) {
+    const naLoja = ESTADO_NA_LOJA[a.estado];
+    if (naLoja && naLoja !== 'open') status[a.id] = naLoja;
+  }
+
+  const shopPlan = aberta ? {
+    idServidor: aberta.id,
+    // O ecrã guarda o ÍNDICE da loja na lista `stores`, não o nome. Traduz-se
+    // aqui; se a loja tiver saído da lista, fica -1 e o ecrã diz «por escolher».
+    store: (listas.stores || []).indexOf(nomeDaLoja[aberta.loja]),
+    who: nomeDoMembro[aberta.comprador] || null,
+    day: chaveDeISO(aberta.planeada_para),
+  } : null;
+
   return {
     vaultMoves,
     registered,
@@ -301,6 +338,9 @@ export async function puxarCasa() {
     listasIds,
     envelopesDaCasa,
     envMove,
+    newItems,
+    status,
+    shopPlan,
     added,
     newTasks,
     urg,
@@ -529,6 +569,73 @@ export async function renomearNaLista(chave, id, nome) {
 export async function apagarDaLista(chave, id) {
   if (!ligado() || !id) return { pendente: true };
   return servidor.pb.collection(colecaoDaLista(chave)).delete(id);
+}
+
+// ── As compras ───────────────────────────────────────────────────────────────
+//
+// ⚠ O `estado` de um artigo vai NA LINHA dele, e o esquema já avisava porquê,
+// no comentário da coleção `artigos`:
+//
+//   «O estado vive na linha do artigo. Se fosse uma lista de identificadores
+//    confirmados, dois telefones na mesma loja anulavam-se; assim, fundem-se.»
+//
+// O cliente tinha exactamente a lista que o comentário proíbe — um mapa
+// `status` que cada telefone reescrevia por inteiro. Dois adultos a dividir os
+// corredores anulavam o trabalho um do outro. É a mesma forma do `envMove`.
+//
+// A loja fala «open | done | sem stock»; o servidor tem um `select` com
+// `por_comprar | confirmado | sem_stock`. A tradução é aqui, e nos dois
+// sentidos, para não haver duas tabelas a divergir.
+const ESTADO_NO_SERVIDOR = {
+  open: 'por_comprar', done: 'confirmado', 'sem stock': 'sem_stock',
+};
+const ESTADO_NA_LOJA = Object.fromEntries(
+  Object.entries(ESTADO_NO_SERVIDOR).map(([a, b]) => [b, a]));
+
+export async function listaDeCompras({ casa, loja, comprador, planeadaPara }) {
+  return criarOuEnfileirarCasa('listas_compras', {
+    casa, loja: loja || null, comprador: comprador || null,
+    planeada_para: planeadaPara ? isoDeChave(planeadaPara) : null,
+  });
+}
+
+export async function alterarListaDeCompras(idNoServidor, campos) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  const linha = {};
+  if ('loja' in campos) linha.loja = campos.loja || null;
+  if ('comprador' in campos) linha.comprador = campos.comprador || null;
+  if ('planeadaPara' in campos) linha.planeada_para = campos.planeadaPara ? isoDeChave(campos.planeadaPara) : null;
+  // Fechar a conta é pôr a data: a lista deixa de ser a aberta.
+  if ('fechadaEm' in campos) linha.fechada_em = campos.fechadaEm ? isoDeChave(campos.fechadaEm) : null;
+  return servidor.pb.collection('listas_compras').update(idNoServidor, linha);
+}
+
+export async function artigoDeCompras({ casa, lista, rotulo, seccao, pedidoPor, habitual, estimativa }) {
+  if (!lista) throw new Error('Um artigo sem lista não se grava — não teria onde aparecer.');
+  return criarOuEnfileirarCasa('artigos', {
+    casa, lista, rotulo,
+    seccao: Number.isFinite(Number(seccao)) ? Number(seccao) : 0,
+    pedido_por: pedidoPor || null,
+    estado: 'por_comprar',
+    habitual: !!habitual,
+    estimativa: Number(estimativa) || 0,
+  });
+}
+
+// ⚠ Marcar um artigo ALTERA A LINHA dele — não escreve numa lista à parte. É
+// isso que faz dois telefones na mesma loja fundirem-se: cada um altera os
+// artigos que apanhou, e nenhum reescreve os do outro.
+export async function marcarArtigo(idNoServidor, estado, precoReal) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('artigos').update(idNoServidor, {
+    estado: ESTADO_NO_SERVIDOR[estado] || 'por_comprar',
+    ...(precoReal !== undefined ? { preco_real: Number(precoReal) || 0 } : {}),
+  });
+}
+
+export async function apagarArtigo(idNoServidor) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('artigos').delete(idNoServidor);
 }
 
 // ── Os envelopes, para o servidor ────────────────────────────────────────────

@@ -470,7 +470,10 @@ const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
   'transferencias',
   // As três listas da casa. Têm a mesma forma — casa e nome — e por isso levam
   // uma tradução só, no `sync`.
-  'especialidades', 'categorias_equip', 'lojas'];
+  'especialidades', 'categorias_equip', 'lojas',
+  // As compras: a lista aberta e os artigos dela. O `estado` vive na LINHA do
+  // artigo — é isso que faz dois telefones na mesma loja fundirem-se.
+  'listas_compras', 'artigos'];
 
 export const ler = {
   async casa() {

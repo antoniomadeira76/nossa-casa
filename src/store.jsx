@@ -764,6 +764,20 @@ export function StoreProvider({ children }) {
         set({ envelopesDaCasa: casa.envelopesDaCasa, envMove: casa.envMove || {} });
       }
 
+      // ── As compras ────────────────────────────────────────────────────────
+      //
+      // ⚠ O `status` do servidor SUBSTITUI o local, e é a diferença que
+      // importa: ele vem da linha de cada artigo, e não de um mapa que este
+      // telefone reescreveu. Fundi-lo deixava um artigo apanhado pelo outro
+      // adulto a aparecer por comprar aqui.
+      if (casa.shopPlan) {
+        set(x => ({
+          newItems: casa.newItems,
+          status: casa.status || {},
+          shopPlan: { ...x.shopPlan, ...casa.shopPlan },
+        }));
+      }
+
       if ((casa.added || []).length) set({ added: casa.added });
       if ((casa.newTasks || []).length) {
         set(x => ({
@@ -1065,7 +1079,16 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // preciso cuidado nenhum: o `precos` é indexado pelo RÓTULO do artigo e não
   // pelo id, portanto apagar por id nunca lhe toca. Está dito porque a
   // próxima pessoa a mexer nisto não tem como saber.
-  const removerArtigo = (id) => set(x => {
+  const removerArtigo = (id) => {
+    // ⚠ O `id` do servidor lê-se ANTES do `set` — depois dele o artigo já não
+    // está na lista, e não há de onde o tirar. É a mesma armadilha do
+    // `removerTarefa`.
+    const noServidor = artigoNoServidor(id);
+    if (sync && noServidor) sync.apagarArtigo(noServidor).catch(() => {});
+    return removerArtigoLocal(id);
+  };
+
+  const removerArtigoLocal = (id) => set(x => {
     const a = allItems().find(i => i.id === id);
     if (!a) return {};
 
@@ -1337,6 +1360,100 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       ...(campos.title !== undefined ? { titulo: campos.title } : {}),
       ...(campos.visibilidade !== undefined ? { visibilidade: campos.visibilidade } : {}),
     }).catch(() => {});
+  };
+
+  // ── As compras ──────────────────────────────────────────────────────────
+  //
+  // ⚠ O `estado` de um artigo vive NA LINHA dele. O comentário da coleção
+  // `artigos` já avisava, antes de eu o fazer errado:
+  //
+  //   «O estado vive na linha do artigo. Se fosse uma lista de identificadores
+  //    confirmados, dois telefones na mesma loja anulavam-se; assim, fundem-se.»
+  //
+  // O cliente tinha exactamente a lista que o comentário proíbe: um mapa
+  // `status` que cada telefone reescrevia por inteiro. Dois adultos a dividir
+  // os corredores anulavam o trabalho um do outro. É a mesma forma do
+  // `envMove`, e a terceira vez que este projeto a encontra.
+  const artigoNoServidor = (id) =>
+    (allItems().find(a => a.id === id) || {}).idServidor || null;
+
+  // A lista de compras ABERTA no servidor. Nula quando a casa está entre duas
+  // idas — e isso é um estado válido, não um erro.
+  const listaAberta = () => (s.shopPlan || {}).idServidor || null;
+
+  const criarArtigo = ({ label, section, est, staple, by }) => {
+    const rotulo = String(label || '').trim();
+    if (!rotulo) return null;
+    const id = 'art-' + Date.now();
+    set(x => ({
+      newItems: [...(x.newItems || []), { id, s: section, label: rotulo, est: est || 0, staple, by }],
+    }));
+
+    if (sync) {
+      const ses = sync.sessao();
+      const lista = listaAberta();
+      // Sem lista aberta o artigo não tem onde entrar — fica local até haver
+      // uma, que é melhor do que inventar uma ida às compras.
+      if (ses && lista) sync.artigoDeCompras({
+        casa: ses.casa, lista, rotulo, seccao: section,
+        pedidoPor: idDoMembro(by), habitual: !!staple, estimativa: est,
+      })
+        .then((r) => { if (r && r.id) set(x => ({
+          newItems: (x.newItems || []).map(a => (a.id === id ? { ...a, idServidor: r.id } : a)),
+        })); })
+        .catch(() => {});
+    }
+    return id;
+  };
+
+  // Marcar um artigo: por comprar → apanhado → sem stock. Três estados, não
+  // dois: «sem stock» não é o mesmo que «por comprar», e quem está na loja já
+  // lá foi ver.
+  const marcarArtigo = (id, estado) => {
+    const agora = s.status[id] || 'open';
+    const proximo = agora === estado ? 'open' : estado;
+    set(x => ({ status: { ...x.status, [id]: proximo } }));
+
+    const noServidor = artigoNoServidor(id);
+    if (sync && noServidor) sync.marcarArtigo(noServidor, proximo, s.precoPago[id]).catch(() => {});
+  };
+
+  // ── A ida às compras: abrir e fechar ────────────────────────────────────
+  //
+  // Uma `listas_compras` sem `fechada_em` é a lista ABERTA. Fechar a conta põe
+  // a data e abre outra: é assim que o histórico fica, e que a lista seguinte
+  // nasce vazia sem ninguém apagar nada.
+  const mudarPlanoDeCompras = (campos) => {
+    set(x => ({ shopPlan: { ...x.shopPlan, ...campos } }));
+    if (!sync) return;
+    const ses = sync.sessao();
+    if (!ses) return;
+
+    const lista = listaAberta();
+    const daLoja = (nome) => ((s.listasIds || {}).stores || {})[nome] || null;
+    const linha = {
+      ...(campos.store !== undefined ? { loja: daLoja((s.stores || [])[campos.store]) } : {}),
+      ...(campos.who !== undefined ? { comprador: idDoMembro(campos.who) } : {}),
+      ...(campos.day !== undefined ? { planeadaPara: campos.day } : {}),
+    };
+    if (!Object.keys(linha).length) return;
+
+    // Sem lista aberta, abre-se uma: mudar o plano É começar a planear a ida.
+    if (lista) { sync.alterarListaDeCompras(lista, linha).catch(() => {}); return; }
+    sync.listaDeCompras({
+      casa: ses.casa,
+      loja: linha.loja, comprador: linha.comprador, planeadaPara: linha.planeadaPara,
+    })
+      .then((r) => { if (r && r.id) set(x => ({ shopPlan: { ...x.shopPlan, idServidor: r.id } })); })
+      .catch(() => {});
+  };
+
+  const fecharIdaAsCompras = () => {
+    const lista = listaAberta();
+    if (sync && lista) {
+      sync.alterarListaDeCompras(lista, { fechadaEm: TODAY_KEY }).catch(() => {});
+      set(x => ({ shopPlan: { ...x.shopPlan, idServidor: null } }));
+    }
   };
 
   // ── Registar uma despesa ────────────────────────────────────────────────
@@ -2714,6 +2831,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     removerTarefa, criarTarefa, editarTarefa, tarefaNoServidor, mudarRegraDaCasa, mudarListaDaCasa,
     moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope, registarDespesa,
     criarEvento, alterarEventoDaCasa, eventoNoServidor,
+    criarArtigo, marcarArtigo, artigoNoServidor, mudarPlanoDeCompras, fecharIdaAsCompras,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
     lerDoServidor,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),

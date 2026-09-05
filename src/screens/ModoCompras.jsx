@@ -20,7 +20,7 @@ import Carrinho from '../sheets/Carrinho';
 // (seta de voltar, título, loja) e o rodapé, e isto é só o conteúdo.
 export default function ModoCompras({ t, user, onClose }) {
   const { s, set, allItems, envelopes, precoDe, definirPrecoPago, registarPrecos,
-          lojaDoPlano } = useStore();
+          lojaDoPlano, marcarArtigo, registarDespesa, fecharIdaAsCompras } = useStore();
   const [step, setStep] = useState(-1);            // -1 = Todos
   const [novoArtigo, setNovoArtigo] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -59,9 +59,10 @@ export default function ModoCompras({ t, user, onClose }) {
 
   // Um artigo tem três estados nesta lista, não dois. «Sem stock» não é o
   // mesmo que «por comprar»: quem está na loja já lá foi ver.
-  const marcar = (id, estado) => set(x => ({
-    status: { ...x.status, [id]: (x.status[id] || 'open') === estado ? 'open' : estado },
-  }));
+  // ⚠ Pelo `marcarArtigo` da loja. Isto reescrevia o mapa `status` por
+  // inteiro, e dois adultos a dividir os corredores anulavam o trabalho um do
+  // outro — o esquema da coleção `artigos` já avisava.
+  const marcar = (id, estado) => marcarArtigo(id, estado);
 
   const tabs = [{ i: -1, label: 'Todos' }, ...SECTIONS.map((n, i) => ({ i, label: n.split(' ')[0] }))];
   const pctCart = merc > 0 ? (cart / merc) * 100 : 0;
@@ -237,13 +238,22 @@ export default function ModoCompras({ t, user, onClose }) {
             // e o dia. É o que faz a próxima ida saber quanto custou a banana.
             registarPrecos(doneItems, loja);
             set(x => ({
-              registered: x.registered + cart,
               acertoMovs: [],
               shopHistory: [{
                 at: Date.now(), store: (x.stores || [])[x.shopPlan.store] || null, who: x.shopPlan.who,
                 total: cart, items: doneItems.length,
               }, ...x.shopHistory].slice(0, 10),
             }));
+            // ⚠ A conta fechada é uma DESPESA, e sobe como tal. Isto somava ao
+            // `registered` local e mais nada: a compra do sábado não aparecia
+            // no orçamento do outro adulto.
+            registarDespesa({
+              envelope: 'Mercearia', valor: cart, pagador: s.shopPlan.who || user,
+              descricao: loja ? `Compras · ${loja}` : 'Compras',
+            });
+            // E a ida fecha-se no servidor: a lista deixa de ser a aberta, e a
+            // próxima nasce vazia sem ninguém apagar nada.
+            fecharIdaAsCompras();
             setCartOpen(false);
             onClose();
           }} />
