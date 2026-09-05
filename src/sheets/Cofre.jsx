@@ -48,10 +48,16 @@ export default function Cofre({ t, kid, onClose }) {
   const porPagar = pts * s.pointValue;
   const bonus = 1;
 
+  // ⚠ Os pontos pagos vão NO movimento, e não num campo à parte.
+  //
+  // Isto era `vaultAdd(...)` seguido de `paidPts[kid] += pts` — um saldo
+  // escrito neste telefone. A linha do cofre chegava ao outro adulto e o
+  // `paidPts` não: o ecrã dele continuava a dizer que havia pontos por pagar, e
+  // a semanada era paga duas vezes. Ver `provar-pontos-pagos.mjs`.
   const pagarSemanada = () => {
     if (porPagar <= 0) return;
-    vaultAdd(kid, porPagar, 'semanada', 'Semanada desta semana', `${plural(pts, 'ponto', 'pontos')}`);
-    st.set(x => ({ paidPts: { ...x.paidPts, [kid]: (x.paidPts[kid] ?? 0) + pts } }));
+    vaultAdd(kid, porPagar, 'semanada', 'Semanada desta semana',
+      `${plural(pts, 'ponto', 'pontos')}`, undefined, pts);
   };
 
   const darBonus = () => vaultAdd(kid, bonus, 'bonus', 'Bónus', 'atribuído por si');

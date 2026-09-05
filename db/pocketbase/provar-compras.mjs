@@ -181,7 +181,7 @@ await prova('desmarcar volta a `por_comprar`', async () => {
 console.log('\n── fechar a conta fecha a ida ──');
 
 await prova('⚠ a lista fechada deixa de ser a aberta', async () => {
-  await sync.alterarListaDeCompras(lista, { fechadaEm: 'd2026-09-28' });
+  await sync.alterarListaDeCompras(lista, { fechadaEm: 'd2026-09-28', total: 62.4 });
   const lida = await sync.puxarCasa();
   igual(lida.shopPlan, null, 'a lista fechada continua a ser a aberta');
   // E os artigos dela não vêm mais — a próxima ida nasce vazia sem ninguém
@@ -197,6 +197,48 @@ await prova('e a ida seguinte é uma lista nova', async () => {
   // A fechada fica: é o histórico.
   igual((await admin.collection('listas_compras').getFullList())
     .filter(l => l.casa === casa.id).length, 2);
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+console.log('\n── ⚠ e o histórico das idas é da casa, não do telefone ──');
+
+// O `shopHistory` era uma lista escrita no telefone de quem foi ao
+// supermercado, e mais nada. Quem não tinha ido via o histórico vazio — e a
+// comparação com a ida anterior, que é para o que ele serve, não funcionava
+// para metade da casa. Agora deriva-se das listas FECHADAS.
+
+await prova('a ida fechada entra no histórico, com o total e a loja', async () => {
+  const lida = await sync.puxarCasa();
+  const h = (lida.shopHistory || [])[0];
+  if (!h) throw new Error('histórico vazio: ' + JSON.stringify(lida.shopHistory));
+  igual(h.total, 62.4, 'o total da ida não voltou');
+  igual(h.who, 'Rita');
+  if (!h.store) throw new Error('a loja não voltou');
+});
+
+await prova('⚠ e o OUTRO adulto vê o mesmo histórico', async () => {
+  // É o defeito todo: o histórico existia só onde foi escrito.
+  const memoriaDele = new Map();
+  configurar({
+    url: URL,
+    storage: {
+      getItem: async (k) => (memoriaDele.has(k) ? memoriaDele.get(k) : null),
+      setItem: async (k, v) => { memoriaDele.set(k, v); },
+      removeItem: async (k) => { memoriaDele.delete(k); },
+    },
+  });
+  await auth.entrarAdulto('tomas@x.pt', 'palavra-longa-2');
+  const dele = await sync.puxarCasa();
+  igual((dele.shopHistory || []).length, 1, JSON.stringify(dele.shopHistory));
+  igual(dele.shopHistory[0].total, 62.4);
+  // E volta-se ao telemóvel da Rita, para as provas seguintes.
+  await auth.entrarAdulto('rita@x.pt', 'palavra-longa-1');
+});
+
+await prova('a lista ABERTA não entra no histórico', async () => {
+  // Só entra quem tem `fechada_em`. A ida a meio ainda não custou nada.
+  const lida = await sync.puxarCasa();
+  igual((lida.shopHistory || []).length, 1);
 });
 
 // ═════════════════════════════════════════════════════════════════════════════

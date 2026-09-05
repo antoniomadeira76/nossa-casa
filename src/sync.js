@@ -155,6 +155,33 @@ export async function puxarCasa() {
       .replace(/^(\d{4})-(\d{2})-(\d{2})$/, 'd$1-$2-$3'),
   }));
 
+  // ── Os pontos já pagos, que são uma SOMA e não um campo ───────────────────
+  //
+  // ⚠ Isto existia como `paidPts` na loja e subia à mão em `Cofre.jsx`:
+  // `paidPts[kid] = paidPts[kid] + pts`. Um saldo escrito, o INVARIANTE #2 ao
+  // contrário, e desta vez com consequência em euros.
+  //
+  // A Rita pagava a semanada ao Léo. A linha do cofre subia para o servidor e
+  // chegava aos dois telefones — o SALDO do cofre ficava certo nos dois. Mas o
+  // `paidPts` era dela: no telemóvel do Tomás continuava a zero, o ecrã dele
+  // dizia «catorze pontos por pagar», e ele pagava outra vez.
+  //
+  // O `kidPts - paidPts` é o que a app mostra por pagar, e agora as duas metades
+  // são somas sobre as mesmas linhas. Dois telefones não se podem contradizer
+  // sobre uma soma que ambos fazem.
+  const paidPts = {};
+  for (const m of casa.cofre_movimentos || []) {
+    const nome = nomeDoMembro[m.membro];
+    if (!nome) continue;
+    paidPts[nome] = (paidPts[nome] || 0) + (Number(m.pontos) || 0);
+  }
+  // Toda a criança tem entrada, mesmo sem movimento nenhum: sem ela o
+  // `kidPts - paidPts` era `n - undefined` = NaN em qualquer sítio que não se
+  // defendesse, e defender em cada leitura é o remédio, não a cura.
+  for (const m of casa.membros || []) {
+    if (m.papel === 'crianca' && paidPts[m.nome] === undefined) paidPts[m.nome] = 0;
+  }
+
   // ── O mês aberto ──────────────────────────────────────────────────────────
   //
   // ⚠ É ele que define o INTERVALO por onde tudo o resto se filtra. Sem isto os
@@ -179,6 +206,30 @@ export async function puxarCasa() {
   const registered = (casa.despesas || [])
     .filter(d => !d.anula_id && noMes(d.data || d.created))
     .reduce((n, d) => n + (Number(d.valor) || 0), 0);
+
+  // ── O acerto de contas entre os adultos ───────────────────────────────────
+  //
+  // ⚠ A mesma história do `paidPts`, no outro livro de dinheiro. O `sync.acerto`
+  // ESCREVIA na coleção `acertos` e ninguém a lia de volta — a coleção nem
+  // sequer estava na lista que o `ler.casa()` puxa. Uma escrita de sentido
+  // único, que é pior do que não sincronizar: os dois telefones julgam-se de
+  // acordo. O Tomás pagava à Rita, o telemóvel dela continuava a dizer que a
+  // dívida estava por acertar, e pagava-se outra vez.
+  //
+  // ⚠ E filtra-se pelo MÊS, como as despesas e as transferências. O `fecharMes`
+  // fazia `acertoMovs: []` — zero por cima de uma soma, o mesmo defeito do mês
+  // que reabria sozinho, e pela mesma razão: as linhas ficam no servidor. O mês
+  // novo começa sem acertos por ser OUTRA soma, não por alguém a ter apagado.
+  const acertoMovs = (casa.acertos || [])
+    .filter(a => noMes(a.data || a.created))
+    .map(a => ({
+      id: a.id,
+      de: nomeDoMembro[a.de_membro] || a.de_membro,
+      para: nomeDoMembro[a.para_membro] || a.para_membro,
+      valor: Number(a.valor) || 0,
+      day: (a.data || a.created || '').slice(0, 10)
+        .replace(/^(\d{4})-(\d{2})-(\d{2})$/, 'd$1-$2-$3'),
+    }));
 
   const aCasa = (casa.casas || [])[0] || null;
 
@@ -347,6 +398,35 @@ export async function puxarCasa() {
     if (naLoja && naLoja !== 'open') status[a.id] = naLoja;
   }
 
+  // ── As últimas idas às compras ────────────────────────────────────────────
+  //
+  // ⚠ O `shopHistory` era uma lista escrita no telefone de quem foi ao
+  // supermercado, e mais nada. Quem não tinha ido via o histórico vazio — e a
+  // comparação com a ida anterior, que é para o que ele serve, não funcionava
+  // para metade da casa.
+  //
+  // Agora deriva-se das listas FECHADAS, que são as mesmas para os dois. Dez, a
+  // contar da mais recente, como o ecrã sempre mostrou.
+  const artigosPorLista = {};
+  for (const a of casa.artigos || []) {
+    if (a.estado === 'confirmado') {
+      artigosPorLista[a.lista] = (artigosPorLista[a.lista] || 0) + 1;
+    }
+  }
+  const shopHistory = (casa.listas_compras || [])
+    .filter(l => l.fechada_em)
+    .sort((a, b) => String(b.fechada_em).localeCompare(String(a.fechada_em)))
+    .slice(0, 10)
+    .map(l => ({
+      // O ecrã ordena e data por `at`. É a data do fecho, não a hora a que este
+      // telemóvel leu — duas leituras não podem dar histórias diferentes.
+      at: Date.parse(l.fechada_em) || 0,
+      store: nomeDaLoja[l.loja] || null,
+      who: nomeDoMembro[l.comprador] || null,
+      total: Number(l.total) || 0,
+      items: artigosPorLista[l.id] || 0,
+    }));
+
   const shopPlan = aberta ? {
     idServidor: aberta.id,
     // O ecrã guarda o ÍNDICE da loja na lista `stores`, não o nome. Traduz-se
@@ -404,6 +484,8 @@ export async function puxarCasa() {
 
   return {
     vaultMoves,
+    paidPts,
+    acertoMovs,
     registered,
     newEquip,
     preferencias,
@@ -416,6 +498,7 @@ export async function puxarCasa() {
     newItems,
     status,
     shopPlan,
+    shopHistory,
     added,
     newTasks,
     urg,
@@ -445,10 +528,13 @@ export async function puxarCasa() {
 // caíam. Só a prova de dois telemóveis apanhou. Antes de mexer aqui,
 // confirme os campos contra db/pocketbase/criar-colecoes.mjs.
 
-export async function movimentoDeCofre({ casa, membro, tipo, valor, motivo, data, autorizadoPor }) {
+export async function movimentoDeCofre({ casa, membro, tipo, valor, motivo, data, autorizadoPor, pontos }) {
   if (!ligado()) return { enviadas: 0, pendentes: 0 };
   return servidor.escrever.criar('cofre_movimentos', {
     casa, membro, tipo, valor, motivo, data, autorizado_por: autorizadoPor,
+    // Quantos pontos esta semanada pagou. Zero num bónus ou numa retirada,
+    // que não pagam pontos nenhuns.
+    pontos: Number(pontos) || 0,
   });
 }
 
@@ -801,6 +887,8 @@ export async function alterarListaDeCompras(idNoServidor, campos) {
   if ('planeadaPara' in campos) linha.planeada_para = campos.planeadaPara ? isoDeChave(campos.planeadaPara) : null;
   // Fechar a conta é pôr a data: a lista deixa de ser a aberta.
   if ('fechadaEm' in campos) linha.fechada_em = campos.fechadaEm ? isoDeChave(campos.fechadaEm) : null;
+  // E quanto custou, que é o que faz o histórico chegar ao outro telemóvel.
+  if ('total' in campos) linha.total = Number(campos.total) || 0;
   return servidor.pb.collection('listas_compras').update(idNoServidor, linha);
 }
 

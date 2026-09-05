@@ -468,6 +468,11 @@ const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
   // se calcula. Sem as ler, o `envMove` da loja ficava a ser um saldo escrito —
   // que é o INVARIANTE #2 ao contrário.
   'transferencias',
+  // ⚠ Os ACERTOS, pela mesma razão — e faltavam aqui, o que fazia deles uma
+  // escrita de sentido único. O `sync.acerto` mandava a linha, ninguém a lia de
+  // volta, e o telemóvel do outro adulto continuava a dizer que os 86,50 €
+  // estavam por acertar. Pagava-se duas vezes, como a semanada.
+  'acertos',
   // As três listas da casa. Têm a mesma forma — casa e nome — e por isso levam
   // uma tradução só, no `sync`.
   'especialidades', 'categorias_equip', 'lojas',

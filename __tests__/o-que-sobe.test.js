@@ -97,6 +97,11 @@ describe('o retrato de hoje', () => {
     // ⚠ E o número escreve-se DEPOIS de o medir. Pus 34 à primeira, de cabeça,
     // quando eram 32, e a prova corrigiu-me — coincidência ter voltado a 34
     // com os equipamentos, e não desculpa para o adivinhar da próxima vez.
-    expect(sobem).toBeGreaterThanOrEqual(39);
+    //
+    // ⚠ 05/09/2026, mais tarde: 41. Subiram o `paidPts`, o `acertoMovs` e o
+    // `shopHistory` — os três estavam classificados como derivados de linhas que
+    // sobem, e nenhum dos três era mesmo derivado. E o total desceu de 64 para
+    // 62 com a saída do `extraLog` e do `importDone`, que ninguém lia.
+    expect(sobem).toBeGreaterThanOrEqual(41);
   });
 });

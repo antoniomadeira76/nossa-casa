@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro, LARGURA_APP } from '../theme';
-import { EUR } from '../format';
+import { EUR, MONTHS } from '../format';
 import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
@@ -28,7 +28,8 @@ export default function Gestao({ t, user, onClose }) {
   const { s, set, isAdmin, budget, spent, envelopes, pinError, setPin, canChangeRole, setRole,
           kidPts, pontosNasTarefas, mudarRegraDaCasa, mudarListaDaCasa,
           criarEnvelope, alterarEnvelope, apagarEnvelope, membros: MEMBERS, nomeDaCasa, podeGerirCasa,
-          renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro } = useStore();
+          renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
+          abrirMes, fecharMes } = useStore();
   const [tab, setTab] = useState('orcamento');
   const [sheetOpen, setSheetOpen] = useState(null);
   const [modal, setModal] = useState(null);
@@ -874,11 +875,17 @@ export default function Gestao({ t, user, onClose }) {
                     </Text>
                   </View>
                 </Pressable>
+                {/* ⚠ Pelo `abrirMes` da loja, como o Dinheiro. Isto escrevia
+                    `monthZero: false, registered: 0` e mais nada: a Gestão era
+                    uma SEGUNDA porta para a mesma acção, e só uma delas dava
+                    para o servidor. Abrir o mês por aqui não criava linha
+                    nenhuma em `meses`, e o zero durava até à leitura seguinte —
+                    o mês reabria com o gasto do anterior. */}
                 <Pressable accessibilityRole="button" onPress={() => {
-                  set(s => ({
-                    monthZero: false,
-                    registered: 0,
-                  }));
+                  abrirMes({
+                    nome: MONTHS[(MONTHS.indexOf(s.monthName) + 1) % 12],
+                    limites: s.monthLimits || {},
+                  });
                   setModal(null);
                 }} style={{ flex: 1 }}>
                   <View style={{ padding: S.md, borderRadius: R.row, backgroundColor: t.accent }}>
@@ -914,11 +921,9 @@ export default function Gestao({ t, user, onClose }) {
                     </Text>
                   </View>
                 </Pressable>
+                {/* Pelo `fecharMes` da loja, pela mesma razão. */}
                 <Pressable accessibilityRole="button" onPress={() => {
-                  set(s => ({
-                    monthZero: true,
-                    registered: 0,
-                  }));
+                  fecharMes();
                   setModal(null);
                 }} style={{ flex: 1 }}>
                   <View style={{ padding: S.md, borderRadius: R.row, backgroundColor: t.accent }}>

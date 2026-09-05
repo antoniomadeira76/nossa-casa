@@ -140,7 +140,7 @@ export const resumoPin = (nome, pin) => {
 
 // Mapas cuja CHAVE é o nome do membro.
 export const MAPAS_POR_MEMBRO = [
-  'membros', 'roles', 'pins', 'paidPts', 'schemeByUser', 'themeByUser', 'importDone',
+  'membros', 'roles', 'pins', 'paidPts', 'schemeByUser', 'themeByUser',
 ];
 
 // Campos cujo VALOR é o nome de um membro. `lista` percorre um array, `mapa`
@@ -240,11 +240,23 @@ const BACKUP = `${KEY}.antes-da-migracao`;
 const BACKUPS_ANTIGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(n => `${KEY}.antes-de-v${n}`);
 
 // Só isto é gravado. O resto — separador ativo, folha aberta, rascunhos — é UI.
+//
+// ⚠ Uma chave que ninguém LÊ é gravada na mesma, e engana duas vezes: aparece
+// no ficheiro como se guardasse alguma coisa, e no `o-que-sobe.js` com uma
+// razão escrita para não subir. Saíram duas em 05/09/2026 — o `extraLog` e o
+// `importDone` — ambas herdadas do protótipo, ambas com o trabalho já feito por
+// outra chave (`vaultMoves` e `googleCalendarImported`).
+//
+// Tirar uma daqui é seguro e não pede migração: o carregamento só copia as
+// chaves que estão nesta lista, e a gravação só escreve estas. O que ficou no
+// disco fica lá, ignorado.
+//
+// O guarda é `__tests__/nenhuma-chave-sem-quem-a-leia.test.js`.
 const DATA_KEYS = [
-  'done', 'pending', 'status', 'registered', 'acertoMovs', 'vaultMoves', 'paidPts', 'extraLog',
+  'done', 'pending', 'status', 'registered', 'acertoMovs', 'vaultMoves', 'paidPts',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
   'newItems', 'itemGone', 'feitas', 'listasIds', 'envelopesDaCasa', 'mes',
-  'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'importDone', 'notif',
+  'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'pointValue', 'payDay', 'splitHalf',
   'rendimento', 'stores', 'shopPlan', 'shopHistory', 'precos', 'precoPago', 'health', 'specialities', 'equipCats', 'registo',
@@ -516,7 +528,6 @@ export const DEMO = () => ({
   pending: {}, status: {}, registered: 0, acertoMovs: [],
   vaultMoves: [],
   paidPts: Object.fromEntries(Object.keys(MEMBERS).filter(n => MEMBERS[n].kid).map(n => [n, 0])),
-  extraLog: {},
   envMove: {}, added: [], newTasks: [], taskEdits: {}, taskGone: {}, taskOrder: {},
   // `nome → id` das três listas da casa, por lista. É o que permite renomear e
   // apagar do lado do servidor sem mudar a forma que os ecrãs leem.
@@ -532,7 +543,7 @@ export const DEMO = () => ({
   feitas: {},
   pontosDeTarefasApagadas: [],
   newItems: [], itemGone: {}, newEquip: [], equipGone: {}, equipEdits: {},
-  schemeByUser: {}, themeByUser: {}, importDone: {},
+  schemeByUser: {}, themeByUser: {},
   notif: { digest: true, hour: '20:00', lead: 1 },
   rotate: {},
   urg: TASKS.reduce((a, t) => (a[t.id] = t.urg ?? 1, a), {}),
@@ -726,7 +737,25 @@ export function StoreProvider({ children }) {
       // Os movimentos de cofre do servidor substituem os locais: são a mesma
       // coisa vista de outro sítio, e o servidor tem os dos dois telemóveis.
       // Um saldo nunca é escrito — continua a ser a soma.
-      if (casa.vaultMoves.length) set({ vaultMoves: casa.vaultMoves });
+      //
+      // ⚠ E o `paidPts` vem com eles, porque é a mesma soma sobre as mesmas
+      // linhas. Era um campo que cada telefone escrevia sozinho: a Rita pagava
+      // a semanada, o Tomás continuava a ver os pontos por pagar, e pagava
+      // outra vez. SUBSTITUI-se, nunca se funde — fundir duas versões de uma
+      // soma é somá-la duas vezes.
+      if (casa.vaultMoves.length) {
+        set({ vaultMoves: casa.vaultMoves, paidPts: casa.paidPts || {} });
+      }
+
+      // ⚠ O acerto de contas entre os adultos, pela mesma razão e com a mesma
+      // regra: SUBSTITUI, nunca funde. Era uma escrita de sentido único — subia
+      // para a coleção `acertos` e nunca voltava —, e por isso o telemóvel de
+      // quem recebeu continuava a mostrar a dívida por pagar.
+      //
+      // Aqui substitui-se mesmo quando vem VAZIO, ao contrário do cofre: uma
+      // lista vazia é a resposta certa depois de o mês fechar, e ficar com os
+      // movimentos locais era voltar a ter uma dívida já acertada.
+      if (Array.isArray(casa.acertoMovs)) set({ acertoMovs: casa.acertoMovs });
 
       // ── A agenda e as tarefas do servidor ─────────────────────────────────
       //
@@ -808,6 +837,12 @@ export function StoreProvider({ children }) {
           shopPlan: { ...x.shopPlan, ...casa.shopPlan },
         }));
       }
+
+      // ⚠ O histórico das idas vem à parte da lista ABERTA, e é de propósito:
+      // entre duas idas não há lista aberta nenhuma — `casa.shopPlan` é nulo — e
+      // é exatamente aí que o ecrã das compras mostra o histórico. Pendurá-lo na
+      // condição de cima deixava-o vazio no único momento em que se lê.
+      if ((casa.shopHistory || []).length) set({ shopHistory: casa.shopHistory });
 
       if ((casa.added || []).length) set({ added: casa.added });
       if ((casa.newTasks || []).length) {
@@ -1306,12 +1341,22 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // dariam 5. Assim dão 10. A escrita passa por uma fila, portanto sem rede
   // fica pendente em vez de se perder, e a chave impede que reenviar a fila
   // pague a semanada duas vezes.
-  const vaultAdd = (kid, delta, kind, label, sub, day = TODAY_KEY) => {
+  // ⚠ O `pontos` é quantos pontos ESTE movimento pagou, e não é decoração: é
+  // dele que sai o `paidPts` dos dois telefones. Ver o comentário do campo em
+  // `criar-colecoes.mjs`. Um bónus ou uma retirada passam zero.
+  const vaultAdd = (kid, delta, kind, label, sub, day = TODAY_KEY, pontos = 0) => {
     set(x => ({
       vaultMoves: [...(x.vaultMoves || []), {
         id: 'vm-' + Date.now() + '-' + Math.round(Math.random() * 1e6),
-        kid, delta, kind, label, sub, day,
+        kid, delta, kind, label, sub, day, pontos,
       }],
+      // Sem servidor o `paidPts` continua a somar-se aqui, porque não há
+      // segunda leitura que o refaça. Com servidor NÃO se escreve: a próxima
+      // `puxarCasa` traz a soma, e escrevê-lo aqui era voltar a ter duas
+      // versões do mesmo número — a local e a do servidor — a divergir.
+      ...(sync || !pontos ? {} : {
+        paidPts: { ...x.paidPts, [kid]: (x.paidPts[kid] ?? 0) + pontos },
+      }),
     }));
     // A fila guarda a escrita; falhar aqui não pode estragar o ecrã, que já
     // tem o movimento. Sem servidor, `sync` é null e isto não faz nada.
@@ -1320,7 +1365,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       if (ses) sync.movimentoDeCofre({
         casa: ses.casa, membro: idDoMembro(kid), tipo: kind,
         valor: delta, motivo: label, data: day.replace(/^d/, ''),
-        autorizadoPor: ses.membro,
+        autorizadoPor: ses.membro, pontos,
       }).catch(() => {});
     }
   };
@@ -1538,10 +1583,12 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       .catch(() => {});
   };
 
-  const fecharIdaAsCompras = () => {
+  // O `total` fecha a ida com o que ela custou. Sem ele, o histórico das
+  // compras vivia só no telefone de quem foi ao supermercado.
+  const fecharIdaAsCompras = (total = 0) => {
     const lista = listaAberta();
     if (sync && lista) {
-      sync.alterarListaDeCompras(lista, { fechadaEm: TODAY_KEY }).catch(() => {});
+      sync.alterarListaDeCompras(lista, { fechadaEm: TODAY_KEY, total }).catch(() => {});
       set(x => ({ shopPlan: { ...x.shopPlan, idServidor: null } }));
     }
   };
@@ -1698,9 +1745,17 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
 
   const fecharMes = () => {
     set(x => ({
-      acertoMovs: [],
-      paidPts: Object.fromEntries(criancas.map(n => [n, 0])),
-      ...(sync ? {} : { registered: 0, envMove: {} }),
+      // ⚠ Com servidor NADA se zera aqui, e é a lição do mês que reabria
+      // sozinho: `acertoMovs` e `paidPts` são somas de linhas que ficam no
+      // servidor, e escrever zero por cima delas dura até à leitura seguinte.
+      // O mês novo começa limpo por ser OUTRA soma — os acertos filtram-se pelo
+      // mês, e os pontos pagos acompanham as tarefas que os ganharam.
+      ...(sync ? {} : {
+        acertoMovs: [],
+        paidPts: Object.fromEntries(criancas.map(n => [n, 0])),
+        registered: 0,
+        envMove: {},
+      }),
     }));
     const id = mesNoServidor();
     if (sync && id) {

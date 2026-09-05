@@ -29,3 +29,19 @@ pb_data*/
 
 # Binário do PocketBase: descarregado por quem corre o servidor, não versionado.
 /pocketbase.exe
+
+# ⚠ As migrações que o PocketBase escreve SOZINHO ao ver o esquema mudar.
+#
+# O `criar-colecoes.mjs` apaga e recria as coleções a cada execução, e o
+# servidor regista cada apagar e cada criar num ficheiro. Três execuções hoje
+# deram cerca de 190 ficheiros — `created_x`, `deleted_x`, `updated_x`, o mesmo
+# `x` três vezes — que não são história nenhuma: são o mesmo esquema a ir e a
+# vir. E enterravam as alterações a sério no `git status`.
+#
+# A fonte do esquema é o `criar-colecoes.mjs`, não estes ficheiros. O que fica
+# versionado são os `collections_snapshot`, que são o retrato completo, e as
+# poucas migrações escritas à mão — essas já estão seguidas pelo git, e o
+# `.gitignore` não mexe no que já está seguido.
+db/pocketbase/pb_migrations/*_created_*.js
+db/pocketbase/pb_migrations/*_deleted_*.js
+db/pocketbase/pb_migrations/*_updated_*.js

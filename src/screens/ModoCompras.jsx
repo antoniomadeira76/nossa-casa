@@ -237,8 +237,11 @@ export default function ModoCompras({ t, user, onClose }) {
             // Os preços escritos no corredor viram histórico aqui, com a loja
             // e o dia. É o que faz a próxima ida saber quanto custou a banana.
             registarPrecos(doneItems, loja);
+            // ⚠ Aqui havia também `acertoMovs: []`, e não tinha nada que ver
+            // com fechar uma conta de compras: apagava os pagamentos do acerto
+            // entre os dois adultos. Quem tivesse acertado contas nessa semana
+            // via a dívida VOLTAR por ter ido ao supermercado.
             set(x => ({
-              acertoMovs: [],
               shopHistory: [{
                 at: Date.now(), store: (x.stores || [])[x.shopPlan.store] || null, who: x.shopPlan.who,
                 total: cart, items: doneItems.length,
@@ -253,7 +256,7 @@ export default function ModoCompras({ t, user, onClose }) {
             });
             // E a ida fecha-se no servidor: a lista deixa de ser a aberta, e a
             // próxima nasce vazia sem ninguém apagar nada.
-            fecharIdaAsCompras();
+            fecharIdaAsCompras(cart);
             setCartOpen(false);
             onClose();
           }} />

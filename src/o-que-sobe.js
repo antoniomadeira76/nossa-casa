@@ -40,7 +40,7 @@ export const O_QUE_SOBE = {
   taskOrder: ['local', 'A ordem à mão dentro do grupo de urgência. Ainda não tem campo no servidor — está por decidir se a ordem é da casa ou de quem olha para a lista.'],
   pending: ['local', 'Uma criança marcou e falta um adulto confirmar. No servidor isso é a AUSÊNCIA de `confirmada_em` na linha de `tarefas_feitas`; aqui é o passo intermédio da interface.'],
   rotate: ['local', 'Alternar uma tarefa entre as crianças. Sem campo no servidor — a rotação é semanal e derivável, e ainda não se decidiu se vale uma coluna.'],
-  recurringReset: ['local', 'Quando uma tarefa recorrente foi reposta hoje. Deriva-se das linhas de `tarefas_feitas`; guardá-lo é uma otimização deste dispositivo.'],
+  recurringReset: ['local', 'Em que DIA uma tarefa recorrente foi reposta neste dispositivo. O que a casa partilha é a linha de `tarefas_feitas` do dia; isto é o relógio local a saber que a de ontem já não conta para hoje.'],
   pontosDeTarefasApagadas: ['local', 'Pontos ganhos numa tarefa que foi apagada. O histórico verdadeiro são as linhas de `tarefas_feitas`, que ficam.'],
 
   // ── Agenda ────────────────────────────────────────────────────────────────
@@ -54,20 +54,19 @@ export const O_QUE_SOBE = {
   envMove: ['linhas', 'A SOMA das `transferencias` deste mês. Era um saldo escrito, e dois telefones a mover dinheiro anulavam-se — o INVARIANTE #2 ao contrário.'],
   envelopesDaCasa: ['linhas', 'A coleção `envelopes`. Eram sementes no código, e a lista da casa não existia em lado nenhum.'],
   registered: ['linhas', 'A soma das `despesas` não anuladas DESTE mês. Fechar o mês escrevia zero por cima dela, e as linhas ficavam: o mês fechado reabria sozinho.'],
-  acertoMovs: ['linhas', 'A coleção `acertos`, aditiva. O acerto entre os dois adultos — dinheiro entre duas pessoas, o sítio onde discordar dói mais.', 'acerto'],
-  paidPts: ['local', 'Quantos pontos de cada criança já foram pagos. Deriva-se dos `cofre_movimentos` do tipo semanada; guardá-lo aqui é o resumo, não a verdade.'],
+  acertoMovs: ['linhas', 'A coleção `acertos`, aditiva e filtrada pelo mês aberto. Subia e nunca voltava — a coleção nem estava na lista que o `ler.casa()` puxa —, por isso quem recebia continuava a ver a dívida por pagar.', 'acerto'],
+  paidPts: ['linhas', 'A SOMA do campo `pontos` dos `cofre_movimentos` da criança. Era um campo escrito no telefone de quem pagava: a linha do cofre chegava ao outro adulto e este número não, e a semanada era paga duas vezes.', 'movimentoDeCofre'],
   mes: ['linhas', 'A linha de `meses` que está ABERTA — a que não tem `fechado_em`. É ela que define o intervalo por onde os totais se filtram.', 'abrirMes'],
   monthLimits: ['campo', 'O `limites` da linha do mês aberto, um objeto `envelope → limite` guardado como JSON. Muda com o `mudarLimiteDoMes`.', 'alterarMes'],
-  monthZero: ['local', 'Se o mês foi aberto e ainda nada se gastou. Deriva-se de o `registered` do mês aberto ser zero — é um atalho do ecrã, não um facto guardado.'],
+  monthZero: ['local', 'Marca uma casa que ainda não abriu mês nenhum, e nessas o gasto dos envelopes-semente não conta. Com servidor, quem responde a isso é o `mes` ser nulo; isto fica para a app correr sem servidor, como sempre correu.'],
   monthName: ['local', 'O nome do mês a mostrar. É uma etiqueta do ecrã, calculada da data.'],
-  extraLog: ['local', 'Registo de extras dados a uma criança. Deriva-se dos `cofre_movimentos` do tipo bónus.'],
 
   // ── Compras ───────────────────────────────────────────────────────────────
   newItems: ['linhas', 'A coleção `artigos`, ligada à `listas_compras` da ida às compras.'],
   status: ['linhas', 'O `estado` de cada artigo vive NA LINHA — por comprar, confirmado, sem stock. Era um mapa que cada telefone reescrevia, e o esquema já avisava: «se fosse uma lista de identificadores confirmados, dois telefones na mesma loja anulavam-se».'],
   shopPlan: ['campo', 'A `listas_compras` aberta: a loja, quem vai, e para quando.'],
   itemGone: ['local', 'Lápides de artigos-semente. Um artigo do servidor apaga-se lá.'],
-  shopHistory: ['local', 'As últimas dez idas às compras. Deriva-se das `listas_compras` fechadas; é um resumo para o ecrã.'],
+  shopHistory: ['linhas', 'As últimas dez `listas_compras` FECHADAS, com o `total` que a ida custou. Era uma lista escrita no telefone de quem foi ao supermercado: quem não tinha ido via o histórico vazio.', 'shopHistory'],
   precos: ['local', 'O histórico de preços por artigo e loja. Não tem coleção no servidor: são observações deste dispositivo, e a comparação entre lojas ainda é local. É a lacuna maior que resta nas compras.'],
   precoPago: ['local', 'O que se escreveu no corredor NESTA ida. É um rascunho: vira observações ao fechar a conta, e limpa-se.'],
 
@@ -105,7 +104,6 @@ export const O_QUE_SOBE = {
   themeByUser: ['campo', 'O `aspeto` da mesma linha — claro, escuro ou sistema. Os valores são os mesmos dos dois lados, e por isso não há tabela de tradução.', 'preferenciasDoMembro'],
   notif: ['campo', 'Os avisos, na mesma linha: `resumo_ativo`, `resumo_hora` e `aviso_prazo_dias`. Cada um escolhe os seus, e ninguém escolhe pelos outros.', 'preferenciasDoMembro'],
   clearedSeeds: ['local', 'Se as sementes de demonstração já saíram deste dispositivo. É um facto sobre este telefone, não sobre a casa.'],
-  importDone: ['local', 'Se a importação inicial já correu neste dispositivo.'],
   deDemonstracao: ['local', 'Se a app está a correr com a família de demonstração. É o oposto de ter servidor — por definição não sobe.'],
   registo: ['local', 'O registo de alterações da casa. Cada dispositivo escreve o seu; juntá-los precisa de uma coleção e de decidir o que fazer com as linhas repetidas.'],
 };

@@ -29,7 +29,6 @@ const cheio = () => ({
   paidPts: { 'Léo': 7 },
   schemeByUser: { 'Léo': 2 },
   themeByUser: { 'Léo': 'escuro' },
-  importDone: { 'Léo': '2026-08-01' },
   newTasks: [{ id: 't1', who: 'Léo', title: 'Levar o Léo à escola' }],
   taskEdits: { lixo: { who: 'Léo' } },
   added: [{ id: 'e1', owner: 'Léo', responsaveis: ['Léo', 'Rita'], title: 'Consulta do Léo' }],
@@ -80,7 +79,12 @@ describe('Renomear leva tudo atrás', () => {
   // vazio passaria e eu ficava convencido de que estava provado.
   test('e a sonda vê mesmo, antes de renomear', () => {
     const sobrou = ondeAparece(cheio(), 'Léo').filter(c => !TEXTO_LIVRE.includes(c));
-    expect(sobrou.length).toBeGreaterThan(15);
+    // ⚠ O número é um CHÃO — «a sonda vê muitos sítios» —, não uma fotografia
+    // do estado de hoje. Desceu de 16 para 15 quando o `importDone` saiu das
+    // `DATA_KEYS` por ninguém o ler, e isso é uma chave a menos, não uma sonda
+    // pior. Baixar este limite só se justifica quando um sítio DEIXA de existir;
+    // se descer sem que nada tenha saído, é a sonda que cegou.
+    expect(sobrou.length).toBeGreaterThanOrEqual(15);
   });
 
   test('o nome novo chegou a todos os sítios que a tabela diz', () => {
@@ -90,7 +94,8 @@ describe('Renomear leva tudo atrás', () => {
     expect(d.paidPts['Leonardo']).toBe(7);
     expect(d.schemeByUser['Leonardo']).toBe(2);
     expect(d.themeByUser['Leonardo']).toBe('escuro');
-    expect(d.importDone['Leonardo']).toBe('2026-08-01');
+    // O `importDone` saiu daqui em 05/09/2026: estava nas `DATA_KEYS`, nascia
+    // no `DEMO()`, e ninguém o lia. Ver `nenhuma-chave-sem-quem-a-leia`.
     expect(d.newTasks[0].who).toBe('Leonardo');
     expect(d.taskEdits.lixo.who).toBe('Leonardo');
     expect(d.added[0].owner).toBe('Leonardo');

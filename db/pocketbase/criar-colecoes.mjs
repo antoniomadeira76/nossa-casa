@@ -486,6 +486,23 @@ await criar({
     rel('membro', ids.membros, { required: true }),
     sel('tipo', ['semanada', 'bonus', 'retirada'], { required: true }),
     num('valor', { required: true }),
+    // ⚠ Os PONTOS que este movimento pagou — e é por isto que o `paidPts`
+    // deixa de ser um campo escrito.
+    //
+    // «Quantos pontos de cada criança já foram pagos» era uma soma guardada no
+    // telefone de quem pagou, e mais nada. A Rita pagava a semanada ao Léo: a
+    // linha do cofre subia, o `paidPts` dela subia, e o telemóvel do Tomás
+    // continuava a dizer que o Léo tinha catorze pontos por pagar. Ele pagava
+    // outra vez. Dinheiro a sério, duas vezes, sem erro nenhum no ecrã.
+    //
+    // Agora os pontos pagos são a SOMA deste campo sobre os movimentos da
+    // criança — aditiva, como o INVARIANTE #2 manda, e igual nos dois
+    // telefones porque é a mesma soma sobre as mesmas linhas.
+    //
+    // E guarda-se o número, não se divide o valor pelo `valor_ponto`: o valor
+    // do ponto muda, e catorze pontos pagos a 0,10 € continuam a ser catorze
+    // pontos depois de a casa o mudar para 0,15 €.
+    num('pontos'),
     txt('motivo'),
     rel('autorizado_por', ids.membros),
     data('data'),
@@ -560,6 +577,18 @@ await criar({
     rel('casa', ids.casas, { required: true, cascadeDelete: true }),
     rel('loja', ids.lojas), rel('comprador', ids.membros),
     data('planeada_para'), data('fechada_em'),
+    // ⚠ O que a ida custou, escrito ao fechar a conta — e é o que faz o
+    // histórico das compras existir fora do telefone de quem foi.
+    //
+    // As últimas dez idas eram o `shopHistory`, uma lista guardada só aqui.
+    // Quem não tinha ido às compras via o histórico vazio, e a comparação com a
+    // ida anterior — que é para o que ele serve — não funcionava para metade da
+    // casa.
+    //
+    // A despesa também sobe, e é ela que conta para o orçamento. Isto é outra
+    // coisa: quanto custou ESTA ida. Derivá-lo da despesa obrigava a caçá-la
+    // pelo texto da descrição, que é uma ligação por acaso e não por desenho.
+    num('total', { min: 0 }),
   ],
   // A lista é de todos: as crianças também pedem artigos.
   listRule: DA_CASA, viewRule: DA_CASA,
@@ -907,8 +936,22 @@ await vista('v_acerto_saldo',
   "SELECT m.id AS id, m.id AS membro, m.casa AS casa, (COALESCE((SELECT SUM(d.valor / 2) FROM despesas d WHERE d.pagador = m.id AND d.divide_meias = TRUE AND (d.anula_id IS NULL OR d.anula_id = '')), 0) + COALESCE((SELECT SUM(a.valor) FROM acertos a WHERE a.de_membro = m.id), 0) - COALESCE((SELECT SUM(a2.valor) FROM acertos a2 WHERE a2.para_membro = m.id), 0)) AS saldo FROM membros m WHERE m.papel != 'crianca'",
   `${DA_CASA} && ${ADULTO}`);
 
-// Pontos confirmados que ainda não entraram numa semanada posterior.
+// Pontos ganhos menos pontos pagos. Duas somas, e é o que a app mostra.
+//
+// ⚠ Isto era uma HEURÍSTICA por datas: «pontos confirmados que ainda não
+// entraram numa semanada POSTERIOR» — `cm.data > tf.confirmada_em`. Existia
+// antes de os movimentos guardarem quantos pontos pagavam, e adivinhava.
+//
+// Adivinhava mal em três casos, todos normais numa casa: uma tarefa confirmada
+// no MESMO dia da semanada não contava (a data não é maior), uma semanada
+// lançada com data de ontem apagava pontos que ainda não tinha pago, e pagar
+// só metade dos pontos zerava-os todos.
+//
+// E era a segunda definição do mesmo número: o cliente calcula
+// `kidPts - paidPts`, e as duas podiam responder coisas diferentes sobre a
+// mesma criança sem que nada avisasse. Passa a ser a mesma subtração de somas
+// que a app faz, sobre as mesmas linhas.
 await vista('v_pontos_por_pagar',
-  "SELECT m.id AS id, m.id AS membro, m.casa AS casa, COALESCE((SELECT SUM(t.pontos) FROM tarefas_feitas tf JOIN tarefas t ON t.id = tf.tarefa WHERE tf.marcada_por = m.id AND tf.confirmada_em IS NOT NULL AND NOT EXISTS (SELECT 1 FROM cofre_movimentos cm WHERE cm.membro = m.id AND cm.tipo = 'semanada' AND cm.data > tf.confirmada_em)), 0) AS pontos FROM membros m WHERE m.papel = 'crianca'",
+  "SELECT m.id AS id, m.id AS membro, m.casa AS casa, (COALESCE((SELECT SUM(t.pontos) FROM tarefas_feitas tf JOIN tarefas t ON t.id = tf.tarefa WHERE tf.marcada_por = m.id AND tf.confirmada_em IS NOT NULL), 0) - COALESCE((SELECT SUM(cm.pontos) FROM cofre_movimentos cm WHERE cm.membro = m.id), 0)) AS pontos FROM membros m WHERE m.papel = 'crianca'",
   `${DA_CASA} && (${ADULTO} || membro = @request.auth.id)`);
 console.log('vistas:', ['v_cofre_saldo','v_envelope_gasto','v_acerto_saldo','v_pontos_por_pagar'].join(', '));
