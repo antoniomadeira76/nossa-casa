@@ -96,7 +96,7 @@ const TABS = [
 function Shell() {
   const { s, set, importGoogleEvents, idsGoogleDaCasa, remaining, allEvents, allTasks,
           canSeeHealth, healthOf, docsOf, allEquip, membros: MEMBERS, nomeDaCasa,
-          lerDoServidor, removerEvento, eventosQueSairamDaGoogle } = useStore();
+          lerDoServidor, removerEvento, eventosQueSairamDaGoogle, isAdmin } = useStore();
   const sysDark = useColorScheme() === 'dark';
   const [user, setUser] = useState(null);      // nome do membro ligado
   const [tab, setTab] = useState('inicio');
@@ -449,7 +449,8 @@ function Shell() {
     doc: {
       icon: 'fileText', titulo: 'Documentação', fechar: () => setDoc(false),
       sub: () => `Versão ${APP_VERSION}`,
-      render: () => <Documentacao t={t} onClose={() => setDoc(false)} />,
+      render: () => <Documentacao t={t} onClose={() => setDoc(false)}
+        onIr={irDoRegisto} podeGerir={isAdmin(user)} />,
     },
     loja: {
       icon: 'fileDone', titulo: 'Modo Compras', fechar: () => setLoja(false),
@@ -473,6 +474,22 @@ function Shell() {
   const fecharVistas = () => {
     setFicha(null); setSaude(false); setEquip(false);
     setGestao(false); setDoc(false); setLoja(false);
+  };
+
+  // Onde uma linha do registo da casa leva. O destino vem da ÁREA dela — ver o
+  // `DESTINO` em `Documentacao.jsx` —, e é sempre um ECRÃ: metade das entradas
+  // fala de coisas que já não existem, e nenhuma tem um registo para onde
+  // apontar.
+  //
+  // ⚠ Fecha a Documentação primeiro, e é o mesmo `fecharVistas` que o rodapé
+  // usa. Sem ele o separador acendia-se e o ecrã continuava a ser este — o
+  // defeito que o rodapé já teve, e que está escrito aqui em cima.
+  const irDoRegisto = (destino) => {
+    fecharVistas();
+    if (destino === 'saude') { setSaude(true); return; }
+    if (destino === 'equip') { setEquip(true); return; }
+    if (destino === 'gestao') { setGestao(true); return; }
+    setTab(destino);
   };
 
   const vistaAberta = ficha ? 'ficha' : saude ? 'saude' : equip ? 'equip'

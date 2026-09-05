@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Card, SectionTitle, Pill, Segmented, Empty, Pager, usePaged } from '../ui';
+import { Card, SectionTitle, Pill, Segmented, Empty, Pager, usePaged, Choice, Label } from '../ui';
 import { plural, pad2 } from '../format';
 import Icon from '../Icon';
 import { REGISTO_APP, TIPOS, AREAS, AMBITO } from '../registo-app';
@@ -110,9 +110,67 @@ const AreaAberta = ({ t, g, corDo }) => {
   );
 };
 
-export default function Documentacao({ t }) {
+// Os dois filtros do registo: por quem fez, e por onde aconteceu.
+//
+// ⚠ Só aparecem quando há por onde escolher. Numa casa de um membro, uma fila
+// de pastilhas com uma opção não é um filtro — é ruído a ocupar o sítio do que
+// se veio ler.
+//
+// ⚠ E está num componente à parte por uma razão medida: dentro do ecrã, o
+// bloco afastava a protecção de vazio do título da secção em mais de vinte e
+// seis linhas, e a prova `secoes-vazias` deixava de a ver. A prova tinha razão
+// — um título e o seu conteúdo a trinta linhas de distância leem-se mal — e a
+// resposta certa era encurtar, não alargar a janela dela.
+const Filtros = ({ t, quemHa, areasHa, quem, area, mudarQuem, mudarArea }) => {
+  if (quemHa.length <= 1 && areasHa.length <= 1) return null;
+  const Fila = ({ titulo, todos, opcoes, valor, mudar }) => (
+    <>
+      <Label t={t}>{titulo}</Label>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
+        <Choice t={t} label={todos} selected={!valor} onPress={() => mudar(null)} />
+        {opcoes.map(o => (
+          <Choice key={o} t={t} label={o} selected={valor === o}
+            onPress={() => mudar(valor === o ? null : o)} />
+        ))}
+      </View>
+    </>
+  );
+  return (
+    <Card t={t} style={{ gap: S.sm }}>
+      {quemHa.length > 1
+        ? <Fila titulo="Quem" todos="Todos" opcoes={quemHa} valor={quem} mudar={mudarQuem} /> : null}
+      {areasHa.length > 1
+        ? <Fila titulo="Onde" todos="Tudo" opcoes={areasHa} valor={area} mudar={mudarArea} /> : null}
+    </Card>
+  );
+};
+
+// Onde é que uma linha do registo leva, pela área dela. Nulo = não leva a lado
+// nenhum, e então a linha não é tocável.
+//
+// ⚠ Isto é por ÁREA e não por linha, de propósito. Metade das entradas fala de
+// coisas que já não existem — «a tarefa X foi apagada» — e nenhuma delas tem um
+// registo para onde apontar. Levar ao ECRÃ onde a coisa aconteceu é o destino
+// que se pode prometer sempre, e é o mesmo para todas as linhas da área.
+const DESTINO = {
+  'Início': 'inicio',
+  'Dinheiro': 'dinheiro',
+  'Tarefas': 'tarefas',
+  'Compras': 'compras',
+  'Agenda': 'agenda',
+  'Saúde': 'saude',
+  'Equipamentos': 'equip',
+  'Gestão da Casa': 'gestao',
+  // «A App» e «Documentação» não têm ecrã próprio para onde ir. «Perfil» e
+  // «Entrada» também não: o Perfil é uma folha que se abre por cima de tudo, e
+  // a Entrada já passou.
+};
+
+export default function Documentacao({ t, onIr, podeGerir }) {
   const { s } = useStore();
   const [aba, setAba] = useState('novidades');
+  const [filtroQuem, setFiltroQuem] = useState(null);
+  const [filtroArea, setFiltroArea] = useState(null);
 
   const corDo = (k) => ({
     novo:      { fg: t.state.okDeep,   bg: t.state.okBg,   br: t.state.okBorder },
@@ -192,7 +250,23 @@ export default function Documentacao({ t }) {
   // Mais recente primeiro. A lista já vem ordenada do servidor, mas ordena-se
   // aqui também: sem servidor ela é a local, e essa vem pela ordem em que os
   // catorze sítios a foram acrescentando.
-  const daCasa = [...(s.registo || [])].sort((a, b) => (b.at || 0) - (a.at || 0));
+  const todoOregisto = [...(s.registo || [])].sort((a, b) => (b.at || 0) - (a.at || 0));
+
+  // ── Os dois filtros ────────────────────────────────────────────────────────
+  //
+  // ⚠ São a resposta ao que faltava mesmo. Com quarenta linhas o registo lê-se;
+  // com quatrocentas, não — e a pergunta que se faz a um histórico é sempre a
+  // mesma duas: «o que é que o Tomás andou a fazer?» e «o que se passou no
+  // dinheiro?».
+  //
+  // As opções saem do que EXISTE no registo, não de uma lista fixa: uma casa
+  // que nunca mexeu na Saúde não tem por que ver esse filtro.
+  const quemHa = [...new Set(todoOregisto.map(r => r.quem).filter(Boolean))].sort();
+  const areasHa = [...new Set(todoOregisto.map(r => r.a).filter(Boolean))].sort();
+
+  const daCasa = todoOregisto
+    .filter(r => !filtroQuem || r.quem === filtroQuem)
+    .filter(r => !filtroArea || r.a === filtroArea);
   const pgCasa = usePaged(daCasa, 5);
 
   // Data e hora da entrada, numa linha só à direita.
@@ -239,13 +313,17 @@ export default function Documentacao({ t }) {
             Histórico da Casa
           </SectionTitle>
 
+          <Filtros t={t} quemHa={quemHa} areasHa={areasHa}
+            quem={filtroQuem} area={filtroArea}
+            mudarQuem={setFiltroQuem} mudarArea={setFiltroArea} />
+
           {daCasa.length ? (
             <Card t={t} style={{ gap: S.sm }}>
               <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
                 Mais recente primeiro
               </Text>
               <View style={{ height: 1, backgroundColor: t.divider }} />
-              {pgCasa.slice.map((r, i) => (
+              {pgCasa.slice.map((r, i) => {
                 // ⚠ Um ícone só, o mesmo em todas as linhas, e é uma decisão.
                 //
                 // O protótipo dá um ícone por tipo de acontecimento; as nossas
@@ -254,36 +332,70 @@ export default function Documentacao({ t }) {
                 // ícone desta app tem um significado exclusivo: um `smile` numa
                 // linha que fala de dinheiro mente mais do que um ícone neutro
                 // não diz. Quando as entradas ganharem tipo, ganham ícone.
-                <View key={r.id || `${r.at}-${i}`}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
-                    minHeight: 44, paddingVertical: S.md }}>
-                  <Icon name="fileText" size={20} color={t.text3} />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={{ fontFamily: FONT.body, fontSize: 14.5, lineHeight: 21, color: t.text2 }}>
-                      {r.t}
-                    </Text>
-                  </View>
-                  <View style={{ gap: 2, alignItems: 'flex-end' }}>
-                    {/* Quem fez. Só existe com servidor: um registo escrito
-                        neste telefone antes de haver casa ligada não sabe de
-                        quem é, e inventar um nome era pior do que não o dizer. */}
-                    {r.quem ? (
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text2 }}>
-                        {r.quem}
+
+                // ⚠ Só é tocável quem tem para onde ir, e vê-se: a linha com
+                // destino leva uma seta, a outra não.
+                //
+                // Avisei que ficaria desigual, e fica — metade das entradas
+                // fala de coisas que já não existem. O que a torna honesta é o
+                // AFIXO ser diferente: uma linha sem seta não promete nada, e o
+                // «uma linha, um destino» do CLAUDE.md continua de pé, porque
+                // nenhuma linha tem DOIS destinos.
+                const destino = DESTINO[r.a] || null;
+                const podeIr = destino && onIr
+                  && (destino !== 'gestao' || podeGerir);
+
+                const conteudo = (
+                  <>
+                    <Icon name="fileText" size={20} color={t.text3} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={{ fontFamily: FONT.body, fontSize: 14.5, lineHeight: 21, color: t.text2 }}>
+                        {r.t}
                       </Text>
-                    ) : null}
-                    <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>
-                      {quando(r.at)}
-                    </Text>
-                  </View>
-                </View>
-              ))}
+                    </View>
+                    <View style={{ gap: 2, alignItems: 'flex-end' }}>
+                      {/* Quem fez. Só existe com servidor: um registo escrito
+                          neste telefone antes de haver casa ligada não sabe de
+                          quem é, e inventar um nome era pior do que não o dizer. */}
+                      {r.quem ? (
+                        <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text2 }}>
+                          {r.quem}
+                        </Text>
+                      ) : null}
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>
+                        {quando(r.at)}
+                      </Text>
+                    </View>
+                    {podeIr ? <Icon name="caretRight" size={16} color={t.text3} /> : null}
+                  </>
+                );
+
+                const estilo = { flexDirection: 'row', alignItems: 'center', gap: S.md,
+                  minHeight: 44, paddingVertical: S.md };
+                const chave = r.id || `${r.at}-${i}`;
+
+                return podeIr ? (
+                  <Pressable key={chave} onPress={() => onIr(destino)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${r.t} — abrir ${r.a}`}
+                    style={({ pressed }) => ({ ...estilo, opacity: pressed ? 0.6 : 1 })}>
+                    {conteudo}
+                  </Pressable>
+                ) : (
+                  <View key={chave} style={estilo}>{conteudo}</View>
+                );
+              })}
               <Pager t={t} pg={pgCasa} />
             </Card>
           ) : (
-            // As palavras são as do protótipo.
-            <Empty t={t} icon="fileText" title="Ainda sem registos."
-              hint="Tudo o que a família fizer na app fica aqui: tarefas, despesas, compras, agenda e equipamentos." />
+            // As palavras são as do protótipo — e a segunda frase muda quando o
+            // vazio é do FILTRO e não da casa: dizer «ainda sem registos» a
+            // quem acabou de escolher um membro era mentir sobre a razão.
+            <Empty t={t} icon="fileText"
+              title={todoOregisto.length ? 'Nada com esse filtro.' : 'Ainda sem registos.'}
+              hint={todoOregisto.length
+                ? 'Escolha «Todos» e «Tudo» para ver o histórico inteiro.'
+                : 'Tudo o que a família fizer na app fica aqui: tarefas, despesas, compras, agenda e equipamentos.'} />
           )}
         </View>
       ) : aba === 'novidades' ? porVersao.map(g => (

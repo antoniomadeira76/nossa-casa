@@ -770,6 +770,18 @@ await criar({
     txt('texto', { required: true, max: 300 }),
     rel('quem', ids.membros),
     data('quando'),
+    // A ÁREA da casa a que a linha pertence — «Dinheiro», «Tarefas», «Saúde».
+    //
+    // É ela que faz o registo ser mais do que uma parede de texto: dá o filtro
+    // do ecrã e dá o destino ao toque. Sem ela, quarenta linhas leem-se e
+    // quatrocentas não.
+    //
+    // ⚠ Texto e não `select`: os nomes das áreas vivem no `src/registo-app.js`,
+    // que é onde a Documentação os escreve, e uma lista de valores fixa aqui
+    // era a mesma lista escrita duas vezes — para divergir da primeira vez que
+    // alguém acrescentasse uma área. Quem as mantém alinhadas é a prova
+    // `__tests__/registo-tem-area-conhecida.test.js`.
+    txt('area', { max: 40 }),
   ],
   // ⚠ Adultos. O registo diz quem passou a administrar a casa, quem entrou e
   // quem saiu — é administração da casa, como o orçamento, e uma criança não

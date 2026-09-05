@@ -682,9 +682,12 @@ export const chaveDeRegisto = (r) => `${r.at}|${r.t}`;
 // milhares de linhas para dentro do telefone a cada gravação. O servidor já
 // devolve só as cem mais recentes; aqui guardam-se duzentas, que é folga para o
 // que ainda não subiu.
+// A ÁREA da casa a que a linha pertence, e é ela que faz o registo ser mais do
+// que uma parede de texto: dá o filtro, e dá o destino ao toque. Os nomes são
+// os mesmos do `AREAS` da Documentação — uma lista só, e uma prova a conferi-la.
 export const REGISTO_MAX = 200;
-export const maisRegisto = (x, t) =>
-  [{ t, at: Date.now() }, ...(x.registo || [])].slice(0, REGISTO_MAX);
+export const maisRegisto = (x, t, a = null) =>
+  [{ t, at: Date.now(), ...(a ? { a } : {}) }, ...(x.registo || [])].slice(0, REGISTO_MAX);
 
 export const registosPorEnviar = (lista, jaEnviados) => (lista || []).filter((r) => {
   // ⚠ Uma linha com `id` VEIO do servidor, e por definição já lá está.
@@ -708,6 +711,9 @@ export function StoreProvider({ children }) {
   // Nome local → identificador do servidor. Vazio enquanto a app correr só
   // local, que é o caso quando não há EXPO_PUBLIC_PB_URL.
   const mapaServidor = useRef({ casa: null, membros: {}, envelopes: {} });
+  // As linhas do registo que já não é preciso mandar. Nulo = o disco ainda não
+  // foi lido, e nada sobe até isso acontecer.
+  const registosEnviados = useRef(null);
 
   // Ler a casa do servidor. Corre no arranque E outra vez depois de alguém
   // entrar — que é o que faltava.
@@ -760,7 +766,7 @@ export function StoreProvider({ children }) {
           ...(x.clearedSeeds ? {} : {
             clearedSeeds: true,
             ...SEM_DINHEIRO_SEMEADO(),
-            registo: maisRegisto(x, 'A casa passou a ser a do servidor; os dados de demonstração saíram'),
+            registo: maisRegisto(x, 'A casa passou a ser a do servidor; os dados de demonstração saíram', 'A App'),
           }),
         }));
       }
@@ -978,6 +984,16 @@ export function StoreProvider({ children }) {
             const patch = {};
             DATA_KEYS.forEach(k => { if (saved[k] !== undefined) patch[k] = saved[k]; });
             set(patch);
+            // ⚠ O registo que veio do DISCO é o que não sobe — e semeia-se
+            // AQUI, e não à primeira passagem do efeito.
+            //
+            // Semeado no efeito, apanhava de caminho a linha que o
+            // `lerDoServidor` acabava de escrever («A casa passou a ser a do
+            // servidor»): ela existia já quando o efeito correu pela primeira
+            // vez, ficava marcada como enviada, e a primeira linha da história
+            // de uma casa nunca subia nem tinha autor. Era a única que se via
+            // numa casa acabada de ligar.
+            registosEnviados.current = new Set((saved.registo || []).map(chaveDeRegisto));
           } catch (e) {
             // NÃO se grava. O disco fica como está, com a cópia ao lado, e a
             // app corre em memória até alguém corrigir a migração.
@@ -992,6 +1008,9 @@ export function StoreProvider({ children }) {
         }
       }
       ready.current = true;
+      // Sem nada gravado no disco — casa nova — não há história antiga
+      // nenhuma, e tudo o que se escreva daqui para a frente sobe.
+      if (registosEnviados.current === null) registosEnviados.current = new Set();
 
       // Depois do local, o servidor — nesta ordem de propósito: a app tem de
       // desenhar já com o que tem em disco, e a rede é um extra que chega
@@ -1027,20 +1046,19 @@ export function StoreProvider({ children }) {
   // Aqui é um sítio só, e vê tudo o que entra na lista: quem acrescentar um
   // registo novo amanhã não tem de saber que isto existe.
   //
-  // ⚠ E o que JÁ LÁ ESTAVA não sobe. A primeira passagem semeia o conjunto do
-  // que se considera enviado: é a história deste telefone de antes de haver
-  // servidor, e mandá-la em bloco enchia a casa de linhas antigas assinadas por
-  // quem calhasse estar ligado. O que sobe é o que acontecer daqui para a
-  // frente.
-  const registosEnviados = useRef(null);
+  // ⚠ E o que veio do DISCO não sobe: é a história deste telefone de antes de
+  // haver servidor, e mandá-la em bloco enchia a casa de linhas antigas
+  // assinadas por quem calhasse estar ligado. O que sobe é o que acontecer daqui
+  // para a frente.
+  //
+  // ⚠ Esse conjunto semeia-se ao LER O DISCO — ver o efeito de carregamento —, e
+  // não na primeira passagem deste. Semeado aqui, apanhava de caminho a linha
+  // que o `lerDoServidor` acabava de escrever, e a primeira linha da história de
+  // uma casa nunca subia nem tinha autor.
   useEffect(() => {
     if (!ready.current || !sync) return;
+    if (registosEnviados.current === null) return;   // o disco ainda não foi lido
     const lista = state.registo || [];
-
-    if (registosEnviados.current === null) {
-      registosEnviados.current = new Set(lista.map(chaveDeRegisto));
-      return;
-    }
     const ses = sync.sessao && sync.sessao();
     if (!ses) return;
 
@@ -1049,7 +1067,7 @@ export function StoreProvider({ children }) {
       // `escrever`, e voltar a marcá-la aqui só a mandaria duas vezes.
       registosEnviados.current.add(chaveDeRegisto(r));
       sync.registoDaCasa({
-        casa: ses.casa, texto: r.t, quem: ses.membro, quando: r.at,
+        casa: ses.casa, texto: r.t, quem: ses.membro, quando: r.at, area: r.a,
       }).catch(() => {});
     }
   }, [state.registo]);
@@ -1271,7 +1289,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       newItems: daApp ? x.newItems.filter(i => i.id !== id) : x.newItems,
       itemGone: daApp ? x.itemGone : { ...x.itemGone, [id]: true },
       status: fora(x.status), precoPago: fora(x.precoPago),
-      registo: maisRegisto(x, `«${a.label}» saiu da lista de compras`),
+      registo: maisRegisto(x, `«${a.label}» saiu da lista de compras`, 'Compras'),
     };
   });
   const allEvents = () => [...(s.clearedSeeds ? [] : EVENTS), ...s.added, ...s.health.map(h => h.event).filter(Boolean)]
@@ -1304,7 +1322,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         ...(shop ? { shop } : {}), ...(price ? { price } : {}),
         ...(maint ? { maint } : {}), ...(maintDate ? { maintDate } : {}),
       }],
-      registo: maisRegisto(x, `Equipamento «${nome}» acrescentado`),
+      registo: maisRegisto(x, `Equipamento «${nome}» acrescentado`, 'Equipamentos'),
     }));
 
     if (sync) {
@@ -1469,7 +1487,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         ? `Semanada de ${kid}: ${EUR(delta)}${pontos ? ` · ${plural(pontos, 'ponto', 'pontos')}` : ''}`
         : kind === 'bonus'
           ? `Bónus de ${EUR(delta)} para ${kid}`
-          : `Retirada de ${EUR(Math.abs(delta))} do cofre de ${kid}`),
+          : `Retirada de ${EUR(Math.abs(delta))} do cofre de ${kid}`, 'Dinheiro'),
     }));
     // A fila guarda a escrita; falhar aqui não pode estragar o ecrã, que já
     // tem o movimento. Sem servidor, `sync` é null e isto não faz nada.
@@ -1547,7 +1565,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         ? [...(x.pontosDeTarefasApagadas || []),
            { id, quem: t.who, pts: t.pts, titulo: t.title, at: Date.now() }]
         : (x.pontosDeTarefasApagadas || []),
-      registo: maisRegisto(x, `A tarefa «${t.title}» foi apagada`),
+      registo: maisRegisto(x, `A tarefa «${t.title}» foi apagada`, 'Tarefas'),
     };
   });
 
@@ -1578,7 +1596,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       // traseiras. Desses fica só que houve um evento.
       registo: maisRegisto(x, (visibilidade || 'so-eu') === 'so-eu'
         ? 'Um evento privado foi agendado'
-        : `Evento «${title}» agendado`),
+        : `Evento «${title}» agendado`, 'Agenda'),
     }));
 
     if (sync) {
@@ -1708,7 +1726,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   const fecharIdaAsCompras = (total = 0) => {
     const loja = lojaDoPlano();
     set(x => ({
-      registo: maisRegisto(x, `Ida às compras fechada${loja ? ` · ${loja}` : ''} · ${EUR(total)}`),
+      registo: maisRegisto(x, `Ida às compras fechada${loja ? ` · ${loja}` : ''} · ${EUR(total)}`, 'Compras'),
     }));
     const lista = listaAberta();
     if (sync && lista) {
@@ -1743,7 +1761,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // em lado nenhum.
     set(x => ({
       registered: x.registered + (envelope === 'Mercearia' ? v : 0),
-      registo: maisRegisto(x, `Despesa de ${EUR(v)} em ${envelope}${descricao ? ` · ${descricao}` : ''}`),
+      registo: maisRegisto(x, `Despesa de ${EUR(v)} em ${envelope}${descricao ? ` · ${descricao}` : ''}`, 'Dinheiro'),
     }));
 
     if (sync) {
@@ -1853,7 +1871,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       monthLimits: limites,
       monthZero: false,
       monthName: nome,
-      registo: maisRegisto(x, `Mês de ${nome} aberto`),
+      registo: maisRegisto(x, `Mês de ${nome} aberto`, 'Dinheiro'),
       // ⚠ O `registered` e o `envMove` NÃO se zeram à mão. Sem servidor ficam
       // como estão até haver despesas do mês novo; com servidor, a leitura
       // seguinte traz as somas já filtradas.
@@ -1889,7 +1907,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         registered: 0,
         envMove: {},
       }),
-      registo: maisRegisto(x, `Mês de ${x.monthName} fechado · ${EUR(x.registered || 0)} gastos`),
+      registo: maisRegisto(x, `Mês de ${x.monthName} fechado · ${EUR(x.registered || 0)} gastos`, 'Dinheiro'),
     }));
     const id = mesNoServidor();
     if (sync && id) {
@@ -2048,7 +2066,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       newTasks: [...(x.newTasks || []), { id, title: t, who, recur, pts: Number(pts) || 0 }],
       urg: { ...x.urg, [id]: Number.isFinite(Number(urgencia)) ? Number(urgencia) : 1 },
       due: dueKey ? { ...x.due, [id]: { key: dueKey, time: dueTime || '18:00' } } : x.due,
-      registo: maisRegisto(x, `Tarefa «${t}» criada${who ? ` para ${who}` : ''}`),
+      registo: maisRegisto(x, `Tarefa «${t}» criada${who ? ` para ${who}` : ''}`, 'Tarefas'),
     }));
 
     if (sync) {
@@ -2211,7 +2229,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     if (sync && noServidor) sync.apagarEvento(noServidor).catch(() => {});
     set(x => ({
       eventGone: { ...x.eventGone, [id]: true },
-      registo: maisRegisto(x, 'Um evento foi apagado da agenda'),
+      registo: maisRegisto(x, 'Um evento foi apagado da agenda', 'Agenda'),
     }));
   };
 
@@ -2351,7 +2369,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
 
     set(x => ({
       roles: { ...x.roles, [name]: role },
-      registo: maisRegisto(x, `${name} passou a ${role === 'admin' ? 'administração' : 'adulto'}`),
+      registo: maisRegisto(x, `${name} passou a ${role === 'admin' ? 'administração' : 'adulto'}`, 'Gestão da Casa'),
     }));
 
     // ⚠ E sobe. O papel é o que decide quem vê o orçamento, quem gere a casa e
@@ -2531,7 +2549,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     } catch (e) { return emPortugues(e); }
     set(x => ({
       nomeDaCasa: n,
-      registo: maisRegisto(x, `A casa passou a chamar-se ${n}`),
+      registo: maisRegisto(x, `A casa passou a chamar-se ${n}`, 'Gestão da Casa'),
     }));
     return null;
   };
@@ -2591,7 +2609,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       // não se defendesse. Defender em cada leitura é o remédio; ter a forma
       // certa desde o início é a cura.
       paidPts: papel === 'crianca' ? { ...x.paidPts, [n]: 0 } : x.paidPts,
-      registo: maisRegisto(x, `${n} entrou na casa`),
+      registo: maisRegisto(x, `${n} entrou na casa`, 'Gestão da Casa'),
     }));
     return null;
   };
@@ -2626,7 +2644,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         ...(campos.cor !== undefined ? { cor: campos.cor } : {}),
       } },
       ...(campos.papel ? { roles: { ...x.roles, [nome]: campos.papel } } : {}),
-      registo: maisRegisto(x, `${nome}: dados alterados`),
+      registo: maisRegisto(x, `${nome}: dados alterados`, 'Gestão da Casa'),
     }));
     return null;
   };
@@ -2660,7 +2678,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     mapaServidor.current.membros[n] = id;
     set(x => ({
       ...renomearNoEstado(x, antigo, n),
-      registo: maisRegisto(x, `${antigo} passou a chamar-se ${n}`),
+      registo: maisRegisto(x, `${antigo} passou a chamar-se ${n}`, 'Gestão da Casa'),
     }));
     return null;
   };
@@ -2681,7 +2699,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       const { [nome]: _semPin, ...pinsRestantes } = x.pins;
       return {
         membros: restantes, roles: papeis, pins: pinsRestantes,
-        registo: maisRegisto(x, `${nome} saiu da casa`),
+        registo: maisRegisto(x, `${nome} saiu da casa`, 'Gestão da Casa'),
       };
     });
     return null;
@@ -3036,7 +3054,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     }
     set(x => ({
       specialities: [...(x.specialities || []), n],
-      registo: maisRegisto(x, `Especialidade criada: ${n}`),
+      registo: maisRegisto(x, `Especialidade criada: ${n}`, 'Saúde'),
     }));
     listaAcrescenta('specialities', n);
     return null;
@@ -3064,7 +3082,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     }
     set(x => ({
       specialities: (x.specialities || []).filter(e => e !== nome),
-      registo: maisRegisto(x, `Especialidade apagada: ${nome}`),
+      registo: maisRegisto(x, `Especialidade apagada: ${nome}`, 'Saúde'),
     }));
     listaApaga('specialities', nome);
     return null;
@@ -3122,7 +3140,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
           ? { ...e, title: `Consulta ${alvo}` } : e)),
       registo: maisRegisto(x, existente
         ? `A especialidade ${antigo} passou a contar como ${alvo}`
-        : `A especialidade ${antigo} passou a chamar-se ${alvo}`),
+        : `A especialidade ${antigo} passou a chamar-se ${alvo}`, 'Saúde'),
     }));
 
     // ⚠ Uma FUSÃO não é um renomear: quando o nome novo já existe, a antiga

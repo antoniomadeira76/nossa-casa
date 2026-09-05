@@ -242,6 +242,7 @@ export async function puxarCasa() {
       id: r.id,
       t: r.texto,
       quem: nomeDoMembro[r.quem] || null,
+      a: r.area || null,
       at: Date.parse(r.quando || r.created) || 0,
     }))
     .sort((a, b) => b.at - a.at)
@@ -583,7 +584,7 @@ export async function transferenciaEntreEnvelopes({ casa, de, para, valor, mes, 
 
 // Uma linha do registo da casa. Apende-se, e é tudo: não há alterar nem apagar
 // deste lado porque não há regra nenhuma no servidor que os deixe.
-export async function registoDaCasa({ casa, texto, quem, quando }) {
+export async function registoDaCasa({ casa, texto, quem, quando, area }) {
   if (!ligado()) return { enviadas: 0, pendentes: 0 };
   return servidor.escrever.criar('registo', {
     casa,
@@ -592,6 +593,7 @@ export async function registoDaCasa({ casa, texto, quem, quando }) {
     texto: String(texto || '').slice(0, 300),
     quem: quem || null,
     quando: quando ? new Date(quando).toISOString() : new Date().toISOString(),
+    area: String(area || '').slice(0, 40),
   });
 }
 
