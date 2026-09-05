@@ -102,6 +102,12 @@ describe('o retrato de hoje', () => {
     // `shopHistory` — os três estavam classificados como derivados de linhas que
     // sobem, e nenhum dos três era mesmo derivado. E o total desceu de 64 para
     // 62 com a saída do `extraLog` e do `importDone`, que ninguém lia.
-    expect(sobem).toBeGreaterThanOrEqual(41);
+    //
+    // ⚠ 43 com o `taskOrder` e o `registo`, as duas últimas que estavam à
+    // espera de uma decisão de modelo em vez de código. A ordem à mão é da casa
+    // (campo `posto` da tarefa); o registo apende-se numa coleção própria, e
+    // não há linhas repetidas para juntar porque cada uma nasce onde a acção
+    // aconteceu.
+    expect(sobem).toBeGreaterThanOrEqual(43);
   });
 });

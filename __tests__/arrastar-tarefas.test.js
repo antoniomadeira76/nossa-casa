@@ -148,7 +148,15 @@ describe('⚠ o que a loja grava', () => {
     const loja = comLoja(casa(['u1', 'u2', 'n1', 'n2'], { u1: 0, u2: 0, n1: 1, n2: 1 }));
     chamar(loja, ['u2', 'u1']);
     chamar(loja, ['n2', 'n1']);
-    expect(loja().s.taskOrder).toEqual({ u2: 0, u1: 1, n2: 0, n1: 1 });
+    // ⚠ Contam de UM, e não de zero. Não é uma preferência: o `posto` da linha
+    // da tarefa é um `number` do PocketBase, que não é anulável — escrever
+    // `null` guarda 0, e uma tarefa nunca arrastada também nasce a 0. Com
+    // postos a contar de zero, o grupo inteiro lia-se empatado em primeiro
+    // lugar e a lista saía por ordem qualquer.
+    //
+    // A loja conta como o servidor de propósito: com um lado a contar de zero e
+    // o outro de um, a lista mudava de ordem na primeira leitura.
+    expect(loja().s.taskOrder).toEqual({ u2: 1, u1: 2, n2: 1, n1: 2 });
   });
 
   it('⚠ recusa atravessar grupos, e diz porquê', () => {

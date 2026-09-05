@@ -9,9 +9,17 @@ import { REGISTO_APP, TIPOS } from '../registo-app';
 // área — as duas geradas do mesmo registo.
 //
 // Este ecrã mostrava `s.registo`, que é o histórico das alterações que a
-// FAMÍLIA faz à casa e está sempre vazio: nada o escreve. A referência 17
-// mostra outra coisa — o que mudou na app. São duas funcionalidades com o
-// mesmo nome, e só uma tem dados.
+// FAMÍLIA faz à casa. A referência 17 mostra outra coisa — o que mudou na app.
+// São duas funcionalidades com o mesmo nome, e este ecrã é a segunda.
+//
+// ⚠ «e está sempre vazio: nada o escreve» dizia esta linha, e era verdade
+// quando a escrevi. Deixou de ser: catorze sítios do `store.jsx` acrescentam-lhe
+// linhas, e desde 05/09/2026 sobem para a coleção `registo`, com o `quem`.
+//
+// O que continua a não existir é um ecrã que o MOSTRE — o registo da casa é
+// escrito e lido de volta, e não aparece em lado nenhum. Onde deve aparecer é
+// decisão do dono da casa, não minha: acrescentar uma secção é das coisas que o
+// CLAUDE.md manda perguntar antes.
 export default function Documentacao({ t }) {
   const [aba, setAba] = useState('novidades');
 

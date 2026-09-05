@@ -57,7 +57,7 @@ const NOSSAS = [
   'eventos',
   'anexos', 'episodios_saude', 'especialidades', 'manutencoes', 'categorias_equip',
   'metas', 'acertos', 'transferencias', 'artigos', 'listas_compras', 'lojas',
-  'meses', 'preferencias', 'equipamentos', 'cofre_movimentos', 'despesas',
+  'registo', 'meses', 'preferencias', 'equipamentos', 'cofre_movimentos', 'despesas',
   'envelopes', 'tarefas_feitas', 'tarefas', 'membros', 'casas'];
 
 // ── Uma casa habitada não se apaga ───────────────────────────────────────────
@@ -93,9 +93,62 @@ if (casaHabitada) {
 //
 // Preservar `membros` e `casas` e não isto era guardar a conta e perder o que
 // a conta tinha autorizado.
-const PRESERVAR = casaHabitada ? ['membros', 'casas', 'credenciais_agenda'] : [];
-
+// ── ⚠ E uma coleção COM DADOS também não se apaga ────────────────────────────
+//
+// A lista acima era de três nomes escolhidos à mão, e chegava enquanto as
+// outras coleções estavam vazias: até esta semana o cliente escrevia em 10 de
+// 31, e recriar as outras não custava nada a ninguém.
+//
+// Deixou de ser verdade. As tarefas, a agenda, as despesas, o cofre, as compras
+// e as fichas de saúde da família vivem agora nestas coleções — e este script
+// apagava-as e recriava-as a cada execução, o que quer dizer que aplicar uma
+// mudança de regra levava atrás o que a casa tinha escrito.
+//
+// Hoje a casa «Madeira» tinha zero linhas em todas elas e não se perdeu nada.
+// Amanhã não é o caso, e uma salvaguarda que depende de a casa estar vazia não
+// é uma salvaguarda — é o mesmo «sobreviveu por ACIDENTE» de 03/09/2026, que
+// está escrito aqui em cima como lição aprendida.
+//
+// Agora preserva-se o que TEM LINHAS. O esquema e as regras aplicam-se por
+// `update`, como já acontecia com o `casas` e o `membros` — que é a razão pela
+// qual alguém corre isto depois do primeiro dia.
+//
+// Para uma reconstrução total e deliberada: PB_RECRIAR=1.
 const existentes = await pb.collections.getFullList();
+
+const temLinhas = async (nome) => {
+  try {
+    const r = await pb.collection(nome).getList(1, 1);
+    return r.totalItems > 0;
+  } catch { return false; }
+};
+
+const comDados = [];
+if (casaHabitada) {
+  for (const nome of NOSSAS) {
+    const c = existentes.find(x => x.name === nome);
+    if (!c) continue;
+    // ⚠ Uma VISTA nunca se preserva, por muitas linhas que responda.
+    //
+    // Ela não tem dados nenhuns: é uma consulta sobre as coleções de base, e as
+    // «linhas» que devolve são as delas. Preservá-la fazia duas coisas erradas
+    // ao mesmo tempo — deixava a consulta ANTIGA no sítio quando o SQL mudava,
+    // e, porque uma coleção não se apaga enquanto outra a referir, impedia
+    // apagar as coleções que ela lê. Foi assim: o `v_acerto_saldo` apareceu na
+    // lista de preservadas e a limpeza parou com «Failed to delete collection».
+    if (c.type === 'view') continue;
+    if (await temLinhas(nome)) comDados.push(nome);
+  }
+}
+
+const PRESERVAR = casaHabitada
+  ? [...new Set(['membros', 'casas', 'credenciais_agenda', ...comDados])]
+  : [];
+
+if (comDados.length) {
+  console.log(`Com dados, preservadas: ${comDados.join(', ')}`);
+}
+
 for (const nome of NOSSAS) {
   if (PRESERVAR.includes(nome)) continue;
   const c = existentes.find(x => x.name === nome);
@@ -106,7 +159,35 @@ if (casaHabitada) {
   ids.membros = existentes.find(x => x.name === 'membros').id;
 }
 
+// Cria a coleção — ou ATUALIZA-A, quando ela sobreviveu à limpeza por ter
+// linhas dentro. As regras e os campos aplicam-se nos dois caminhos, que é o
+// que faz correr isto depois do primeiro dia ter algum efeito.
+//
+// ⚠ Os campos fundem-se pelo nome, como no `aplicarCampos`: o que já lá está
+// mantém-se — senão um `update` com a lista nova apagava as colunas antigas e,
+// com elas, os dados —, o que é novo entra, e o que mudou de limites é
+// substituído.
 const criar = async (def) => {
+  const vivo = PRESERVAR.includes(def.name)
+    ? (await pb.collections.getFullList()).find(x => x.name === def.name)
+    : null;
+
+  if (vivo) {
+    const porNome = new Map((vivo.fields || []).map(f => [f.name, f]));
+    for (const novo of def.fields || []) {
+      porNome.set(novo.name, { ...porNome.get(novo.name), ...novo });
+    }
+    const { name, type, fields, ...resto } = def;
+    try {
+      await pb.collections.update(vivo.id, { ...resto, fields: [...porNome.values()] });
+    } catch (e) {
+      console.error(`FALHOU ao atualizar ${def.name}:`, JSON.stringify(e.response?.data || e.message));
+      throw e;
+    }
+    ids[def.name] = vivo.id;
+    return vivo;
+  }
+
   let c;
   try { c = await pb.collections.create(def); }
   catch (e) {
@@ -379,6 +460,33 @@ await criar({
     num('pontos', { min: 0, max: 20, onlyInt: true }),
     num('urgencia', { min: 0, max: 2, onlyInt: true }),
     data('prazo'),
+    // ⚠ O posto que a MÃO deu à tarefa ao arrastá-la, dentro do grupo de
+    // urgência — e é da CASA, não de quem está a olhar.
+    //
+    // Ficou por decidir durante dois dias, e a decisão é esta: a lista é a
+    // mesma lista para toda a gente. Se a ordem fosse de cada um, a Rita
+    // arrastava «Levar o lixo» para cima e o Tomás continuava a vê-la em
+    // terceiro — os dois a falar da «primeira tarefa» a pensar em tarefas
+    // diferentes. A urgência e o prazo já são da casa (INVARIANTE #6); a ordem
+    // dentro do grupo é a mesma espécie de coisa.
+    //
+    // Não é um saldo, é um atributo: dois telefones a arrastar ao mesmo tempo
+    // ficam com a ordem de quem escreveu por último, como já acontece com a
+    // urgência. O INVARIANTE #2 é sobre SOMAS, e uma ordem não se soma.
+    //
+    // ⚠ Os postos contam de UM, e zero quer dizer «sem posto».
+    //
+    // Não é uma preferência: um campo `number` do PocketBase não é anulável.
+    // Escrevi `posto: null` a desarrumar uma tarefa e ele guardou 0 — e uma
+    // tarefa nova, que nunca foi arrastada, também nasce a 0. Com postos a
+    // contar de zero, TODAS as tarefas do grupo liam-se como estando em
+    // primeiro lugar, empatadas, e a lista saía por ordem qualquer.
+    //
+    // É o mesmo tipo de armadilha dos campos que o PocketBase ignora em
+    // silêncio: não dá erro, dá um valor que parece bom.
+    //
+    // Sem posto, a tarefa não entra no mapa da loja e ordena-se pelo prazo.
+    num('posto', { min: 0, onlyInt: true }),
   ],
   listRule: DA_CASA, viewRule: DA_CASA,
   // ⚠ `atribuido_a` tem de ser da casa, não só a linha. Sem isto, uma adulta de
@@ -615,6 +723,46 @@ await criar({
   createRule: `${DA_CASA} && ${daCasaTambem('lista', 'pedido_por')}`,
   updateRule: `${DA_CASA} && ${daCasaTambem('lista', 'pedido_por')}`,
   deleteRule: `${DA_CASA} && ${ADULTO}`,
+});
+
+// ── O registo de alterações da casa ──────────────────────────────────────────
+//
+// «Quem mudou isto?» é uma pergunta que a OUTRA pessoa faz, e por isso um
+// registo só local nunca lhe pode responder. Era o que havia: catorze sítios do
+// `store.jsx` a escrever no `s.registo`, cada telefone com o seu, e nenhum a
+// saber o que o outro fez.
+//
+// ── APENDE-SE, não se corrige ────────────────────────────────────────────────
+//
+// Sem `updateRule` nem `deleteRule`. Um registo que se possa alterar não é um
+// registo: quem administra a casa apagaria a linha que diz que se deu
+// administração a si próprio. É a mesma decisão dos `cofre_movimentos` e dos
+// `acertos`, e pela mesma razão.
+//
+// ── E não há linhas repetidas para juntar ────────────────────────────────────
+//
+// A dúvida que ficou escrita era «o que fazer com as repetidas» — e não há
+// nenhuma, porque a linha nasce no momento da ACÇÃO, escrita pelo telefone que
+// a fez. Não se juntam dois registos; escreve-se um, no sítio onde a coisa
+// aconteceu. Juntar históricos é que faria repetidos.
+await criar({
+  name: 'registo', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    txt('texto', { required: true, max: 300 }),
+    rel('quem', ids.membros),
+    data('quando'),
+  ],
+  // ⚠ Adultos. O registo diz quem passou a administrar a casa, quem entrou e
+  // quem saiu — é administração da casa, como o orçamento, e uma criança não
+  // tem nada que ler a lista de mudanças de papel dos pais.
+  listRule: `${DA_CASA} && ${ADULTO}`,
+  viewRule: `${DA_CASA} && ${ADULTO}`,
+  // ⚠ `quem` tem de ser desta casa: sem isso, uma adulta da casa ao lado
+  // assinava uma linha do registo desta com o nome de um membro daqui.
+  createRule: `${DA_CASA} && ${ADULTO} && (quem = "" || quem.casa = @request.auth.casa)`,
+  updateRule: null,
+  deleteRule: null,
 });
 
 // ── Dinheiro, o resto ────────────────────────────────────────────────────────

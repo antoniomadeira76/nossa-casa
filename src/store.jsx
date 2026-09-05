@@ -665,6 +665,26 @@ const idDeNota = () => `note-${Date.now()}-${++contadorDeNotas}`;
 const Ctx = createContext(null);
 const reducer = (s, patch) => ({ ...s, ...(typeof patch === 'function' ? patch(s) : patch) });
 
+// ── Que linhas do registo faltam mandar ──────────────────────────────────────
+//
+// Está fora do efeito, e exportada, porque a decisão tem dois casos que só se
+// veem na SEGUNDA leitura — e um efeito de React não se põe à prova sem montar
+// a app inteira. Assim prova-se a decisão, que é onde estava o defeito.
+//
+// A chave é o par instante+texto: as linhas antigas não têm `id`, e duas acções
+// iguais no mesmo milissegundo não existem.
+export const chaveDeRegisto = (r) => `${r.at}|${r.t}`;
+
+export const registosPorEnviar = (lista, jaEnviados) => (lista || []).filter((r) => {
+  // ⚠ Uma linha com `id` VEIO do servidor, e por definição já lá está.
+  //
+  // Sem isto havia um ciclo: a leitura punha as linhas do servidor na loja, o
+  // efeito via instantes que nunca tinha enviado — os do servidor, não os
+  // locais — e mandava-as outra vez. A leitura seguinte trazia o dobro.
+  if (r.id) return false;
+  return !jaEnviados.has(chaveDeRegisto(r));
+});
+
 export function StoreProvider({ children }) {
   const [state, set] = useReducer(reducer, null, DEMO);
   const ready = useRef(false);
@@ -844,12 +864,29 @@ export function StoreProvider({ children }) {
       // condição de cima deixava-o vazio no único momento em que se lê.
       if ((casa.shopHistory || []).length) set({ shopHistory: casa.shopHistory });
 
+      // ⚠ O registo da casa SUBSTITUI o local, e traz o `quem` — que é a única
+      // coisa que o registo local nunca podia ter. «Quem mudou isto?» é uma
+      // pergunta que a outra pessoa faz, e catorze sítios escreviam a resposta
+      // num telefone só.
+      //
+      // Substitui-se em vez de fundir porque o servidor tem as linhas dos dois
+      // telefones e este só tem as suas. O que fica de fora é a história deste
+      // aparelho de antes de haver servidor — e essa não se manda para trás,
+      // que seria assiná-la com o nome de quem estivesse ligado hoje.
+      if ((casa.registo || []).length) set({ registo: casa.registo });
+
       if ((casa.added || []).length) set({ added: casa.added });
       if ((casa.newTasks || []).length) {
         set(x => ({
           newTasks: casa.newTasks,
           urg: { ...x.urg, ...casa.urg },
           due: { ...x.due, ...casa.due },
+          // ⚠ A ordem à mão SUBSTITUI a local, e não se funde como o `urg` e o
+          // `due`. Os postos são relativos: fundir os do servidor com os deste
+          // telefone dava dois grupos numerados de zero misturados no mesmo
+          // grupo, e uma lista que salta de cada vez que se lê. A ordem é da
+          // casa — quem manda é quem a tem inteira.
+          taskOrder: casa.taskOrder || {},
           // O `done` do servidor é o de HOJE. Funde-se, senão uma tarefa
           // marcada neste telefone e ainda por subir voltava a por fazer.
           done: { ...x.done, ...casa.done },
@@ -968,6 +1005,44 @@ export function StoreProvider({ children }) {
     sig.current = s;
     AsyncStorage.setItem(KEY, payload).catch(() => {});
   }, [state]);
+
+  // ── O registo da casa sobe daqui, e de mais lado nenhum ───────────────────
+  //
+  // ⚠ São CATORZE os sítios do `build` que acrescentam uma linha ao registo —
+  // apagar uma tarefa, mudar um papel, renomear a casa, alguém entrar, alguém
+  // sair. Pôr a escrita em cada um deles era catorze oportunidades de esquecer
+  // a décima quinta, que é exatamente a forma de defeito das oito funções de
+  // escrita que ninguém chamava.
+  //
+  // Aqui é um sítio só, e vê tudo o que entra na lista: quem acrescentar um
+  // registo novo amanhã não tem de saber que isto existe.
+  //
+  // ⚠ E o que JÁ LÁ ESTAVA não sobe. A primeira passagem semeia o conjunto do
+  // que se considera enviado: é a história deste telefone de antes de haver
+  // servidor, e mandá-la em bloco enchia a casa de linhas antigas assinadas por
+  // quem calhasse estar ligado. O que sobe é o que acontecer daqui para a
+  // frente.
+  const registosEnviados = useRef(null);
+  useEffect(() => {
+    if (!ready.current || !sync) return;
+    const lista = state.registo || [];
+
+    if (registosEnviados.current === null) {
+      registosEnviados.current = new Set(lista.map(chaveDeRegisto));
+      return;
+    }
+    const ses = sync.sessao && sync.sessao();
+    if (!ses) return;
+
+    for (const r of registosPorEnviar(lista, registosEnviados.current)) {
+      // Marca-se ANTES de enviar. Se a escrita falhar fica na fila do
+      // `escrever`, e voltar a marcá-la aqui só a mandaria duas vezes.
+      registosEnviados.current.add(chaveDeRegisto(r));
+      sync.registoDaCasa({
+        casa: ses.casa, texto: r.t, quem: ses.membro, quando: r.at,
+      }).catch(() => {});
+    }
+  }, [state.registo]);
 
   const api = useMemo(() => build(state, set, mapaServidor, lerDoServidor), [state]);
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
@@ -1117,12 +1192,33 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     const fila = [...lista];
     const nova = grupo.map(id => (lista.includes(id) ? fila.shift() : id));
 
+    // ⚠ Os postos contam de UM, dos dois lados. No servidor é obrigatório —
+    // um campo `number` não é anulável, e o zero é que faz de «sem posto» —, e
+    // aqui é para os dois mapas terem os mesmos números: com a loja a contar de
+    // zero e o servidor de um, a lista mudava de ordem na primeira leitura.
     set(x => ({
       taskOrder: {
         ...(x.taskOrder || {}),
-        ...Object.fromEntries(nova.map((id, i) => [id, i])),
+        ...Object.fromEntries(nova.map((id, i) => [id, i + 1])),
       },
     }));
+
+    // ⚠ E vai para o servidor, porque a ordem é da CASA. Até 05/09/2026 ficava
+    // só aqui: a Rita arrastava «Levar o lixo» para cima e o Tomás continuava a
+    // vê-la em terceiro — os dois a falar da «primeira tarefa» a pensar em
+    // tarefas diferentes.
+    //
+    // Escreve-se o grupo INTEIRO, e não só as arrastadas: os postos são
+    // relativos, e mexer numa muda o lugar de todas as que estão abaixo.
+    // Escrever só as que a mão tocou deixava as outras com o posto de antes, e
+    // dois números iguais no mesmo grupo desempatam-se pelo prazo — a lista
+    // saltava sozinha na leitura seguinte.
+    if (sync) {
+      nova.forEach((id, i) => {
+        const noServidor = tarefaNoServidor(id);
+        if (noServidor) sync.alterarTarefa(noServidor, { posto: i + 1 }).catch(() => {});
+      });
+    }
     return null;
   };
 

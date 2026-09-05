@@ -231,6 +231,22 @@ export async function puxarCasa() {
         .replace(/^(\d{4})-(\d{2})-(\d{2})$/, 'd$1-$2-$3'),
     }));
 
+  // ── O registo de alterações da casa ───────────────────────────────────────
+  //
+  // As mais recentes primeiro, que é a ordem em que se lê um histórico. E
+  // limitado: a lista local crescia sem fim nenhum — catorze sítios a
+  // acrescentar e nada a cortar —, e uma casa com dois anos de uso levava
+  // milhares de linhas para dentro do telefone a cada leitura.
+  const registo = (casa.registo || [])
+    .map(r => ({
+      id: r.id,
+      t: r.texto,
+      quem: nomeDoMembro[r.quem] || null,
+      at: Date.parse(r.quando || r.created) || 0,
+    }))
+    .sort((a, b) => b.at - a.at)
+    .slice(0, 100);
+
   const aCasa = (casa.casas || [])[0] || null;
 
   // ── A agenda ──────────────────────────────────────────────────────────────
@@ -273,11 +289,22 @@ export async function puxarCasa() {
 
   const urg = {};
   const due = {};
+  // ⚠ A ordem à mão é da CASA, e é a mesma para toda a gente — ver o campo
+  // `posto` em `criar-colecoes.mjs`. Só entram as tarefas que foram MESMO
+  // arrastadas: sem posto, a tarefa não tem entrada aqui e ordena-se pelo
+  // prazo, que é o que o `sortedTasks` espera.
+  const taskOrder = {};
   for (const t of casa.tarefas || []) {
     // 1 é «normal», que é o que a loja usa por omissão.
     urg[t.id] = Number.isFinite(Number(t.urgencia)) ? Number(t.urgencia) : 1;
     const chave = chaveDeISO(t.prazo);
     if (chave) due[t.id] = { key: chave, time: String(t.prazo).slice(11, 16) || '18:00' };
+    // ⚠ Zero é «sem posto», e não o primeiro lugar — os postos contam de um.
+    // Um `number` do PocketBase não é anulável: uma tarefa que nunca foi
+    // arrastada lê-se 0, e tratar isso como primeiro lugar punha o grupo
+    // inteiro empatado à cabeça.
+    const posto = Number(t.posto);
+    if (Number.isFinite(posto) && posto > 0) taskOrder[t.id] = posto;
   }
 
   // ── E o que está feito HOJE ───────────────────────────────────────────────
@@ -499,10 +526,12 @@ export async function puxarCasa() {
     status,
     shopPlan,
     shopHistory,
+    registo,
     added,
     newTasks,
     urg,
     due,
+    taskOrder,
     done,
     feitas,
     // O servidor manda: se responder, é esta a casa e são estes os membros.
@@ -549,6 +578,20 @@ export async function transferenciaEntreEnvelopes({ casa, de, para, valor, mes, 
   if (!ligado()) return { enviadas: 0, pendentes: 0 };
   return servidor.escrever.criar('transferencias', {
     casa, de_envelope: de, para_envelope: para, valor, mes, por,
+  });
+}
+
+// Uma linha do registo da casa. Apende-se, e é tudo: não há alterar nem apagar
+// deste lado porque não há regra nenhuma no servidor que os deixe.
+export async function registoDaCasa({ casa, texto, quem, quando }) {
+  if (!ligado()) return { enviadas: 0, pendentes: 0 };
+  return servidor.escrever.criar('registo', {
+    casa,
+    // O servidor limita a 300 e ignora em silêncio o que não conhece; cortar
+    // aqui é a diferença entre uma linha truncada e uma escrita recusada.
+    texto: String(texto || '').slice(0, 300),
+    quem: quem || null,
+    quando: quando ? new Date(quando).toISOString() : new Date().toISOString(),
   });
 }
 
@@ -637,6 +680,13 @@ export async function alterarTarefa(idNoServidor, campos) {
   if ('urgencia' in campos) linha.urgencia = Number(campos.urgencia) || 0;
   if ('recorrencia' in campos) linha.recorrencia = RECORRENCIA_NO_SERVIDOR[campos.recorrencia] || 'uma_vez';
   if ('prazo' in campos) linha.prazo = campos.prazo ? isoDeChave(campos.prazo) : null;
+  // ⚠ Zero é «sem posto», e os postos contam de UM. Um campo `number` do
+  // PocketBase não é anulável — escrever `null` guarda 0 —, por isso é o zero
+  // que faz de ausência. Ver o campo em `criar-colecoes.mjs`.
+  if ('posto' in campos) {
+    const n = Number(campos.posto);
+    linha.posto = Number.isFinite(n) && n > 0 ? n : 0;
+  }
   return servidor.pb.collection('tarefas').update(idNoServidor, linha);
 }
 

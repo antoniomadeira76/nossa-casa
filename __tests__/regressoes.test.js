@@ -971,9 +971,24 @@ describe('Camada de ligação ao servidor — PocketBase', () => {
     // `credenciais_agenda` levava com ela o refresh_token — que não se
     // recupera de cópia nenhuma, só voltando à Google.
     expect(colecoes).toMatch(/const casaHabitada =/);
-    expect(colecoes).toContain("['membros', 'casas', 'credenciais_agenda']");
+    expect(colecoes).toContain("'membros', 'casas', 'credenciais_agenda'");
     // E a reconstrução total continua possível, mas tem de ser pedida.
     expect(colecoes).toMatch(/process\.env\.PB_RECRIAR/);
+  });
+
+  test('⚠ e uma coleção COM LINHAS também não se apaga', () => {
+    // Os três nomes acima eram escolhidos à mão, e chegavam enquanto as outras
+    // coleções estavam vazias — até esta semana o cliente escrevia em 10 de 31.
+    // Agora as tarefas, a agenda, as despesas, o cofre, as compras e as fichas
+    // de saúde da família vivem lá, e o script apagava-as a cada execução:
+    // aplicar uma mudança de regra levava atrás o que a casa tinha escrito.
+    expect(colecoes).toMatch(/const temLinhas = async/);
+    expect(colecoes).toMatch(/\.\.\.comDados/);
+    // ⚠ E uma VISTA nunca se preserva: não tem dados nenhuns — as linhas que
+    // devolve são das coleções de base —, ficava com o SQL antigo, e impedia
+    // apagar as coleções que ela lê. Apanhado a correr, com o `v_acerto_saldo`
+    // na lista de preservadas e a limpeza a parar em «Failed to delete».
+    expect(colecoes).toMatch(/c\.type === 'view'/);
   });
 
   test('⚠ e o script das coleções ANALISA', () => {

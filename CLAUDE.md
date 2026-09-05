@@ -46,7 +46,7 @@ não estão escritas e esperadas — estão **provadas a correr**:
 npm run db:servir     # o servidor. Sem ele a app corre local, e o ecrã de
                       # entrada diz que o servidor não responde — não que a
                       # Google esteja mal configurada. Já enganou duas vezes.
-npm run db:provar     # 358 provas, vinte e um ficheiros
+npm run db:provar     # 368 provas, vinte e dois ficheiros
 ```
 
 Cada prova tenta o que a `docs/seguranca.html` diz que não pode acontecer e falha se

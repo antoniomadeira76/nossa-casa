@@ -486,7 +486,10 @@ const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
   // O mês aberto e os fechados. O mês ABERTO é o que não tem `fechado_em`, e é
   // ele que define o intervalo por onde as despesas e as transferências se
   // filtram — os totais são SOMAS de um mês, nunca campos que alguém zera.
-  'meses'];
+  'meses',
+  // O registo de alterações da casa. «Quem mudou isto?» é uma pergunta que a
+  // OUTRA pessoa faz, e um registo só local nunca lhe podia responder.
+  'registo'];
 
 export const ler = {
   async casa() {

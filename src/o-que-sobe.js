@@ -37,7 +37,7 @@ export const O_QUE_SOBE = {
   urg: ['campo', 'A `urgencia` da linha da tarefa. O mapa é a forma que oito ecrãs leem, e enche-se a partir da linha.'],
   due: ['campo', 'O `prazo` da linha da tarefa, pela mesma razão do `urg`.'],
   taskGone: ['local', 'Lápides de sementes apagadas. Uma tarefa do servidor apaga-se LÁ; isto só marca as que vêm do ficheiro `data.js` e não existem em coleção nenhuma.'],
-  taskOrder: ['local', 'A ordem à mão dentro do grupo de urgência. Ainda não tem campo no servidor — está por decidir se a ordem é da casa ou de quem olha para a lista.'],
+  taskOrder: ['campo', 'O `posto` da linha da tarefa, dentro do grupo de urgência. É da CASA e não de quem olha: se fosse de cada um, a Rita arrastava uma tarefa para cima e o Tomás continuava a vê-la em terceiro.'],
   pending: ['local', 'Uma criança marcou e falta um adulto confirmar. No servidor isso é a AUSÊNCIA de `confirmada_em` na linha de `tarefas_feitas`; aqui é o passo intermédio da interface.'],
   rotate: ['local', 'Alternar uma tarefa entre as crianças. Sem campo no servidor — a rotação é semanal e derivável, e ainda não se decidiu se vale uma coluna.'],
   recurringReset: ['local', 'Em que DIA uma tarefa recorrente foi reposta neste dispositivo. O que a casa partilha é a linha de `tarefas_feitas` do dia; isto é o relógio local a saber que a de ontem já não conta para hoje.'],
@@ -105,7 +105,7 @@ export const O_QUE_SOBE = {
   notif: ['campo', 'Os avisos, na mesma linha: `resumo_ativo`, `resumo_hora` e `aviso_prazo_dias`. Cada um escolhe os seus, e ninguém escolhe pelos outros.', 'preferenciasDoMembro'],
   clearedSeeds: ['local', 'Se as sementes de demonstração já saíram deste dispositivo. É um facto sobre este telefone, não sobre a casa.'],
   deDemonstracao: ['local', 'Se a app está a correr com a família de demonstração. É o oposto de ter servidor — por definição não sobe.'],
-  registo: ['local', 'O registo de alterações da casa. Cada dispositivo escreve o seu; juntá-los precisa de uma coleção e de decidir o que fazer com as linhas repetidas.'],
+  registo: ['linhas', 'A coleção `registo`, que só se apende. Não há repetidas para juntar: a linha nasce no momento da acção, escrita por quem a fez. E traz o `quem`, que é a única coisa que um registo local nunca podia ter.', 'registoDaCasa'],
 };
 
 // As três respostas possíveis, para a prova as poder verificar.
