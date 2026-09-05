@@ -2,50 +2,17 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
-import { EUR, warrantyDaysLeft, MONTHS } from '../format';
+import { EUR, warrantyDaysLeft, MONTHS, plural } from '../format';
 import { ENV_BASE, GOALS, EQUIP } from '../data';
-import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Tap, Opcao } from '../ui';
+import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Tap, Opcao, NumField } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 
-// Campo de valor: toque para escrever, −/+ para ajustar. O mesmo controlo
-// serve rendimento, limites, valor do ponto e despesas.
-export function NumField({ t, value, onChange, step = 5, min = 0, max = 99999, suffix = true }) {
-  const [txt, setTxt] = useState(null);
-  const commit = () => {
-    if (txt === null) return;
-    const v = Number(String(txt).replace(',', '.'));
-    setTxt(null);
-    if (!isFinite(v)) return;
-    onChange(Math.min(max, Math.max(min, v)));
-  };
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-      <Pressable onPress={() => onChange(Math.max(min, value - step))} accessibilityRole="button"
-        accessibilityLabel={`Menos ${step}`}
-        style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
-          alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.accent }}>−</Text>
-      </Pressable>
-      <TextInput
-        value={txt !== null ? String(txt) : (suffix ? EUR(value) : String(value))}
-        onFocus={() => setTxt(String(value).replace('.', ','))}
-        onChangeText={setTxt}
-        onBlur={commit}
-        onSubmitEditing={commit}
-        keyboardType="decimal-pad"
-        accessibilityLabel="Valor"
-        style={{ flex: 1, minHeight: 44, textAlign: 'center', fontFamily: FONT.display,
-          fontSize: 18, color: t.text2, borderRadius: R.row, borderWidth: 1, borderColor: t.border }} />
-      <Pressable onPress={() => onChange(Math.min(max, value + step))} accessibilityRole="button"
-        accessibilityLabel={`Mais ${step}`}
-        style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
-          alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.accent }}>+</Text>
-      </Pressable>
-    </View>
-  );
-}
+// ⚠ O `NumField` mudou-se para o `ui.jsx`, e continua a ser importado daqui
+// para quem o leia por este nome. Vivia neste ecrã e era o controlo partilhado
+// de todos os valores — o que fez com que a Gestão, que não pode importar um
+// ecrã, escrevesse a sua própria versão sem campo de texto.
+export { NumField } from '../ui';
 
 // Envelopes em grelha de dois, com o valor livre por baixo do nome — é assim
 // nas duas listas da referência 19. Eram oito linhas de largura total, 48 px
@@ -90,6 +57,8 @@ export default function Dinheiro({ t, user, onEquip }) {
   // Quanto falta acertar, e entre quem. Vem da loja: era 86,5 escrito aqui e
   // outra vez no Início, com os nomes «Tomás» e «Rita» no meio do texto.
   const settleBase = acerto ? acerto.valor : 0;
+  // Quantas despesas deste mês entram no acerto. Era «14», escrito à mão.
+  const despesasPartilhadas = s.despesasMeias || 0;
   // O que sobra do rendimento depois de atribuir os envelopes — a segunda
   // metade da frase da referência 05.
   const semEnvelope = Math.max(0, (s.rendimento || 0) - budget);
@@ -245,9 +214,22 @@ export default function Dinheiro({ t, user, onEquip }) {
                 {acertado ? 'Está tudo acertado'
                   : `${oNome(acerto.devedor)} deve ${aoNome(acerto.credor)} ${EUR(settleBase)}`}
               </Text>
+              {/* ⚠ A linha de baixo contradizia a de cima.
+                  Dizia «Sem valores pendentes entre os dois» sempre que
+                  `clearedSeeds` fosse verdadeiro — ou seja, em toda a casa a
+                  sério — mesmo com o título a dizer «A Rita deve ao António
+                  83,67 €». Duas frases, uma por cima da outra, a dizer o
+                  contrário uma da outra.
+
+                  E o «14 despesas partilhadas este mês» era o número da
+                  demonstração, escrito à mão. Agora conta as que há. */}
               <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
-                {s.clearedSeeds ? 'Sem valores pendentes entre os dois.'
-                  : acerto && acerto.pago > 0 ? 'Último acerto hoje' : '14 despesas partilhadas este mês'}
+                {acertado
+                  ? 'Sem valores pendentes entre os dois.'
+                  : acerto && acerto.pago > 0
+                    ? `Já foram acertados ${EUR(acerto.pago)} de ${EUR(acerto.base)}.`
+                    : plural(despesasPartilhadas, 'despesa partilhada este mês',
+                             'despesas partilhadas este mês')}
               </Text>
             </View>
             <Pill label={acertado ? 'Concluído' : 'A Decorrer'}

@@ -207,6 +207,53 @@ export async function puxarCasa() {
     .filter(d => !d.anula_id && noMes(d.data || d.created))
     .reduce((n, d) => n + (Number(d.valor) || 0), 0);
 
+  // ── O gasto POR ENVELOPE ───────────────────────────────────────────────────
+  //
+  // ⚠ Sem isto, a loja fazia `used: e.name === 'Mercearia' ? s.registered : 0`
+  // — o gasto INTEIRO do mês atirado para a Mercearia, e todos os outros
+  // envelopes a zero. Era um resto da demonstração, onde as únicas despesas
+  // eram compras; com despesas a sério, o ecrã dizia «Mercearia 1 248,64 € /
+  // 590,00 €» e «Casa & contas 0,00 €» com o condomínio e a luz lá dentro.
+  //
+  // Sai por NOME do envelope, que é como a loja e os ecrãs falam deles.
+  const gastoPorEnvelope = {};
+  // ⚠ `envelopePorId`, e não `nomeDoEnvelope`: esse nome já existe mais abaixo,
+  // e dois `const` iguais no mesmo módulo são um SyntaxError — o ficheiro
+  // inteiro deixa de analisar. É o mesmo erro que calou o `criar-colecoes.mjs`
+  // durante dias, e desta vez a prova de fumo apanhou-o à primeira.
+  const envelopePorId = Object.fromEntries((casa.envelopes || []).map(e => [e.id, e.nome]));
+  for (const d of casa.despesas || []) {
+    if (d.anula_id || !noMes(d.data || d.created)) continue;
+    const nome = envelopePorId[d.envelope];
+    if (!nome) continue;
+    gastoPorEnvelope[nome] = (gastoPorEnvelope[nome] || 0) + (Number(d.valor) || 0);
+  }
+
+  // ── Quanto cada um pagou das despesas PARTILHADAS deste mês ───────────────
+  //
+  // ⚠ É a base do acerto de contas, e não existia.
+  //
+  // O `acerto.base` da loja era o `ACERTO_INICIAL` — 86,50 €, uma constante da
+  // demonstração — e só contava com `clearedSeeds` falso. Numa casa a sério
+  // valia ZERO: o «Contas entre Nós» dizia «Está tudo acertado» com o Tomás a
+  // ter pago três vezes mais compras do que a Rita.
+  //
+  // A fórmula não estava por decidir: está escrita na vista `v_acerto_saldo`
+  // desde o primeiro dia — metade das despesas partilhadas de cada um, menos os
+  // acertos já pagos. O que faltava era o cliente usá-la.
+  //
+  // Sai por NOME porque é assim que a loja conhece os membros.
+  const partilhasPagas = {};
+  let despesasMeias = 0;                 // quantas são, para o ecrã o poder dizer
+  for (const d of casa.despesas || []) {
+    if (d.anula_id || !d.divide_meias) continue;
+    if (!noMes(d.data || d.created)) continue;
+    despesasMeias += 1;
+    const nome = nomeDoMembro[d.pagador];
+    if (!nome) continue;
+    partilhasPagas[nome] = (partilhasPagas[nome] || 0) + (Number(d.valor) || 0);
+  }
+
   // ── O acerto de contas entre os adultos ───────────────────────────────────
   //
   // ⚠ A mesma história do `paidPts`, no outro livro de dinheiro. O `sync.acerto`
@@ -279,6 +326,28 @@ export async function puxarCasa() {
   // A tarefa vem numa linha, mas a app lê a urgência e o prazo de MAPAS
   // (`s.urg[id]`, `s.due[id]`). Enche-se os dois, com o id do servidor por
   // chave: os ecrãs não mudam nada e a ordenação continua a funcionar.
+  // ⚠ O `today` é o que põe uma tarefa no «Tarefas de Hoje» do Início e no
+  // «por fazer hoje» do «Precisa de Si». Era um campo escrito à mão nas
+  // sementes do `data.js` e as tarefas do SERVIDOR não o traziam: numa casa a
+  // sério — que é toda a casa ligada — aquelas duas secções ficavam vazias para
+  // sempre, com oito tarefas na base de dados.
+  //
+  // Apanhado a semear a casa para experimentar a app. Não dá erro nenhum: dá um
+  // ecrã que diz «Nada para hoje» e parece que a app não tem tarefas.
+  //
+  // A regra é a que a pessoa espera:
+  //   • todos os dias        → é de hoje, sempre
+  //   • dias de semana       → é de hoje de segunda a sexta
+  //   • uma vez              → é de hoje se o prazo for hoje
+  const hojeISO = new Date().toISOString().slice(0, 10);
+  const diaDaSemana = new Date().getDay();          // 0 domingo … 6 sábado
+  const eDiaUtil = diaDaSemana >= 1 && diaDaSemana <= 5;
+  const eDeHoje = (t) => {
+    if (t.recorrencia === 'diaria') return true;
+    if (t.recorrencia === 'dias_semana') return eDiaUtil;
+    return String(t.prazo || '').slice(0, 10) === hojeISO;
+  };
+
   const newTasks = (casa.tarefas || []).map(t => ({
     id: t.id,
     idServidor: t.id,
@@ -286,6 +355,7 @@ export async function puxarCasa() {
     who: nomeDoMembro[t.atribuido_a] || '',
     recur: RECORRENCIA_NA_LOJA[t.recorrencia] || 'Uma vez',
     pts: Number(t.pontos) || 0,
+    today: eDeHoje(t),
   }));
 
   const urg = {};
@@ -514,6 +584,9 @@ export async function puxarCasa() {
     vaultMoves,
     paidPts,
     acertoMovs,
+    partilhasPagas,
+    despesasMeias,
+    gastoPorEnvelope,
     registered,
     newEquip,
     preferencias,

@@ -253,7 +253,7 @@ const BACKUPS_ANTIGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(n => `${KEY}.ant
 //
 // O guarda é `__tests__/nenhuma-chave-sem-quem-a-leia.test.js`.
 const DATA_KEYS = [
-  'done', 'pending', 'status', 'registered', 'acertoMovs', 'vaultMoves', 'paidPts',
+  'done', 'pending', 'status', 'registered', 'acertoMovs', 'partilhasPagas', 'despesasMeias', 'gastoPorEnvelope', 'vaultMoves', 'paidPts',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
   'newItems', 'itemGone', 'feitas', 'listasIds', 'envelopesDaCasa', 'mes',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
@@ -525,7 +525,7 @@ const proximoDomingo = () => {
 
 export const DEMO = () => ({
   done: TASKS.reduce((a, t) => (a[t.id] = !!t.done, a), {}),
-  pending: {}, status: {}, registered: 0, acertoMovs: [],
+  pending: {}, status: {}, registered: 0, acertoMovs: [], partilhasPagas: {}, despesasMeias: 0, gastoPorEnvelope: {},
   vaultMoves: [],
   paidPts: Object.fromEntries(Object.keys(MEMBERS).filter(n => MEMBERS[n].kid).map(n => [n, 0])),
   envMove: {}, added: [], newTasks: [], taskEdits: {}, taskGone: {}, taskOrder: {},
@@ -792,6 +792,11 @@ export function StoreProvider({ children }) {
       // lista vazia é a resposta certa depois de o mês fechar, e ficar com os
       // movimentos locais era voltar a ter uma dívida já acertada.
       if (Array.isArray(casa.acertoMovs)) set({ acertoMovs: casa.acertoMovs });
+      // E quanto cada adulto pagou das despesas partilhadas — a base do acerto.
+      if (casa.partilhasPagas) set({ partilhasPagas: casa.partilhasPagas });
+      // E o gasto de cada envelope — sem isto, tudo caía na Mercearia.
+      if (casa.gastoPorEnvelope) set({ gastoPorEnvelope: casa.gastoPorEnvelope });
+      if (typeof casa.despesasMeias === 'number') set({ despesasMeias: casa.despesasMeias });
 
       // ── A agenda e as tarefas do servidor ─────────────────────────────────
       //
@@ -831,6 +836,21 @@ export function StoreProvider({ children }) {
       if ((casa.envelopesDaCasa || []).length) {
         set({ envelopesDaCasa: casa.envelopesDaCasa, envMove: casa.envMove || {} });
       }
+
+      // ⚠ E o GASTO do mês, que o `puxarCasa` calculava e NINGUÉM aplicava.
+      //
+      // O `registered` só crescia pelo `registarDespesa` local. Numa casa a
+      // sério — que é toda a casa ligada — o orçamento dizia «0,00 € gastos» com
+      // dez despesas na base de dados: as do outro adulto nunca contavam, e as
+      // deste telefone desapareciam ao recarregar a página.
+      //
+      // É o mesmo defeito do `paidPts` e do `acertoMovs`: uma soma que o
+      // servidor faz e o cliente ignora. Só que este não passou pelo guarda do
+      // `o-que-sobe`, porque lá a pergunta era «o `puxarCasa` calcula-o?» — e
+      // calculava. Faltava a segunda metade: «e alguém o USA?».
+      //
+      // Apanhado a semear a casa para experimentar a app, e não por uma prova.
+      if (typeof casa.registered === 'number') set({ registered: casa.registered });
 
       // ── As compras ────────────────────────────────────────────────────────
       //
@@ -1113,14 +1133,50 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   //
   // Quem deve a quem sai da ordem dos adultos da casa e não de dois nomes.
   // Numa casa de um adulto não há nada a acertar, e a secção não aparece.
-  const acertoPago = (s.acertoMovs || []).reduce((a, m) => a + (m.valor || 0), 0);
-  const acerto = adultos.length < 2 ? null : {
-    devedor: adultos[1],
-    credor: adultos[0],
-    base: s.clearedSeeds ? 0 : ACERTO_INICIAL,
-    pago: acertoPago,
-    valor: Math.max(0, (s.clearedSeeds ? 0 : ACERTO_INICIAL) - acertoPago),
-  };
+  // ⚠ A BASE vem das despesas partilhadas, e não de uma constante.
+  //
+  // Era `s.clearedSeeds ? 0 : ACERTO_INICIAL` — 86,50 €, um número da
+  // demonstração. Numa casa a sério `clearedSeeds` é verdadeiro, logo a base era
+  // ZERO e o «Contas entre Nós» dizia «Está tudo acertado» por mais desigual que
+  // fosse quem pagou o quê. A secção estava morta e parecia viva.
+  //
+  // Com servidor, o `partilhado` diz quanto cada adulto pagou das despesas
+  // marcadas «a meias» DESTE mês. Quem pagou a mais tem a receber metade da
+  // diferença — é a fórmula da vista `v_acerto_saldo`, que o esquema tem desde o
+  // primeiro dia e o cliente nunca usou.
+  //
+  // Sem servidor, fica o número da demonstração, que é o que a demonstração
+  // precisa para mostrar a secção.
+  const partilhasPagas = s.partilhasPagas || {};
+  const temPartilhas = adultos.some(n => partilhasPagas[n] !== undefined);
+
+  const acerto = (() => {
+    if (adultos.length < 2) return null;
+    let credor = adultos[0];
+    let devedor = adultos[1];
+    let base = s.clearedSeeds ? 0 : ACERTO_INICIAL;
+
+    if (temPartilhas) {
+      const a = partilhasPagas[adultos[0]] || 0;
+      const b = partilhasPagas[adultos[1]] || 0;
+      // Quem pagou MAIS é o credor. Metade da diferença é o que falta acertar.
+      if (b > a) { credor = adultos[1]; devedor = adultos[0]; }
+      base = Math.round(Math.abs(a - b) / 2 * 100) / 100;
+    }
+
+    // ⚠ Os pagamentos contam com DIREÇÃO. Somar todos os movimentos dava o
+    // mesmo resultado a um pagamento do Tomás para a Rita e a um da Rita para o
+    // Tomás — que se anulam, não se somam. Os movimentos antigos, sem `de` nem
+    // `para`, contam como antes: são da demonstração local.
+    const pago = (s.acertoMovs || []).reduce((soma, m) => {
+      if (!m.de && !m.para) return soma + (m.valor || 0);
+      if (m.de === devedor && m.para === credor) return soma + (m.valor || 0);
+      if (m.de === credor && m.para === devedor) return soma - (m.valor || 0);
+      return soma;
+    }, 0);
+
+    return { devedor, credor, base, pago, valor: Math.max(0, Math.round((base - pago) * 100) / 100) };
+  })();
   const acertado = !acerto || acerto.valor === 0;
 
   // Traduzir um nome local para o identificador do servidor. Devolve null
@@ -1379,9 +1435,24 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     ? s.envelopesDaCasa.map(e => ({ ...e, used: 0 }))
     : ENV_BASE;
 
+  // ⚠ O gasto de cada envelope é o DELE, e não o do mês inteiro.
+  //
+  // Era `e.name === 'Mercearia' ? s.registered : 0`: o total do mês despejado
+  // na Mercearia e zero em todos os outros. Funcionava na demonstração, onde as
+  // únicas despesas eram compras. Com despesas a sério, a Mercearia aparecia a
+  // 1 248,64 € de um limite de 590 — «Restam −658,64 €» — e o condomínio, a luz
+  // e a água ficavam num «Casa & contas 0,00 €».
+  //
+  // Sem servidor não há repartição nenhuma para fazer, e fica o comportamento
+  // de sempre: as sementes trazem o `used` delas.
+  const gastoNoEnvelope = s.gastoPorEnvelope || {};
+  const temGastoDoServidor = Object.keys(gastoNoEnvelope).length > 0;
+
   const envelopes = baseDeEnvelopes.map(e => ({
     ...e,
-    used: (s.monthZero ? 0 : e.used) + (e.name === 'Mercearia' ? s.registered : 0),
+    used: temGastoDoServidor
+      ? (gastoNoEnvelope[e.name] || 0)
+      : (s.monthZero ? 0 : e.used) + (e.name === 'Mercearia' ? s.registered : 0),
     limit: (s.monthLimits && s.monthLimits[e.name] !== undefined
       ? s.monthLimits[e.name] : e.limit) + (s.envMove[e.name] || 0),
   }));

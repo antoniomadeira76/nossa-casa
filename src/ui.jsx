@@ -1,9 +1,63 @@
 import React from 'react';
-import { View, Text, Pressable, Image, Platform } from 'react-native';
+import { View, Text, TextInput, Pressable, Image, Platform } from 'react-native';
 import { S, R, elev, FONT, corDoMembro, comAlfa } from './theme';
+import { EUR } from './format';
 import Icon from './Icon';
 import Figura from './Avatares';
 import { visibilidadeDe } from './store';
+
+// ── Campo de valor: escreve-se, e os −/+ ajustam ─────────────────────────────
+//
+// Toque no meio para escrever; os botões dos lados servem para acertar sem
+// teclado. Serve rendimento, limites, valor do ponto e despesas.
+//
+// ⚠ Vivia dentro do `Dinheiro.jsx`, e o próprio comentário dele dizia que
+// servia «rendimento, limites, valor do ponto e despesas» — mas o valor do
+// ponto, na Gestão, era um `<Text>` entre dois botões. Não se podia escrever
+// lá: para pôr o ponto a 0,35 € eram sete toques, e para o pôr a 1,00 €, vinte.
+// Um controlo partilhado que vive dentro de um ecrã acaba por ser copiado à
+// mão no ecrã do lado, e a cópia fica pior. Passa a viver aqui.
+//
+// ⚠ E os passos ARREDONDAM aos cêntimos. Com passo de 0,05, três toques no
+// menos davam `0.09999999999999999` — o binário a fazer o que o binário faz.
+// A Gestão tinha um `+(x).toFixed(2)` à mão à volta de cada botão; agora é do
+// campo, e quem o usar não tem de se lembrar.
+const aosCentimos = (n) => Math.round(n * 100) / 100;
+
+export function NumField({ t, value, onChange, step = 5, min = 0, max = 99999, suffix = true }) {
+  const [txt, setTxt] = React.useState(null);
+  const commit = () => {
+    if (txt === null) return;
+    const v = Number(String(txt).replace(',', '.'));
+    setTxt(null);
+    if (!isFinite(v)) return;
+    onChange(aosCentimos(Math.min(max, Math.max(min, v))));
+  };
+  const Botao = ({ rotulo, sinal, para }) => (
+    <Pressable onPress={() => onChange(para)} accessibilityRole="button"
+      accessibilityLabel={rotulo}
+      style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
+        alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.accent }}>{sinal}</Text>
+    </Pressable>
+  );
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+      <Botao rotulo={`Menos ${step}`} sinal="−" para={aosCentimos(Math.max(min, value - step))} />
+      <TextInput
+        value={txt !== null ? String(txt) : (suffix ? EUR(value) : String(value))}
+        onFocus={() => setTxt(String(value).replace('.', ','))}
+        onChangeText={setTxt}
+        onBlur={commit}
+        onSubmitEditing={commit}
+        keyboardType="decimal-pad"
+        accessibilityLabel="Valor"
+        style={{ flex: 1, minHeight: 44, textAlign: 'center', fontFamily: FONT.display,
+          fontSize: 18, color: t.text2, borderRadius: R.row, borderWidth: 1, borderColor: t.border }} />
+      <Botao rotulo={`Mais ${step}`} sinal="+" para={aosCentimos(Math.min(max, value + step))} />
+    </View>
+  );
+}
 
 // Cartão: um enchimento só, 14/16, herdado do protótipo
 export const Card = ({ t, children, style, pad = true }) => (

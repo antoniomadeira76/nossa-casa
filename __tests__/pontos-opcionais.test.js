@@ -157,10 +157,23 @@ describe('a Gestão da Casa', () => {
 
   it('⚠ e o menos desce até 0, que era o que faltava', () => {
     // O mínimo era 0,01 €: os pontos tinham de valer sempre algo.
+    //
+    // ⚠ Esta prova fixava a EXPRESSÃO — `Math.max(0, +(s.pointValue - 0.05)`
+    // — e não a propriedade. Quando o controlo passou a ser o `NumField`
+    // partilhado, que já traz o mínimo e o arredondamento, a prova falhou sem
+    // que nada tivesse regredido. É a mesma forma do tecto de 2500 caracteres
+    // e da lista literal do `COM_IDEM`: uma fotografia do estado de hoje
+    // envelhece a impedir a arrumação de amanhã.
+    //
+    // O que interessa é o LIMITE, venha ele de onde vier.
     const fs = require('fs');
     const path = require('path');
     const codigo = fs.readFileSync(path.join(__dirname, '..', 'src/screens/Gestao.jsx'), 'utf8');
-    expect(codigo).toMatch(/pointValue: Math\.max\(0, \+\(s\.pointValue - 0\.05\)/);
+    const campo = codigo.slice(codigo.indexOf('<NumField'), codigo.indexOf('<NumField') + 220);
+    expect(campo).toMatch(/value=\{s\.pointValue\}/);
+    expect(campo).toMatch(/min=\{0\}/);
+    // E o máximo do ecrã é o do servidor: `num('valor_ponto', { min: 0, max: 5 })`.
+    expect(campo).toMatch(/max=\{5\}/);
     expect(codigo).not.toMatch(/Math\.max\(0\.01,/);
   });
 

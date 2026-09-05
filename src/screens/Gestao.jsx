@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-nativ
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro, LARGURA_APP } from '../theme';
 import { EUR, MONTHS } from '../format';
-import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty, avatarDe } from '../ui';
+import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty, avatarDe, NumField } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import { ENV_BASE } from '../data';
@@ -149,22 +149,19 @@ export default function Gestao({ t, user, onClose }) {
         {pontosNasTarefas ? (
         <>
         <Label t={t}>Quanto vale um ponto</Label>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-          {/* ⚠ Mínimo 0, e não 0,01. Uma casa pode querer os pontos como
-              contagem e não como dinheiro: «cinco pontos» sem euros atrás. O
-              0,01 obrigava a que valessem sempre algo. */}
-          <Tap label="Menos 0,05 €" onPress={() => mudarRegraDaCasa({ pointValue: Math.max(0, +(s.pointValue - 0.05).toFixed(2)) })}
-            style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row }}>
-            <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.accent }}>−</Text>
-          </Tap>
-          <Text style={{ flex: 1, textAlign: 'center', fontFamily: FONT.display, fontSize: 18, color: t.text2 }}>
-            {EUR(s.pointValue)}
-          </Text>
-          <Tap label="Mais 0,05 €" onPress={() => mudarRegraDaCasa({ pointValue: Math.min(5, +(s.pointValue + 0.05).toFixed(2)) })}
-            style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row }}>
-            <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.accent }}>+</Text>
-          </Tap>
-        </View>
+        {/* ⚠ Mínimo 0, e não 0,01. Uma casa pode querer os pontos como
+            contagem e não como dinheiro: «cinco pontos» sem euros atrás. O
+            0,01 obrigava a que valessem sempre algo. O máximo é 5, como no
+            servidor (`num('valor_ponto', { min: 0, max: 5 })`).
+
+            ⚠ E é o `NumField`, não dois botões à volta de um `<Text>`. Escrito
+            à mão, este controlo não deixava ESCREVER o valor: pôr o ponto a
+            0,35 € eram sete toques, e a 1,00 € eram vinte. O campo partilhado
+            já tinha o campo de texto lá dentro — só não estava a ser usado
+            aqui, porque vivia dentro do ecrã do Dinheiro e a Gestão não pode
+            importar um ecrã. */}
+        <NumField t={t} value={s.pointValue} step={0.05} min={0} max={5}
+          onChange={(v) => mudarRegraDaCasa({ pointValue: v })} />
         <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
           {(() => {
             const porPagar = Object.keys(MEMBERS)
