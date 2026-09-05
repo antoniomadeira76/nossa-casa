@@ -477,7 +477,11 @@ const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
   // ⚠ As preferências são de CADA UM: a regra é `membro = @request.auth.id`, e
   // esta leitura devolve UMA linha — a de quem pergunta — ou nenhuma. É a única
   // coleção da lista que não é da casa inteira.
-  'preferencias'];
+  'preferencias',
+  // O mês aberto e os fechados. O mês ABERTO é o que não tem `fechado_em`, e é
+  // ele que define o intervalo por onde as despesas e as transferências se
+  // filtram — os totais são SOMAS de um mês, nunca campos que alguém zera.
+  'meses'];
 
 export const ler = {
   async casa() {
@@ -747,7 +751,18 @@ const traduzirEvento = (e) => {
 // entre as coisas que nunca devem acontecer).
 
 const FILA = 'nossa-casa/fila';
-const COM_IDEM = new Set(['despesas', 'cofre_movimentos']);
+// ⚠ TODAS as coleções com índice único em `(casa, idem_key)`, e a lista tem de
+// ficar completa: quem tem o índice e não está aqui escreve `idem_key` vazio, e
+// a SEGUNDA escrita dessa coleção na casa colide com a primeira e é recusada.
+//
+// Estavam aqui duas das quatro. As transferências entre envelopes e os acertos
+// de contas ficaram de fora, e a segunda de cada era recusada com um 400 que a
+// fila engolia — a casa deixava de sincronizar e o único sintoma era o número
+// de pendentes a subir.
+//
+// A lista não se mantém de cabeça: `__tests__/idem-key-em-todas.test.js` lê os
+// índices do `criar-colecoes.mjs` e exige que cada um apareça aqui.
+const COM_IDEM = new Set(['despesas', 'cofre_movimentos', 'transferencias', 'acertos']);
 
 const lerFila = async () => {
   try { return JSON.parse(await guarda.getItem(FILA)) || []; } catch { return []; }
@@ -774,10 +789,29 @@ export const escrever = {
 
   // Por ordem, parando na primeira falha para não trocar a sequência. O que
   // falhou fica na fila para a próxima tentativa.
+  //
+  // ── ⚠ Uma recusa não é uma falha de rede, e tratá-las como iguais custou-me
+  // uma tarde ────────────────────────────────────────────────────────────────
+  //
+  // Esta função parava em QUALQUER erro e não dizia qual. Uma escrita que o
+  // servidor RECUSA — campo em falta, regra que não deixa — nunca vai passar,
+  // por muitas vezes que se tente: fica à cabeça da fila e bloqueia tudo o que
+  // vem atrás, para sempre, em silêncio. A casa deixa de sincronizar e ninguém
+  // sabe porquê, porque a única pista era um número de pendentes a subir.
+  //
+  // Distinguem-se pelo estado:
+  //   • 4xx  → o servidor entendeu e recusou. Não melhora com o tempo. Sai da
+  //            fila para as `recusadas`, e a fila continua.
+  //   • 0/5xx → não houve resposta, ou o servidor caiu. Melhora. Fica na fila.
+  //
+  // E a que sai leva o motivo com ela: `presa` e `recusadas` existem para que
+  // quem chamar possa dizer o que aconteceu em vez de contar pendentes.
   async esvaziar() {
-    if (!estaLigado()) return { enviadas: 0, pendentes: (await lerFila()).length };
+    if (!estaLigado()) return { enviadas: 0, pendentes: (await lerFila()).length, recusadas: [] };
     let fila = await lerFila();
     let enviadas = 0;
+    const recusadas = [];
+    let presa = null;
     while (fila.length) {
       const w = fila[0];
       try {
@@ -787,12 +821,27 @@ export const escrever = {
         // 400 numa escrita com chave de idempotência é o índice único a dizer
         // «já lá está» — o que é sucesso, não erro.
         const jaLa = e.status === 400 && w.dados && w.dados.idem_key;
-        if (!jaLa) break;
+        if (!jaLa) {
+          const porque = {
+            op: w.op, colecao: w.colecao, estado: e.status || 0,
+            mensagem: e.message,
+            campos: (e.response && e.response.data) || (e.data && e.data.data) || null,
+          };
+          // Sem resposta, ou o servidor a arder: pára e guarda para a próxima.
+          if (!e.status || e.status >= 500) { presa = porque; break; }
+          // Recusada. Tirá-la é o que desbloqueia as que vêm atrás — mas não é
+          // uma escrita enviada, e contá-la como tal era voltar ao silêncio.
+          recusadas.push(porque);
+          fila.shift();
+          await gravarFila(fila);
+          continue;
+        }
       }
-      fila.shift(); enviadas++;
+      fila.shift();
+      enviadas++;
       await gravarFila(fila);
     }
-    return { enviadas, pendentes: fila.length };
+    return { enviadas, pendentes: fila.length, recusadas, presa };
   },
 
   pendentes: async () => (await lerFila()).length,

@@ -914,11 +914,28 @@ describe('Camada de ligação ao servidor — PocketBase', () => {
   });
 
   // §6 e §9: nenhuma operação de dinheiro sem chave.
+  //
+  // ⚠ Esta prova ESCONDEU o defeito que devia apanhar, e vale a pena dizer como.
+  //
+  // Estava escrita a fixar a lista literal: `new Set(['despesas',
+  // 'cofre_movimentos'])`. Entretanto nasceram as `transferencias` e os
+  // `acertos`, com o mesmo índice único e sem entrarem na lista — e a prova
+  // continuou verde, porque o que ela media era se as duas de sempre lá
+  // estavam, não se lá estavam TODAS. A segunda transferência de cada casa era
+  // recusada com um 400 que a fila engolia.
+  //
+  // É a mesma forma do tecto de 2500 caracteres que tirei daqui há dois dias:
+  // uma prova que fotografa o estado de hoje em vez de exigir uma propriedade
+  // envelhece a fechar os olhos.
+  //
+  // A propriedade — quem tem o índice está na lista, e mais ninguém — está em
+  // `__tests__/idem-key-em-todas.test.js`, que a ENUMERA a partir do esquema.
+  // Aqui fica só o que é do §6: que as quatro operações de dinheiro têm índice.
   test('as operações de dinheiro levam chave de idempotência', () => {
-    for (const c of ['despesas', 'cofre_movimentos']) {
+    for (const c of ['despesas', 'cofre_movimentos', 'transferencias', 'acertos']) {
       expect(colecoes).toMatch(new RegExp(`CREATE UNIQUE INDEX \\w+ ON ${c} \\(casa, idem_key\\)`));
     }
-    expect(cliente).toMatch(/COM_IDEM = new Set\(\['despesas', 'cofre_movimentos'\]\)/);
+    expect(cliente).toMatch(/const COM_IDEM = new Set\(\[/);
   });
 
   // §5 chama-lhe «a regra mais restritiva do sistema». Aqui só se guarda que a

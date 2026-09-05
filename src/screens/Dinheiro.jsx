@@ -77,7 +77,8 @@ function GrelhaEnvelopes({ t, envelopes, livre, escolhido, onEscolher }) {
 
 export default function Dinheiro({ t, user, onEquip }) {
   const st = useStore();
-  const { s, set, envelopes, budget, spent, remaining, allEquip, isAdmin, membros: MEMBERS, adultos, criancas, acerto, acertado, pagarAcerto, oNome, aoNome, moverEntreEnvelopes, registarDespesa } = st;
+  const { s, set, envelopes, budget, spent, remaining, allEquip, isAdmin, membros: MEMBERS, adultos, criancas, acerto, acertado, pagarAcerto, oNome, aoNome, moverEntreEnvelopes, registarDespesa,
+          abrirMes, fecharMes } = st;
   const [sheet, setSheet] = useState(null);
   const [mv, setMv] = useState({ from: 0, to: 3, amount: 0 });
   const [exp, setExp] = useState({ amount: 0, env: 0, payer: user, split: true });
@@ -129,16 +130,14 @@ export default function Dinheiro({ t, user, onEquip }) {
       envLimits[e.name] = e.limit + (openMonth.envelopes[e.name] || 0);
     });
 
-    set(x => ({
-      monthLimits: envLimits,
-      monthZero: false,
-      // Era `'Setembro'` escrito à mão, com um TODO em inglês ao lado.
-      // Abrir o mês em março punha a app a dizer «Orçamento de Setembro» em
-      // quatro ecrãs, e o `proximoMes` daí em diante contava a partir do mês
-      // errado. É o mês SEGUINTE ao que está aberto, que é o que o botão diz.
-      monthName: proximoMes,
-      registered: 0,
-    }));
+    // ⚠ Pelo `abrirMes` da loja, que também cria a linha no servidor — e fecha
+    // a anterior antes de abrir a nova, para não haver dois meses abertos ao
+    // mesmo tempo.
+    //
+    // O `monthName` era `'Setembro'` escrito à mão, com um TODO em inglês ao
+    // lado. Abrir o mês em março punha a app a dizer «Orçamento de Setembro»
+    // em quatro ecrãs. É o mês SEGUINTE ao aberto, que é o que o botão diz.
+    abrirMes({ nome: proximoMes, limites: envLimits });
     setSheet(null);
   };
 
@@ -146,12 +145,11 @@ export default function Dinheiro({ t, user, onEquip }) {
   // ainda não está decidida (o texto dizia metas aqui e cofres na Gestão), por
   // isso não se aplica nada — melhor não mover dinheiro do que movê-lo ao acaso.
   const handleCloseMonth = () => {
-    set(x => ({
-      registered: 0,
-      acertoMovs: [],
-      paidPts: Object.fromEntries(criancas.map(n => [n, 0])),
-      envMove: {},
-    }));
+    // ⚠ Pelo `fecharMes` da loja. Isto escrevia `registered: 0` e `envMove: {}`
+    // — zero por cima de duas SOMAS. Com as despesas e as transferências no
+    // servidor, as linhas ficavam e a leitura seguinte trazia o total de
+    // volta: o mês fechado reabria sozinho.
+    fecharMes();
     setSheet(null);
   };
 

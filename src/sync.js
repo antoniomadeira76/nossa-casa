@@ -155,10 +155,29 @@ export async function puxarCasa() {
       .replace(/^(\d{4})-(\d{2})-(\d{2})$/, 'd$1-$2-$3'),
   }));
 
-  // O que foi gasto: a soma das despesas não anuladas. A vista do servidor
-  // também o calcula; isto é para o ecrã ter o número sem uma segunda ida.
+  // ── O mês aberto ──────────────────────────────────────────────────────────
+  //
+  // ⚠ É ele que define o INTERVALO por onde tudo o resto se filtra. Sem isto os
+  // totais eram somas de SEMPRE, e fechar o mês escrevia zero por cima delas —
+  // o que funcionava enquanto eram campos locais e deixou de funcionar quando
+  // passaram a ser linhas no servidor: as linhas ficavam, e a leitura seguinte
+  // trazia o total todo de volta. O mês fechado reabria sozinho.
+  //
+  // Sem nenhum mês aberto, o intervalo é «tudo» — é o que uma casa acabada de
+  // ligar tem, e é melhor mostrar o que há do que esconder tudo.
+  const mesAberto = (casa.meses || []).find(m => !m.fechado_em) || null;
+  const inicioDoMes = mesAberto ? String(mesAberto.mes).slice(0, 10) : null;
+  const noMes = (data) => {
+    if (!inicioDoMes) return true;
+    const d = String(data || '').slice(0, 10);
+    return d >= inicioDoMes;
+  };
+
+  // O que foi gasto NESTE mês: a soma das despesas não anuladas cuja data cai
+  // depois de o mês ter aberto. A vista do servidor também soma; isto é para o
+  // ecrã ter o número sem uma segunda ida.
   const registered = (casa.despesas || [])
-    .filter(d => !d.anula_id)
+    .filter(d => !d.anula_id && noMes(d.data || d.created))
     .reduce((n, d) => n + (Number(d.valor) || 0), 0);
 
   const aCasa = (casa.casas || [])[0] || null;
@@ -289,7 +308,10 @@ export async function puxarCasa() {
   // idempotência. Uma soma não se anula.
   const nomeDoEnvelope = Object.fromEntries(envelopesDaCasa.map(e => [e.id, e.name]));
   const envMove = {};
-  for (const t of casa.transferencias || []) {
+  // ⚠ Só as DESTE mês, pela mesma razão do `registered`: o ajuste de um
+  // envelope é uma redistribuição dentro de um mês, e arrastá-la para o
+  // seguinte era começar o mês com o orçamento já mexido.
+  for (const t of (casa.transferencias || []).filter(x => noMes(x.mes || x.created))) {
     const de = nomeDoEnvelope[t.de_envelope];
     const para = nomeDoEnvelope[t.para_envelope];
     const valor = Number(t.valor) || 0;
@@ -371,11 +393,21 @@ export async function puxarCasa() {
     },
   } : null;
 
+  // O mês, na forma da loja. O `monthLimits` é o `limites` da linha — um objeto
+  // `nome do envelope → limite`, guardado como JSON.
+  const mes = mesAberto ? {
+    idServidor: mesAberto.id,
+    inicio: chaveDeISO(mesAberto.mes),
+    monthLimits: mesAberto.limites || null,
+    rendimento: Number(mesAberto.rendimento) || 0,
+  } : null;
+
   return {
     vaultMoves,
     registered,
     newEquip,
     preferencias,
+    mes,
     regras,
     listas,
     listasIds,
@@ -612,6 +644,41 @@ export async function renomearNaLista(chave, id, nome) {
 export async function apagarDaLista(chave, id) {
   if (!ligado() || !id) return { pendente: true };
   return servidor.pb.collection(colecaoDaLista(chave)).delete(id);
+}
+
+// ── O mês ────────────────────────────────────────────────────────────────────
+//
+// ⚠ Fechar o mês fazia `registered: 0` e `envMove: {}` — escrever zero por cima
+// de duas somas. Enquanto tudo era local isso funcionava por acidente: o total
+// era um campo, e zerá-lo zerava-o.
+//
+// A partir do momento em que as despesas e as transferências são LINHAS no
+// servidor, deixa de funcionar: as linhas continuam lá, e a leitura seguinte
+// traz o total todo de volta. O mês fechado reabria sozinho.
+//
+// O modelo certo é o que a coleção `meses` já previa: uma linha por mês, e o
+// mês ABERTO é o que não tem `fechado_em`. Os totais passam a ser as somas
+// FILTRADAS por esse mês — nunca zeradas, porque não há nada a zerar.
+//
+// O `mes` é o primeiro dia do mês, para as comparações serem de datas e não de
+// texto.
+export async function abrirMes({ casa, mes, rendimento, limites }) {
+  return criarOuEnfileirarCasa('meses', {
+    casa, mes: isoDeChave(mes),
+    rendimento: Number(rendimento) || 0,
+    limites: limites || {},
+  });
+}
+
+export async function alterarMes(idNoServidor, campos) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  const linha = {};
+  if ('rendimento' in campos) linha.rendimento = Number(campos.rendimento) || 0;
+  if ('limites' in campos) linha.limites = campos.limites || {};
+  // Fechar é pôr a data: o mês deixa de ser o aberto, e os totais do seguinte
+  // começam do zero por serem OUTRA soma — não por alguém os ter apagado.
+  if ('fechadoEm' in campos) linha.fechado_em = campos.fechadoEm ? isoDeChave(campos.fechadoEm) : null;
+  return servidor.pb.collection('meses').update(idNoServidor, linha);
 }
 
 // ── As preferências de cada um ───────────────────────────────────────────────

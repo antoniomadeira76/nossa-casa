@@ -51,13 +51,14 @@ export const O_QUE_SOBE = {
 
   // ── Dinheiro ──────────────────────────────────────────────────────────────
   vaultMoves: ['linhas', 'A coleção `cofre_movimentos`, aditiva e com chave de idempotência.'],
-  envMove: ['linhas', 'A SOMA das `transferencias`. Era um saldo escrito, e dois telefones a mover dinheiro anulavam-se — o INVARIANTE #2 ao contrário.'],
+  envMove: ['linhas', 'A SOMA das `transferencias` deste mês. Era um saldo escrito, e dois telefones a mover dinheiro anulavam-se — o INVARIANTE #2 ao contrário.'],
   envelopesDaCasa: ['linhas', 'A coleção `envelopes`. Eram sementes no código, e a lista da casa não existia em lado nenhum.'],
-  registered: ['linhas', 'A soma das `despesas` não anuladas. O número é derivado; o que sobe são as despesas.'],
+  registered: ['linhas', 'A soma das `despesas` não anuladas DESTE mês. Fechar o mês escrevia zero por cima dela, e as linhas ficavam: o mês fechado reabria sozinho.'],
   acertoMovs: ['linhas', 'A coleção `acertos`, aditiva. O acerto entre os dois adultos — dinheiro entre duas pessoas, o sítio onde discordar dói mais.', 'acerto'],
   paidPts: ['local', 'Quantos pontos de cada criança já foram pagos. Deriva-se dos `cofre_movimentos` do tipo semanada; guardá-lo aqui é o resumo, não a verdade.'],
-  monthLimits: ['local', 'Os limites de cada envelope NESTE mês. A coleção `meses` tem um campo `limites`, e ligá-lo é o trabalho seguinte — está dito no TAREFAS.md.'],
-  monthZero: ['local', 'Se o mês foi aberto e ainda nada se gastou. Deriva-se de haver ou não despesas no mês.'],
+  mes: ['linhas', 'A linha de `meses` que está ABERTA — a que não tem `fechado_em`. É ela que define o intervalo por onde os totais se filtram.', 'abrirMes'],
+  monthLimits: ['campo', 'O `limites` da linha do mês aberto, um objeto `envelope → limite` guardado como JSON. Muda com o `mudarLimiteDoMes`.', 'alterarMes'],
+  monthZero: ['local', 'Se o mês foi aberto e ainda nada se gastou. Deriva-se de o `registered` do mês aberto ser zero — é um atalho do ecrã, não um facto guardado.'],
   monthName: ['local', 'O nome do mês a mostrar. É uma etiqueta do ecrã, calculada da data.'],
   extraLog: ['local', 'Registo de extras dados a uma criança. Deriva-se dos `cofre_movimentos` do tipo bónus.'],
 

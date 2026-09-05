@@ -243,7 +243,7 @@ const BACKUPS_ANTIGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(n => `${KEY}.ant
 const DATA_KEYS = [
   'done', 'pending', 'status', 'registered', 'acertoMovs', 'vaultMoves', 'paidPts', 'extraLog',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
-  'newItems', 'itemGone', 'feitas', 'listasIds', 'envelopesDaCasa',
+  'newItems', 'itemGone', 'feitas', 'listasIds', 'envelopesDaCasa', 'mes',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'importDone', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'pointValue', 'payDay', 'splitHalf',
@@ -524,6 +524,9 @@ export const DEMO = () => ({
   // Os envelopes da casa, quando vêm do servidor. Vazio = corre com as
   // sementes do `ENV_BASE`, como antes de haver servidor.
   envelopesDaCasa: [],
+  // O mês aberto, quando vem do servidor: o id da linha, o dia em que abriu, e
+  // os limites dele. Nulo = a casa ainda não abriu nenhum.
+  mes: null,
   // As linhas de `tarefas_feitas` que o servidor tem, por «tarefa|dia». É o
   // que permite DESMARCAR: sem o id da linha não há o que apagar do outro lado.
   feitas: {},
@@ -785,6 +788,16 @@ export function StoreProvider({ children }) {
           schemeByUser: { ...x.schemeByUser, [p.nome]: p.esquema },
           themeByUser: { ...x.themeByUser, [p.nome]: p.aspeto },
           notif: { ...x.notif, ...p.notif },
+        }));
+      }
+
+      // O mês aberto. É ele que define o intervalo dos totais, e por isso vem
+      // ANTES de o `registered` e o `envMove` serem lidos — que já vêm
+      // filtrados por ele.
+      if (casa.mes) {
+        set(x => ({
+          mes: casa.mes,
+          ...(casa.mes.monthLimits ? { monthLimits: casa.mes.monthLimits } : {}),
         }));
       }
 
@@ -1639,6 +1652,71 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     const id = envelopeNoServidor(nome);
     if (sync && id) sync.apagarEnvelope(id).catch(() => {});
     set(x => ({ envelopesDaCasa: (x.envelopesDaCasa || []).filter(e => e.name !== nome) }));
+  };
+
+  // ── O mês: abrir e fechar ───────────────────────────────────────────────
+  //
+  // ⚠ Fechar o mês fazia `registered: 0` e `envMove: {}` — escrever zero por
+  // cima de duas SOMAS. Enquanto tudo era local funcionava por acidente: o
+  // total era um campo, e zerá-lo zerava-o.
+  //
+  // Com as despesas e as transferências como linhas no servidor, deixa de
+  // funcionar: as linhas ficam, e a leitura seguinte traz o total todo de
+  // volta. O mês fechado reabria sozinho.
+  //
+  // O modelo certo é o que a coleção `meses` já previa: o mês ABERTO é o que
+  // não tem `fechado_em`, e os totais são as somas FILTRADAS por ele. Não há
+  // nada a zerar — o mês seguinte começa do zero por ser outra soma.
+  const mesNoServidor = () => (s.mes || {}).idServidor || null;
+
+  const abrirMes = ({ nome, limites, rendimento }) => {
+    set(x => ({
+      monthLimits: limites,
+      monthZero: false,
+      monthName: nome,
+      // ⚠ O `registered` e o `envMove` NÃO se zeram à mão. Sem servidor ficam
+      // como estão até haver despesas do mês novo; com servidor, a leitura
+      // seguinte traz as somas já filtradas.
+      ...(sync ? {} : { registered: 0, envMove: {} }),
+    }));
+
+    if (!sync) return;
+    const ses = sync.sessao();
+    if (!ses) return;
+    // Fecha-se o anterior antes de abrir o seguinte: dois meses abertos ao
+    // mesmo tempo tornavam o «mês aberto» uma escolha ao acaso.
+    const anterior = mesNoServidor();
+    const acao = anterior
+      ? sync.alterarMes(anterior, { fechadoEm: TODAY_KEY }).catch(() => {})
+      : Promise.resolve();
+    acao.then(() => sync.abrirMes({
+      casa: ses.casa, mes: TODAY_KEY, rendimento: rendimento ?? s.rendimento, limites,
+    }))
+      .then((r) => { if (r && r.id) set(x => ({ mes: { ...x.mes, idServidor: r.id } })); })
+      .catch(() => {});
+  };
+
+  const fecharMes = () => {
+    set(x => ({
+      acertoMovs: [],
+      paidPts: Object.fromEntries(criancas.map(n => [n, 0])),
+      ...(sync ? {} : { registered: 0, envMove: {} }),
+    }));
+    const id = mesNoServidor();
+    if (sync && id) {
+      sync.alterarMes(id, { fechadoEm: TODAY_KEY })
+        .then(() => set(x => ({ mes: null })))
+        .catch(() => {});
+    }
+  };
+
+  const mudarLimiteDoMes = (envelope, limite) => {
+    set(x => ({ monthLimits: { ...(x.monthLimits || {}), [envelope]: limite } }));
+    const id = mesNoServidor();
+    if (sync && id) {
+      sync.alterarMes(id, { limites: { ...(s.monthLimits || {}), [envelope]: limite } })
+        .catch(() => {});
+    }
   };
 
   // ── As preferências de cada um ──────────────────────────────────────────
@@ -2946,6 +3024,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     criarEvento, alterarEventoDaCasa, eventoNoServidor,
     criarArtigo, marcarArtigo, artigoNoServidor, mudarPlanoDeCompras, fecharIdaAsCompras,
     criarEquipamento, equipNoServidor, mudarPreferencia,
+    abrirMes, fecharMes, mudarLimiteDoMes,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
     lerDoServidor,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),
