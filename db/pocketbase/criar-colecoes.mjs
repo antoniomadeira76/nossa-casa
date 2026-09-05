@@ -1,11 +1,12 @@
 // Cria as coleções da Nossa Casa no PocketBase, traduzindo db/postgres/01-esquema.sql.
 import PocketBase from 'pocketbase';
+import { SUPERUTILIZADOR, SUPER_PALAVRA, URL_DO_SERVIDOR } from './ambiente.mjs';
 
-const pb = new PocketBase(process.env.PB_URL || 'http://127.0.0.1:8095');
-// As credenciais do superutilizador vêm do ambiente. Os valores por omissão
-// são os do servidor de desenvolvimento e estão aqui para estes scripts
-// correrem sem preparação nenhuma — mas num servidor a sério o administrador é
-// outro, e a palavra-passe não deve estar escrita num ficheiro versionado.
+const pb = new PocketBase(URL_DO_SERVIDOR);
+// As credenciais do superutilizador vêm do ambiente OU do `.env.local`, que o
+// `.gitignore` exclui — ver `ambiente.mjs`. O valor por omissão está escrito
+// no código e este repositório é público: serve para uma base acabada de criar
+// e mais nada.
 //   PB_ADMIN=... PB_ADMIN_PASS=... node <este ficheiro>
 //
 // ⚠ `SUPER` e não `ADMIN`. Mais abaixo há um `const ADMIN` que é a REGRA do
@@ -19,8 +20,8 @@ const pb = new PocketBase(process.env.PB_URL || 'http://127.0.0.1:8095');
 // verdes porque corriam contra as coleções criadas ANTES disso — uma base de
 // dados que já não se sabia recriar. Descoberto em 03/09/2026, ao tentar
 // aplicar a correção da visibilidade da saúde.
-const SUPER = process.env.PB_ADMIN || 'admin@nossacasa.local';
-const SUPER_PASS = process.env.PB_ADMIN_PASS || 'casa-de-testes-123';
+const SUPER = SUPERUTILIZADOR;
+const SUPER_PASS = SUPER_PALAVRA;
 await pb.collection('_superusers').authWithPassword(SUPER, SUPER_PASS);
 
 const txt = (name, o = {}) => ({ name, type: 'text', ...o });

@@ -13,15 +13,15 @@
 // a outra. Para isso é preciso existir uma segunda casa — e ela também é de
 // provas, também é limpa, e também não toca em mais nada.
 import PocketBase from 'pocketbase';
+// ⚠ As credenciais vêm do `.env.local` quando lá estiverem — o Node não o
+// carrega sozinho, e sem isto os scripts caíam sempre no valor por omissão que
+// está escrito no código, num repositório PÚBLICO. Ver `ambiente.mjs`.
+import { SUPERUTILIZADOR, SUPER_PALAVRA, URL_DO_SERVIDOR } from './ambiente.mjs';
 
-export const URL = process.env.PB_URL || 'http://127.0.0.1:8095';
+export const URL = URL_DO_SERVIDOR;
 
-// As credenciais do superutilizador vêm do ambiente. Os valores por omissão
-// são os do servidor de desenvolvimento e estão aqui para estes scripts
-// correrem sem preparação nenhuma — mas num servidor a sério o administrador é
-// outro, e a palavra-passe não deve estar escrita num ficheiro versionado.
-const ADMIN = process.env.PB_ADMIN || 'admin@nossacasa.local';
-const ADMIN_PASS = process.env.PB_ADMIN_PASS || 'casa-de-testes-123';
+const ADMIN = SUPERUTILIZADOR;
+const ADMIN_PASS = SUPER_PALAVRA;
 
 // O prefixo é o que distingue uma casa de provas de uma casa a sério. Está no
 // nome porque é o único campo que se lê de fora sem convenções extra.
