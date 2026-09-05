@@ -90,12 +90,13 @@ describe('o retrato de hoje', () => {
     // eslint-disable-next-line no-console
     console.log(`      sobem: ${sobem} · locais: ${locais} · total: ${CHAVES.length}`);
     expect(sobem + locais).toBe(CHAVES.length);
-    // ⚠ Em 05/09/2026 são 32 a subir, contra 10 dois dias antes. A prova prende
+    // ⚠ Em 05/09/2026 são 34 a subir, contra 10 dois dias antes. A prova prende
     // o CHÃO, não o teto: sobe à medida que as lacunas fecham, e se descer é
     // porque alguém desligou alguma coisa.
     //
-    // Escrevi 34 à primeira, de cabeça, e a prova corrigiu-me. Fica o número
-    // medido, não o que eu julgava.
-    expect(sobem).toBeGreaterThanOrEqual(32);
+    // ⚠ E o número escreve-se DEPOIS de o medir. Pus 34 à primeira, de cabeça,
+    // quando eram 32, e a prova corrigiu-me — coincidência ter voltado a 34
+    // com os equipamentos, e não desculpa para o adivinhar da próxima vez.
+    expect(sobem).toBeGreaterThanOrEqual(34);
   });
 });

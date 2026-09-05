@@ -95,9 +95,9 @@ export const O_QUE_SOBE = {
   healthGone: ['local', 'Lápides de consultas-semente apagadas neste dispositivo.'],
 
   // ── Equipamentos ──────────────────────────────────────────────────────────
-  newEquip: ['local', 'A coleção `equipamentos` existe no servidor e o cliente ainda não escreve nela. É a lacuna maior que resta, e está no TAREFAS.md.'],
-  equipEdits: ['local', 'Pela mesma razão do `newEquip`: enquanto a coleção não for escrita, as alterações não têm para onde ir.'],
-  equipGone: ['local', 'Lápides de equipamentos-semente, e pela mesma razão.'],
+  newEquip: ['linhas', 'A coleção `equipamentos`. Existia desde o início e ninguém escrevia nela: a garantia da máquina de lavar era conhecida de um telefone só.', 'equipamentoDaCasa'],
+  equipEdits: ['campo', 'As alterações de um equipamento vão para a própria linha. O mapa existe porque uma SEMENTE não se pode editar no sítio.', 'alterarEquipamento'],
+  equipGone: ['local', 'Lápides de equipamentos-semente. Um equipamento do servidor apaga-se LÁ, pelo `apagarEquipamento`; isto marca só os que vêm do `data.js`.'],
 
   // ── Do dispositivo, e de mais ninguém ─────────────────────────────────────
   schemeByUser: ['local', 'O esquema de cor escolhido. A coleção `preferencias` existe e é POR MEMBRO; ligá-la é trabalho de outro dia, e entretanto a cor é deste telefone.'],

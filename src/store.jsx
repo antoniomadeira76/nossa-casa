@@ -770,6 +770,10 @@ export function StoreProvider({ children }) {
       // importa: ele vem da linha de cada artigo, e não de um mapa que este
       // telefone reescreveu. Fundi-lo deixava um artigo apanhado pelo outro
       // adulto a aparecer por comprar aqui.
+      // Os equipamentos: a coleção existia desde o início e ninguém escrevia
+      // nela. A garantia da máquina de lavar era conhecida de um telefone só.
+      if ((casa.newEquip || []).length) set({ newEquip: casa.newEquip });
+
       if (casa.shopPlan) {
         set(x => ({
           newItems: casa.newItems,
@@ -1110,10 +1114,69 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   const allEquip = () => [...(s.clearedSeeds ? [] : EQUIP), ...s.newEquip]
     .filter(e => !s.equipGone[e.id])
     .map(e => ({ ...e, ...((s.equipEdits || {})[e.id] || {}) }));
-  const editEquip = (id, campos) => set(x => ({
-    equipEdits: { ...(x.equipEdits || {}), [id]: { ...((x.equipEdits || {})[id] || {}), ...campos } },
-  }));
-  const removeEquip = (id) => set(x => ({ equipGone: { ...x.equipGone, [id]: true } }));
+  const equipNoServidor = (id) =>
+    (allEquip().find(e => e.id === id) || {}).idServidor || null;
+
+  // ── Criar um equipamento ────────────────────────────────────────────────
+  //
+  // Isto vivia dentro do ecrã, que escrevia direto no `set`. A coleção
+  // `equipamentos` existia no servidor desde o início e ninguém escrevia nela:
+  // a garantia da máquina de lavar era conhecida de um telefone só.
+  //
+  // ⚠ Os campos `fatura` e `foto` da coleção ficam por usar — a app ainda não
+  // tem onde escolher a fotografia de uma fatura. Quando tiver, tem de ir pelo
+  // `criarComFicheiro`, como o anexo de saúde: a fila serializa em JSON.
+  const criarEquipamento = ({ name, cat, bought, warrantyEnd, shop, price, maint, maintDate }) => {
+    const nome = String(name || '').trim();
+    if (!nome) return null;
+    const id = 'eq-' + Date.now();
+    set(x => ({
+      newEquip: [...(x.newEquip || []), {
+        id, name: nome, cat, bought, warrantyEnd,
+        ...(shop ? { shop } : {}), ...(price ? { price } : {}),
+        ...(maint ? { maint } : {}), ...(maintDate ? { maintDate } : {}),
+      }],
+    }));
+
+    if (sync) {
+      const ses = sync.sessao();
+      if (ses) sync.equipamentoDaCasa({
+        casa: ses.casa, nome, categoria: cat, compradoEm: bought,
+        loja: shop, preco: price, garantiaAte: warrantyEnd,
+        manutencao: maint, manutencaoAte: maintDate,
+      })
+        .then((r) => { if (r && r.id) set(x => ({
+          newEquip: (x.newEquip || []).map(e => (e.id === id ? { ...e, idServidor: r.id } : e)),
+        })); })
+        .catch(() => {});
+    }
+    return id;
+  };
+
+  const editEquip = (id, campos) => {
+    set(x => ({
+      equipEdits: { ...(x.equipEdits || {}), [id]: { ...((x.equipEdits || {})[id] || {}), ...campos } },
+    }));
+    const noServidor = equipNoServidor(id);
+    if (sync && noServidor) sync.alterarEquipamento(noServidor, {
+      ...(campos.name !== undefined ? { nome: campos.name } : {}),
+      ...(campos.cat !== undefined ? { categoria: campos.cat } : {}),
+      ...(campos.bought !== undefined ? { compradoEm: campos.bought } : {}),
+      ...(campos.shop !== undefined ? { loja: campos.shop } : {}),
+      ...(campos.price !== undefined ? { preco: campos.price } : {}),
+      ...(campos.warrantyEnd !== undefined ? { garantiaAte: campos.warrantyEnd } : {}),
+      ...(campos.maint !== undefined ? { manutencao: campos.maint } : {}),
+      ...(campos.maintDate !== undefined ? { manutencaoAte: campos.maintDate } : {}),
+    }).catch(() => {});
+  };
+
+  // ⚠ O `id` do servidor lê-se ANTES do `set`, como no `removerTarefa` e no
+  // `removerArtigo`. É a terceira vez que a mesma armadilha aparece.
+  const removeEquip = (id) => {
+    const noServidor = equipNoServidor(id);
+    if (sync && noServidor) sync.apagarEquipamento(noServidor).catch(() => {});
+    set(x => ({ equipGone: { ...x.equipGone, [id]: true } }));
+  };
 
   const budget = s.monthLimits
     ? Object.values(s.monthLimits).reduce((a, b) => a + b, 0)
@@ -2832,6 +2895,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope, registarDespesa,
     criarEvento, alterarEventoDaCasa, eventoNoServidor,
     criarArtigo, marcarArtigo, artigoNoServidor, mudarPlanoDeCompras, fecharIdaAsCompras,
+    criarEquipamento, equipNoServidor,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
     lerDoServidor,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),

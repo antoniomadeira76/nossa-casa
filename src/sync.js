@@ -45,6 +45,10 @@
 // prova é que se adapta.» As provas resolvem-no com um `registerHooks`.
 import * as servidor from './pocketbase';
 import { eEnderecoDeCasa, PORQUE_NAO_SOBE } from './endereco';
+// ⚠ O `format` é seguro de importar aqui: não importa `react-native`, e por
+// isso as provas em Node conseguem carregar este ficheiro. Uma importação que
+// arraste o RN parte todas elas — já aconteceu com o `Platform`.
+import { chaveDeDMY, dmyDeChave } from './format';
 
 export { eEnderecoDeCasa, PORQUE_NAO_SOBE };
 
@@ -330,9 +334,28 @@ export async function puxarCasa() {
     day: chaveDeISO(aberta.planeada_para),
   } : null;
 
+  // ── Os equipamentos ───────────────────────────────────────────────────────
+  //
+  // A forma da loja: `name`, `cat`, `bought`, `shop`, `price`, `warrantyEnd`,
+  // `maint`, `maintDate`. O `daysLeft` NÃO vem — é derivado da garantia e do
+  // dia de hoje, e um número gravado fica errado amanhã.
+  const newEquip = (casa.equipamentos || []).map(e => ({
+    id: e.id,
+    idServidor: e.id,
+    name: e.nome,
+    cat: e.categoria || '',
+    bought: dmyDeISO(e.comprado_em),
+    shop: e.loja || '',
+    price: Number(e.preco) || 0,
+    warrantyEnd: dmyDeISO(e.garantia_ate),
+    maint: e.manutencao || '',
+    maintDate: dmyDeISO(e.manutencao_ate),
+  }));
+
   return {
     vaultMoves,
     registered,
+    newEquip,
     regras,
     listas,
     listasIds,
@@ -569,6 +592,60 @@ export async function renomearNaLista(chave, id, nome) {
 export async function apagarDaLista(chave, id) {
   if (!ligado() || !id) return { pendente: true };
   return servidor.pb.collection(colecaoDaLista(chave)).delete(id);
+}
+
+// ── Os equipamentos ──────────────────────────────────────────────────────────
+//
+// ⚠ As datas fazem DUAS traduções, e é onde este género de coisa se parte: a
+// loja guarda-as como texto «dd/mm/aaaa», a chave interna é `d2026-09-20`, e o
+// servidor quer ISO. Num sítio só, e nos dois sentidos.
+//
+// O `daysLeft` das sementes NÃO sobe: é derivado da garantia e da data de hoje,
+// e guardá-lo era gravar um número que fica errado ao dia seguinte.
+//
+// ⚠ E os campos `fatura` e `foto` da coleção ficam por usar: a app ainda não
+// tem onde escolher a fotografia de uma fatura. Quando tiver, tem de ir pelo
+// `criarComFicheiro` como o anexo de saúde — a fila serializa em JSON, e um
+// ficheiro não é JSON.
+const isoDeDMY = (dmy) => {
+  const k = chaveDeDMY(dmy);
+  return k ? isoDeChave(k) : null;
+};
+const dmyDeISO = (iso) => {
+  const k = chaveDeISO(iso);
+  return k ? dmyDeChave(k) : '';
+};
+
+export async function equipamentoDaCasa({ casa, nome, categoria, compradoEm, loja, preco, garantiaAte, manutencao, manutencaoAte }) {
+  return criarOuEnfileirarCasa('equipamentos', {
+    casa, nome,
+    categoria: categoria || '',
+    comprado_em: isoDeDMY(compradoEm),
+    loja: loja || '',
+    preco: Number(preco) || 0,
+    garantia_ate: isoDeDMY(garantiaAte),
+    manutencao: manutencao || '',
+    manutencao_ate: isoDeDMY(manutencaoAte),
+  });
+}
+
+export async function alterarEquipamento(idNoServidor, campos) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  const linha = {};
+  if ('nome' in campos) linha.nome = campos.nome;
+  if ('categoria' in campos) linha.categoria = campos.categoria || '';
+  if ('compradoEm' in campos) linha.comprado_em = isoDeDMY(campos.compradoEm);
+  if ('loja' in campos) linha.loja = campos.loja || '';
+  if ('preco' in campos) linha.preco = Number(campos.preco) || 0;
+  if ('garantiaAte' in campos) linha.garantia_ate = isoDeDMY(campos.garantiaAte);
+  if ('manutencao' in campos) linha.manutencao = campos.manutencao || '';
+  if ('manutencaoAte' in campos) linha.manutencao_ate = isoDeDMY(campos.manutencaoAte);
+  return servidor.pb.collection('equipamentos').update(idNoServidor, linha);
+}
+
+export async function apagarEquipamento(idNoServidor) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('equipamentos').delete(idNoServidor);
 }
 
 // ── As compras ───────────────────────────────────────────────────────────────

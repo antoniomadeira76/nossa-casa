@@ -31,7 +31,7 @@ const warrantyLabel = (days) => {
 // que faz «Garantia a expirar · Frigorífico» levar ao frigorífico, e não a uma
 // lista onde é preciso voltar a procurá-lo.
 export default function Equipamentos({ t, abrir }) {
-  const { set, allEquip } = useStore();
+  const { allEquip, criarEquipamento } = useStore();
   const [sheet, setSheet] = useState(null);
   const [ficha, setFicha] = useState(abrir || null);   // equipamento cuja ficha está aberta
   const [form, setForm] = useState({ name: '', bought: '', warranty: 365, cat: CATS[0] });
@@ -52,15 +52,15 @@ export default function Equipamentos({ t, abrir }) {
   const handleSave = () => {
     if (!form.name.trim()) return;
     const boughtMs = parseDMY(form.bought) ?? Date.UTC(TODAY.y, TODAY.m, TODAY.d);
-    set(x => ({
-      newEquip: [...(x.newEquip || []), {
-        id: 'eq-' + Date.now(),
-        name: form.name.trim(),
-        cat: form.cat,
-        bought: fmtDMY(boughtMs),
-        warrantyEnd: fmtDMY(boughtMs + (form.warranty || 365) * 86400000),
-      }],
-    }));
+    // ⚠ Pelo `criarEquipamento` da loja, que também o manda para o servidor.
+    // A coleção `equipamentos` existia desde o início e ninguém escrevia nela:
+    // a garantia da máquina de lavar era conhecida de um telefone só.
+    criarEquipamento({
+      name: form.name.trim(),
+      cat: form.cat,
+      bought: fmtDMY(boughtMs),
+      warrantyEnd: fmtDMY(boughtMs + (form.warranty || 365) * 86400000),
+    });
     setSheet(null);
     setForm({ name: '', bought: '', warranty: 365, cat: CATS[0] });
   };
