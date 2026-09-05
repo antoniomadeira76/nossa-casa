@@ -166,6 +166,11 @@ function Shell() {
       // dependências vazias — pergunta uma vez e nunca volta a tentar.
       await servidor.sessaoPronta();
       if (!vivo) return;
+      // ⚠ E RENOVAR o token, senão o prazo dele expulsa quem usa a app todos
+      // os dias. Só uma recusa do servidor termina a sessão; sem resposta,
+      // fica-se com a que está gravada — ver `renovarSessao`.
+      await servidor.renovarSessao();
+      if (!vivo) return;
       const m = servidor.auth.valida() ? servidor.auth.membro() : null;
       if (!m || !vivo) return;
       await lerDoServidor();          // a casa antes do nome, para o quadro já o ter

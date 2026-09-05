@@ -5,7 +5,7 @@ import { S, R, FONT } from '../theme';
 import { Card, SectionTitle, Pill, Segmented, Empty, Pager, usePaged } from '../ui';
 import { plural, pad2 } from '../format';
 import Icon from '../Icon';
-import { REGISTO_APP, TIPOS } from '../registo-app';
+import { REGISTO_APP, TIPOS, AREAS, AMBITO } from '../registo-app';
 
 // Documentação: as novidades da app, versão a versão, e o «Como funciona» por
 // área — as duas geradas do mesmo registo.
@@ -30,6 +30,86 @@ import { REGISTO_APP, TIPOS } from '../registo-app';
 // data ao meio, quem fez à direita, «mais recente primeiro», estado vazio com
 // as palavras dele, e paginação acima de cinco. O sítio é o que o dono da casa
 // pediu; o desenho é o que estava desenhado.
+// Uma área do «Como funciona»: o nome, o que faz, e — dobrado — o que mudou.
+//
+// ⚠ É um acordeão, como no protótipo (linha 3120): doze áreas abertas de uma
+// vez eram um ecrã de rolar sem fim, e quem procura uma quer VER a lista das
+// doze antes de escolher.
+//
+// ⚠ E o que faz está SEMPRE à vista; só o que mudou é que se dobra. Ao
+// contrário, o ecrã voltava a ser um registo de alterações com uma descrição
+// escondida lá dentro — que é o defeito que isto veio corrigir.
+const AreaAberta = ({ t, g, corDo }) => {
+  const [aberto, setAberto] = useState(false);
+  const temMudancas = g.itens.length > 0;
+
+  return (
+    <Card t={t} style={{ gap: S.sm }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+        <Icon name={g.icon || 'fileText'} size={20} color={t.accent} />
+        <Text style={{ flex: 1, fontFamily: FONT.display, fontSize: 17,
+          fontWeight: '600', color: t.text1 }}>
+          {g.area}
+        </Text>
+      </View>
+
+      {g.o ? (
+        <Text style={{ fontFamily: FONT.body, fontSize: 14.5, lineHeight: 22, color: t.text2 }}>
+          {g.o}
+        </Text>
+      ) : null}
+
+      {g.faz.map((linha, i) => (
+        <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: S.md }}>
+          {/* O visto é o do protótipo, e aqui quer dizer «isto a app faz» —
+              não «isto está feito». É o único sítio da app onde aparece com
+              este sentido, e por isso não colide com nenhum outro. */}
+          <View style={{ paddingTop: 3 }}>
+            <Icon name="check" size={15} color={t.state.okDeep} />
+          </View>
+          <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 14, lineHeight: 21, color: t.text2 }}>
+            {linha}
+          </Text>
+        </View>
+      ))}
+
+      {temMudancas ? (
+        <>
+          <View style={{ height: 1, backgroundColor: t.divider }} />
+          <Pressable onPress={() => setAberto(v => !v)} accessibilityRole="button"
+            accessibilityLabel={`O que mudou em ${g.area}`}
+            accessibilityState={{ expanded: aberto }}
+            style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+            <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 12.5, fontWeight: '600', color: t.text3 }}>
+              {plural(g.itens.length, 'alteração desde então', 'alterações desde então')}
+            </Text>
+            <Icon name={aberto ? 'caretUp' : 'caretDown'} size={16} color={t.text3} />
+          </Pressable>
+
+          {aberto ? g.itens.map((r, i) => {
+            const c = corDo(r.k);
+            return (
+              <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: S.md }}>
+                <View style={{ minWidth: 74 }}>
+                  <Pill label={TIPOS[r.k] || r.k} fg={c.fg} bg={c.bg} border={c.br} />
+                </View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.text3 }}>
+                    {r.t}
+                  </Text>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>
+                    versão {r.v}
+                  </Text>
+                </View>
+              </View>
+            );
+          }) : null}
+        </>
+      ) : null}
+    </Card>
+  );
+};
+
 export default function Documentacao({ t }) {
   const { s } = useStore();
   const [aba, setAba] = useState('novidades');
@@ -55,12 +135,37 @@ export default function Documentacao({ t }) {
     return Object.values(mapa).sort((a, b) => ordemVersao(a.v, b.v));
   })();
 
+  // ── O «Como funciona», por área ────────────────────────────────────────────
+  //
+  // ⚠ A ordem é a do `AREAS`, e não alfabética. As áreas eram ordenadas pelo
+  // nome — «A App» primeiro, «Tarefas» no fim —, o que punha a mecânica do
+  // rodapé à frente do que a app faz. Agora seguem a ordem em que estão
+  // escritas, que é a de quem chega: Início, Dinheiro, Tarefas, Compras,
+  // Agenda, e o resto atrás.
+  //
+  // ⚠ E parte-se do `AREAS`, não do registo. Ao contrário, uma área sem
+  // alterações nenhumas desaparecia do «Como funciona» — que é onde ela mais
+  // precisa de estar, porque é a que ninguém conhece.
   const porArea = (() => {
-    const mapa = {};
-    for (const r of REGISTO_APP) (mapa[r.a] ||= []).push(r);
-    return Object.entries(mapa)
-      .map(([area, itens]) => ({ area, itens: itens.sort((a, b) => ordemVersao(a.v, b.v)) }))
-      .sort((a, b) => a.area.localeCompare(b.area, 'pt'));
+    const mudancas = {};
+    for (const r of REGISTO_APP) (mudancas[r.a] ||= []).push(r);
+    const escritas = new Set(AREAS.map(a => a.area));
+    return [
+      ...AREAS.map(a => ({
+        ...a,
+        // ⚠ Só o que MUDOU. As entradas `novo` descrevem a funcionalidade
+        // quando ela nasceu, e o `faz` já a descreve — melhor, e sem falar no
+        // passado. Repetir as duas era dizer a mesma coisa por duas palavras.
+        itens: (mudancas[a.area] || []).filter(r => r.k !== 'novo')
+          .sort((x, y) => ordemVersao(x.v, y.v)),
+      })),
+      // Uma área que exista no registo e não esteja escrita aparece na mesma,
+      // sem descrição. É preferível a desaparecer em silêncio — e a prova
+      // `documentacao-cobre-as-areas` faz com que não aconteça.
+      ...Object.keys(mudancas).filter(a => !escritas.has(a)).sort()
+        .map(area => ({ area, icon: 'fileText', o: null, faz: [],
+          itens: mudancas[area].sort((x, y) => ordemVersao(x.v, y.v)) })),
+    ];
   })();
 
   const Linha = ({ r, mostrarArea }) => {
@@ -195,14 +300,24 @@ export default function Documentacao({ t }) {
           <View style={{ height: 1, backgroundColor: t.divider }} />
           {g.itens.map((r, i) => <Linha key={i} r={r} mostrarArea />)}
         </Card>
-      )) : porArea.map(g => (
-        <View key={g.area}>
-          <SectionTitle t={t}>{g.area}</SectionTitle>
-          <Card t={t} style={{ gap: 0 }}>
-            {g.itens.map((r, i) => <Linha key={i} r={r} />)}
+      )) : (
+        <>
+          {/* O âmbito, uma vez e no topo. Não existia em lado nenhum na app: o
+              ecrã dizia o que tinha MUDADO em cada área e nunca o que a app é.
+              Quem abre a Documentação pela primeira vez começa por aqui. */}
+          <Card t={t} style={{ gap: S.sm }}>
+            <Text style={{ fontFamily: FONT.display, fontSize: 17, fontWeight: '600', color: t.text1 }}>
+              Nossa Casa
+            </Text>
+            <Text style={{ fontFamily: FONT.body, fontSize: 14.5, lineHeight: 22, color: t.text2 }}>
+              {AMBITO}
+            </Text>
           </Card>
-        </View>
-      ))}
+          {porArea.map(g => (
+            <AreaAberta key={g.area} t={t} g={g} corDo={corDo} />
+          ))}
+        </>
+      )}
     </>
   );
 }

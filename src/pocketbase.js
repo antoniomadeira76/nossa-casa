@@ -24,6 +24,14 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PocketBase, { AsyncAuthStore } from 'pocketbase';
+// A decisão de quando uma sessão acaba vive à parte, para poder ser posta à
+// prova: este ficheiro importa o SDK do PocketBase, que é ESM, e uma prova em
+// Jest que o carregue rebenta. Ver `src/sessao.js`.
+// ⚠ Com extensão. Este ficheiro é carregado tal e qual pelo Node nas provas do
+// servidor, e o Node não adivinha o `.js` — as outras provas têm um resolvedor
+// que o acrescenta, a do cliente não. Escrevê-la aqui serve os três: Metro,
+// Jest e Node.
+import { terminaSessao } from './sessao.js';
 
 // O armazenamento é injetável para este módulo poder ser exercitado fora do
 // React Native — é assim que db/pocketbase/provar-cliente.mjs o testa a sério,
@@ -90,6 +98,41 @@ export const sessaoPronta = async (msMax = 1500) => {
     await new Promise(r => setTimeout(r, 25));
   }
   return Boolean(pb.authStore && pb.authStore.isValid);
+};
+
+// ── Renovar a sessão, e só a terminar quando o servidor o disser ─────────────
+//
+// ⚠ O token dos `membros` tem prazo, e NADA o renovava. Ao fim dele a pessoa
+// era atirada para o ecrã de entrada e tinha de repetir a janela de
+// consentimento da Google — usasse a app todos os dias ou não. Para uma app de
+// casa, entrar é a parte que mais custa e a que menos se devia repetir.
+//
+// Isto pede um token novo a cada arranque: quem usa a app nunca chega ao prazo.
+//
+// ⚠ E a parte que interessa é o `catch`. Um erro AQUI tem duas naturezas
+// completamente diferentes, e tratá-las como iguais é o defeito:
+//
+//   • 4xx  → o servidor VIU o token e recusou-o. Está morto. Terminar a sessão
+//            é o correto: a pessoa tem mesmo de entrar outra vez.
+//   • 0/5xx → não houve resposta. O servidor de casa está desligado, o telemóvel
+//            está sem rede, ou o portátil ainda está a arrancar. O token
+//            gravado continua bom, e apagá-lo obriga a uma volta à Google por
+//            causa de uma coisa que passa sozinha.
+//
+// É a mesma distinção da fila de escritas (`esvaziar`), no sítio onde custa
+// mais: ali perde-se uma escrita, aqui perde-se a sessão.
+export const renovarSessao = async () => {
+  if (!estaLigado()) return false;
+  await sessaoPronta();
+  if (!pb.authStore || !pb.authStore.isValid) return false;
+  try {
+    await pb.collection('membros').authRefresh();
+    return true;
+  } catch (e) {
+    if (terminaSessao(e)) { auth.sair(); return false; }
+    // Sem resposta: fica-se com o que está gravado, que ainda é válido.
+    return true;
+  }
 };
 
 // Mantido para quem já lia `ligado`; `estaLigado()` é que reflete uma

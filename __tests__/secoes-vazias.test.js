@@ -19,8 +19,12 @@ const ficheiros = ['src/screens', 'src/sheets']
 // Secções cuja lista nunca pode vir vazia. Cada linha tem de dizer porquê —
 // sem razão escrita, não entra aqui.
 const NUNCA_VAZIAS = {
-  'src/screens/Documentacao.jsx :: {g.area}':
-    'as áreas e os seus itens são texto escrito à mão neste ficheiro',
+  // ⚠ Saiu daqui o `Documentacao.jsx :: {g.area}`, e foi esta prova a dizê-lo.
+  //
+  // O «Como funciona» deixou de ser uma lista de `<SectionTitle>` por área e
+  // passou a um cartão por área, com o que ela faz escrito à mão. O título já
+  // não existe, e a excepção passou a justificar coisa nenhuma — que é
+  // exactamente o que a prova de baixo apanha.
   'src/screens/Gestao.jsx :: Membros e PIN':
     'quem abre a Gestão é membro da casa, logo a lista tem-no sempre',
   // Chamava-se «O Meu Perfil» e passou a «Aparência» quando o ecrã foi

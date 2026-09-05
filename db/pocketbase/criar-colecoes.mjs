@@ -252,18 +252,36 @@ else await criar({ name: 'casas', type: 'base', fields: CAMPOS_DA_CASA });
 // hash das palavras-passe com bcrypt e verifica-as no servidor, portanto o PIN
 // de uma criança é a palavra-passe dela — e §3.2 fica satisfeita sem escrever
 // criptografia nenhuma. O valor correto nunca chega ao dispositivo.
+// ⚠ O prazo do token, escrito e não deixado ao acaso.
+//
+// Estava nos cinco dias por omissão do PocketBase, e nada o renovava: ao fim
+// deles a app atirava a pessoa para o ecrã de entrada e obrigava-a a repetir a
+// janela de consentimento da Google. Numa app de casa, entrar é a parte que
+// mais custa e a que menos se devia repetir.
+//
+// Trinta dias, e o cliente pede um token novo a cada arranque (`renovarSessao`
+// em `src/pocketbase.js`) — quem usa a app nunca chega ao prazo, e quem a
+// deixar um mês fechada entra outra vez, que é razoável.
+//
+// ⚠ E fica AQUI, no `REGRAS_MEMBROS`, para se aplicar também numa casa
+// habitada: é o único caminho que a coleção `membros` percorre quando este
+// script corre pela segunda vez.
+const DURACAO_TOKEN = 30 * 24 * 60 * 60;
+
 const REGRAS_MEMBROS = {
   listRule: 'casa = @request.auth.casa',
   viewRule: 'casa = @request.auth.casa',
   createRule: '@request.auth.papel = "admin" && casa = @request.auth.casa',
   updateRule: '@request.auth.papel = "admin" && casa = @request.auth.casa',
   deleteRule: '@request.auth.papel = "admin" && casa = @request.auth.casa',
+  authToken: { duration: DURACAO_TOKEN },
 };
 if (casaHabitada) {
   // A coleção fica; as regras aplicam-se, que é para isso que se corre isto.
   await pb.collections.update(ids.membros, REGRAS_MEMBROS);
 } else await criar({
   name: 'membros', type: 'auth',
+  authToken: { duration: DURACAO_TOKEN },
   // Os adultos entram por e-mail. As crianças não têm e-mail nem conta própria
   // — §8 pede que assim continue — por isso entram por `login`, um
   // identificador interno «casa_nome». O campo de identidade tem de ser único

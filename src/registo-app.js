@@ -8,6 +8,137 @@
 // onde a referência 17 mostra a primeira.
 export const APP_VERSION = '1.8.0';
 
+// ── O que a app é, e o que cada área faz ─────────────────────────────────────
+//
+// ⚠ Isto é ESCRITO À MÃO, e é de propósito.
+//
+// O «Como funciona» era o registo de alterações cortado por área: respondia a
+// «o que mudou nas Compras», não a «para que servem as Compras». E as frases de
+// um registo são escritas como diferenças — «o botão era menor do que o mínimo
+// para o dedo» — que só se entendem a quem já conhece a app. Uma lista de
+// funcionalidades DERIVADA de um registo de alterações envelhece a ler como um
+// registo de alterações.
+//
+// O que muda, muda no `REGISTO_APP` em baixo. O que a coisa É muda aqui, e
+// muda muito menos vezes. São dois textos porque são duas perguntas.
+//
+// ⚠ O nome da área tem de bater CERTO com o campo `a` do `REGISTO_APP`: é por
+// ele que o ecrã junta o que a área faz com o que mudou nela. Há uma prova que
+// o confere — `__tests__/documentacao-cobre-as-areas.test.js`.
+export const AMBITO = 'A Nossa Casa é a casa de uma família num sítio só: a '
+  + 'agenda de todos, as tarefas com pontos, a lista de compras que fecha em '
+  + 'despesa, o orçamento por envelopes, os equipamentos com as garantias e as '
+  + 'fichas de saúde. Corre nos telemóveis dos adultos e das crianças, com '
+  + 'aquilo que cada um pode ver decidido pelo papel que tem na casa.';
+
+export const AREAS = [
+  { area: 'Início', icon: 'home',
+    o: 'O resumo do dia, e o primeiro ecrã de quem abre a app.',
+    faz: [
+      'Mostra o que precisa de si hoje: prazos a acabar, tarefas por confirmar e contas por acertar',
+      'Traz a agenda e as tarefas de hoje, e o estado do orçamento do mês',
+      'O avatar abre o Perfil; terminar sessão fica no cabeçalho',
+    ] },
+
+  { area: 'Dinheiro', icon: 'wallet',
+    o: 'O orçamento da casa, por envelopes, um mês de cada vez.',
+    faz: [
+      'Divide o rendimento por envelopes — Mercearia, Casa & contas, e os que a casa criar',
+      'Regista despesas, com a opção de as dividir a meias entre os adultos',
+      'Move dinheiro de um envelope para outro sem mexer no total',
+      'Acerta contas entre os dois adultos: quem pagou mais recebe a diferença',
+      'Abre e fecha o mês. Fechar não apaga nada — o mês seguinte é outra contagem',
+      'Os cofres das crianças, com a semanada e os bónus',
+    ] },
+
+  { area: 'Tarefas', icon: 'checkSquare',
+    o: 'O que há para fazer na casa, e quem o faz.',
+    faz: [
+      'Tarefas com responsável, prazo, recorrência e pontos',
+      'A urgência manda na ordem; dentro de cada grupo, arrastar muda o lugar',
+      'Uma criança marca a tarefa como feita e um adulto confirma — os pontos só contam depois disso',
+      'Os pontos viram semanada ao valor que a casa definir, e podem ser desligados',
+    ] },
+
+  { area: 'Compras', icon: 'storefront',
+    o: 'A lista de compras da casa, e a ida à loja.',
+    faz: [
+      'A lista é de todos: as crianças também pedem artigos',
+      'O modo de loja arruma os artigos pela ordem dos corredores dessa loja',
+      'Cada artigo marca-se como apanhado ou sem stock, e os dois telemóveis veem o mesmo',
+      'Fechar a conta regista a despesa e guarda a ida no histórico',
+      'Os preços pagos ficam por artigo e por loja, para se saber onde é mais barato',
+    ] },
+
+  { area: 'Agenda', icon: 'calendar',
+    o: 'Os compromissos da casa, com três níveis de quem vê o quê.',
+    faz: [
+      'Um evento é «Só eu», «Os adultos» ou «A casa toda» — e o que é privado não chega sequer ao telemóvel dos outros',
+      'As consultas de saúde aparecem aqui como eventos, sem se escreverem duas vezes',
+      'A agenda da Google pode ser importada, evento a evento',
+    ] },
+
+  { area: 'Saúde', icon: 'heartPulse',
+    o: 'As fichas de saúde da família — a área mais fechada da app.',
+    faz: [
+      'Uma consulta por membro, com especialidade, médico e notas',
+      'Notas, receitas e decisões acrescentam-se à consulta ao longo do tempo',
+      'Documentos e exames anexam-se à consulta que os originou',
+      'A ficha de um adulto é dele: nem o outro adulto a vê. Uma criança não vê a sua própria ficha',
+      'Só sincroniza para um servidor dentro de casa — são dados de saúde de menores',
+    ] },
+
+  { area: 'Equipamentos', icon: 'fileDone',
+    o: 'As máquinas da casa e o que se sabe delas.',
+    faz: [
+      'Data de compra, loja, preço e fim da garantia',
+      'Avisa quando uma garantia está a acabar',
+      'Guarda a próxima manutenção de cada equipamento',
+    ] },
+
+  { area: 'Gestão da Casa', icon: 'houseGear',
+    o: 'As regras da casa, e quem lá vive. Só para quem administra.',
+    faz: [
+      'Acrescentar e retirar membros, e mudar o papel de cada um',
+      'O PIN de entrada das crianças',
+      'O rendimento mensal, os envelopes e os limites de cada um',
+      'O valor do ponto, o dia de pagamento da semanada e se as despesas se dividem a meias',
+      'As listas da casa: especialidades médicas, categorias de equipamento e lojas',
+    ] },
+
+  { area: 'Perfil', icon: 'user',
+    o: 'O que é de cada um, e não da casa.',
+    faz: [
+      'O avatar: dezasseis figuras, a cor do perfil, ou a fotografia da conta Google',
+      'O aspeto claro ou escuro e o esquema de cor — cada membro escolhe o seu',
+      'Os avisos: o resumo diário e quantos dias antes de um prazo avisar',
+      'Repor os dados de demonstração ou começar de zero',
+    ] },
+
+  { area: 'Entrada', icon: 'idcard',
+    o: 'Como cada um entra na casa.',
+    faz: [
+      'Os adultos entram com a Conta Google',
+      'As crianças entram com um PIN, e vão para um modo próprio — sem orçamento nenhum à vista',
+    ] },
+
+  { area: 'A App', icon: 'sliders',
+    o: 'O que é igual em todos os ecrãs.',
+    faz: [
+      'O cabeçalho e o rodapé aparecem sempre, mesmo com folhas e diálogos abertos',
+      'Seis esquemas de cor e dois aspetos, por membro e não por casa',
+      'Sem ligação, a app continua a funcionar: o que se escreve fica em fila e sobe depois',
+    ] },
+
+  { area: 'Documentação', icon: 'fileText',
+    o: 'Este ecrã: o que a app faz, o que mudou nela, e o que a casa fez.',
+    faz: [
+      '«Novidades» diz o que mudou na app, versão a versão',
+      '«Como funciona» diz o que a app faz, área a área — e o que mudou em cada uma',
+      '«Nesta casa» diz o que a família fez: quem mudou o quê, e quando',
+    ] },
+];
+
 export const REGISTO_APP = [
   // ── 1.8.0 ─────────────────────────────────────────────────────────────────
   { v: '1.8.0', d: '02/09/2026', k: 'novo', a: 'Perfil', t: 'O avatar escolhe-se: dezasseis figuras, a cor do perfil, ou a fotografia da conta Google' },
