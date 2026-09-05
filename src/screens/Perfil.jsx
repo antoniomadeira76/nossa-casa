@@ -32,7 +32,7 @@ const CORTE = 60;
 const RECUO = BOLA / 2 + (CORTE / 2) * (Math.SQRT1_2 - 1);
 export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, onGestao }) {
   const st = useStore();
-  const { s, set, isAdmin, resetDemo, startBlank, canSeeHealth, healthOf, receitasAExpirar, membros: MEMBERS, deDemonstracao, nomeDaCasa } = st;
+  const { s, set, isAdmin, resetDemo, startBlank, canSeeHealth, healthOf, receitasAExpirar, membros: MEMBERS, deDemonstracao, nomeDaCasa, mudarPreferencia } = st;
 
   // A referência 09 mostra a contagem de consultas e um aviso das receitas na
   // própria linha da Saúde. Passa pelo canSeeHealth como tudo o resto.
@@ -167,7 +167,7 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
             { k: 'sistema', icon: 'refresh', label: 'Sistema' }].map(o => {
             const on = mode === o.k;
             return (
-              <Pressable key={o.k} onPress={() => set(x => ({ themeByUser: { ...x.themeByUser, [user]: o.k } }))}
+              <Pressable key={o.k} onPress={() => mudarPreferencia(user, { aspeto: o.k })}
                 accessibilityRole="button" accessibilityLabel={`Aspeto ${o.label}`} accessibilityState={{ selected: on }}
                 style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1,
                   borderColor: on ? t.chrome : t.border, backgroundColor: on ? t.chrome : 'transparent',
@@ -187,7 +187,7 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
           {SCHEMES.map((sc, i) => {
             const on = scheme === i;
             return (
-              <Pressable key={sc.name} onPress={() => set(x => ({ schemeByUser: { ...x.schemeByUser, [user]: i } }))}
+              <Pressable key={sc.name} onPress={() => mudarPreferencia(user, { esquema: i })}
                 accessibilityRole="button" accessibilityLabel={`Esquema ${sc.name}`} accessibilityState={{ selected: on }}
                 style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
                 {/* Dois tons: a cor de ação e a do cabeçalho. Um esquema são
@@ -240,7 +240,7 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
               {plural(s.notif.lead, 'dia', 'dias')} antes de cada prazo.
             </Text>
             <Toggle t={t} on={s.notif.digest} label="Resumo diário"
-              onPress={() => set(x => ({ notif: { ...x.notif, digest: !x.notif.digest } }))} />
+              onPress={() => mudarPreferencia(user, { notif: { digest: !s.notif.digest } })} />
           </View>
         </Card>
       </View>

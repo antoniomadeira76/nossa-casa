@@ -473,7 +473,11 @@ const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
   'especialidades', 'categorias_equip', 'lojas',
   // As compras: a lista aberta e os artigos dela. O `estado` vive na LINHA do
   // artigo — é isso que faz dois telefones na mesma loja fundirem-se.
-  'listas_compras', 'artigos'];
+  'listas_compras', 'artigos',
+  // ⚠ As preferências são de CADA UM: a regra é `membro = @request.auth.id`, e
+  // esta leitura devolve UMA linha — a de quem pergunta — ou nenhuma. É a única
+  // coleção da lista que não é da casa inteira.
+  'preferencias'];
 
 export const ler = {
   async casa() {

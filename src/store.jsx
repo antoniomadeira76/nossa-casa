@@ -774,6 +774,20 @@ export function StoreProvider({ children }) {
       // nela. A garantia da máquina de lavar era conhecida de um telefone só.
       if ((casa.newEquip || []).length) set({ newEquip: casa.newEquip });
 
+      // ── As preferências de quem está ligado ───────────────────────────────
+      //
+      // ⚠ UMA chave só nos mapas — a desta pessoa. O servidor devolve só a
+      // linha de quem pergunta, e escrever as dos outros por cima apagava o que
+      // este dispositivo tivesse guardado localmente para eles.
+      if (casa.preferencias) {
+        const p = casa.preferencias;
+        set(x => ({
+          schemeByUser: { ...x.schemeByUser, [p.nome]: p.esquema },
+          themeByUser: { ...x.themeByUser, [p.nome]: p.aspeto },
+          notif: { ...x.notif, ...p.notif },
+        }));
+      }
+
       if (casa.shopPlan) {
         set(x => ({
           newItems: casa.newItems,
@@ -1625,6 +1639,42 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     const id = envelopeNoServidor(nome);
     if (sync && id) sync.apagarEnvelope(id).catch(() => {});
     set(x => ({ envelopesDaCasa: (x.envelopesDaCasa || []).filter(e => e.name !== nome) }));
+  };
+
+  // ── As preferências de cada um ──────────────────────────────────────────
+  //
+  // ⚠ A coleção `preferencias` é a única que NÃO é da casa: a regra é `membro =
+  // @request.auth.id` nas cinco operações, e cada um vê e escreve as suas — nem
+  // quem administra vê as dos outros.
+  //
+  // Por isso isto só escreve as de QUEM ESTÁ LIGADO. Mudar as de outra pessoa
+  // seria recusado pelo servidor, e não faz sentido nenhum: a cor do avatar do
+  // Tomás é dele.
+  const mudarPreferencia = (quem, campos) => {
+    set(x => ({
+      ...(campos.esquema !== undefined
+        ? { schemeByUser: { ...x.schemeByUser, [quem]: campos.esquema } } : {}),
+      ...(campos.aspeto !== undefined
+        ? { themeByUser: { ...x.themeByUser, [quem]: campos.aspeto } } : {}),
+      ...(campos.notif !== undefined
+        ? { notif: { ...x.notif, ...campos.notif } } : {}),
+    }));
+
+    if (!sync) return;
+    const ses = sync.sessao();
+    // ⚠ Só as do próprio. Se `quem` não for quem está ligado, fica local — e é
+    // o correcto: o servidor recusaria, e a app não deve fingir que mandou.
+    if (!ses || ses.nome !== quem) return;
+
+    const n = { ...s.notif, ...(campos.notif || {}) };
+    sync.preferenciasDoMembro({
+      membro: ses.membro,
+      ...(campos.esquema !== undefined ? { esquemaCor: campos.esquema } : {}),
+      ...(campos.aspeto !== undefined ? { aspeto: campos.aspeto } : {}),
+      ...(campos.notif !== undefined ? {
+        resumoAtivo: n.digest, resumoHora: n.hour, avisoPrazoDias: n.lead,
+      } : {}),
+    }).catch(() => {});
   };
 
   // ── As três listas da casa ──────────────────────────────────────────────
@@ -2895,7 +2945,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope, registarDespesa,
     criarEvento, alterarEventoDaCasa, eventoNoServidor,
     criarArtigo, marcarArtigo, artigoNoServidor, mudarPlanoDeCompras, fecharIdaAsCompras,
-    criarEquipamento, equipNoServidor,
+    criarEquipamento, equipNoServidor, mudarPreferencia,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
     lerDoServidor,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),

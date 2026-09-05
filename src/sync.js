@@ -352,10 +352,30 @@ export async function puxarCasa() {
     maintDate: dmyDeISO(e.manutencao_ate),
   }));
 
+  // ── As preferências de quem está ligado ───────────────────────────────────
+  //
+  // ⚠ Vem UMA linha, ou nenhuma: a regra devolve só a de quem pergunta. Por
+  // isso os mapas `schemeByUser` e `themeByUser` enchem-se numa chave só — a
+  // desta pessoa — e não se toca nas dos outros, que este dispositivo possa ter
+  // guardado localmente.
+  const minhaPref = (casa.preferencias || [])[0] || null;
+  const euSou = minhaPref ? nomeDoMembro[minhaPref.membro] : null;
+  const preferencias = (minhaPref && euSou) ? {
+    nome: euSou,
+    esquema: Number(minhaPref.esquema_cor) || 0,
+    aspeto: minhaPref.aspeto || 'sistema',
+    notif: {
+      digest: minhaPref.resumo_ativo !== false,
+      hour: minhaPref.resumo_hora || '20:00',
+      lead: Number(minhaPref.aviso_prazo_dias ?? 1),
+    },
+  } : null;
+
   return {
     vaultMoves,
     registered,
     newEquip,
+    preferencias,
     regras,
     listas,
     listasIds,
@@ -592,6 +612,36 @@ export async function renomearNaLista(chave, id, nome) {
 export async function apagarDaLista(chave, id) {
   if (!ligado() || !id) return { pendente: true };
   return servidor.pb.collection(colecaoDaLista(chave)).delete(id);
+}
+
+// ── As preferências de cada um ───────────────────────────────────────────────
+//
+// ⚠ Esta é a única coleção que NÃO é da casa: a regra é `membro =
+// @request.auth.id` nas cinco operações, e é mais apertada do que a casa. Cada
+// um vê e escreve as suas, e mais ninguém — nem quem administra.
+//
+// Há um índice único no `membro`: uma linha por pessoa. Portanto isto é um
+// UPSERT — procura-se a que existe e altera-se, e só se cria quando não há.
+// Criar às cegas colidia no índice, e a segunda escrita de cada sessão falhava.
+//
+// Os valores do `aspeto` são os MESMOS dos dois lados — `claro`, `escuro`,
+// `sistema` — e por isso não há tabela de tradução. Se um dia divergirem, é
+// aqui que a tradução entra, e não em dois sítios.
+export async function preferenciasDoMembro({ membro, esquemaCor, aspeto, resumoAtivo, resumoHora, avisoPrazoDias }) {
+  if (!ligado() || !membro) return { pendente: true };
+  const linha = { membro };
+  if (esquemaCor !== undefined) linha.esquema_cor = Number(esquemaCor) || 0;
+  if (aspeto !== undefined) linha.aspeto = aspeto;
+  if (resumoAtivo !== undefined) linha.resumo_ativo = !!resumoAtivo;
+  if (resumoHora !== undefined) linha.resumo_hora = resumoHora || '';
+  if (avisoPrazoDias !== undefined) linha.aviso_prazo_dias = Number(avisoPrazoDias) || 0;
+
+  // ⚠ Direto, sem fila. Uma preferência é um ESTADO, não um movimento: duas
+  // escritas fora de ordem deixavam a antiga a ganhar, e a fila só sabe criar.
+  const ja = await servidor.pb.collection('preferencias')
+    .getFirstListItem(`membro="${membro}"`).catch(() => null);
+  if (ja) return servidor.pb.collection('preferencias').update(ja.id, linha);
+  return servidor.pb.collection('preferencias').create(linha);
 }
 
 // ── Os equipamentos ──────────────────────────────────────────────────────────

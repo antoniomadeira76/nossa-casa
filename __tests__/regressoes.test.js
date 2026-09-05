@@ -1168,9 +1168,23 @@ describe('O que o servidor manda chega inteiro à loja', () => {
   const leitura = loja.slice(inicio, loja.indexOf('useEffect(', inicio));
 
   test('a região medida é mesmo a da leitura, e não meio ficheiro', () => {
+    // ⚠ Isto prendia o COMPRIMENTO — «menos de 2500 caracteres» — e envelheceu
+    // mal: entre 04 e 05/09/2026 a função da leitura cresceu seis vezes, uma
+    // por cada coisa que passou a vir do servidor (regras, listas, envelopes,
+    // compras, equipamentos, preferências). A prova falhava por o código ter
+    // crescido, que não é o defeito que ela existe para apanhar.
+    //
+    // O defeito é o `indexOf` devolver −1 e a região passar a ser o ficheiro
+    // quase todo — foi o que aconteceu quando o corte era feito num COMENTÁRIO,
+    // que o `semComentarios` já tinha apagado. Então prende-se isso: os dois
+    // cortes existem, e a região acaba ANTES do que vem muito depois.
     expect(inicio).toBeGreaterThan(0);
+    expect(loja.indexOf('useEffect(', inicio)).toBeGreaterThan(inicio);
     expect(leitura.length).toBeGreaterThan(200);
-    expect(leitura.length).toBeLessThan(2500);
+    // Se a região tivesse engolido meio ficheiro, teria isto lá dentro.
+    expect(leitura).not.toContain('const DATA_KEYS');
+    expect(leitura).not.toContain('const criarTarefa');
+    expect(leitura).not.toContain('const removerTarefa');
   });
 
   test('a leitura da casa traz os membros, os papéis e o nome', () => {

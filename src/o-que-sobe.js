@@ -100,9 +100,9 @@ export const O_QUE_SOBE = {
   equipGone: ['local', 'Lápides de equipamentos-semente. Um equipamento do servidor apaga-se LÁ, pelo `apagarEquipamento`; isto marca só os que vêm do `data.js`.'],
 
   // ── Do dispositivo, e de mais ninguém ─────────────────────────────────────
-  schemeByUser: ['local', 'O esquema de cor escolhido. A coleção `preferencias` existe e é POR MEMBRO; ligá-la é trabalho de outro dia, e entretanto a cor é deste telefone.'],
-  themeByUser: ['local', 'Claro ou escuro, pela mesma razão do `schemeByUser`.'],
-  notif: ['local', 'Os avisos: resumo diário, hora, dias de antecedência. Também da `preferencias`, também por ligar.'],
+  schemeByUser: ['campo', 'O `esquema_cor` da linha de `preferencias` de cada um. É a única coleção que NÃO é da casa: a regra é `membro = @request.auth.id`, e nem quem administra vê as dos outros.', 'preferenciasDoMembro'],
+  themeByUser: ['campo', 'O `aspeto` da mesma linha — claro, escuro ou sistema. Os valores são os mesmos dos dois lados, e por isso não há tabela de tradução.', 'preferenciasDoMembro'],
+  notif: ['campo', 'Os avisos, na mesma linha: `resumo_ativo`, `resumo_hora` e `aviso_prazo_dias`. Cada um escolhe os seus, e ninguém escolhe pelos outros.', 'preferenciasDoMembro'],
   clearedSeeds: ['local', 'Se as sementes de demonstração já saíram deste dispositivo. É um facto sobre este telefone, não sobre a casa.'],
   importDone: ['local', 'Se a importação inicial já correu neste dispositivo.'],
   deDemonstracao: ['local', 'Se a app está a correr com a família de demonstração. É o oposto de ter servidor — por definição não sobe.'],
