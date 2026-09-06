@@ -29,14 +29,28 @@ const carregarSync = async () => {
 // A ficha de um adulto é só dele; as das crianças são visíveis aos adultos e
 // invisíveis às próprias. Esta é a regra do cliente — a do servidor está em
 // docs/seguranca.html, tem 15 provas, e é a que conta.
-export const podeVerSaude = (member, viewer) =>
-  MEMBERS[member] && MEMBERS[member].kid
-    ? !!(MEMBERS[viewer] && !MEMBERS[viewer].kid)
+// ⚠ O `quadro` é o dos MEMBROS DESTA CASA, e tem de ser passado.
+//
+// Isto lia o `MEMBERS` do `data.js` — a família de demonstração — e mais nada.
+// Numa casa a sério com outras pessoas, a resposta vinha de uma família
+// inventada: o António existe nesta casa e não no `data.js`, portanto
+// `MEMBERS['António']` é `undefined`, e a regra concluía que ele não é um
+// adulto conhecido. A app escondia-lhe as fichas das crianças que o SERVIDOR
+// lhe devolvia — três consultas descarregadas e zero no ecrã.
+//
+// Não é uma fuga: o servidor manda, e manda bem. É o contrário — a app a
+// esconder o que a pessoa tem direito a ver, sem dizer porquê.
+//
+// O `podeVerEvento` já levava o quadro desde sempre; este ficou para trás, e a
+// demonstração tapou-o porque lá os nomes coincidem.
+export const podeVerSaude = (member, viewer, quadro = MEMBERS) =>
+  quadro[member] && quadro[member].kid
+    ? !!(quadro[viewer] && !quadro[viewer].kid)
     : member === viewer;
 
 // As receitas com prazo a acabar que este membro pode ver.
-export const receitasAExpirarDe = (docs, viewer, limite = 30) => (docs || [])
-  .filter(d => d.kind === 'Receita' && d.expires && podeVerSaude(d.member, viewer))
+export const receitasAExpirarDe = (docs, viewer, limite = 30, quadro = MEMBERS) => (docs || [])
+  .filter(d => d.kind === 'Receita' && d.expires && podeVerSaude(d.member, viewer, quadro))
   .map(d => ({ ...d, dias: daysUntil(d.expires) }))
   .filter(d => d.dias !== null && d.dias <= limite)
   .sort((a, b) => a.dias - b.dias);
@@ -1567,7 +1581,8 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // cópia do conjunto todo.
   const budget = envelopes.reduce((a, e) => a + e.limit, 0);
 
-  const canSeeHealth = podeVerSaude;
+  // ⚠ Com o quadro DESTA casa, e não com a família do `data.js`.
+  const canSeeHealth = (member, viewer) => podeVerSaude(member, viewer, quadro);
 
   const allHealth = () => [...(s.clearedSeeds ? [] : HEALTH), ...(s.health || [])]
     .filter(h => !(s.healthGone || {})[h.id]);
@@ -1597,7 +1612,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     .filter(e => e.dias >= 0 && e.dias <= 90)
     .sort((a, b) => a.dias - b.dias);
 
-  const receitasAExpirar = (viewer) => receitasAExpirarDe(allHealthDocs(), viewer);
+  const receitasAExpirar = (viewer) => receitasAExpirarDe(allHealthDocs(), viewer, 30, quadro);
   const consultasProximas = (viewer) => consultasProximasDe(allHealth(), viewer);
 
   // Saldo do cofre: soma, nunca leitura de um campo (INVARIANTE #2).
@@ -3373,6 +3388,78 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   //
   // Uma consulta arquivada sai da lista principal e do «precisa de ação», e
   // continua no arquivo clínico. Quem decide isso é o ecrã; a loja só guarda.
+  // ── ⚠ A saúde desce do servidor ───────────────────────────────────────────
+  //
+  // O `ler.saude()` do cliente existia, comentado e documentado, e NINGUÉM lhe
+  // chamava. A saúde era a única área da app de sentido único: a Rita marcava
+  // uma consulta à Mia, ela subia, e o telemóvel do Tomás nunca a via.
+  //
+  // ⚠ Pede-se ficha a ficha, e por TODOS os membros da casa.
+  //
+  // Não se filtra aqui por quem pode ver — o servidor é que decide, e devolve
+  // vazio para a ficha de outro adulto. Repetir a regra deste lado eram duas
+  // ideias da mesma coisa, e a segunda acabaria mais fraca (INVARIANTE #3).
+  //
+  // Corre ao ABRIR a Saúde, e não no arranque: o `ler.casa()` não toca nestas
+  // coleções de propósito, para o dado não chegar ao dispositivo de quem lá não
+  // tem nada que fazer.
+  const lerSaudeDoServidor = async () => {
+    if (!sync || !sync.puxarSaude) return false;
+    const ids = (mapaServidor.current || {}).membros || {};
+    if (!Object.keys(ids).length) return false;
+
+    const { episodios, anexos } = await sync.puxarSaude(ids)
+      .catch(() => ({ episodios: [], anexos: [] }));
+
+    set(x => {
+      // ⚠ Uma consulta que já existe cá GUARDA o seu id local.
+      //
+      // Escrevi isto primeiro a deitar fora tudo o que tinha `idServidor` e a
+      // recriar da resposta com ids novos — e as notas, as receitas e os
+      // documentos ficavam órfãos, porque são indexados pelo id LOCAL. A
+      // consulta voltava sem nada pendurado nela.
+      const jaCa = new Map((x.health || [])
+        .filter(h => h.idServidor).map(h => [h.idServidor, h]));
+
+      const health = [
+        // O que ainda não subiu fica: é o que se escreveu sem rede.
+        ...(x.health || []).filter(h => !h.idServidor),
+        // E o que o servidor tem manda no resto — incluindo no que ele já não
+        // tem, que desaparece por não vir na resposta.
+        ...episodios.map((e) => {
+          const ja = jaCa.get(e.idServidor);
+          return ja
+            ? { ...ja, ...e, id: ja.id }
+            : { ...e, id: `srv-${e.idServidor}`, createdAt: new Date().toISOString() };
+        }),
+      ];
+
+      // Os anexos penduram-se pelo id LOCAL da consulta, e o servidor fala do
+      // id dele: aqui é onde os dois se ligam.
+      const localDoEpisodio = new Map(health
+        .filter(h => h.idServidor).map(h => [h.idServidor, h.id]));
+      const docsCa = new Map((x.healthDocs || [])
+        .filter(d => d.idServidor).map(d => [d.idServidor, d]));
+
+      const healthDocs = [
+        // A fotografia que ainda está só neste telemóvel não se perde.
+        ...(x.healthDocs || []).filter(d => !d.idServidor),
+        ...anexos.map((a) => {
+          const healthId = localDoEpisodio.get(a.episodioNoServidor);
+          if (!healthId) return null;   // anexo de uma ficha que não se vê
+          const ja = docsCa.get(a.idServidor);
+          return ja
+            ? { ...ja, ...a, id: ja.id, healthId }
+            : { ...a, id: `doc-srv-${a.idServidor}`, healthId,
+                createdAt: new Date().toISOString() };
+        }).filter(Boolean),
+      ];
+
+      return { health, healthDocs };
+    });
+    return true;
+  };
+
   const arquivarConsulta = (healthId, arquivar = true) => {
     set(x => ({
       healthArchived: { ...(x.healthArchived || {}), [healthId]: !!arquivar },
@@ -3763,7 +3850,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     addHealthRecord, addHealthNote, editarNotaSaude, apagarNotaSaude, notaDaConsulta,
     addRecipe, setRecipeDecision, setHealthDecision,
     addHealthDoc, arquivarConsulta, docsDaConsulta, estaArquivada,
-    apagarConsulta, porqueNaoApaga, oQueCaiCom,
+    apagarConsulta, porqueNaoApaga, oQueCaiCom, lerSaudeDoServidor,
     addSpecialty, removeSpecialty, renameSpecialty, consultasDaEspecialidade,
     reordenarTarefas,
     // ⚠ UMA leitura da bandeira, e não `s.pontosLigados !== false` repetido em

@@ -62,6 +62,17 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   // A consulta que está a ser apagada, e o não do servidor quando há um.
   const [aApagar, setAApagar] = useState(null);
   const [naoApagou, setNaoApagou] = useState(null);
+
+  // ⚠ As fichas descem do servidor AO ABRIR este ecrã.
+  //
+  // A saúde era a única área da app de sentido único: subia e nunca voltava. O
+  // `ler.saude()` do cliente existia e ninguém lhe chamava — a Rita marcava uma
+  // consulta à Mia e o telemóvel do Tomás nunca a via.
+  //
+  // Aqui, e não no arranque: o `ler.casa()` não toca nas coleções de saúde de
+  // propósito, para o dado não CHEGAR ao dispositivo de quem lá não tem nada
+  // que fazer (INVARIANTE #3). Quem abre a Saúde tem.
+  useEffect(() => { st.lerSaudeDoServidor(); }, []);
   const [anexoForm, setAnexoForm] = useState({ kind: 'Exame', title: '', expires: '', foto: null });
 
   // A visibilidade vem da loja. Havia aqui uma cópia própria, e era mais

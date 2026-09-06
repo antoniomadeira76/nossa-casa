@@ -1237,6 +1237,10 @@ export async function episodioDeSaude({ casa, membro, especialidade, medico, dia
 // `relatorio`) — é um `select` com esses três valores. A loja fala «Exame»,
 // «Receita», «Relatório». A tradução é aqui, e não nos dois sítios.
 const TIPO_NO_SERVIDOR = { Exame: 'exame', Receita: 'receita', 'Relatório': 'relatorio' };
+// O mesmo mapa, ao contrário, derivado dele — para não haver duas listas a
+// divergir quando alguém acrescentar um tipo.
+const TIPO_NA_LOJA = Object.fromEntries(
+  Object.entries(TIPO_NO_SERVIDOR).map(([loja, servidor_]) => [servidor_, loja]));
 
 export async function anexoDeSaude({ casa, episodio, tipo, titulo, uri, blob, nome, mime }) {
   recusaSaude('anexos');
@@ -1321,6 +1325,80 @@ export async function apagarEpisodioDeSaude(idNoServidor) {
   recusaSaude('episodios_saude');
   if (!idNoServidor) return { pendente: true };
   return servidor.pb.collection('episodios_saude').delete(idNoServidor);
+}
+
+// ── ⚠ E a saúde DESCE, que era a metade que faltava ──────────────────────────
+//
+// O `servidor.ler.saude()` estava escrito, comentado e documentado — e ninguém
+// lhe chamava. Nem este ficheiro, nem a loja, nem um ecrã.
+//
+// Consequência: a saúde era a única área da app de sentido ÚNICO. A Rita
+// marcava uma consulta à Mia, ela subia, e o telemóvel do Tomás nunca a via —
+// não por uma regra, mas porque nunca perguntava. Todo o resto da casa desce.
+//
+// É a quarta vez que esta forma aparece neste projeto (o `tempoReal`, o
+// `healthGone`, as oito escritas sem quem as chamasse), e a primeira em que o
+// que faltava era uma LEITURA. Havia guardas para as outras duas formas e não
+// para esta; passou a haver.
+//
+// ⚠ Pede-se ficha a ficha, e não em bloco, e é a decisão de sempre: o
+// `ler.casa()` não toca na saúde para o dado não CHEGAR ao dispositivo de quem
+// não lhe pode aceder (INVARIANTE #3). Quem decide o que existe é o servidor —
+// pedir a ficha de outro adulto devolve vazio, não devolve escondido.
+//
+// E só a um servidor de CASA: se o `saudeSincroniza()` for falso, nunca lá
+// escrevemos nada, e portanto não há nada para ler. É a mesma condição do
+// `recusaSaude`, do lado da leitura.
+export async function puxarSaude(idsDosMembros) {
+  if (!ligado() || !saudeSincroniza()) return { episodios: [], anexos: [] };
+
+  const episodios = [];
+  const anexos = [];
+  for (const [nome, id] of Object.entries(idsDosMembros || {})) {
+    if (!id) continue;
+    // Um `catch` por membro, e não um à volta de todos: uma ficha que o
+    // servidor recuse não pode apagar as que ele deixou passar.
+    const ficha = await servidor.ler.saude(id).catch(() => null);
+    if (!ficha) continue;
+    for (const e of ficha.episodios || []) {
+      episodios.push({
+        idServidor: e.id,
+        member: nome,
+        // A app lê chaves com `d`; a coleção guarda uma data.
+        day: `d${String(e.dia || '').slice(0, 10)}`,
+        specialty: e.especialidade || '',
+        time: e.hora || '',
+        // ⚠ `medico` e `notas` são os nomes da COLEÇÃO; `doctor` e `nota` os
+        // da loja. Trocá-los aqui era o mesmo defeito da subida, ao contrário:
+        // os dados chegavam e caíam sem erro nenhum.
+        doctor: e.medico || '',
+        nota: e.notas || '',
+      });
+    }
+    for (const a of ficha.anexos || []) {
+      anexos.push({
+        idServidor: a.id,
+        episodioNoServidor: a.episodio,
+        member: nome,
+        // ⚠ O ESPELHO exacto do `TIPO_NO_SERVIDOR`, e não uma tradução minha.
+        //
+        // A coleção guarda `exame|receita|relatorio` em minúsculas; a loja lê
+        // `Exame|Receita|Relatório`. Escrevi primeiro `kind: a.tipo`, e todos
+        // os anexos desciam como «exame» — sem erro nenhum, que é como estas
+        // coisas passam.
+        kind: TIPO_NA_LOJA[a.tipo] || 'Exame',
+        title: a.titulo || '',
+        // ⚠ E NÃO há `expires` a descer: a coleção `anexos` não tem campo de
+        // prazo. Escrevi um `a.expira_em` de cabeça e fui confirmar contra o
+        // `criar-colecoes.mjs` — é o mesmo defeito do `created`, que era um
+        // campo que não existia e ninguém dava por isso. O prazo de uma
+        // receita vive em `receitas_saude`, que é outra coleção.
+        // O URL é assinado pelo servidor, e não construído aqui.
+        foto: servidor.ler.ficheiro(a, 'ficheiro'),
+      });
+    }
+  }
+  return { episodios, anexos };
 }
 
 export async function receitaDeSaude({ casa, episodio, nome, dose, quantidade, unidade, expiraEm, decisao }) {

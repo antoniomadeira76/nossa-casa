@@ -310,8 +310,19 @@ const CONSULTAS = [
 ];
 const consultas = [];
 for (const [quem, esp, medico, quando, notas] of CONSULTAS) {
+  // ⚠ O NOME da especialidade, e não o id da linha em `especialidades`.
+  //
+  // O campo `especialidade` de `episodios_saude` é TEXTO — a app escreve-lhe o
+  // nome e as provas do servidor também. Este semeador escrevia-lhe o id, e o
+  // PocketBase aceitava, porque um id é uma cadeia de caracteres como qualquer
+  // outra.
+  //
+  // Não deu erro nenhum. Só se viu quando a leitura da saúde foi ligada e o
+  // ecrã passou a mostrar «Léo: ouu605abgi9g6f9» onde devia dizer
+  // «Léo: Pediatria». Um campo de texto aceita tudo, e é por isso que um
+  // engano destes espera meses.
   consultas.push(await pb.collection('episodios_saude').create({
-    casa: casa.id, membro: quem.id, especialidade: especialidades[esp].id,
+    casa: casa.id, membro: quem.id, especialidade: esp,
     medico, dia: iso(quando), hora: '10:00', notas }));
 }
 // ── Notas: VÁRIAS por consulta, e de autores diferentes ──────────────────────
