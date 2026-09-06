@@ -6,7 +6,7 @@
 // Não confundir com `s.registo`, que é o histórico de alterações que a
 // FAMÍLIA faz à casa. São duas coisas diferentes, e o ecrã mostrava a segunda
 // onde a referência 17 mostra a primeira.
-export const APP_VERSION = '1.8.0';
+export const APP_VERSION = '1.10.0';
 
 // ── O que a app é, e o que cada área faz ─────────────────────────────────────
 //
@@ -140,6 +140,36 @@ export const AREAS = [
 ];
 
 export const REGISTO_APP = [
+  // ── 1.10.0 ────────────────────────────────────────────────────────────────
+  // A casa encheu-se de dados a sério — três meses de despesas, quatro
+  // consultas, dezoito artigos — e cinco defeitos apareceram que nenhuma prova
+  // via com a casa vazia. São estes.
+  { v: '1.10.0', d: '06/09/2026', k: 'alterado', a: 'A App', t: 'A app abre mais depressa: o registo da casa deixou de vir todo de cada vez' },
+  { v: '1.10.0', d: '06/09/2026', k: 'corrigido', a: 'Agenda', t: 'Mudar o responsável ou a etiqueta de um evento ficava só neste telemóvel' },
+  { v: '1.10.0', d: '06/09/2026', k: 'corrigido', a: 'Dinheiro', t: 'Uma despesa sem data contava no total de todos os meses' },
+  { v: '1.10.0', d: '06/09/2026', k: 'corrigido', a: 'Dinheiro', t: 'O gasto de um envelope era o do mês inteiro, e não o do envelope' },
+  { v: '1.10.0', d: '06/09/2026', k: 'corrigido', a: 'Tarefas', t: 'As tarefas de hoje não apareciam no Início quando vinham do servidor' },
+
+  // ── 1.9.0 ─────────────────────────────────────────────────────────────────
+  // A casa deixou de viver em cada telemóvel e passou a viver num servidor
+  // próprio. Quase tudo o que está aqui é consequência disso: o que dois
+  // telefones já não se anulam, e o que passou a ser visto pelos dois.
+  { v: '1.9.0', d: '05/09/2026', k: 'novo', a: 'A App', t: 'A casa passou a viver num servidor próprio: dois telemóveis vêem as mesmas tarefas, as mesmas compras e o mesmo dinheiro' },
+  { v: '1.9.0', d: '05/09/2026', k: 'novo', a: 'Documentação', t: '«Nesta casa» diz o que a família fez: quem mudou o quê, e quando' },
+  { v: '1.9.0', d: '05/09/2026', k: 'novo', a: 'Documentação', t: 'O registo filtra-se por área e por pessoa, e tocar numa linha leva ao ecrã de que ela fala' },
+  { v: '1.9.0', d: '05/09/2026', k: 'alterado', a: 'Documentação', t: 'O «Como funciona» passou a descrever o âmbito da app e o que cada área faz' },
+  { v: '1.9.0', d: '05/09/2026', k: 'novo', a: 'Tarefas', t: 'A ordem à mão das tarefas é da casa: quem arrasta muda a lista dos dois' },
+  { v: '1.9.0', d: '05/09/2026', k: 'corrigido', a: 'Tarefas', t: 'A semanada podia ser paga duas vezes — o segundo adulto não via que já tinha sido paga' },
+  { v: '1.9.0', d: '05/09/2026', k: 'corrigido', a: 'Compras', t: 'Dois adultos na mesma loja apagavam as marcações um do outro; agora cada um marca a sua linha' },
+  { v: '1.9.0', d: '05/09/2026', k: 'corrigido', a: 'Dinheiro', t: 'Dois telemóveis a mover dinheiro entre envelopes anulavam-se; agora somam-se' },
+  { v: '1.9.0', d: '05/09/2026', k: 'alterado', a: 'Dinheiro', t: 'O mês do orçamento passou a ser uma linha que abre e fecha — o mês novo começa do zero sem apagar o anterior' },
+  { v: '1.9.0', d: '05/09/2026', k: 'alterado', a: 'Dinheiro', t: 'Os valores escrevem-se à mão, além de subirem e descerem ao toque' },
+  { v: '1.9.0', d: '05/09/2026', k: 'novo', a: 'Perfil', t: 'O esquema de cor e o aspeto seguem a pessoa, e não o telemóvel onde entrou' },
+  { v: '1.9.0', d: '05/09/2026', k: 'corrigido', a: 'Entrada', t: 'Uma oscilação da rede terminava a sessão e obrigava a entrar outra vez' },
+
+  { v: '1.9.0', d: '04/09/2026', k: 'novo', a: 'Gestão da Casa', t: 'As lojas, as categorias de equipamento e as especialidades são da casa, e não de cada telemóvel' },
+  { v: '1.9.0', d: '04/09/2026', k: 'alterado', a: 'Tarefas', t: 'Os pontos passaram a ser opcionais: uma tarefa pode não valer nada' },
+
   // ── 1.8.0 ─────────────────────────────────────────────────────────────────
   { v: '1.8.0', d: '02/09/2026', k: 'novo', a: 'Perfil', t: 'O avatar escolhe-se: dezasseis figuras, a cor do perfil, ou a fotografia da conta Google' },
   { v: '1.8.0', d: '02/09/2026', k: 'novo', a: 'Perfil', t: 'A fotografia da conta Google traz-se sem terminar a sessão' },
