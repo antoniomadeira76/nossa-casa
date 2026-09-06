@@ -22,56 +22,12 @@
 // totais são as somas FILTRADAS por ele. Não há nada a zerar: o mês seguinte
 // começa do zero por ser OUTRA soma.
 import PocketBase from 'pocketbase';
-import { registerHooks } from 'node:module';
-import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
-
-registerHooks({
-  resolve(especificador, contexto, seguinte) {
-    try { return seguinte(especificador, contexto); }
-    catch (e) {
-      if (especificador.startsWith('.') && !/\.[cm]?jsx?$/.test(especificador)) {
-        return seguinte(especificador + '.js', contexto);
-      }
-      throw e;
-    }
-  },
-});
+import { URL, PREFIXO, comecar, prova, igual, recusado, semRecusa, comId, resumo, memoriaDeTelemovel } from './provas.mjs';
 
 const { configurar, auth } = await import('../../src/pocketbase.js');
 const sync = await import('../../src/sync.js');
 
-const memoria = new Map();
-configurar({
-  url: URL,
-  storage: {
-    getItem: async (k) => (memoria.has(k) ? memoria.get(k) : null),
-    setItem: async (k, v) => { memoria.set(k, v); },
-    removeItem: async (k) => { memoria.delete(k); },
-  },
-});
-
-let ok = 0, mau = 0;
-const prova = async (n, f) => {
-  try { await f(); console.log(`  ✓ ${n}`); ok++; }
-  catch (e) { console.log(`  ✕ ${n}\n      ${e.message}`); mau++; }
-};
-
-// ⚠ Uma escrita recusada pelo servidor não rebenta — devolve-se. Sem isto, uma
-// prova podia passar por a leitura seguinte trazer o valor de OUTRA escrita, e
-// a recusa ficava por contar. Foi assim que uma transferência recusada bloqueou
-// a fila inteira durante uma tarde sem dizer nada.
-const semRecusa = async (o, onde) => {
-  const r = await o;
-  const rec = (r && r.recusadas) || [];
-  if (rec.length) throw new Error(`${onde}: o servidor recusou — ${JSON.stringify(rec)}`);
-  if (r && r.presa) throw new Error(`${onde}: fila presa — ${JSON.stringify(r.presa)}`);
-  return r;
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
-const recusado = async (f) => {
-  try { await f(); throw new Error('PASSOU — devia ter sido recusado'); }
-  catch (e) { if (/PASSOU/.test(e.message)) throw e; }
-};
+configurar({ url: URL, storage: memoriaDeTelemovel() });
 
 // ── A casa ───────────────────────────────────────────────────────────────────
 const { pb: admin } = await comecar();
@@ -93,10 +49,10 @@ const telemovel = async (id, senha) => {
   return c;
 };
 
-const mercearia = (await sync.criarEnvelope({
-  casa: daRita.casa, nome: 'Mercearia', limite: 550 })).id;
-const lazer = (await sync.criarEnvelope({
-  casa: daRita.casa, nome: 'Lazer', limite: 180 })).id;
+const mercearia = (await comId(sync.criarEnvelope({
+  casa: daRita.casa, nome: 'Mercearia', limite: 550 }), 'criarEnvelope(Mercearia)')).id;
+const lazer = (await comId(sync.criarEnvelope({
+  casa: daRita.casa, nome: 'Lazer', limite: 180 }), 'criarEnvelope(Lazer)')).id;
 
 // ═════════════════════════════════════════════════════════════════════════════
 console.log('\n── abrir o mês ──');
@@ -104,10 +60,9 @@ console.log('\n── abrir o mês ──');
 let agosto = null;
 
 await prova('abrir cria uma linha, com os limites e o rendimento', async () => {
-  const r = await sync.abrirMes({
+  const r = await comId(sync.abrirMes({
     casa: daRita.casa, mes: 'd2026-08-01', rendimento: 3200,
-    limites: { Mercearia: 550, Lazer: 180 } });
-  if (!r || !r.id) throw new Error('não devolveu id: ' + JSON.stringify(r));
+    limites: { Mercearia: 550, Lazer: 180 } }), 'abrirMes(agosto)');
   agosto = r.id;
   const m = await admin.collection('meses').getOne(agosto);
   igual(String(m.mes).slice(0, 10), '2026-08-01');
@@ -127,9 +82,9 @@ await prova('⚠ e o `puxarCasa` traz o mês aberto e os limites dele', async ()
 console.log('\n── e os totais são DESTE mês ──');
 
 await prova('uma despesa de agosto conta', async () => {
-  await sync.despesa({
+  await semRecusa(sync.despesa({
     casa: daRita.casa, envelope: mercearia, valor: 40, pagador: daRita.membro,
-    descricao: 'Compras', data: '2026-08-10' });
+    descricao: 'Compras', data: '2026-08-10' }), 'despesa de agosto');
   const lida = await sync.puxarCasa();
   igual(lida.registered, 40);
 });
@@ -137,9 +92,9 @@ await prova('uma despesa de agosto conta', async () => {
 await prova('⚠ e uma de JULHO, antes de o mês abrir, NÃO conta', async () => {
   // É o que o filtro por mês existe para fazer: sem ele, o total era a soma de
   // sempre e o mês novo começava com o gasto do anterior.
-  await sync.despesa({
+  await semRecusa(sync.despesa({
     casa: daRita.casa, envelope: mercearia, valor: 999, pagador: daRita.membro,
-    descricao: 'Compras de julho', data: '2026-07-15' });
+    descricao: 'Compras de julho', data: '2026-07-15' }), 'despesa de julho');
   const lida = await sync.puxarCasa();
   igual(lida.registered, 40, 'a despesa de julho entrou no total de agosto');
 });
@@ -176,9 +131,9 @@ let setembro = null;
 await prova('⚠ setembro abre, e começa do ZERO — sem ninguém apagar nada', async () => {
   // É a prova que interessa. As despesas de agosto continuam todas lá; o total
   // de setembro é zero porque é OUTRA soma, não porque alguém a zerou.
-  setembro = (await sync.abrirMes({
+  setembro = (await comId(sync.abrirMes({
     casa: daRita.casa, mes: 'd2026-09-01', rendimento: 3200,
-    limites: { Mercearia: 600, Lazer: 200 } })).id;
+    limites: { Mercearia: 600, Lazer: 200 } }), 'abrirMes(setembro)')).id;
 
   const lida = await sync.puxarCasa();
   igual(lida.mes.idServidor, setembro);
@@ -239,5 +194,4 @@ await prova('⚠ e um mês não se APAGA — o histórico do orçamento não se 
   await admin.collection('meses').getOne(agosto);
 });
 
-console.log(`\n${ok} provas passaram, ${mau} falharam.`);
-process.exit(mau ? 1 : 0);
+resumo();

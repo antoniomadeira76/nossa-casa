@@ -10,7 +10,7 @@
 //
 //   node db/pocketbase/provar-dois-telemoveis.mjs
 import PocketBase from 'pocketbase';
-import { URL, comecar, criarCasa, criarMembro } from './casa-de-provas.mjs';
+import { URL, comecar, criarCasa, criarMembro, prova, igual, resumo } from './provas.mjs';
 
 // ── Casa de provas, limpa ────────────────────────────────────────────────────
 // Só o que é das provas é apagado. O que estiver noutra casa fica onde está.
@@ -24,13 +24,6 @@ const rita = await membro('Rita', 'admin', {
 const tomas = await membro('Tomas', 'adulto', {
   email: 'tomas@exemplo.pt', password: 'palavra-longa-2', passwordConfirm: 'palavra-longa-2', verified: true });
 const leo = await membro('Leo', 'crianca', { password: '1357', passwordConfirm: '1357', verified: true });
-
-let ok = 0, mau = 0;
-const prova = async (nome, fn) => {
-  try { await fn(); console.log(`  ✓ ${nome}`); ok++; }
-  catch (e) { console.log(`  ✕ ${nome}\n      ${e.message}`); mau++; }
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
 
 // Dois clientes distintos: dois telemóveis, cada um com a sua sessão.
 const telemovel = async (identidade, senha) => {
@@ -119,5 +112,4 @@ await prova('o Léo vê o saldo dele mas não mexe nele', async () => {
   } catch (e) { if (/PASSOU/.test(e.message)) throw e; }
 });
 
-console.log(`\n${ok} provas passaram, ${mau} falharam.`);
-process.exit(mau ? 1 : 0);
+resumo();

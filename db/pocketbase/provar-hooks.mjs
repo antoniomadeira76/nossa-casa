@@ -1,22 +1,11 @@
 // Prova os hooks: qualidade do PIN, força da palavra-passe de adulto,
 // minimização e as guardas de papel. Um hook por testar é um hook que não existe.
 //   node db/pocketbase/provar-hooks.mjs
-import PocketBase from 'pocketbase';
-import { PREFIXO, comecar } from './casa-de-provas.mjs';
+import { PREFIXO, comecar, prova, recusado, resumo } from './provas.mjs';
 
 // Casa de provas, limpa. Só o que é das provas é apagado — o que estiver
 // noutra casa fica onde está.
 const { pb } = await comecar();
-
-let ok = 0, mau = 0;
-const prova = async (n, f) => {
-  try { await f(); console.log(`  ✓ ${n}`); ok++; }
-  catch (e) { console.log(`  ✕ ${n}\n      ${e.message}`); mau++; }
-};
-const recusado = async (f) => {
-  try { await f(); throw new Error('PASSOU — devia ter sido recusado'); }
-  catch (e) { if (/PASSOU/.test(e.message)) throw e; }
-};
 
 const casa = await pb.collection('casas').create({ nome: PREFIXO + 'Prova', valor_ponto: 0.1 });
 const mk = (nome, papel, extra) => pb.collection('membros').create({
@@ -60,5 +49,4 @@ await prova('com dois administradores, despromover um é permitido', async () =>
   await pb.collection('membros').update(rita.id, { papel: 'adulto' });
 });
 
-console.log(`\n${ok} provas passaram, ${mau} falharam.`);
-process.exit(mau ? 1 : 0);
+resumo();

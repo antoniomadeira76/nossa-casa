@@ -19,25 +19,9 @@
 // ficheiro anexo, e é dessa peça que os cinco pontos do db/postgres/README.md
 // mais falam. Sobe a consulta; o que está pendurado nela, não.
 import PocketBase from 'pocketbase';
-import { registerHooks } from 'node:module';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
-// O src/sync.js importa './pocketbase' sem extensao, porque e assim que o
-// Metro resolve. O Node nao resolve, e a app nao se muda para agradar a prova
-// — esta escrito no provar-gerir-casa-pela-app.mjs, que usa este mesmo gancho.
-registerHooks({
-  resolve(especificador, contexto, seguinte) {
-    try { return seguinte(especificador, contexto); }
-    catch (e) {
-      if (especificador.startsWith('.') && !/.[cm]?jsx?$/.test(especificador)) {
-        return seguinte(especificador + '.js', contexto);
-      }
-      throw e;
-    }
-  },
-});
-
+import { URL, PREFIXO, comecar, prova, igual, recusado, resumo } from './provas.mjs';
 const { configurar, auth } = await import('../../src/pocketbase.js');
 const { episodioDeSaude, saudeSincroniza, recusaSaude, eEnderecoDeCasa,
         NUNCA_SINCRONIZA, pendentes, esvaziar } = await import('../../src/sync.js');
@@ -49,16 +33,6 @@ const storage = {
   removeItem: async (k) => { memoria.delete(k); },
 };
 
-let ok = 0, mau = 0;
-const prova = async (n, f) => {
-  try { await f(); console.log(`  ✓ ${n}`); ok++; }
-  catch (e) { console.log(`  ✕ ${n}\n      ${e.message}`); mau++; }
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
-const recusado = async (f) => {
-  try { await f(); throw new Error('PASSOU — devia ter sido recusado'); }
-  catch (e) { if (/PASSOU/.test(e.message)) throw e; }
-};
 const como = async (id, senha) => {
   const c = new PocketBase(URL);
   await c.collection('membros').authWithPassword(id, senha);
@@ -223,5 +197,4 @@ await prova('e `health` já não está nela, porque sobe sob condição', () => 
   if (NUNCA_SINCRONIZA.includes('health')) throw new Error('health ainda está na lista');
 });
 
-console.log(`\n${ok} provas passaram, ${mau} falharam.`);
-process.exit(mau ? 1 : 0);
+resumo();

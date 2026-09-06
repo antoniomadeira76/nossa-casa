@@ -19,42 +19,12 @@
 // Por isso isto escreve pelo `sync.js`, lê pelo `sync.js`, e confere o que
 // chegou ao outro lado campo a campo.
 import PocketBase from 'pocketbase';
-import { registerHooks } from 'node:module';
-import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
-
-// O `src/sync.js` importa `'./pocketbase'` sem extensão, porque é assim que o
-// Metro resolve. O Node não resolve, e a app não se muda para agradar à prova.
-registerHooks({
-  resolve(especificador, contexto, seguinte) {
-    try { return seguinte(especificador, contexto); }
-    catch (e) {
-      if (especificador.startsWith('.') && !/\.[cm]?jsx?$/.test(especificador)) {
-        return seguinte(especificador + '.js', contexto);
-      }
-      throw e;
-    }
-  },
-});
+import { URL, PREFIXO, comecar, prova, igual, comId, resumo, memoriaDeTelemovel } from './provas.mjs';
 
 const { configurar, auth } = await import('../../src/pocketbase.js');
 const sync = await import('../../src/sync.js');
 
-const memoria = new Map();
-configurar({
-  url: URL,
-  storage: {
-    getItem: async (k) => (memoria.has(k) ? memoria.get(k) : null),
-    setItem: async (k, v) => { memoria.set(k, v); },
-    removeItem: async (k) => { memoria.delete(k); },
-  },
-});
-
-let ok = 0, mau = 0;
-const prova = async (n, f) => {
-  try { await f(); console.log(`  ✓ ${n}`); ok++; }
-  catch (e) { console.log(`  ✕ ${n}\n      ${e.message}`); mau++; }
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
+configurar({ url: URL, storage: memoriaDeTelemovel() });
 
 // ── A casa ───────────────────────────────────────────────────────────────────
 const { pb: admin } = await comecar();
@@ -88,11 +58,10 @@ console.log('\n── uma tarefa criada num telemóvel aparece no outro ──')
 
 let idDaTarefa = null;
 await prova('a Rita cria uma tarefa, e o servidor devolve o id', async () => {
-  const r = await sync.tarefaDaCasa({
+  const r = await comId(sync.tarefaDaCasa({
     casa: daRita.casa, titulo: 'Pôr a mesa', atribuidoA: leo.id,
     recorrencia: 'Todos os dias', pontos: 3, urgencia: 0, prazo: 'd2026-09-25',
-  });
-  if (!r || !r.id) throw new Error('não devolveu id: ' + JSON.stringify(r));
+  }), 'tarefaDaCasa');
   idDaTarefa = r.id;
 });
 
@@ -138,9 +107,9 @@ const hoje = new Date().toISOString().slice(0, 10);
 let idDaLinha = null;
 
 await prova('marcar a tarefa cria uma linha em `tarefas_feitas`', async () => {
-  const r = await sync.marcarTarefaFeita({
-    casa: daRita.casa, tarefa: idDaTarefa, dia: `d${hoje}`, marcadaPor: daRita.membro });
-  if (!r || !r.id) throw new Error('não criou a linha: ' + JSON.stringify(r));
+  const r = await comId(sync.marcarTarefaFeita({
+    casa: daRita.casa, tarefa: idDaTarefa, dia: `d${hoje}`, marcadaPor: daRita.membro }),
+    'marcarTarefaFeita');
   idDaLinha = r.id;
   const linha = await admin.collection('tarefas_feitas').getOne(idDaLinha);
   igual(linha.tarefa, idDaTarefa);
@@ -151,8 +120,9 @@ await prova('⚠ e o SEGUNDO telemóvel a marcar não duplica — devolve a que 
   // Sem o índice único ficavam duas linhas e os pontos contavam a dobrar. Com
   // ele, a segunda marcação encontra a primeira e devolve-a: o estado que se
   // pediu já lá está, e isso não é erro.
-  const r = await sync.marcarTarefaFeita({
-    casa: daRita.casa, tarefa: idDaTarefa, dia: `d${hoje}`, marcadaPor: daRita.membro });
+  const r = await comId(sync.marcarTarefaFeita({
+    casa: daRita.casa, tarefa: idDaTarefa, dia: `d${hoje}`, marcadaPor: daRita.membro }),
+    'marcarTarefaFeita, segunda vez');
   igual(r.id, idDaLinha);
   igual(r.jaEstava, true);
   const todas = (await admin.collection('tarefas_feitas').getFullList())
@@ -184,10 +154,10 @@ await prova('desmarcar APAGA a linha — não escreve um booleano', async () => 
 console.log('\n── a agenda: o que cada telemóvel recebe ──');
 
 await prova('a Rita cria um evento da família', async () => {
-  const r = await sync.eventoDaCasa({
+  const r = await comId(sync.eventoDaCasa({
     casa: daRita.casa, dia: 'd2026-09-26', hora: '19:30',
-    titulo: 'Jantar de aniversário', autor: daRita.membro, visibilidade: 'familia' });
-  if (!r || !r.id) throw new Error('não devolveu id');
+    titulo: 'Jantar de aniversário', autor: daRita.membro, visibilidade: 'familia' }),
+    'eventoDaCasa');
   const e = await admin.collection('eventos').getOne(r.id);
   igual(e.titulo, 'Jantar de aniversário');
   igual(String(e.dia).slice(0, 10), '2026-09-26');
@@ -197,9 +167,9 @@ await prova('a Rita cria um evento da família', async () => {
 
 let idPrivado = null;
 await prova('e um só dela', async () => {
-  const r = await sync.eventoDaCasa({
+  const r = await comId(sync.eventoDaCasa({
     casa: daRita.casa, dia: 'd2026-09-27', titulo: 'Médico',
-    autor: daRita.membro, visibilidade: 'so-eu' });
+    autor: daRita.membro, visibilidade: 'so-eu' }), 'eventoDaCasa, só dela');
   idPrivado = r.id;
 });
 
@@ -231,5 +201,4 @@ await prova('⚠ e o `puxarCasa` NÃO filtra nada — é o servidor que decide',
   }
 });
 
-console.log(`\n${ok} provas passaram, ${mau} falharam.`);
-process.exit(mau ? 1 : 0);
+resumo();

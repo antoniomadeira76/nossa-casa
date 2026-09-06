@@ -12,7 +12,7 @@
 //
 //   node db/pocketbase/provar-gerir-casa.mjs
 import PocketBase from 'pocketbase';
-import { URL, comecar, criarCasa, criarMembro, PREFIXO } from './casa-de-provas.mjs';
+import { URL, PREFIXO, comecar, criarCasa, criarMembro, prova, igual, resumo } from './provas.mjs';
 
 const { pb: admin } = await comecar();
 const casa = await criarCasa(admin, 'Ferreira', {
@@ -34,13 +34,6 @@ const outra = await criarCasa(admin, 'Vizinhos');
 const vizinha = await criarMembro(admin, outra, 'Zita', 'admin', {
   email: 'zita@exemplo.pt', password: 'palavra-longa-9', passwordConfirm: 'palavra-longa-9',
   verified: true });
-
-let ok = 0, mau = 0;
-const prova = async (nome, fn) => {
-  try { await fn(); console.log(`  ✓ ${nome}`); ok++; }
-  catch (e) { console.log(`  ✕ ${nome}\n      ${e.message}`); mau++; }
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
 
 // Uma recusa que passa é o defeito que estas provas procuram.
 const recusa = async (o_que, fn) => {
@@ -244,5 +237,4 @@ await prova('a administração de outra casa NÃO tira ninguém desta', () =>
   recusa('remover noutra casa', () => daZita.collection('membros').delete(dina.id)));
 
 // ─────────────────────────────────────────────────────────────────────────────
-console.log(`\n${mau ? '✕' : '✓'} ${ok} provas passaram, ${mau} falharam\n`);
-process.exit(mau ? 1 : 0);
+resumo();

@@ -19,44 +19,12 @@
 // E o `daysLeft`, que NÃO sobe: é derivado da garantia e do dia de hoje, e um
 // número gravado fica errado no dia seguinte.
 import PocketBase from 'pocketbase';
-import { registerHooks } from 'node:module';
-import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
-
-registerHooks({
-  resolve(especificador, contexto, seguinte) {
-    try { return seguinte(especificador, contexto); }
-    catch (e) {
-      if (especificador.startsWith('.') && !/\.[cm]?jsx?$/.test(especificador)) {
-        return seguinte(especificador + '.js', contexto);
-      }
-      throw e;
-    }
-  },
-});
+import { URL, PREFIXO, comecar, prova, igual, recusado, comId, resumo, memoriaDeTelemovel } from './provas.mjs';
 
 const { configurar, auth } = await import('../../src/pocketbase.js');
 const sync = await import('../../src/sync.js');
 
-const memoria = new Map();
-configurar({
-  url: URL,
-  storage: {
-    getItem: async (k) => (memoria.has(k) ? memoria.get(k) : null),
-    setItem: async (k, v) => { memoria.set(k, v); },
-    removeItem: async (k) => { memoria.delete(k); },
-  },
-});
-
-let ok = 0, mau = 0;
-const prova = async (n, f) => {
-  try { await f(); console.log(`  ✓ ${n}`); ok++; }
-  catch (e) { console.log(`  ✕ ${n}\n      ${e.message}`); mau++; }
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
-const recusado = async (f) => {
-  try { await f(); throw new Error('PASSOU — devia ter sido recusado'); }
-  catch (e) { if (/PASSOU/.test(e.message)) throw e; }
-};
+configurar({ url: URL, storage: memoriaDeTelemovel() });
 
 // ── A casa ───────────────────────────────────────────────────────────────────
 const { pb: admin } = await comecar();
@@ -85,7 +53,7 @@ console.log('\n── um equipamento, com todos os campos ──');
 let maquina = null;
 
 await prova('a Rita regista a máquina de lavar', async () => {
-  const r = await sync.equipamentoDaCasa({
+  const r = await comId(sync.equipamentoDaCasa({
     casa: daRita.casa,
     nome: 'Máquina de lavar roupa Bosch',
     categoria: 'Eletrodomésticos',
@@ -95,8 +63,7 @@ await prova('a Rita regista a máquina de lavar', async () => {
     garantiaAte: '14/03/2027',
     manutencao: 'Limpeza do filtro',
     manutencaoAte: '01/10/2026',
-  });
-  if (!r || !r.id) throw new Error('não devolveu id: ' + JSON.stringify(r));
+  }), 'equipamentoDaCasa');
   maquina = r.id;
 });
 
@@ -159,8 +126,14 @@ await prova('alterar muda os campos, e as datas continuam a viajar', async () =>
 });
 
 await prova('e apagar apaga', async () => {
-  const outro = (await sync.equipamentoDaCasa({
-    casa: daRita.casa, nome: 'Torradeira', compradoEm: '01/01/2026' })).id;
+  // ⚠ Sem o `comId` esta prova passava sem NADA acontecer: recusada a criação,
+  // o `outro` ficava `undefined`, o `apagarEquipamento(undefined)` devolvia
+  // `{pendente:true}` calado, e o `getOne(undefined)` rebentava — que é
+  // precisamente o que o `recusado` lá em baixo quer ver. Verde de ponta a
+  // ponta, e a torradeira nunca existiu.
+  const outro = (await comId(sync.equipamentoDaCasa({
+    casa: daRita.casa, nome: 'Torradeira', compradoEm: '01/01/2026' }),
+    'equipamentoDaCasa(torradeira)')).id;
   await sync.apagarEquipamento(outro);
   await recusado(() => admin.collection('equipamentos').getOne(outro));
 });
@@ -209,5 +182,4 @@ await prova('⚠ a vizinha não vê nem escreve nos equipamentos desta casa', as
     casa: outra.id, equipamento: maquina, descricao: 'Intrusa' }));
 });
 
-console.log(`\n${ok} provas passaram, ${mau} falharam.`);
-process.exit(mau ? 1 : 0);
+resumo();

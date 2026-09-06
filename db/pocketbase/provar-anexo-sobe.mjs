@@ -14,49 +14,16 @@
 //
 // Por isso isto sobe um ficheiro a sério e volta a pedi-lo.
 import PocketBase from 'pocketbase';
-import { registerHooks } from 'node:module';
 import { writeFile, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
-
-// O `src/sync.js` importa `'./pocketbase'` sem extensão, porque é assim que o
-// Metro resolve. O Node não resolve, e a app não se muda para agradar à prova.
-registerHooks({
-  resolve(especificador, contexto, seguinte) {
-    try { return seguinte(especificador, contexto); }
-    catch (e) {
-      if (especificador.startsWith('.') && !/\.[cm]?jsx?$/.test(especificador)) {
-        return seguinte(especificador + '.js', contexto);
-      }
-      throw e;
-    }
-  },
-});
+import { URL, PREFIXO, comecar, prova, igual, recusado, resumo, memoriaDeTelemovel } from './provas.mjs';
 
 const { configurar, auth, pb: cliente } = await import('../../src/pocketbase.js');
 const { anexoDeSaude, episodioDeSaude } = await import('../../src/sync.js');
 
-const memoria = new Map();
-configurar({
-  url: URL,
-  storage: {
-    getItem: async (k) => (memoria.has(k) ? memoria.get(k) : null),
-    setItem: async (k, v) => { memoria.set(k, v); },
-    removeItem: async (k) => { memoria.delete(k); },
-  },
-});
+configurar({ url: URL, storage: memoriaDeTelemovel() });
 
-let ok = 0, mau = 0;
-const prova = async (n, f) => {
-  try { await f(); console.log(`  ✓ ${n}`); ok++; }
-  catch (e) { console.log(`  ✕ ${n}\n      ${e.message}`); mau++; }
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
-const recusado = async (f) => {
-  try { await f(); throw new Error('PASSOU — devia ter sido recusado'); }
-  catch (e) { if (/PASSOU/.test(e.message)) throw e; }
-};
 const como = async (id, senha) => {
   const c = new PocketBase(URL);
   await c.collection('membros').authWithPassword(id, senha);
@@ -189,5 +156,4 @@ await prova('o travão da conformidade recusa antes de tocar no ficheiro', async
 });
 
 await unlink(caminho).catch(() => {});
-console.log(`\n${ok} provas passaram, ${mau} falharam.`);
-process.exit(mau ? 1 : 0);
+resumo();

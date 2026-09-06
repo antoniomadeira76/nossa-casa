@@ -6,13 +6,7 @@
 //
 //   node db/pocketbase/provar-agenda-google.mjs
 import PocketBase from 'pocketbase';
-import { URL, comecar, criarCasa, criarMembro } from './casa-de-provas.mjs';
-
-let ok = 0, mau = 0;
-const prova = async (titulo, fn) => {
-  try { await fn(); console.log(`  ✓ ${titulo}`); ok++; }
-  catch (e) { console.error(`  ✗ ${titulo}\n      ${e.message}`); mau++; }
-};
+import { URL, comecar, criarCasa, criarMembro, prova, resumo } from './provas.mjs';
 
 // Uma operação que TEM de falhar. Se passar, é o defeito.
 const recusa = async (titulo, fn) => prova(titulo, async () => {
@@ -193,5 +187,4 @@ for (const m of [rita.id, tomas.id]) {
   for (const l of linhas) await admin.collection('credenciais_agenda').delete(l.id).catch(() => {});
 }
 
-console.log(`\n${mau ? '✗' : '✓'} ${ok} provas passaram, ${mau} falharam`);
-process.exit(mau ? 1 : 0);
+resumo();

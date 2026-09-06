@@ -18,44 +18,12 @@
 // orçamento, o `done` das tarefas, e agora o `status` das compras. Todas as
 // três estão agora em linhas.
 import PocketBase from 'pocketbase';
-import { registerHooks } from 'node:module';
-import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
-
-registerHooks({
-  resolve(especificador, contexto, seguinte) {
-    try { return seguinte(especificador, contexto); }
-    catch (e) {
-      if (especificador.startsWith('.') && !/\.[cm]?jsx?$/.test(especificador)) {
-        return seguinte(especificador + '.js', contexto);
-      }
-      throw e;
-    }
-  },
-});
+import { URL, PREFIXO, comecar, prova, igual, recusado, comId, resumo, memoriaDeTelemovel } from './provas.mjs';
 
 const { configurar, auth } = await import('../../src/pocketbase.js');
 const sync = await import('../../src/sync.js');
 
-const memoria = new Map();
-configurar({
-  url: URL,
-  storage: {
-    getItem: async (k) => (memoria.has(k) ? memoria.get(k) : null),
-    setItem: async (k, v) => { memoria.set(k, v); },
-    removeItem: async (k) => { memoria.delete(k); },
-  },
-});
-
-let ok = 0, mau = 0;
-const prova = async (n, f) => {
-  try { await f(); console.log(`  ✓ ${n}`); ok++; }
-  catch (e) { console.log(`  ✕ ${n}\n      ${e.message}`); mau++; }
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
-const recusado = async (f) => {
-  try { await f(); throw new Error('PASSOU — devia ter sido recusado'); }
-  catch (e) { if (/PASSOU/.test(e.message)) throw e; }
-};
+configurar({ url: URL, storage: memoriaDeTelemovel() });
 
 // ── A casa ───────────────────────────────────────────────────────────────────
 const { pb: admin } = await comecar();
@@ -84,10 +52,11 @@ console.log('\n── a ida às compras, e os artigos dela ──');
 let loja = null, lista = null;
 
 await prova('a Rita abre uma ida às compras', async () => {
-  loja = (await sync.acrescentarNaLista('stores', { casa: daRita.casa, nome: 'Continente' })).id;
-  const r = await sync.listaDeCompras({
-    casa: daRita.casa, loja, comprador: daRita.membro, planeadaPara: 'd2026-09-28' });
-  if (!r || !r.id) throw new Error('não devolveu id: ' + JSON.stringify(r));
+  loja = (await comId(sync.acrescentarNaLista('stores',
+    { casa: daRita.casa, nome: 'Continente' }), 'acrescentarNaLista(stores)')).id;
+  const r = await comId(sync.listaDeCompras({
+    casa: daRita.casa, loja, comprador: daRita.membro, planeadaPara: 'd2026-09-28' }),
+    'listaDeCompras');
   lista = r.id;
   const l = await admin.collection('listas_compras').getOne(lista);
   igual(l.loja, loja);
@@ -99,9 +68,9 @@ await prova('a Rita abre uma ida às compras', async () => {
 let banana = null, leite = null;
 
 await prova('⚠ e os artigos vão para a linha, com todos os campos', async () => {
-  const r = await sync.artigoDeCompras({
+  const r = await comId(sync.artigoDeCompras({
     casa: daRita.casa, lista, rotulo: 'Bananas', seccao: 0,
-    pedidoPor: daRita.membro, habitual: true, estimativa: 1.8 });
+    pedidoPor: daRita.membro, habitual: true, estimativa: 1.8 }), 'artigoDeCompras');
   banana = r.id;
   const a = await admin.collection('artigos').getOne(banana);
   // `rotulo` e não `label`; `seccao` e não `s`. O PocketBase ignora em
@@ -114,8 +83,8 @@ await prova('⚠ e os artigos vão para a linha, com todos os campos', async () 
 });
 
 await prova('e o telemóvel do Tomás vê-os', async () => {
-  leite = (await sync.artigoDeCompras({
-    casa: daRita.casa, lista, rotulo: 'Leite', seccao: 1 })).id;
+  leite = (await comId(sync.artigoDeCompras({
+    casa: daRita.casa, lista, rotulo: 'Leite', seccao: 1 }), 'artigoDeCompras(leite)')).id;
   const v = await doTomas.collection('artigos').getFullList();
   igual(v.filter(a => a.lista === lista).length, 2);
 });
@@ -190,7 +159,11 @@ await prova('⚠ a lista fechada deixa de ser a aberta', async () => {
 });
 
 await prova('e a ida seguinte é uma lista nova', async () => {
-  const r = await sync.listaDeCompras({ casa: daRita.casa, loja, comprador: daRita.membro });
+  // ⚠ Sem o `comId` esta prova passava com a lista POR CRIAR: o `r.id` vinha
+  // `undefined`, o `shopPlan.idServidor` também, e `igual(undefined, undefined)`
+  // dá certo. Uma recusa aqui não se via de todo.
+  const r = await comId(sync.listaDeCompras({
+    casa: daRita.casa, loja, comprador: daRita.membro }), 'listaDeCompras, a seguinte');
   const lida = await sync.puxarCasa();
   igual(lida.shopPlan.idServidor, r.id);
   igual((lida.newItems || []).length, 0);
@@ -266,5 +239,4 @@ await prova('⚠ a vizinha não vê nem escreve nas compras desta casa', async (
   await recusado(() => cVizinha.collection('artigos').update(leite, { estado: 'confirmado' }));
 });
 
-console.log(`\n${ok} provas passaram, ${mau} falharam.`);
-process.exit(mau ? 1 : 0);
+resumo();

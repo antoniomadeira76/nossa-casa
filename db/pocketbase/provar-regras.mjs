@@ -2,7 +2,7 @@
 // Cada teste tenta o que NÃO deve ser possível e espera uma recusa.
 //   node db/pocketbase/provar-regras.mjs
 import PocketBase from 'pocketbase';
-import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
+import { URL, PREFIXO, comecar, prova, igual, recusado, resumo } from './provas.mjs';
 
 // Casa de provas, limpa. Só o que é das provas é apagado — o que estiver
 // noutra casa fica onde está.
@@ -40,17 +40,6 @@ const vizinho = await admin.collection('membros').create({
 await admin.collection('envelopes').create({ casa: outraCasa.id, nome: 'Mercearia dos vizinhos', limite_base: 100 });
 
 // ── Provas ───────────────────────────────────────────────────────────────────
-let ok = 0, mau = 0;
-const prova = async (nome, fn) => {
-  try { await fn(); console.log(`  ✓ ${nome}`); ok++; }
-  catch (e) { console.log(`  ✕ ${nome}\n      ${e.message}`); mau++; }
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
-const recusado = async (o, fn) => {
-  try { await fn(); throw new Error('PASSOU — devia ter sido recusado'); }
-  catch (e) { if (/PASSOU/.test(e.message)) throw e; }
-};
-
 const como = async (identidade, senha) => {
   const c = new PocketBase(URL);
   await c.collection('membros').authWithPassword(identidade, senha);
@@ -63,7 +52,7 @@ await prova('a criança entra com o PIN certo', async () => {
   igual(c.authStore.record.nome, 'Leo');
 });
 await prova('o PIN errado é recusado pelo servidor', () =>
-  recusado(null, () => como(leo.login, '9999')));
+  recusado(() => como(leo.login, '9999')));
 await prova('o hash do PIN nunca chega ao cliente', async () => {
   const c = await como(leo.login, '1357');
   const r = JSON.stringify(c.authStore.record);
@@ -107,11 +96,11 @@ await prova('a casa vizinha não vê nada desta', async () => {
 console.log('\n── INVARIANTE #2: o cofre é de inserções ──');
 const mov = (await cRita.collection('cofre_movimentos').getFullList())[0];
 await prova('nem um adulto edita um movimento', () =>
-  recusado(null, () => cRita.collection('cofre_movimentos').update(mov.id, { valor: 999 })));
+  recusado(() => cRita.collection('cofre_movimentos').update(mov.id, { valor: 999 })));
 await prova('nem um adulto apaga um movimento', () =>
-  recusado(null, () => cRita.collection('cofre_movimentos').delete(mov.id)));
+  recusado(() => cRita.collection('cofre_movimentos').delete(mov.id)));
 await prova('a criança não credita o próprio cofre', () =>
-  recusado(null, () => cLeo.collection('cofre_movimentos').create({
+  recusado(() => cLeo.collection('cofre_movimentos').create({
     casa: casa.id, membro: leo.id, tipo: 'bonus', valor: 100, idem_key: 'batota' })));
 await prova('o adulto credita o cofre da criança', async () => {
   const m = await cRita.collection('cofre_movimentos').create({
@@ -123,7 +112,7 @@ console.log('\n── §6: idempotência ──');
 await prova('a mesma chave duas vezes não duplica', async () => {
   const k = 'repetida-' + Date.now();
   await cRita.collection('cofre_movimentos').create({ casa: casa.id, membro: leo.id, tipo: 'bonus', valor: 5, idem_key: k });
-  await recusado(null, () => cRita.collection('cofre_movimentos').create({
+  await recusado(() => cRita.collection('cofre_movimentos').create({
     casa: casa.id, membro: leo.id, tipo: 'bonus', valor: 5, idem_key: k }));
 });
 
@@ -142,15 +131,15 @@ await prova('a administração acrescenta um membro à sua casa', async () => {
   await admin.collection('membros').delete(m.id);
 });
 await prova('um adulto que não administra NÃO acrescenta', () =>
-  recusado(null, () => cTomas.collection('membros').create({
+  recusado(() => cTomas.collection('membros').create({
     nome: 'Intruso', login: `${casa.id}_intruso`, casa: casa.id, papel: 'adulto',
     email: 'intruso@exemplo.pt', password: 'palavra-longa-9', passwordConfirm: 'palavra-longa-9' })));
 await prova('uma criança NÃO acrescenta', () =>
-  recusado(null, () => cLeo.collection('membros').create({
+  recusado(() => cLeo.collection('membros').create({
     nome: 'Amigo', login: `${casa.id}_amigo`, casa: casa.id, papel: 'crianca',
     password: '9753', passwordConfirm: '9753' })));
 await prova('a administração de outra casa NÃO acrescenta a esta', () =>
-  recusado(null, () => cVizinho.collection('membros').create({
+  recusado(() => cVizinho.collection('membros').create({
     nome: 'Cavalo', login: `${casa.id}_cavalo`, casa: casa.id, papel: 'adulto',
     email: 'cavalo@exemplo.pt', password: 'palavra-longa-8', passwordConfirm: 'palavra-longa-8' })));
 await prova('o género gramatical é do membro, e vem do servidor', async () => {
@@ -165,15 +154,15 @@ await prova('o género gramatical é do membro, e vem do servidor', async () => 
 
 console.log('\n── §4: autorização por operação ──');
 await prova('só a administração mexe nos envelopes', () =>
-  recusado(null, () => cTomas.collection('envelopes').update(envelope.id, { limite_base: 9999 })));
+  recusado(() => cTomas.collection('envelopes').update(envelope.id, { limite_base: 9999 })));
 await prova('a administração mexe nos envelopes', async () => {
   await cRita.collection('envelopes').update(envelope.id, { limite_base: 600 });
 });
 await prova('uma despesa não pode ter uma criança como pagador', () =>
-  recusado(null, () => cRita.collection('despesas').create({
+  recusado(() => cRita.collection('despesas').create({
     casa: casa.id, envelope: envelope.id, valor: 5, pagador: leo.id, idem_key: 'x' + Date.now() })));
 await prova('uma despesa não se edita — anula-se', () =>
-  recusado(null, async () => {
+  recusado(async () => {
     const d = (await cRita.collection('despesas').getFullList())[0];
     await cRita.collection('despesas').update(d.id, { valor: 1 });
   }));
@@ -214,7 +203,7 @@ await prova('o cofre soma os movimentos, e não há campo que o escreva', async 
   igual(Math.round((depois.saldo - antes.saldo) * 100) / 100, 2.5, 'a soma não acompanhou o movimento');
 });
 await prova('uma vista não tem escrita — nem para a administração', () =>
-  recusado(null, () => cRita.collection('v_cofre_saldo').create({ membro: leo.id, saldo: 9999 })));
+  recusado(() => cRita.collection('v_cofre_saldo').create({ membro: leo.id, saldo: 9999 })));
 await prova('a criança vê o SEU saldo e mais nenhum', async () => {
   const v = await cLeo.collection('v_cofre_saldo').getFullList();
   igual(v.length, 1);
@@ -227,5 +216,4 @@ await prova('o gasto por envelope vem calculado', async () => {
 await prova('as contas entre adultos são invisíveis à criança', async () =>
   igual((await cLeo.collection('v_acerto_saldo').getFullList()).length, 0));
 
-console.log(`\n${ok} provas passaram, ${mau} falharam.`);
-process.exit(mau ? 1 : 0);
+resumo();

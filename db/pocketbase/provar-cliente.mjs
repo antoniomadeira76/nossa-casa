@@ -1,10 +1,8 @@
 // Prova o próprio src/pocketbase.js contra um servidor — não o SDK cru.
 // É a diferença entre «o cliente está escrito» e «o cliente funciona».
 //   node db/pocketbase/provar-cliente.mjs
-import PocketBase from 'pocketbase';
-import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
+import { URL, PREFIXO, comecar, prova, igual, resumo } from './provas.mjs';
 import { configurar, estaLigado, auth, ler, escrever, google } from '../../src/pocketbase.js';
-
 
 // Um AsyncStorage de mentira, em memória. É para isto que o módulo aceita
 // armazenamento injetado.
@@ -14,13 +12,6 @@ const storage = {
   setItem: async (k, v) => { memoria.set(k, v); },
   removeItem: async (k) => { memoria.delete(k); },
 };
-
-let ok = 0, mau = 0;
-const prova = async (n, f) => {
-  try { await f(); console.log(`  ✓ ${n}`); ok++; }
-  catch (e) { console.log(`  ✕ ${n}\n      ${e.message}`); mau++; }
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
 
 // ── Dados de prova, pelo caminho de administração ─────────────────────────────
 // Casa de provas, limpa. Só o que é das provas é apagado — o que estiver
@@ -160,5 +151,4 @@ await prova('entrar com Google sem provedor configurado dá erro claro', async (
   catch (e) { if (/devia ter recusado/.test(e.message)) throw e; }
 });
 
-console.log(`\n${ok} provas passaram, ${mau} falharam.`);
-process.exit(mau ? 1 : 0);
+resumo();

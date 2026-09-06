@@ -19,51 +19,15 @@
 // Sem `updateRule` nem `deleteRule`, que um registo que se corrige não é um
 // registo.
 import PocketBase from 'pocketbase';
-import { registerHooks } from 'node:module';
-import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
-
-registerHooks({
-  resolve(especificador, contexto, seguinte) {
-    try { return seguinte(especificador, contexto); }
-    catch (e) {
-      if (especificador.startsWith('.') && !/\.[cm]?jsx?$/.test(especificador)) {
-        return seguinte(especificador + '.js', contexto);
-      }
-      throw e;
-    }
-  },
-});
+import { URL, PREFIXO, comecar, prova, igual, recusado, semRecusa, comId, resumo,
+  memoriaDeTelemovel } from './provas.mjs';
 
 const { configurar, auth } = await import('../../src/pocketbase.js');
 const sync = await import('../../src/sync.js');
 
-const emMemoria = () => {
-  const m = new Map();
-  return {
-    getItem: async (k) => (m.has(k) ? m.get(k) : null),
-    setItem: async (k, v) => { m.set(k, v); },
-    removeItem: async (k) => { m.delete(k); },
-  };
-};
-configurar({ url: URL, storage: emMemoria() });
-
-let ok = 0, mau = 0;
-const prova = async (n, f) => {
-  try { await f(); console.log(`  ✓ ${n}`); ok++; }
-  catch (e) { console.log(`  ✕ ${n}\n      ${e.message}`); mau++; }
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
-const recusado = async (f) => {
-  try { await f(); throw new Error('PASSOU — devia ter sido recusado'); }
-  catch (e) { if (/PASSOU/.test(e.message)) throw e; }
-};
-const semRecusa = async (o, onde) => {
-  const r = await o;
-  const rec = (r && r.recusadas) || [];
-  if (rec.length) throw new Error(`${onde}: o servidor recusou — ${JSON.stringify(rec)}`);
-  if (r && r.presa) throw new Error(`${onde}: fila presa — ${JSON.stringify(r.presa)}`);
-  return r;
-};
+// Cada chamada devolve um `Map` novo, e é isso que serve para trocar de
+// telemóvel a meio: o do Tomás não sabe nada do da Rita.
+configurar({ url: URL, storage: memoriaDeTelemovel() });
 
 // ── A casa ───────────────────────────────────────────────────────────────────
 const { pb: admin } = await comecar();
@@ -86,9 +50,11 @@ console.log('\n── a ordem à mão é da casa ──');
 let lixo = null, loica = null, cama = null;
 
 await prova('três tarefas do mesmo grupo de urgência nascem sem posto', async () => {
-  lixo  = (await sync.tarefaDaCasa({ casa: daRita.casa, titulo: 'Levar o lixo',  urgencia: 1 })).id;
-  loica = (await sync.tarefaDaCasa({ casa: daRita.casa, titulo: 'Lavar a loiça', urgencia: 1 })).id;
-  cama  = (await sync.tarefaDaCasa({ casa: daRita.casa, titulo: 'Fazer a cama',  urgencia: 1 })).id;
+  const nova = (titulo) =>
+    comId(sync.tarefaDaCasa({ casa: daRita.casa, titulo, urgencia: 1 }), titulo);
+  lixo  = (await nova('Levar o lixo')).id;
+  loica = (await nova('Lavar a loiça')).id;
+  cama  = (await nova('Fazer a cama')).id;
 
   const lida = await sync.puxarCasa();
   // ⚠ Sem posto NÃO há entrada no mapa, e é isto que obrigou os postos a contar
@@ -115,7 +81,7 @@ await prova('arrastar escreve o posto na LINHA da tarefa', async () => {
 });
 
 await prova('⚠ e o OUTRO adulto vê a MESMA ordem — é a decisão toda', async () => {
-  configurar({ url: URL, storage: emMemoria() });
+  configurar({ url: URL, storage: memoriaDeTelemovel() });
   await auth.entrarAdulto('tomas-ord@x.pt', 'palavra-longa-2');
 
   const dele = await sync.puxarCasa();
@@ -156,7 +122,7 @@ await prova('uma linha do registo sobe com o autor', async () => {
 await prova('⚠ e o outro adulto vê quem foi — que é para o que serve', async () => {
   // Um registo só local nunca podia responder a «quem mudou isto?», porque a
   // pergunta é feita pela OUTRA pessoa.
-  configurar({ url: URL, storage: emMemoria() });
+  configurar({ url: URL, storage: memoriaDeTelemovel() });
   await auth.entrarAdulto('tomas-ord@x.pt', 'palavra-longa-2');
 
   const dele = await sync.puxarCasa();
@@ -212,5 +178,4 @@ await prova('⚠ e a vizinha não assina uma linha desta casa', async () => {
     casa: outra.id, texto: 'inventado', quem: tomas.id }));
 });
 
-console.log(`\n${ok} provas passaram, ${mau} falharam.`);
-process.exit(mau ? 1 : 0);
+resumo();

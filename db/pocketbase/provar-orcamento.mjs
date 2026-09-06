@@ -21,44 +21,12 @@
 // O servidor já tinha a resposta: `transferencias`, aditiva e com chave de
 // idempotência. O `envMove` passa a ser a SOMA delas.
 import PocketBase from 'pocketbase';
-import { registerHooks } from 'node:module';
-import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
-
-registerHooks({
-  resolve(especificador, contexto, seguinte) {
-    try { return seguinte(especificador, contexto); }
-    catch (e) {
-      if (especificador.startsWith('.') && !/\.[cm]?jsx?$/.test(especificador)) {
-        return seguinte(especificador + '.js', contexto);
-      }
-      throw e;
-    }
-  },
-});
+import { URL, PREFIXO, comecar, prova, igual, recusado, comId, semRecusa, resumo, memoriaDeTelemovel } from './provas.mjs';
 
 const { configurar, auth } = await import('../../src/pocketbase.js');
 const sync = await import('../../src/sync.js');
 
-const memoria = new Map();
-configurar({
-  url: URL,
-  storage: {
-    getItem: async (k) => (memoria.has(k) ? memoria.get(k) : null),
-    setItem: async (k, v) => { memoria.set(k, v); },
-    removeItem: async (k) => { memoria.delete(k); },
-  },
-});
-
-let ok = 0, mau = 0;
-const prova = async (n, f) => {
-  try { await f(); console.log(`  ✓ ${n}`); ok++; }
-  catch (e) { console.log(`  ✕ ${n}\n      ${e.message}`); mau++; }
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
-const recusado = async (f) => {
-  try { await f(); throw new Error('PASSOU — devia ter sido recusado'); }
-  catch (e) { if (/PASSOU/.test(e.message)) throw e; }
-};
+configurar({ url: URL, storage: memoriaDeTelemovel() });
 
 // ── A casa ───────────────────────────────────────────────────────────────────
 const { pb: admin } = await comecar();
@@ -88,8 +56,8 @@ console.log('\n── os envelopes deixam de ser sementes no código ──');
 let mercearia = null, lazer = null, casaEContas = null;
 
 await prova('criar um envelope cria uma linha, e devolve o id', async () => {
-  const r = await sync.criarEnvelope({ casa: daRita.casa, nome: 'Mercearia', limite: 550, cor: '#1890FF' });
-  if (!r || !r.id) throw new Error('não devolveu id: ' + JSON.stringify(r));
+  const r = await comId(sync.criarEnvelope({
+    casa: daRita.casa, nome: 'Mercearia', limite: 550, cor: '#1890FF' }), 'criarEnvelope');
   mercearia = r.id;
   const e = await admin.collection('envelopes').getOne(mercearia);
   // ⚠ `limite_base` e não `limit`; `nome` e não `name`. O PocketBase ignora em
@@ -100,8 +68,10 @@ await prova('criar um envelope cria uma linha, e devolve o id', async () => {
 });
 
 await prova('e mais dois', async () => {
-  lazer = (await sync.criarEnvelope({ casa: daRita.casa, nome: 'Sair & lazer', limite: 180 })).id;
-  casaEContas = (await sync.criarEnvelope({ casa: daRita.casa, nome: 'Casa & contas', limite: 700 })).id;
+  lazer = (await comId(sync.criarEnvelope({
+    casa: daRita.casa, nome: 'Sair & lazer', limite: 180 }), 'criarEnvelope(lazer)')).id;
+  casaEContas = (await comId(sync.criarEnvelope({
+    casa: daRita.casa, nome: 'Casa & contas', limite: 700 }), 'criarEnvelope(casa)')).id;
   igual((await admin.collection('envelopes').getFullList()).filter(e => e.casa === casa.id).length, 3);
 });
 
@@ -120,7 +90,11 @@ await prova('alterar muda a linha, e apagar apaga-a', async () => {
   igual(e.nome, 'Lazer');
   igual(e.limite_base, 200);
 
-  const temporario = (await sync.criarEnvelope({ casa: daRita.casa, nome: 'Temporário', limite: 10 })).id;
+  // ⚠ Sem o `comId` a metade de apagar passava com o envelope POR CRIAR: o
+  // `temporario` ficava `undefined` e o `getOne(undefined)` rebentava, que é o
+  // que o `recusado` quer ver. Verde sem nada ter sido criado nem apagado.
+  const temporario = (await comId(sync.criarEnvelope({
+    casa: daRita.casa, nome: 'Temporário', limite: 10 }), 'criarEnvelope(temporário)')).id;
   await sync.apagarEnvelope(temporario);
   await recusado(() => admin.collection('envelopes').getOne(temporario));
 });
@@ -143,9 +117,9 @@ await prova('⚠ nem as transferências, nem as despesas', async () => {
 console.log('\n── ⚠ e dois telemóveis a mover dinheiro NÃO se anulam ──');
 
 await prova('a Rita move 50 € da Mercearia para o Lazer', async () => {
-  await sync.transferenciaEntreEnvelopes({
+  await semRecusa(sync.transferenciaEntreEnvelopes({
     casa: daRita.casa, de: mercearia, para: lazer, valor: 50,
-    mes: '2026-09-01', por: daRita.membro });
+    mes: '2026-09-01', por: daRita.membro }), 'transferência da Rita');
   const t = (await admin.collection('transferencias').getFullList()).filter(x => x.casa === casa.id);
   igual(t.length, 1);
 });
@@ -225,5 +199,4 @@ await prova('⚠ e ninguém move dinheiro entre envelopes de OUTRA casa', async 
   igual(d.length, 0, 'entrou uma despesa de fora');
 });
 
-console.log(`\n${ok} provas passaram, ${mau} falharam.`);
-process.exit(mau ? 1 : 0);
+resumo();

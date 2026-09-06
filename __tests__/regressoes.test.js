@@ -1012,11 +1012,29 @@ describe('Camada de ligação ao servidor — PocketBase', () => {
     expect(cliente).not.toMatch(/casa-de-testes/);
   });
 
-  test('as provas do servidor existem e são executáveis', () => {
-    for (const f of ['db/pocketbase/provar-regras.mjs', 'db/pocketbase/provar-hooks.mjs',
-                     'db/pocketbase/provar-saude.mjs', 'db/pocketbase/provar-cliente.mjs']) {
-      expect(read(f)).toMatch(/process\.exit\(mau \? 1 : 0\)/);
-    }
+  test('as provas do servidor existem e dizem se passaram', () => {
+    // ⚠ Isto exigia `process.exit(mau ? 1 : 0)` LITERAL em quatro ficheiros
+    // escolhidos à mão — a expressão de hoje, não a propriedade. Quando o
+    // preâmbulo repetido foi para o `provas.mjs` e o fim passou a `resumo()`,
+    // esta prova ficou vermelha sem nada estar partido.
+    //
+    // A propriedade é: cada prova acaba a devolver um código de saída, e o
+    // `provar-tudo.mjs` lê-o para saber se a corrida passou. A lista sai da
+    // pasta, não de quatro nomes.
+    const fs = require('fs');
+    const path = require('path');
+    const pasta = path.join(__dirname, '..', 'db', 'pocketbase');
+    const provas = fs.readdirSync(pasta).filter(f => /^provar-.*\.mjs$/.test(f));
+    expect(provas.length).toBeGreaterThan(20);
+
+    const semFim = provas.filter((f) => {
+      const s = fs.readFileSync(path.join(pasta, f), 'utf8');
+      return !/\bresumo\(\)/.test(s) && !/process\.exit\(/.test(s);
+    });
+    expect(semFim).toEqual([]);
+
+    // E o `resumo()` é mesmo quem devolve o código, senão isto não mede nada.
+    expect(read('db/pocketbase/provas.mjs')).toMatch(/process\.exit\(mau \? 1 : 0\)/);
   });
 });
 

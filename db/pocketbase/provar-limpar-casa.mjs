@@ -7,13 +7,7 @@
 //
 //   node db/pocketbase/provar-limpar-casa.mjs
 import PocketBase from 'pocketbase';
-import { URL, comecar, criarCasa, criarMembro } from './casa-de-provas.mjs';
-
-let ok = 0, mau = 0;
-const prova = async (titulo, fn) => {
-  try { await fn(); console.log(`  ✓ ${titulo}`); ok++; }
-  catch (e) { console.error(`  ✗ ${titulo}\n      ${e.message}`); mau++; }
-};
+import { URL, comecar, criarCasa, criarMembro, prova, resumo } from './provas.mjs';
 
 const chamar = async (token) => {
   const r = await fetch(`${URL}/api/casa/limpar`, {
@@ -168,5 +162,4 @@ for (const m of [adminA.id, adultoA.id, criancaA.id, adminB.id]) {
   for (const l of linhas) await admin.collection('credenciais_agenda').delete(l.id).catch(() => {});
 }
 
-console.log(`\n${mau ? '✗' : '✓'} ${ok} provas passaram, ${mau} falharam`);
-process.exit(mau ? 1 : 0);
+resumo();

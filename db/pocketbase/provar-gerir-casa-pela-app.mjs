@@ -11,24 +11,7 @@
 // causou. Nenhuma leitura de código apanha nem um nem outro.
 //
 //   node db/pocketbase/provar-gerir-casa-pela-app.mjs
-import { registerHooks } from 'node:module';
-import { URL, comecar, criarCasa, criarMembro, PREFIXO } from './casa-de-provas.mjs';
-
-// O `src/sync.js` importa `'./pocketbase'` sem extensão, porque é assim que o
-// Metro resolve. O Node não resolve, e a alternativa era pôr `.js` no código
-// da app para o Node ficar contente — mudar a app para agradar à prova é ao
-// contrário. A prova é que se adapta.
-registerHooks({
-  resolve(especificador, contexto, seguinte) {
-    try { return seguinte(especificador, contexto); }
-    catch (e) {
-      if (especificador.startsWith('.') && !/\.[cm]?jsx?$/.test(especificador)) {
-        return seguinte(especificador + '.js', contexto);
-      }
-      throw e;
-    }
-  },
-});
+import { URL, PREFIXO, comecar, criarCasa, criarMembro, prova, igual, resumo } from './provas.mjs';
 
 // A camada da app lê o servidor do ambiente, tal como no telemóvel.
 process.env.EXPO_PUBLIC_PB_URL = URL;
@@ -59,12 +42,6 @@ await criarMembro(admin, casa, 'Bruno', 'adulto', {
   email: 'bruno@exemplo.pt', password: 'palavra-longa-2', passwordConfirm: 'palavra-longa-2',
   verified: true });
 
-let ok = 0, mau = 0;
-const prova = async (nome, fn) => {
-  try { await fn(); console.log(`  ✓ ${nome}`); ok++; }
-  catch (e) { console.log(`  ✕ ${nome}\n      ${e.message}`); mau++; }
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
 const recusa = async (o_que, fn) => {
   let passou = false;
   try { await fn(); passou = true; } catch { /* recusado, como devia */ }
@@ -202,5 +179,4 @@ await prova('⚠ e um endereço da internet fecha-a outra vez', () => {
   servidor.configurar({ url: URL });        // devolver ao que estava
 });
 
-console.log(`\n${mau ? '✕' : '✓'} ${ok} provas passaram, ${mau} falharam\n`);
-process.exit(mau ? 1 : 0);
+resumo();

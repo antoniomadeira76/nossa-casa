@@ -21,20 +21,10 @@
 //    único. É o INVARIANTE #2 posto em estrutura: dois telefones que marquem a
 //    mesma tarefa no mesmo dia não se anulam, colidem no índice.
 import PocketBase from 'pocketbase';
-import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
+import { URL, PREFIXO, comecar, prova, igual, recusado, resumo } from './provas.mjs';
 
 const { pb: admin } = await comecar();
 
-let ok = 0, mau = 0;
-const prova = async (n, f) => {
-  try { await f(); console.log(`  ✓ ${n}`); ok++; }
-  catch (e) { console.log(`  ✕ ${n}\n      ${e.message}`); mau++; }
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
-const recusado = async (f) => {
-  try { await f(); throw new Error('PASSOU — devia ter sido recusado'); }
-  catch (e) { if (/PASSOU/.test(e.message)) throw e; }
-};
 const como = async (id, senha) => {
   const c = new PocketBase(URL);
   await c.collection('membros').authWithPassword(id, senha);
@@ -313,5 +303,4 @@ await prova('⚠ nem atribui uma tarefa dela a uma criança desta casa', async (
     casa: outra.id, titulo: 'Arrumar o meu quarto', atribuido_a: leo.id, pontos: 5 }));
 });
 
-console.log(`\n${ok} provas passaram, ${mau} falharam.`);
-process.exit(mau ? 1 : 0);
+resumo();

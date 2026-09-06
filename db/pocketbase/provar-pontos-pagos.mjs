@@ -29,47 +29,12 @@
 // o valor do ponto muda, e catorze pontos pagos a 0,10 € continuam a ser
 // catorze pontos depois de a casa passar a 0,15 €. A última prova mede isso.
 import PocketBase from 'pocketbase';
-import { registerHooks } from 'node:module';
-import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
-
-registerHooks({
-  resolve(especificador, contexto, seguinte) {
-    try { return seguinte(especificador, contexto); }
-    catch (e) {
-      if (especificador.startsWith('.') && !/\.[cm]?jsx?$/.test(especificador)) {
-        return seguinte(especificador + '.js', contexto);
-      }
-      throw e;
-    }
-  },
-});
+import { URL, PREFIXO, comecar, prova, igual, semRecusa, comId, resumo, memoriaDeTelemovel } from './provas.mjs';
 
 const { configurar, auth } = await import('../../src/pocketbase.js');
 const sync = await import('../../src/sync.js');
 
-const memoria = new Map();
-configurar({
-  url: URL,
-  storage: {
-    getItem: async (k) => (memoria.has(k) ? memoria.get(k) : null),
-    setItem: async (k, v) => { memoria.set(k, v); },
-    removeItem: async (k) => { memoria.delete(k); },
-  },
-});
-
-let ok = 0, mau = 0;
-const prova = async (n, f) => {
-  try { await f(); console.log(`  ✓ ${n}`); ok++; }
-  catch (e) { console.log(`  ✕ ${n}\n      ${e.message}`); mau++; }
-};
-const igual = (a, b, o) => { if (a !== b) throw new Error(`esperava ${b}, veio ${a}${o ? ' · ' + o : ''}`); };
-const semRecusa = async (o, onde) => {
-  const r = await o;
-  const rec = (r && r.recusadas) || [];
-  if (rec.length) throw new Error(`${onde}: o servidor recusou — ${JSON.stringify(rec)}`);
-  if (r && r.presa) throw new Error(`${onde}: fila presa — ${JSON.stringify(r.presa)}`);
-  return r;
-};
+configurar({ url: URL, storage: memoriaDeTelemovel() });
 
 // ── A casa: dois adultos e uma criança ───────────────────────────────────────
 const { pb: admin } = await comecar();
@@ -121,15 +86,7 @@ await prova('⚠ o SEGUNDO adulto vê os pontos como pagos, e é o defeito todo'
   // tem é o que o servidor lhe responde. Antes desta correção respondia com os
   // movimentos e não com os pontos pagos, e o ecrã dele oferecia pagar outra
   // vez uma semanada que já tinha sido paga.
-  const memoriaDele = new Map();
-  configurar({
-    url: URL,
-    storage: {
-      getItem: async (k) => (memoriaDele.has(k) ? memoriaDele.get(k) : null),
-      setItem: async (k, v) => { memoriaDele.set(k, v); },
-      removeItem: async (k) => { memoriaDele.delete(k); },
-    },
-  });
+  configurar({ url: URL, storage: memoriaDeTelemovel() });
   await auth.entrarAdulto('tomas-pts@x.pt', 'palavra-longa-2');
 
   const dele = await sync.puxarCasa();
@@ -218,8 +175,8 @@ console.log('\n── ⚠ e o acerto de contas também VOLTA ──');
 let setembro = null;
 
 await prova('um acerto entre os dois adultos volta na leitura', async () => {
-  setembro = (await sync.abrirMes({
-    casa: daRita.casa, mes: 'd2026-09-01', rendimento: 3200, limites: {} })).id;
+  setembro = (await comId(sync.abrirMes({
+    casa: daRita.casa, mes: 'd2026-09-01', rendimento: 3200, limites: {} }), 'abrirMes')).id;
   await semRecusa(sync.acerto({
     casa: daRita.casa, de: tomas.id, para: rita.id, valor: 86.5,
     data: '2026-09-05' }), 'acerto');
@@ -232,15 +189,7 @@ await prova('um acerto entre os dois adultos volta na leitura', async () => {
 });
 
 await prova('⚠ e o OUTRO adulto vê-o pago — que é o defeito todo', async () => {
-  const memoriaDele = new Map();
-  configurar({
-    url: URL,
-    storage: {
-      getItem: async (k) => (memoriaDele.has(k) ? memoriaDele.get(k) : null),
-      setItem: async (k, v) => { memoriaDele.set(k, v); },
-      removeItem: async (k) => { memoriaDele.delete(k); },
-    },
-  });
+  configurar({ url: URL, storage: memoriaDeTelemovel() });
   await auth.entrarAdulto('tomas-pts@x.pt', 'palavra-longa-2');
   const dele = await sync.puxarCasa();
   igual(dele.acertoMovs.length, 1, 'o telemóvel do Tomás não sabe que já pagou');
@@ -266,5 +215,4 @@ await prova('⚠ e um acerto do mês ANTERIOR não conta no mês novo', async ()
   igual(todas.length, 2, 'o acerto de agosto foi apagado');
 });
 
-console.log(`\n${ok} provas passaram, ${mau} falharam.`);
-process.exit(mau ? 1 : 0);
+resumo();
