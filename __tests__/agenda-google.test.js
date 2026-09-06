@@ -455,6 +455,40 @@ describe('⚠ o que se traz da Google chega ao outro telemóvel', () => {
       .toEqual(expect.arrayContaining(muitos.map(e => e.id)));
   });
 
+  it('⚠ quem importa fica RESPONSÁVEL pelo evento', () => {
+    // Decisão do dono da casa, 06/09/2026.
+    //
+    // Já era o comportamento — mas por acidente, e não por decisão escrita:
+    // o `who` era o nome de quem importava porque não havia mais ninguém
+    // óbvio para lá pôr. Fica pinado, para não mudar sem alguém reparar.
+    //
+    // Um evento sem responsável é um evento de que ninguém se lembra: aparece
+    // na agenda da casa e não está atribuído a pessoa nenhuma. Quem o trouxe
+    // da sua agenda é quem já contava com ele.
+    const ler = loja();
+    TestRenderer.act(() => { ler().importGoogleEvents(VINDOS, 'Rita', 'adultos'); });
+    for (const e of ler().allEvents().filter(x => VINDOS.some(v => v.title === x.title))) {
+      expect(e.who).toBe('Rita');
+      expect(e.owner).toBe('Rita');
+    }
+  });
+
+  it('⚠ e o responsável chega ao servidor, não só a este telemóvel', () => {
+    // O `who` da loja é por vezes uma FRASE — «Léo · Consulta de saúde» —, e
+    // por isso o `criarEvento` só manda o `responsavel` quando ele é mesmo um
+    // membro da casa. Num evento importado é o nome de quem importou, e
+    // resolve-se; se um dia o `who` do import deixar de ser um nome, o
+    // responsável desaparece do servidor em silêncio.
+    const codigo = semComentarios(ler('src/store.jsx'));
+    const criar = codigo.slice(codigo.indexOf('const criarEvento'),
+                               codigo.indexOf('return idLocal'));
+    expect(criar).toMatch(/const responsavel = idDoMembro\(who\)/);
+    expect(criar).toMatch(/responsavel,/);
+    const importa = codigo.slice(codigo.indexOf('const importGoogleEvents'),
+                                 codigo.indexOf('const importGoogleEvents') + 1600);
+    expect(importa).toMatch(/who: user/);
+  });
+
   it('não voltam a ser oferecidos', () => {
     const ler = loja();
     TestRenderer.act(() => { ler().importGoogleEvents(VINDOS, 'Rita'); });
