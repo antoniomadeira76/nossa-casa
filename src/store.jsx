@@ -3379,6 +3379,89 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     }));
   };
 
+  // ── Apagar uma consulta ───────────────────────────────────────────────────
+  //
+  // ⚠ O `healthGone` era lido a cada leitura de fichas e NUNCA escrito.
+  //
+  // A maquinaria de apagar estava montada — a lista existia, o filtro lia-a —
+  // e não havia porta nenhuma: nem botão, nem menu, nem gesto. Uma consulta
+  // marcada por engano ficava para sempre. Arquivar esconde-a da lista; não a
+  // tira da casa nem do servidor. Apanhado a percorrer os ecrãs, 06/09/2026, e
+  // é a mesma forma do `tempoReal`: construído e sem quem lhe chame.
+
+  // O que cai com uma consulta. Serve para a pergunta DIZER o que leva atrás em
+  // vez de a pessoa descobrir depois — e é a mesma contagem que o apagar usa,
+  // para não haver duas versões da verdade.
+  const oQueCaiCom = (healthId) => ({
+    notas: (s.healthNotes[healthId] || []).length,
+    receitas: (s.healthRecipes[healthId] || []).length,
+    documentos: docsDaConsulta(healthId).length,
+    decisao: !!(s.healthDecisions || {})[healthId],
+    naAgenda: allEvents().some(e => e.healthId === healthId),
+  });
+
+  // ⚠ Quem pode apagar. Três respostas, e nenhuma é «a interface esconde o
+  // botão» — o INVARIANTE #3 diz que a regra vive no servidor, e ela lá está
+  // desde 03/09. Isto é a MESMA regra do lado de cá, para a app poder explicar
+  // o não em vez de mandar o pedido e mostrar um 404.
+  //
+  //   · a consulta tem de existir
+  //   · quem pede tem de a poder VER (`podeVerSaude`): a de um adulto é dele,
+  //     as das crianças são dos adultos, e uma criança não vê a sua
+  //   · e a saúde só sai deste telefone para um servidor DENTRO de casa
+  const porqueNaoApaga = (healthId, quemPede) => {
+    const r = allHealth().find(h => h.id === healthId);
+    if (!r) return 'Essa consulta já não existe.';
+    if (!podeVerSaude(r.member, quemPede)) return 'Esta ficha não é sua.';
+    return null;
+  };
+
+  // Devolve `null` quando apagou, ou a razão por escrito quando não.
+  const apagarConsulta = (healthId, quemPede) => {
+    const porque = porqueNaoApaga(healthId, quemPede);
+    if (porque) return porque;
+
+    const noServidor = episodioNoServidor(healthId);
+    const r = allHealth().find(h => h.id === healthId);
+
+    // ⚠ O servidor PRIMEIRO, ao contrário do resto da app.
+    //
+    // É a mesma escolha do «Começar de Zero»: se o servidor recusar — sessão
+    // caducada, papel mudado entretanto, endereço fora de casa —, a consulta
+    // fica intacta aqui e a folha diz porquê. Apagar cá e falhar lá deixava as
+    // duas metades a discordar, e a leitura seguinte trazia-a de volta sem
+    // ninguém perceber.
+    if (sync && noServidor) {
+      try { sync.apagarEpisodioDeSaude(noServidor).catch(() => {}); }
+      catch (e) { return e.message; }
+    }
+
+    // O evento da agenda vai com ela. Um evento «Consulta» que aponta para uma
+    // consulta que já não existe fica a apitar à hora de nada — e o
+    // `removerEvento` leva-o também da agenda da Google.
+    for (const e of allEvents().filter(ev => ev.healthId === healthId)) removerEvento(e.id);
+
+    set(x => {
+      const semChave = (mapa) => { const m = { ...(mapa || {}) }; delete m[healthId]; return m; };
+      return {
+        // A lápide, que é o que faz a consulta desaparecer das leituras — e a
+        // razão de ela existir: uma consulta-SEMENTE não se pode tirar de lado
+        // nenhum, e uma do servidor apaga-se lá.
+        healthGone: { ...(x.healthGone || {}), [healthId]: true },
+        healthNotes: semChave(x.healthNotes),
+        healthRecipes: semChave(x.healthRecipes),
+        healthDecisions: semChave(x.healthDecisions),
+        healthArchived: semChave(x.healthArchived),
+        healthDocs: (x.healthDocs || []).filter(d => d.healthId !== healthId),
+        // ⚠ Sem o nome nem a especialidade. O registo da casa é lido por todos
+        // os adultos, e uma linha «Consulta de Dentista da Mia apagada» põe no
+        // histórico exatamente o que a ficha existe para fechar.
+        registo: maisRegisto(x, 'Uma consulta foi apagada', 'Saúde'),
+      };
+    });
+    return null;
+  };
+
   // ⚠ O `sync.receitaDeSaude` existia desde 04/09/2026 e ninguém o chamava.
   // Escrevi a coleção, escrevi a função, e não liguei nem uma nem outra: a
   // receita ficava no telefone de quem a escreveu, e o outro adulto que fosse
@@ -3680,6 +3763,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     addHealthRecord, addHealthNote, editarNotaSaude, apagarNotaSaude, notaDaConsulta,
     addRecipe, setRecipeDecision, setHealthDecision,
     addHealthDoc, arquivarConsulta, docsDaConsulta, estaArquivada,
+    apagarConsulta, porqueNaoApaga, oQueCaiCom,
     addSpecialty, removeSpecialty, renameSpecialty, consultasDaEspecialidade,
     reordenarTarefas,
     // ⚠ UMA leitura da bandeira, e não `s.pontosLigados !== false` repetido em

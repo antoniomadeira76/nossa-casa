@@ -8,11 +8,12 @@ import { DE } from '../data';
 import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Tap, Avatar, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
-import { plural, dayLabel, daysUntil, chaveDeDMY, dmyDeChave } from '../format';
+import Confirm from '../Confirm';
+import { plural, dayLabel, daysUntil, chaveDeDMY, dmyDeChave, listaEmPortugues } from '../format';
 
 export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMarcado }) {
   const st = useStore();
-  const { s, set, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, addHealthDoc, arquivarConsulta, membros: MEMBERS, membrosDaCasa } = st;
+  const { s, set, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, addHealthDoc, arquivarConsulta, apagarConsulta, oQueCaiCom, membros: MEMBERS, membrosDaCasa } = st;
   const [membroDaFolha, setMembroDaFolha] = useState(null);  // pré-selecção ao marcar
 
   const [sheet, setSheet] = useState(null);
@@ -58,6 +59,9 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   const [recipeForm, setRecipeForm] = useState({ name: '', dosage: '', quantity: '', unit: '', expiresAt: '' });
   // A folha «Anexar»: de que consulta, e o que se está a escrever.
   const [anexoDe, setAnexoDe] = useState(null);
+  // A consulta que está a ser apagada, e o não do servidor quando há um.
+  const [aApagar, setAApagar] = useState(null);
+  const [naoApagou, setNaoApagou] = useState(null);
   const [anexoForm, setAnexoForm] = useState({ kind: 'Exame', title: '', expires: '', foto: null });
 
   // A visibilidade vem da loja. Havia aqui uma cópia própria, e era mais
@@ -590,6 +594,28 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                 <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 17, color: t.text3 }}>
                   Arquivar não apaga nada — os anexos ficam ligados e a consulta volta com um toque.
                 </Text>
+
+                {/* ── Apagar ────────────────────────────────────────────
+                    ⚠ Isto não existia, e o `healthGone` que a apaga era lido
+                    a cada leitura de fichas sem ninguém lhe escrever. Uma
+                    consulta marcada por engano — no membro errado, no dia
+                    errado, a dobrar — ficava para sempre.
+
+                    Fica DEPOIS do arquivar e com a cor de erro, porque
+                    arquivar é o que se quer quase sempre e apagar é o que não
+                    se desfaz. E o texto por baixo não promete o contrário. */}
+                <Pressable accessibilityRole="button"
+                  accessibilityLabel={`Apagar a consulta de ${record.specialty}`}
+                  onPress={() => { setNaoApagou(null); setAApagar(record); }}
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center',
+                    justifyContent: 'center', gap: S.md, minHeight: 44, borderRadius: R.row,
+                    backgroundColor: pressed ? STATE.errBg : 'transparent' })}>
+                  <Icon name="trash" size={18} color={STATE.errDeep} />
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
+                    color: STATE.errDeep }}>
+                    Apagar Consulta
+                  </Text>
+                </Pressable>
               </View>
             </View>
           )}
@@ -914,6 +940,48 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
           </View>
         </Sheet>
       )}
+
+      {/* ⚠ A pergunta DIZ o que leva atrás, contado do estado e não escrito à
+          mão: notas, receitas, decisão, documentos e o evento na agenda. Sem
+          isso, apagar uma consulta com três exames anexados era uma surpresa
+          que só se descobria depois — e não se desfaz.
+
+          A contagem vem do `oQueCaiCom` da loja, que é o MESMO que o apagar
+          usa. Duas contagens ao lado uma da outra divergem, e a pergunta
+          passaria a mentir sobre o que o botão faz. */}
+      {aApagar ? (() => {
+        const cai = oQueCaiCom(aApagar.id);
+        const partes = [
+          cai.notas ? plural(cai.notas, 'nota', 'notas') : null,
+          cai.receitas ? plural(cai.receitas, 'receita', 'receitas') : null,
+          cai.documentos ? plural(cai.documentos, 'documento', 'documentos') : null,
+          cai.decisao ? 'a decisão' : null,
+          cai.naAgenda ? 'o evento na agenda' : null,
+        ].filter(Boolean);
+        return (
+          <Confirm t={t}
+            title={`Apagar a consulta de ${aApagar.specialty}?`}
+            message={partes.length
+              ? `Leva com ela ${listaEmPortugues(partes)}. Não se desfaz — para a esconder sem a perder, use Arquivar.`
+              : 'Não se desfaz — para a esconder sem a perder, use Arquivar.'}
+            confirmLabel="Apagar"
+            destructive
+            onConfirm={() => {
+              // A loja devolve a razão por escrito quando recusa: a ficha não é
+              // sua, ou a saúde não sai para este servidor. Mostrar o não é a
+              // diferença entre a app explicar-se e parecer avariada.
+              const porque = apagarConsulta(aApagar.id, user);
+              setAApagar(null);
+              setNaoApagou(porque || null);
+              if (!porque) setExpandedRecord(null);
+            }}
+            onCancel={() => setAApagar(null)} />
+        );
+      })() : null}
+
+      {naoApagou ? (
+        <Tile t={t} kind="err" icon="lock">{naoApagou}</Tile>
+      ) : null}
     </>
   );
 }

@@ -1301,6 +1301,28 @@ export async function apagarNotaDeSaude(idNoServidor) {
   return servidor.pb.collection('notas_saude').delete(idNoServidor);
 }
 
+// ⚠ Apagar a consulta INTEIRA — e é a única coisa da saúde que a app não sabia
+// fazer.
+//
+// O `healthGone` da loja era lido a cada leitura de fichas e nunca escrito por
+// ninguém: a maquinaria de apagar estava montada e sem porta. Uma consulta
+// marcada por engano — no membro errado, no dia errado, a dobrar — ficava para
+// sempre. Arquivar esconde-a da lista; não a tira da casa nem do servidor.
+//
+// Quem valida é o servidor, e a regra já lá estava desde 03/09: um adulto
+// apaga a SUA ou a de uma criança da casa, e mais ninguém. Nem o outro adulto,
+// nem a própria criança. Isto não repete a regra — chama-a, e deixa o 404 ou o
+// 403 chegar a quem pediu, em vez de o engolir.
+//
+// As notas, as receitas, as decisões e os anexos caem com ela: a relação tem
+// `cascadeDelete` no servidor, e há uma prova em `provar-notas-saude.mjs` que
+// mede exatamente isso — «restantes 0» nas três coleções filhas.
+export async function apagarEpisodioDeSaude(idNoServidor) {
+  recusaSaude('episodios_saude');
+  if (!idNoServidor) return { pendente: true };
+  return servidor.pb.collection('episodios_saude').delete(idNoServidor);
+}
+
 export async function receitaDeSaude({ casa, episodio, nome, dose, quantidade, unidade, expiraEm, decisao }) {
   if (!episodio) throw new Error('Uma receita sem consulta não se grava.');
   return criarOuEnfileirar('receitas_saude', {

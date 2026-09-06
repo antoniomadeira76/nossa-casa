@@ -100,6 +100,34 @@ await prova('o Léo não escreve na sua própria ficha', () =>
 await prova('o Léo não apaga a sua própria ficha', () =>
   recusado(() => cLeo.collection('episodios_saude').delete(epLeo.id)));
 
+// ── ⚠ Apagar uma consulta ────────────────────────────────────────────────────
+//
+// A app ganhou o botão em 06/09/2026 — antes disso o `healthGone` era lido a
+// cada leitura de fichas e ninguém lhe escrevia: a maquinaria estava montada e
+// sem porta. A porta abre-se aqui, e a regra que a tranca é esta.
+//
+// A `deleteRule` já existia desde 03/09; o que não existia era medi-la para os
+// ADULTOS. A do Léo estava provada, e é a mais fácil das três.
+await prova('⚠ um adulto NÃO apaga a consulta do outro adulto', async () => {
+  await recusado(() => cRita.collection('episodios_saude').delete(epTomas.id));
+  // E continua lá — medido pelo dono, que é quem a pode ver.
+  await cTomas.collection('episodios_saude').getOne(epTomas.id);
+});
+
+await prova('um adulto apaga a SUA', async () => {
+  const meu = await admin.collection('episodios_saude').create({
+    casa: casa.id, membro: rita.id, especialidade: 'A apagar', dia: '2026-09-20' });
+  await cRita.collection('episodios_saude').delete(meu.id);
+  await recusado(() => admin.collection('episodios_saude').getOne(meu.id));
+});
+
+await prova('e a de uma criança da casa', async () => {
+  const doLeo = await admin.collection('episodios_saude').create({
+    casa: casa.id, membro: leo.id, especialidade: 'A apagar', dia: '2026-09-21' });
+  await cRita.collection('episodios_saude').delete(doLeo.id);
+  await recusado(() => admin.collection('episodios_saude').getOne(doLeo.id));
+});
+
 console.log('\n── os anexos herdam a regra do episódio ──');
 await prova('a Rita não vê o anexo do Tomás', async () => {
   const a = await cRita.collection('anexos').getFullList();
