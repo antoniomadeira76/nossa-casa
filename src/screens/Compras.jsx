@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, Modal } from 'react-native';
 
 import { useStore } from '../store';
@@ -24,6 +24,20 @@ export default function Compras({ t, user, onModoCompras }) {
   const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas, removerArtigo, marcarArtigo, mudarPlanoDeCompras } = st;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [aApagar, setAApagar] = useState(null);
+
+  // ── Dois adultos na mesma loja ────────────────────────────────────────────
+  //
+  // Enquanto este ecrã estiver aberto, o que o outro telemóvel marcar aparece
+  // aqui sozinho. É a única área da app onde duas pessoas estão na mesma coisa
+  // ao mesmo tempo — um nos frescos, o outro na mercearia — e é a única que
+  // leva subscrição: em todo o resto, ler ao abrir chega.
+  //
+  // A subscrição fecha-se ao sair. Deixá-la aberta era uma ligação por ecrã
+  // visitado, e bateria a arder por causa de uma lista que ninguém está a ver.
+  useEffect(() => {
+    st.seguirCompras(true);
+    return () => st.seguirCompras(false);
+  }, []);
 
   const items = allItems();
   const stateOf = (i) => s.status[i.id] || (i.real ? 'done' : 'open');

@@ -124,15 +124,21 @@ describe('A agenda da Google: convida, não invade', () => {
   // Se a Google falhar, o evento não pode desaparecer: uma rede não apaga o
   // que uma pessoa escreveu.
   test('a app guarda primeiro, e a Google depois', () => {
-    // ⚠ A forma mudou em 05/09/2026 e a propriedade não: a escrita local
-    // deixou de ser um `set({ added: [...] })` na folha e passa pelo
-    // `criarEvento` da loja, que também o manda para o SERVIDOR DA CASA — o
-    // `sync.eventoDaCasa` existia e ninguém o chamava.
+    // ⚠ A forma mudou DUAS vezes e a propriedade nenhuma.
     //
-    // O que esta prova protege continua a ser a ORDEM: a app guarda, e só
-    // depois vai à Google. Prende-se às posições, não ao texto de uma delas.
-    const guardaCa = folha.indexOf('criarEvento(event)');
-    const vaiAGoogle = folha.indexOf('servidor.google.criarEvento');
+    // Em 05/09 a escrita local deixou de ser um `set({ added: [...] })` na
+    // folha e passou pelo `criarEvento` da loja. Em 06/09 a Google saiu da
+    // folha também: passou a ser sempre, para TODOS os eventos, e por isso
+    // tinha de viver onde os três sítios que criam eventos passam.
+    //
+    // O que esta prova protege continua a ser a ORDEM: o estado da app é
+    // escrito, e só depois se vai à rede. Uma rede não pode apagar o que uma
+    // pessoa escreveu.
+    const codigo = semComs('src/store.jsx');
+    const bloco = codigo.slice(codigo.indexOf('const criarEvento'),
+      codigo.indexOf('const eventoNoServidor'));
+    const guardaCa = bloco.indexOf('set(x => ({');
+    const vaiAGoogle = bloco.indexOf('empurrarParaGoogle');
     expect(guardaCa).toBeGreaterThan(0);
     expect(vaiAGoogle).toBeGreaterThan(0);
     expect(guardaCa).toBeLessThan(vaiAGoogle);

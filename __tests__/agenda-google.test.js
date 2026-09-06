@@ -146,35 +146,71 @@ describe('o servidor é que guarda a autorização', () => {
 });
 
 describe('os três sentidos chegam à agenda da Google', () => {
-  const folha = semComentarios(ler('src/sheets/NovoEvento.jsx'));
+  // ⚠ Estas provas liam o `NovoEvento.jsx`, e passavam. E o defeito que
+  // deixaram entrar foi exactamente esse: os três sentidos chegavam à Google
+  // A PARTIR DAQUELA FOLHA, e a folha não é o único sítio que marca. Uma
+  // consulta marcada na Saúde nunca lá chegava, e a prova dizia que sim.
+  //
+  // 06/09/2026, decisão do dono da casa: tudo o que a app marca em calendário
+  // vai para a Google. Passou para a LOJA, por onde os três sítios passam, e
+  // é a loja que estas provas leem.
+  const loja = semComentarios(ler('src/store.jsx'));
 
   it('criar', () => {
-    expect(folha).toMatch(/servidor\.google\.criarEvento\(/);
+    const bloco = loja.slice(loja.indexOf('const criarEvento'),
+      loja.indexOf('const eventoNoServidor'));
+    expect(bloco).toMatch(/empurrarParaGoogle\(\{[\s\S]{0,160}acao: 'criar'/);
     // O identificador que a Google devolve tem de ficar guardado: sem ele,
     // editar e apagar não sabem em que evento mexer do lado de lá.
-    expect(folha).toMatch(/idGoogle/);
+    expect(loja).toMatch(/guardarIdGoogle\(/);
   });
 
   it('editar', () => {
-    expect(folha).toMatch(/servidor\.google\.atualizarEvento\(/);
+    const bloco = loja.slice(loja.indexOf('const editarEvento'),
+      loja.indexOf('const removerEvento'));
+    expect(bloco).toMatch(/empurrarParaGoogle\(\{[\s\S]{0,160}acao: 'alterar'/);
   });
 
   it('apagar', () => {
-    // `google.apagarEvento` existia e NINGUÉM o chamava: o evento apagado na
+    // `google.apagarEvento` existiu e NINGUÉM o chamava: o evento apagado na
     // app continuava na agenda da Google, a apitar à hora marcada para uma
     // coisa que já não existe. A app dizia «apagado» e mentia.
-    expect(folha).toMatch(/servidor\.google\.apagarEvento\(/);
+    const bloco = loja.slice(loja.indexOf('const removerEvento'),
+      loja.indexOf('const removerEvento') + 900);
+    expect(bloco).toMatch(/empurrarParaGoogle\(\{[\s\S]{0,120}acao: 'apagar'/);
   });
 
-  it('apagar guarda o identificador antes de o tirar da app', () => {
-    // `removerEvento` corre primeiro, e a seguir já não há de onde ler o
-    // `idGoogle` — tem de ser lido ANTES.
-    const bloco = folha.slice(folha.indexOf('const apagar'), folha.indexOf('const apagar') + 700);
-    expect(bloco.indexOf('evento.idGoogle')).toBeLessThan(bloco.indexOf('removerEvento('));
+  it('apagar lê o identificador ANTES de o evento sair da app', () => {
+    const bloco = loja.slice(loja.indexOf('const removerEvento'),
+      loja.indexOf('const removerEvento') + 900);
+    expect(bloco.indexOf('idGoogleDe(id)')).toBeLessThan(bloco.indexOf('eventGone'));
   });
 
-  it('se a Google falhar, a folha diz que ficou por apagar lá', () => {
-    expect(folha).toMatch(/continua na agenda da Google/);
+  it('⚠ e a folha já não empurra por si — senão só ela empurrava', () => {
+    const folha = semComentarios(ler('src/sheets/NovoEvento.jsx'));
+    expect(folha).not.toMatch(/servidor\.google\.criarEvento\(/);
+    expect(folha).not.toMatch(/servidor\.google\.atualizarEvento\(/);
+    expect(folha).not.toMatch(/servidor\.google\.apagarEvento\(/);
+  });
+
+  it('⚠ e não há interruptor: passou a ser sempre', () => {
+    const folha = semComentarios(ler('src/sheets/NovoEvento.jsx'));
+    expect(folha).not.toMatch(/naGoogle/);
+  });
+
+  it('⚠ o que a Google recusa não fica a repetir-se para sempre', () => {
+    // A mesma distinção que a fila do servidor aprendeu à sua custa: uma
+    // RECUSA não é uma falha de rede. Um evento que a Google já não tem, ou
+    // uma autorização retirada, nunca vão passar — e uma fila que os guarde
+    // tenta-os a cada arranque, para sempre.
+    const { naoVaiPassar } = require('../src/agenda-google');
+    for (const s of [400, 401, 403, 404, 410]) {
+      expect(naoVaiPassar({ status: s })).toBe(true);
+    }
+    for (const s of [0, 429, 500, 502, 503]) {
+      expect(naoVaiPassar({ status: s })).toBe(false);
+    }
+    expect(naoVaiPassar(new Error('Failed to fetch'))).toBe(false);
   });
 });
 

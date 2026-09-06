@@ -1343,3 +1343,39 @@ export const guardarAspeto = (campos) => servidor.auth.guardarAspeto(campos);
 // de uma criança não sabe o antigo. Ver `pb_hooks/pin.pb.js`.
 export const definirPin = (membroId, pin) => servidor.auth.definirPin(membroId, pin);
 export const trazerFotografiaDaGoogle = () => servidor.auth.trazerFotografiaDaGoogle();
+
+// ── A agenda da Google, pela mesma porta ─────────────────────────────────────
+//
+// A loja passou a empurrar TODOS os eventos para a Google — o interruptor
+// «Marcar na agenda da Google» desapareceu porque passou a ser sempre. Para o
+// fazer, a loja precisa do cliente da Google, e a regra acima diz que a loja só
+// conhece esta porta.
+//
+// ⚠ E não é só criar. Um evento apagado na app que fica na Google é pior do que
+// nunca lá ter ido: fica a apitar à hora de uma coisa que já não existe, e
+// ninguém percebe de onde vem.
+export const agendaGoogle = {
+  disponivel: () => servidor.google.disponivel(),
+  criar: (evento) => servidor.google.criarEvento(evento),
+  alterar: (idGoogle, evento) => servidor.google.atualizarEvento(idGoogle, evento),
+  apagar: (idGoogle) => servidor.google.apagarEvento(idGoogle),
+};
+
+// ── Tempo real, e só nas compras ─────────────────────────────────────────────
+//
+// É a única área onde dois telemóveis estão na mesma coisa ao mesmo tempo:
+// dois adultos na loja, um nos frescos e o outro na mercearia. Em todo o resto,
+// ler ao abrir chega — subscrever tudo gastava bateria para resolver um
+// problema que não existe.
+//
+// ⚠ Esta subscrição existiu CONSTRUÍDA E POR LIGAR durante duas semanas: era a
+// única exportação da app sem quem a importasse, e o varrimento de 06/09/2026
+// apanhou-a. Estava escrita, comentada, e não fazia nada.
+//
+// Devolve a função que cancela. Sem servidor, devolve uma que não faz nada — e
+// é por isso que quem chama não precisa de saber se há servidor.
+export const seguirCompras = async (aoMudar) => {
+  if (!ligado()) return () => {};
+  try { return await servidor.tempoReal.compras(aoMudar); }
+  catch { return () => {}; }
+};

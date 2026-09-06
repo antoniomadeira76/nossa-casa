@@ -1003,11 +1003,29 @@ export const escrever = {
 // coisa ao mesmo tempo — dois adultos na loja. Subscrever tudo gasta bateria e
 // não resolve problema nenhum.
 
+// ⚠ As DUAS coleções, e não só os `artigos`.
+//
+// A lista fechar é o momento em que o outro telemóvel mais precisa de saber:
+// quem está na caixa fecha a conta, e quem ainda anda nos corredores continua a
+// marcar artigos de uma ida que já acabou. Subscrever só os artigos deixava
+// esse caso de fora, que é o pior dos dois.
+const DE_COMPRAS = ['artigos', 'listas_compras'];
+
 export const tempoReal = {
   async compras(aoMudar) {
     if (!estaLigado()) return () => {};
-    await pb.collection('artigos').subscribe('*', (ev) => aoMudar('artigos', ev))
-      .catch(() => {});
-    return () => { pb.collection('artigos').unsubscribe('*').catch(() => {}); };
+    // ⚠ Uma subscrição que falha não rebenta a app — mas também não pode
+    // fingir que ficou feita. As que passarem são as que se cancelam depois;
+    // cancelar uma que nunca existiu dava um erro sem nada por trás.
+    const vivas = [];
+    for (const colecao of DE_COMPRAS) {
+      try {
+        await pb.collection(colecao).subscribe('*', (ev) => aoMudar(colecao, ev));
+        vivas.push(colecao);
+      } catch { /* sem tempo real nesta coleção; a app continua a funcionar */ }
+    }
+    return () => {
+      for (const colecao of vivas) pb.collection(colecao).unsubscribe('*').catch(() => {});
+    };
   },
 };

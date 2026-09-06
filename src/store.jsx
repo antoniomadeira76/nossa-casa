@@ -1,9 +1,12 @@
-import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES, HEALTH, HEALTH_DOCS, VAULT, DE } from './data';
 import { TODAY_KEY, TODAY, MONTHS, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY,
          chaveRelativa, plural, EUR } from './format';
 import { observacao, precosDe, estimativaDe, compararLojas } from './precos';
+// As decisões sobre o que vai para a agenda da Google — puras, e num ficheiro
+// à parte porque o `pocketbase.js` traz um SDK que o Jest não importa.
+import { paraGoogle, enfileirar, naoVaiPassar } from './agenda-google';
 // A camada do servidor entra por importação dinâmica, não estática. Duas
 // razões: o SDK do PocketBase é ESM e uma importação estática arrastava-o
 // para dentro dos testes — a suite de regressões deixou de carregar inteira,
@@ -263,6 +266,7 @@ const DATA_KEYS = [
   'recurringReset', 'healthNotes', 'healthRecipes', 'healthDecisions', 'healthDocs', 'healthGone',
   'healthArchived',
   'googleCalendarImported', // Google Calendar imports
+  'filaGoogle',             // o que falta empurrar para a agenda da Google
   'membros', 'nomeDaCasa', 'deDemonstracao',
 ];
 
@@ -611,6 +615,11 @@ export const DEMO = () => ({
   // consulta arquivada é `{ id: true }`; arquivar não apaga nada.
   healthArchived: {},
   googleCalendarImported: {}, // eventId -> true (track which Google Calendar events were imported)
+  // ⚠ O que ainda não chegou à agenda da Google, e porquê está no
+  // `agenda-google.js`. Uma escrita que falha não se engole: se «tudo o que se
+  // marca vai para a Google» é o comportamento, uma rede em baixo não o pode
+  // transformar em «quase tudo» sem ninguém dar por isso.
+  filaGoogle: [],
 
   // Quem vive nesta casa. Era uma constante importada de data.js, e a app
   // inteira assumia estas quatro pessoas — 40 leituras diretas e 57 sítios com
@@ -644,7 +653,7 @@ export const BLANK = () => ({
   ...DEMO(), done: {}, urg: {}, due: {}, vaultMoves: [],
   clearedSeeds: true, shopHistory: [], health: [],
   healthNotes: {}, healthRecipes: {}, healthDecisions: {}, googleCalendarImported: {},
-  healthDocs: [], healthGone: {}, healthArchived: {},
+  healthDocs: [], healthGone: {}, healthArchived: {}, filaGoogle: [],
   ...SEM_DINHEIRO_SEMEADO(),
 });
 
@@ -714,6 +723,9 @@ export function StoreProvider({ children }) {
   // As linhas do registo que já não é preciso mandar. Nulo = o disco ainda não
   // foi lido, e nada sobe até isso acontecer.
   const registosEnviados = useRef(null);
+  // Se o ecrã das Compras está aberto. Só enquanto estiver é que vale a pena
+  // ter uma subscrição aberta contra o servidor.
+  const [aSeguirCompras, setASeguirCompras] = useState(false);
 
   // Ler a casa do servidor. Corre no arranque E outra vez depois de alguém
   // entrar — que é o que faltava.
@@ -1092,7 +1104,65 @@ export function StoreProvider({ children }) {
     }
   }, [state.registo]);
 
-  const api = useMemo(() => build(state, set, mapaServidor, lerDoServidor), [state]);
+  // ── Dois adultos na mesma loja ────────────────────────────────────────────
+  //
+  // Enquanto as Compras estiverem abertas, o que o outro telemóvel marcar chega
+  // a este sem ser preciso sair e voltar. Ver `seguirCompras` no `sync.js`.
+  //
+  // ⚠ Relê a casa inteira em vez de aplicar o evento à mão, e é de propósito: o
+  // `puxarCasa` já sabe fundir o que veio do servidor com o que está por subir
+  // deste telefone. Aplicar um `create` de artigo à mão era escrever uma
+  // segunda fusão, mais pobre, ao lado da que já existe e está provada.
+  //
+  // ⚠ E espera meio segundo. Quem apanha meia dúzia de artigos seguidos manda
+  // meia dúzia de eventos, e uma leitura por cada era a lista a saltar debaixo
+  // dos dedos de quem está a marcar.
+  const seguirRef = useRef({ cancelar: null, temporizador: null });
+  useEffect(() => {
+    let vivo = true;
+    if (!aSeguirCompras) return undefined;
+
+    (async () => {
+      const cancelar = await sync?.seguirCompras?.(() => {
+        clearTimeout(seguirRef.current.temporizador);
+        seguirRef.current.temporizador = setTimeout(() => {
+          if (vivo) lerDoServidor();
+        }, 500);
+      });
+      if (!vivo) { cancelar?.(); return; }
+      seguirRef.current.cancelar = cancelar;
+    })();
+
+    return () => {
+      vivo = false;
+      clearTimeout(seguirRef.current.temporizador);
+      seguirRef.current.cancelar?.();
+      seguirRef.current.cancelar = null;
+    };
+  }, [aSeguirCompras]);
+
+  const api = useMemo(() => build(state, set, mapaServidor, lerDoServidor, setASeguirCompras), [state]);
+
+  // ── O que ficou por empurrar para a agenda da Google tenta outra vez ──────
+  //
+  // ⚠ Uma escrita na Google que falha NÃO se engole com um `.catch(() => {})`.
+  // O caso que interessa é invisível: a app fica certa, a agenda fica sem o
+  // evento, e ninguém descobre até faltar a uma consulta.
+  //
+  // A fila escoa-se quando a app abre e sempre que ela muda, o que cobre os
+  // três casos verdadeiros: a rede voltou, a agenda acabou de ser ligada, ou
+  // acabou de entrar uma marcação nova.
+  //
+  // ⚠ E é AQUI, depois do `api`, e não lá em cima com os outros efeitos: as
+  // funções que empurram vivem dentro do `build`, que é outra função.
+  const aEscoarGoogle = useRef(false);
+  useEffect(() => {
+    if (!ready.current || aEscoarGoogle.current) return;
+    if (!(state.filaGoogle || []).length) return;
+    aEscoarGoogle.current = true;
+    api.escoarFilaGoogle().finally(() => { aEscoarGoogle.current = false; });
+  }, [state.filaGoogle]);
+
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }
 
@@ -1107,7 +1177,7 @@ export const useStore = () => {
 // e a referência ao mapa do servidor. Passá-lo é mais honesto do que duplicá-lo
 // aqui — havia duas cópias a divergir à espera de acontecer.
 function build(s, set, mapaServidor = { current: { casa: null, membros: {}, envelopes: {} } },
-               lerDoServidor = async () => false) {
+               lerDoServidor = async () => false, seguirCompras = () => {}) {
   // Quem vive nesta casa. Vinha de listas escritas à mão — `['Léo', 'Mia']` em
   // seis sítios, `['Rita', 'Tomás', 'Léo', 'Mia']` noutros seis. Acrescentar
   // alguém à casa dava-lhe um avatar e mais nada: não aparecia no filtro das
@@ -1653,6 +1723,103 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   //
   // Devolve o `id` local, para quem chama poder ligar-lhe outra coisa — é o
   // que a consulta faz com o `healthId`.
+  // ── A agenda da Google, para TODOS os eventos ─────────────────────────────
+  //
+  // ⚠ Isto vivia no `NovoEvento.jsx`, com um interruptor. Consequência: uma
+  // consulta marcada na Saúde nunca chegava à Google — a folha dizia «e o
+  // evento na agenda», e a agenda do telemóvel não sabia dela. Agora é aqui, e
+  // é sempre, porque os três sítios que criam eventos passam todos por baixo.
+  //
+  // O que vai — e o que NÃO vai, no caso de uma consulta — está decidido no
+  // `agenda-google.js`, que é puro e tem provas.
+
+  // O evento inteiro, juntando o que foi criado e o que foi alterado depois.
+  // O `eDeSaude` precisa da `tag` e do `healthId`, e o `editarEvento` só
+  // recebe os campos que mudaram.
+  const eventoInteiro = (id, extra) => {
+    const base = (s.added || []).find(e => e.id === id) || {};
+    return { ...base, ...((s.eventEdits || {})[id] || {}), ...(extra || {}) };
+  };
+
+  // Quem se convida: os membros da casa que este evento alcança E têm e-mail.
+  // A regra é a do `NovoEvento`, que a trouxe consigo — e uma consulta não
+  // convida ninguém, o que quem decide é o `convidadosParaGoogle`.
+  const emailsDoEvento = (ev) => {
+    const vis = ev.visibilidade || 'so-eu';
+    if (vis !== 'familia' && vis !== 'adultos') return [];
+    return Object.entries(s.membros || {})
+      .filter(([nome, m]) => nome !== ev.owner && m && m.email && !m.kid)
+      .map(([, m]) => m.email);
+  };
+
+  const porFazerNaGoogle = (entrada) =>
+    set(x => ({ filaGoogle: enfileirar(x.filaGoogle || [], entrada) }));
+
+  const feitoNaGoogle = (id) =>
+    set(x => ({ filaGoogle: (x.filaGoogle || []).filter(e => e.id !== id) }));
+
+  const guardarIdGoogle = (id, idGoogle) => set(x => ({
+    eventEdits: { ...x.eventEdits, [id]: { ...(x.eventEdits[id] || {}), idGoogle } },
+  }));
+
+  const idGoogleDe = (id) => ((s.eventEdits || {})[id] || {}).idGoogle
+    || ((s.added || []).find(e => e.id === id) || {}).idGoogle || null;
+
+  // Uma tentativa. Devolve `true` quando a entrada pode sair da fila — que é
+  // tanto quando correu bem como quando NUNCA vai correr: um evento que a
+  // Google já não tem, ou uma autorização retirada, repetem-se para sempre sem
+  // nunca passar. É a mesma distinção que a fila do servidor aprendeu à sua
+  // custa.
+  const tentarNaGoogle = async (entrada) => {
+    if (!sync || !sync.agendaGoogle || !sync.agendaGoogle.disponivel()) return false;
+    try {
+      if (entrada.acao === 'apagar') {
+        if (entrada.idGoogle) await sync.agendaGoogle.apagar(entrada.idGoogle);
+        return true;
+      }
+      const alvo = entrada.idGoogle || idGoogleDe(entrada.id);
+      if (entrada.acao === 'alterar' && alvo) {
+        await sync.agendaGoogle.alterar(alvo, entrada.corpo);
+        return true;
+      }
+      // Sem `idGoogle`, uma alteração é uma criação: o evento nunca lá chegou.
+      const idGoogle = await sync.agendaGoogle.criar(entrada.corpo);
+      guardarIdGoogle(entrada.id, idGoogle);
+      return true;
+    } catch (e) {
+      return naoVaiPassar(e);
+    }
+  };
+
+  const empurrarParaGoogle = (entrada) => {
+    // ⚠ A fila é para uma REDE que caiu, não para uma agenda que nunca foi
+    // ligada. Sem esta guarda, numa casa que nunca autorizou a Google cada
+    // evento entrava numa fila que nada esvazia — e ao fim de um ano eram
+    // centenas de entradas gravadas no disco à espera de uma coisa que não vai
+    // acontecer.
+    //
+    // E quando a agenda for ligada um dia, começa-se do zero: despejar meses de
+    // eventos antigos numa agenda acabada de autorizar é enchê-la de coisas que
+    // já passaram.
+    if (!sync || !sync.agendaGoogle || !sync.agendaGoogle.disponivel()) return;
+    porFazerNaGoogle(entrada);
+    tentarNaGoogle(entrada).then((pronto) => { if (pronto) feitoNaGoogle(entrada.id); });
+  };
+
+  // A fila inteira, pela ordem em que entrou. Chamada pelo fornecedor sempre
+  // que ela muda.
+  //
+  // ⚠ Pela ORDEM, e parando à primeira que não passa: alterar antes de criar
+  // mandava uma alteração de um evento que ainda não existe, e o resto da fila
+  // dependia sempre da entrada anterior ter chegado.
+  const escoarFilaGoogle = async () => {
+    for (const entrada of (s.filaGoogle || [])) {
+      const pronto = await tentarNaGoogle(entrada);
+      if (!pronto) break;      // a rede não voltou; o resto fica para depois
+      feitoNaGoogle(entrada.id);
+    }
+  };
+
   const criarEvento = ({ day, time, title, who, owner, visibilidade, tag, healthId, id }) => {
     const idLocal = id || ('ev-' + Date.now());
     set(x => ({
@@ -1689,6 +1856,15 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         })); })
         .catch(() => {});
     }
+
+    // E para a agenda da Google — sempre, e não só quando alguém liga um
+    // interruptor. Uma consulta leva o título neutro; ver `agenda-google.js`.
+    const ev = { day, time, title, owner, visibilidade, tag, healthId };
+    empurrarParaGoogle({
+      id: idLocal, acao: 'criar',
+      corpo: paraGoogle(ev, { autor: owner, emails: emailsDoEvento(ev) }),
+    });
+
     return idLocal;
   };
 
@@ -2305,6 +2481,15 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     if (sync && noServidor) {
       sync.alterarEvento(noServidor, eventoParaServidor(campos)).catch(() => {});
     }
+
+    // ⚠ E a Google. Sem isto, mudar a hora de uma consulta deixava a agenda a
+    // apitar à hora antiga — que é pior do que não ter lá nada, porque parece
+    // certo.
+    const ev = eventoInteiro(id, campos);
+    empurrarParaGoogle({
+      id, acao: 'alterar', idGoogle: idGoogleDe(id),
+      corpo: paraGoogle(ev, { autor: ev.owner, emails: emailsDoEvento(ev) }),
+    });
   };
 
   // Apagar é marcar como ido, não tirar da lista. As sementes não se conseguem
@@ -2315,6 +2500,9 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   const removerEvento = (id) => {
     const noServidor = eventoNoServidor(id);
     if (sync && noServidor) sync.apagarEvento(noServidor).catch(() => {});
+    // ⚠ Apagado aqui, apagado lá. Um evento que se apaga na app e fica na
+    // Google é pior do que nunca lá ter ido.
+    empurrarParaGoogle({ id, acao: 'apagar', idGoogle: idGoogleDe(id) });
     set(x => ({
       eventGone: { ...x.eventGone, [id]: true },
       registo: maisRegisto(x, 'Um evento foi apagado da agenda', 'Agenda'),
@@ -3317,12 +3505,12 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring, definirAvatar, trazerFotografia,
     removerTarefa, criarTarefa, editarTarefa, tarefaNoServidor, mudarRegraDaCasa, mudarListaDaCasa,
     moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope, registarDespesa,
-    criarEvento, alterarEventoDaCasa, eventoNoServidor,
+    criarEvento, alterarEventoDaCasa, eventoNoServidor, escoarFilaGoogle,
     criarArtigo, marcarArtigo, artigoNoServidor, mudarPlanoDeCompras, fecharIdaAsCompras,
     criarEquipamento, equipNoServidor, mudarPreferencia,
     abrirMes, fecharMes, mudarLimiteDoMes,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
-    lerDoServidor,
+    lerDoServidor, seguirCompras,
     dueOf: (t) => (t.dueKey ? dueInfo(t.dueKey, t.dueTime) : null),
     resetDemo: () => { AsyncStorage.removeItem(KEY).catch(() => {}); set(DEMO()); },
     startBlank: () => set(BLANK()),

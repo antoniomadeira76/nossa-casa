@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore, VISIBILIDADES } from '../store';
 import CampoData from '../CampoData';
 import { S, R, FONT } from '../theme';
-import { Label, Primary, EscolherMembros, Opcao, Toggle, Tile, coresDe } from '../ui';
+import { Label, Primary, EscolherMembros, Opcao, Tile, coresDe } from '../ui';
 import Confirm from '../Confirm';
 import Icon from '../Icon';
 import ConfirmShare from '../ConfirmShare';
@@ -17,10 +17,11 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
   const { set, s, adultos, membros: MEMBROS, editarEvento, removerEvento, criarEvento } = useStore();
   const aEditar = !!evento;
   const [aApagar, setAApagar] = useState(false);
-  const [naGoogle, setNaGoogle] = useState(servidor.google.disponivel());
-  const [erroGoogle, setErroGoogle] = useState(null);
-  const [aGuardar, setAGuardar] = useState(false);
   const [aLigar, setALigar] = useState(false);
+  // ⚠ Só do LIGAR a agenda, e não do guardar. O erro de guardar desapareceu
+  // com o interruptor: a folha já não espera pela Google, e o que não passar
+  // fica na fila da loja e tenta outra vez.
+  const [erroAoLigar, setErroAoLigar] = useState(null);
 
   // Ligar a agenda, uma vez e para sempre.
   //
@@ -29,42 +30,28 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
   // aqui para guardar nem para perder quando a app fechar.
   const ligarAgenda = async () => {
     setALigar(true);
-    setErroGoogle(null);
+    setErroAoLigar(null);
     try {
       const ligou = await servidor.google.ligar();
-      if (ligou) setNaGoogle(true);
-      else setErroGoogle('A ligação à agenda não ficou concluída.');
+      if (!ligou) setErroAoLigar('A ligação à agenda não ficou concluída.');
     } catch (e) {
-      setErroGoogle(e.message);
+      setErroAoLigar(e.message);
     }
     setALigar(false);
   };
 
-  // Apagar sai dos DOIS lados.
+  // Apagar sai dos DOIS lados: da app, do servidor da casa e da agenda da
+  // Google. Antes, o `removerEvento` só marcava a app e o
+  // `google.apagarEvento` existia sem ninguém o chamar — um evento apagado
+  // aqui continuava na Google a apitar à hora marcada para uma coisa que já não
+  // existe. A app diz «apagado» e mentia.
   //
-  // `removerEvento` só marcava a app, e `google.apagarEvento` existia sem
-  // ninguém o chamar: um evento apagado aqui continuava na agenda da Google,
-  // a apitar à hora marcada para uma coisa que já não existe. É o defeito
-  // mais irritante dos três, porque a app diz «apagado» e mente.
-  //
-  // A app apaga primeiro, como no guardar: se a Google falhar, o evento fica
-  // apagado aqui e a folha DIZ que ficou por apagar lá — perder a decisão da
-  // pessoa por causa de uma rede é pior do que ter de a repetir do outro lado.
-  const apagar = async () => {
+  // ⚠ E passou para a loja, porque era esta folha a
+  // única a apagar dos dois lados, e um evento apagado noutro sítio ficava na
+  // Google a apitar à hora de uma coisa que já não existe.
+  const apagar = () => {
     setAApagar(false);
-    const idGoogle = evento.idGoogle;
     removerEvento(evento.id);
-
-    if (!idGoogle || !servidor.google.disponivel()) { onClose(); return; }
-    setAGuardar(true);
-    try {
-      await servidor.google.apagarEvento(idGoogle);
-    } catch (e) {
-      setErroGoogle(`Apagado na Nossa Casa, mas continua na agenda da Google: ${e.message}`);
-      setAGuardar(false);
-      return;
-    }
-    setAGuardar(false);
     onClose();
   };
 
@@ -135,16 +122,10 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
     setConfirming(true);
   };
 
-  // O que a Google leva. Separado do que a app guarda, porque são duas coisas
-  // com formas diferentes e juntá-las fazia o evento local depender de a
-  // Google responder.
-  const paraGoogle = () => ({
-    titulo: form.title,
-    dia: form.day,
-    hora: form.time,
-    convidados,
-    descricao: `Criado na Nossa Casa por ${user}.`,
-  });
+  // ⚠ Aqui montava-se o que a Google leva. Saiu para o `agenda-google.js`, e
+  // não por arrumação: montado nesta folha, só os eventos DESTA folha iam para
+  // a agenda — e a consulta marcada na Saúde não ia. E é lá que fica escrito
+  // que uma consulta leva o título neutro.
 
   const handleConfirm = async () => {
     if (aEditar) {
@@ -159,16 +140,11 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
         responsaveis: form.responsaveis,
         visibilidade: form.visibilidade,
       };
-      // A app guarda primeiro. Se a Google falhar, o evento fica na app na
-      // mesma — o contrário perdia o que a pessoa escreveu por causa de uma
-      // rede.
+      // ⚠ A Google era empurrada AQUI, e agora é o `editarEvento` da loja que a
+      // empurra. A folha deixa de esperar por ela: a app guarda, e o que não
+      // passar fica em fila e tenta outra vez. Perder o que a pessoa escreveu
+      // por causa de uma rede é pior do que a agenda chegar um minuto depois.
       editarEvento(evento.id, campos);
-      if (naGoogle && evento.idGoogle && servidor.google.disponivel()) {
-        setAGuardar(true);
-        try { await servidor.google.atualizarEvento(evento.idGoogle, paraGoogle()); }
-        catch (e) { setErroGoogle(e.message); setAGuardar(false); setConfirming(false); return; }
-        setAGuardar(false);
-      }
       setConfirming(false);
       onClose();
       return;
@@ -192,8 +168,10 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
       manual: true,
     };
 
-    // ⚠ Pelo `criarEvento` da loja, que também o manda para o servidor. Isto
-    // era um `set` direto, e o evento ficava só neste telefone.
+    // ⚠ Pelo `criarEvento` da loja, que o manda para o servidor da casa E para
+    // a agenda da Google. Isto era um `set` direto, e o evento ficava só neste
+    // telefone; depois passou pela loja para o servidor, e a Google continuava
+    // a ser empurrada daqui — com um interruptor que só esta folha tinha.
     //
     // Os campos que só a app usa — `responsaveis`, `manual` — ficam no estado
     // local: o servidor tem um `responsavel` só, e a lista de vários é forma
@@ -203,20 +181,6 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
       added: (s.added || []).map(e => (e.id === event.id
         ? { ...e, responsaveis: form.responsaveis, manual: true } : e)),
     }));
-
-    if (naGoogle && servidor.google.disponivel()) {
-      setAGuardar(true);
-      try {
-        const idGoogle = await servidor.google.criarEvento(paraGoogle());
-        // O identificador da Google guarda-se para editar e apagar do lado de
-        // lá. Sem ele, uma alteração na app deixava a agenda a dizer outra
-        // coisa e ninguém percebia porquê.
-        set(x => ({ eventEdits: { ...x.eventEdits, [id]: { ...(x.eventEdits[id] || {}), idGoogle } } }));
-      } catch (e) {
-        setErroGoogle(e.message); setAGuardar(false); setConfirming(false); return;
-      }
-      setAGuardar(false);
-    }
 
     setConfirming(false);
     onClose();
@@ -302,26 +266,36 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
           </Tile>
           <Primary t={t} label={aLigar ? 'A ligar…' : 'Ligar a agenda da Google'}
             icon="calendar" disabled={aLigar} onPress={ligarAgenda} />
+          {erroAoLigar ? <Tile t={t} kind="err">{erroAoLigar}</Tile> : null}
         </View>
       ) : null}
 
+      {/* ⚠ Aqui havia um INTERRUPTOR — «Marcar também na agenda da Google» —, e
+          desapareceu porque passou a ser sempre. Decisão do dono da casa,
+          06/09/2026: tudo o que a app marca em calendário vai para a Google.
+
+          O interruptor tinha um defeito de fundo, e não era o de estar ligado
+          ou desligado: só existia NESTA folha. Uma consulta marcada na Saúde
+          nunca lhe chegava, e a app dizia «e o evento na agenda» sem que a
+          agenda do telemóvel soubesse dela.
+
+          O que fica é o AVISO, que não é opcional: convidar manda correio
+          eletrónico em nome de quem carrega no botão, e isso diz-se antes de
+          acontecer. */}
       {servidor.google.disponivel() ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14,
           borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14 }}>
           <Icon name="calendar" size={22} color={t.slate} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>
-              Marcar também na agenda da Google
+              Entra também na agenda da Google
             </Text>
             <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
-              {!naGoogle ? 'Fica só na Nossa Casa.'
-                : convidados.length
-                  ? `Entra na sua agenda e convida ${listaEmPortugues(convidados)} — a Google manda-lhes um e-mail.`
-                  : 'Entra na sua agenda. Não há mais ninguém com e-mail nesta casa para convidar.'}
+              {convidados.length
+                ? `E convida ${listaEmPortugues(convidados)} — a Google manda-lhes um e-mail.`
+                : 'Não há mais ninguém com e-mail nesta casa para convidar.'}
             </Text>
           </View>
-          <Toggle t={t} on={naGoogle} label="Marcar na agenda da Google"
-            onPress={() => { setNaGoogle(v => !v); setErroGoogle(null); }} />
         </View>
       ) : null}
 
@@ -346,13 +320,10 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
           Não se escreve na agenda de outra pessoa: a agenda de cada um é dela,
           e o que a app pode fazer é convidar. Quem aceita, fica com o evento. */}
 
-      {erroGoogle ? <Tile t={t} kind="warn">{erroGoogle}</Tile> : null}
-
       <Primary
         t={t}
-        label={aGuardar ? 'A guardar…'
-          : aEditar ? 'Guardar alterações' : 'Guardar evento'}
-        disabled={!canSave || aGuardar}
+        label={aEditar ? 'Guardar alterações' : 'Guardar evento'}
+        disabled={!canSave}
         onPress={handleSave}
       />
 

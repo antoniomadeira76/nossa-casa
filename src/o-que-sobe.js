@@ -48,6 +48,7 @@ export const O_QUE_SOBE = {
   eventEdits: ['campo', 'As alterações de um evento vão para a própria linha. O mapa existe pela mesma razão do `taskEdits`.'],
   eventGone: ['local', 'Lápides de eventos-semente. Um evento do servidor apaga-se lá.'],
   googleCalendarImported: ['local', 'Que eventos da Google já foram importados NESTE dispositivo, para não os oferecer duas vezes. A `credenciais_agenda` do servidor é outra coisa.'],
+  filaGoogle: ['local', 'O que falta empurrar para a agenda da Google. É estado deste DISPOSITIVO: o token da Google é de quem entrou neste telemóvel, e uma fila partilhada punha o outro adulto a tentar escrever numa agenda a que não tem acesso. Esvazia-se sozinha quando a rede volta ou a agenda é ligada.'],
 
   // ── Dinheiro ──────────────────────────────────────────────────────────────
   vaultMoves: ['linhas', 'A coleção `cofre_movimentos`, aditiva e com chave de idempotência.'],
