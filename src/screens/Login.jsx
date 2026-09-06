@@ -238,9 +238,26 @@ export default function Login({ t, onEnter }) {
           </View>
         ) : step === 'criancas' ? (
           <View style={glass}>
-            <Text style={{ fontFamily: FONT.display, fontSize: 22, fontWeight: '500', color: '#FFFFFF' }}>Quem está a entrar?</Text>
+            <Text style={{ fontFamily: FONT.display, fontSize: 22, fontWeight: '500', color: '#FFFFFF' }}>
+              {criancas.length ? 'Quem está a entrar?' : 'Ainda não há crianças nesta casa'}
+            </Text>
+            {/* ⚠ A instrução seguia a lista, e a lista podia estar VAZIA.
+                Numa casa sem crianças, este ecrã dizia «Escolha o seu nome e
+                introduza o PIN» por cima de coisa nenhuma — mandava fazer o
+                que não oferecia, e a única saída era o «Voltar».
+
+                Não é um erro que rebente, e por isso nenhuma prova o via: é o
+                ecrã a mentir com toda a calma. Apanhado a percorrer os ecrãs
+                com a casa vazia, que é como ela está no primeiro dia de uma
+                família — e é precisamente aí que este ecrã é mais visitado.
+
+                O resto da app já faz isto: «Ainda não há nada nas fichas desta
+                casa. Use Marcar Consulta para a primeira.» Diz o que falta, e
+                quem o pode resolver. */}
             <Text style={{ fontFamily: FONT.body, fontSize: 15, lineHeight: 22, color: 'rgba(255,255,255,0.8)' }}>
-              Escolha o seu nome e introduza o PIN de 4 dígitos.
+              {criancas.length
+                ? 'Escolha o seu nome e introduza o PIN de 4 dígitos.'
+                : 'Um adulto acrescenta-as em Gestão da Casa, e dá a cada uma o seu PIN de 4 dígitos.'}
             </Text>
             {criancas.map(n => {
               const hasPin = !!s.pins[n];
