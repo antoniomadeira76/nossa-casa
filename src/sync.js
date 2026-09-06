@@ -1350,10 +1350,17 @@ export async function apagarEpisodioDeSaude(idNoServidor) {
 // escrevemos nada, e portanto não há nada para ler. É a mesma condição do
 // `recusaSaude`, do lado da leitura.
 export async function puxarSaude(idsDosMembros) {
-  if (!ligado() || !saudeSincroniza()) return { episodios: [], anexos: [] };
+  const vazio = { episodios: [], anexos: [], notas: [], receitas: [], decisoes: [] };
+  if (!ligado() || !saudeSincroniza()) return vazio;
 
   const episodios = [];
   const anexos = [];
+  const notas = [];
+  const receitas = [];
+  const decisoes = [];
+  // Quem escreveu uma nota vem como id; a app mostra o NOME.
+  const nomeDoMembro = Object.fromEntries(
+    Object.entries(idsDosMembros || {}).map(([nome, id]) => [id, nome]));
   for (const [nome, id] of Object.entries(idsDosMembros || {})) {
     if (!id) continue;
     // Um `catch` por membro, e não um à volta de todos: uma ficha que o
@@ -1397,8 +1404,56 @@ export async function puxarSaude(idsDosMembros) {
         foto: servidor.ler.ficheiro(a, 'ficheiro'),
       });
     }
+    // ⚠ E o que pende de cada consulta. Subia desde 04/09 e nunca descia: a
+    // conversa clínica que a ficha existe para guardar ficava num aparelho só.
+    for (const n of ficha.notas || []) {
+      notas.push({
+        idServidor: n.id,
+        episodioNoServidor: n.episodio,
+        // O autor pode ser alguém que já saiu da casa: fica o id, que é melhor
+        // do que uma nota sem assinatura.
+        author: nomeDoMembro[n.autor] || n.autor || '',
+        text: n.texto || '',
+        // ⚠ Só o `editada_em`. Escrevi `n.editada_em || n.created` e o guarda
+        // `sem-campos-que-nao-existem` apanhou-me na mesma linha em que eu
+        // acabara de escrever um comentário sobre não inventar campos: o
+        // `created` só existe se o esquema o declarar como `autodate`, e o
+        // nosso não declara.
+        //
+        // A consequência fica dita: uma nota que desce do servidor sem nunca
+        // ter sido editada NÃO TEM DATA. A coleção `notas_saude` não guarda
+        // quando foi escrita — só quando foi mudada. É uma lacuna do esquema,
+        // e resolvê-la é acrescentar-lhe um campo, não adivinhar aqui.
+        date: n.editada_em || '',
+      });
+    }
+    for (const r of ficha.receitas || []) {
+      receitas.push({
+        idServidor: r.id,
+        episodioNoServidor: r.episodio,
+        // ⚠ Os nomes da LOJA, que são outros: `nome`→`name`, `dose`→`dosage`,
+        // `expira_em`→`expiresAt`. O ecrã lê os da loja e o servidor guarda os
+        // dele; trocá-los aqui deixava a receita a descer vazia.
+        name: r.nome || '',
+        dosage: r.dose || '',
+        quantity: r.quantidade || '',
+        unit: r.unidade || '',
+        ...(r.expira_em ? { expiresAt: `d${String(r.expira_em).slice(0, 10)}` } : {}),
+        decision: r.decisao || '',
+      });
+    }
+    for (const dec of ficha.decisoes || []) {
+      decisoes.push({
+        idServidor: dec.id,
+        episodioNoServidor: dec.episodio,
+        type: dec.tipo || '',
+        // O `select` do servidor é minúsculo; a loja mostra com maiúscula.
+        status: dec.estado === 'resolvido' ? 'Resolvida' : 'Pendente',
+        note: dec.nota || '',
+      });
+    }
   }
-  return { episodios, anexos };
+  return { episodios, anexos, notas, receitas, decisoes };
 }
 
 export async function receitaDeSaude({ casa, episodio, nome, dose, quantidade, unidade, expiraEm, decisao }) {

@@ -604,10 +604,27 @@ export const ler = {
     if (!estaLigado()) return semLigacao();
     const filtro = pb.filter('membro = {:m}', { m: membroId });
     const episodios = await pb.collection('episodios_saude').getFullList({ filter: filtro, sort: '-dia' });
-    if (!episodios.length) return { episodios: [], anexos: [] };
+    const vazio = { episodios: [], anexos: [], notas: [], receitas: [], decisoes: [] };
+    if (!episodios.length) return vazio;
     const ids = episodios.map(e => `episodio = "${e.id}"`).join(' || ');
-    const anexos = await pb.collection('anexos').getFullList({ filter: ids }).catch(() => []);
-    return { episodios, anexos };
+    // ⚠ E o que PENDE de cada consulta, que é metade do que uma ficha é.
+    //
+    // Isto trazia os episódios e os anexos e mais nada. As notas, as receitas
+    // e as decisões subiam desde 04/09 e nunca desciam: quem marcasse uma
+    // consulta via-a no outro telemóvel sem uma única nota, e a conversa
+    // clínica que a ficha existe para guardar ficava num aparelho só.
+    //
+    // Descoberto com a casa cheia: 8 notas e 4 receitas no servidor, zero na
+    // app. As quatro coleções herdam a regra do episódio (`PELO_EPISODIO`),
+    // portanto quem não pode ver a ficha não vê nada disto — e o `catch`
+    // devolve vazio em vez de deixar a ficha inteira cair.
+    const [anexos, notas, receitas, decisoes] = await Promise.all([
+      pb.collection('anexos').getFullList({ filter: ids }).catch(() => []),
+      pb.collection('notas_saude').getFullList({ filter: ids }).catch(() => []),
+      pb.collection('receitas_saude').getFullList({ filter: ids }).catch(() => []),
+      pb.collection('decisoes_saude').getFullList({ filter: ids }).catch(() => []),
+    ]);
+    return { episodios, anexos, notas, receitas, decisoes };
   },
 
   // Ficheiros: o URL é assinado pelo servidor, não construído aqui.

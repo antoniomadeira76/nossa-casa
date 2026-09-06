@@ -3408,8 +3408,8 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     const ids = (mapaServidor.current || {}).membros || {};
     if (!Object.keys(ids).length) return false;
 
-    const { episodios, anexos } = await sync.puxarSaude(ids)
-      .catch(() => ({ episodios: [], anexos: [] }));
+    const { episodios, anexos, notas, receitas, decisoes } = await sync.puxarSaude(ids)
+      .catch(() => ({ episodios: [], anexos: [], notas: [], receitas: [], decisoes: [] }));
 
     set(x => {
       // ⚠ Uma consulta que já existe cá GUARDA o seu id local.
@@ -3455,7 +3455,37 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         }).filter(Boolean),
       ];
 
-      return { health, healthDocs };
+      // ── E o que pende de cada consulta ──────────────────────────────────
+      //
+      // Os três mapas são indexados pelo id LOCAL da consulta, e o servidor
+      // fala do id dele. Uma consulta que não se veja não traz nada atrás.
+      const porEpisodio = (linhas, jaLa) => {
+        const fora = {};
+        for (const l of linhas || []) {
+          const healthId = localDoEpisodio.get(l.episodioNoServidor);
+          if (!healthId) continue;
+          (fora[healthId] ||= []).push({ ...l, id: `srv-${l.idServidor}` });
+        }
+        // O que ainda não subiu fica, e vai à frente do que veio de baixo: é o
+        // que se escreveu sem rede, e é o mais recente.
+        for (const [k, v] of Object.entries(jaLa || {})) {
+          const locais = (v || []).filter(n => !n.idServidor);
+          if (locais.length) fora[k] = [...(fora[k] || []), ...locais];
+        }
+        return fora;
+      };
+
+      const healthNotes = porEpisodio(notas, x.healthNotes);
+      const healthRecipes = porEpisodio(receitas, x.healthRecipes);
+
+      // A decisão é UMA por consulta, e não uma lista.
+      const healthDecisions = { ...x.healthDecisions };
+      for (const dec of decisoes || []) {
+        const healthId = localDoEpisodio.get(dec.episodioNoServidor);
+        if (healthId) healthDecisions[healthId] = dec;
+      }
+
+      return { health, healthDocs, healthNotes, healthRecipes, healthDecisions };
     });
     return true;
   };

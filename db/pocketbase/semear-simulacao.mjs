@@ -254,9 +254,22 @@ const cofre = async (quem, tipo, valor, motivo, quando, pontos = 0) => {
     casa: casa.id, membro: quem.id, tipo, valor, motivo, pontos,
     data: iso(quando), autorizado_por: dono.id, idem_key: chave() });
 };
-await cofre(leo, 'semanada', 1.2, 'Semanada desta semana', -7, 12);
+// ⚠ Pagar MENOS pontos do que a criança ganhou, e nunca mais.
+//
+// Isto pagava 12 pontos ao Léo e 9 à Mia. Ganhos: o Léo tem duas marcações
+// confirmadas de «Levar o lixo», a 2 pontos — QUATRO. A Mia tem duas de «Pôr a
+// mesa» (1) e uma de «Arrumar o quarto» (3) — CINCO.
+//
+// O que a app mostra por pagar é `ganhos − pagos`, e com estes números dava
+// NEGATIVO: o cofre do Léo dizia «Pagar Semanada · −1,00 €». O botão estava
+// desactivado, portanto nada rebentava — só um número impossível num ecrã de
+// dinheiro, à espera de que alguém reparasse.
+//
+// Metade paga e metade por pagar é o que exercita as duas metades do ecrã: o
+// histórico de movimentos, e o «Mais X por pagar desta semana».
+await cofre(leo, 'semanada', 0.2, 'Semanada desta semana', -7, 2);   // de 4 ganhos
 await cofre(leo, 'bonus', 1, 'Ajudou com as compras', -3);
-await cofre(mia, 'semanada', 0.9, 'Semanada desta semana', -7, 9);
+await cofre(mia, 'semanada', 0.3, 'Semanada desta semana', -7, 3);   // de 5 ganhos
 await cofre(mia, 'retirada', -2.5, 'Comprou um caderno', -2);
 console.log('  4 movimentos de cofre');
 
@@ -415,7 +428,7 @@ const REGISTO = [
   ['Equipamento «Frigorífico» acrescentado', 'Equipamentos', -18, rita],
   ['Despesa de 62,40 € em Mercearia · Compras · Continente', 'Dinheiro', -18, dono],
   ['Ida às compras fechada · Continente de Belém · 62,40 €', 'Compras', -7, dono],
-  ['Semanada de Léo: 1,20 € · 12 pontos', 'Dinheiro', -7, dono],
+  ['Semanada de Léo: 0,20 € · 2 pontos', 'Dinheiro', -7, dono],
   ['Tarefa «Regar as plantas» criada para Rita', 'Tarefas', -5, rita],
   ['Evento «Reunião na escola» agendado', 'Agenda', -4, rita],
   ['Especialidade criada: Ortodontia', 'Saúde', -2, dono],

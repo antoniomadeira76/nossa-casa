@@ -90,8 +90,17 @@ export default function Cofre({ t, kid, onClose }) {
       leading={<Avatar {...avatarDe(kid, st.membros[kid], t.text3)} size={40} />}
       action={
         <View style={{ gap: S.md }}>
+          {/* ⚠ Sem nada por pagar, o botão DIZ isso — não mostra um valor.
+              Mostrava `EUR(porPagar)` cru, e `porPagar` pode ser NEGATIVO:
+              basta terem sido pagos mais pontos do que os que estão
+              confirmados, o que acontece quando uma confirmação é retirada
+              depois de a semanada sair. O cofre dizia «Pagar Semanada ·
+              −1,00 €» — o botão desactivado, portanto nada rebentava, e um
+              número impossível num ecrã de dinheiro à espera de que alguém
+              reparasse. Foi assim que se viu, a olhar. */}
           {pontosNasTarefas ? (
-          <Acao filled label={`Pagar Semanada · ${EUR(porPagar)}`}
+          <Acao filled
+            label={porPagar > 0 ? `Pagar Semanada · ${EUR(porPagar)}` : 'Nada por pagar'}
             onPress={pagarSemanada} disabled={porPagar <= 0} />
           ) : null}
           <Acao label={`Dar Bónus de ${EUR(bonus)}`} icon="smile" onPress={darBonus} />

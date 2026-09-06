@@ -136,4 +136,32 @@ describe('e a saúde desce mesmo — que era a que faltava', () => {
   it('e o ecrã pede-as ao abrir', () => {
     expect(ecra).toMatch(/lerSaudeDoServidor\(\)/);
   });
+
+  it('⚠ e desce a ficha INTEIRA, não só os episódios', () => {
+    // A primeira versão trazia os episódios e os anexos e mais nada. As notas,
+    // as receitas e as decisões subiam desde 04/09 e nunca desciam: quem
+    // marcasse uma consulta via-a no outro telemóvel sem uma única nota, e a
+    // conversa clínica que a ficha existe para guardar ficava num aparelho só.
+    //
+    // Medido com a casa cheia: 8 notas e 4 receitas no servidor, ZERO na app.
+    const cliente = semComentarios(conteudo('src/pocketbase.js'));
+    const bloco = cliente.slice(cliente.indexOf('async saude(membroId)'),
+      cliente.indexOf('async saude(membroId)') + 1400);
+    for (const c of ['anexos', 'notas_saude', 'receitas_saude', 'decisoes_saude']) {
+      expect(bloco).toMatch(new RegExp(`collection\\('${c}'\\)`));
+    }
+    for (const c of ['notas', 'receitas', 'decisoes']) {
+      expect(sync).toMatch(new RegExp(`for \\(const \\w+ of ficha\\.${c} \\|\\| \\[\\]\\)`));
+    }
+  });
+
+  it('e a loja arruma-as pela consulta a que pertencem', () => {
+    const bloco = loja.slice(loja.indexOf('const lerSaudeDoServidor'),
+      loja.indexOf('const arquivarConsulta'));
+    expect(bloco).toMatch(/healthNotes/);
+    expect(bloco).toMatch(/healthRecipes/);
+    expect(bloco).toMatch(/healthDecisions/);
+    // ⚠ E o que ainda não subiu não se perde na descida.
+    expect(bloco).toMatch(/filter\(n => !n\.idServidor\)/);
+  });
 });

@@ -3,7 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, warrantyDaysLeft, MONTHS, plural } from '../format';
-import { ENV_BASE, GOALS } from '../data';
+import { GOALS } from '../data';
 import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Opcao, NumField } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
@@ -93,9 +93,14 @@ export default function Dinheiro({ t, user, onEquip }) {
   };
 
   const handleOpenMonth = () => {
-    // Initialize envelopes with default limits for the new month
+    // ⚠ Os envelopes DESTA casa, e não o `ENV_BASE` do `data.js`.
+    //
+    // Cinco sítios deste ecrã liam as sementes da demonstração — quatro
+    // envelopes com nomes que esta casa não tem. Abrir o mês distribuía o
+    // rendimento por «Crianças & escola» e «Sair & lazer», que aqui não
+    // existem, e os seis a sério ficavam sem limite nenhum.
     const envLimits = {};
-    ENV_BASE.forEach(e => {
+    envelopes.forEach(e => {
       envLimits[e.name] = e.limit + (openMonth.envelopes[e.name] || 0);
     });
 
@@ -373,13 +378,21 @@ export default function Dinheiro({ t, user, onEquip }) {
                 setSheet(null); setMv(m => ({ ...m, amount: 0 }));
               }} />}>
             <View style={{ gap: S.md }}>
+              {/* ⚠ A grelha mostrava o `ENV_BASE` e a confirmação aplicava
+                  `envelopes[índice]` — a lista da CASA. Duas listas com ordens
+                  e tamanhos diferentes indexadas pelo mesmo número: escolhia-se
+                  um envelope e o dinheiro saía de outro, sem erro nenhum.
+
+                  Aqui, com seis envelopes na casa e quatro na demonstração,
+                  tocar no primeiro da grelha («Mercearia») movia dinheiro de
+                  «Transportes». */}
               <Label t={t}>Retirar de</Label>
-              <GrelhaEnvelopes t={t} envelopes={ENV_BASE} livre={freeOf} escolhido={mv.from}
+              <GrelhaEnvelopes t={t} envelopes={envelopes} livre={freeOf} escolhido={mv.from}
                 onEscolher={(i) => setMv(m => ({ ...m, from: i, to: m.to === i ? m.from : m.to }))} />
             </View>
             <View style={{ gap: S.md }}>
               <Label t={t}>Reforçar</Label>
-              <GrelhaEnvelopes t={t} envelopes={ENV_BASE} livre={freeOf} escolhido={mv.to}
+              <GrelhaEnvelopes t={t} envelopes={envelopes} livre={freeOf} escolhido={mv.to}
                 onEscolher={(i) => setMv(m => ({ ...m, to: i, from: m.from === i ? m.to : m.from }))} />
             </View>
             <View style={{ gap: S.md }}>
@@ -425,8 +438,13 @@ export default function Dinheiro({ t, user, onEquip }) {
               onChange={(v) => setExp(e => ({ ...e, amount: v }))} />
           </View>
           <View style={{ gap: S.md }}>
+            {/* ⚠ A lista da CASA. Era o `ENV_BASE`, e o `registarDespesa`
+                logo acima usa `envelopes[exp.env].name` — a lista da casa,
+                pelo mesmo índice. Escolhia-se «Casa & contas» na lista da
+                demonstração e a despesa era lançada no que estivesse nesse
+                lugar na casa. Dinheiro a sério no envelope errado, sem erro. */}
             <Label t={t}>Envelope</Label>
-            {ENV_BASE.map((e, i) => (
+            {envelopes.map((e, i) => (
               <Pressable key={e.name} onPress={() => setExp(x => ({ ...x, env: i }))}
                 accessibilityRole="button" accessibilityLabel={e.name} accessibilityState={{ selected: exp.env === i }}
                 style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: 14,
@@ -472,7 +490,7 @@ export default function Dinheiro({ t, user, onEquip }) {
             </Text>
             <View style={{ gap: S.md }}>
               <Label t={t}>Limites dos Envelopes</Label>
-              {ENV_BASE.map((e) => (
+              {envelopes.map((e) => (
                 <View key={e.name} style={{ gap: S.md }}>
                   <Label t={t}>{e.name}</Label>
                   <NumField t={t}
