@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Filtros do registo — dez alternativas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500&display=swap">
+<style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Os valores são os do `src/theme.js`, não aproximações: as claridades do
+   escuro (LUMES), a saturação máxima por superfície, os raios, o espaçamento
+   de 2/4/8/16/24, e as três famílias de letra. O escuro é DERIVADO do esquema
+   pelo mesmo cálculo da app — HSL do `chrome`, saturação limitada, claridade
+   fixa — para que o que se vê aqui seja o que se vê no telemóvel.
+   ───────────────────────────────────────────────────────────────────────── */
+:root {
+  --page:#F0F2F5; --card:#FCFCFD; --surface:#FFFFFF; --subtle:#FAFAFA;
+  --border:#D9D9D9; --divider:#F0F2F5;
+  --text1:#262626; --text2:#434343; --text3:#6A7282; --slate:#67769B;
+  --accent:#722ED1; --hover:#8B4EE0; --chrome:#241239; --titulo:#722ED1;
+  --pill:100px; --card-r:8px; --row-r:6px; --tinta:12%;
+  --ui:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --body:'Roboto',system-ui,sans-serif;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--page); color:var(--text1);
+  font-family:var(--body); font-size:14px; line-height:1.5;
+  transition:background .18s;
+}
+.envolucro { max-width:1240px; margin:0 auto; padding:24px 16px 64px; }
+
+/* ── O cabeçalho da página, que não é a app ─────────────────────────────── */
+header h1 {
+  font-family:var(--ui); font-weight:700; font-size:26px; letter-spacing:-.01em;
+  margin:0 0 4px; color:var(--text1); text-wrap:balance;
+}
+header p { margin:0 0 16px; color:var(--text3); max-width:64ch; }
+header code {
+  font-family:ui-monospace,'Cascadia Code',monospace; font-size:12.5px;
+  background:var(--subtle); border:1px solid var(--border);
+  border-radius:var(--row-r); padding:1px 5px; color:var(--text2);
+}
+.problema {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--card-r); padding:16px; margin:0 0 24px; max-width:72ch;
+}
+.problema ul { margin:8px 0 0; padding-left:18px; color:var(--text2); }
+.problema li { margin:4px 0; }
+
+/* ── Os comandos ────────────────────────────────────────────────────────── */
+.comandos {
+  display:flex; flex-wrap:wrap; gap:16px; align-items:center;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--card-r); padding:16px; margin:0 0 24px;
+  position:sticky; top:8px; z-index:10;
+}
+.grupo { display:flex; align-items:center; gap:8px; }
+.rotulo {
+  font-family:var(--ui); font-size:11px; font-weight:600; color:var(--slate);
+  text-transform:uppercase; letter-spacing:.06em;
+}
+.esquemas { display:flex; gap:4px; }
+.esq {
+  width:32px; height:32px; border-radius:var(--pill); border:2px solid transparent;
+  cursor:pointer; padding:0; outline-offset:2px;
+}
+.esq[aria-pressed="true"] { border-color:var(--text1); }
+.alternar {
+  font-family:var(--ui); font-size:13px; font-weight:600; cursor:pointer;
+  min-height:36px; padding:0 14px; border-radius:var(--pill);
+  border:1px solid var(--border); background:var(--surface); color:var(--text2);
+}
+.alternar[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* ── A grelha das alternativas ──────────────────────────────────────────── */
+.grelha {
+  display:grid; gap:24px;
+  grid-template-columns:repeat(auto-fill,minmax(370px,1fr));
+}
+.alt {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--card-r); padding:16px; display:flex; flex-direction:column; gap:8px;
+}
+.alt > h2 {
+  font-family:var(--ui); font-size:15px; font-weight:700; margin:0;
+  color:var(--titulo); display:flex; align-items:baseline; gap:8px;
+}
+.alt > h2 .n {
+  font-family:var(--ui); font-size:11px; font-weight:700; color:var(--text3);
+  border:1px solid var(--border); border-radius:var(--pill); padding:1px 7px;
+}
+/* A referência não é uma proposta — é o ponto de partida, e vê-se. */
+.alt.referencia { border-style:dashed; }
+.alt.referencia > h2 { color:var(--text3); }
+.nota { margin:0; font-size:12.5px; color:var(--text3); min-height:3em; }
+.medida {
+  font-family:var(--ui); font-size:11px; font-weight:600; color:var(--slate);
+  display:flex; justify-content:space-between; border-top:1px solid var(--divider);
+  padding-top:8px; margin-top:auto;
+}
+.medida b { font-variant-numeric:tabular-nums; color:var(--text2); }
+
+/* ── O telefone: 402 de largura, 355 de conteúdo ────────────────────────── */
+.telefone {
+  width:100%; max-width:402px; margin:0 auto; background:var(--page);
+  border:1px solid var(--border); border-radius:var(--card-r); overflow:hidden;
+}
+.cabecalho {
+  background:var(--chrome); color:#fff; padding:10px 16px;
+  font-family:var(--ui); font-size:13px; font-weight:600;
+}
+/* ⚠ 23,5 de cada lado para o conteúdo dar exactamente 355 num telefone de
+   402 — é a largura útil que o CLAUDE.md manda respeitar, e é ela que decide
+   onde as pastilhas partem. Medir a 413, que é o que a janela deste painel dá,
+   dava uma fila a menos e uma poupança inventada. */
+.corpo { padding:16px 23.5px; display:flex; flex-direction:column; gap:16px; }
+
+/* ── Peças partilhadas ──────────────────────────────────────────────────── */
+.cartao {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--card-r); padding:14px;
+}
+.etiqueta {
+  font-family:var(--ui); font-size:11px; font-weight:600; color:var(--slate);
+  margin:0 0 4px;
+}
+.pastilhas { display:flex; flex-wrap:wrap; gap:8px; }
+
+/* A pastilha de hoje — a que o ecrã usa, e a que está em causa. */
+.p {
+  min-height:44px; padding:0 16px; border-radius:var(--pill);
+  border:1px solid var(--border); background:var(--card); color:var(--text2);
+  font-family:var(--ui); font-size:13px; font-weight:600; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+}
+.p[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#fff; }
+.p:active { opacity:.85; }
+
+/* A pastilha leve: o selecionado é tinta, não bloco. */
+.pl {
+  min-height:36px; padding:0 14px; border-radius:var(--pill);
+  border:1px solid var(--border); background:transparent; color:var(--text2);
+  font-family:var(--ui); font-size:13px; font-weight:600; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+}
+/* ⚠ O texto do selecionado é `text1`, e NÃO o acento.
+   Medido nos seis esquemas e nos dois aspetos: com o acento, seis dos doze
+   pares ficavam abaixo dos 4,5:1 que 13 px a 600 exigem — o Cião dava 3,55 no
+   claro, o Violeta 3,53 no escuro. É o mesmo defeito que o CLAUDE.md já
+   descreve para as etiquetas pequenas.
+   O acento fica onde não tem de ser lido: a borda e o banho de fundo. */
+.pl[aria-pressed="true"] {
+  background:color-mix(in srgb, var(--accent) var(--tinta), transparent);
+  border-color:var(--accent); color:var(--text1);
+}
+
+/* Uma fila que desliza em vez de partir em quatro. */
+.desliza {
+  display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;
+  scrollbar-width:thin; scroll-snap-type:x proximity;
+}
+.desliza > * { flex:0 0 auto; scroll-snap-align:start; }
+.desliza::-webkit-scrollbar { height:4px; }
+.desliza::-webkit-scrollbar-thumb { background:var(--border); border-radius:var(--pill); }
+
+/* O segmentado: poucos, todos à vista, sem deslizar. */
+.segmento {
+  display:flex; background:var(--subtle); border:1px solid var(--border);
+  border-radius:var(--pill); padding:3px; gap:2px;
+}
+.seg {
+  flex:1; min-height:38px; border:0; background:transparent; cursor:pointer;
+  border-radius:var(--pill); color:var(--text2);
+  font-family:var(--ui); font-size:13px; font-weight:600;
+}
+.seg[aria-pressed="true"] { background:var(--accent); color:#fff; }
+
+/* O campo que abre uma folha. */
+.campo {
+  width:100%; min-height:44px; padding:0 14px; cursor:pointer;
+  border:1px solid var(--border); border-radius:var(--row-r);
+  background:var(--surface); color:var(--text1);
+  font-family:var(--ui); font-size:13.5px; font-weight:600;
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+}
+.campo .qual { color:var(--text3); font-weight:500; }
+.campo .seta { color:var(--text3); }
+
+/* A barra que abre. */
+.barra {
+  width:100%; min-height:44px; padding:0 14px; cursor:pointer;
+  border:1px solid var(--border); border-radius:var(--pill);
+  background:var(--surface); color:var(--text2);
+  font-family:var(--ui); font-size:13px; font-weight:600;
+  display:flex; align-items:center; gap:8px;
+}
+.barra .resumo { color:var(--text3); font-weight:500; flex:1; text-align:left; }
+/* ⚠ Sem `display` nenhum aqui: a gaveta leva `display:flex` na linha, e um
+   `display:none` na classe perdia para ele. A gaveta estava sempre aberta e a
+   medida dizia 315 px quando devia dizer 44. */
+.gaveta[hidden] { display:none !important; }
+
+/* A etiqueta à esquerda da fila, em vez de por cima: poupa uma linha inteira
+   por grupo, que é a diferença entre poupar espaço e não poupar nada. */
+.fila { display:flex; align-items:center; gap:8px; min-width:0; }
+.fila > .etiqueta {
+  margin:0; flex:0 0 auto; width:44px; text-align:right;
+  line-height:1.2;
+}
+
+/* As fichas removíveis. */
+.fichas { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.ficha {
+  min-height:36px; padding:0 6px 0 14px; border-radius:var(--pill);
+  background:color-mix(in srgb, var(--accent) var(--tinta), transparent);
+  border:1px solid var(--accent); color:var(--text1);
+  font-family:var(--ui); font-size:13px; font-weight:600;
+  display:inline-flex; align-items:center; gap:4px;
+}
+.ficha button {
+  width:28px; height:28px; border-radius:var(--pill); border:0; cursor:pointer;
+  background:transparent; color:var(--text2); font-size:15px; line-height:1;
+  display:grid; place-items:center;
+}
+.ficha button:hover { background:color-mix(in srgb, var(--accent) 28%, transparent); }
+.abrir-filtros {
+  min-height:36px; padding:0 14px; border-radius:var(--pill); cursor:pointer;
+  border:1px solid var(--border); background:var(--surface); color:var(--text2);
+  font-family:var(--ui); font-size:13px; font-weight:600;
+  display:inline-flex; align-items:center; gap:6px;
+}
+.contagem {
+  font-family:var(--ui); font-size:11px; font-weight:700;
+  color:var(--text3); font-variant-numeric:tabular-nums;
+}
+[aria-pressed="true"] .contagem { color:inherit; opacity:.75; }
+
+/* ── F: a pesquisa ──────────────────────────────────────────────────────── */
+.procura {
+  display:flex; align-items:center; gap:8px; min-height:44px; padding:0 14px;
+  border:1px solid var(--border); border-radius:var(--pill); background:var(--surface);
+}
+.procura input {
+  flex:1; border:0; background:transparent; outline:0; min-width:0;
+  font-family:var(--ui); font-size:13.5px; color:var(--text1);
+}
+.procura input::placeholder { color:var(--text3); font-weight:500; }
+.procura .lupa, .procura .limpar { color:var(--text3); }
+.procura .limpar {
+  width:32px; height:32px; border-radius:var(--pill); border:0; cursor:pointer;
+  background:transparent; font-size:16px; line-height:1; display:grid; place-items:center;
+}
+
+/* ── G: os separadores, o vocabulário que a app já tem ──────────────────── */
+.separadores {
+  display:flex; gap:0; overflow-x:auto; border-bottom:1px solid var(--border);
+  scrollbar-width:none;
+}
+.separadores::-webkit-scrollbar { display:none; }
+.sep {
+  flex:0 0 auto; min-height:44px; padding:0 14px; border:0; cursor:pointer;
+  background:transparent; color:var(--text3); white-space:nowrap;
+  font-family:var(--ui); font-size:13px; font-weight:600;
+  border-bottom:2px solid transparent; margin-bottom:-1px;
+}
+.sep[aria-selected="true"] { color:var(--text1); border-bottom-color:var(--accent); }
+
+/* ── H: as caras ────────────────────────────────────────────────────────── */
+.caras { display:flex; gap:8px; align-items:center; }
+.cara {
+  width:44px; height:44px; border-radius:var(--pill); cursor:pointer; padding:0;
+  border:2px solid transparent; background:var(--subtle); position:relative;
+  display:grid; place-items:center;
+  font-family:var(--ui); font-size:13px; font-weight:700; color:var(--text2);
+}
+.cara[aria-pressed="true"] { border-color:var(--accent); }
+.cara[aria-pressed="true"]::after {
+  content:''; position:absolute; inset:-2px; border-radius:var(--pill);
+  box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.cara.todos { width:auto; padding:0 14px; border-radius:var(--pill); }
+.grupo-area {
+  font-family:var(--ui); font-size:11px; font-weight:700; color:var(--slate);
+  text-transform:uppercase; letter-spacing:.06em;
+  padding:8px 0 4px; position:sticky; top:0; background:var(--surface);
+}
+
+/* ── I: o funil no cabeçalho do ecrã ────────────────────────────────────── */
+.cabecalho.com-acao { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.funil {
+  width:44px; height:44px; border-radius:var(--pill); border:0; cursor:pointer;
+  background:transparent; color:#fff; font-size:15px; position:relative;
+  display:grid; place-items:center; margin:-8px -8px -8px 0;
+}
+.funil .ponto {
+  position:absolute; top:8px; right:8px; width:8px; height:8px;
+  border-radius:var(--pill); background:#fff;
+}
+
+/* ── J: os três menus numa linha ────────────────────────────────────────── */
+.menus { display:flex; gap:8px; }
+.menu {
+  flex:1; min-width:0; min-height:44px; padding:0 10px; cursor:pointer;
+  border:1px solid var(--border); border-radius:var(--pill); background:var(--surface);
+  font-family:var(--ui); font-size:12.5px; font-weight:600; color:var(--text2);
+  display:flex; align-items:center; justify-content:center; gap:4px;
+}
+.menu[data-aceso="1"] {
+  border-color:var(--accent); color:var(--text1);
+  background:color-mix(in srgb, var(--accent) var(--tinta), transparent);
+}
+.menu .qual { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ── As linhas do registo, para se ver o que os filtros custam ──────────── */
+.registo { background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--card-r); padding:14px; }
+.registo .topo { font-family:var(--ui); font-size:11.5px; color:var(--text3); }
+.linha {
+  display:flex; align-items:center; gap:12px; min-height:56px;
+  border-top:1px solid var(--divider); padding:8px 0;
+}
+.linha:first-of-type { border-top:0; }
+.linha .txt { flex:1; }
+.linha .txt b { font-family:var(--body); font-weight:400; font-size:14.5px; color:var(--text2); display:block; }
+.linha .txt span { font-family:var(--ui); font-size:11.5px; color:var(--text3); }
+.linha .seta { color:var(--text3); }
+.vazio { font-family:var(--ui); font-size:12.5px; color:var(--text3); padding:8px 0; }
+
+/* ── A folha, para as alternativas que a usam ───────────────────────────── */
+dialog {
+  border:0; padding:0; background:transparent; max-width:402px; width:100%;
+}
+dialog::backdrop { background:rgba(0,0,0,.45); }
+.folha {
+  background:var(--surface); border-radius:var(--card-r);
+  border:1px solid var(--border); padding:16px; display:flex; flex-direction:column; gap:8px;
+}
+.folha h3 { font-family:var(--ui); font-size:15px; font-weight:700; margin:0 0 4px; color:var(--text1); }
+.opcao {
+  width:100%; min-height:48px; padding:0 14px; cursor:pointer; text-align:left;
+  border:0; border-bottom:1px solid var(--divider); background:transparent;
+  color:var(--text2); font-family:var(--ui); font-size:14px; font-weight:600;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.opcao[aria-selected="true"] { color:var(--titulo); }
+.rodape-folha {
+  min-height:44px; border-radius:var(--pill); border:0; cursor:pointer;
+  background:var(--accent); color:#fff;
+  font-family:var(--ui); font-size:14px; font-weight:700; margin-top:8px;
+}
+:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+@media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="envolucro">
+
+<header>
+  <h1>Filtros do registo</h1>
+  <p>Dez alternativas ao bloco de pastilhas do «Nesta casa», em
+     <code>src/screens/Documentacao.jsx</code>. Todas funcionam: escolha, veja o
+     registo filtrar-se, e troque de esquema e de aspeto. As cinco primeiras
+     mudam a FORMA das pastilhas; as cinco seguintes trocam o MECANISMO —
+     escrever em vez de escolher, separadores, caras, um funil no cabeçalho, e
+     três menus numa linha.</p>
+</header>
+
+<div class="problema">
+  <strong>O que está em causa</strong>
+  <ul>
+    <li>Doze pastilhas partem em <b>quatro filas</b> — e as áreas só aumentam.</li>
+    <li>O bloco come <b id="quanto">—</b> antes da primeira linha do registo, à
+        largura útil de 355&nbsp;px. Medido aqui, não estimado: na app a correr,
+        numa janela mais larga de 413, são 262.</li>
+    <li>O selecionado é um <b>bloco de cor cheia</b>, que grita mais alto do que
+        o conteúdo que está a filtrar.</li>
+    <li>«Todos» e «Tudo» são reposições disfarçadas de opções — têm o mesmo
+        aspeto do que não são.</li>
+  </ul>
+</div>
+
+<div class="comandos">
+  <div class="grupo">
+    <span class="rotulo">Esquema</span>
+    <div class="esquemas" id="esquemas"></div>
+  </div>
+  <div class="grupo">
+    <span class="rotulo">Aspeto</span>
+    <button class="alternar" id="aspeto" aria-pressed="false">Escuro</button>
+  </div>
+  <div class="grupo">
+    <span class="rotulo">Medidas</span>
+    <button class="alternar" id="remedir">Medir outra vez</button>
+  </div>
+</div>
+
+<div class="grelha" id="grelha"></div>
+
+</div>
+
+<dialog id="folha"><div class="folha" id="folha-corpo"></div></dialog>
+
+<script>
+/* ───────────────────────────────────────────────────────────────────────────
+   O tema, portado do `src/theme.js` — o mesmo cálculo, não uma aproximação.
+   ─────────────────────────────────────────────────────────────────────── */
+const SCHEMES = [
+  { name:'Violeta', accent:'#722ED1', hover:'#8B4EE0', chrome:'#241239' },
+  { name:'Cião',    accent:'#08979C', hover:'#13ADB3', chrome:'#0A5B60' },
+  { name:'Céu',     accent:'#1B5FA8', hover:'#2679C9', chrome:'#0C2A47' },
+  { name:'Rosa',    accent:'#B5306E', hover:'#CC4285', chrome:'#8A3A5A' },
+  { name:'Menta',   accent:'#177D5E', hover:'#1E9B75', chrome:'#2E6455' },
+  { name:'Cinza',   accent:'#5A6478', hover:'#6E798F', chrome:'#8E99AB' },
+];
+const LUMES = { page:[.042,.55], card:[.135,.42], subtle:[.180,.36],
+                border:[.255,.28], text3:[.660,.14], slate:[.740,.24] };
+
+const hsl = (hex) => {
+  const n = hex.replace('#','');
+  const [r,g,b] = [0,2,4].map(i => parseInt(n.slice(i,i+2),16)/255);
+  const mx = Math.max(r,g,b), mn = Math.min(r,g,b), d = mx-mn, l = (mx+mn)/2;
+  const s = d === 0 ? 0 : d/(1-Math.abs(2*l-1));
+  let h = 0;
+  if (d) h = mx === r ? 60*(((g-b)/d)%6) : mx === g ? 60*((b-r)/d+2) : 60*((r-g)/d+4);
+  return { h:(h+360)%360, s, l };
+};
+const paraHex = (h,s,l) => {
+  const c = (1-Math.abs(2*l-1))*s, x = c*(1-Math.abs(((h/60)%2)-1)), m = l-c/2;
+  const [r,g,b] = h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]
+    : h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x];
+  return '#'+[r,g,b].map(v=>Math.round((v+m)*255).toString(16).padStart(2,'0')).join('').toUpperCase();
+};
+
+let idx = 0, escuro = false;
+
+function aplicarTema() {
+  const e = SCHEMES[idx], r = document.documentElement.style;
+  if (!escuro) {
+    r.setProperty('--page','#F0F2F5');  r.setProperty('--card','#FCFCFD');
+    r.setProperty('--surface','#FFFFFF'); r.setProperty('--subtle','#FAFAFA');
+    r.setProperty('--border','#D9D9D9'); r.setProperty('--divider','#F0F2F5');
+    r.setProperty('--text1','#262626');  r.setProperty('--text2','#434343');
+    r.setProperty('--text3','#6A7282');  r.setProperty('--slate','#67769B');
+    r.setProperty('--titulo', e.accent);
+  } else {
+    const { h, s } = hsl(e.chrome);
+    const tom = (k) => paraHex(h, Math.min(s, LUMES[k][1]), LUMES[k][0]);
+    const card = tom('card'), linha = tom('border');
+    r.setProperty('--page', tom('page')); r.setProperty('--card', card);
+    r.setProperty('--surface', card);     r.setProperty('--subtle', tom('subtle'));
+    r.setProperty('--border', linha);     r.setProperty('--divider', linha);
+    r.setProperty('--text1','#F0F2F5');   r.setProperty('--text2','#DCE3EA');
+    r.setProperty('--text3', tom('text3')); r.setProperty('--slate', tom('slate'));
+    // ⚠ O título segue o `hover` no escuro: o acento não chega a 3:1 contra a
+    // página escura em três dos seis esquemas.
+    r.setProperty('--titulo', e.hover);
+  }
+  // O banho do selecionado precisa de mais força no escuro: 12% de acento
+  // sobre um cartão escuro quase não se vê.
+  r.setProperty('--tinta', escuro ? '26%' : '12%');
+  r.setProperty('--accent', e.accent);
+  r.setProperty('--hover', e.hover);
+  r.setProperty('--chrome', escuro ? SCHEMES[idx].chrome : e.chrome);
+  document.querySelectorAll('#esquemas .esq').forEach((b,i) =>
+    b.setAttribute('aria-pressed', String(i === idx)));
+  document.getElementById('aspeto').setAttribute('aria-pressed', String(escuro));
+  document.getElementById('aspeto').textContent = escuro ? 'Claro' : 'Escuro';
+  medir();
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Os dados: os que a casa tem hoje.
+   ─────────────────────────────────────────────────────────────────────── */
+const QUEM = ['António','Rita'];
+const ONDE = ['Agenda','Compras','Dinheiro','Equipamentos','Gestão da Casa','Saúde','Tarefas'];
+const QUANDO = ['Hoje','Esta semana','Este mês'];
+const LINHAS = [
+  { t:'Acrescentou «Leite» à lista do Continente', q:'Rita',    a:'Compras',      d:'hoje, 09:12',    quando:'Hoje' },
+  { t:'Despesa de 42,30 € em Mercearia',           q:'António', a:'Dinheiro',     d:'hoje, 08:40',    quando:'Hoje' },
+  { t:'Marcou Pediatria para o Léo, dia 18',       q:'Rita',    a:'Saúde',        d:'ontem, 21:05',   quando:'Esta semana' },
+  { t:'Arrastou «Levar o lixo» para primeiro',     q:'António', a:'Tarefas',      d:'ontem, 19:30',   quando:'Esta semana' },
+  { t:'Garantia do frigorífico expira em 25 dias', q:'Rita',    a:'Equipamentos', d:'ontem, 11:02',   quando:'Esta semana' },
+  { t:'Abriu o mês de setembro',                   q:'António', a:'Dinheiro',     d:'sábado, 10:15',  quando:'Este mês' },
+];
+const DESTINO = new Set(['Agenda','Compras','Dinheiro','Equipamentos','Gestão da Casa','Saúde','Tarefas']);
+const conta = (campo, valor) => LINHAS.filter(l => l[campo] === valor).length;
+
+/* ───────────────────────────────────────────────────────────────────────────
+   As cinco alternativas.
+   ─────────────────────────────────────────────────────────────────────── */
+const ALTERNATIVAS = [
+  {
+    id:'hoje', nome:'Hoje', referencia:true,
+    nota:'O que está no ecrã, para a comparação ser medida e não impressão. '
+       + 'Quatro filas, e a quinta chega com a próxima área.',
+    render(estado) {
+      const fila = (titulo, todos, campo, opcoes) => `
+        <p class="etiqueta">${titulo}</p>
+        <div class="pastilhas">
+          <button class="p" aria-pressed="${!estado[campo]}" data-c="${campo}" data-v="">${todos}</button>
+          ${opcoes.map(o => `<button class="p" aria-pressed="${estado[campo]===o}" data-c="${campo}" data-v="${o}">${o}</button>`).join('')}
+        </div>`;
+      return `<div class="cartao" style="display:flex;flex-direction:column;gap:4px">
+        ${fila('Quem','Todos','q',QUEM)}${fila('Onde','Tudo','a',ONDE)}
+      </div>`;
+    },
+  },
+  {
+    id:'a', nome:'Duas filas que deslizam',
+    nota:'As mesmas pastilhas, mas cada grupo numa fila só que se arrasta para o '
+       + 'lado, com a etiqueta à esquerda em vez de por cima. Nada parte em '
+       + 'quatro, e o número de áreas deixa de mandar na altura.',
+    render(estado) {
+      const fila = (titulo, todos, campo, opcoes) => `
+        <div class="fila">
+          <p class="etiqueta">${titulo}</p>
+          <div class="desliza">
+            <button class="pl" aria-pressed="${!estado[campo]}" data-c="${campo}" data-v="">${todos}</button>
+            ${opcoes.map(o => `<button class="pl" aria-pressed="${estado[campo]===o}" data-c="${campo}" data-v="${o}">${o}</button>`).join('')}
+          </div>
+        </div>`;
+      return `<div class="cartao" style="display:flex;flex-direction:column;gap:8px">
+        ${fila('Quem','Todos','q',QUEM)}${fila('Onde','Tudo','a',ONDE)}
+      </div>`;
+    },
+  },
+  {
+    id:'b', nome:'Dois campos que abrem folha',
+    nota:'Uma linha por filtro, com o que está escolhido à vista. Tocar abre a '
+       + 'folha de sempre, com a lista inteira e alvos de 48. É o mais compacto, '
+       + 'e o preço é não se ver as opções sem abrir.',
+    render(estado) {
+      const campo = (titulo, campo, vazio) => `
+        <button class="campo" data-abrir="${campo}">
+          <span>${titulo}</span>
+          <span><span class="qual">${estado[campo] || vazio}</span> <span class="seta">▾</span></span>
+        </button>`;
+      return `<div class="cartao" style="display:flex;flex-direction:column;gap:8px">
+        ${campo('Quem','q','Todos')}${campo('Onde','a','Tudo')}
+      </div>`;
+    },
+  },
+  {
+    id:'c', nome:'Segmentado e deslizante',
+    nota:'Cada grupo com a forma que o seu tamanho pede: as pessoas são três e '
+       + 'cabem num segmentado fixo; as áreas são doze e deslizam. A forma passa '
+       + 'a dizer quantas opções há antes de se tocar.',
+    render(estado) {
+      return `<div class="cartao" style="display:flex;flex-direction:column;gap:8px">
+        <p class="etiqueta">Quem</p>
+        <div class="segmento">
+          <button class="seg" aria-pressed="${!estado.q}" data-c="q" data-v="">Todos</button>
+          ${QUEM.map(o => `<button class="seg" aria-pressed="${estado.q===o}" data-c="q" data-v="${o}">${o}</button>`).join('')}
+        </div>
+        <div class="fila">
+          <p class="etiqueta">Onde</p>
+          <div class="desliza">
+            <button class="pl" aria-pressed="${!estado.a}" data-c="a" data-v="">Tudo</button>
+            ${ONDE.map(o => `<button class="pl" aria-pressed="${estado.a===o}" data-c="a" data-v="${o}">${o}</button>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    },
+  },
+  {
+    id:'d', nome:'Uma barra que abre',
+    nota:'Fechada por omissão, e fechada é uma linha de 44 que diz o que está a '
+       + 'filtrar. Quem só quer ler o registo não paga nada; quem quer filtrar '
+       + 'toca uma vez. Custa um toque a mais a quem filtra sempre.',
+    render(estado) {
+      const resumo = !estado.q && !estado.a ? 'Tudo, de todos'
+        : [estado.q || 'Todos', estado.a || 'Tudo'].join(' · ');
+      const fila = (titulo, todos, campo, opcoes) => `
+        <div class="fila">
+          <p class="etiqueta">${titulo}</p>
+          <div class="desliza">
+            <button class="pl" aria-pressed="${!estado[campo]}" data-c="${campo}" data-v="">${todos}</button>
+            ${opcoes.map(o => `<button class="pl" aria-pressed="${estado[campo]===o}" data-c="${campo}" data-v="${o}">${o}</button>`).join('')}
+          </div>
+        </div>`;
+      return `<div class="cartao" style="display:flex;flex-direction:column;gap:8px">
+        <button class="barra" data-gaveta="1" aria-expanded="${!!estado.aberta}">
+          <span aria-hidden="true">⚟</span>
+          <span class="resumo">${resumo}</span>
+          <span class="seta" aria-hidden="true">${estado.aberta ? '▴' : '▾'}</span>
+        </button>
+        <div class="gaveta"${estado.aberta ? '' : ' hidden'}>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${fila('Quem','Todos','q',QUEM)}${fila('Onde','Tudo','a',ONDE)}
+          </div>
+        </div>
+      </div>`;
+    },
+  },
+  {
+    id:'e', nome:'Filtrar, e fichas do que está aceso',
+    nota:'Sem filtro, uma linha e mais nada. Com filtro, uma ficha por cada, que '
+       + 'se tira no próprio sítio. O que está a filtrar deixa de ser uma pastilha '
+       + 'entre doze e passa a ser a única coisa ali.',
+    render(estado) {
+      const fichas = [];
+      if (estado.q) fichas.push(`<span class="ficha">${estado.q}<button data-c="q" data-v="" aria-label="Tirar ${estado.q}">×</button></span>`);
+      if (estado.a) fichas.push(`<span class="ficha">${estado.a}<button data-c="a" data-v="" aria-label="Tirar ${estado.a}">×</button></span>`);
+      return `<div class="cartao">
+        <div class="fichas">
+          <button class="abrir-filtros" data-abrir="ambos">
+            <span aria-hidden="true">⚟</span> Filtrar
+          </button>
+          ${fichas.join('')}
+          ${fichas.length ? '' : '<span class="contagem">tudo, de todos</span>'}
+        </div>
+      </div>`;
+    },
+  },
+
+  /* ═════════════════════════════════════════════════════════════════════════
+     As cinco seguintes não são variações das primeiras: cada uma troca o
+     MECANISMO, e não a forma das pastilhas.
+     ═══════════════════════════════════════════════════════════════════════ */
+  {
+    id:'f', nome:'Escrever, em vez de escolher',
+    nota:'Um campo só. Escrever «rita» ou «compras» estreita o registo, porque '
+       + 'o registo é texto e o nome e a área estão lá dentro. Duas dimensões '
+       + 'num controlo, e nenhuma lista que cresça com as áreas.',
+    render(estado) {
+      return `<div class="cartao">
+        <label class="procura">
+          <span class="lupa" aria-hidden="true">⌕</span>
+          <input type="search" data-procura placeholder="Procurar no registo"
+                 value="${estado.txt || ''}" aria-label="Procurar no registo">
+          ${estado.txt ? '<button class="limpar" data-c="txt" data-v="" aria-label="Limpar">×</button>' : ''}
+        </label>
+      </div>`;
+    },
+    filtra: (l, e) => {
+      if (!e.txt) return true;
+      const q = e.txt.toLowerCase();
+      return (l.t + ' ' + l.q + ' ' + l.a).toLowerCase().includes(q);
+    },
+  },
+  {
+    id:'g', nome:'Separadores, como o resto da app',
+    nota:'A área passa a separador com sublinhado — o vocabulário que o rodapé e '
+       + 'a própria Documentação já usam. A pessoa sai do bloco e vai para a '
+       + 'folha, porque é a dimensão que menos se muda.',
+    render(estado) {
+      return `<div style="display:flex;flex-direction:column;gap:8px">
+        <div class="separadores">
+          <button class="sep" aria-selected="${!estado.a}" data-c="a" data-v="">Tudo</button>
+          ${ONDE.map(o => `<button class="sep" aria-selected="${estado.a===o}" data-c="a" data-v="${o}">${o}</button>`).join('')}
+        </div>
+        <button class="barra" data-abrir="q">
+          <span class="resumo">${estado.q ? 'De ' + estado.q : 'De todos'}</span>
+          <span class="seta" aria-hidden="true">▾</span>
+        </button>
+      </div>`;
+    },
+  },
+  {
+    id:'h', nome:'Caras para quem, secções para onde',
+    nota:'A pessoa escolhe-se pela cara, que a app já tem em toda a parte. A '
+       + 'área deixa de ser filtro e passa a ser a arrumação da lista: em vez de '
+       + 'filtrar até lá, rola-se até lá.',
+    render(estado) {
+      const inicial = (n) => n.slice(0,1).toUpperCase();
+      return `<div class="cartao">
+        <div class="caras">
+          <button class="cara todos" aria-pressed="${!estado.q}" data-c="q" data-v="">Todos</button>
+          ${QUEM.map(o => `<button class="cara" aria-pressed="${estado.q===o}" data-c="q" data-v="${o}"
+             aria-label="${o}" title="${o}">${inicial(o)}</button>`).join('')}
+        </div>
+      </div>`;
+    },
+    lista(estado) {
+      const filtradas = LINHAS.filter(l => !estado.q || l.q === estado.q);
+      if (!filtradas.length) return `<div class="registo"><p class="vazio">Nada de ${estado.q}.</p></div>`;
+      const porArea = {};
+      for (const l of filtradas) (porArea[l.a] ||= []).push(l);
+      return `<div class="registo">
+        ${Object.entries(porArea).map(([area, ls]) => `
+          <p class="grupo-area">${area}</p>
+          ${ls.map(l => `<div class="linha">
+            <div class="txt"><b>${l.t}</b><span>${l.q} · ${l.d}</span></div>
+            ${DESTINO.has(l.a) ? '<span class="seta" aria-hidden="true">›</span>' : ''}
+          </div>`).join('')}`).join('')}
+      </div>`;
+    },
+  },
+  {
+    id:'i', nome:'Um funil no cabeçalho do ecrã',
+    nota:'O filtro sai do conteúdo e vai para o cabeçalho, onde já vivem a seta '
+       + 'de voltar e a marca da casa. O registo recupera a altura toda, e um '
+       + 'ponto branco diz que há filtro aceso sem ocupar uma linha.',
+    cabecalho(estado) {
+      const aceso = estado.q || estado.a;
+      return `<div class="cabecalho com-acao">
+        <span>Documentação · Nesta casa</span>
+        <button class="funil" data-abrir="ambos" aria-label="Filtrar o registo">
+          <span aria-hidden="true">⚟</span>${aceso ? '<span class="ponto"></span>' : ''}
+        </button>
+      </div>`;
+    },
+    render() { return ''; },
+    // A folha abre com as três dimensões, e as três filtram: sem espaço no
+    // ecrã a defender, não há razão para deixar o «quando» de fora.
+    filtra: (l, e) => !e.d || l.quando === e.d,
+  },
+  {
+    id:'j', nome:'Três menus numa linha',
+    nota:'Quem, Onde e Quando lado a lado, cada um a abrir a sua folha. Uma '
+       + 'linha de 44 para as três dimensões, e o «quando» entra — que num '
+       + 'registo cronológico é a pergunta que mais se faz.',
+    render(estado) {
+      const m = (rot, campo, vazio) => `
+        <button class="menu" data-abrir="${campo}" data-aceso="${estado[campo] ? 1 : 0}">
+          <span class="qual">${estado[campo] || rot}</span>
+          <span class="seta" aria-hidden="true">▾</span>
+        </button>`;
+      return `<div class="cartao">
+        <div class="menus">${m('Quem','q','Todos')}${m('Onde','a','Tudo')}${m('Quando','d','Sempre')}</div>
+      </div>`;
+    },
+    filtra: (l, e) => !e.d || l.quando === e.d,
+  },
+];
+
+/* ───────────────────────────────────────────────────────────────────────────
+   O desenho, e a medida.
+   ─────────────────────────────────────────────────────────────────────── */
+const estados = Object.fromEntries(
+  ALTERNATIVAS.map(a => [a.id, { q:null, a:null, d:null, txt:'', aberta:false }]));
+
+// A poupança de cada alternativa mede-se contra o que está no ecrã HOJE, e o
+// «hoje» é a primeira ficha — está lá para isso.
+const medidas = {};
+
+const registoDe = (e, alt) => {
+  const extra = alt && alt.filtra ? alt.filtra : () => true;
+  const filtradas = LINHAS.filter(l =>
+    (!e.q || l.q === e.q) && (!e.a || l.a === e.a) && extra(l, e));
+  if (!filtradas.length) return `<div class="registo"><p class="vazio">Nada com estes filtros.</p></div>`;
+  return `<div class="registo">
+    <p class="topo" style="margin:0 0 8px">Mais recente primeiro</p>
+    ${filtradas.slice(0,4).map(l => `<div class="linha">
+      <div class="txt"><b>${l.t}</b><span>${l.q} · ${l.a} · ${l.d}</span></div>
+      ${DESTINO.has(l.a) ? '<span class="seta" aria-hidden="true">›</span>' : ''}
+    </div>`).join('')}
+  </div>`;
+};
+
+function desenhar() {
+  let letra = -1;
+  document.getElementById('grelha').innerHTML = ALTERNATIVAS.map((alt) => {
+    if (!alt.referencia) letra++;
+    const base = ALTERNATIVAS[0].id;
+    const marca = alt.referencia ? '·' : String.fromCharCode(65 + letra);
+    return `
+    <section class="alt${alt.referencia ? ' referencia' : ''}" data-alt="${alt.id}">
+      <h2><span class="n">${marca}</span> ${alt.nome}</h2>
+      <p class="nota">${alt.nota}</p>
+      <div class="telefone">
+        ${alt.cabecalho ? alt.cabecalho(estados[alt.id])
+          : '<div class="cabecalho">Documentação · Nesta casa</div>'}
+        <div class="corpo">
+          <div data-filtro>${alt.render(estados[alt.id])}</div>
+          ${alt.lista ? alt.lista(estados[alt.id]) : registoDe(estados[alt.id], alt)}
+        </div>
+      </div>
+      <p class="medida"><span>Altura do bloco de filtros</span>
+        <b data-medida="${alt.id}">—</b></p>
+    </section>`;
+  }).join('');
+  medir();
+}
+
+function medir() {
+  requestAnimationFrame(() => {
+    for (const alt of ALTERNATIVAS) {
+      const bloco = document.querySelector(`[data-alt="${alt.id}"] [data-filtro]`);
+      if (bloco) medidas[alt.id] = Math.round(bloco.getBoundingClientRect().height);
+    }
+    const base = medidas.hoje || 0;
+    const quanto = document.getElementById('quanto');
+    if (quanto && base) quanto.textContent = base + ' px';
+    for (const alt of ALTERNATIVAS) {
+      const saida = document.querySelector(`[data-medida="${alt.id}"]`);
+      if (!saida || medidas[alt.id] == null) continue;
+      const h = medidas[alt.id];
+      if (alt.referencia || !base) { saida.textContent = h + ' px'; continue; }
+      const d = h - base;
+      saida.textContent = `${h} px  ·  ${d === 0 ? 'igual' : d < 0 ? `−${-d}` : `+${d}`}`;
+      saida.style.color = d < -20 ? 'var(--titulo)' : d > 20 ? 'var(--text3)' : 'var(--text2)';
+    }
+  });
+}
+
+/* ── Os toques ──────────────────────────────────────────────────────────── */
+document.getElementById('grelha').addEventListener('click', (ev) => {
+  const secao = ev.target.closest('[data-alt]');
+  if (!secao) return;
+  const e = estados[secao.dataset.alt];
+
+  const gaveta = ev.target.closest('[data-gaveta]');
+  if (gaveta) { e.aberta = !e.aberta; return desenhar(); }
+
+  const abrir = ev.target.closest('[data-abrir]');
+  if (abrir) return abrirFolha(secao.dataset.alt, abrir.dataset.abrir);
+
+  const b = ev.target.closest('[data-c]');
+  if (!b) return;
+  const v = b.dataset.v || null;
+  const campo = b.dataset.c;
+  e[campo] = (e[campo] === v) ? (campo === 'txt' ? '' : null) : (campo === 'txt' ? (v || '') : v);
+  desenhar();
+});
+
+// ⚠ A pesquisa não pode redesenhar tudo a cada tecla: o `innerHTML` mata o
+// campo e o cursor sai de lá. Redesenha-se só a lista, e o campo fica.
+document.getElementById('grelha').addEventListener('input', (ev) => {
+  const campo = ev.target.closest('[data-procura]');
+  if (!campo) return;
+  const secao = campo.closest('[data-alt]');
+  const alt = ALTERNATIVAS.find(a => a.id === secao.dataset.alt);
+  const e = estados[secao.dataset.alt];
+  e.txt = campo.value;
+  const lista = secao.querySelector('.registo, .vazio')?.closest('.registo')
+    || secao.querySelector('.corpo > :last-child');
+  if (lista) lista.outerHTML = registoDe(e, alt);
+  // O «×» de limpar aparece e desaparece com o conteúdo.
+  const tinha = !!campo.parentElement.querySelector('.limpar');
+  if (tinha !== !!e.txt) {
+    const pos = campo.selectionStart;
+    secao.querySelector('[data-filtro]').innerHTML = alt.render(e);
+    const novo = secao.querySelector('[data-procura]');
+    novo.focus(); novo.setSelectionRange(pos, pos);
+  }
+});
+
+const folha = document.getElementById('folha');
+function abrirFolha(altId, qual) {
+  const e = estados[altId];
+  const chaveDe = { q:'q', a:'a', d:'quando' };
+  const bloco = (titulo, campo, todos, opcoes) => `
+    <h3>${titulo}</h3>
+    <button class="opcao" data-c="${campo}" data-v="" aria-selected="${!e[campo]}">
+      ${todos}<span class="contagem">${LINHAS.length}</span></button>
+    ${opcoes.map(o => `<button class="opcao" data-c="${campo}" data-v="${o}" aria-selected="${e[campo]===o}">
+      ${o}<span class="contagem">${conta(chaveDe[campo], o)}</span></button>`).join('')}`;
+  document.getElementById('folha-corpo').innerHTML =
+    (qual === 'q' || qual === 'ambos' ? bloco('Quem','q','Todos',QUEM) : '')
+    + (qual === 'a' || qual === 'ambos' ? bloco('Onde','a','Tudo',ONDE) : '')
+    + (qual === 'd' || qual === 'ambos' ? bloco('Quando','d','Sempre',QUANDO) : '')
+    + '<button class="rodape-folha" data-fechar>Ver o registo</button>';
+  folha.dataset.alt = altId;
+  folha.showModal();
+}
+document.getElementById('folha-corpo').addEventListener('click', (ev) => {
+  if (ev.target.closest('[data-fechar]')) { folha.close(); return; }
+  const b = ev.target.closest('[data-c]');
+  if (!b) return;
+  const e = estados[folha.dataset.alt];
+  e[b.dataset.c] = b.dataset.v || null;
+  desenhar();
+  // As que mostram o resultado dentro da própria folha ficam abertas; as que o
+  // mostram no ecrã fecham-se, para não tapar o que se acabou de pedir.
+  if (folha.dataset.alt === 'e' || folha.dataset.alt === 'i') {
+    abrirFolha(folha.dataset.alt, 'ambos');
+  } else folha.close();
+});
+folha.addEventListener('click', (ev) => { if (ev.target === folha) folha.close(); });
+
+/* ── Os comandos ────────────────────────────────────────────────────────── */
+document.getElementById('esquemas').innerHTML = SCHEMES.map((s,i) =>
+  `<button class="esq" style="background:${s.accent}" title="${s.name}"
+     aria-label="Esquema ${s.name}" aria-pressed="${i===0}"></button>`).join('');
+document.getElementById('esquemas').addEventListener('click', (ev) => {
+  const b = ev.target.closest('.esq'); if (!b) return;
+  idx = [...ev.currentTarget.children].indexOf(b); aplicarTema();
+});
+document.getElementById('aspeto').addEventListener('click', () => { escuro = !escuro; aplicarTema(); });
+document.getElementById('remedir').addEventListener('click', medir);
+window.addEventListener('resize', medir);
+
+desenhar();
+aplicarTema();
+</script>
+</body>
+</html>

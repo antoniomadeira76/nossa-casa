@@ -4,25 +4,57 @@
     {
       "name": "Expo Web",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["expo", "start", "--web", "--port", "8082"],
+      "runtimeArgs": [
+        "expo",
+        "start",
+        "--web",
+        "--port",
+        "8082"
+      ],
       "port": 8082
     },
     {
       "name": "Protótipo",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["http-server", "C:/Users/amadeira/AppData/Local/Temp/claude/C--Users-amadeira-Claude-Projects-Nossa-Casa/c754d258-c865-41b4-9895-24b007f0e27b/scratchpad/proto", "-p", "8090", "-c-1", "--silent"],
+      "runtimeArgs": [
+        "http-server",
+        "C:/Users/amadeira/AppData/Local/Temp/claude/C--Users-amadeira-Claude-Projects-Nossa-Casa/c754d258-c865-41b4-9895-24b007f0e27b/scratchpad/proto",
+        "-p",
+        "8090",
+        "-c-1",
+        "--silent"
+      ],
       "port": 8090
+    },
+    {
+      "name": "Desenho",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "http-server",
+        "design",
+        "-p",
+        "8091",
+        "-c-1",
+        "--silent"
+      ],
+      "port": 8091
     },
     {
       "name": "Expo iOS",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["expo", "start"],
+      "runtimeArgs": [
+        "expo",
+        "start"
+      ],
       "port": 19000
     },
     {
       "name": "Expo Android",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["expo", "start"],
+      "runtimeArgs": [
+        "expo",
+        "start"
+      ],
       "port": 19000
     }
   ]
