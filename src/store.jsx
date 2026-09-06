@@ -1758,12 +1758,27 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   const feitoNaGoogle = (id) =>
     set(x => ({ filaGoogle: (x.filaGoogle || []).filter(e => e.id !== id) }));
 
-  const guardarIdGoogle = (id, idGoogle) => set(x => ({
-    eventEdits: { ...x.eventEdits, [id]: { ...(x.eventEdits[id] || {}), idGoogle } },
-  }));
+  // ⚠ Guarda-se sob as DUAS chaves: a local e a do servidor.
+  //
+  // A resposta da Google e a do servidor da casa chegam cada uma no seu tempo,
+  // e qualquer das duas pode ser a primeira. Se a do servidor chegar antes, a
+  // cópia de chave feita no `criarEvento` já passou e este `idGoogle` nascia
+  // órfão — debaixo de um `evt-…` que a leitura seguinte apaga.
+  const guardarIdGoogle = (id, idGoogle) => set(x => {
+    const noServidor = ((x.added || []).find(e => e.id === id) || {}).idServidor;
+    const edits = { ...x.eventEdits, [id]: { ...(x.eventEdits[id] || {}), idGoogle } };
+    if (noServidor) edits[noServidor] = { ...(x.eventEdits[noServidor] || {}), idGoogle };
+    return { eventEdits: edits };
+  });
 
-  const idGoogleDe = (id) => ((s.eventEdits || {})[id] || {}).idGoogle
-    || ((s.added || []).find(e => e.id === id) || {}).idGoogle || null;
+  const idGoogleDe = (id) => {
+    const edits = s.eventEdits || {};
+    const noServidor = eventoNoServidor(id);
+    return (edits[id] || {}).idGoogle
+      || (noServidor ? (edits[noServidor] || {}).idGoogle : null)
+      || ((s.added || []).find(e => e.id === id) || {}).idGoogle
+      || null;
+  };
 
   // Uma tentativa. Devolve `true` quando a entrada pode sair da fila — que é
   // tanto quando correu bem como quando NUNCA vai correr: um evento que a
@@ -1802,8 +1817,21 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // eventos antigos numa agenda acabada de autorizar é enchê-la de coisas que
     // já passaram.
     if (!sync || !sync.agendaGoogle || !sync.agendaGoogle.disponivel()) return;
+    // ⚠ SÓ enfileira. Não tenta aqui.
+    //
+    // Tentava as duas coisas — punha na fila e mandava logo —, e o efeito que
+    // escoa a fila dispara precisamente por ela ter mudado. Dois caminhos a
+    // criar o mesmo evento, e a Google fica com ele A DOBRAR: dois eventos com
+    // o mesmo título e a mesma hora, e um deles sem `idGoogle` guardado, pelo
+    // que apagar na app só apaga um.
+    //
+    // Apanhado com o evento de prova a sério, na agenda a sério: a importação
+    // ofereceu-o de volta e havia DOIS ids do lado de lá. Nenhuma prova o via,
+    // porque a duplicação nasce da corrida entre o efeito e a chamada, e não
+    // de nenhuma das duas sozinha.
+    //
+    // Uma porta: enfileirar. O efeito escoa, e escoa uma vez.
     porFazerNaGoogle(entrada);
-    tentarNaGoogle(entrada).then((pronto) => { if (pronto) feitoNaGoogle(entrada.id); });
   };
 
   // A fila inteira, pela ordem em que entrou. Chamada pelo fornecedor sempre
@@ -1853,6 +1881,21 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       })
         .then((r) => { if (r && r.id) set(x => ({
           added: (x.added || []).map(e => (e.id === idLocal ? { ...e, idServidor: r.id } : e)),
+          // ⚠ E o `idGoogle` muda de chave com ele.
+          //
+          // O identificador da Google era guardado em `eventEdits[idLocal]`. Na
+          // leitura seguinte, o evento volta do servidor COM O ID DO SERVIDOR —
+          // o `evt-1788…` desaparece, e com ele a única ligação entre este
+          // evento e o que ele é na agenda da Google. A partir daí, editar e
+          // apagar deixavam de lá chegar, sem erro nenhum: a app dizia
+          // «apagado» e o evento ficava na agenda para sempre.
+          //
+          // Bastava fechar a app entre criar e apagar. Apanhado com o evento de
+          // prova, na agenda a sério, e não por nenhuma das 1363 provas: todas
+          // elas correm sem servidor, e sem servidor o id local nunca muda.
+          eventEdits: (x.eventEdits || {})[idLocal]
+            ? { ...x.eventEdits, [r.id]: { ...(x.eventEdits[r.id] || {}), ...x.eventEdits[idLocal] } }
+            : x.eventEdits,
         })); })
         .catch(() => {});
     }

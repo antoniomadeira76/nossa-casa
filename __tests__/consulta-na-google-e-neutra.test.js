@@ -137,6 +137,24 @@ describe('a fila do que ainda não chegou à Google', () => {
     expect(f[0].id).toBe('e25');
   });
 
+  it('⚠ há UMA porta para a Google, e não duas', () => {
+    // ⚠ O `empurrarParaGoogle` enfileirava E tentava logo — e o efeito que
+    // escoa a fila dispara por ela ter mudado. Dois caminhos a criar o mesmo
+    // evento, e a agenda ficou com ele A DOBRAR: dois eventos com o mesmo
+    // título e a mesma hora, um deles sem `idGoogle` guardado, pelo que apagar
+    // na app só apagava um.
+    //
+    // Apanhado com um evento de prova na agenda a sério. Nenhuma prova o via,
+    // porque a duplicação nasce da CORRIDA entre os dois e não de nenhum
+    // deles sozinho — por isso o que se mede é que o segundo caminho não
+    // existe.
+    const loja = ler('src/store.jsx');
+    const bloco = loja.slice(loja.indexOf('const empurrarParaGoogle'),
+      loja.indexOf('const escoarFilaGoogle'));
+    expect(bloco).toMatch(/porFazerNaGoogle\(entrada\)/);
+    expect(bloco).not.toMatch(/tentarNaGoogle\(/);
+  });
+
   it('⚠ e sem a agenda LIGADA nada entra na fila', () => {
     // Numa casa que nunca autorizou a Google, cada evento entrava numa fila que
     // nada esvazia. A fila é para uma rede que caiu, não para uma agenda que
