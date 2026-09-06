@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
-import { S, FONT, corDoMembro } from '../theme';
+import { S, FONT } from '../theme';
 import { EUR, plural, evTime, TODAY_KEY, dayLabel, agoraNaApp, subtituloDaTarefa } from '../format';
 
 import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade, avatarDe } from '../ui';

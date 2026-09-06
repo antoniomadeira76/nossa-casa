@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { Label, Choice, Segmented, Primary, EscolherMembro, coresDe } from '../ui';
-import { TODAY_KEY, dkey, pad2 } from '../format';
+import { TODAY_KEY } from '../format';
 import Icon from '../Icon';
 
 const RECUR_OPTS = ['Uma vez', 'Todos os dias', 'Dias de semana'];

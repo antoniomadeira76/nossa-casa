@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
-import { MONTHS, WD_SHORT, TODAY, TODAY_KEY, dkey, dayLabel, evTime, pad2 } from '../format';
+import { MONTHS, WD_SHORT, TODAY, TODAY_KEY, dkey, dayLabel, evTime } from '../format';
 
-import { Card, SectionTitle, Pill, Avatar, Empty, AddButton, Tap, usePaged, Pager, PastilhaVisibilidade, avatarDe } from '../ui';
+import { Card, SectionTitle, Avatar, Empty, AddButton, Tap, usePaged, Pager, PastilhaVisibilidade, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import NovoEvento from '../sheets/NovoEvento';

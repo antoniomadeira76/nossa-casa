@@ -151,7 +151,7 @@ export async function puxarCasa() {
     label: m.motivo || m.tipo,
     sub: nomeDoMembro[m.autorizado_por] ? `autorizado por ${nomeDoMembro[m.autorizado_por]}` : '',
     // O servidor devolve ISO; a loja usa a chave `d2026-08-20`.
-    day: (m.data || m.created || '').slice(0, 10)
+    day: (m.data || '').slice(0, 10)
       .replace(/^(\d{4})-(\d{2})-(\d{2})$/, 'd$1-$2-$3'),
   }));
 
@@ -194,9 +194,25 @@ export async function puxarCasa() {
   // ligar tem, e é melhor mostrar o que há do que esconder tudo.
   const mesAberto = (casa.meses || []).find(m => !m.fechado_em) || null;
   const inicioDoMes = mesAberto ? String(mesAberto.mes).slice(0, 10) : null;
+  // ⚠ Uma data que não é uma data NÃO está no mês.
+  //
+  // Isto era `String(data || '').slice(0, 10) >= inicioDoMes`, e cada sítio que
+  // o chamava passava `d.data || d.created`. O `created` **não existe**: as
+  // coleções deste projeto não o declaram, e o PocketBase v0.23+ só o cria
+  // quando o esquema o pede. A reserva era `undefined`, e
+  // `String(undefined).slice(0,10)` é `"undefine"` — que é MAIOR do que
+  // `"2026-09-01"` em ordem alfabética.
+  //
+  // Ou seja: uma linha sem data contava em TODOS os meses, para sempre, e a
+  // reserva escrita para a proteger era exactamente o que a partia. Nunca se
+  // viu porque o `sync` sempre escreveu a data — mas uma linha posta à mão no
+  // painel de administração bastava.
+  //
+  // As reservas `|| created` saíram todas: eram código morto a fingir cuidado.
   const noMes = (data) => {
     if (!inicioDoMes) return true;
     const d = String(data || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
     return d >= inicioDoMes;
   };
 
@@ -204,7 +220,7 @@ export async function puxarCasa() {
   // depois de o mês ter aberto. A vista do servidor também soma; isto é para o
   // ecrã ter o número sem uma segunda ida.
   const registered = (casa.despesas || [])
-    .filter(d => !d.anula_id && noMes(d.data || d.created))
+    .filter(d => !d.anula_id && noMes(d.data))
     .reduce((n, d) => n + (Number(d.valor) || 0), 0);
 
   // ── O gasto POR ENVELOPE ───────────────────────────────────────────────────
@@ -223,7 +239,7 @@ export async function puxarCasa() {
   // durante dias, e desta vez a prova de fumo apanhou-o à primeira.
   const envelopePorId = Object.fromEntries((casa.envelopes || []).map(e => [e.id, e.nome]));
   for (const d of casa.despesas || []) {
-    if (d.anula_id || !noMes(d.data || d.created)) continue;
+    if (d.anula_id || !noMes(d.data)) continue;
     const nome = envelopePorId[d.envelope];
     if (!nome) continue;
     gastoPorEnvelope[nome] = (gastoPorEnvelope[nome] || 0) + (Number(d.valor) || 0);
@@ -247,7 +263,7 @@ export async function puxarCasa() {
   let despesasMeias = 0;                 // quantas são, para o ecrã o poder dizer
   for (const d of casa.despesas || []) {
     if (d.anula_id || !d.divide_meias) continue;
-    if (!noMes(d.data || d.created)) continue;
+    if (!noMes(d.data)) continue;
     despesasMeias += 1;
     const nome = nomeDoMembro[d.pagador];
     if (!nome) continue;
@@ -268,13 +284,13 @@ export async function puxarCasa() {
   // que reabria sozinho, e pela mesma razão: as linhas ficam no servidor. O mês
   // novo começa sem acertos por ser OUTRA soma, não por alguém a ter apagado.
   const acertoMovs = (casa.acertos || [])
-    .filter(a => noMes(a.data || a.created))
+    .filter(a => noMes(a.data))
     .map(a => ({
       id: a.id,
       de: nomeDoMembro[a.de_membro] || a.de_membro,
       para: nomeDoMembro[a.para_membro] || a.para_membro,
       valor: Number(a.valor) || 0,
-      day: (a.data || a.created || '').slice(0, 10)
+      day: (a.data || '').slice(0, 10)
         .replace(/^(\d{4})-(\d{2})-(\d{2})$/, 'd$1-$2-$3'),
     }));
 
@@ -290,7 +306,7 @@ export async function puxarCasa() {
       t: r.texto,
       quem: nomeDoMembro[r.quem] || null,
       a: r.area || null,
-      at: Date.parse(r.quando || r.created) || 0,
+      at: Date.parse(r.quando) || 0,
     }))
     .sort((a, b) => b.at - a.at)
     .slice(0, 100);
@@ -460,7 +476,7 @@ export async function puxarCasa() {
   // ⚠ Só as DESTE mês, pela mesma razão do `registered`: o ajuste de um
   // envelope é uma redistribuição dentro de um mês, e arrastá-la para o
   // seguinte era começar o mês com o orçamento já mexido.
-  for (const t of (casa.transferencias || []).filter(x => noMes(x.mes || x.created))) {
+  for (const t of (casa.transferencias || []).filter(x => noMes(x.mes))) {
     const de = nomeDoEnvelope[t.de_envelope];
     const para = nomeDoEnvelope[t.para_envelope];
     const valor = Number(t.valor) || 0;
@@ -723,6 +739,9 @@ export async function alterarEvento(idNoServidor, campos) {
   if ('titulo' in campos) linha.titulo = campos.titulo;
   if ('visibilidade' in campos) linha.visibilidade = campos.visibilidade;
   if ('responsavel' in campos) linha.responsavel = campos.responsavel || null;
+  // ⚠ A etiqueta faltava, e o `eventoDaCasa` manda-a na criação. Mudar a
+  // etiqueta de «Escola» para «Saúde» ficava neste telefone para sempre.
+  if ('etiqueta' in campos) linha.etiqueta = campos.etiqueta || '';
   return servidor.pb.collection('eventos').update(idNoServidor, linha);
 }
 

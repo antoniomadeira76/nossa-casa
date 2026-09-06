@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
 import { EUR, subtituloDaTarefa } from '../format';
 
-import { Card, SectionTitle, Label, Pill, Row, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe } from '../ui';
+import { Card, SectionTitle, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';

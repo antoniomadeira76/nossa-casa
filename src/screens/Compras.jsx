@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, Pressable, Modal } from 'react-native';
+
 import { useStore } from '../store';
-import { S, R, FONT, elev, corDoMembro } from '../theme';
+import { S, R, FONT } from '../theme';
 import { EUR, dayLabel, parseKey, WD, plural } from '../format';
 import { SECTIONS } from '../data';
-import { Card, SectionTitle, Label, Pill, Bar, Primary, AddButton, Empty, usePaged, Pager, Tap, Tile, Avatar, avatarDe } from '../ui';
+import { Card, SectionTitle, Label, AddButton, usePaged, Tap, Tile, Avatar, avatarDe } from '../ui';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';

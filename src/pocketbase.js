@@ -534,11 +534,61 @@ const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
   // OUTRA pessoa faz, e um registo só local nunca lhe podia responder.
   'registo'];
 
+// ── As coleções que CRESCEM sem fim, e o que delas se lê ─────────────────────
+//
+// ⚠ O `ler.casa()` puxava TODAS as linhas de TODAS as coleções, a cada abertura
+// da app, e o `puxarCasa` deitava fora quase tudo a seguir. Numa casa acabada de
+// semear são 104 linhas e ninguém nota. As que crescem todos os dias não ficam
+// nessa escala:
+//
+//   registo           ~10 por dia    →  3 650 ao fim de um ano
+//   tarefas_feitas    ~4 por dia     →  1 460 ao fim de um ano
+//   despesas          ~22 por mês    →    264 ao fim de um ano
+//
+// Ao fim de dois anos são mais de dez mil linhas descarregadas de cada vez que
+// alguém abre a app — pela Wi-Fi de casa, num telemóvel, para mostrar as cinco
+// mais recentes.
+//
+// ⚠ O `registo` é o caso mais claro, e é o que se corrige aqui: o `puxarCasa`
+// já fazia `.slice(0, 100)` DEPOIS de descarregar tudo. Pedir as 100 mais
+// recentes ao servidor dá exactamente o mesmo resultado, e é a única coleção
+// onde isso é exactamente equivalente.
+//
+// As outras não se filtram aqui de propósito, e vale a pena dizer porquê:
+//
+//   • `cofre_movimentos` — o saldo do cofre é a soma de SEMPRE, não a do mês.
+//     Cortar por data dava um saldo errado, em silêncio.
+//   • `despesas`, `transferencias`, `acertos` — filtram-se pelo mês ABERTO, e
+//     esse só se sabe depois de ler os `meses`. Fazê-lo obrigaria a duas idas
+//     ao servidor em vez de uma; é a otimização seguinte, e tem de ser medida
+//     antes de ser feita.
+//   • `tarefas_feitas` — o `done` é de hoje, mas o `feitas` é o índice que
+//     permite DESMARCAR, e desmarcar o que já lá está é o que impede uma linha
+//     órfã. Cortá-lo sem perceber até onde se desmarca partia isso.
+//
+// ⚠ E a ordenação é por `-quando` e mais nada. Escrevi `-quando,-created` à
+// primeira, e o servidor devolveu 400: **as coleções deste projeto não têm
+// campo `created`**. O PocketBase v0.23+ só o cria quando o esquema o declara
+// como `autodate`, e o `criar-colecoes.mjs` nunca o declarou.
+//
+// O erro ia calado — o `.catch(() => [])` desta função devolvia lista vazia — e
+// o registo aparecia sempre em branco. Foram as provas do servidor a apanhá-lo.
+const OPCOES_POR_COLECAO = {
+  registo: { sort: '-quando', perPage: 100 },
+};
+
 export const ler = {
   async casa() {
     if (!estaLigado()) return semLigacao();
-    const res = await Promise.all(COLECOES.map(c =>
-      pb.collection(c).getFullList({ batch: 500 }).catch(() => [])));
+    const res = await Promise.all(COLECOES.map((c) => {
+      const opts = OPCOES_POR_COLECAO[c];
+      // Com `perPage` é uma página só — é isso que evita descarregar tudo.
+      if (opts) {
+        return pb.collection(c).getList(1, opts.perPage, { sort: opts.sort })
+          .then(r => r.items).catch(() => []);
+      }
+      return pb.collection(c).getFullList({ batch: 500 }).catch(() => []);
+    }));
     return Object.fromEntries(COLECOES.map((c, i) => [c, res[i]]));
   },
 

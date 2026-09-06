@@ -1695,15 +1695,35 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   const eventoNoServidor = (id) =>
     ((s.added || []).find(e => e.id === id) || {}).idServidor || null;
 
+  // ── Um evento alterado, na forma do servidor ────────────────────────────
+  //
+  // ⚠ Isto estava escrito DUAS VEZES — no `alterarEventoDaCasa` e no
+  // `editarEvento` —, palavra por palavra. E as duas cópias tinham o mesmo
+  // buraco: mandavam o dia, a hora, o título e a visibilidade, e mais nada.
+  //
+  // O `responsavel` e a `etiqueta` ficavam neste telefone. Mudar quem é
+  // responsável por um evento, ou trocar-lhe a etiqueta de «Escola» para
+  // «Saúde», não chegava ao outro adulto — sem erro nenhum, porque a escrita
+  // acontecia e ia incompleta.
+  //
+  // Uma cópia só, e os dois campos que faltavam entram nela.
+  const eventoParaServidor = (campos) => ({
+    ...(campos.day !== undefined ? { dia: campos.day } : {}),
+    ...(campos.time !== undefined ? { hora: campos.time } : {}),
+    ...(campos.title !== undefined ? { titulo: campos.title } : {}),
+    ...(campos.visibilidade !== undefined ? { visibilidade: campos.visibilidade } : {}),
+    ...(campos.tag !== undefined ? { etiqueta: campos.tag } : {}),
+    // O `who` da loja é um NOME, e às vezes uma frase («Léo · Consulta de
+    // saúde»): só se manda quando é mesmo um membro, como na criação.
+    ...(campos.who !== undefined ? { responsavel: idDoMembro(campos.who) } : {}),
+  });
+
   const alterarEventoDaCasa = (id, campos) => {
     set(x => ({ added: (x.added || []).map(e => (e.id === id ? { ...e, ...campos } : e)) }));
     const noServidor = eventoNoServidor(id);
-    if (sync && noServidor) sync.alterarEvento(noServidor, {
-      ...(campos.day !== undefined ? { dia: campos.day } : {}),
-      ...(campos.time !== undefined ? { hora: campos.time } : {}),
-      ...(campos.title !== undefined ? { titulo: campos.title } : {}),
-      ...(campos.visibilidade !== undefined ? { visibilidade: campos.visibilidade } : {}),
-    }).catch(() => {});
+    if (sync && noServidor) {
+      sync.alterarEvento(noServidor, eventoParaServidor(campos)).catch(() => {});
+    }
   };
 
   // ── As compras ──────────────────────────────────────────────────────────
@@ -2282,12 +2302,9 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       eventEdits: { ...x.eventEdits, [id]: { ...(x.eventEdits[id] || {}), ...campos } },
     }));
     const noServidor = eventoNoServidor(id);
-    if (sync && noServidor) sync.alterarEvento(noServidor, {
-      ...(campos.day !== undefined ? { dia: campos.day } : {}),
-      ...(campos.time !== undefined ? { hora: campos.time } : {}),
-      ...(campos.title !== undefined ? { titulo: campos.title } : {}),
-      ...(campos.visibilidade !== undefined ? { visibilidade: campos.visibilidade } : {}),
-    }).catch(() => {});
+    if (sync && noServidor) {
+      sync.alterarEvento(noServidor, eventoParaServidor(campos)).catch(() => {});
+    }
   };
 
   // Apagar é marcar como ido, não tirar da lista. As sementes não se conseguem

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, Switch } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { S, R, FONT, elev } from '../theme';
 import Icon, { GoogleG } from '../Icon';
 import { pad2, parseKey } from '../format';

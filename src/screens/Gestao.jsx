@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT, corDoMembro, LARGURA_APP } from '../theme';
+import { S, R, FONT, LARGURA_APP } from '../theme';
 import { EUR, MONTHS } from '../format';
 import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty, avatarDe, NumField } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
-import { ENV_BASE } from '../data';
 
 // O estilo dos campos de texto estava copiado onze vezes neste ficheiro, cada
 // uma com onze linhas iguais. Um sítio só: se o desenho do campo mudar, muda

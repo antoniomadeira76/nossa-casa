@@ -1,5 +1,4 @@
-import { dkey, TODAY, TODAY_KEY, TOMORROW_KEY, chaveRelativa, dmyRelativo,
-         diaEMesRelativo, ddmmRelativo, mesEAnoRelativo } from './format';
+import { TODAY_KEY, TOMORROW_KEY, chaveRelativa, dmyRelativo, diaEMesRelativo, ddmmRelativo, mesEAnoRelativo } from './format';
 
 // `fem` é o género gramatical, e está aqui porque é uma propriedade da pessoa
 // — não uma coisa que se adivinhe do nome. Havia três sítios a fazer

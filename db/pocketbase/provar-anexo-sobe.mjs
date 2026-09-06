@@ -15,7 +15,7 @@
 // Por isso isto sobe um ficheiro a sério e volta a pedi-lo.
 import PocketBase from 'pocketbase';
 import { registerHooks } from 'node:module';
-import { writeFile, readFile, unlink } from 'node:fs/promises';
+import { writeFile, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';

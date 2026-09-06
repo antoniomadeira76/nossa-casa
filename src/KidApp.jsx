@@ -5,7 +5,7 @@ import { useStore } from './store';
 import { buildTheme, onChrome, S, R, FONT, corDoMembro, elev } from './theme';
 import { EUR, parseKey, pad2, plural } from './format';
 import Icon from './Icon';
-import { Card, SectionTitle, Label, Pill, Empty, Primary } from './ui';
+import { Card, SectionTitle, Pill, Empty } from './ui';
 
 // dkey → dd/mm, para a linha do movimento
 const dayShort = (k) => {

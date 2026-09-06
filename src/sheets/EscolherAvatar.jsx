@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Image, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, PALETA_MEMBROS, corDoMembro } from '../theme';
 import Figura, { GRUPOS, figurasDoGrupo, nomeDaFigura } from '../Avatares';

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { dayLabel, plural, TODAY_KEY, parseKey } from '../format';
-import { DE } from '../data';
+
 import { Card, SectionTitle, Empty, Pill } from '../ui';
 import Icon from '../Icon';
 import ExportarSaude from '../sheets/ExportarSaude';

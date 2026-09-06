@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT, corDoMembro } from '../theme';
+import { S, R, FONT } from '../theme';
 import { Label, Primary, Tile, Avatar, avatarDe } from '../ui';
 import Icon from '../Icon';
 import * as servidor from '../pocketbase';

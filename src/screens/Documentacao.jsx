@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT } from '../theme';
+import { S, FONT } from '../theme';
 import { Card, SectionTitle, Pill, Segmented, Empty, Pager, usePaged, Choice, Label } from '../ui';
 import { plural, pad2 } from '../format';
 import Icon from '../Icon';

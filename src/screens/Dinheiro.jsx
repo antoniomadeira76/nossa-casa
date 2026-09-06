@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT, corDoMembro } from '../theme';
+import { S, R, FONT } from '../theme';
 import { EUR, warrantyDaysLeft, MONTHS, plural } from '../format';
-import { ENV_BASE, GOALS, EQUIP } from '../data';
-import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Tap, Opcao, NumField } from '../ui';
+import { ENV_BASE, GOALS } from '../data';
+import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Opcao, NumField } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 

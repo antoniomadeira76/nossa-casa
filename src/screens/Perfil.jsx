@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, TextInput, ScrollView, Modal } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, Pressable } from 'react-native';
+
 import { useStore } from '../store';
-import { SCHEMES, S, R, FONT, elev, corDoMembro } from '../theme';
-import { EUR, plural } from '../format';
+import { SCHEMES, S, R, FONT } from '../theme';
+import { plural } from '../format';
 import { FEM } from '../data';
-import { Card, SectionTitle, Label, Row, Pill, Primary, Toggle, Segmented, Tap, Avatar, avatarDe, mostraFotografia } from '../ui';
+import { Card, SectionTitle, Label, Row, Pill, Toggle, Tap, Avatar, avatarDe, mostraFotografia } from '../ui';
 import Icon from '../Icon';
 import { nomeDaFigura } from '../Avatares';
 import Sheet from '../Sheet';

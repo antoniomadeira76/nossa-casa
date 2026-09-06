@@ -2,7 +2,7 @@
 // minimização e as guardas de papel. Um hook por testar é um hook que não existe.
 //   node db/pocketbase/provar-hooks.mjs
 import PocketBase from 'pocketbase';
-import { URL, PREFIXO, comecar } from './casa-de-provas.mjs';
+import { PREFIXO, comecar } from './casa-de-provas.mjs';
 
 // Casa de provas, limpa. Só o que é das provas é apagado — o que estiver
 // noutra casa fica onde está.

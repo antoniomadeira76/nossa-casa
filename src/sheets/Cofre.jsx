@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT, corDoMembro } from '../theme';
+import { S, R, FONT } from '../theme';
 import { EUR, WD, plural } from '../format';
 import { SectionTitle, Avatar, Empty, avatarDe } from '../ui';
 import Icon from '../Icon';
