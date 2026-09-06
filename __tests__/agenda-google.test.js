@@ -342,13 +342,125 @@ describe('um evento trazido da Google fica ligado a ela', () => {
   });
 
   it('assim o ciclo continua protegido pelos dois lados', () => {
-    // `idsGoogleDaCasa` lê `e.idGoogle`: com o identificador guardado, um
-    // evento importado também deixa de ser oferecido de volta — além da marca
-    // em `googleCalendarImported`, que já o fazia.
+    // `idsGoogleDaCasa` lê o `idGoogle` do evento e dos `eventEdits`: com o
+    // identificador guardado, um evento importado também deixa de ser oferecido
+    // de volta — além da marca em `googleCalendarImported`, que já o fazia.
     const ids = loja.slice(loja.indexOf('const idsGoogleDaCasa'),
                            loja.indexOf('const idsGoogleDaCasa') + 400);
     expect(ids).toMatch(/s\.added/);
     expect(ids).toMatch(/e\.idGoogle/);
+  });
+
+  it('⚠ e SOBE para o servidor da casa, como qualquer outro evento', () => {
+    // Isto era um `set` direto no `added`, e o evento importado ficava num
+    // telemóvel só: a Rita trazia da agenda dela a reunião da escola, via-a na
+    // Nossa Casa, e o Tomás não via nada. A app diz «Sincronizar eventos do
+    // Google Calendar» e sincronizava com metade da casa.
+    //
+    // É a mesma forma de defeito das oito funções de escrita que ninguém
+    // chamava, e a mesma que o «Guardar evento» teve até 05/09.
+    expect(bloco).toMatch(/criarEvento\(\{/);
+    expect(bloco).not.toMatch(/added: \[\.\.\.\(x\.added/);
+  });
+
+  it('⚠ mas NÃO volta a subir para a Google — já lá está', () => {
+    // Mandá-lo outra vez duplicava-o na agenda de quem o importou: o mesmo
+    // defeito da dupla porta, visto do outro lado do espelho. O `idGoogle` é o
+    // que diz ao `criarEvento` que este evento veio de lá.
+    const criar = loja.slice(loja.indexOf('const criarEvento'),
+                             loja.indexOf('return idLocal'));
+    expect(criar).toMatch(/if \(!idGoogle\) \{[\s\S]{0,400}empurrarParaGoogle/);
+  });
+
+  it('e o registo leva UMA linha, não uma por evento', () => {
+    // Trazer cinco eventos escrevia cinco linhas a dizer a mesma coisa.
+    expect(bloco).toMatch(/semRegisto: true/);
+    expect(bloco).toMatch(/da agenda da Google/);
+  });
+});
+
+describe('⚠ o que se traz da Google chega ao outro telemóvel', () => {
+  // Estas correm a loja a sério — sem servidor, que é como o Jest a corre —,
+  // e por isso medem o que se pode medir aqui: que o evento entra na casa pelo
+  // caminho certo e com o que é preciso para o resto funcionar.
+  const React = require('react');
+  const TestRenderer = require('react-test-renderer');
+  const { StoreProvider, useStore } = require('../src/store');
+
+  const loja = () => {
+    let api = null;
+    const Sonda = () => { api = useStore(); return null; };
+    TestRenderer.act(() => {
+      TestRenderer.create(React.createElement(StoreProvider, null, React.createElement(Sonda)));
+    });
+    return () => api;
+  };
+
+  const VINDOS = [
+    { id: 'g-aaa', title: 'Reunião na escola', date: '2026-09-20', time: '18:00' },
+    { id: 'g-bbb', title: 'Consulta do carro', date: 'd2026-09-21', time: '', isRecurring: true },
+  ];
+
+  it('entram na agenda da casa', () => {
+    const ler = loja();
+    TestRenderer.act(() => { ler().importGoogleEvents(VINDOS, 'Rita', 'adultos'); });
+    const todos = ler().allEvents();
+    const a = todos.find(e => e.title === 'Reunião na escola');
+    expect(a).toBeTruthy();
+    // A chave do dia leva o prefixo, venha ela com ele ou sem ele.
+    expect(a.day).toBe('d2026-09-20');
+    expect(a.visibilidade).toBe('adultos');
+    expect(todos.find(e => e.title === 'Consulta do carro').day).toBe('d2026-09-21');
+  });
+
+  it('ficam ligados à Google, para poderem ser editados e apagados lá', () => {
+    const ler = loja();
+    TestRenderer.act(() => { ler().importGoogleEvents(VINDOS, 'Rita'); });
+    expect([...ler().idsGoogleDaCasa()]).toEqual(expect.arrayContaining(['g-aaa', 'g-bbb']));
+  });
+
+  it('e o que só a app usa não se perde pelo caminho', () => {
+    const ler = loja();
+    TestRenderer.act(() => { ler().importGoogleEvents(VINDOS, 'Rita'); });
+    const b = ler().allEvents().find(e => e.title === 'Consulta do carro');
+    expect(b.source).toBe('Google Calendar');
+    expect(b.isRecurring).toBe(true);
+  });
+
+  it('⚠ e o registo da casa leva uma linha só', () => {
+    const ler = loja();
+    const antes = (ler().s.registo || []).length;
+    TestRenderer.act(() => { ler().importGoogleEvents(VINDOS, 'Rita'); });
+    const depois = ler().s.registo || [];
+    expect(depois.length).toBe(antes + 1);
+    expect(depois[0].t).toMatch(/2 eventos trazidos da agenda da Google/);
+  });
+
+  it('⚠ e cada um leva o SEU id, mesmo criados no mesmo milissegundo', () => {
+    // O `criarEvento` fazia `'ev-' + Date.now()` e mais nada. Trazer três
+    // eventos da agenda é um ciclo sem espera nenhuma pelo meio: os três
+    // ficavam com o mesmo id, e o `idGoogle` do último apagava o dos
+    // anteriores — dois deles perdiam a ligação à agenda e ficavam
+    // intocáveis. Só se viu quando a importação passou a usar esta porta.
+    const ler = loja();
+    const muitos = Array.from({ length: 6 }, (_, i) => ({
+      id: `g-${i}`, title: `Evento ${i}`, date: '2026-09-22', time: '09:00',
+    }));
+    TestRenderer.act(() => { ler().importGoogleEvents(muitos, 'Rita'); });
+    const nossos = ler().allEvents().filter(e => /^Evento \d$/.test(e.title));
+    expect(nossos).toHaveLength(6);
+    expect(new Set(nossos.map(e => e.id)).size).toBe(6);
+    // E cada um ficou com o SEU identificador da Google.
+    expect([...ler().idsGoogleDaCasa()])
+      .toEqual(expect.arrayContaining(muitos.map(e => e.id)));
+  });
+
+  it('não voltam a ser oferecidos', () => {
+    const ler = loja();
+    TestRenderer.act(() => { ler().importGoogleEvents(VINDOS, 'Rita'); });
+    const vistos = ler().s.googleCalendarImported || {};
+    expect(vistos['g-aaa']).toBe(true);
+    expect(vistos['g-bbb']).toBe(true);
   });
 });
 

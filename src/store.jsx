@@ -1848,22 +1848,47 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     }
   };
 
-  const criarEvento = ({ day, time, title, who, owner, visibilidade, tag, healthId, id }) => {
-    const idLocal = id || ('ev-' + Date.now());
+  // ⚠ `idGoogle` quer dizer «este evento JÁ existe na agenda da Google» — veio
+  // de lá, não vai para lá. Sem esta distinção, importar um evento devolvia-o à
+  // Google como novo e a agenda ficava com ele a dobrar: o mesmo defeito da
+  // dupla porta, visto do outro lado do espelho.
+  //
+  // `semRegisto` é para quem escreve a sua própria linha. Trazer cinco eventos
+  // da agenda escrevia cinco linhas no registo da casa a dizer a mesma coisa.
+  const criarEvento = ({ day, time, title, who, owner, visibilidade, tag, healthId, id,
+                         idGoogle, semRegisto, extra }) => {
+    // ⚠ `Date.now()` E MAIS NADA não chega.
+    //
+    // Dois eventos criados no mesmo milissegundo ficavam com o MESMO id — e
+    // trazer três da agenda da Google é exactamente isso: um ciclo, sem espera
+    // nenhuma pelo meio. Os três eventos ficavam a partilhar id, e o
+    // `idGoogle` do último apagava o dos anteriores: dois deles perdiam a
+    // ligação à agenda e passavam a ser intocáveis.
+    //
+    // Só se viu quando a importação passou a usar esta porta; até aí ela tinha
+    // sufixo próprio e o `criarEvento` era chamado uma vez de cada vez.
+    const idLocal = id || ('ev-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9));
     set(x => ({
       added: [...(x.added || []), {
         id: idLocal, day, time: time || '', title, who: who || '',
         owner, visibilidade: visibilidade || 'so-eu', tag: tag || '',
         ...(healthId ? { healthId } : {}),
+        ...(extra || {}),
       }],
       // ⚠ Só o TÍTULO, e nem sempre. Um evento «Só eu» é privado por regra do
       // servidor (INVARIANTE #3), e escrever-lhe o título no registo da casa —
       // que todos os adultos leem — era contornar essa regra pela porta das
       // traseiras. Desses fica só que houve um evento.
-      registo: maisRegisto(x, (visibilidade || 'so-eu') === 'so-eu'
-        ? 'Um evento privado foi agendado'
-        : `Evento «${title}» agendado`, 'Agenda'),
+      registo: semRegisto ? x.registo
+        : maisRegisto(x, (visibilidade || 'so-eu') === 'so-eu'
+          ? 'Um evento privado foi agendado'
+          : `Evento «${title}» agendado`, 'Agenda'),
     }));
+
+    // O identificador da Google de um evento que veio de lá guarda-se já: é ele
+    // que faz o `editar` e o `apagar` chegarem à agenda, e que impede a
+    // importação seguinte de o oferecer outra vez como novidade.
+    if (idGoogle) guardarIdGoogle(idLocal, idGoogle);
 
     if (sync) {
       const ses = sync.sessao();
@@ -1902,11 +1927,16 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
 
     // E para a agenda da Google — sempre, e não só quando alguém liga um
     // interruptor. Uma consulta leva o título neutro; ver `agenda-google.js`.
-    const ev = { day, time, title, owner, visibilidade, tag, healthId };
-    empurrarParaGoogle({
-      id: idLocal, acao: 'criar',
-      corpo: paraGoogle(ev, { autor: owner, emails: emailsDoEvento(ev) }),
-    });
+    //
+    // ⚠ Excepto quando veio DE lá: nesse caso já existe, e mandá-lo outra vez
+    // duplicava-o na agenda de quem o importou.
+    if (!idGoogle) {
+      const ev = { day, time, title, owner, visibilidade, tag, healthId };
+      empurrarParaGoogle({
+        id: idLocal, acao: 'criar',
+        corpo: paraGoogle(ev, { autor: owner, emails: emailsDoEvento(ev) }),
+      });
+    }
 
     return idLocal;
   };
@@ -3477,10 +3507,21 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // `visibilidade`: um dos três níveis, como em qualquer outro evento. Era um
   // booleano, e por isso a importação era o único sítio da app onde não se
   // podia dizer «só os adultos».
+  // ⚠ Isto era um `set` direto no `added`, e o evento importado ficava NUM
+  // TELEMÓVEL SÓ.
+  //
+  // A Rita trazia da agenda dela a reunião da escola, via-a na Nossa Casa, e o
+  // Tomás não via nada — a app diz «Sincronizar eventos do Google Calendar» e
+  // sincronizava com metade da casa. É a mesma forma de defeito das oito
+  // funções de escrita que ninguém chamava, e a mesma que o `criarEvento` da
+  // folha de agendar teve até 05/09.
+  //
+  // Agora passa pela MESMA porta que os outros dois sítios que criam eventos.
+  // Ganha com isso o servidor da casa, e ganha a garantia de não voltar à
+  // Google: o `idGoogle` diz ao `criarEvento` que este já lá está.
   const importGoogleEvents = (events, user, visibilidade = 'familia') => {
-    set(x => {
-      const newAdded = events.map(ev => ({
-        id: `gcal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    for (const ev of events) {
+      criarEvento({
         // O mesmo defeito que o «Guardar evento» tinha: a app lê chaves
         // (`d2026-08-27`) e isto punha `2026-08-27`. Os eventos importados
         // gravavam-se e não apareciam.
@@ -3490,7 +3531,6 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         who: user,
         owner: user,
         visibilidade,
-        source: 'Google Calendar',
         // ⚠ O identificador da Google guarda-se, e não se guardava.
         //
         // Sem ele, um evento trazido da agenda podia ser editado e apagado na
@@ -3498,23 +3538,23 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         // diferentes, em dois sítios, sem nada a dizer qual está certa. E o
         // «Apagar» dizia «sai da agenda de quem o via», deixava-o na Google, e
         // no dia seguinte ele estava lá a apitar.
-        //
-        // Com ele, um evento importado segue exactamente o mesmo caminho de um
-        // criado aqui — as folhas já leem `evento.idGoogle` para editar e
-        // apagar do lado de lá, e o confirmar de apagar já diz que sai das
-        // duas agendas quando ele existe.
         idGoogle: ev.id,
-        isRecurring: ev.isRecurring || false,
-      }));
+        // Uma linha só no fim, e não uma por evento.
+        semRegisto: true,
+        // O que só a app usa. O servidor não tem `source` nem `isRecurring`, e
+        // inventar-lhe campos era o caminho para eles caírem em silêncio.
+        extra: { source: 'Google Calendar', isRecurring: ev.isRecurring || false },
+      });
+    }
 
-      const imported = {};
-      events.forEach(ev => { imported[ev.id] = true; });
-
-      return {
-        added: [...(x.added || []), ...newAdded],
-        googleCalendarImported: { ...(x.googleCalendarImported || {}), ...imported },
-      };
-    });
+    const imported = {};
+    events.forEach(ev => { imported[ev.id] = true; });
+    set(x => ({
+      googleCalendarImported: { ...(x.googleCalendarImported || {}), ...imported },
+      registo: maisRegisto(x,
+        `${plural(events.length, 'evento trazido', 'eventos trazidos')} da agenda da Google`,
+        'Agenda'),
+    }));
   };
 
   return {
