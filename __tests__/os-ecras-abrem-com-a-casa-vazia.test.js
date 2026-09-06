@@ -34,10 +34,20 @@ function camposQuePodemSerNulos() {
   return nulos;
 }
 
-const ECRAS = fs.readdirSync(path.join(RAIZ, 'src', 'screens'))
-  .filter(f => f.endsWith('.jsx')).map(f => `src/screens/${f}`)
+// ⚠ E o `App.jsx` entra na lista.
+//
+// A primeira versão deste guarda varria `src/screens` e `src/sheets` e mais
+// nada. Passou — e «iniciar compras na loja» continuava a dar ecrã branco: o
+// `s.shopPlan.who` que rebentava estava no CABEÇALHO, montado no `App.jsx`,
+// que corre antes do ecrã. A pilha apontava ao `Shell` e não ao `ModoCompras`,
+// que era onde eu estava a olhar.
+const ECRAS = ['App.jsx']
+  .concat(fs.readdirSync(path.join(RAIZ, 'src', 'screens'))
+    .filter(f => f.endsWith('.jsx')).map(f => `src/screens/${f}`))
   .concat(fs.readdirSync(path.join(RAIZ, 'src', 'sheets'))
-    .filter(f => f.endsWith('.jsx')).map(f => `src/sheets/${f}`));
+    .filter(f => f.endsWith('.jsx')).map(f => `src/sheets/${f}`))
+  .concat(fs.readdirSync(path.join(RAIZ, 'src', 'modals'))
+    .filter(f => f.endsWith('.jsx')).map(f => `src/modals/${f}`));
 
 describe('⚠ nenhum ecrã lê um campo anulável sem defesa', () => {
   const nulos = camposQuePodemSerNulos();
@@ -51,16 +61,24 @@ describe('⚠ nenhum ecrã lê um campo anulável sem defesa', () => {
     expect(ECRAS.length).toBeGreaterThan(8);
   });
 
-  it('⚠ e nenhum faz `s.<campo>.alguma-coisa` a seco', () => {
+  it('⚠ e nenhum lê um campo anulável a seco', () => {
+    // ⚠ QUALQUER prefixo, e não só o `s.`.
+    //
+    // A primeira versão procurava `s.<campo>.` e mais nada. Deixou passar o
+    // `x.shopPlan.who` de dentro de um `set(x => …)` — onde a loja se chama
+    // `x` — no `ModoCompras`, que rebentava ao FECHAR A CONTA.
     const soltas = [];
     for (const f of ECRAS) {
       const linhas = semComentarios(ler(f)).split(/\r?\n/);
       linhas.forEach((linha, i) => {
         for (const campo of nulos) {
-          // `s.shopPlan.who` — sem `?.`, sem `||`, sem ter sido guardado antes.
-          const re = new RegExp(`\\bs\\.${campo}\\.\\w`);
+          // Um acesso é seguro quando leva `?.`, ou quando o objeto foi
+          // defendido com `(… || {})` antes do ponto.
+          const re = new RegExp(`(?<!\\|\\| \\{\\}\\))\\b\\w+\\.${campo}\\.\\w`);
           if (!re.test(linha)) continue;
-          soltas.push(`${f}:${i + 1}  s.${campo}.… sem defesa`);
+          if (new RegExp(`\\w+\\.${campo}\\?\\.`).test(linha)) continue;
+          if (new RegExp(`\\(\\w+\\.${campo} \\|\\| \\{\\}\\)\\.`).test(linha)) continue;
+          soltas.push(`${f}:${i + 1}  .${campo}.… sem defesa`);
         }
       });
     }

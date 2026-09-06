@@ -243,7 +243,10 @@ export default function ModoCompras({ t, user, onClose }) {
             // via a dívida VOLTAR por ter ido ao supermercado.
             set(x => ({
               shopHistory: [{
-                at: Date.now(), store: (x.stores || [])[x.shopPlan.store] || null, who: x.shopPlan.who,
+                // Sem ida marcada, a linha do histórico fica com quem fechou a
+                // conta — e não rebenta a fechá-la.
+                at: Date.now(), store: (x.stores || [])[(x.shopPlan || {}).store] || null,
+                who: (x.shopPlan || {}).who || user,
                 total: cart, items: doneItems.length,
               }, ...x.shopHistory].slice(0, 10),
             }));

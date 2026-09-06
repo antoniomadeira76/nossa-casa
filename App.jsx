@@ -454,8 +454,13 @@ function Shell() {
     },
     loja: {
       icon: 'fileDone', titulo: 'Modo Compras', fechar: () => setLoja(false),
-      sub: () => [s.shopPlan.who, (s.stores || [])[s.shopPlan.store], s.shopPlan.time]
-        .filter(Boolean).join(' · '),
+      // ⚠ Sem ida marcada, `s.shopPlan` é NULO — entre duas idas e numa casa
+      // acabada de abrir. Isto lia-o cru e rebentava no CABEÇALHO, que corre
+      // antes do ecrã: tocar em «iniciar compras na loja» dava branco, e a
+      // pilha apontava ao `Shell` e não ao `ModoCompras`, que era onde eu
+      // estava a olhar.
+      sub: () => { const p = s.shopPlan || {};
+        return [p.who, (s.stores || [])[p.store], p.time].filter(Boolean).join(' · '); },
       render: () => <ModoCompras t={t} user={user} onClose={() => setLoja(false)} />,
     },
   };
