@@ -1491,9 +1491,6 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     set(x => ({ equipGone: { ...x.equipGone, [id]: true } }));
   };
 
-  const budget = s.monthLimits
-    ? Object.values(s.monthLimits).reduce((a, b) => a + b, 0)
-    : ENV_BASE.reduce((a, e) => a + e.limit, 0);
   // ⚠ A lista dos envelopes vem do SERVIDOR quando há um. Eram sementes no
   // código (`ENV_BASE`) e mais nada: a lista da casa não existia em lado
   // nenhum, e «criar um envelope» era acrescentar uma chave a um mapa de
@@ -1534,6 +1531,30 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // lado. É o INVARIANTE #2 noutra roupagem: um total que devia ser uma soma
   // foi escrito, e divergiu da coisa que devia resumir.
   const spent = envelopes.reduce((a, e) => a + e.used, 0);
+
+  // ⚠ E o ORÇAMENTO é a soma dos MESMOS envelopes — a lição de cima, que eu
+  // apliquei ao gasto e não ao total que ele se compara.
+  //
+  // Era `Object.values(s.monthLimits).reduce(...)`: uma segunda fonte para a
+  // mesma coisa, ao lado da lista que o ecrã mostra. Divergiam no uso normal,
+  // e sem dizer nada:
+  //
+  //   apagar   um envelope saía da lista e o limite dele FICAVA no
+  //            `monthLimits` — o orçamento continuava a contá-lo, e o
+  //            «Disponível» do Início ficava alto para sempre.
+  //   renomear a lista mudava de nome e o mapa não: o orçamento passava a
+  //            contar um envelope que já não existe.
+  //   o limite mudava no servidor e não no mapa, e o orçamento só se mexia na
+  //            leitura seguinte.
+  //
+  // E `{}` é VERDADEIRO em JavaScript: com o mapa vazio, o ramo das sementes
+  // nunca corria e o orçamento dava ZERO com quatro envelopes na lista — que
+  // foi como isto se viu.
+  //
+  // O `monthLimits` passa a ser só o que sempre devia ter sido: o AJUSTE deste
+  // mês a um envelope, que o `limit` acima já aplica. Deixa de ser uma segunda
+  // cópia do conjunto todo.
+  const budget = envelopes.reduce((a, e) => a + e.limit, 0);
 
   const canSeeHealth = podeVerSaude;
 
@@ -2158,37 +2179,84 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   const envelopeNoServidor = (nome) =>
     ((s.envelopesDaCasa || []).find(e => e.name === nome) || {}).id || null;
 
+  // ⚠ A lista da casa MATERIALIZA-SE antes de se lhe mexer.
+  //
+  // Enquanto ninguém toca nos envelopes, a lista são as sementes do `data.js` e
+  // o `envelopesDaCasa` está vazio. No momento em que a casa cria, apaga ou
+  // renomeia um, passa a ser dona da lista inteira — senão criar «Férias»
+  // deixava a casa com UM envelope e os outros quatro desapareciam.
+  const listaDeEnvelopes = (x) => ((x.envelopesDaCasa || []).length
+    ? x.envelopesDaCasa
+    : ENV_BASE.map(e => ({ id: null, name: e.name, limit: e.limit, color: e.color || null })));
+
+  // ⚠ E escreve-se LOCAL PRIMEIRO, como tudo o resto nesta app.
+  //
+  // Isto só escrevia no `monthLimits` e esperava pelo servidor para pôr a
+  // linha na lista. Numa casa sem servidor — que é como esta app corria antes
+  // de haver um, e como corre quando a rede falha — criar um envelope não
+  // acrescentava nada à lista: mexia num mapa de limites que o ecrã nem lê.
   const criarEnvelope = (nome, limite = 500) => {
     const n = String(nome || '').trim();
     if (!n) return;
-    set(x => ({ monthLimits: { ...(x.monthLimits || {}), [n]: limite } }));
+    set(x => ({
+      envelopesDaCasa: [...listaDeEnvelopes(x), { id: null, name: n, limit: limite, color: null }],
+      monthLimits: { ...(x.monthLimits || {}), [n]: limite },
+    }));
     if (sync) {
       const ses = sync.sessao();
       if (ses) sync.criarEnvelope({ casa: ses.casa, nome: n, limite })
+        // O `id` do servidor cola-se à linha que já existe cá, e não cria uma
+        // segunda: sem isto o envelope aparecia a dobrar assim que a resposta
+        // chegasse.
         .then((r) => { if (r && r.id) set(x => ({
-          envelopesDaCasa: [...(x.envelopesDaCasa || []),
-            { id: r.id, name: n, limit: limite, color: null }],
+          envelopesDaCasa: (x.envelopesDaCasa || []).map(e => (
+            e.name === n && !e.id ? { ...e, id: r.id } : e)),
         })); })
         .catch(() => {});
     }
   };
 
+  // ⚠ O `monthLimits` é indexado pelo NOME, e por isso tem de acompanhar o
+  // nome. Renomear mudava a lista e deixava o ajuste debaixo do nome antigo:
+  // o envelope voltava ao limite de base e o orçamento continuava a contar o
+  // ajuste de um envelope que já não se chama assim.
   const alterarEnvelope = (nome, campos) => {
     const id = envelopeNoServidor(nome);
     if (sync && id) sync.alterarEnvelope(id, campos).catch(() => {});
-    // O nome muda no mapa local também, senão o ajuste ficava órfão.
-    if (campos.nome && campos.nome !== nome) {
-      set(x => ({
-        envelopesDaCasa: (x.envelopesDaCasa || []).map(e => (
-          e.name === nome ? { ...e, name: campos.nome } : e)),
-      }));
-    }
+    set(x => {
+      const limites = { ...(x.monthLimits || {}) };
+      const novoNome = campos.nome && campos.nome !== nome ? campos.nome : nome;
+      let lista = listaDeEnvelopes(x);
+
+      if (novoNome !== nome) {
+        lista = lista.map(e => (e.name === nome ? { ...e, name: novoNome } : e));
+        if (nome in limites) { limites[novoNome] = limites[nome]; delete limites[nome]; }
+      }
+      // E o limite muda AQUI e não só no servidor: sem isto, mudar um limite
+      // não mexia no orçamento até à leitura seguinte.
+      if ('limite' in campos) {
+        const v = Number(campos.limite) || 0;
+        lista = lista.map(e => (e.name === novoNome ? { ...e, limit: v } : e));
+        if (novoNome in limites) limites[novoNome] = v;
+      }
+      return { envelopesDaCasa: lista, monthLimits: limites };
+    });
   };
 
+  // ⚠ E o ajuste do mês sai COM o envelope. Ficava para trás, e o orçamento
+  // continuava a contar o limite de um envelope apagado — o «Disponível» do
+  // Início ficava alto e ninguém percebia de onde vinha a diferença.
   const apagarEnvelope = (nome) => {
     const id = envelopeNoServidor(nome);
     if (sync && id) sync.apagarEnvelope(id).catch(() => {});
-    set(x => ({ envelopesDaCasa: (x.envelopesDaCasa || []).filter(e => e.name !== nome) }));
+    set(x => {
+      const limites = { ...(x.monthLimits || {}) };
+      delete limites[nome];
+      return {
+        envelopesDaCasa: listaDeEnvelopes(x).filter(e => e.name !== nome),
+        monthLimits: limites,
+      };
+    });
   };
 
   // ── O mês: abrir e fechar ───────────────────────────────────────────────
