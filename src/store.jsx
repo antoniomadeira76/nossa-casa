@@ -1689,6 +1689,76 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     }
   };
 
+  // ── Os pontos que uma criança GANHOU ──────────────────────────────────────
+  //
+  // ⚠ Duas coisas estavam mal, e juntas produziam um valor impossível no ecrã:
+  // «Pagar Semanada · −1,00 €».
+  //
+  // **A janela.** Isto contava `s.done[t.id]` — o mapa das tarefas feitas
+  // HOJE, que o `recurringReset` limpa à meia-noite. E o `paidPts` conta os
+  // pontos pagos DESDE SEMPRE. Duas janelas diferentes subtraídas uma à outra:
+  // bastava uma semanada ter sido paga ontem para o «por pagar» de hoje nascer
+  // negativo, e ficar negativo até a criança fazer tarefas que cobrissem tudo o
+  // que já lhe foi pago na vida.
+  //
+  // **A confirmação.** Contava uma tarefa marcada, confirmada ou não. O ecrã
+  // da Documentação promete o contrário, em letras: «Uma criança marca a tarefa
+  // como feita e um adulto confirma — os pontos só contam depois disso». A
+  // criança marcava e os pontos apareciam logo.
+  //
+  // O modelo certo é o INVARIANTE #2, como em todo o resto: uma SOMA sobre as
+  // linhas. As linhas são as `tarefas_feitas` — uma por (tarefa, dia), com
+  // índice único —, e conta-se o ponto de cada uma que esteja CONFIRMADA.
+  // Assim as duas metades da subtração falam da mesma coisa: pontos ganhos de
+  // sempre, menos pontos pagos de sempre.
+  const pontosGanhos = (k) => {
+    const minhas = allTasks().filter(t => t.who === k);
+    const porId = Object.fromEntries(minhas.map(t => [t.id, t]));
+    const contadas = new Set();
+    let n = 0;
+
+    // Todas as marcações confirmadas, de sempre. O `feitas` vem do servidor e
+    // traz o histórico inteiro, com o `confirmada` de cada linha.
+    for (const [chave, linha] of Object.entries(s.feitas || {})) {
+      if (!linha || !linha.confirmada) continue;
+      const t = porId[chave.split('|')[0]];
+      if (!t) continue;
+      contadas.add(chave);
+      n += t.pts || 0;
+    }
+
+    // ⚠ E quando o `feitas` tem alguma coisa, é ELE e mais nada.
+    //
+    // A primeira versão somava também o `done` de hoje que não estivesse já
+    // contado — e deu 0,40 € onde a conta é 0,20 €. Duas razões, as duas
+    // minhas:
+    //
+    //   · o `done` guarda RESTOS de dias anteriores. A leitura do servidor
+    //     funde-o (`{ ...x.done, ...casa.done }`) em vez de o substituir, e o
+    //     `recurringReset` só limpa quando a app abre. «Levar o lixo» de ontem
+    //     continuava lá hoje, e contava outra vez.
+    //   · uma marcação de hoje POR CONFIRMAR não está no `pending` quando veio
+    //     do servidor — está no `feitas` com `confirmada: false`. A volta do
+    //     `done` não olhava para isso e contava-a.
+    //
+    // Com servidor, o livro das linhas é a verdade inteira e não precisa de
+    // ajuda. A janela de segundos entre marcar e a linha subir não vale um
+    // caminho paralelo que erra em dois sítios.
+    if (contadas.size || Object.keys(s.feitas || {}).length) return n;
+
+    // Sem servidor, o `feitas` está sempre vazio — só se escreve quando há
+    // linha do outro lado. Aqui a verdade é o `done` de hoje, e o `pending` é
+    // «a criança marcou e falta um adulto confirmar»: essas não contam, que é
+    // a regra que o ecrã promete.
+    for (const t of minhas) {
+      if (!s.done[t.id]) continue;
+      if ((s.pending || {})[t.id]) continue;
+      if (TASKS.some(x => x.id === t.id && x.done)) continue;   // semente já feita
+      n += t.pts || 0;
+    }
+    return n;
+  };
+
   const kidPts = criancas.reduce((a, k) => {
     // Os pontos de partida são semente da demonstração; uma criança nova
     // começa a zero, que é o correto — não herda o histórico de ninguém.
@@ -1704,8 +1774,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // livro é aditivo: apagar escreve um movimento, não reescreve uma soma.
     const guardados = (s.pontosDeTarefasApagadas || [])
       .filter(m => m.quem === k).reduce((n, m) => n + (m.pts || 0), 0);
-    a[k] = base + guardados
-      + allTasks().filter(t => t.who === k && s.done[t.id] && !TASKS.some(x => x.id === t.id && x.done)).reduce((n, t) => n + (t.pts || 0), 0);
+    a[k] = base + guardados + pontosGanhos(k);
     return a;
   }, {});
 
