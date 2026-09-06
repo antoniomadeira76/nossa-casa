@@ -231,7 +231,7 @@ export default function ModoCompras({ t, user, onClose }) {
 
       {cartOpen ? (
         <Carrinho t={t} doneItems={doneItems} items={items} cart={cart} pago={pago}
-          user={user} store={loja} who={s.shopPlan.who}
+          user={user} store={loja} who={(s.shopPlan || {}).who}
           onClose={() => setCartOpen(false)}
           onConfirm={() => {
             // Os preços escritos no corredor viram histórico aqui, com a loja
@@ -251,7 +251,10 @@ export default function ModoCompras({ t, user, onClose }) {
             // `registered` local e mais nada: a compra do sábado não aparecia
             // no orçamento do outro adulto.
             registarDespesa({
-              envelope: 'Mercearia', valor: cart, pagador: s.shopPlan.who || user,
+              // ⚠ Sem ida marcada, quem paga é quem está a fechar a conta. Isto
+              // era `s.shopPlan.who` cru: entre duas idas o `shopPlan` é nulo, e
+              // fechar a conta rebentava em vez de registar a despesa.
+              envelope: 'Mercearia', valor: cart, pagador: (s.shopPlan || {}).who || user,
               descricao: loja ? `Compras · ${loja}` : 'Compras',
             });
             // E a ida fecha-se no servidor: a lista deixa de ser a aberta, e a

@@ -898,13 +898,24 @@ export function StoreProvider({ children }) {
         }));
       }
 
-      if (casa.shopPlan) {
-        set(x => ({
+      // ⚠ E o NULO também se aplica — era o que faltava.
+      //
+      // O `puxarCasa` devolve `shopPlan: null` quando não há lista aberta, e o
+      // `if (casa.shopPlan)` deitava isso fora. Consequência: a Rita fecha a
+      // conta na caixa, a lista fecha no servidor, e o telemóvel do Tomás
+      // continua a mostrar a ida de sábado com os artigos todos — para sempre,
+      // porque nenhuma leitura seguinte a tira de lá.
+      //
+      // É a mesma forma dos «saldos escritos» do INVARIANTE #2, virada ao
+      // contrário: aqui não é um total que não se recalcula, é uma ausência que
+      // não se propaga. Quem manda na lista ABERTA é o servidor.
+      set(x => (casa.shopPlan
+        ? {
           newItems: casa.newItems,
           status: casa.status || {},
           shopPlan: { ...x.shopPlan, ...casa.shopPlan },
-        }));
-      }
+        }
+        : { newItems: [], status: {}, shopPlan: null }));
 
       // ⚠ O histórico das idas vem à parte da lista ABERTA, e é de propósito:
       // entre duas idas não há lista aberta nenhuma — `casa.shopPlan` é nulo — e

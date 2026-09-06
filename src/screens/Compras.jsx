@@ -65,7 +65,19 @@ export default function Compras({ t, user, onModoCompras }) {
   // sementes, e continuava a nomeá-lo numa casa onde ele já não está — com o
   // avatar a «?», que é a guarda a funcionar e a pergunta a ficar por
   // responder. Sem ninguém válido, não se nomeia ninguém.
-  const planoDe = MEMBERS[s.shopPlan.who] ? s.shopPlan.who : null;
+  // ⚠ PODE NÃO HAVER IDA MARCADA, e o ecrã tem de se ler à mesma.
+  //
+  // Isto era `s.shopPlan.who` cru, e o `puxarCasa` devolve `shopPlan: null`
+  // sempre que não há lista aberta — que é o estado normal entre duas idas, e
+  // o de uma casa acabada de abrir. Tocar em «Compras» dava ecrã BRANCO:
+  // «Cannot read properties of null (reading 'who')».
+  //
+  // A loja guarda-o em cinco sítios (`(s.shopPlan || {})`, `s.shopPlan ? …`);
+  // o ecrã não guardava em nenhum. Apanhado a percorrer os cinco separadores
+  // com a casa vazia — nenhuma das 1385 provas o via, porque todas correm com
+  // uma ida às compras marcada.
+  const plano = s.shopPlan || {};
+  const planoDe = MEMBERS[plano.who] ? plano.who : null;
   // O dia vem derivado: o gravado se ainda estiver para vir, senão o próximo
   // domingo. Ler `s.shopPlan.day` cru punha aqui datas de há duas semanas.
   const diaDoPlano = st.diaDoPlano();
@@ -122,7 +134,7 @@ export default function Compras({ t, user, onModoCompras }) {
             <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
               {/* Sem loja escolhida não se escreve « · undefined». Uma casa
                   nova não tem lojas, e a linha tem de ler-se de qualquer forma. */}
-              {diaDoPlano ? `${dayLabel(diaDoPlano)} · ` : ''}{s.shopPlan.time}{loja ? ` · ${loja}` : ' · loja por escolher'}
+              {diaDoPlano ? `${dayLabel(diaDoPlano)} · ` : ''}{plano.time || ''}{loja ? ` · ${loja}` : ' · loja por escolher'}
             </Text>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel="Alterar quem vai às compras"
