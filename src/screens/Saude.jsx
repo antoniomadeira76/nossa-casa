@@ -740,7 +740,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
               <Pressable accessibilityRole="button"
                 onPress={() => setMemberFilter(null)}
                 style={{
-                  paddingHorizontal: S.md, minHeight: 44, borderRadius: R.pill,
+                  paddingHorizontal: S.md, minHeight: 44, borderRadius: R.row,
                   borderWidth: 1, borderColor: !memberFilter ? t.accent : t.border,
                   backgroundColor: !memberFilter ? 'rgba(0,0,0,0.02)' : 'transparent',
                   justifyContent: 'center',
@@ -755,7 +755,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                   key={member}
                   onPress={() => setMemberFilter(memberFilter === member ? null : member)}
                   style={{
-                    paddingHorizontal: S.md, minHeight: 44, borderRadius: R.pill,
+                    paddingHorizontal: S.md, minHeight: 44, borderRadius: R.row,
                     borderWidth: 1, borderColor: memberFilter === member ? corDoMembro(member, MEMBERS[member]?.cor) : t.border,
                     backgroundColor: memberFilter === member ? 'rgba(0,0,0,0.02)' : 'transparent',
                     justifyContent: 'center',
@@ -1108,7 +1108,7 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
                     accessibilityState={{ selected: form.member === name }}
                     onPress={() => setForm(f => ({ ...f, member: name }))}
                     style={{
-                      paddingHorizontal: S.md, minHeight: 44, borderRadius: R.pill,
+                      paddingHorizontal: S.md, minHeight: 44, borderRadius: R.row,
                       borderWidth: 2,
                       borderColor: form.member === name ? corDoMembro(name, MEMBERS[name]?.cor) : t.border,
                       backgroundColor: form.member === name ? 'rgba(0,0,0,0.02)' : 'transparent',

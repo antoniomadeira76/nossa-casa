@@ -286,24 +286,41 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
                 ? `pedem a confirmação dos ${nAdmins} administradores desta casa.`
                 : 'pedem a sua confirmação.'}
             </Text>
-            <Pressable onPress={() => { setErroAoApagar(null); setAApagar('repor'); }}
-              accessibilityRole="button" accessibilityLabel="Repor dados de demonstração"
-              style={{ minHeight: 44, borderRadius: R.pill, borderWidth: 1, borderColor: t.state.err,
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <Icon name="refresh" size={18} color={t.state.errDeep} />
-              <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.state.errDeep }}>
-                Repor Dados de Demonstração
-              </Text>
-            </Pressable>
-            <Pressable onPress={() => { setErroAoApagar(null); setAApagar('zero'); }}
-              accessibilityRole="button" accessibilityLabel="Começar de zero"
-              style={{ minHeight: 44, borderRadius: R.pill, borderWidth: 1, borderColor: t.state.err,
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <Icon name="trash" size={18} color={t.state.errDeep} />
-              <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.state.errDeep }}>
-                Começar de Zero (casa nova)
-              </Text>
-            </Pressable>
+            {/* ── Lado a lado ──────────────────────────────────────────────
+                Eram dois cilindros de largura inteira, empilhados. Lado a lado
+                ocupam metade da altura e leem-se como o que são: duas variantes
+                da mesma decisão, e não duas secções.
+
+                ⚠ Metade da largura obriga a encurtar o rótulo, e é onde isto
+                pode correr mal: «Repor Dados de Demonstração» não cabe em
+                155 px. Fica «Repor Demonstração» / «Começar de Zero», com o
+                `accessibilityLabel` inteiro para quem ouve o ecrã — e o cartão
+                acima já explica o que as duas fazem em prosa.
+
+                ⚠ E ficam a um dedo de distância uma da outra. As duas são
+                irreversíveis; o que as protege é a confirmação dos
+                administradores, que nenhuma delas dispensa — e é por isso que
+                aproximá-las é aceitável. Sem essa porta não o seria. */}
+            <View style={{ flexDirection: 'row', gap: S.md }}>
+              <Pressable onPress={() => { setErroAoApagar(null); setAApagar('repor'); }}
+                accessibilityRole="button" accessibilityLabel="Repor dados de demonstração"
+                style={{ flex: 1, minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.state.err,
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Icon name="refresh" size={18} color={t.state.errDeep} />
+                <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 13.5, fontWeight: '500', color: t.state.errDeep }}>
+                  Repor Demonstração
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => { setErroAoApagar(null); setAApagar('zero'); }}
+                accessibilityRole="button" accessibilityLabel="Começar de zero, casa nova"
+                style={{ flex: 1, minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.state.err,
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Icon name="trash" size={18} color={t.state.errDeep} />
+                <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 13.5, fontWeight: '500', color: t.state.errDeep }}>
+                  Começar de Zero
+                </Text>
+              </Pressable>
+            </View>
           </Card>
         </View>
       ) : null}

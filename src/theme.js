@@ -223,6 +223,22 @@ export const LARGURA_APP = 460;
 // Escala de espaçamento: cinco valores, mais nada
 export const S = { xs: 2, sm: 4, md: 8, lg: 16, xl: 24, empty: 48 };
 
+// Cantos.
+//
+// ⚠ `row` é o canto de TUDO O QUE SE TOCA — botões, pastilhas de escolha,
+// separadores, campos, linhas. Era `pill` na metade dos botões da app, e a
+// diferença entre um cilindro e um canto de 6 não dizia nada: os dois estavam
+// em coisas do mesmo tipo, escolhidos ficheiro a ficheiro. Uma app onde o
+// mesmo tipo de coisa tem duas formas obriga a olhar duas vezes para perceber
+// que é a mesma coisa.
+//
+// `pill` fica para o que é REDONDO POR FORMA e não por decisão de estilo: a
+// barra de progresso, o interruptor e a bola dele, o anel do rádio, os avatares
+// e os discos de cor. Nesses, quadrar os cantos não é uma escolha de desenho —
+// é desenhar outra coisa.
+//
+// O guarda que impede a volta atrás enumera os tocáveis:
+// `__tests__/o-canto-de-tudo-o-que-se-toca.test.js`.
 export const R = { pill: 100, card: 8, row: 6, sm: 4 };
 
 export const FONT = {

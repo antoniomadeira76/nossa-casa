@@ -112,7 +112,7 @@ export default function Carrinho({ t, doneItems, items, cart, pago, user, store,
               onPress={onConfirm} />
             <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Cancelar"
               style={({ pressed }) => ({
-                minHeight: 44, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center',
+                minHeight: 44, borderRadius: R.row, alignItems: 'center', justifyContent: 'center',
                 backgroundColor: t.border, opacity: pressed ? 0.7 : 1,
               })}>
               <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700', color: t.text2 }}>Cancelar</Text>

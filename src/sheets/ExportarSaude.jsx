@@ -129,7 +129,7 @@ export default function ExportarSaude({
             <Pressable onPress={enviar} disabled={aGuardar || nada || !para}
               accessibilityRole="button"
               accessibilityLabel={para ? `Enviar por correio a ${para.nome}` : 'Enviar por correio'}
-              style={({ pressed }) => ({ minHeight: 48, borderRadius: R.pill, borderWidth: 1,
+              style={({ pressed }) => ({ minHeight: 48, borderRadius: R.row, borderWidth: 1,
                 borderColor: t.border, alignItems: 'center', justifyContent: 'center',
                 flexDirection: 'row', gap: 8,
                 opacity: (aGuardar || nada || !para) ? 0.45 : (pressed ? 0.7 : 1) })}>

@@ -150,6 +150,29 @@ export const mesEAnoRelativo = (dias) => {
   return `${MONTHS[d.getMonth()].toLowerCase()} de ${d.getFullYear()}`;
 };
 
+// ── O mês do orçamento ──────────────────────────────────────────────────────
+//
+// «Setembro de 2026», como o cabeçalho do Dinheiro já dizia. Vive aqui porque
+// passou a ser dito em três sítios — o cabeçalho, o cartão do mês na Gestão, e
+// o que o `abrirMes` grava — e um nome de mês escrito à mão num deles é a
+// primeira coisa a divergir. ⚠ A app não guarda o ANO do mês aberto: é sempre o
+// de hoje, tal como o `App.jsx` já assumia.
+export const mesComAno = (nome, ano = TODAY.y) => `${nome} de ${ano}`;
+
+// O mês SEGUINTE a um nome de mês. Estava escrito duas vezes —
+// `MONTHS[(MONTHS.indexOf(s.monthName) + 1) % 12]`, no Dinheiro e na Gestão —,
+// e eu ia escrevê-lo uma terceira. Duas cópias de uma conta é a classe de
+// defeito que já pôs a grelha de envelopes a mostrar uma lista e a confirmação
+// a aplicar outra.
+//
+// Um nome que não está na lista devolve o mês de HOJE e não `undefined`: o
+// `monthName` vem do disco, e uma casa gravada por uma versão antiga pode trazer
+// lá qualquer coisa. «Abrir undefined» num botão é pior do que abrir o mês certo.
+export const mesSeguinte = (nome) => {
+  const i = MONTHS.indexOf(nome);
+  return i < 0 ? MONTHS[TODAY.m] : MONTHS[(i + 1) % 12];
+};
+
 // E o curto, para «pago a 17/08».
 export const ddmmRelativo = (dias) => {
   const d = diaRelativo(dias);

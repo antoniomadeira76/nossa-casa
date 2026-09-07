@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, LARGURA_APP } from '../theme';
-import { EUR, MONTHS } from '../format';
+import { EUR, mesComAno, mesSeguinte, dmyDeChave } from '../format';
 import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty, avatarDe, NumField } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
@@ -28,8 +28,74 @@ const campo = (t) => ({
   color: t.text1,
 });
 
+// ── O cartão do mês do orçamento ────────────────────────────────────────────
+//
+// Diz de que mês se fala, em que ponto vai, e leva as duas acções no fundo.
+//
+// ⚠ As duas cores foram MEDIDAS nos doze temas antes de aqui chegarem, e não é
+// zelo a mais: a mesma ideia com o rótulo na cor do acento — que é o que o
+// Dinheiro faz neste mesmo par — dá 2,12:1 no Cinza escuro. Aqui o cheio leva
+// branco sobre o acento (4,62 no pior caso, o Cião claro) e o de contorno leva
+// `text2` sobre o cartão (9,65). Ver `design/abrir-fechar-mes.dc.html`.
+function BotaoDoMes({ t, label, cheio, disabled, onPress }) {
+  const fundo = disabled ? t.border : cheio ? t.accent : 'transparent';
+  const cor = disabled ? t.text3 : cheio ? '#FFFFFF' : t.text2;
+  return (
+    <Pressable onPress={disabled ? undefined : onPress}
+      accessibilityRole="button" accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled }}
+      style={({ pressed }) => ({
+        flex: 1,
+        minHeight: 44,                       // INVARIANTE #5
+        borderRadius: R.row,               // o canto de tudo o que se toca
+        borderWidth: cheio ? 0 : 1,
+        borderColor: disabled ? t.border : t.border,
+        backgroundColor: fundo,
+        alignItems: 'center', justifyContent: 'center',
+        opacity: pressed ? 0.85 : 1,
+      })}>
+      {/* ⚠ Uma linha só. «Fechar Setembro» a 13,5 px cabe nos 155 px que sobram
+          de metade da largura útil; «Fechar Fevereiro» é o pior caso e cabe
+          também. Sem isto, um mês longo partia o botão em dois e a coluna dos
+          dois deixava de ter a mesma altura. */}
+      <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 13.5,
+        fontWeight: '700', color: cor, paddingHorizontal: 8 }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function CartaoDoMes({ t, nome, aberto, desde, gasto, orcamento, onAbrir, onFechar }) {
+  const seguinte = mesSeguinte(nome);
+  return (
+    <View style={{ gap: S.md }}>
+      <SectionTitle t={t}>Mês</SectionTitle>
+      <Card t={t} style={{ gap: 2 }}>
+        <Label t={t}>{aberto ? 'Mês aberto' : 'Sem mês aberto'}</Label>
+        <Text style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: '600', color: t.text1 }}>
+          {mesComAno(nome)}
+        </Text>
+        {/* O «desde» só aparece quando existe: sem servidor não há data de
+            abertura gravada, e escrever «aberto desde undefined» seria pior do
+            que não dizer nada. */}
+        <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
+          {aberto
+            ? `${desde ? `aberto desde ${dmyDeChave(desde)} · ` : ''}${EUR(gasto)} gastos de ${EUR(orcamento)}`
+            : `Orçamento de ${EUR(orcamento)} por distribuir`}
+        </Text>
+        <View style={{ flexDirection: 'row', gap: S.md, marginTop: 14 }}>
+          <BotaoDoMes t={t} cheio label={`Abrir ${seguinte}`} onPress={onAbrir} />
+          {/* ⚠ Fechar um mês que nunca foi aberto não é uma acção — é um
+              engano à espera. Mostra-se desactivado, e não escondido: assim
+              diz-se que existe e o que falta para lá chegar. */}
+          <BotaoDoMes t={t} label={`Fechar ${nome}`} disabled={!aberto} onPress={onFechar} />
+        </View>
+      </Card>
+    </View>
+  );
+}
+
 export default function Gestao({ t, user, onClose }) {
-  const { s, set, isAdmin, budget, spent, envelopes, pinError, setPin, canChangeRole, setRole,
+  const { s, set, isAdmin, budget, spent, mesAberto, mesAbertoDesde, envelopes, pinError, setPin, canChangeRole, setRole,
           kidPts, pontosNasTarefas, mudarRegraDaCasa, mudarListaDaCasa,
           criarEnvelope, alterarEnvelope, apagarEnvelope, membros: MEMBERS, nomeDaCasa, podeGerirCasa,
           renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
@@ -202,10 +268,21 @@ export default function Gestao({ t, user, onClose }) {
         </View>
       </View>
 
-      <View style={{ gap: S.md }}>
-        <Primary t={t} comum label="Abrir Mês" icon="calendar" onPress={() => setModal('openMonth')} />
-        <Primary t={t} comum label="Fechar Mês" icon="checkSquare" onPress={() => setModal('closeMonth')} />
-      </View>
+      {/* ── O mês do orçamento ────────────────────────────────────────────
+          ⚠ Eram dois cilindros a `text1` — preto no claro — empilhados aqui, e
+          era muita mobília para o que fazem: abrir um diálogo de confirmação.
+
+          Agora o par tem um SÍTIO. O cartão diz de que mês se está a falar e em
+          que ponto vai, e os botões ficam pequenos no fundo, porque a
+          informação é que é o assunto. O peso desaparece sem que o acento tenha
+          de tomar o lugar dele — o acento continua a querer dizer «isto não se
+          desfaz», e é o que a confirmação lá dentro leva.
+
+          Desenho E de `design/abrir-fechar-mes.dc.html`, escolhido depois de
+          medir os cinco nos doze temas. */}
+      <CartaoDoMes t={t} nome={s.monthName} aberto={mesAberto} desde={mesAbertoDesde}
+        gasto={spent} orcamento={budget}
+        onAbrir={() => setModal('openMonth')} onFechar={() => setModal('closeMonth')} />
 
       {envelopes && envelopes.length > 0 && (
         <View style={{ gap: S.md }}>
@@ -902,7 +979,7 @@ export default function Gestao({ t, user, onClose }) {
                     o mês reabria com o gasto do anterior. */}
                 <Pressable accessibilityRole="button" onPress={() => {
                   abrirMes({
-                    nome: MONTHS[(MONTHS.indexOf(s.monthName) + 1) % 12],
+                    nome: mesSeguinte(s.monthName),
                     limites: s.monthLimits || {},
                   });
                   setModal(null);

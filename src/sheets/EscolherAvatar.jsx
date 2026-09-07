@@ -211,7 +211,7 @@ export default function EscolherAvatar({ t, user, onFeito }) {
             }} disabled={aTrazer}
               accessibilityRole="button" accessibilityLabel="Trazer a fotografia da Google"
               accessibilityState={{ disabled: aTrazer }}
-              style={{ minHeight: 48, borderRadius: R.pill, borderWidth: 2, borderColor: t.accent,
+              style={{ minHeight: 48, borderRadius: R.row, borderWidth: 2, borderColor: t.accent,
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.md,
                 opacity: aTrazer ? 0.5 : 1 }}>
               <GoogleG size={18} />

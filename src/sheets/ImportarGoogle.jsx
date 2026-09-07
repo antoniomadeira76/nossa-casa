@@ -189,7 +189,9 @@ export default function ImportarGoogle({ t, user, onClose }) {
                   minHeight: 44, padding: 14, borderRadius: R.row,
                   borderWidth: 1, borderColor: on ? t.accent : t.border,
                   backgroundColor: on ? t.subtle : 'transparent' }}>
-                <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 2,
+                {/* `R.sm`, e não um 4 escrito à mão: é o mesmo número, e um
+                    número solto é o primeiro passo para haver cinco cantos. */}
+                <View style={{ width: 20, height: 20, borderRadius: R.sm, borderWidth: 2,
                   borderColor: on ? t.accent : t.border,
                   backgroundColor: on ? t.accent : 'transparent',
                   alignItems: 'center', justifyContent: 'center' }}>

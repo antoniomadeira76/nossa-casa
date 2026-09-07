@@ -57,7 +57,7 @@ export default function Tarefas({ t, user, abrir }) {
               // ⚠ Tinha 40. Medido no navegador, eram os dois únicos alvos
               // deste ecrã abaixo dos 44 do INVARIANTE #5 — e são o primeiro
               // que a mão encontra ao abrir as Tarefas.
-              style={{ minHeight: 44, paddingHorizontal: 14, borderRadius: R.pill, borderWidth: 1,
+              style={{ minHeight: 44, paddingHorizontal: 14, borderRadius: R.row, borderWidth: 1,
                 borderColor: on ? t.chrome : t.border, backgroundColor: on ? t.chrome : 'transparent',
                 flexDirection: 'row', alignItems: 'center', gap: 7 }}>
               {n !== 'Todos' ? <View style={{ width: 8, height: 8, borderRadius: R.pill,
@@ -311,7 +311,7 @@ export default function Tarefas({ t, user, abrir }) {
           <View style={{ height: 1, backgroundColor: t.divider }} />
           <Pressable onPress={() => setAApagar(task.id)}
             accessibilityRole="button" accessibilityLabel={`Apagar ${task.title}`}
-            style={{ minHeight: 44, borderRadius: R.pill, borderWidth: 1, borderColor: t.state.err,
+            style={{ minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.state.err,
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <Icon name="trash" size={18} color={t.state.errDeep} />
             <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.state.errDeep }}>

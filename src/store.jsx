@@ -1661,6 +1661,27 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // cópia do conjunto todo.
   const budget = envelopes.reduce((a, e) => a + e.limit, 0);
 
+  // ── Há um mês aberto? ─────────────────────────────────────────────────────
+  //
+  // ⚠ A resposta NÃO é `!s.monthZero`, e foi o primeiro sítio a perguntá-lo que
+  // me ensinou isso: o cartão do mês na Gestão dizia «Sem mês aberto» numa casa
+  // com 1 248,64 € já gastos e a linha de `meses` aberta no servidor desde
+  // 01/09, com o botão de fechar desactivado.
+  //
+  // O `monthZero` é a bandeira LOCAL de quem nunca abriu um mês NESTE
+  // dispositivo. Numa casa ligada fica a `true` para sempre: o mês veio do
+  // servidor, o `abrirMes` nunca correu aqui, e nada a limpa. Quem responde é o
+  // `s.mes` — a linha sem `fechado_em` —, e o `monthZero` é a reserva de quem
+  // corre sem servidor, como a app sempre correu.
+  //
+  // Vive aqui, e não no ecrã: já é a mesma pergunta em dois sítios (o cartão, e
+  // o `used` dos envelopes acima), e um facto derivado escrito duas vezes é a
+  // classe de defeito que já pôs o orçamento a divergir da lista.
+  const mesAberto = s.mes ? true : !s.monthZero;
+  // Desde quando, para quem quiser dizê-lo. `null` quando o mês é local: sem
+  // servidor não há data de abertura gravada em sítio nenhum.
+  const mesAbertoDesde = (s.mes || {}).inicio || null;
+
   // ⚠ Com o quadro DESTA casa, e não com a família do `data.js`.
   const canSeeHealth = (member, viewer) => podeVerSaude(member, viewer, quadro);
 
@@ -4009,6 +4030,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     s, set,
     allTasks, allItems, allEvents, allEquip, editEquip, removeEquip, removerArtigo,
     budget, spent, remaining: budget - spent, envelopes, kidPts,
+    mesAberto, mesAbertoDesde,
     vaultOf, vaultMoves, vaultAdd,
     verificarPin,
     // Os membros da casa. Quem consome isto NUNCA deve importar MEMBERS de

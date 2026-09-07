@@ -45,7 +45,10 @@ export default function GoogleCalendarImportModal({ t, events, onImportar, onIgn
   return (
     <View style={{
       width: '100%', maxWidth: 420, maxHeight: '100%',
-      backgroundColor: t.surface, borderRadius: 14, overflow: 'hidden', ...elev(3),
+      // ⚠ Era `borderRadius: 14`, um quinto canto que não está na escala. Os
+      // cartões e as folhas desta app são todos `R.card`; esta modal era a
+      // única a 14, e ninguém saberia dizer porquê.
+      backgroundColor: t.surface, borderRadius: R.card, overflow: 'hidden', ...elev(3),
     }}>
       {/* Cabeçalho */}
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12,

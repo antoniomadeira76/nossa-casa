@@ -244,7 +244,7 @@ function KidVaultView({ t, kid }) {
           <Pressable onPress={() => setRequested(true)} accessibilityRole="button"
             accessibilityLabel="Pedir para usar o dinheiro"
             style={({ pressed }) => ({
-              minHeight: 52, borderRadius: R.pill, borderWidth: 1.5, borderColor: t.accent,
+              minHeight: 52, borderRadius: R.row, borderWidth: 1.5, borderColor: t.accent,
               backgroundColor: pressed ? t.subtle : 'transparent',
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
             })}>

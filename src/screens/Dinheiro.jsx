@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { EUR, warrantyDaysLeft, MONTHS, plural } from '../format';
+import { EUR, warrantyDaysLeft, plural, mesSeguinte } from '../format';
 import { GOALS } from '../data';
 import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Opcao, NumField } from '../ui';
 import Icon from '../Icon';
@@ -82,7 +82,7 @@ export default function Dinheiro({ t, user, onEquip }) {
   // Os meses vêm do `format.js`, onde já viviam. Uma segunda lista escrita à
   // mão aqui era um sítio a mais para divergir — e divergiu: esta tinha os
   // acentos certos e ninguém garantia que continuasse.
-  const proximoMes = MONTHS[(MONTHS.indexOf(s.monthName) + 1) % 12];
+  const proximoMes = mesSeguinte(s.monthName);
 
   const eq = allEquip();
   const eqWarn = eq.filter(x => { const d = warrantyDaysLeft(x); return d >= 0 && d <= 90; }).length;

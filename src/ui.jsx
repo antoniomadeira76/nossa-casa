@@ -137,7 +137,7 @@ export const Choice = ({ t, label, selected, onPress }) => (
   <Pressable onPress={onPress} accessibilityRole="button"
     accessibilityLabel={label} accessibilityState={{ selected: !!selected }}
     style={({ pressed }) => ({
-      minHeight: 44, paddingHorizontal: S.lg, borderRadius: R.pill, borderWidth: 1,
+      minHeight: 44, paddingHorizontal: S.lg, borderRadius: R.row, borderWidth: 1,
       alignItems: 'center', justifyContent: 'center',
       backgroundColor: selected ? t.accent : t.card,
       borderColor: selected ? t.accent : t.border,
@@ -351,7 +351,7 @@ export const Primary = ({ t, label, sub, icon, onPress, disabled, comum }) => (
     accessibilityLabel={sub ? `${label} — ${sub}` : label}
     accessibilityState={{ disabled: !!disabled }}
     style={({ pressed }) => ({
-      minHeight: sub ? 56 : 48, borderRadius: R.pill, flexDirection: 'row',
+      minHeight: sub ? 56 : 48, borderRadius: R.row, flexDirection: 'row',
       alignItems: 'center', justifyContent: 'center', gap: 8,
       // O tom do texto no comum, o acento no que não se desfaz. `text1` sobre
       // a página dá 13:1 no claro e 15:1 no escuro — nunca é o elo fraco.

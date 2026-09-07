@@ -154,7 +154,7 @@ export default function Login({ t, onEnter }) {
               Entre com a sua Conta Google para aceder à casa partilhada.
             </Text>
             <Pressable onPress={entrarComGoogle} accessibilityRole="button" accessibilityLabel="Continuar com Google"
-              style={({ pressed }) => ({ minHeight: 56, borderRadius: R.pill, backgroundColor: pressed ? '#FAFAFA' : '#FFFFFF',
+              style={({ pressed }) => ({ minHeight: 56, borderRadius: R.row, backgroundColor: pressed ? '#FAFAFA' : '#FFFFFF',
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, ...elev(3) })}>
               <G />
               <Text style={{ fontFamily: FONT.display, fontSize: 16, fontWeight: '700', color: '#262626', letterSpacing: 0.4 }}>Continuar com Google</Text>
@@ -169,7 +169,7 @@ export default function Login({ t, onEnter }) {
             </Text>
             <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.2)' }} />
             <Pressable onPress={() => setStep('criancas')} accessibilityRole="button" accessibilityLabel="Entrar como criança"
-              style={{ minHeight: 48, borderRadius: R.pill, borderWidth: 1, borderColor: 'rgba(255,255,255,0.45)',
+              style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, borderColor: 'rgba(255,255,255,0.45)',
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
               <Icon name="smile" size={20} color="#FFFFFF" />
               <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '500', color: '#FFFFFF', letterSpacing: 0.4 }}>Entrar como Criança</Text>
@@ -232,7 +232,7 @@ export default function Login({ t, onEnter }) {
               </Text>
             </Pressable>
             <Pressable onPress={() => setStep('login')} accessibilityRole="button" accessibilityLabel="Voltar"
-              style={{ minHeight: 44, borderRadius: R.pill, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)', alignItems: 'center', justifyContent: 'center' }}>
+              style={{ minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)', alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: '#FFFFFF' }}>Voltar</Text>
             </Pressable>
           </View>
@@ -281,7 +281,7 @@ export default function Login({ t, onEnter }) {
               );
             })}
             <Pressable onPress={() => setStep('login')} accessibilityRole="button" accessibilityLabel="Voltar"
-              style={{ minHeight: 44, borderRadius: R.pill, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)', alignItems: 'center', justifyContent: 'center' }}>
+              style={{ minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)', alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: '#FFFFFF' }}>Voltar</Text>
             </Pressable>
           </View>

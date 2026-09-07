@@ -187,7 +187,7 @@ export default function ConfirmarAdministradores({
           O `Primary` não tem essa variante — e acrescentar-lhe uma por causa
           de um botão seria alargar um componente que trinta ecrãs usam. */}
       <Pressable onPress={onCancelar} accessibilityRole="button" accessibilityLabel="Cancelar"
-        style={({ pressed }) => ({ minHeight: 48, borderRadius: R.pill, borderWidth: 1,
+        style={({ pressed }) => ({ minHeight: 48, borderRadius: R.row, borderWidth: 1,
           borderColor: t.border, alignItems: 'center', justifyContent: 'center',
           backgroundColor: pressed ? t.subtle : 'transparent' })}>
         <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '500', color: t.text2 }}>

@@ -365,7 +365,7 @@ function Shell() {
         </Text>
         <Pressable onPress={() => { servidor.auth.sair(); setUser(null); }}
           accessibilityRole="button" accessibilityLabel="Voltar à entrada"
-          style={{ minHeight: 44, paddingHorizontal: S.xl, borderRadius: R.pill, borderWidth: 1,
+          style={{ minHeight: 44, paddingHorizontal: S.xl, borderRadius: R.row, borderWidth: 1,
             borderColor: 'rgba(255,255,255,0.45)', alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ fontFamily: FONT.display, fontSize: 14.5, color: '#FFFFFF' }}>
             Voltar à entrada
