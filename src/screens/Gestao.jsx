@@ -211,15 +211,27 @@ export default function Gestao({ t, user, onClose }) {
         <View style={{ gap: S.md }}>
           <SectionTitle t={t}>Envelopes</SectionTitle>
           {envelopes.map((env, i) => {
+            // A barra é uma proporção DESENHADA, e essa fica: uma barra lê-se
+            // de relance sem se fazer conta nenhuma. O que sai é o número.
             const pct = env.limit > 0 ? Math.round((env.used / env.limit) * 100) : 0;
             const over = env.used > env.limit;
+            // ⚠ Era `{pct}%` neste canto — o único número desta app que falava
+            // de dinheiro em percentagem, depois de a frase do Dinheiro e a do
+            // Início terem passado a euros. E era o número menos útil dos três
+            // que se podem pôr aqui: quem olha para um envelope quer saber
+            // quanto ainda pode gastar, não que fração já gastou.
+            //
+            // «livre» é a palavra que a grelha do Dinheiro já usa para isto —
+            // uma casa, uma palavra. E quando passa do limite não se escreve
+            // «livre −43,40 €»: diz-se que excedeu, que é o que aconteceu.
+            const sobra = env.limit - env.used;
             return (
               <Card key={env.name} t={t}>
                 <View style={{ gap: S.md }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{env.name}</Text>
                     <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: over ? t.state.err : t.text3 }}>
-                      {pct}%
+                      {over ? `excedido em ${EUR(-sobra)}` : `livre ${EUR(sobra)}`}
                     </Text>
                   </View>
                   <View style={{ height: 6, borderRadius: R.pill, backgroundColor: t.page, overflow: 'hidden' }}>
