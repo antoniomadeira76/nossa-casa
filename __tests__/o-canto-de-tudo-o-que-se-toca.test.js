@@ -162,6 +162,28 @@ describe('⚠ nenhum RETÂNGULO TOCÁVEL leva pílula', () => {
     expect(maus).toEqual([]);
   });
 
+  it('⚠ nem `minHeight` e `R.card` — o buraco que a primeira versão tinha', () => {
+    // A primeira versão desta prova só procurava `R.pill`, e havia ONZE
+    // tocáveis a `R.card` (8): os dois botões do `Confirm`, os dois da modal da
+    // Google, os dois da FichaSaude, o «Usar outra conta» do Login, a linha de
+    // um artigo no Modo Compras, o Cofre, a FichaEquipamento e o KidApp.
+    //
+    // Um canto de 8 num botão não salta à vista ao lado de um de 6 — e é
+    // precisamente por isso que precisa de prova: ninguém o ia ver, e ficavam
+    // três cantos onde a decisão foi um.
+    const maus = [];
+    for (const rel of jsx) {
+      const linhas = fs.readFileSync(path.join(RAIZ, rel), 'utf8').split('\n');
+      linhas.forEach((l, i) => {
+        if (/^\s*(\/\/|\*)/.test(l)) return;
+        if (/minHeight/.test(l) && /borderRadius: R\.card/.test(l)) {
+          maus.push(`${rel}:${i + 1} → ${l.trim().slice(0, 62)}`);
+        }
+      });
+    }
+    expect(maus).toEqual([]);
+  });
+
   it('e o `Primary`, a `Choice` e a `Opcao` levam `R.row`', () => {
     const ui = fs.readFileSync(path.join(RAIZ, 'src', 'ui.jsx'), 'utf8');
     for (const nome of ['Primary', 'Choice', 'Opcao']) {

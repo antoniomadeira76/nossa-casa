@@ -934,9 +934,13 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                   onPress={escolherFotoDoAnexo}
                   style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center',
                     justifyContent: 'center', gap: S.md, minHeight: 44, borderRadius: R.row,
-                    borderWidth: 1, borderStyle: 'dashed', borderColor: t.border,
+                    // O mesmo tracejado do `AddButton`, com a mesma cor: é a
+                    // mesma coisa — acrescentar — escrita à mão neste ecrã. O
+                    // `titulo` é o token seguro como objeto gráfico (3,01 no
+                    // pior dos doze temas); o acento falharia em cinco escuros.
+                    borderWidth: 1, borderStyle: 'dashed', borderColor: t.titulo,
                     backgroundColor: pressed ? t.subtle : 'transparent' })}>
-                  <Icon name="camera" size={19} color={t.text3} />
+                  <Icon name="camera" size={19} color={t.titulo} />
                   <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
                     Fotografe o exame ou a receita
                   </Text>

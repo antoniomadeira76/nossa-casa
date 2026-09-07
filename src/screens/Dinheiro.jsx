@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, warrantyDaysLeft, plural, mesSeguinte } from '../format';
 import { GOALS } from '../data';
-import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Opcao, NumField } from '../ui';
+import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Opcao, NumField, BotaoDoMes } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 
@@ -44,7 +44,7 @@ function GrelhaEnvelopes({ t, envelopes, livre, escolhido, onEscolher }) {
 
 export default function Dinheiro({ t, user, onEquip }) {
   const st = useStore();
-  const { s, set, envelopes, budget, spent, remaining, allEquip, isAdmin, membros: MEMBERS, adultos, criancas, acerto, acertado, pagarAcerto, oNome, aoNome, moverEntreEnvelopes, registarDespesa,
+  const { s, set, envelopes, budget, spent, remaining, mesAberto, allEquip, isAdmin, membros: MEMBERS, adultos, criancas, acerto, acertado, pagarAcerto, oNome, aoNome, moverEntreEnvelopes, registarDespesa,
           abrirMes, fecharMes } = st;
   const [sheet, setSheet] = useState(null);
   const [mv, setMv] = useState({ from: 0, to: 3, amount: 0 });
@@ -308,27 +308,25 @@ export default function Dinheiro({ t, user, onEquip }) {
         <View>
           <SectionTitle t={t}>Administração</SectionTitle>
           <Card t={t} style={{ gap: S.md }}>
+            {/* ⚠ Eram dois `Pressable` escritos à mão aqui, com o rótulo de
+                13 px na cor do acento e em âmbar. Medido nos doze temas contra
+                o cartão: o acento dá 2,12 a 3,07 nos seis esquemas ESCUROS e o
+                âmbar dá 3,17 nos seis CLAROS — catorze de vinte e quatro pares
+                abaixo dos 4,5 que 13 px pedem. Vivia na app assim, e o
+                `CLAUDE.md` dizia «o acento no escuro NÃO se mede contra o
+                cartão: aí ele nunca é texto». Era falso: era texto, aqui.
+
+                E era a segunda porta para a mesma decisão, com outro desenho —
+                a Gestão tem o mesmo par no cartão do mês. Agora é o mesmo
+                componente, com as cores medidas, nos dois sítios.
+
+                Os rótulos dizem QUAL mês, como no cartão da Gestão: «Abrir
+                Outubro» e «Fechar Setembro», e não «Abrir Mês». */}
             <View style={{ flexDirection: 'row', gap: S.md }}>
-              <Pressable
-                onPress={() => { setOpenMonth({ envelopes: {} }); setSheet('openMonth'); }}
-                accessibilityRole="button"
-                accessibilityLabel="Abrir mês"
-                style={{ flex: 1, minHeight: 48, borderRadius: R.row, borderWidth: 1, borderColor: t.accent,
-                  backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.accent }}>
-                  Abrir Mês
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setSheet('closeMonth')}
-                accessibilityRole="button"
-                accessibilityLabel="Fechar mês"
-                style={{ flex: 1, minHeight: 48, borderRadius: R.row, borderWidth: 1, borderColor: t.state.warnDeep,
-                  backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.state.warnDeep }}>
-                  Fechar Mês
-                </Text>
-              </Pressable>
+              <BotaoDoMes t={t} cheio label={`Abrir ${proximoMes}`}
+                onPress={() => { setOpenMonth({ envelopes: {} }); setSheet('openMonth'); }} />
+              <BotaoDoMes t={t} label={`Fechar ${s.monthName}`} disabled={!mesAberto}
+                onPress={() => setSheet('closeMonth')} />
             </View>
           </Card>
         </View>

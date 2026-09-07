@@ -219,7 +219,7 @@ export default function Login({ t, onEnter }) {
                 não fica sem saída no ecrã das duas que já existem. */}
             <Pressable onPress={() => setStep('login')} accessibilityRole="button"
               accessibilityLabel="Usar outra conta Google"
-              style={{ minHeight: 56, borderRadius: R.card, borderWidth: 1, borderStyle: 'dashed',
+              style={{ minHeight: 56, borderRadius: R.row, borderWidth: 1, borderStyle: 'dashed',
                 borderColor: 'rgba(255,255,255,0.4)', flexDirection: 'row', alignItems: 'center',
                 paddingHorizontal: 14, gap: 14 }}>
               <View style={{ width: 40, height: 40, borderRadius: R.pill, borderWidth: 1,

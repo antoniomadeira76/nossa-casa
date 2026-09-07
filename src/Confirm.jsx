@@ -33,7 +33,7 @@ export default function Confirm({
           <View style={{ flexDirection: 'row', gap: S.md }}>
             <Pressable onPress={onCancel} accessibilityRole="button" accessibilityLabel={cancelLabel}
               style={({ pressed }) => ({
-                flex: 1, minHeight: 44, borderRadius: R.card, borderWidth: 1, borderColor: t.border,
+                flex: 1, minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
                 alignItems: 'center', justifyContent: 'center',
                 backgroundColor: pressed ? t.subtle : t.surface,
               })}>
@@ -44,7 +44,7 @@ export default function Confirm({
 
             <Pressable onPress={onConfirm} accessibilityRole="button" accessibilityLabel={confirmLabel}
               style={({ pressed }) => ({
-                flex: 1, minHeight: 44, borderRadius: R.card, borderWidth: 1, borderColor: tone,
+                flex: 1, minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: tone,
                 alignItems: 'center', justifyContent: 'center',
                 backgroundColor: pressed ? t.subtle : t.surface,
               })}>

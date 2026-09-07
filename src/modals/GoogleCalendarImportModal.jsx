@@ -120,7 +120,7 @@ export default function GoogleCalendarImportModal({ t, events, onImportar, onIgn
       <View style={{ flexDirection: 'row', gap: S.md, paddingHorizontal: S.lg, paddingBottom: S.lg }}>
         <Pressable onPress={onIgnore} accessibilityRole="button" accessibilityLabel="Agora não"
           style={({ pressed }) => ({
-            flex: 1, minHeight: 44, borderRadius: R.card, borderWidth: 1, borderColor: t.border,
+            flex: 1, minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
             alignItems: 'center', justifyContent: 'center',
             backgroundColor: pressed ? t.subtle : 'transparent',
           })}>
@@ -133,7 +133,7 @@ export default function GoogleCalendarImportModal({ t, events, onImportar, onIgn
           accessibilityRole="button" accessibilityState={{ disabled: !n }}
           accessibilityLabel={`Adicionar ${n} evento${n === 1 ? '' : 's'}`}
           style={({ pressed }) => ({
-            flex: 1.4, minHeight: 44, borderRadius: R.card,
+            flex: 1.4, minHeight: 44, borderRadius: R.row,
             alignItems: 'center', justifyContent: 'center',
             backgroundColor: n ? t.state.infoBg : t.subtle,
             opacity: pressed ? 0.85 : 1,

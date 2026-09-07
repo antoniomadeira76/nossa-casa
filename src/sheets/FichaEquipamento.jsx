@@ -51,7 +51,7 @@ export default function FichaEquipamento({ t, equip, onClose }) {
         <Pressable onPress={desativado ? undefined : onPress} accessibilityRole="button"
           accessibilityLabel={label} accessibilityState={{ disabled: !!desativado }}
           style={({ pressed }) => ({
-            minHeight: 48, borderRadius: R.card, borderWidth: 1,
+            minHeight: 48, borderRadius: R.row, borderWidth: 1,
             flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.md,
             backgroundColor: desativado ? t.subtle : preenchido ? t.state.infoBg : t.surface,
             borderColor: desativado ? t.border : preenchido ? t.state.infoBg : tom,

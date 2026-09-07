@@ -374,15 +374,82 @@ export const Primary = ({ t, label, sub, icon, onPress, disabled, comum }) => (
 );
 
 // Ação secundária: contorno tracejado, minúsculas — o padrão "acrescentar"
+// ── O par «abrir / fechar» de um mês ────────────────────────────────────────
+//
+// Metade da largura cada, 44 de alvo, um cheio e um de contorno.
+//
+// ⚠ Vive AQUI, e não dentro de um ecrã, porque o par existe em DOIS: o cartão
+// do mês na Gestão e a secção «Administração» do Dinheiro. Estavam desenhados à
+// mão nos dois, com cores diferentes — e o do Dinheiro tinha o rótulo de 13 px
+// na cor do acento e em âmbar, o que dá 2,12:1 no Cinza escuro e 3,17 no âmbar
+// claro. Catorze de vinte e quatro pares abaixo dos 4,5 que 13 px pedem.
+//
+// As cores daqui foram MEDIDAS nos doze temas: o cheio leva branco sobre o
+// acento (4,62 no pior caso, o Cião claro) e o de contorno leva `text2` sobre o
+// cartão (9,65). Ver `design/abrir-fechar-mes.dc.html`.
+export function BotaoDoMes({ t, label, cheio, disabled, onPress }) {
+  const fundo = disabled ? t.border : cheio ? t.accent : 'transparent';
+  const cor = disabled ? t.text3 : cheio ? '#FFFFFF' : t.text2;
+  return (
+    <Pressable onPress={disabled ? undefined : onPress}
+      accessibilityRole="button" accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled }}
+      style={({ pressed }) => ({
+        flex: 1,
+        minHeight: 44,                       // INVARIANTE #5
+        borderRadius: R.row,               // o canto de tudo o que se toca
+        borderWidth: cheio ? 0 : 1,
+        borderColor: disabled ? t.border : t.border,
+        backgroundColor: fundo,
+        alignItems: 'center', justifyContent: 'center',
+        opacity: pressed ? 0.85 : 1,
+      })}>
+      {/* ⚠ Uma linha só. «Fechar Setembro» a 13,5 px cabe nos 155 px que sobram
+          de metade da largura útil; «Fechar Fevereiro» é o pior caso e cabe
+          também. Sem isto, um mês longo partia o botão em dois e a coluna dos
+          dois deixava de ter a mesma altura. */}
+      <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 13.5,
+        fontWeight: '700', color: cor, paddingHorizontal: 8 }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+
+// Ação secundária: contorno tracejado, minúsculas — o padrão «acrescentar».
+//
+// ⚠ Leva a cor do PERFIL, e leva-a nos sítios certos.
+//
+// Era tudo neutro: contorno `border`, «+» e rótulo em `text3`. Num ecrã onde o
+// título da secção e os botões seguem o esquema escolhido, o «+ agendar
+// evento» era a única coisa cinzenta — e é uma ação, não uma nota de pé de
+// página.
+//
+// ── Onde a cor entra, e onde NÃO ────────────────────────────────────────────
+//
+// O contorno e o «+» são OBJETOS GRÁFICOS: precisam de 3:1. O rótulo tem
+// 13,5 px, que é texto pequeno, e precisa de 4,5. Medido nos doze temas:
+//
+//   accent   como contorno   falha 3:1 em CINCO esquemas escuros (2,12 a 2,90)
+//   titulo   como contorno   3,01 no pior caso (Cinza escuro, sobre cartão) ✓
+//   titulo   como rótulo     3,01 — muito abaixo dos 4,5 que 13,5 px pedem ✗
+//
+// Por isso o contorno e o ícone levam `titulo` — que é o token que o tema já
+// tem para isto: o acento no claro, o `hover` no escuro, clareado quando não
+// chega — e o rótulo fica neutro. Pôr o acento no rótulo é o defeito que os
+// dois botões de mês do Dinheiro tiveram durante meses.
+//
+// ⚠ E o rótulo sobe de `text3` para `text2`, o que é uma correção e não um
+// gosto: `text3` sobre a página dá 4,31 no Violeta claro, abaixo dos 4,5.
+// O `text2` dá 8,82.
 export const AddButton = ({ t, label, onPress }) => (
   <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
     style={({ pressed }) => ({
       minHeight: 44, borderRadius: R.row, borderWidth: 1, borderStyle: 'dashed',
-      borderColor: t.border, flexDirection: 'row', alignItems: 'center',
+      borderColor: t.titulo, flexDirection: 'row', alignItems: 'center',
       justifyContent: 'center', gap: 8, opacity: pressed ? 0.7 : 1,
     })}>
-    <Icon name="plus" size={18} color={t.text3} />
-    <Text style={{ fontFamily: FONT.ui, fontSize: 13.5, color: t.text3 }}>{label}</Text>
+    <Icon name="plus" size={18} color={t.titulo} />
+    <Text style={{ fontFamily: FONT.ui, fontSize: 13.5, color: t.text2 }}>{label}</Text>
   </Pressable>
 );
 

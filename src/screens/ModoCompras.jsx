@@ -152,7 +152,7 @@ export default function ModoCompras({ t, user, onClose }) {
           const sem = estado === 'sem-stock';
           return (
             <View key={i.id} style={{
-              minHeight: 64, borderRadius: R.card, padding: 16, gap: 12, borderWidth: feito ? 2 : 1,
+              minHeight: 64, borderRadius: R.row, padding: 16, gap: 12, borderWidth: feito ? 2 : 1,
               borderColor: feito ? t.state.okBorder : sem ? t.state.warn : t.border,
               backgroundColor: feito ? t.state.okBg : sem ? t.state.warnBg : t.card, ...elev(1),
             }}>

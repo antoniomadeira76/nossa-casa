@@ -66,7 +66,7 @@ export default function Cofre({ t, kid, onClose }) {
     <Pressable onPress={disabled ? undefined : onPress} accessibilityRole="button"
       accessibilityLabel={label} accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => ({
-        minHeight: 48, borderRadius: R.card, borderWidth: 1,
+        minHeight: 48, borderRadius: R.row, borderWidth: 1,
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.md,
         backgroundColor: disabled ? t.subtle : filled ? t.state.infoBg : t.surface,
         borderColor: disabled ? t.border : filled ? t.state.infoBg : t.border,

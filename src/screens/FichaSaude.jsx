@@ -69,7 +69,7 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
               {consultas.length ? (
                 <Pressable onPress={() => setExportar({ ambito: 'tudo', alvo: null })}
                   accessibilityRole="button" accessibilityLabel="Exportar ficha de saúde"
-                  style={({ pressed }) => ({ minHeight: 44, paddingHorizontal: S.lg, borderRadius: R.card,
+                  style={({ pressed }) => ({ minHeight: 44, paddingHorizontal: S.lg, borderRadius: R.row,
                     flexDirection: 'row', alignItems: 'center', gap: S.sm,
                     backgroundColor: pressed ? t.card : t.subtle, borderWidth: 1, borderColor: t.border })}>
                   <Icon name="printer" size={16} color={t.text2} />
@@ -78,7 +78,7 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
               ) : null}
               {onMarcar ? (
                 <Pressable onPress={onMarcar} accessibilityRole="button" accessibilityLabel="Marcar consulta"
-                  style={({ pressed }) => ({ minHeight: 44, paddingHorizontal: S.lg, borderRadius: R.card,
+                  style={({ pressed }) => ({ minHeight: 44, paddingHorizontal: S.lg, borderRadius: R.row,
                     flexDirection: 'row', alignItems: 'center', gap: S.sm,
                     backgroundColor: pressed ? t.card : t.subtle, borderWidth: 1, borderColor: t.border })}>
                   <Icon name="plus" size={16} color={t.accent} />
