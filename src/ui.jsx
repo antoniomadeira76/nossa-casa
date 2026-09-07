@@ -315,18 +315,44 @@ export const Toggle = ({ t, on, onPress, label }) => (
 );
 
 // Botão principal: pílula, cor de ação
-export const Primary = ({ t, label, icon, onPress, disabled }) => (
+// A ação principal, em dois pesos.
+//
+// ⚠ `comum` é o peso do que se desfaz; sem ele, o botão leva a COR DE AÇÃO, e
+// essa passa a querer dizer uma coisa: **isto não se desfaz**.
+//
+// A regra, escrita para não derivar: leva o acento o que mexe em dinheiro
+// ENTRE PESSOAS, o que APAGA, e o que FECHA um período. Tudo o resto —
+// criar, guardar, anexar, agendar — é comum.
+//
+// O que isto resolve: o acento estava em todos os botões, e por isso não
+// distinguia nenhum. Contado no ecrã, eram um a três fundos de acento por
+// separador, todos com o mesmo peso — a ação que acerta contas entre dois
+// adultos ao lado da que anexa um ficheiro.
+//
+// ⚠ E o `sub` diz a CONSEQUÊNCIA dentro do próprio botão — «83,67 € para a
+// Rita». Numa app de dinheiro isso vale mais do que qualquer cor: quem carrega
+// não tem de se lembrar do que leu duas linhas acima.
+export const Primary = ({ t, label, sub, icon, onPress, disabled, comum }) => (
   <Pressable onPress={disabled ? undefined : onPress} accessibilityRole="button"
-    accessibilityLabel={label} accessibilityState={{ disabled: !!disabled }}
+    accessibilityLabel={sub ? `${label} — ${sub}` : label}
+    accessibilityState={{ disabled: !!disabled }}
     style={({ pressed }) => ({
-      minHeight: 48, borderRadius: R.pill, flexDirection: 'row',
+      minHeight: sub ? 56 : 48, borderRadius: R.pill, flexDirection: 'row',
       alignItems: 'center', justifyContent: 'center', gap: 8,
-      backgroundColor: disabled ? t.border : t.accent,
+      // O tom do texto no comum, o acento no que não se desfaz. `text1` sobre
+      // a página dá 13:1 no claro e 15:1 no escuro — nunca é o elo fraco.
+      backgroundColor: disabled ? t.border : comum ? t.text1 : t.accent,
       opacity: pressed ? 0.9 : 1, ...(disabled ? {} : elev(3)),
     })}>
-    {icon ? <Icon name={icon} size={20} color="#FFFFFF" /> : null}
-    <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700',
-      color: '#FFFFFF', letterSpacing: 0.4 }}>{label}</Text>
+    {icon ? <Icon name={icon} size={20} color={comum ? t.page : '#FFFFFF'} /> : null}
+    <View style={{ alignItems: 'center', gap: 1 }}>
+      <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700',
+        color: comum ? t.page : '#FFFFFF', letterSpacing: 0.4 }}>{label}</Text>
+      {sub ? (
+        <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, fontWeight: '500',
+          color: comum ? t.page : '#FFFFFF', opacity: 0.82 }}>{sub}</Text>
+      ) : null}
+    </View>
   </Pressable>
 );
 

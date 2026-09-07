@@ -53,15 +53,31 @@ export default function Dinheiro({ t, user, onEquip }) {
   const [openMonth, setOpenMonth] = useState({ envelopes: {} });
 
   const admin = isAdmin(user);
+  // O que já se gastou do orçamento. É isto que a barra mede.
   const pct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
   // Quanto falta acertar, e entre quem. Vem da loja: era 86,5 escrito aqui e
   // outra vez no Início, com os nomes «Tomás» e «Rita» no meio do texto.
   const settleBase = acerto ? acerto.valor : 0;
   // Quantas despesas deste mês entram no acerto. Era «14», escrito à mão.
   const despesasPartilhadas = s.despesasMeias || 0;
-  // O que sobra do rendimento depois de atribuir os envelopes — a segunda
-  // metade da frase da referência 05.
-  const semEnvelope = Math.max(0, (s.rendimento || 0) - budget);
+
+  // ⚠ A frase debaixo da barra dizia «{pct} % dos {budget} atribuídos aos
+  // envelopes. Sobram {rendimento − budget} sem envelope.» — e as duas metades
+  // não eram sobre o mesmo bolo:
+  //
+  //   · a primeira dividia o GASTO pelo ORÇAMENTO  (1 248,64 / 2 020 = 62 %)
+  //   · a segunda subtraía o orçamento ao RENDIMENTO (3 200 − 2 020 = 1 180 €)
+  //
+  // Lidas juntas, mentiam: «62 % dos 2 020 € atribuídos aos envelopes» quando
+  // 100 % dos 2 020 € estão atribuídos por definição — o orçamento É a soma dos
+  // envelopes (INVARIANTE #2). E ninguém reparou porque 2 020/3 200 dá 63 %,
+  // um ponto ao lado dos 62 % que apareciam por acidente.
+  //
+  // A frase é sobre o rendimento: quanto dele foi para envelopes, e quanto
+  // ficou de fora. Agora as duas metades somam 100 % do mesmo número.
+  const rendimento = s.rendimento || 0;
+  const pctAtribuido = rendimento > 0 ? Math.round((budget / rendimento) * 100) : 0;
+  const semEnvelope = Math.max(0, rendimento - budget);
   // Os meses vêm do `format.js`, onde já viviam. Uma segunda lista escrita à
   // mão aqui era um sítio a mais para divergir — e divergiu: esta tinha os
   // acentos certos e ninguém garantia que continuasse.
@@ -144,10 +160,14 @@ export default function Dinheiro({ t, user, onEquip }) {
           </Text>
         </View>
         <Bar t={t} pct={pct} color={t.accent} />
-        <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 18, color: t.text3 }}>
-          {pct} % dos {EUR(budget)} atribuídos aos envelopes.
-          {semEnvelope > 0 ? ` Sobram ${EUR(semEnvelope)} sem envelope.` : ''}
-        </Text>
+        {/* Sem rendimento declarado não há nada de que atribuir: a frase
+            calava-se a meio («0 % dos 0,00 €») em vez de se calar toda. */}
+        {rendimento > 0 ? (
+          <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 18, color: t.text3 }}>
+            {pctAtribuido} % dos {EUR(rendimento)} atribuídos aos envelopes.
+            {semEnvelope > 0 ? ` Sobram ${EUR(semEnvelope)} sem envelope.` : ''}
+          </Text>
+        ) : null}
       </Card>
 
       {/* Registar despesa é a acção mais frequente deste ecrã e estava no fim
@@ -242,8 +262,10 @@ export default function Dinheiro({ t, user, onEquip }) {
               bg={acertado ? t.state.okBg : t.state.infoBg}
               border={acertado ? t.state.okBorder : t.state.info} />
           </View>
+          {/* Dinheiro entre pessoas — leva o acento, e diz para onde vai. */}
           <Primary t={t} disabled={acertado}
             label={acertado ? 'Contas Acertadas' : 'Acertar Contas'}
+            sub={!acertado && acerto ? `${EUR(settleBase)} ${aoNome(acerto.credor)}` : null}
             onPress={() => { setSettle({ mode: 'all', customAmount: 0 }); setSheet('settle'); }} />
         </Card>
       </View>
@@ -317,6 +339,7 @@ export default function Dinheiro({ t, user, onEquip }) {
             onClose={() => setSheet(null)}
             action={<Primary t={t} disabled={settleAmount <= 0}
               label="Confirmar Pagamento"
+              sub={acerto ? `${EUR(settleAmount)} ${aoNome(acerto.credor)}` : null}
               onPress={handleSettle} />}>
             <View style={{ gap: S.lg }}>
               <View style={{ gap: S.md }}>
@@ -363,10 +386,14 @@ export default function Dinheiro({ t, user, onEquip }) {
       {sheet === 'mover' ? (() => {
         const free = freeOf(mv.from);
         const over = mv.amount > free;
+        // ⚠ O botão é COMUM, e é a decisão que mais custa a tomar aqui: isto
+        // mexe em dinheiro, mas não entre PESSOAS — muda o limite de dois
+        // envelopes da mesma casa, e desfaz-se movendo ao contrário. A própria
+        // folha já o diz: «Não sai dinheiro da conta.»
         return (
           <Sheet t={t} title="Mover Dinheiro" sub="Redistribuir o orçamento, sem sair dinheiro da conta"
             onClose={() => setSheet(null)}
-            action={<Primary t={t} disabled={over || mv.amount <= 0}
+            action={<Primary t={t} comum disabled={over || mv.amount <= 0}
               label={over ? 'Valor Indisponível' : mv.amount <= 0 ? 'Escreva um valor' : 'Confirmar Movimento'}
               onPress={() => {
                 // ⚠ Uma TRANSFERÊNCIA, não um saldo escrito. Isto era um
@@ -415,10 +442,11 @@ export default function Dinheiro({ t, user, onEquip }) {
       })() : null}
 
       {/* Register Expense Sheet */}
+      {/* O botão é comum: acrescenta uma linha, não fecha nem apaga nada. */}
       {sheet === 'despesa' ? (
         <Sheet t={t} title="Registar Despesa" sub="Entra no envelope e na conta entre os dois"
           onClose={() => setSheet(null)}
-          action={<Primary t={t} disabled={exp.amount <= 0} label="Registar Despesa"
+          action={<Primary t={t} comum disabled={exp.amount <= 0} label="Registar Despesa"
             onPress={() => {
               // ⚠ Pela loja, que também a manda para o servidor. Isto somava
               // ao `registered` local e mais nada — as despesas nunca
@@ -478,12 +506,15 @@ export default function Dinheiro({ t, user, onEquip }) {
         </Sheet>
       ) : null}
 
-      {/* Open Month Sheet */}
+      {/* Open Month Sheet — o botão fecha um período: o mês anterior deixa de
+          ser o aberto, e os totais passam a contar noutra soma. Leva o acento. */}
       {sheet === 'openMonth' && admin ? (
         <Sheet t={t} title="Abrir Mês"
           sub="Distribuir o rendimento aos envelopes"
           onClose={() => setSheet(null)}
-          action={<Primary t={t} label="Confirmar Abertura" onPress={handleOpenMonth} />}>
+          action={<Primary t={t} label="Confirmar Abertura"
+            sub={`${EUR(Object.values(openMonth.envelopes || {}).reduce((a, b) => a + b, budget))} distribuídos`}
+            onPress={handleOpenMonth} />}>
           <View style={{ gap: S.lg }}>
             <Text style={{ fontFamily: FONT.body, fontSize: 15, lineHeight: 22, color: t.text2 }}>
               Distribua o rendimento mensal aos envelopes. Os limites serão atualizados no início do mês.
@@ -513,7 +544,9 @@ export default function Dinheiro({ t, user, onEquip }) {
         <Sheet t={t} title="Fechar Mês"
           sub="Arquivar as despesas e recomeçar a contagem"
           onClose={() => setSheet(null)}
-          action={<Primary t={t} label="Confirmar Encerramento" onPress={handleCloseMonth} />}>
+          action={<Primary t={t} label="Confirmar Encerramento"
+            sub={`${EUR(spent)} gastos em ${s.monthName}`}
+            onPress={handleCloseMonth} />}>
           <View style={{ gap: S.lg }}>
             <Text style={{ fontFamily: FONT.body, fontSize: 15, lineHeight: 22, color: t.text2 }}>
               Ao fechar o mês, o registo de despesas e os pontos pagos voltam a zero. O saldo restante não é movido.

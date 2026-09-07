@@ -153,11 +153,23 @@ describe('🔥 Smoke Tests — Nossa Casa', () => {
         const i = ui.indexOf(`export const ${nome} =`);
         expect(i).toBeGreaterThan(0);
         const bloco = ui.slice(i, i + 900);
-        // Ou um mínimo declarado, ou um tamanho por omissão de 44.
-        const medidas = [...bloco.matchAll(/min(?:Height|Width): (\d+)/g)].map(m => Number(m[1]))
-          .concat([...bloco.matchAll(/size = (\d+)/g)].map(m => Number(m[1])));
+
+        // ⚠ Lia `min(Height|Width): (\d+)` — um número LITERAL, colado aos dois
+        // pontos. O `Primary` passou a ter duas alturas (`sub ? 56 : 48`, que a
+        // linha de consequência precisa) e o teste deixou de ver medida nenhuma:
+        // não falhou por a altura ser pequena, falhou por não encontrar altura.
+        // Lê-se agora o VALOR inteiro e tiram-se-lhe todos os números.
+        // O `size = ` com espaços é o valor por omissão do parâmetro; o
+        // `size={20}` de um ícone dentro do botão não é alvo de toque nenhum.
+        const valores = [...bloco.matchAll(/(?:min(?:Height|Width)\s*:|size = )([^,;\n}]+)/g)]
+          .map(m => m[1]);
+        // `minWidth: size` não traz número — traz-o a linha `size = 44`.
+        const medidas = valores.flatMap(v => [...v.matchAll(/\d+(?:\.\d+)?/g)].map(n => Number(n[0])));
         expect(medidas.length).toBeGreaterThan(0);
-        expect(Math.max(...medidas)).toBeGreaterThanOrEqual(44);
+
+        // ⚠ E era `Math.max`: bastava UMA medida acima de 44 para as outras
+        // passarem escondidas atrás dela. São todas, ramo a ramo do ternário.
+        for (const m of medidas) expect(m).toBeGreaterThanOrEqual(44);
       }
     });
 
