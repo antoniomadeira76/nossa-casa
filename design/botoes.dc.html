@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Botões — cinco alternativas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500&display=swap">
+<style>
+/* Os valores são os do `src/theme.js`: as claridades do escuro (LUMES), a
+   saturação máxima por superfície, os raios, o espaçamento de 2/4/8/16/24 e as
+   três famílias de letra. O escuro é DERIVADO do esquema pelo mesmo cálculo da
+   app — HSL do `chrome`, saturação limitada, claridade fixa. */
+:root {
+  --page:#F0F2F5; --card:#FCFCFD; --surface:#FFFFFF; --subtle:#FAFAFA;
+  --border:#D9D9D9; --divider:#F0F2F5;
+  --text1:#262626; --text2:#434343; --text3:#6A7282; --slate:#67769B;
+  --accent:#722ED1; --hover:#8B4EE0; --chrome:#241239; --titulo:#722ED1;
+  --acentoCheio:#722ED1; --tinta:12%; --pill:100px; --card-r:8px; --row-r:6px;
+  --ui:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --body:'Roboto',system-ui,sans-serif;
+  --ok:#389E0D; --okBg:rgba(220,243,209,.35); --okBorder:#BAE7A3;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--page); color:var(--text1);
+  font-family:var(--body); font-size:14px; line-height:1.5; transition:background .18s; }
+.envolucro { max-width:1180px; margin:0 auto; padding:24px 16px 64px; }
+
+header h1 { font-family:var(--ui); font-weight:700; font-size:26px; letter-spacing:-.01em;
+  margin:0 0 4px; text-wrap:balance; }
+header p { margin:0 0 16px; color:var(--text3); max-width:66ch; }
+code { font-family:ui-monospace,'Cascadia Code',monospace; font-size:12.5px;
+  background:var(--subtle); border:1px solid var(--border); border-radius:var(--row-r);
+  padding:1px 5px; color:var(--text2); }
+
+.problema { background:var(--card); border:1px solid var(--border);
+  border-radius:var(--card-r); padding:16px; margin:0 0 24px; max-width:74ch; }
+.problema ul { margin:8px 0 0; padding-left:18px; color:var(--text2); }
+.problema li { margin:6px 0; }
+
+.comandos { display:flex; flex-wrap:wrap; gap:16px; align-items:center;
+  background:var(--card); border:1px solid var(--border); border-radius:var(--card-r);
+  padding:16px; margin:0 0 24px; position:sticky; top:8px; z-index:10; }
+.grupo { display:flex; align-items:center; gap:8px; }
+.rotulo { font-family:var(--ui); font-size:11px; font-weight:600; color:var(--slate);
+  text-transform:uppercase; letter-spacing:.06em; }
+.esquemas { display:flex; gap:4px; }
+.esq { width:32px; height:32px; border-radius:var(--pill); border:2px solid transparent;
+  cursor:pointer; padding:0; outline-offset:2px; }
+.esq[aria-pressed="true"] { border-color:var(--text1); }
+.alternar { font-family:var(--ui); font-size:13px; font-weight:600; cursor:pointer;
+  min-height:36px; padding:0 14px; border-radius:var(--pill);
+  border:1px solid var(--border); background:var(--surface); color:var(--text2); }
+.alternar[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+.grelha { display:grid; gap:24px; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); }
+.alt { background:var(--card); border:1px solid var(--border); border-radius:var(--card-r);
+  padding:16px; display:flex; flex-direction:column; gap:8px; }
+.alt.referencia { border-style:dashed; }
+.alt.referencia > h2 { color:var(--text3); }
+.alt > h2 { font-family:var(--ui); font-size:15px; font-weight:700; margin:0;
+  color:var(--titulo); display:flex; align-items:baseline; gap:8px; }
+.alt > h2 .n { font-family:var(--ui); font-size:11px; font-weight:700; color:var(--text3);
+  border:1px solid var(--border); border-radius:var(--pill); padding:1px 7px; }
+.nota { margin:0; font-size:12.5px; color:var(--text3); min-height:4.4em; }
+.medida { font-family:var(--ui); font-size:11px; font-weight:600; color:var(--slate);
+  border-top:1px solid var(--divider); padding-top:8px; margin-top:auto;
+  display:flex; justify-content:space-between; gap:8px; }
+.medida b { color:var(--text2); font-variant-numeric:tabular-nums; }
+
+/* O telefone: 402 de largura, 355 de conteúdo — a largura útil que o
+   CLAUDE.md manda respeitar. */
+.telefone { width:100%; max-width:402px; margin:0 auto; background:var(--page);
+  border:1px solid var(--border); border-radius:var(--card-r); overflow:hidden; }
+.corpo { padding:16px 23.5px; display:flex; flex-direction:column; gap:16px; }
+.cartao { background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--card-r); padding:14px; display:flex; flex-direction:column; gap:12px; }
+.etiqueta { font-family:var(--ui); font-size:11px; font-weight:600; color:var(--slate); margin:0; }
+.linha { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+/* ── HOJE: o que está no ecrã ────────────────────────────────────────────── */
+.b-primaria { min-height:48px; border-radius:var(--pill); border:0; cursor:pointer;
+  width:100%; background:var(--accent); color:#fff; font-family:var(--ui);
+  font-size:15px; font-weight:700; letter-spacing:.4px;
+  box-shadow:0 3px 8px rgba(0,0,0,.14); }
+.b-primaria:active { opacity:.9; }
+.b-estado { min-height:44px; padding:0 18px; border-radius:var(--row-r); border:0;
+  cursor:pointer; background:var(--accent); color:#fff;
+  font-family:var(--ui); font-size:14px; font-weight:700; }
+.p-hoje { min-height:44px; padding:0 16px; border-radius:var(--pill); border:1px solid var(--border);
+  background:var(--card); color:var(--text2); font-family:var(--ui); font-size:13px;
+  font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+.p-hoje[aria-pressed="true"] { background:var(--chrome); border-color:var(--chrome); color:#fff; }
+.ponto { width:8px; height:8px; border-radius:var(--pill); flex:0 0 auto; }
+
+/* ── A: peso pela hierarquia ─────────────────────────────────────────────── */
+.a-primaria { min-height:48px; border-radius:var(--row-r); border:0; cursor:pointer;
+  width:100%; background:var(--acentoCheio); color:#fff; font-family:var(--ui);
+  font-size:15px; font-weight:600; }
+.a-secundaria { min-height:44px; padding:0 16px; border-radius:var(--row-r);
+  border:1px solid var(--accent); background:transparent; color:var(--text1);
+  font-family:var(--ui); font-size:14px; font-weight:600; cursor:pointer; }
+.a-terciaria { min-height:44px; padding:0 12px; border:0; background:transparent;
+  color:var(--text1); text-decoration:underline; text-decoration-color:var(--accent);
+  text-underline-offset:4px; text-decoration-thickness:2px; font-family:var(--ui); font-size:14px; font-weight:600; cursor:pointer; }
+
+/* ── B: o estado deixa de ser botão ──────────────────────────────────────── */
+.b-pastilha { min-height:28px; padding:0 10px; border-radius:var(--pill);
+  background:var(--okBg); border:1px solid var(--okBorder); color:var(--ok);
+  font-family:var(--ui); font-size:12px; font-weight:700;
+  display:inline-flex; align-items:center; gap:6px; }
+.b-mudar { min-height:44px; padding:0 12px; border:0; background:transparent;
+  color:var(--text1); font-family:var(--ui); font-size:13px; font-weight:600; cursor:pointer; }
+.b-linha { display:flex; align-items:center; justify-content:space-between;
+  min-height:44px; gap:8px; }
+
+/* ── C: só contorno, e o cheio guardado para uma coisa por ecrã ──────────── */
+.c-cheia { min-height:48px; border-radius:var(--pill); border:0; cursor:pointer;
+  width:100%; background:var(--acentoCheio); color:#fff; font-family:var(--ui);
+  font-size:15px; font-weight:600; }
+.c-contorno { min-height:44px; padding:0 16px; border-radius:var(--pill);
+  border:1.5px solid var(--accent); background:transparent; color:var(--text1);
+  font-family:var(--ui); font-size:14px; font-weight:600; cursor:pointer; }
+.c-pastilha { min-height:44px; padding:0 14px; border-radius:var(--pill);
+  border:1px solid var(--border); background:transparent; color:var(--text2);
+  font-family:var(--ui); font-size:13px; font-weight:600; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px; }
+.c-pastilha[aria-pressed="true"] { border-color:var(--accent); border-width:1.5px;
+  color:var(--text1); background:color-mix(in srgb, var(--accent) var(--tinta), transparent); }
+
+/* ── D: o alvo é maior do que a tinta ────────────────────────────────────── */
+.d-primaria { min-height:52px; border-radius:var(--row-r); border:0; cursor:pointer;
+  width:100%; background:var(--acentoCheio); color:#fff; font-family:var(--ui);
+  font-size:15px; font-weight:600; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:2px; }
+.d-primaria small { font-family:var(--ui); font-size:11.5px; font-weight:500;
+  color:rgba(255,255,255,.82); }
+.d-pastilha { min-height:44px; padding:0 6px 0 14px; border-radius:var(--row-r);
+  border:1px solid var(--border); background:var(--surface); color:var(--text2);
+  font-family:var(--ui); font-size:13px; font-weight:600; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px; }
+.d-pastilha[aria-pressed="true"] { border-color:var(--accent); color:var(--text1); }
+.d-marca { width:22px; height:22px; border-radius:var(--pill); display:grid;
+  place-items:center; color:var(--accent); font-size:13px; }
+.d-pastilha[aria-pressed="false"] .d-marca { visibility:hidden; }
+
+/* ── E: a cor só onde decide ─────────────────────────────────────────────── */
+.e-primaria { min-height:48px; border-radius:var(--row-r); border:0; cursor:pointer;
+  width:100%; background:var(--text1); color:var(--page); font-family:var(--ui);
+  font-size:15px; font-weight:600; }
+.e-acento { min-height:48px; border-radius:var(--row-r); border:0; cursor:pointer;
+  width:100%; background:var(--acentoCheio); color:#fff; font-family:var(--ui);
+  font-size:15px; font-weight:600; }
+.e-pastilha { min-height:44px; padding:0 14px; border-radius:var(--row-r);
+  border:1px solid transparent; background:var(--subtle); color:var(--text2);
+  font-family:var(--ui); font-size:13px; font-weight:600; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px; }
+.e-pastilha[aria-pressed="true"] { background:var(--surface); border-color:var(--text1);
+  color:var(--text1); box-shadow:0 1px 3px rgba(0,0,0,.10); }
+
+:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+@media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="envolucro">
+
+<header>
+  <h1>Botões</h1>
+  <p>As três famílias que aparecem nos seus ecrãs — a ação principal, o estado
+     de uma consulta, e as pastilhas de filtro — e cinco maneiras de as
+     resolver. Todas funcionam: toque, troque de esquema e de aspeto.</p>
+</header>
+
+<div class="problema">
+  <strong>O que se pode dizer contra o que está</strong>
+  <ul>
+    <li><b>Três coisas diferentes com o mesmo peso.</b> «Acertar Contas» é uma
+        ação que mexe em dinheiro; «Resolvida» é um <em>estado</em>; «Todos» é
+        um filtro. Os três aparecem como um bloco cheio de cor.</li>
+    <li><b>«Resolvida» parece um botão e é um facto.</b> Diz o que a consulta
+        <em>é</em>, com o aspeto de quem promete fazer alguma coisa.</li>
+    <li><b>O filtro escolhido é azul-marinho e não a cor do esquema.</b> Numa
+        casa com o Cião ou o Menta, aparece um tom que não é de lado nenhum.</li>
+    <li><b>A sombra da ação principal</b> é o único sítio da app com relevo, e
+        não se repete em mais nada.</li>
+  </ul>
+  <p style="margin:12px 0 0"><strong>⚠ E dois falham o contraste, medidos:</strong></p>
+  <ul>
+    <li>com o <b>Cião</b>, branco sobre o acento dá <b>3,55:1</b> — é o botão
+        principal, em todos os ecrãs da app;</li>
+    <li>com o <b>Cinza</b>, branco sobre o <code>chrome</code> dá
+        <b>2,88:1</b> — é o filtro de membro escolhido, nas Tarefas. O Cinza é
+        o único esquema em que o cabeçalho é mais CLARO do que a cor de ação, e
+        é aí que isto parte.</li>
+  </ul>
+  <p style="margin:12px 0 0; color:var(--text3)">Texto de 13 a 15 px precisa de
+     4,5:1. A medida por baixo de cada alternativa é o <em>pior</em> caso dela
+     nos seis esquemas e nos dois aspetos — <b>as cinco passam; o que está no
+     ecrã hoje não</b>.</p>
+</div>
+
+<div class="comandos">
+  <div class="grupo"><span class="rotulo">Esquema</span><div class="esquemas" id="esquemas"></div></div>
+  <div class="grupo"><span class="rotulo">Aspeto</span>
+    <button class="alternar" id="aspeto" aria-pressed="false">Escuro</button></div>
+</div>
+
+<div class="grelha" id="grelha"></div>
+</div>
+
+<script>
+/* O tema, portado do `src/theme.js` — o mesmo cálculo, não uma aproximação. */
+const SCHEMES = [
+  { name:'Violeta', accent:'#722ED1', hover:'#8B4EE0', chrome:'#241239' },
+  { name:'Cião',    accent:'#08979C', hover:'#13ADB3', chrome:'#0A5B60' },
+  { name:'Céu',     accent:'#1B5FA8', hover:'#2679C9', chrome:'#0C2A47' },
+  { name:'Rosa',    accent:'#B5306E', hover:'#CC4285', chrome:'#8A3A5A' },
+  { name:'Menta',   accent:'#177D5E', hover:'#1E9B75', chrome:'#2E6455' },
+  { name:'Cinza',   accent:'#5A6478', hover:'#6E798F', chrome:'#8E99AB' },
+];
+const LUMES = { page:[.042,.55], card:[.135,.42], subtle:[.180,.36],
+                border:[.255,.28], text3:[.660,.14], slate:[.740,.24] };
+const hsl = (hex) => { const n=hex.replace('#','');
+  const [r,g,b]=[0,2,4].map(i=>parseInt(n.slice(i,i+2),16)/255);
+  const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn, l=(mx+mn)/2;
+  const s=d===0?0:d/(1-Math.abs(2*l-1)); let h=0;
+  if(d) h = mx===r?60*(((g-b)/d)%6) : mx===g?60*((b-r)/d+2) : 60*((r-g)/d+4);
+  return { h:(h+360)%360, s, l }; };
+const paraHex = (h,s,l) => { const c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs(((h/60)%2)-1)), m=l-c/2;
+  const [r,g,b]=h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x];
+  return '#'+[r,g,b].map(v=>Math.round((v+m)*255).toString(16).padStart(2,'0')).join('').toUpperCase(); };
+
+const lumHex=(hex)=>{const n=hex.replace('#','');
+  const v=[0,2,4].map(i=>parseInt(n.slice(i,i+2),16)/255)
+    .map(c=>c<=.03928?c/12.92:Math.pow((c+.055)/1.055,2.4));
+  return .2126*v[0]+.7152*v[1]+.0722*v[2];};
+const contra=(a,b)=>{const[x,y]=[lumHex(a),lumHex(b)].sort((p,q)=>q-p);return (x+.05)/(y+.05);};
+// Escurece uma cor até ela cumprir um contraste contra um primeiro plano. O
+// tom e a saturação não se mexem: continua a ser a cor do esquema, só mais
+// escura. É o clarearAte do tema, ao contrário.
+const escurecerAte=(hex,frente,alvo)=>{const{h,s,l}=hsl(hex);
+  for(let x=l;x>=0;x-=0.01){const c=paraHex(h,s,x);if(contra(c,frente)>=alvo)return c;}
+  return '#000000';};
+
+let idx = 0, escuro = false;
+function aplicarTema() {
+  const e = SCHEMES[idx], r = document.documentElement.style;
+  if (!escuro) {
+    r.setProperty('--page','#F0F2F5'); r.setProperty('--card','#FCFCFD');
+    r.setProperty('--surface','#FFFFFF'); r.setProperty('--subtle','#FAFAFA');
+    r.setProperty('--border','#D9D9D9'); r.setProperty('--divider','#F0F2F5');
+    r.setProperty('--text1','#262626'); r.setProperty('--text2','#434343');
+    r.setProperty('--text3','#6A7282'); r.setProperty('--slate','#67769B');
+    r.setProperty('--titulo', e.accent);
+    r.setProperty('--ok','#389E0D'); r.setProperty('--okBg','rgba(220,243,209,.35)');
+    r.setProperty('--okBorder','#BAE7A3');
+  } else {
+    const { h, s } = hsl(e.chrome);
+    const tom = (k) => paraHex(h, Math.min(s, LUMES[k][1]), LUMES[k][0]);
+    const card = tom('card'), linha = tom('border');
+    r.setProperty('--page', tom('page')); r.setProperty('--card', card);
+    r.setProperty('--surface', card); r.setProperty('--subtle', tom('subtle'));
+    r.setProperty('--border', linha); r.setProperty('--divider', linha);
+    r.setProperty('--text1','#F0F2F5'); r.setProperty('--text2','#DCE3EA');
+    r.setProperty('--text3', tom('text3')); r.setProperty('--slate', tom('slate'));
+    // ⚠ O título segue o `hover` no escuro: o acento não chega a 3:1 contra a
+    // página escura em três dos seis esquemas.
+    r.setProperty('--titulo', e.hover);
+    r.setProperty('--ok','#7BD44F'); r.setProperty('--okBg','rgba(82,196,26,.16)');
+    r.setProperty('--okBorder','rgba(82,196,26,.42)');
+  }
+  r.setProperty('--tinta', escuro ? '26%' : '12%');
+  // ⚠ O acento ESCURECIDO até o branco por cima dele dar 4,5:1.
+  //
+  // Medido: com o Cião (#08979C), branco sobre o acento dá 3,55:1 — o botão
+  // principal da app, em todos os ecrãs, abaixo do mínimo. É o mesmo cálculo
+  // que o clarearAte do tema já faz na direção contrária.
+  r.setProperty('--acentoCheio', escurecerAte(e.accent, '#FFFFFF', 4.5));
+  r.setProperty('--accent', e.accent);
+  r.setProperty('--hover', e.hover);
+  r.setProperty('--chrome', e.chrome);
+  document.querySelectorAll('#esquemas .esq').forEach((b,i) =>
+    b.setAttribute('aria-pressed', String(i === idx)));
+  const a = document.getElementById('aspeto');
+  a.setAttribute('aria-pressed', String(escuro));
+  a.textContent = escuro ? 'Claro' : 'Escuro';
+  medir();
+}
+
+const MEMBROS = [['Todos',null],['Léo','#22B0E8'],['António','#8B4EE0'],
+                 ['Rita','#A855F7'],['Tomás','#14B8A6'],['Mia','#1E293B']];
+
+const ALTERNATIVAS = [
+  {
+    id:'hoje', nome:'Hoje', referencia:true,
+    nota:'O que está no ecrã, para a comparação ser medida e não impressão. '
+       + 'A ação, o estado e o filtro escolhido, os três em bloco cheio.',
+    render(e) {
+      return `<div class="cartao">
+        <p class="etiqueta">Ação</p>
+        <button class="b-primaria">Acertar Contas</button>
+        <p class="etiqueta">Estado da consulta</p>
+        <div class="linha"><button class="b-estado" data-t="estado">${e.estado ? 'Resolvida' : 'Pendente'}</button></div>
+        <p class="etiqueta">Quem</p>
+        <div class="linha">${MEMBROS.map(([n,c],i)=>`
+          <button class="p-hoje" aria-pressed="${e.quem===i}" data-q="${i}">
+            ${c?`<span class="ponto" style="background:${c}"></span>`:''}${n}</button>`).join('')}</div>
+      </div>`;
+    },
+  },
+  {
+    id:'a', nome:'Três pesos, três formas',
+    nota:'Uma só ação por ecrã fica cheia; o resto é contorno, e o que só '
+       + 'navega é texto. Cantos de 6, como os cartões e os campos — o raio de '
+       + 'pílula passa a querer dizer «isto é uma pastilha, não um botão».',
+    render(e) {
+      return `<div class="cartao">
+        <p class="etiqueta">Ação principal — uma por ecrã</p>
+        <button class="a-primaria">Acertar Contas</button>
+        <p class="etiqueta">Ações a seguir</p>
+        <div class="linha">
+          <button class="a-secundaria">Registar Despesa</button>
+          <button class="a-terciaria">Ver histórico</button>
+        </div>
+        <p class="etiqueta">Quem</p>
+        <div class="linha">${MEMBROS.map(([n,c],i)=>`
+          <button class="c-pastilha" aria-pressed="${e.quem===i}" data-q="${i}">
+            ${c?`<span class="ponto" style="background:${c}"></span>`:''}${n}</button>`).join('')}</div>
+      </div>`;
+    },
+  },
+  {
+    id:'b', nome:'O estado deixa de ser botão',
+    nota:'«Resolvida» é um facto, não uma promessa: passa a pastilha de estado '
+       + 'com a cor de «bem» — a mesma que a app já usa nas garantias e nos '
+       + 'saldos — e ao lado fica o verbo que a muda. Deixa de haver um botão '
+       + 'que não faz o que o nome diz.',
+    render(e) {
+      return `<div class="cartao">
+        <p class="etiqueta">Estado da consulta</p>
+        <div class="b-linha">
+          <span class="b-pastilha">${e.estado ? '✓ Resolvida' : '● Pendente'}</span>
+          <button class="b-mudar" data-t="estado">${e.estado ? 'Reabrir' : 'Marcar resolvida'}</button>
+        </div>
+        <p class="etiqueta">Ação</p>
+        <button class="a-primaria">Acertar Contas</button>
+        <p class="etiqueta">Quem</p>
+        <div class="linha">${MEMBROS.map(([n,c],i)=>`
+          <button class="c-pastilha" aria-pressed="${e.quem===i}" data-q="${i}">
+            ${c?`<span class="ponto" style="background:${c}"></span>`:''}${n}</button>`).join('')}</div>
+      </div>`;
+    },
+  },
+  {
+    id:'c', nome:'A cor só onde decide',
+    nota:'O cheio de cor guarda-se para o que mexe em dinheiro ou não se '
+       + 'desfaz. Tudo o resto é contorno ou tinta. Um ecrã com dez blocos de '
+       + 'acento não tem hierarquia nenhuma — e este tinha três só nesta zona.',
+    render(e) {
+      return `<div class="cartao">
+        <p class="etiqueta">Mexe em dinheiro — cheia</p>
+        <button class="c-cheia">Acertar Contas</button>
+        <p class="etiqueta">Não mexe — contorno</p>
+        <div class="linha">
+          <button class="c-contorno">Registar Despesa</button>
+          <button class="c-contorno" data-t="estado">${e.estado ? 'Reabrir' : 'Resolver'}</button>
+        </div>
+        <p class="etiqueta">Quem</p>
+        <div class="linha">${MEMBROS.map(([n,c],i)=>`
+          <button class="c-pastilha" aria-pressed="${e.quem===i}" data-q="${i}">
+            ${c?`<span class="ponto" style="background:${c}"></span>`:''}${n}</button>`).join('')}</div>
+      </div>`;
+    },
+  },
+  {
+    id:'d', nome:'O alvo é maior do que a tinta',
+    nota:'A ação diz o que vai acontecer numa segunda linha, dentro do próprio '
+       + 'botão — «83,67 € para a Rita» —, e o filtro escolhido marca-se com um '
+       + 'visto em vez de se pintar por inteiro. Alvos de 44 e 52, e nenhum '
+       + 'depende de distinguir dois tons.',
+    render(e) {
+      return `<div class="cartao">
+        <p class="etiqueta">Ação, com a consequência à vista</p>
+        <button class="d-primaria">Acertar Contas<small>83,67 € para a Rita</small></button>
+        <p class="etiqueta">Estado</p>
+        <div class="b-linha">
+          <span class="b-pastilha">${e.estado ? '✓ Resolvida' : '● Pendente'}</span>
+          <button class="b-mudar" data-t="estado">${e.estado ? 'Reabrir' : 'Marcar resolvida'}</button>
+        </div>
+        <p class="etiqueta">Quem</p>
+        <div class="linha">${MEMBROS.map(([n,c],i)=>`
+          <button class="d-pastilha" aria-pressed="${e.quem===i}" data-q="${i}">
+            ${c?`<span class="ponto" style="background:${c}"></span>`:''}${n}
+            <span class="d-marca">✓</span></button>`).join('')}</div>
+      </div>`;
+    },
+  },
+  {
+    id:'e', nome:'O acento reservado ao acento',
+    nota:'A ação comum fica no tom do texto — escura no claro, clara no escuro '
+       + '— e a cor do esquema aparece só no que é irreversível. O filtro '
+       + 'escolhido levanta-se do fundo em vez de mudar de cor, o que resolve '
+       + 'o azul-marinho que não é de esquema nenhum.',
+    render(e) {
+      return `<div class="cartao">
+        <p class="etiqueta">Ação comum</p>
+        <button class="e-primaria">Registar Despesa</button>
+        <p class="etiqueta">Irreversível — leva o acento</p>
+        <button class="e-acento">Acertar Contas</button>
+        <p class="etiqueta">Quem</p>
+        <div class="linha">${MEMBROS.map(([n,c],i)=>`
+          <button class="e-pastilha" aria-pressed="${e.quem===i}" data-q="${i}">
+            ${c?`<span class="ponto" style="background:${c}"></span>`:''}${n}</button>`).join('')}</div>
+      </div>`;
+    },
+  },
+];
+
+const estados = Object.fromEntries(ALTERNATIVAS.map(a => [a.id, { quem:0, estado:true }]));
+const medidas = {};
+
+function desenhar() {
+  let letra = -1;
+  document.getElementById('grelha').innerHTML = ALTERNATIVAS.map((alt) => {
+    if (!alt.referencia) letra++;
+    const marca = alt.referencia ? '·' : String.fromCharCode(65 + letra);
+    return `
+    <section class="alt${alt.referencia ? ' referencia' : ''}" data-alt="${alt.id}">
+      <h2><span class="n">${marca}</span> ${alt.nome}</h2>
+      <p class="nota">${alt.nota}</p>
+      <div class="telefone"><div class="corpo">
+        <div data-bloco>${alt.render(estados[alt.id])}</div>
+      </div></div>
+      <p class="medida"><span>Alvo mínimo · contraste do texto</span>
+        <b data-medida="${alt.id}">—</b></p>
+    </section>`;
+  }).join('');
+  medir();
+}
+
+// A medida que interessa: o alvo mais pequeno (INVARIANTE #5 pede 44) e o
+// contraste mais baixo entre um texto de botão e o seu fundo (4,5:1 para 13 px).
+const lum = (c) => { const m = c.match(/\d+/g).map(Number);
+  const v = m.slice(0,3).map(x => x/255).map(x => x<=.03928 ? x/12.92 : Math.pow((x+.055)/1.055, 2.4));
+  return .2126*v[0] + .7152*v[1] + .0722*v[2]; };
+const contraste = (a,b) => { const [x,y]=[lum(a),lum(b)].sort((p,q)=>q-p); return (x+.05)/(y+.05); };
+const fundoReal = (el) => { let n = el;
+  while (n && n !== document.documentElement) {
+    const c = getComputedStyle(n).backgroundColor;
+    if (c && !/rgba\(0, 0, 0, 0\)|transparent/.test(c)) return c;
+    n = n.parentElement;
+  }
+  return 'rgb(255,255,255)'; };
+
+function medir() {
+  requestAnimationFrame(() => {
+    for (const alt of ALTERNATIVAS) {
+      const zona = document.querySelector(`[data-alt="${alt.id}"] [data-bloco]`);
+      const saida = document.querySelector(`[data-medida="${alt.id}"]`);
+      if (!zona || !saida) continue;
+      const alvos = [...zona.querySelectorAll('button')];
+      const menor = Math.min(...alvos.map(b => Math.round(b.getBoundingClientRect().height)));
+      const pior = Math.min(...alvos.map(b => {
+        const cs = getComputedStyle(b);
+        return contraste(cs.color, fundoReal(b));
+      }));
+      medidas[alt.id] = { menor, pior };
+      saida.textContent = `${menor} px · ${pior.toFixed(2)}:1`;
+      saida.style.color = (menor < 44 || pior < 4.5) ? 'var(--titulo)' : 'var(--text2)';
+    }
+  });
+}
+
+document.getElementById('grelha').addEventListener('click', (ev) => {
+  const secao = ev.target.closest('[data-alt]'); if (!secao) return;
+  const e = estados[secao.dataset.alt];
+  const q = ev.target.closest('[data-q]');
+  if (q) { e.quem = Number(q.dataset.q); return desenhar(); }
+  if (ev.target.closest('[data-t="estado"]')) { e.estado = !e.estado; return desenhar(); }
+});
+
+document.getElementById('esquemas').innerHTML = SCHEMES.map((s,i) =>
+  `<button class="esq" style="background:${s.accent}" title="${s.name}"
+     aria-label="Esquema ${s.name}" aria-pressed="${i===0}"></button>`).join('');
+document.getElementById('esquemas').addEventListener('click', (ev) => {
+  const b = ev.target.closest('.esq'); if (!b) return;
+  idx = [...ev.currentTarget.children].indexOf(b); aplicarTema();
+});
+document.getElementById('aspeto').addEventListener('click', () => { escuro = !escuro; aplicarTema(); });
+window.addEventListener('resize', medir);
+
+desenhar();
+aplicarTema();
+</script>
+</body>
+</html>
