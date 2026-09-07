@@ -200,7 +200,6 @@ const ACENTO_A_MAO = (() => {
 const ACENTO_JUSTIFICADO = {
   'src/ConfirmShare.jsx': 'o «Guardar» do diálogo que confirma a visibilidade de um evento — é o último toque antes de o evento sair, e de a Google convidar quem for por e-mail',
   'src/Confirm.jsx': 'o botão de confirmar do diálogo de confirmação da app — é o último toque antes de algo acontecer, e é CHEIO porque em contorno o rótulo de 15 px falhava 4,5:1 em seis dos doze temas (sete na variante destrutiva)',
-  'src/screens/Saude.jsx': '⚠ CINCO botões pequenos de campo: «Guardada», «Guardar receita», «Guardar», «Guardar nota», «Resolvida». Não são confirmações de diálogo nem mexem em dinheiro — são commits de um campo, e pela regra não deviam levar o acento. Ficam à espera de decisão: passá-los a `comum` põe cinco blocos escuros dentro de uma ficha clínica, e o que eles querem é provavelmente um terceiro peso, mais leve do que os dois. Relatado em 07/09/2026.',
   // O `ui.jsx` não entra: o `jsxDaApp()` exclui-o de propósito — é onde o
   // `Primary` VIVE, e o acento dele é governado pela lista do topo deste
   // ficheiro. Pô-lo aqui era um motivo sem sítio, e a prova de baixo apanha-o.
@@ -208,7 +207,15 @@ const ACENTO_JUSTIFICADO = {
 
 describe('⚠ e o acento preenchido à mão, fora do `Primary`', () => {
   it('a prova encontra sítios — senão o buraco continua tapado por acidente', () => {
-    expect(ACENTO_A_MAO.length).toBeGreaterThan(3);
+    // ⚠ Eram ONZE quando este guarda nasceu; são DOIS, e a descida é o trabalho
+    // feito: o «Fechar» do acesso restrito passou a comum, os dois diálogos do
+    // mês passaram a usar o `Confirm`, e os cinco da Saúde ganharam os três
+    // idiomas do desenho E. Ficam os dois diálogos de confirmação, que é onde o
+    // acento pertence.
+    //
+    // O piso é 1 e não 0: se der zero, ou o padrão deixou de casar ou o acento
+    // desapareceu da app — e nos dois casos quero saber.
+    expect(ACENTO_A_MAO.length).toBeGreaterThan(0);
   });
 
   it('⚠ cada ficheiro que preenche com o acento tem o motivo escrito', () => {
@@ -220,6 +227,21 @@ describe('⚠ e o acento preenchido à mão, fora do `Primary`', () => {
   it('e nenhum motivo sobra sem sítio', () => {
     const vivos = new Set(ACENTO_A_MAO.map(a => a.rel));
     expect(Object.keys(ACENTO_JUSTIFICADO).filter(r => !vivos.has(r))).toEqual([]);
+  });
+
+  it('⚠ os cinco botões pequenos da Saúde deixaram de levar acento', () => {
+    // Desenho E de `design/botoes-da-saude.dc.html`: três formas, três idiomas.
+    // A marca da receita virou pastilha tocável (verde, com a cara do estado em
+    // que vai ficar), o par de decisões virou `Segmented` (o aceso é o `chrome`,
+    // que é como a app marca uma escolha), e os três confirmares de campo
+    // passaram a `comum`.
+    const saude = fs.readFileSync(path.join(RAIZ, 'src', 'screens', 'Saude.jsx'), 'utf8');
+    expect(saude).toMatch(/<PastilhaTocavel t=\{t\} label="Guardada"/);
+    expect(saude).toMatch(/<Segmented t=\{t\} small/);
+    expect(saude).toMatch(/<BotaoCompacto t=\{t\} tom="comum" label="Guardar receita"/);
+    expect(saude).toMatch(/<BotaoCompacto t=\{t\} tom="comum" label="Guardar"/);
+    // E o «+» de guardar nota, que é botão de ícone e por isso fica à mão.
+    expect(saude).toMatch(/accessibilityLabel="Guardar nota"[\s\S]{0,300}backgroundColor: t\.text1/);
   });
 
   it('⚠ o «Fechar» do acesso restrito deixou de levar acento', () => {

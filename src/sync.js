@@ -1464,7 +1464,14 @@ export async function puxarSaude(idsDosMembros) {
         dosage: r.dose || '',
         quantity: r.quantidade || '',
         unit: r.unidade || '',
-        ...(r.expira_em ? { expiresAt: `d${String(r.expira_em).slice(0, 10)}` } : {}),
+        // ⚠ E na forma da LOJA, que é «02/09/2026» e não a chave «d2026-09-02».
+        //
+        // Escrevia a CHAVE, e o ecrã imprime este campo cru: uma receita vinda
+        // do servidor lia-se «Expirou em d2026-09-02». Visto no navegador, na
+        // ficha da Mia. O formulário escreve `dmyDeChave(...)` — a forma humana
+        // — e o servidor escrevia outra: duas formas para o mesmo campo, que é
+        // a classe de defeito do `sem-stock`, do `plano.time` e do `section`.
+        ...(r.expira_em ? { expiresAt: dmyDeChave(`d${String(r.expira_em).slice(0, 10)}`) } : {}),
         decision: r.decisao || '',
       });
     }

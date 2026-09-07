@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, warrantyDaysLeft, plural, mesSeguinte } from '../format';
 import { GOALS } from '../data';
-import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Opcao, NumField, BotaoDoMes } from '../ui';
+import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Opcao, NumField, BotaoCompacto } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 
@@ -323,9 +323,9 @@ export default function Dinheiro({ t, user, onEquip }) {
                 Os rótulos dizem QUAL mês, como no cartão da Gestão: «Abrir
                 Outubro» e «Fechar Setembro», e não «Abrir Mês». */}
             <View style={{ flexDirection: 'row', gap: S.md }}>
-              <BotaoDoMes t={t} cheio label={`Abrir ${proximoMes}`}
+              <BotaoCompacto t={t} tom="acento" label={`Abrir ${proximoMes}`}
                 onPress={() => { setOpenMonth({ envelopes: {} }); setSheet('openMonth'); }} />
-              <BotaoDoMes t={t} label={`Fechar ${s.monthName}`} disabled={!mesAberto}
+              <BotaoCompacto t={t} label={`Fechar ${s.monthName}`} disabled={!mesAberto}
                 onPress={() => setSheet('closeMonth')} />
             </View>
           </Card>

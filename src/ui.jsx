@@ -373,33 +373,53 @@ export const Primary = ({ t, label, sub, icon, onPress, disabled, comum }) => (
   </Pressable>
 );
 
-// Ação secundária: contorno tracejado, minúsculas — o padrão "acrescentar"
-// ── O par «abrir / fechar» de um mês ────────────────────────────────────────
+// ── Botão compacto: 44 de alvo, três pesos ──────────────────────────────────
 //
-// Metade da largura cada, 44 de alvo, um cheio e um de contorno.
+// Chamava-se `BotaoDoMes`, e era o nome do primeiro sítio onde apareceu — o par
+// «Abrir Outubro / Fechar Setembro». Quando um componente serve um terceiro
+// caso, o nome tem de deixar de ser o do primeiro: agora também é o «Guardar
+// receita» e o «Guardar nota» da ficha de saúde, que não têm nada que ver com
+// meses.
 //
-// ⚠ Vive AQUI, e não dentro de um ecrã, porque o par existe em DOIS: o cartão
-// do mês na Gestão e a secção «Administração» do Dinheiro. Estavam desenhados à
-// mão nos dois, com cores diferentes — e o do Dinheiro tinha o rótulo de 13 px
-// na cor do acento e em âmbar, o que dá 2,12:1 no Cinza escuro e 3,17 no âmbar
-// claro. Catorze de vinte e quatro pares abaixo dos 4,5 que 13 px pedem.
+// ⚠ Vive AQUI, e não dentro de um ecrã, porque o par do mês existe em DOIS: o
+// cartão do mês na Gestão e a secção «Administração» do Dinheiro. Estavam
+// desenhados à mão nos dois, com cores diferentes — e o do Dinheiro tinha o
+// rótulo de 13 px na cor do acento e em âmbar, o que dá 2,12:1 no Cinza escuro
+// e 3,17 no âmbar claro. Catorze de vinte e quatro pares abaixo dos 4,5 que
+// 13 px pedem.
 //
-// As cores daqui foram MEDIDAS nos doze temas: o cheio leva branco sobre o
-// acento (4,62 no pior caso, o Cião claro) e o de contorno leva `text2` sobre o
-// cartão (9,65). Ver `design/abrir-fechar-mes.dc.html`.
-export function BotaoDoMes({ t, label, cheio, disabled, onPress }) {
-  const fundo = disabled ? t.border : cheio ? t.accent : 'transparent';
-  const cor = disabled ? t.text3 : cheio ? '#FFFFFF' : t.text2;
+// Os três pesos, com o pior caso medido nos doze temas:
+//
+//   'acento'     branco sobre o acento     4,62 (Cião claro)   — não se desfaz
+//   'comum'      `page` sobre `text1`     13,49                — tudo o resto
+//   'contorno'   `text2` sobre o cartão    9,65                — a alternativa
+//
+// Ver `design/abrir-fechar-mes.dc.html` e `design/botoes-da-saude.dc.html`.
+// ⚠ A `etiqueta` existe porque o rótulo VISÍVEL e o que se OUVE nem sempre
+// podem ser o mesmo. Numa lista de notas há um «Guardar» por nota, e o que a
+// pessoa ouve tem de dizer qual: «Guardar a alteração». Escrever «Guardar» nos
+// dois sítios quebrou uma prova que existia justamente para isso — e a prova
+// tinha razão.
+export function BotaoCompacto({ t, label, etiqueta, tom = 'contorno', disabled, onPress, largura }) {
+  const fundo = disabled ? t.border
+    : tom === 'acento' ? t.accent
+      : tom === 'comum' ? t.text1 : 'transparent';
+  const cor = disabled ? t.text3
+    : tom === 'acento' ? '#FFFFFF'
+      : tom === 'comum' ? t.page : t.text2;
   return (
     <Pressable onPress={disabled ? undefined : onPress}
-      accessibilityRole="button" accessibilityLabel={label}
+      accessibilityRole="button" accessibilityLabel={etiqueta || label}
       accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => ({
-        flex: 1,
+        // ⚠ O `flex: 1` é o comportamento por omissão porque o primeiro uso era
+        // um par de metades. Quem o quiser ajustado ao rótulo — um «Guardar» ao
+        // lado de um campo — passa `largura="conteudo"`.
+        ...(largura === 'conteudo' ? { paddingHorizontal: 14 } : { flex: 1 }),
         minHeight: 44,                       // INVARIANTE #5
-        borderRadius: R.row,               // o canto de tudo o que se toca
-        borderWidth: cheio ? 0 : 1,
-        borderColor: disabled ? t.border : t.border,
+        borderRadius: R.row,                 // o canto de tudo o que se toca
+        borderWidth: tom === 'contorno' ? 1 : 0,
+        borderColor: t.border,
         backgroundColor: fundo,
         alignItems: 'center', justifyContent: 'center',
         opacity: pressed ? 0.85 : 1,
@@ -413,6 +433,36 @@ export function BotaoDoMes({ t, label, cheio, disabled, onPress }) {
     </Pressable>
   );
 }
+
+// ── A pastilha que se toca ──────────────────────────────────────────────────
+//
+// Um botão que VIRA ESTADO: toca-se em «Guardada» na linha de uma receita, e a
+// linha passa a mostrar a pastilha «guardada» no mesmo sítio.
+//
+// ⚠ Desenha-se já com a cara do estado em que vai ficar — verde, com a marca —
+// e é isso que a distingue de um botão qualquer: a pessoa vê o resultado antes
+// de tocar. É o desenho E de `design/botoes-da-saude.dc.html`.
+//
+// Não confundir com a `Pill`, que é a mesma cara e NÃO se toca: esta é o antes,
+// aquela é o depois.
+//
+// ⚠ E o canto é `R.row`, não `R.pill` — tudo o que se toca leva o mesmo canto,
+// e essa regra ganha à semelhança com a pastilha que vem a seguir. A cor e a
+// marca chegam para a fazer.
+export const PastilhaTocavel = ({ t, label, fg, bg, border, icon = 'check', onPress }) => (
+  <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
+    style={({ pressed }) => ({
+      minHeight: 44, borderRadius: R.row, paddingHorizontal: 12,
+      borderWidth: 1, borderColor: border, backgroundColor: bg,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+      opacity: pressed ? 0.7 : 1,
+    })}>
+    <Icon name={icon} size={14} color={fg} />
+    <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, fontWeight: '600', color: fg }}>
+      {label}
+    </Text>
+  </Pressable>
+);
 
 
 // Ação secundária: contorno tracejado, minúsculas — o padrão «acrescentar».

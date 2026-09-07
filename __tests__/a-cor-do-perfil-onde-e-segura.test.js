@@ -131,25 +131,32 @@ describe('e os dois botões de mês do Dinheiro deixaram de ter o defeito', () =
 
   it('⚠ o par passou a ser o componente partilhado, e não dois `Pressable` à mão', () => {
     const d = ler('src/screens/Dinheiro.jsx');
-    expect(d).toMatch(/<BotaoDoMes t=\{t\} cheio label=\{`Abrir \$\{proximoMes\}`\}/);
-    expect(d).toMatch(/<BotaoDoMes t=\{t\} label=\{`Fechar \$\{s\.monthName\}`\}/);
+    // ⚠ Chamava-se `BotaoDoMes`. Quando passou a servir também os «Guardar» da
+    // ficha de saúde, o nome deixou de poder ser o do primeiro sítio onde
+    // apareceu — é `BotaoCompacto`, e o peso vem no `tom`.
+    expect(d).toMatch(/<BotaoCompacto t=\{t\} tom="acento" label=\{`Abrir \$\{proximoMes\}`\}/);
+    expect(d).toMatch(/<BotaoCompacto t=\{t\} label=\{`Fechar \$\{s\.monthName\}`\}/);
     // E o que lá estava — o acento e o âmbar como cor de texto — desapareceu.
     expect(d).not.toMatch(/fontSize: 13, fontWeight: '600', color: t\.accent/);
     expect(d).not.toMatch(/color: t\.state\.warnDeep[\s\S]{0,40}Fechar Mês/);
   });
 
   it('o componente vive no `ui.jsx`, que é o que faz haver UM desenho', () => {
-    expect(ler('src/ui.jsx')).toMatch(/export function BotaoDoMes/);
-    for (const f of ['src/screens/Dinheiro.jsx', 'src/screens/Gestao.jsx']) {
-      expect(ler(f)).toMatch(/BotaoDoMes/);
-      // E nenhum dos dois o redefine.
-      expect(ler(f)).not.toMatch(/function BotaoDoMes/);
+    expect(ler('src/ui.jsx')).toMatch(/export function BotaoCompacto/);
+    // Três ecrãs, um desenho: o par do mês em dois, e os «Guardar» da Saúde.
+    for (const f of ['src/screens/Dinheiro.jsx', 'src/screens/Gestao.jsx', 'src/screens/Saude.jsx']) {
+      expect(ler(f)).toMatch(/BotaoCompacto/);
+      // E nenhum dos três o redefine.
+      expect(ler(f)).not.toMatch(/function BotaoCompacto/);
     }
   });
 
   it('e o rótulo dele é branco sobre o acento, ou `text2` — nunca o acento', () => {
     const ui = ler('src/ui.jsx');
-    const bloco = ui.slice(ui.indexOf('export function BotaoDoMes'), ui.indexOf('export const AddButton'));
-    expect(bloco).toMatch(/cheio \? '#FFFFFF' : t\.text2/);
+    const bloco = ui.slice(ui.indexOf('export function BotaoCompacto'), ui.indexOf('export const PastilhaTocavel'));
+    // Os três pesos, e nenhum deles põe a cor do esquema num rótulo pequeno.
+    expect(bloco).toMatch(/tom === 'acento' \? '#FFFFFF'/);
+    expect(bloco).toMatch(/tom === 'comum' \? t\.page : t\.text2/);
+    expect(bloco).not.toMatch(/color[\s\S]{0,60}t\.accent/);
   });
 });

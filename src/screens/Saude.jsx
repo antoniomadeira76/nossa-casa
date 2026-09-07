@@ -5,7 +5,7 @@ import CampoData from '../CampoData';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro, STATE } from '../theme';
 import { DE } from '../data';
-import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Tap, Avatar, avatarDe } from '../ui';
+import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Tap, Avatar, avatarDe, BotaoCompacto, PastilhaTocavel, Segmented } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -188,6 +188,11 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   // o resto — ver daysUntil em format.js.
   const getRecipeExpiration = (expiresAt) => daysUntil(expiresAt) ?? 0;
 
+  // A data de uma receita, para ler. Aceita as duas formas que este campo teve:
+  // «02/09/2026», que é o que o formulário escreve, e «d2026-09-02», que é a
+  // chave — o servidor escrevia-a até 07/09/2026 e há fichas gravadas assim.
+  const dataDaReceita = (v) => (/^d\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? dmyDeChave(v) : v);
+
   // O mesmo caminho que a fatura de um equipamento usa (FichaEquipamento.jsx),
   // para não haver dois modos de escolher uma imagem nesta app.
   const escolherFotoDoAnexo = async () => {
@@ -285,22 +290,33 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                               fontFamily: FONT.ui, fontSize: 11, color: isExpired ? STATE.err : isWarning ? STATE.warn : t.text3,
                               fontWeight: isWarning || isExpired ? '600' : '400',
                             }}>
+                              {/* ⚠ Pelo `dataDaReceita`, e não cru. O campo
+                                  já chegou aqui nas duas formas — «02/09/2026»
+                                  do formulário e «d2026-09-02» do servidor — e
+                                  imprimir o valor tal como está pôs a chave no
+                                  ecrã. O servidor passou a escrever a forma da
+                                  loja; isto é a rede de segurança para o que já
+                                  está gravado com a outra. */}
                               {isExpired
-                                ? `Expirou em ${recipe.expiresAt}`
+                                ? `Expirou em ${dataDaReceita(recipe.expiresAt)}`
                                 : isWarning
-                                ? `Expira em ${recipe.expiresAt} (${daysLeft} dias)`
-                                : `Expira em ${recipe.expiresAt}`}
+                                ? `Expira em ${dataDaReceita(recipe.expiresAt)} (${daysLeft} dias)`
+                                : `Expira em ${dataDaReceita(recipe.expiresAt)}`}
                             </Text>
                           </View>
+                          {/* ⚠ Um botão que VIRA ESTADO, e desenhado como
+                              tal: verde, com a marca, igual à pastilha que vai
+                              ficar no lugar dele três linhas abaixo. A pessoa
+                              vê o resultado antes de tocar.
+
+                              Levava o ACENTO cheio — a cor que a app reserva
+                              para «isto não se desfaz» — e marcar uma receita
+                              como guardada não é nada disso. Desenho E de
+                              `design/botoes-da-saude.dc.html`. */}
                           {!recipe.decision && (
-                            <Pressable accessibilityRole="button"
-                              onPress={() => setRecipeDecision(record.id, recipe.id, 'guardada')}
-                              style={{ paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: t.accent, borderRadius: R.row, minHeight: 44, justifyContent: 'center' }}
-                            >
-                              <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: '#FFFFFF' }}>
-                                Guardada
-                              </Text>
-                            </Pressable>
+                            <PastilhaTocavel t={t} label="Guardada"
+                              fg={STATE.okDeep} bg={STATE.okBg} border={STATE.okBorder}
+                              onPress={() => setRecipeDecision(record.id, recipe.id, 'guardada')} />
                           )}
                           {recipe.decision && (
                             <Pill label={recipe.decision} bg={STATE.okBg} fg={STATE.ok} border={STATE.ok} />
@@ -372,19 +388,12 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                       <CampoData t={t} valor={chaveDeDMY(recipeForm.expiresAt)}
                         placeholder="Validade (dd/mm/aaaa)"
                         onChange={(k) => setRecipeForm(f => ({ ...f, expiresAt: dmyDeChave(k) }))} />
-                      <Pressable accessibilityRole="button"
-                        onPress={() => handleAddRecipe(record.id)}
+                      {/* Confirmar um campo: peso COMUM. Guardar uma receita
+                          acrescenta uma linha à ficha — não é dinheiro entre
+                          pessoas, não apaga, não fecha um período. */}
+                      <BotaoCompacto t={t} tom="comum" label="Guardar receita"
                         disabled={!recipeForm.name.trim() || !recipeForm.expiresAt.trim()}
-                        style={{
-                          paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: t.accent,
-                          borderRadius: R.row, minHeight: 44, justifyContent: 'center',
-                          opacity: !recipeForm.name.trim() || !recipeForm.expiresAt.trim() ? 0.5 : 1,
-                        }}
-                      >
-                        <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: '#FFFFFF', textAlign: 'center' }}>
-                          Guardar receita
-                        </Text>
-                      </Pressable>
+                        onPress={() => handleAddRecipe(record.id)} />
                     </View>
                   )}
                 </View>
@@ -450,16 +459,9 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                               backgroundColor: t.card, textAlignVertical: 'top' }}
                           />
                           <View style={{ flexDirection: 'row', gap: S.sm }}>
-                            <Pressable accessibilityRole="button" accessibilityLabel="Guardar a alteração"
-                              onPress={guardarAEdicao}
-                              disabled={!textoEmEdicao.trim()}
-                              style={{ flex: 1, minHeight: 44, minWidth: 44, borderRadius: R.row,
-                                backgroundColor: t.accent, alignItems: 'center', justifyContent: 'center',
-                                opacity: !textoEmEdicao.trim() ? 0.5 : 1 }}>
-                              <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>
-                                Guardar
-                              </Text>
-                            </Pressable>
+                            <BotaoCompacto t={t} tom="comum" label="Guardar"
+                              etiqueta="Guardar a alteração"
+                              disabled={!textoEmEdicao.trim()} onPress={guardarAEdicao} />
                             <Pressable accessibilityRole="button" accessibilityLabel="Cancelar a alteração"
                               onPress={pararDeEditar}
                               style={{ minHeight: 44, minWidth: 44, paddingHorizontal: S.md, borderRadius: R.row,
@@ -497,13 +499,20 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                       borderRadius: R.row, borderWidth: 1, borderColor: t.border,
                       backgroundColor: t.card, textAlignVertical: 'top' }}
                   />
+                  {/* ⚠ Este é só o «+», sem palavra, e por isso não passa pelo
+                      `BotaoCompacto`: um botão de ícone tem de declarar as duas
+                      medidas de 44 (INVARIANTE #5) e o `BotaoCompacto` só
+                      declara a altura — a largura dele vem do rótulo.
+
+                      O peso é o mesmo: COMUM. Acrescentar uma nota a uma
+                      consulta não é dinheiro, não apaga, não fecha nada. */}
                   <Pressable accessibilityRole="button" accessibilityLabel="Guardar nota"
                     onPress={() => handleAddNote(record.id)}
                     disabled={!rascunhoDe(record.id).trim()}
                     style={{ minHeight: 44, minWidth: 44, borderRadius: R.row,
-                      backgroundColor: t.accent, alignItems: 'center', justifyContent: 'center',
+                      backgroundColor: t.text1, alignItems: 'center', justifyContent: 'center',
                       opacity: !rascunhoDe(record.id).trim() ? 0.5 : 1 }}>
-                    <Icon name="plus" size={19} color="#FFFFFF" />
+                    <Icon name="plus" size={19} color={t.page} />
                   </Pressable>
                 </View>
 
@@ -520,24 +529,27 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                   <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: STATE.warn }}>
                     Precisa de ação
                   </Text>
-                  <View style={{ flexDirection: 'row', gap: S.sm }}>
-                    <Pressable accessibilityRole="button"
-                      onPress={() => setHealthDecision(record.id, 'acompanhamento', 'resolvido', 'Consulta marcada')}
-                      style={{ flex: 1, paddingHorizontal: S.md, paddingVertical: S.sm, backgroundColor: t.accent, borderRadius: R.row, minHeight: 44, justifyContent: 'center' }}
-                    >
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: '#FFFFFF', textAlign: 'center' }}>
-                        Resolvida
-                      </Text>
-                    </Pressable>
-                    <Pressable accessibilityRole="button"
-                      onPress={() => setHealthDecision(record.id, 'seguimento', 'pendente', 'A aguardar resultado')}
-                      style={{ flex: 1, paddingHorizontal: S.md, paddingVertical: S.sm, borderWidth: 1, borderColor: t.border, borderRadius: R.row, minHeight: 44, justifyContent: 'center' }}
-                    >
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text2, textAlign: 'center' }}>
-                        Pendente
-                      </Text>
-                    </Pressable>
-                  </View>
+                  {/* ⚠ Duas faces da MESMA pergunta, e por isso um
+                      segmentado e não dois botões soltos: o que está escolhido
+                      fica aceso, e a resposta actual lê-se sem se procurar.
+
+                      «Resolvida» levava o acento cheio. Aqui o aceso é o
+                      `chrome` do `Segmented` — a cor do cabeçalho do esquema,
+                      que já é como a app marca uma escolha em todo o lado —, e
+                      o acento fica livre para querer dizer o que quer dizer.
+
+                      Escolher «Resolvida» faz esta caixa desaparecer, porque o
+                      `needsDec` deixa de ser verdadeiro. Por isso o valor aceso
+                      é só «pendente» ou nenhum. */}
+                  <Segmented t={t} small
+                    value={decision && decision.status === 'pendente' ? 'pendente' : null}
+                    options={[
+                      { value: 'resolvido', label: 'Resolvida' },
+                      { value: 'pendente', label: 'Pendente' },
+                    ]}
+                    onChange={(v) => (v === 'resolvido'
+                      ? setHealthDecision(record.id, 'acompanhamento', 'resolvido', 'Consulta marcada')
+                      : setHealthDecision(record.id, 'seguimento', 'pendente', 'A aguardar resultado'))} />
                 </View>
               )}
 

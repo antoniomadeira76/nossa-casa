@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-nativ
 import { useStore } from '../store';
 import { S, R, FONT, LARGURA_APP } from '../theme';
 import { EUR, mesComAno, mesSeguinte, dmyDeChave } from '../format';
-import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty, avatarDe, NumField, BotaoDoMes } from '../ui';
+import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty, avatarDe, NumField, BotaoCompacto } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -48,11 +48,11 @@ function CartaoDoMes({ t, nome, aberto, desde, gasto, orcamento, onAbrir, onFech
             : `Orçamento de ${EUR(orcamento)} por distribuir`}
         </Text>
         <View style={{ flexDirection: 'row', gap: S.md, marginTop: 14 }}>
-          <BotaoDoMes t={t} cheio label={`Abrir ${seguinte}`} onPress={onAbrir} />
+          <BotaoCompacto t={t} tom="acento" label={`Abrir ${seguinte}`} onPress={onAbrir} />
           {/* ⚠ Fechar um mês que nunca foi aberto não é uma acção — é um
               engano à espera. Mostra-se desactivado, e não escondido: assim
               diz-se que existe e o que falta para lá chegar. */}
-          <BotaoDoMes t={t} label={`Fechar ${nome}`} disabled={!aberto} onPress={onFechar} />
+          <BotaoCompacto t={t} label={`Fechar ${nome}`} disabled={!aberto} onPress={onFechar} />
         </View>
       </Card>
     </View>
