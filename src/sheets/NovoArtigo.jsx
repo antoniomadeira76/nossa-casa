@@ -3,13 +3,12 @@ import { View, Text, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { Label, Choice, Toggle, Primary } from '../ui';
-import { SECTIONS } from '../data';
 
 export default function NovoArtigo({ t, user, onClose }) {
-  const { criarArtigo } = useStore();
+  const { criarArtigo, seccoes } = useStore();
   const [form, setForm] = useState({
     label: '',
-    section: 0,
+    section: null,   // o NOME do corredor; nasce vazio e o primeiro é o predefinido
     staple: false,
     est: 0,
   });
@@ -22,7 +21,8 @@ export default function NovoArtigo({ t, user, onClose }) {
     // compras que é, por natureza, de duas pessoas.
     criarArtigo({
       label: form.label,
-      section: form.section,
+      // Sem escolha, vai para o primeiro corredor — que é onde a lista começa.
+      section: form.section || seccoes[0],
       est: form.est || 0,
       staple: form.staple,
       by: user,
@@ -54,13 +54,16 @@ export default function NovoArtigo({ t, user, onClose }) {
       <View style={{ gap: S.sm }}>
         <Label t={t}>Secção</Label>
         <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-          {SECTIONS.map((sec, idx) => (
+          {/* ⚠ As secções da CASA. E a escolha guarda o NOME — o formulário
+              guardava o índice, e a partir do momento em que a casa pode
+              reordenar as secções um índice deixa de apontar para a mesma. */}
+          {seccoes.map((sec) => (
             <Choice
               key={sec}
               t={t}
               label={sec}
-              selected={form.section === idx}
-              onPress={() => setForm(f => ({ ...f, section: idx }))}
+              selected={form.section === sec}
+              onPress={() => setForm(f => ({ ...f, section: sec }))}
             />
           ))}
         </View>

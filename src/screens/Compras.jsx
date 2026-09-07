@@ -4,7 +4,6 @@ import { View, Text, Pressable, Modal } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, dayLabel, parseKey, WD, plural } from '../format';
-import { SECTIONS } from '../data';
 import { Card, SectionTitle, Label, AddButton, usePaged, Tap, Tile, Avatar, avatarDe } from '../ui';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
@@ -21,7 +20,7 @@ const diaDaSemana = (k) => {
 
 export default function Compras({ t, user, onModoCompras }) {
   const st = useStore();
-  const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas, removerArtigo, marcarArtigo, mudarPlanoDeCompras } = st;
+  const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas, removerArtigo, marcarArtigo, mudarPlanoDeCompras, seccoes } = st;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [aApagar, setAApagar] = useState(null);
 
@@ -212,8 +211,11 @@ export default function Compras({ t, user, onModoCompras }) {
         </Card>
       ) : null}
 
-      {SECTIONS.map((sec, si) => {
-        const rows = items.filter(i => i.s === si);
+      {/* ⚠ As secções da CASA, e não a constante do `data.js`. E a comparação
+          é pelo NOME: o `i.s` guardava um índice, e a partir do momento em que
+          a casa pode reordenar as secções um índice aponta para outra coisa. */}
+      {seccoes.map((sec) => {
+        const rows = items.filter(i => i.s === sec);
         if (!rows.length) return null;
         return (
           <View key={sec}>

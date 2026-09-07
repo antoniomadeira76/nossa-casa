@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, MEMBERS, ROLES, HEALTH, HEALTH_DOCS, VAULT, DE } from './data';
+import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, SECTIONS, MEMBERS, ROLES, HEALTH, HEALTH_DOCS, VAULT, DE } from './data';
 import { TODAY_KEY, TODAY, MONTHS, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY,
          chaveRelativa, plural, EUR } from './format';
 import { observacao, precosDe, estimativaDe, compararLojas } from './precos';
@@ -272,7 +272,7 @@ const BACKUPS_ANTIGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(n => `${KEY}.ant
 const DATA_KEYS = [
   'done', 'pending', 'status', 'registered', 'gastoLocal', 'acertoMovs', 'partilhasPagas', 'despesasMeias', 'gastoPorEnvelope', 'vaultMoves', 'paidPts',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
-  'newItems', 'itemGone', 'feitas', 'listasIds', 'envelopesDaCasa', 'mes',
+  'newItems', 'itemGone', 'feitas', 'listasIds', 'envelopesDaCasa', 'seccoesDaCasa', 'mes',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'pointValue', 'payDay', 'splitHalf',
@@ -287,10 +287,36 @@ const DATA_KEYS = [
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
 // muda, e MIGRATIONS ganha a entrada correspondente. Sem isto, dados antigos
 // eram lidos com a forma nova e ganhavam silenciosamente ao código.
-export const SCHEMA = 14;
+export const SCHEMA = 15;
 
 // Uma migração por salto de versão: recebe o objeto lido e devolve-o corrigido.
 export const MIGRATIONS = {
+  // v14 → v15: a secção de um artigo era um ÍNDICE e passa a ser o NOME.
+  //
+  // `i.s = 0..3` apontava para uma lista de quatro nomes que a casa não podia
+  // mudar. A partir do momento em que ela os pode reordenar ou apagar, um
+  // índice aponta para outra coisa a cada mudança — apagar «Frescos» fazia a
+  // mercearia toda mudar de corredor, em silêncio.
+  //
+  // ⚠ Sem isto, os artigos gravados ficavam com um número num campo que os
+  // ecrãs passaram a comparar com um nome: TODAS as secções apareceriam vazias.
+  // É a mesma lição da migração 14 — corrigir a leitura do servidor só serve as
+  // leituras futuras, e o `newItems` está no disco.
+  15: (o) => {
+    const artigos = o.newItems;
+    if (!Array.isArray(artigos)) return o;
+    if (!artigos.some(a => a && typeof a.s === 'number')) return o;
+    // A lista que a casa tem; se ainda não tem nenhuma, são as sementes — que
+    // é exactamente o que os índices significavam.
+    const lista = (o.seccoesDaCasa || []).length ? o.seccoesDaCasa : SECTIONS;
+    return {
+      ...o,
+      newItems: artigos.map(a => (a && typeof a.s === 'number'
+        ? { ...a, s: lista[a.s] || lista[0] || null }
+        : a)),
+    };
+  },
+
   // v13 → v14: os artigos que vieram do servidor ficaram com a forma dele.
   //
   // O `puxarCasa` montava `{ section, habitual }` e os ecrãs leem `{ s, staple }`
@@ -578,6 +604,8 @@ export const DEMO = () => ({
   vaultMoves: [],
   paidPts: Object.fromEntries(Object.keys(MEMBERS).filter(n => MEMBERS[n].kid).map(n => [n, 0])),
   envMove: {}, added: [], newTasks: [], taskEdits: {}, taskGone: {}, taskOrder: {},
+  // Vazio quer dizer «ainda são as sementes» — materializa-se ao primeiro toque.
+  seccoesDaCasa: [],
   // `nome → id` das três listas da casa, por lista. É o que permite renomear e
   // apagar do lado do servidor sem mudar a forma que os ecrãs leem.
   listasIds: {},
@@ -873,6 +901,12 @@ export function StoreProvider({ children }) {
       // É o mesmo raciocínio do cofre e do acerto — o que o servidor devolve
       // SUBSTITUI o que estava de cá, não se soma a ele.
       if (casa.gastoPorEnvelope) set({ gastoPorEnvelope: casa.gastoPorEnvelope, gastoLocal: {} });
+      // ⚠ Os corredores, com a ORDEM que o servidor tem. Sem esta linha a lista
+      // descia e ficava por aplicar — o meio-caminho que já deixou o gasto do
+      // mês somado e nunca usado.
+      if (casa.seccoesDaCasa && casa.seccoesDaCasa.length) {
+        set({ seccoesDaCasa: casa.seccoesDaCasa });
+      }
       if (typeof casa.despesasMeias === 'number') set({ despesasMeias: casa.despesasMeias });
 
       // ── A agenda e as tarefas do servidor ─────────────────────────────────
@@ -2216,7 +2250,14 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     if (!rotulo) return null;
     const id = 'art-' + Date.now();
     set(x => ({
-      newItems: [...(x.newItems || []), { id, s: section, label: rotulo, est: est || 0, staple, by }],
+      // ⚠ O NOME do corredor, e não o índice. Quem chama pode mandar as duas
+      // coisas — a folha do artigo ainda escolhe por posição —, e a tradução
+      // faz-se aqui, num sítio só.
+      newItems: [...(x.newItems || []), {
+        id,
+        s: typeof section === 'number' ? (listaDeSeccoes(x)[section] || listaDeSeccoes(x)[0]) : section,
+        label: rotulo, est: est || 0, staple, by,
+      }],
     }));
 
     if (sync) {
@@ -2225,7 +2266,9 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       // Sem lista aberta o artigo não tem onde entrar — fica local até haver
       // uma, que é melhor do que inventar uma ida às compras.
       if (ses && lista) sync.artigoDeCompras({
-        casa: ses.casa, lista, rotulo, seccao: section,
+        casa: ses.casa, lista, rotulo,
+        corredor: seccaoNoServidor(
+          typeof section === 'number' ? (seccoes[section] || seccoes[0]) : section),
         pedidoPor: idDoMembro(by), habitual: !!staple, estimativa: est,
       })
         .then((r) => { if (r && r.id) set(x => ({
@@ -2390,6 +2433,113 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // ── Os envelopes: criar, alterar e apagar ───────────────────────────────
   const envelopeNoServidor = (nome) =>
     ((s.envelopesDaCasa || []).find(e => e.name === nome) || {}).id || null;
+
+  // ── Os corredores da loja ─────────────────────────────────────────────────
+  //
+  // A ordem É o dado: uma secção não é só um nome, é o lugar dela no percurso.
+  // Por isso a lista é ORDENADA e não um conjunto.
+  //
+  // ⚠ E o artigo guarda o NOME do corredor, não o índice. Era `i.s = 0..3`, um
+  // índice numa lista de quatro nomes fixos; a partir do momento em que a casa
+  // os pode reordenar, um índice aponta para outra coisa a cada mudança — a
+  // mesma armadilha da grelha de envelopes que mostrava uma lista e aplicava
+  // outra.
+  const seccoes = (s.seccoesDaCasa || []).length ? s.seccoesDaCasa : SECTIONS;
+
+  // Materializa-se antes de se lhe mexer, como os envelopes: enquanto ninguém
+  // lhes tocar, a lista são as sementes e o `seccoesDaCasa` está vazio.
+  const listaDeSeccoes = (x) => ((x.seccoesDaCasa || []).length ? x.seccoesDaCasa : [...SECTIONS]);
+
+  const seccaoNoServidor = (nome) => ((s.listasIds || {}).seccoes || {})[nome] || null;
+
+  const criarSeccao = (nome) => {
+    const n = String(nome || '').trim();
+    if (!n) return 'A secção precisa de um nome.';
+    if (listaDeSeccoes(s).some(x => x.toLowerCase() === n.toLowerCase())) {
+      return 'Já existe uma secção com esse nome.';
+    }
+    let posto = 0;
+    set(x => {
+      const lista = [...listaDeSeccoes(x), n];
+      posto = lista.length;
+      return { seccoesDaCasa: lista };
+    });
+    if (sync) {
+      const ses = sync.sessao();
+      if (ses) sync.criarSeccao({ casa: ses.casa, nome: n, posto })
+        // O id guarda-se para que renomear, apagar e reordenar tenham para
+        // onde ir — como nas outras listas da casa.
+        .then(r => { if (r && r.id) set(x => ({
+          listasIds: { ...x.listasIds, seccoes: { ...(x.listasIds || {}).seccoes, [n]: r.id } },
+        })); })
+        .catch(() => {});
+    }
+    return null;
+  };
+
+  // ⚠ Renomear reescreve os ARTIGOS, porque a chave é o nome. É o mesmo que o
+  // `alterarEnvelope` faz com o `monthLimits`: uma lista que muda de nome e
+  // deixa as linhas a apontar para o nome velho é uma lista partida.
+  const alterarSeccao = (nome, novoNome) => {
+    const n = String(novoNome || '').trim();
+    if (!n || n === nome) return null;
+    if (listaDeSeccoes(s).some(x => x !== nome && x.toLowerCase() === n.toLowerCase())) {
+      return 'Já existe uma secção com esse nome.';
+    }
+    const id = seccaoNoServidor(nome);
+    if (sync && id) sync.renomearSeccao(id, n).catch(() => {});
+    set(x => ({
+      seccoesDaCasa: listaDeSeccoes(x).map(v => (v === nome ? n : v)),
+      newItems: (x.newItems || []).map(a => (a.s === nome ? { ...a, s: n } : a)),
+      listasIds: {
+        ...(x.listasIds || {}),
+        seccoes: Object.fromEntries(Object.entries((x.listasIds || {}).seccoes || {})
+          .map(([k, v]) => [k === nome ? n : k, v])),
+      },
+    }));
+    return null;
+  };
+
+  // ⚠ Apagar uma secção NÃO apaga os artigos dela: passam para a primeira que
+  // sobrar. Um artigo sem corredor desaparecia de todas as abas menos «Todos»,
+  // e ninguém saberia porquê.
+  const apagarSeccao = (nome) => {
+    const lista = listaDeSeccoes(s);
+    if (lista.length <= 1) return 'A casa tem de ter pelo menos uma secção.';
+    const sobra = lista.find(v => v !== nome) || null;
+    const id = seccaoNoServidor(nome);
+    if (sync && id) sync.apagarSeccao(id).catch(() => {});
+    set(x => ({
+      seccoesDaCasa: listaDeSeccoes(x).filter(v => v !== nome),
+      newItems: (x.newItems || []).map(a => (a.s === nome ? { ...a, s: sobra } : a)),
+    }));
+    // E os artigos que mudaram de corredor sobem, senão o outro telemóvel
+    // continuava a vê-los na secção apagada.
+    if (sync && sobra) {
+      const idSobra = seccaoNoServidor(sobra);
+      for (const a of (s.newItems || [])) {
+        if (a.s === nome && a.idServidor) sync.mudarCorredor(a.idServidor, idSobra).catch(() => {});
+      }
+    }
+    return null;
+  };
+
+  // A ordem nova, inteira. ⚠ Recebe NOMES e não índices, pela mesma razão de
+  // sempre — e recusa uma lista que não seja a mesma gente, senão uma ordem
+  // parcial apagava as que ficaram de fora.
+  const reordenarSeccoes = (nomes) => {
+    const nova = (Array.isArray(nomes) ? nomes : []).filter(Boolean);
+    const antiga = listaDeSeccoes(s);
+    if (nova.length !== antiga.length) return 'A ordem tem de ter todas as secções.';
+    if (new Set(nova).size !== nova.length) return 'A mesma secção aparece duas vezes.';
+    if (nova.some(n => !antiga.includes(n))) return 'Essa secção não existe nesta casa.';
+    set(() => ({ seccoesDaCasa: nova }));
+    if (sync) {
+      const ids = nova.map(n => seccaoNoServidor(n)).filter(Boolean);
+      if (ids.length === nova.length) sync.reordenarSeccoes(ids).catch(() => {});
+    }
+    return null;
+  };
 
   // ⚠ A lista da casa MATERIALIZA-SE antes de se lhe mexer.
   //
@@ -4060,6 +4210,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope, registarDespesa,
     criarEvento, alterarEventoDaCasa, eventoNoServidor, escoarFilaGoogle,
     criarArtigo, marcarArtigo, artigoNoServidor, mudarPlanoDeCompras, fecharIdaAsCompras,
+    seccoes, criarSeccao, alterarSeccao, apagarSeccao, reordenarSeccoes,
     criarEquipamento, equipNoServidor, mudarPreferencia,
     abrirMes, fecharMes, mudarLimiteDoMes,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,

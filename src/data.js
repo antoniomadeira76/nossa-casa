@@ -37,20 +37,27 @@ export const TASKS = [
   { id: 'meds',    title: 'Vitamina D das crianças',    who: 'Rita',  meta: 'Rotina diária · manhã',    pts: 0, done: true, recur: 'Todos os dias', urg: 1 },
 ];
 
+// ⚠ A secção pelo NOME, e não pelo índice.
+//
+// Era `s: 0..3`, um índice em `SECTIONS`. A partir do momento em que a casa
+// pode reordenar as secções — 08/09/2026 —, um índice aponta para outra coisa a
+// cada mudança. Aqui não se notava porque as sementes e a constante nunca
+// mudavam; notava-se na casa a sério, e é a mesma armadilha da grelha de
+// envelopes que mostrava uma lista e aplicava outra.
 export const ITEMS = [
-  { id: 'maca',   s: 0, label: 'Maçã reineta · 1,5 kg',     est: 3.40, by: `Adicionado por Rita · ${ddmmRelativo(-1)}` },
-  { id: 'cen',    s: 0, label: 'Cenoura · 1 kg',            est: 1.20, staple: true, by: 'Artigo habitual · semanal' },
-  { id: 'ban',    s: 0, label: 'Banana · 1 kg',             est: 1.85, real: 1.85, by: `Comprado por Tomás · ${ddmmRelativo(-1)}` },
-  { id: 'leite',  s: 1, label: 'Leite meio-gordo · 6 un.',  est: 5.10, staple: true, by: 'Artigo habitual · semanal' },
-  { id: 'iog',    s: 1, label: 'Iogurtes das crianças · 8', est: 4.60, by: `Adicionado pela Mia · ${ddmmRelativo(0)}` },
-  { id: 'queijo', s: 1, label: 'Queijo flamengo fatiado',   est: 3.20, staple: true, by: 'Artigo habitual' },
-  { id: 'mant',   s: 1, label: 'Manteiga sem sal',          est: 2.50, by: `Adicionado por Rita · ${ddmmRelativo(0)}` },
-  { id: 'arroz',  s: 2, label: 'Arroz agulha · 1 kg',       est: 1.30, staple: true, by: 'Artigo habitual' },
-  { id: 'massa',  s: 2, label: 'Massa espirais · 500 g',    est: 0.95, by: `Adicionado por Tomás · ${ddmmRelativo(0)}` },
-  { id: 'cafe',   s: 2, label: 'Café moído · 250 g',        est: 3.80, staple: true, by: 'Artigo habitual' },
-  { id: 'pao',    s: 2, label: 'Pão de forma',              est: 1.60, by: 'Adicionado por Rita · há 3 min' },
-  { id: 'papel',  s: 3, label: 'Papel de cozinha · 6 rolos',est: 4.20, staple: true, by: 'Artigo habitual' },
-  { id: 'det',    s: 3, label: 'Detergente da louça',       est: 2.30, staple: true, by: 'Artigo habitual' },
+  { id: 'maca',   s: 'Frutas & Legumes', label: 'Maçã reineta · 1,5 kg',     est: 3.40, by: `Adicionado por Rita · ${ddmmRelativo(-1)}` },
+  { id: 'cen',    s: 'Frutas & Legumes', label: 'Cenoura · 1 kg',            est: 1.20, staple: true, by: 'Artigo habitual · semanal' },
+  { id: 'ban',    s: 'Frutas & Legumes', label: 'Banana · 1 kg',             est: 1.85, real: 1.85, by: `Comprado por Tomás · ${ddmmRelativo(-1)}` },
+  { id: 'leite',  s: 'Frescos', label: 'Leite meio-gordo · 6 un.',  est: 5.10, staple: true, by: 'Artigo habitual · semanal' },
+  { id: 'iog',    s: 'Frescos', label: 'Iogurtes das crianças · 8', est: 4.60, by: `Adicionado pela Mia · ${ddmmRelativo(0)}` },
+  { id: 'queijo', s: 'Frescos', label: 'Queijo flamengo fatiado',   est: 3.20, staple: true, by: 'Artigo habitual' },
+  { id: 'mant',   s: 'Frescos', label: 'Manteiga sem sal',          est: 2.50, by: `Adicionado por Rita · ${ddmmRelativo(0)}` },
+  { id: 'arroz',  s: 'Mercearia', label: 'Arroz agulha · 1 kg',       est: 1.30, staple: true, by: 'Artigo habitual' },
+  { id: 'massa',  s: 'Mercearia', label: 'Massa espirais · 500 g',    est: 0.95, by: `Adicionado por Tomás · ${ddmmRelativo(0)}` },
+  { id: 'cafe',   s: 'Mercearia', label: 'Café moído · 250 g',        est: 3.80, staple: true, by: 'Artigo habitual' },
+  { id: 'pao',    s: 'Mercearia', label: 'Pão de forma',              est: 1.60, by: 'Adicionado por Rita · há 3 min' },
+  { id: 'papel',  s: 'Casa', label: 'Papel de cozinha · 6 rolos',est: 4.20, staple: true, by: 'Artigo habitual' },
+  { id: 'det',    s: 'Casa', label: 'Detergente da louça',       est: 2.30, staple: true, by: 'Artigo habitual' },
 ];
 
 export const EVENTS = [

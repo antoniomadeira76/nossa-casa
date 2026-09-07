@@ -453,6 +453,24 @@ export async function puxarCasa() {
     listasIds[naLoja] = Object.fromEntries(linhas.map(l => [l.nome, l.id]));
   }
 
+  // ── Os corredores ─────────────────────────────────────────────────────────
+  //
+  // ⚠ NÃO entram na tabela acima, e a razão é a única coisa que os distingue
+  // das outras três listas: têm ORDEM. Uma secção não é só um nome — é o lugar
+  // onde ela fica no percurso da loja, e uma lista de nomes sem ordem não diz
+  // por onde se anda.
+  //
+  // Vêm ordenadas pelo `posto`, que conta de UM. Ordenar aqui e não no ecrã é
+  // o que faz os dois telemóveis mostrarem o mesmo percurso.
+  const linhasDeSeccao = [...(casa.seccoes || [])]
+    .sort((a, b) => (Number(a.posto) || 0) - (Number(b.posto) || 0));
+  const seccoesDaCasa = linhasDeSeccao.map(l => l.nome);
+  if (linhasDeSeccao.length) {
+    listasIds.seccoes = Object.fromEntries(linhasDeSeccao.map(l => [l.nome, l.id]));
+  }
+  // `id → nome`, para o artigo saber em que corredor está.
+  const nomeDoCorredor = Object.fromEntries(linhasDeSeccao.map(l => [l.id, l.nome]));
+
   // ── O orçamento ───────────────────────────────────────────────────────────
   //
   // Os envelopes eram SEMENTES NO CÓDIGO (`ENV_BASE`): a lista nunca veio do
@@ -515,7 +533,16 @@ export async function puxarCasa() {
     id: a.id,
     idServidor: a.id,
     label: a.rotulo,
-    s: Number(a.seccao) || 0,
+    // ⚠ O corredor pelo NOME, e não pelo índice.
+    //
+    // Era `Number(a.seccao) || 0` — um índice numa lista de quatro nomes que a
+    // casa não podia mudar. Agora que os pode reordenar e apagar, um índice
+    // aponta para outra coisa a cada mudança. A reserva para o índice antigo
+    // fica enquanto houver linhas por migrar: `migrar-seccoes.mjs` enche o
+    // `corredor`, e até lá o número ainda diz onde o artigo estava.
+    s: nomeDoCorredor[a.corredor]
+      || seccoesDaCasa[Number(a.seccao) || 0]
+      || seccoesDaCasa[0] || null,
     staple: !!a.habitual,
     est: Number(a.estimativa) || 0,
     // A linha pequena debaixo do rótulo. As sementes trazem-na escrita; aqui
@@ -626,6 +653,7 @@ export async function puxarCasa() {
     partilhasPagas,
     despesasMeias,
     gastoPorEnvelope,
+    seccoesDaCasa,
     registered,
     newEquip,
     preferencias,
@@ -899,6 +927,40 @@ export async function apagarDaLista(chave, id) {
   return servidor.pb.collection(colecaoDaLista(chave)).delete(id);
 }
 
+// ── Os corredores da loja ────────────────────────────────────────────────────
+//
+// ⚠ Fora do `acrescentarNaLista` de propósito: uma secção tem `posto`, e as
+// outras três listas não têm. Enfiá-la lá dentro obrigava a tabela a ter uma
+// excepção — e uma tabela com excepções deixa de ser uma tabela.
+export async function criarSeccao({ casa, nome, posto }) {
+  if (!ligado()) return { pendente: true };
+  return criarOuEnfileirarCasa('seccoes', { casa, nome, posto });
+}
+
+export async function renomearSeccao(id, nome) {
+  if (!ligado() || !id) return { pendente: true };
+  return servidor.pb.collection('seccoes').update(id, { nome });
+}
+
+export async function apagarSeccao(id) {
+  if (!ligado() || !id) return { pendente: true };
+  return servidor.pb.collection('seccoes').delete(id);
+}
+
+// A ordem nova, de uma vez. ⚠ Os postos contam de UM: um `number` do PocketBase
+// não é anulável, e o zero é que faz de «sem posto».
+export async function reordenarSeccoes(ids) {
+  if (!ligado()) return { pendente: true };
+  return Promise.all((ids || []).map((id, i) =>
+    servidor.pb.collection('seccoes').update(id, { posto: i + 1 }).catch(() => null)));
+}
+
+// E o corredor de um artigo, quando ele muda de sítio.
+export async function mudarCorredor(idNoServidor, idDoCorredor) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('artigos').update(idNoServidor, { corredor: idDoCorredor || null });
+}
+
 // ── O mês ────────────────────────────────────────────────────────────────────
 //
 // ⚠ Fechar o mês fazia `registered: 0` e `envMove: {}` — escrever zero por cima
@@ -1056,11 +1118,13 @@ export async function alterarListaDeCompras(idNoServidor, campos) {
   return servidor.pb.collection('listas_compras').update(idNoServidor, linha);
 }
 
-export async function artigoDeCompras({ casa, lista, rotulo, seccao, pedidoPor, habitual, estimativa }) {
+// ⚠ O `corredor` é uma RELAÇÃO e vem de quem chama. O `seccao` numérico deixou
+// de ser escrito: era um índice, e a casa passou a poder reordenar as secções.
+export async function artigoDeCompras({ casa, lista, rotulo, corredor, pedidoPor, habitual, estimativa }) {
   if (!lista) throw new Error('Um artigo sem lista não se grava — não teria onde aparecer.');
   return criarOuEnfileirarCasa('artigos', {
     casa, lista, rotulo,
-    seccao: Number.isFinite(Number(seccao)) ? Number(seccao) : 0,
+    corredor: corredor || null,
     pedido_por: pedidoPor || null,
     estado: 'por_comprar',
     habitual: !!habitual,

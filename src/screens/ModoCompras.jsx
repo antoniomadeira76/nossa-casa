@@ -3,7 +3,6 @@ import { View, Text, Pressable, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, elev } from '../theme';
 import { EUR, plural } from '../format';
-import { SECTIONS } from '../data';
 import { Card, Label, Bar, Primary, AddButton, usePaged, Pager } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
@@ -26,8 +25,8 @@ const ENVELOPE_DAS_COMPRAS = 'Mercearia';
 
 export default function ModoCompras({ t, user, onClose }) {
   const { s, set, allItems, envelopes, precoDe, definirPrecoPago, registarPrecos,
-          lojaDoPlano, marcarArtigo, registarDespesa, fecharIdaAsCompras } = useStore();
-  const [step, setStep] = useState(-1);            // -1 = Todos
+          lojaDoPlano, marcarArtigo, registarDespesa, fecharIdaAsCompras, seccoes } = useStore();
+  const [step, setStep] = useState(null);          // null = Todos
   const [novoArtigo, setNovoArtigo] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
 
@@ -60,7 +59,10 @@ export default function ModoCompras({ t, user, onClose }) {
   const mercearia = envelopes.find(e => e.name === 'Mercearia');
   const merc = mercearia ? mercearia.limit - mercearia.used : 0;
 
-  const inStep = step === -1 ? items : items.filter(i => i.s === step);
+  // ⚠ O `step` é o NOME do corredor, não o índice. Era um número, e a casa
+  // passou a poder reordenar as secções — um índice deixaria de apontar para o
+  // mesmo sítio à primeira mudança.
+  const inStep = step === null ? items : items.filter(i => i.s === step);
   const pg = usePaged(inStep, 10);
 
   // Um artigo tem três estados nesta lista, não dois. «Sem stock» não é o
@@ -70,7 +72,7 @@ export default function ModoCompras({ t, user, onClose }) {
   // outro — o esquema da coleção `artigos` já avisava.
   const marcar = (id, estado) => marcarArtigo(id, estado);
 
-  const tabs = [{ i: -1, label: 'Todos' }, ...SECTIONS.map((n, i) => ({ i, label: n.split(' ')[0] }))];
+  const tabs = [{ i: null, label: 'Todos' }, ...seccoes.map(n => ({ i: n, label: n.split(' ')[0] }))];
   const pctCart = merc > 0 ? (cart / merc) * 100 : 0;
   // A barra do carrinho: vermelha acima do limite, âmbar perto dele, e do
   // ESQUEMA no caso normal — que não é um estado, é o progresso da compra.
@@ -99,7 +101,7 @@ export default function ModoCompras({ t, user, onClose }) {
           // despachadas, sem nunca ter havido nada para despachar. Um ecrã
           // cheio de verde a dizer que se fez o que não havia que fazer.
           const naSeccao = items.filter(i => i.s === x.i);
-          const limpo = x.i >= 0 && naSeccao.length > 0
+          const limpo = x.i !== null && naSeccao.length > 0
             && naSeccao.every(i => stateOf(i) !== 'open');
           return (
             <Pressable key={x.i} onPress={() => setStep(x.i)} accessibilityRole="tab"
@@ -142,8 +144,8 @@ export default function ModoCompras({ t, user, onClose }) {
               depois de eles voltarem a ter artigos — dois dos quatro tinham um.
               O `plural` do `format.js` existe para isto e estava a três linhas
               de distância, usado no ecrã das Compras. */}
-          {step === -1 ? `Toda a lista · ${plural(items.length, 'artigo', 'artigos')}`
-            : `${SECTIONS[step]} · ${plural(inStep.length, 'artigo', 'artigos')}`}
+          {step === null ? `Toda a lista · ${plural(items.length, 'artigo', 'artigos')}`
+            : `${step} · ${plural(inStep.length, 'artigo', 'artigos')}`}
         </Text>
 
         {pg.slice.map(i => {
@@ -235,13 +237,13 @@ export default function ModoCompras({ t, user, onClose }) {
           onde está o botão que fecha — e é esse que leva o acento. Um passo
           intermédio pintado como decisão final ensina a família a carregar sem
           ler. A linha por baixo diz o que vai encontrar lá dentro. */}
-      {step === -1 || step >= SECTIONS.length - 1 ? (
+      {step === null || seccoes.indexOf(step) >= seccoes.length - 1 ? (
         <Primary t={t} comum label="Fechar Conta e Registar Despesa"
           sub={cart > 0 ? `${EUR(cart)} · ${plural(doneItems.length, 'artigo', 'artigos')}` : null}
           onPress={() => setCartOpen(true)} />
       ) : (
         <Primary t={t} comum label="Secção seguinte" icon="caretRight"
-          onPress={() => setStep(x => Math.min(SECTIONS.length - 1, x + 1))} />
+          onPress={() => setStep(x => seccoes[Math.min(seccoes.length - 1, seccoes.indexOf(x) + 1)])} />
       )}
 
       {novoArtigo ? (

@@ -521,6 +521,13 @@ const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
   'especialidades', 'categorias_equip', 'lojas',
   // As compras: a lista aberta e os artigos dela. O `estado` vive na LINHA do
   // artigo — é isso que faz dois telefones na mesma loja fundirem-se.
+  //
+  // ⚠ E os corredores. Eram quatro nomes fixos no `data.js`, e a casa não lhes
+  // podia tocar; passaram a ser uma lista com ORDEM, que é o que uma secção é —
+  // a ordem por que se anda na loja. Sem estarem aqui, quem reordenasse num
+  // telemóvel ficava a ser o único a ver a ordem nova: a classe «sobe e nunca
+  // desce», que o registo desta casa diz ser pior do que não sincronizar.
+  'seccoes',
   'listas_compras', 'artigos',
   // ⚠ As preferências são de CADA UM: a regra é `membro = @request.auth.id`, e
   // esta leitura devolve UMA linha — a de quem pergunta — ou nenhuma. É a única
