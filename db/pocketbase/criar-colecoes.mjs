@@ -57,7 +57,11 @@ const NOSSAS = [
   // reference in eventos». É o mesmo erro que a `credenciais_agenda` ensinou.
   'eventos',
   'anexos', 'episodios_saude', 'especialidades', 'manutencoes', 'categorias_equip',
-  'metas', 'acertos', 'transferencias', 'artigos', 'listas_compras', 'lojas',
+  // ⚠ A `seccoes` vem DEPOIS dos `artigos`, e é por causa da ordem de limpeza:
+  // apaga-se pela ordem inversa das relações, e o artigo aponta para o corredor.
+  // À frente dele, a limpeza parava com «existing reference in artigos» — a
+  // mesma lição da `credenciais_agenda` e dos `eventos`.
+  'metas', 'acertos', 'transferencias', 'artigos', 'listas_compras', 'lojas', 'seccoes',
   'registo', 'meses', 'preferencias', 'equipamentos', 'cofre_movimentos', 'despesas',
   'envelopes', 'tarefas_feitas', 'tarefas', 'membros', 'casas'];
 
@@ -691,6 +695,28 @@ await criar({
 });
 
 // ── Compras ──────────────────────────────────────────────────────────────────
+//
+// Os corredores da loja, por que ordem se anda neles.
+//
+// ⚠ Eram quatro nomes fixos no `data.js` — «Frutas & Legumes», «Frescos»,
+// «Mercearia», «Casa» — e a casa não lhes podia tocar. Passam a ser uma lista
+// da casa, como as lojas e os envelopes.
+//
+// O `posto` é a ordem, e conta de UM: um `number` do PocketBase não é anulável,
+// e um campo novo nasce a zero em todas as linhas que já existem. Com o posto a
+// contar de zero, a lista inteira lia-se empatada em primeiro e saía por ordem
+// qualquer — foi o que aconteceu às tarefas.
+await criar({
+  name: 'seccoes', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    txt('nome', { required: true }),
+    num('posto', { min: 0, onlyInt: true }),
+  ],
+  listRule: DA_CASA, viewRule: DA_CASA,
+  createRule: `${DA_CASA} && ${ADULTO}`, updateRule: `${DA_CASA} && ${ADULTO}`, deleteRule: `${DA_CASA} && ${ADULTO}`,
+});
+
 await criar({
   name: 'lojas', type: 'base',
   fields: [rel('casa', ids.casas, { required: true, cascadeDelete: true }), txt('nome', { required: true })],
@@ -730,7 +756,22 @@ await criar({
     rel('casa', ids.casas, { required: true, cascadeDelete: true }),
     rel('lista', ids.listas_compras, { required: true, cascadeDelete: true }),
     txt('rotulo', { required: true }),
+    // ⚠ O corredor é uma RELAÇÃO, e o `seccao` numérico fica só para a
+    // migração o ler.
+    //
+    // Era `num('seccao', { min: 0, max: 3 })` — um ÍNDICE, com o máximo preso
+    // aos quatro nomes que o `data.js` tinha. Enquanto os nomes fossem fixos
+    // isso era inofensivo; a partir do momento em que a casa os pode reordenar
+    // ou apagar, um índice passa a apontar para outra coisa e a mercearia toda
+    // muda de corredor em silêncio. É o mesmo defeito da grelha de envelopes
+    // que mostrava uma lista e aplicava outra.
+    //
+    // Campo NOVO em vez de mudar o tipo deste: mudar um `number` para relação
+    // numa coleção que já tem linhas é pedir ao PocketBase que converta dados a
+    // sério, e não há aqui nada que justifique esse risco. O `seccao` fica,
+    // por ler, até a migração ter corrido em todo o lado.
     num('seccao', { min: 0, max: 3, onlyInt: true }),
+    rel('corredor', ids.seccoes),
     rel('pedido_por', ids.membros),
     sel('estado', ['por_comprar', 'confirmado', 'sem_stock']),
     num('estimativa', { min: 0 }), num('preco_real', { min: 0 }),
@@ -739,8 +780,8 @@ await criar({
   // O estado vive na linha do artigo. Se fosse uma lista de identificadores
   // confirmados, dois telefones na mesma loja anulavam-se; assim, fundem-se.
   listRule: DA_CASA, viewRule: DA_CASA,
-  createRule: `${DA_CASA} && ${daCasaTambem('lista', 'pedido_por')}`,
-  updateRule: `${DA_CASA} && ${daCasaTambem('lista', 'pedido_por')}`,
+  createRule: `${DA_CASA} && ${daCasaTambem('lista', 'pedido_por', 'corredor')}`,
+  updateRule: `${DA_CASA} && ${daCasaTambem('lista', 'pedido_por', 'corredor')}`,
   deleteRule: `${DA_CASA} && ${ADULTO}`,
 });
 

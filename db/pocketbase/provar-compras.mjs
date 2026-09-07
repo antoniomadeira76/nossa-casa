@@ -143,8 +143,13 @@ await prova('⚠ e o `puxarCasa` traduz os estados de volta para a forma da loja
   const b = (lida.newItems || []).find(a => a.id === banana);
   if (!b) throw new Error('a banana não veio');
   igual(b.label, 'Bananas');
-  igual(b.section, 0);
-  igual(b.habitual, true);
+  // ⚠ `s` e `staple`, que são os nomes da LOJA. Esta prova pedia `section` e
+  // `habitual` — os nomes do servidor — e ficou a falhar quando o `sync.js`
+  // passou a montar a forma que os ecrãs leem, em 07/09/2026. Era ela que
+  // estava desactualizada: com `section`, as quatro secções do Modo Compras
+  // apareciam vazias.
+  igual(b.s, 0);
+  igual(b.staple, true);
   // E o plano: a loja pelo ÍNDICE na lista `stores`, que é o que o ecrã lê.
   igual(lida.shopPlan.who, 'Rita');
   igual(lida.shopPlan.day, 'd2026-09-28');

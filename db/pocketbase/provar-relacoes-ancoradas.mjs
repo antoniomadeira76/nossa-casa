@@ -185,6 +185,7 @@ nosso.tarefa = await admin.collection('tarefas').create({
   casa: casa.id, titulo: 'Pôr a mesa', atribuido_a: leo.id, pontos: 1 });
 nosso.loja = await admin.collection('lojas').create({ casa: casa.id, nome: 'Continente' });
 nosso.lista = await admin.collection('listas_compras').create({ casa: casa.id, loja: nosso.loja.id });
+nosso.corredor = await admin.collection('seccoes').create({ casa: casa.id, nome: 'Mercearia', posto: 1 });
 nosso.equipamento = await admin.collection('equipamentos').create({
   casa: casa.id, nome: 'Máquina de lavar' });
 
@@ -194,6 +195,7 @@ nosso.equipamento = await admin.collection('equipamentos').create({
 const deles = {};
 deles.envelope = await admin.collection('envelopes').create({
   casa: outra.id, nome: 'Mercearia deles', limite_base: 100 });
+deles.lista = await admin.collection('listas_compras').create({ casa: outra.id });
 
 // Uma tentativa por relação: os campos mínimos, com a relação a apontar para
 // DENTRO desta casa e o `casa` da linha na casa DELA.
@@ -215,6 +217,15 @@ const ATAQUES = [
   ['decisoes_saude', 'episodio', { estado: 'pendente', episodio: () => nosso.episodio.id }],
   ['listas_compras', 'loja', { loja: () => nosso.loja.id }],
   ['artigos', 'lista', { rotulo: 'X', lista: () => nosso.lista.id }],
+  // ⚠ O `corredor` nasceu em 07/09/2026 — as secções deixaram de ser um índice
+  // e passaram a ser linhas da casa. E esta prova apanhou-me OUTRA VEZ: a regra
+  // já estava ancorada, o ataque é que não estava escrito. É a segunda vez que
+  // ela me apanha a acrescentar uma relação sem o ataque dela, e a primeira foi
+  // o `para_envelope` da transferência.
+  //
+  // A lista tem de ser DELA, senão a recusa vem por causa da lista e não do
+  // corredor — e a prova passava sem provar a ponta que interessa.
+  ['artigos', 'corredor', { rotulo: 'X', lista: () => deles.lista.id, corredor: () => nosso.corredor.id }],
   ['manutencoes', 'equipamento', { equipamento: () => nosso.equipamento.id }],
 ];
 
