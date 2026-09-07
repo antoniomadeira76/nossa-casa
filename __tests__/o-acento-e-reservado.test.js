@@ -150,6 +150,92 @@ describe('⚠ o acento é uma lista fechada, e a lista é esta', () => {
   });
 });
 
+// ── E o acento fora do `Primary` ────────────────────────────────────────────
+//
+// ⚠ A prova acima enumera `<Primary`, e é um COMPONENTE. A regra é sobre o
+// ACENTO, e por isso ela tem um buraco do tamanho de tudo o que preenche com
+// `t.accent` à mão — que eram onze sítios. Um deles era o «Fechar» do ecrã de
+// acesso restrito: um botão de desistir, cheio de acento, na única cor forte de
+// uma página que não decide nada.
+//
+// A distinção que interessa: `backgroundColor: t.accent` SEM condição é o uso
+// reservado; `selected ? t.accent : …` é outra coisa — o acento a marcar a
+// opção escolhida, que é como a `Choice` e a `Opcao` funcionam.
+const ACENTO_A_MAO = (() => {
+  const fora = [];
+  for (const rel of jsxDaApp()) {
+    // Os comentários são APAGADOS, não tirados: assim o número da linha
+    // continua a ser o do ficheiro. Tirá-las desloca tudo o que vem abaixo.
+    const txt = fs.readFileSync(path.join(RAIZ, rel), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+      .split('\n').map(l => (/^\s*(\/\/|\*)/.test(l) ? '' : l));
+    // ⚠ Resolve UM nível de variável.
+    //
+    // O `Confirm.jsx` preenche com `backgroundColor: cheio`, e o `cheio` é
+    // `destructive ? t.state.errDeep : t.accent`. Escrito assim — que é código
+    // melhor do que repetir o ternário — o acento desaparecia deste guarda: ele
+    // procurava `t.accent` na MESMA linha do `backgroundColor`. Dar um nome a
+    // uma cor não devia tirá-la da lista.
+    const porNome = new Set(
+      [...txt.join('\n').matchAll(/const (\w+) = [^;\n]*t\.accent/g)].map(m => m[1]));
+    const eAcento = (l) => /backgroundColor:[^,;]*t\.accent/.test(l)
+      || [...porNome].some(n => new RegExp(`backgroundColor:\\s*${n}\\b`).test(l));
+
+    txt.forEach((l, i) => {
+      if (!eAcento(l)) return;
+      if (/\?[^:]*t\.accent/.test(l)) return;          // marca uma escolha
+      const volta = txt.slice(Math.max(0, i - 14), i + 8).join(' ');
+      if (!/<Pressable\b|accessibilityRole="button"/.test(volta)) return;   // é uma forma
+      if (!/minHeight/.test(l) && !/minHeight/.test(volta)) return;         // não é alvo
+      fora.push({ rel, linha: i + 1, texto: l.trim() });
+    });
+  }
+  return fora;
+})();
+
+// Quem pode preencher com o acento à mão, e porquê. A regra que a app pratica,
+// escrita: o acento vive no CONFIRMAR de um diálogo — o último toque antes de
+// algo acontecer — e no que mexe em dinheiro entre pessoas, apaga, ou fecha um
+// período. A ENTRADA para um diálogo é comum; o confirmar é que leva a cor.
+const ACENTO_JUSTIFICADO = {
+  'src/ConfirmShare.jsx': 'o «Guardar» do diálogo que confirma a visibilidade de um evento — é o último toque antes de o evento sair, e de a Google convidar quem for por e-mail',
+  'src/Confirm.jsx': 'o botão de confirmar do diálogo de confirmação da app — é o último toque antes de algo acontecer, e é CHEIO porque em contorno o rótulo de 15 px falhava 4,5:1 em seis dos doze temas (sete na variante destrutiva)',
+  'src/screens/Saude.jsx': '⚠ CINCO botões pequenos de campo: «Guardada», «Guardar receita», «Guardar», «Guardar nota», «Resolvida». Não são confirmações de diálogo nem mexem em dinheiro — são commits de um campo, e pela regra não deviam levar o acento. Ficam à espera de decisão: passá-los a `comum` põe cinco blocos escuros dentro de uma ficha clínica, e o que eles querem é provavelmente um terceiro peso, mais leve do que os dois. Relatado em 07/09/2026.',
+  // O `ui.jsx` não entra: o `jsxDaApp()` exclui-o de propósito — é onde o
+  // `Primary` VIVE, e o acento dele é governado pela lista do topo deste
+  // ficheiro. Pô-lo aqui era um motivo sem sítio, e a prova de baixo apanha-o.
+};
+
+describe('⚠ e o acento preenchido à mão, fora do `Primary`', () => {
+  it('a prova encontra sítios — senão o buraco continua tapado por acidente', () => {
+    expect(ACENTO_A_MAO.length).toBeGreaterThan(3);
+  });
+
+  it('⚠ cada ficheiro que preenche com o acento tem o motivo escrito', () => {
+    const semMotivo = [...new Set(ACENTO_A_MAO.map(a => a.rel))]
+      .filter(rel => !ACENTO_JUSTIFICADO[rel]);
+    expect(semMotivo).toEqual([]);
+  });
+
+  it('e nenhum motivo sobra sem sítio', () => {
+    const vivos = new Set(ACENTO_A_MAO.map(a => a.rel));
+    expect(Object.keys(ACENTO_JUSTIFICADO).filter(r => !vivos.has(r))).toEqual([]);
+  });
+
+  it('⚠ o «Fechar» do acesso restrito deixou de levar acento', () => {
+    // Um botão de desistir não é uma decisão. Passou a `Primary comum`, e ganhou
+    // de caminho o alvo de 44 que lhe faltava.
+    const g = fs.readFileSync(path.join(RAIZ, 'src', 'screens', 'Gestao.jsx'), 'utf8');
+    const i = g.indexOf('Apenas administradores podem aceder');
+    expect(i).toBeGreaterThan(0);
+    // A janela é generosa: os comentários que explicam o defeito vivem entre a
+    // frase e o botão, e 900 caracteres não chegavam para lá passar.
+    const perto = g.slice(i, i + 1600);
+    expect(perto).toMatch(/<Primary t=\{t\} comum label="Fechar"/);
+    expect(perto).not.toMatch(/backgroundColor: t\.accent/);
+  });
+});
+
 describe('o «Fechar» nunca é o botão de maior peso da folha', () => {
   // Havia três, todos com a cor do esquema: o botão que não faz nada pintado
   // como o que apaga a casa.

@@ -6,6 +6,7 @@ import { EUR, mesComAno, mesSeguinte, dmyDeChave } from '../format';
 import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty, avatarDe, NumField, BotaoDoMes } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
+import Confirm from '../Confirm';
 
 // Com que limite nasce um envelope novo. Estava escrito no meio da chamada, sem
 // nome e sem aparecer em sítio nenhum da folha; agora tem nome e o botão diz-lhe
@@ -118,9 +119,20 @@ export default function Gestao({ t, user, onClose }) {
         <Text style={{ fontFamily: FONT.ui, fontSize: 14, color: t.text3, textAlign: 'center' }}>
           Apenas administradores podem aceder à gestão da casa.
         </Text>
-        <Pressable accessibilityRole="button" onPress={onClose} style={{ marginTop: S.xl, paddingHorizontal: S.lg, paddingVertical: S.md, backgroundColor: t.accent, borderRadius: R.row }}>
-          <Text style={{ fontFamily: FONT.display, fontSize: 14, color: '#FFFFFF' }}>Fechar</Text>
-        </Pressable>
+        {/* ⚠ Levava o ACENTO cheio, e é uma saída: fecha um ecrã que diz
+            «acesso restrito» e não decide nada. O acento quer dizer «isto não
+            se desfaz», e num ecrã onde não há nada para fazer era a única cor
+            forte — a coisa mais chamativa da página era o botão de desistir.
+
+            É o mesmo defeito dos três «Fechar» com acento que o ImportarGoogle
+            tinha. Passa a `comum`, o peso que os outros trinta botões da app
+            têm, e ganha o alvo de 44 que também lhe faltava. */}
+        {/* O `Primary` não tem largura própria; num contentor centrado
+            ajusta-se ao rótulo, e é o que se quer aqui. A margem era do
+            `Pressable` que ele substitui. */}
+        <View style={{ marginTop: S.xl, paddingHorizontal: S.xl }}>
+          <Primary t={t} comum label="Fechar" onPress={onClose} />
+        </View>
       </ScrollView>
     );
   }
@@ -914,88 +926,45 @@ export default function Gestao({ t, user, onClose }) {
           em React Native seria um ReferenceError. O papel mudou-se para
           dentro da folha do membro, onde o nome está em mão. */}
 
-      {modal === 'openMonth' && (
-        <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
-          <Pressable accessibilityRole="button" onPress={() => setModal(null)}
-            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <Pressable accessibilityRole="button" style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 320 }}>
-              <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
-                Abrir novo mês?
-              </Text>
-              <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2, textAlign: 'center' }}>
-                Distribuir rendimento pelos envelopes e resetar gastos.
-              </Text>
+      {/* ── Os dois diálogos do mês ───────────────────────────────────────
+          ⚠ Eram escritos à mão, os dois, com os botões a 34 px de altura.
+          Medido no navegador: «Cancelar» e «Abrir», 34×140, num diálogo que
+          abre ou fecha o mês do orçamento da casa. O INVARIANTE #5 são 44, e
+          nenhuma das 1700 provas os media — porque nenhuma abria estes dois
+          diálogos.
 
-              <View style={{ flexDirection: 'row', gap: S.md }}>
-                <Pressable onPress={() => setModal(null)} accessibilityRole="button"
-                  accessibilityLabel="Cancelar" style={{ flex: 1 }}>
-                  <View style={{ padding: S.md, borderRadius: R.row, borderWidth: 1, borderColor: t.border }}>
-                    <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.text2, textAlign: 'center' }}>
-                      Cancelar
-                    </Text>
-                  </View>
-                </Pressable>
-                {/* ⚠ Pelo `abrirMes` da loja, como o Dinheiro. Isto escrevia
-                    `monthZero: false, registered: 0` e mais nada: a Gestão era
-                    uma SEGUNDA porta para a mesma acção, e só uma delas dava
-                    para o servidor. Abrir o mês por aqui não criava linha
-                    nenhuma em `meses`, e o zero durava até à leitura seguinte —
-                    o mês reabria com o gasto do anterior. */}
-                <Pressable accessibilityRole="button" onPress={() => {
-                  abrirMes({
-                    nome: mesSeguinte(s.monthName),
-                    limites: s.monthLimits || {},
-                  });
-                  setModal(null);
-                }} style={{ flex: 1 }}>
-                  <View style={{ padding: S.md, borderRadius: R.row, backgroundColor: t.accent }}>
-                    <Text style={{ fontFamily: FONT.display, fontSize: 14, color: '#FFFFFF', textAlign: 'center' }}>
-                      Abrir
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-            </Pressable>
-          </Pressable>
-        </Modal>
+          A causa era não terem `minHeight` nenhum: contavam com `padding: 8`
+          mais a altura da letra, e 8+8+18 dá 34. Um alvo que resulta de uma
+          soma em vez de um mínimo declarado é um alvo por acidente.
+
+          Passam a usar o `Confirm`, que é o diálogo de confirmação da app e já
+          declara os 44 — e assim deixam de ser um terceiro desenho para o
+          padrão «Cancelar / Confirmar» que a app já tinha em dois sítios. */}
+      {modal === 'openMonth' && (
+        <Confirm t={t} icon="calendar"
+          title={`Abrir ${mesSeguinte(s.monthName)}?`}
+          message={`Distribui o rendimento pelos envelopes e recomeça a contagem dos gastos. ${mesComAno(s.monthName)} passa a fechado.`}
+          confirmLabel={`Abrir ${mesSeguinte(s.monthName)}`}
+          onConfirm={() => {
+            // ⚠ Pelo `abrirMes` da loja, como o Dinheiro. Isto escrevia
+            // `monthZero: false, registered: 0` e mais nada: a Gestão era uma
+            // SEGUNDA porta para a mesma acção, e só uma delas dava para o
+            // servidor. Abrir o mês por aqui não criava linha nenhuma em
+            // `meses`, e o zero durava até à leitura seguinte — o mês reabria
+            // com o gasto do anterior.
+            abrirMes({ nome: mesSeguinte(s.monthName), limites: s.monthLimits || {} });
+            setModal(null);
+          }}
+          onCancel={() => setModal(null)} />
       )}
 
       {modal === 'closeMonth' && (
-        <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
-          <Pressable accessibilityRole="button" onPress={() => setModal(null)}
-            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <Pressable accessibilityRole="button" style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 320 }}>
-              <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
-                Fechar mês?
-              </Text>
-              <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2, textAlign: 'center' }}>
-                Arquivar os movimentos do mês e recomeçar a contagem.
-              </Text>
-
-              <View style={{ flexDirection: 'row', gap: S.md }}>
-                <Pressable onPress={() => setModal(null)} accessibilityRole="button"
-                  accessibilityLabel="Cancelar" style={{ flex: 1 }}>
-                  <View style={{ padding: S.md, borderRadius: R.row, borderWidth: 1, borderColor: t.border }}>
-                    <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.text2, textAlign: 'center' }}>
-                      Cancelar
-                    </Text>
-                  </View>
-                </Pressable>
-                {/* Pelo `fecharMes` da loja, pela mesma razão. */}
-                <Pressable accessibilityRole="button" onPress={() => {
-                  fecharMes();
-                  setModal(null);
-                }} style={{ flex: 1 }}>
-                  <View style={{ padding: S.md, borderRadius: R.row, backgroundColor: t.accent }}>
-                    <Text style={{ fontFamily: FONT.display, fontSize: 14, color: '#FFFFFF', textAlign: 'center' }}>
-                      Fechar
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-            </Pressable>
-          </Pressable>
-        </Modal>
+        <Confirm t={t} icon="checkSquare"
+          title={`Fechar ${s.monthName}?`}
+          message={`Arquiva as despesas de ${mesComAno(s.monthName)} e recomeça a contagem. O saldo que restar não se move.`}
+          confirmLabel={`Fechar ${s.monthName}`}
+          onConfirm={() => { fecharMes(); setModal(null); }}
+          onCancel={() => setModal(null)} />
       )}
 
       {sheetOpen === 'newShop' && (
