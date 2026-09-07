@@ -193,6 +193,17 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   // chave — o servidor escrevia-a até 07/09/2026 e há fichas gravadas assim.
   const dataDaReceita = (v) => (/^d\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? dmyDeChave(v) : v);
 
+  // A data de uma nota, para ler. ⚠ Devolve `null` quando não há — e é o ponto:
+  // quem monta a linha filtra os vazios, e um separador nunca fica pendurado.
+  //
+  // A nota escrita aqui guarda um ISO completo; a que desce do servidor traz o
+  // `editada_em`, e a que nunca foi editada não traz nada. As três formas
+  // passam por aqui.
+  const dataDaNota = (v) => {
+    const iso = String(v || '').slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? dmyDeChave(`d${iso}`) : null;
+  };
+
   // O mesmo caminho que a fatura de um equipamento usa (FichaEquipamento.jsx),
   // para não haver dois modos de escolher uma imagem nesta app.
   const escolherFotoDoAnexo = async () => {
@@ -409,6 +420,20 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                     Sem notas ainda.
                   </Text>
                 )}
+                {/* ⚠ A regra estava INVISÍVEL. Só quem escreveu uma nota a pode
+                    alterar ou apagar — o lápis e o caixote só aparecem nas
+                    próprias —, e quem olhava para a nota de outra pessoa via
+                    apenas nada: sem ícone, sem explicação, sem forma de saber
+                    se era assim de propósito ou se estava partido.
+
+                    Foi lido como um defeito, e por boa razão. Uma linha, uma
+                    vez, e só quando há de facto notas de outra pessoa — repetir
+                    em cada nota seria ruído. */}
+                {notes.some(n => n.author !== user) ? (
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 11, lineHeight: 16, color: t.text3 }}>
+                    Cada nota só se altera ou apaga por quem a escreveu.
+                  </Text>
+                ) : null}
                 {notes.map(note => {
                   const aEditar = notaEmEdicao
                     && notaEmEdicao.healthId === record.id
@@ -423,9 +448,29 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                       backgroundColor: t.subtle, borderRadius: R.row,
                       borderWidth: aEditar ? 1 : 0, borderColor: t.accent }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.sm }}>
+                        {/* ⚠ Três defeitos numa linha só, e todos visíveis:
+                            «Rita · », com o separador pendurado.
+
+                            1. O NOME sozinho. Num cartão que já diz «Mia» no
+                               topo, um «Rita» três linhas abaixo lê-se como se
+                               a nota fosse SOBRE a Rita. Foi lido assim.
+                               Agora diz «Nota de Rita».
+                            2. A DATA vazia. As notas do servidor não trazem
+                               data — a coleção `notas_saude` só tem
+                               `editada_em`, e uma nota nunca editada fica sem
+                               nenhuma. O «·» ficava a prometer o que não vinha.
+                            3. `date.split('T')[0]` dava «2026-09-07», que é a
+                               forma da máquina. A app escreve dd/mm/aaaa.
+
+                            A linha monta-se juntando só os pedaços que EXISTEM.
+                            Assim nunca pode sobrar um separador — é a mesma
+                            correcção do «Quarta, 09/09 ·  · Pingo Doce». */}
                         <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 11, color: t.text3, fontWeight: '600' }}>
-                          {note.author} · {note.date.split('T')[0]}
-                          {note.editadaEm ? ' · alterada' : ''}
+                          {[
+                            `Nota de ${note.author}`,
+                            dataDaNota(note.date),
+                            note.editadaEm ? 'alterada' : null,
+                          ].filter(Boolean).join(' · ')}
                         </Text>
                         {minha && !aEditar ? (
                           <>

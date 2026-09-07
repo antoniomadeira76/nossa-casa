@@ -38,16 +38,23 @@ const s = (p) => ({ password: p, passwordConfirm: p });
 const rita  = await mk('rita',  'admin',   { email: 'rita@x.pt',  ...s('palavra-longa-1'), verified: true });
 const tomas = await mk('tomas', 'adulto',  { email: 'tomas@x.pt', ...s('palavra-longa-2'), verified: true });
 const leo   = await mk('leo',   'crianca', { ...s('1357'), verified: true });
+// ⚠ Uma SEGUNDA criança, e não é enfeite: sem ela não se pode provar o caso que
+// interessa — uma criança a escrever na ficha de OUTRA. Com uma criança só, a
+// única coisa provável é ela na sua própria ficha, e isso deixa de fora o medo
+// que uma casa com dois filhos tem.
+const mia   = await mk('mia',   'crianca', { ...s('2468'), verified: true });
 
 const ep = (membro, especialidade) => admin.collection('episodios_saude').create({
   casa: casa.id, membro, especialidade, dia: '2026-08-28' });
 const epRita  = await ep(rita.id,  'Medicina geral');
 const epTomas = await ep(tomas.id, 'Dermatologia');
 const epLeo   = await ep(leo.id,   'Pediatria');
+const epMia   = await ep(mia.id,   'Dentista');
 
 const cRita  = await como('rita@x.pt',  'palavra-longa-1');
 const cTomas = await como('tomas@x.pt', 'palavra-longa-2');
 const cLeo   = await como(leo.login, '1357');
+const cMia   = await como(mia.login, '2468');
 
 // ── 1. A visibilidade herda-se do episódio ───────────────────────────────────
 console.log('\n── a nota vê-se se e só se a consulta se vê ──');
@@ -119,9 +126,60 @@ await prova('o Tomás escreve a sua, na mesma consulta', async () => {
   igual(r.autor, tomas.id);
 });
 
-await prova('⚠ e a criança não escreve nenhuma', () =>
+await prova('⚠ e a criança não escreve nenhuma, nem na sua própria ficha', () =>
   recusado(() => cLeo.collection('notas_saude').create({
     casa: casa.id, episodio: epLeo.id, autor: leo.id, texto: 'Não me dói nada' })));
+
+// ── ⚠ Uma criança na ficha de OUTRA criança ─────────────────────────────────
+//
+// Pedido em 07/09/2026: «uma criança não pode escrever notas noutra criança, só
+// os adultos podem». A regra `ADULTO` já o impedia, e o ficheiro não o provava —
+// tinha uma criança só, e com uma criança só o caso não se pode montar.
+//
+// Três portas, porque uma regra que só se testa pela porta da frente não está
+// testada: escrever na ficha da outra, escrever pondo o id de um ADULTO no
+// `autor`, e alterar o que a mãe escreveu.
+
+await prova('⚠ o Léo NÃO escreve na ficha da Mia', () =>
+  recusado(() => cLeo.collection('notas_saude').create({
+    casa: casa.id, episodio: epMia.id, autor: leo.id, texto: 'A Mia disse que dói' })));
+
+await prova('⚠ nem pondo a mãe no `autor` — a assinatura não é a autorização', () =>
+  recusado(() => cLeo.collection('notas_saude').create({
+    casa: casa.id, episodio: epMia.id, autor: rita.id, texto: 'A Mia disse que dói' })));
+
+await prova('⚠ e a Mia também não escreve na do Léo', () =>
+  recusado(() => cMia.collection('notas_saude').create({
+    casa: casa.id, episodio: epLeo.id, autor: mia.id, texto: 'O Léo faltou' })));
+
+await prova('⚠ nem uma criança LÊ a nota da ficha da outra', async () => {
+  // A escrita recusada não chega: se ela conseguisse ler, sabia o que a mãe
+  // escreveu sobre a irmã. É o INVARIANTE #3 — o dado não pode CHEGAR ao
+  // dispositivo.
+  const notaDaMia = await admin.collection('notas_saude').create({
+    casa: casa.id, episodio: epMia.id, autor: rita.id, texto: 'Aparelho a incomodar' });
+  igual((await cLeo.collection('notas_saude').getFullList()).length, 0);
+  await recusado(() => cLeo.collection('notas_saude').getOne(notaDaMia.id));
+  await recusado(() => cMia.collection('notas_saude').getOne(notaDaMia.id));
+});
+
+await prova('⚠ nem altera nem apaga o que a mãe escreveu', async () => {
+  const nota = (await admin.collection('notas_saude').getFullList())
+    .find(n => n.episodio === epMia.id);
+  await recusado(() => cLeo.collection('notas_saude').update(nota.id, { texto: 'mudei' }));
+  await recusado(() => cMia.collection('notas_saude').update(nota.id, { texto: 'mudei' }));
+  await recusado(() => cMia.collection('notas_saude').delete(nota.id));
+});
+
+await prova('e os dois adultos escrevem na ficha da Mia, que é o que se quer', async () => {
+  // Uma prova de recusas sem uma de permissão não distingue «está protegido» de
+  // «está partido».
+  const r = await cTomas.collection('notas_saude').create({
+    casa: casa.id, episodio: epMia.id, autor: tomas.id, texto: 'Levei-a eu' });
+  igual(r.autor, tomas.id);
+  const vistas = await cRita.collection('notas_saude').getFullList();
+  igual(vistas.filter(n => n.episodio === epMia.id).length, 2);
+});
 
 // ── 3. As receitas ───────────────────────────────────────────────────────────
 console.log('\n── as receitas, pela mesma porta ──');
