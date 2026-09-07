@@ -260,6 +260,67 @@ describe('o plano de compras não aponta para quem não existe', () => {
   });
 });
 
+describe('⚠ os artigos gravados com a forma do servidor passam à forma da loja', () => {
+  // O `puxarCasa` montava `{ section, habitual }`; os ecrãs leem `{ s, staple }`.
+  // Corrigir o `sync.js` só serve as leituras FUTURAS: o `newItems` é gravado, e
+  // sem migração as quatro secções do Modo Compras ficavam vazias para sempre
+  // em qualquer telemóvel que não voltasse a falar com o servidor.
+  const catorze = (loja) => MIGRATIONS[14](loja);
+
+  it('o corredor passa de `section` para `s`', () => {
+    const r = catorze({ v: 13, newItems: [
+      { id: 'a', idServidor: 'a', label: 'Leite', section: 2, habitual: true, est: 1.2 },
+    ] });
+    expect(r.newItems[0].s).toBe(2);
+    expect(r.newItems[0].staple).toBe(true);
+    expect(r.newItems[0].section).toBeUndefined();
+    expect(r.newItems[0].habitual).toBeUndefined();
+    // E o resto fica: um artigo não perde o rótulo nem o preço a mudar de nome.
+    expect(r.newItems[0].label).toBe('Leite');
+    expect(r.newItems[0].est).toBe(1.2);
+    expect(r.newItems[0].idServidor).toBe('a');
+  });
+
+  it('⚠ um artigo que já tem `s` fica intacto', () => {
+    // As sementes e o `criarArtigo` sempre escreveram a forma certa. Uma
+    // migração que lhes mexesse punha o corredor a zero.
+    const seed = { id: 'cen', s: 3, label: 'Cenoura', est: 1.2, staple: true };
+    const r = catorze({ v: 13, newItems: [{ ...seed }] });
+    expect(r.newItems[0]).toEqual(seed);
+  });
+
+  it('e uma lista com as duas formas converte só a antiga', () => {
+    const r = catorze({ v: 13, newItems: [
+      { id: 'a', label: 'Servidor', section: 1, habitual: false },
+      { id: 'b', label: 'Local', s: 2, staple: true },
+    ] });
+    expect(r.newItems[0].s).toBe(1);
+    expect(r.newItems[1].s).toBe(2);
+    expect(r.newItems[1].staple).toBe(true);
+  });
+
+  it('sem `section` em ninguém, devolve a loja tal e qual', () => {
+    // Não é só «não rebenta»: é não tocar. Uma migração que reescreve tudo
+    // sempre é uma migração que corre em todas as versões seguintes.
+    const loja = { v: 13, newItems: [{ id: 'a', s: 0, label: 'x' }] };
+    expect(catorze(loja)).toBe(loja);
+  });
+
+  it('sem artigos gravados não rebenta', () => {
+    expect(() => catorze({ v: 13 })).not.toThrow();
+    expect(() => catorze({ v: 13, newItems: null })).not.toThrow();
+    expect(() => catorze({ v: 13, newItems: [null, undefined] })).not.toThrow();
+  });
+
+  it('e o `section` a zero não se confunde com ausente', () => {
+    // `Number(0) || 0` dá 0, e `section: 0` é o primeiro corredor — não é
+    // «sem corredor». O `|| 0` aqui é inofensivo, e a prova diz porquê.
+    const r = catorze({ v: 13, newItems: [{ id: 'a', label: 'x', section: 0, habitual: false }] });
+    expect(r.newItems[0].s).toBe(0);
+    expect(r.newItems[0].staple).toBe(false);
+  });
+});
+
 describe('as lojas da demonstração saem de uma casa a sério', () => {
   const SEMENTES = ['Continente de Belém', 'Pingo Doce da Ajuda', 'Mercado de Alcântara'];
   const treze = (loja) => MIGRATIONS[13](loja);

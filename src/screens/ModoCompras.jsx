@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, elev } from '../theme';
-import { EUR } from '../format';
+import { EUR, plural } from '../format';
 import { SECTIONS } from '../data';
 import { Card, Label, Bar, Primary, AddButton, usePaged, Pager } from '../ui';
 import Icon from '../Icon';
@@ -127,15 +127,23 @@ export default function ModoCompras({ t, user, onClose }) {
         </View>
         <Bar t={t} pct={pctCart} color={barColor} />
         <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-          {doneItems.length} de {items.length} artigos confirmados
+          {/* «0 de 1 artigos confirmados» numa lista de um só. O `plural` conta
+              pelo TOTAL, que é a palavra a que «artigos» pertence. */}
+          {doneItems.length} de {plural(items.length, 'artigo confirmado', 'artigos confirmados')}
           {porConfirmar.length ? ` · ${porConfirmar.length} por confirmar` : ''}
-          {semStock.length ? ` · ${semStock.length} sem stock` : ''}
+          {semStock.length ? ` · ${plural(semStock.length, 'sem stock', 'sem stock')}` : ''}
         </Text>
       </Card>
 
       <View style={{ gap: S.md }}>
         <Text style={{ fontFamily: FONT.display, fontSize: 18, fontWeight: '700', color: t.slate }}>
-          {step === -1 ? `Toda a lista · ${items.length} artigos` : `${SECTIONS[step]} · ${inStep.length} artigos`}
+          {/* ⚠ Era «artigos» escrito à mão, e um corredor com um artigo só dizia
+              «Mercearia · 1 artigos». Visto ao percorrer os quatro corredores
+              depois de eles voltarem a ter artigos — dois dos quatro tinham um.
+              O `plural` do `format.js` existe para isto e estava a três linhas
+              de distância, usado no ecrã das Compras. */}
+          {step === -1 ? `Toda a lista · ${plural(items.length, 'artigo', 'artigos')}`
+            : `${SECTIONS[step]} · ${plural(inStep.length, 'artigo', 'artigos')}`}
         </Text>
 
         {pg.slice.map(i => {
@@ -229,7 +237,7 @@ export default function ModoCompras({ t, user, onClose }) {
           ler. A linha por baixo diz o que vai encontrar lá dentro. */}
       {step === -1 || step >= SECTIONS.length - 1 ? (
         <Primary t={t} comum label="Fechar Conta e Registar Despesa"
-          sub={cart > 0 ? `${EUR(cart)} · ${doneItems.length} ${doneItems.length === 1 ? 'artigo' : 'artigos'}` : null}
+          sub={cart > 0 ? `${EUR(cart)} · ${plural(doneItems.length, 'artigo', 'artigos')}` : null}
           onPress={() => setCartOpen(true)} />
       ) : (
         <Primary t={t} comum label="Secção seguinte" icon="caretRight"

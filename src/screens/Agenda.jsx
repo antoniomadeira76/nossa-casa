@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
-import { MONTHS, WD_SHORT, TODAY, TODAY_KEY, dkey, dayLabel, evTime } from '../format';
+import { MONTHS, WD_SHORT, TODAY, TODAY_KEY, dkey, dayLabel, evTime, plural } from '../format';
 
 import { Card, SectionTitle, Avatar, Empty, AddButton, Tap, usePaged, Pager, PastilhaVisibilidade, avatarDe } from '../ui';
 import Icon from '../Icon';
@@ -177,7 +177,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                         setSheetOpen(true);
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={`${c.n} de ${MONTHS[ym.m].toLowerCase()}${c.evs.length ? ` · ${c.evs.length} eventos` : ''}`}
+                      accessibilityLabel={`${c.n} de ${MONTHS[ym.m].toLowerCase()}${c.evs.length ? ` · ${plural(c.evs.length, 'evento', 'eventos')}` : ''}`}
                       accessibilityState={{ selected: on }}
                       style={{ flex: 1, minHeight: 46, borderRadius: R.sm, alignItems: 'center',
                         justifyContent: 'center', gap: 4,

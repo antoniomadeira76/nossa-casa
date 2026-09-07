@@ -49,6 +49,7 @@ import { eEnderecoDeCasa, PORQUE_NAO_SOBE } from './endereco';
 // isso as provas em Node conseguem carregar este ficheiro. Uma importação que
 // arraste o RN parte todas elas — já aconteceu com o `Platform`.
 import { chaveDeDMY, dmyDeChave } from './format';
+import { paraOServidor, paraALoja } from './compras-estado';
 
 export { eEnderecoDeCasa, PORQUE_NAO_SOBE };
 
@@ -493,13 +494,35 @@ export async function puxarCasa() {
 
   const artigosDaLista = (casa.artigos || []).filter(a => aberta && a.lista === aberta.id);
 
+  // ⚠ A forma é a da LOJA, campo a campo. Era esta:
+  //
+  //     { id, idServidor, label, section, habitual, est }
+  //
+  // e os ecrãs leem `i.s` e `i.staple` — a forma das sementes do `data.js`, que
+  // é a que o `criarArtigo` também escreve. O `section` e o `habitual` não eram
+  // lidos por ninguém.
+  //
+  // Consequência: o Modo Compras existe para andar corredor a corredor, e numa
+  // casa ligada ao servidor as QUATRO secções apareciam vazias. Medido:
+  // «Frutas & Legumes · 0 artigos», «Frescos · 0», «Mercearia · 0», «Casa · 0»
+  // — e «Toda a lista · 8 artigos». Os artigos existiam todos; nenhum tinha o
+  // campo pelo qual são agrupados.
+  //
+  // É a terceira vez que um nome divergente entre o servidor e os ecrãs custa
+  // uma funcionalidade inteira, depois do `sem-stock` e do `plano.time`. Guarda:
+  // `__tests__/o-artigo-tem-a-forma-da-loja.test.js`.
   const newItems = artigosDaLista.map(a => ({
     id: a.id,
     idServidor: a.id,
     label: a.rotulo,
-    section: Number(a.seccao) || 0,
-    habitual: !!a.habitual,
+    s: Number(a.seccao) || 0,
+    staple: !!a.habitual,
     est: Number(a.estimativa) || 0,
+    // A linha pequena debaixo do rótulo. As sementes trazem-na escrita; aqui
+    // constrói-se de quem pediu o artigo, que é a informação que o servidor
+    // tem. Sem `pedido_por`, fica vazia em vez de dizer «undefined».
+    by: a.habitual ? 'Artigo habitual'
+      : nomeDoMembro[a.pedido_por] ? `Adicionado por ${nomeDoMembro[a.pedido_por]}` : '',
   }));
 
   // ⚠ O `estado` vem DA LINHA de cada artigo, e não de uma lista à parte. É
@@ -508,7 +531,7 @@ export async function puxarCasa() {
   // fazer errado.
   const status = {};
   for (const a of artigosDaLista) {
-    const naLoja = ESTADO_NA_LOJA[a.estado];
+    const naLoja = paraALoja(a.estado);
     if (naLoja && naLoja !== 'open') status[a.id] = naLoja;
   }
 
@@ -1007,14 +1030,11 @@ export async function apagarEquipamento(idNoServidor) {
 // `status` que cada telefone reescrevia por inteiro. Dois adultos a dividir os
 // corredores anulavam o trabalho um do outro. É a mesma forma do `envMove`.
 //
-// A loja fala «open | done | sem stock»; o servidor tem um `select` com
-// `por_comprar | confirmado | sem_stock`. A tradução é aqui, e nos dois
-// sentidos, para não haver duas tabelas a divergir.
-const ESTADO_NO_SERVIDOR = {
-  open: 'por_comprar', done: 'confirmado', 'sem stock': 'sem_stock',
-};
-const ESTADO_NA_LOJA = Object.fromEntries(
-  Object.entries(ESTADO_NO_SERVIDOR).map(([a, b]) => [b, a]));
+// ⚠ A tabela vivia AQUI, e o comentário dizia «a loja fala open | done | sem
+// stock». Não fala: fala «sem-stock», com hífen, e por isso marcar um artigo
+// como esgotado não funcionava em direcção nenhuma. Saiu para o
+// `compras-estado.js`, que é o dono do vocabulário e que as provas conseguem
+// ler — ver lá o relato inteiro.
 
 export async function listaDeCompras({ casa, loja, comprador, planeadaPara }) {
   return criarOuEnfileirarCasa('listas_compras', {
@@ -1054,7 +1074,13 @@ export async function artigoDeCompras({ casa, lista, rotulo, seccao, pedidoPor, 
 export async function marcarArtigo(idNoServidor, estado, precoReal) {
   if (!ligado() || !idNoServidor) return { pendente: true };
   return servidor.pb.collection('artigos').update(idNoServidor, {
-    estado: ESTADO_NO_SERVIDOR[estado] || 'por_comprar',
+    // ⚠ Sem `|| 'por_comprar'`. Esse `||` transformava um estado que a
+    // tabela não conhecia num estado VÁLIDO, e escrevia «por comprar» por cima
+    // do que a pessoa acabara de marcar. Um estado desconhecido é um defeito,
+    // não um valor por omissão: não se escreve o campo, e o servidor fica como
+    // estava. O guarda que impede que volte a acontecer enumera as grafias dos
+    // ecrãs — `__tests__/o-estado-do-artigo-tem-uma-grafia.test.js`.
+    ...(paraOServidor(estado) ? { estado: paraOServidor(estado) } : {}),
     ...(precoReal !== undefined ? { preco_real: Number(precoReal) || 0 } : {}),
   });
 }

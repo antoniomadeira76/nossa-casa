@@ -287,10 +287,41 @@ const DATA_KEYS = [
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
 // muda, e MIGRATIONS ganha a entrada correspondente. Sem isto, dados antigos
 // eram lidos com a forma nova e ganhavam silenciosamente ao código.
-export const SCHEMA = 13;
+export const SCHEMA = 14;
 
 // Uma migração por salto de versão: recebe o objeto lido e devolve-o corrigido.
 export const MIGRATIONS = {
+  // v13 → v14: os artigos que vieram do servidor ficaram com a forma dele.
+  //
+  // O `puxarCasa` montava `{ section, habitual }` e os ecrãs leem `{ s, staple }`
+  // — a forma das sementes, que é a que o `criarArtigo` também escreve. Estava
+  // corrigido no `sync.js`, e não bastava: o `newItems` é gravado, e quem já
+  // tinha a app ficava com os artigos na forma antiga até à leitura seguinte.
+  //
+  // Sem isto, as quatro secções do Modo Compras continuavam vazias nos
+  // telemóveis que não voltassem a falar com o servidor — que é o caso de quem
+  // corre a app sem ele. Um campo que muda de nome numa chave GRAVADA pede
+  // migração; corrigir o `sync.js` só serve as leituras futuras.
+  //
+  // ⚠ Só mexe no que tem a forma antiga: um artigo já com `s` fica intacto.
+  14: (o) => {
+    const artigos = o.newItems;
+    if (!Array.isArray(artigos)) return o;
+    if (!artigos.some(a => a && a.s === undefined && a.section !== undefined)) return o;
+    return {
+      ...o,
+      newItems: artigos.map(a => {
+        if (!a || a.s !== undefined) return a;
+        const { section, habitual, ...resto } = a;
+        return {
+          ...resto,
+          s: Number(section) || 0,
+          staple: habitual !== undefined ? !!habitual : !!a.staple,
+        };
+      }),
+    };
+  },
+
   // v1 → v2: o cofre deixou de ser um saldo escrito e as sementes deixaram de
   // ser gravadas. Se o saldo antigo divergir das sementes, a diferença fica
   // como movimento de acerto — dinheiro nunca desaparece numa migração.
@@ -598,7 +629,18 @@ export const DEMO = () => ({
     // O próximo domingo, e não `'d2026-08-23'`. A data fixa passou, e o ecrã
     // dizia «Compras de domingo · Domingo, 23/08» numa semana que começava a
     // 31/08 — um plano para um dia que já lá vai.
-    day: proximoDomingo(), time: '10:30', store: 0,
+    // ⚠ Havia aqui um `time: '10:30'`, e era um campo que SÓ a demonstração
+    // tinha. A `listas_compras` não o modela, o `puxarCasa` devolve o plano
+    // inteiro com `{idServidor, store, who, day}`, e nada na app o deixa
+    // escolher. Numa casa ligada ao servidor a linha do plano lia-se
+    // «Quarta, 09/09 ·  · Pingo Doce do Restelo» — dois separadores com nada
+    // no meio, porque o ecrã fazia `${dia} · ${plano.time || ''} · ${loja}`.
+    //
+    // É a terceira vez desta classe: um campo das sementes que os dados do
+    // servidor não trazem, depois do `today` das tarefas e do `used` dos
+    // envelopes. Guarda:
+    // `__tests__/o-plano-de-compras-tem-os-mesmos-campos-dos-dois-lados.test.js`.
+    day: proximoDomingo(), store: 0,
   },
   shopHistory: [],
   // O histórico de preços da casa: uma observação por artigo, loja e dia.

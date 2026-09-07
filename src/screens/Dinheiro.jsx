@@ -275,7 +275,10 @@ export default function Dinheiro({ t, user, onEquip }) {
         <SectionTitle t={t}>Equipamentos da Casa</SectionTitle>
         <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
           <Row t={t} icon="camera" title="Equipamentos registados"
-            sub={`${eq.length} equipamentos · ${eqWarn} garantia a expirar · ${eqOut} fora de garantia`}
+            // ⚠ Três contagens, três plurais escritos à mão. Com duas garantias a
+            // expirar dizia «2 garantia a expirar»; com um equipamento,
+            // «1 equipamentos». O `plural` do `format.js` faz as três.
+            sub={`${plural(eq.length, 'equipamento', 'equipamentos')} · ${plural(eqWarn, 'garantia a expirar', 'garantias a expirar')} · ${eqOut} fora de garantia`}
             onPress={onEquip} last />
         </Card>
       </View>

@@ -28,9 +28,20 @@ function camposQuePodemSerNulos() {
   const sync = semComentarios(ler('src/sync.js'));
   const nulos = new Set();
   // `const shopPlan = aberta ? { … } : null;`
-  for (const m of sync.matchAll(/const (\w+) = [^;]*\?[\s\S]*?:\s*null;/g)) nulos.add(m[1]);
+  //
+  // ⚠ O corpo é `[^;]*` do princípio ao fim, e não `[\s\S]*?`.
+  //
+  // Com o `[\s\S]` a expressão ATRAVESSAVA declarações: bastava aparecer um
+  // ternário mais acima — no `const newItems = …`, por exemplo — para o `?`
+  // dele casar com o `: null;` do `shopPlan` lá abaixo. O `newItems` entrava
+  // na lista de anuláveis e o `shopPlan`, que é o que interessa, saía dela.
+  // Uma linha de comentário nova noutro sítio do `sync.js` chegava para
+  // desarmar este guarda sem que nada ficasse vermelho — e o que ele defende é
+  // o ecrã branco do «iniciar compras na loja». Um literal de objecto não tem
+  // `;` dentro, por isso `[^;]*` chega e não salta a declaração.
+  for (const m of sync.matchAll(/const (\w+) = [^;]*\?[^;]*:\s*null;/g)) nulos.add(m[1]);
   // `mes: aberto ? { … } : null`
-  for (const m of sync.matchAll(/^\s*(\w+):\s*[^,\n]*\?[\s\S]{0,400}?:\s*null,$/gm)) nulos.add(m[1]);
+  for (const m of sync.matchAll(/^\s*(\w+):\s*[^,\n;]*\?[^;]{0,400}?:\s*null,$/gm)) nulos.add(m[1]);
   return nulos;
 }
 

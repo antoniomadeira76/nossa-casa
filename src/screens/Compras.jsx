@@ -78,6 +78,16 @@ export default function Compras({ t, user, onModoCompras }) {
   // uma ida às compras marcada.
   const plano = s.shopPlan || {};
   const planoDe = MEMBERS[plano.who] ? plano.who : null;
+
+  // Quem fica com as compras se alguém tocar em «Alterar»: o adulto seguinte,
+  // à roda. ⚠ Os adultos vêm do QUADRO da casa, e não de uma lista escrita
+  // aqui — é a classe de defeito que já escondeu as fichas das crianças ao
+  // administrador. Com um adulto só, não há a quem passar: fica `null` e o
+  // botão desliga-se em vez de mentir.
+  const adultos = Object.keys(MEMBERS).filter(n => !MEMBERS[n].kid);
+  const proximoComprador = adultos.length > 1
+    ? adultos[(Math.max(0, adultos.indexOf(planoDe)) + 1) % adultos.length]
+    : null;
   // O dia vem derivado: o gravado se ainda estiver para vir, senão o próximo
   // domingo. Ler `s.shopPlan.day` cru punha aqui datas de há duas semanas.
   const diaDoPlano = st.diaDoPlano();
@@ -133,13 +143,31 @@ export default function Compras({ t, user, onModoCompras }) {
             </Text>
             <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
               {/* Sem loja escolhida não se escreve « · undefined». Uma casa
-                  nova não tem lojas, e a linha tem de ler-se de qualquer forma. */}
-              {diaDoPlano ? `${dayLabel(diaDoPlano)} · ` : ''}{plano.time || ''}{loja ? ` · ${loja}` : ' · loja por escolher'}
+                  nova não tem lojas, e a linha tem de ler-se de qualquer forma.
+
+                  ⚠ E havia aqui um `{plano.time || ''}` no meio, com um « · »
+                  de cada lado. O `time` só existia na semente da demonstração
+                  — o servidor devolve o plano inteiro sem ele —, e numa casa
+                  ligada a linha lia-se «Quarta, 09/09 ·  · Pingo Doce do
+                  Restelo». Dois separadores com nada entre eles. O campo saiu
+                  também da semente: uma ida às compras tem dia, não hora. */}
+              {diaDoPlano ? `${dayLabel(diaDoPlano)}` : ''}{loja ? `${diaDoPlano ? ' · ' : ''}${loja}` : ' · loja por escolher'}
             </Text>
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Alterar quem vai às compras"
-            style={{ minHeight: 44, justifyContent: 'center' }}>
-            <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '700', color: t.accent }}>Alterar</Text>
+          {/* ⚠ Este botão não tinha `onPress`. Dizia «Alterar», com a cor de
+              ação, e tocá-lo não fazia nada — «andaime sem obra» do lado do
+              ecrã. Passa quem vai às compras ao adulto seguinte, que é o que o
+              rótulo promete, e diz qual antes de o fazer.
+
+              E tinha `minHeight: 44` sem `minWidth`: a palavra media 42 px de
+              largura. O INVARIANTE #5 é nas duas medidas. */}
+          <Pressable accessibilityRole="button"
+            accessibilityLabel={proximoComprador ? `Passar as compras para ${proximoComprador}` : 'Alterar quem vai às compras'}
+            disabled={!proximoComprador}
+            onPress={proximoComprador ? () => mudarPlanoDeCompras({ who: proximoComprador }) : undefined}
+            style={{ minHeight: 44, minWidth: 44, paddingHorizontal: S.sm, justifyContent: 'center' }}>
+            <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '700',
+              color: proximoComprador ? t.accent : t.text3 }}>Alterar</Text>
           </Pressable>
         </View>
       </Card>
@@ -190,7 +218,7 @@ export default function Compras({ t, user, onModoCompras }) {
         return (
           <View key={sec}>
             <SectionTitle t={t} right={
-              <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>{rows.length} artigos</Text>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>{plural(rows.length, 'artigo', 'artigos')}</Text>
             }>{sec}</SectionTitle>
             <View style={{ gap: S.md }}>
               {rows.map(i => {

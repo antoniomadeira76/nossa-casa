@@ -220,8 +220,15 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
             </Text>
           </View>
           <Bar t={t} pct={pct} color={t.accent} />
+          {/* ⚠ Dizia «{pct} % do orçamento de Setembro usado até agora».
+              A percentagem era CERTA — gasto sobre orçamento —, ao contrário da
+              do Dinheiro, mas obrigava a fazer a conta de cabeça para saber de
+              quanto dinheiro se falava, num cartão onde os outros dois números
+              já são euros. E era o terceiro número da mesma conta escrito de
+              uma terceira maneira: «771,36 €», «de 2 020,00 €», «62 %». Agora
+              os três são euros e somam. */}
           <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-            {pct} % do orçamento de {s.monthName} usado até agora.
+            {EUR(spent)} do orçamento de {s.monthName} usados até agora.
           </Text>
         </Card>
       </View>

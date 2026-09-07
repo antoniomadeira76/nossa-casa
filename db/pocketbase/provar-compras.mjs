@@ -22,6 +22,10 @@ import { URL, PREFIXO, comecar, prova, igual, recusado, comId, resumo, memoriaDe
 
 const { configurar, auth } = await import('../../src/pocketbase.js');
 const sync = await import('../../src/sync.js');
+// ⚠ A grafia do estado vem de quem é dono dela, e não escrita aqui. Escrita
+// aqui era o que fazia esta prova concordar com a tabela e discordar dos ecrãs.
+const { ESTADOS_DA_LOJA } = await import('../../src/compras-estado.js');
+const SEM_STOCK = ESTADOS_DA_LOJA.find(e => /stock/.test(e));
 
 configurar({ url: URL, storage: memoriaDeTelemovel() });
 
@@ -120,12 +124,21 @@ await prova('⚠ e as DUAS marcações ficam — cada um alterou a sua linha', a
   // o mapa inteiro e apagava o trabalho do outro.
   const lida = await sync.puxarCasa();
   igual(lida.status[banana], 'done', JSON.stringify(lida.status));
-  igual(lida.status[leite], 'sem stock', JSON.stringify(lida.status));
+  // ⚠ Estava aqui `'sem stock'`, com espaço — a grafia da tabela do `sync.js`,
+  // não a dos ecrãs. Esta prova comparava a tabela CONSIGO PRÓPRIA e ficou
+  // verde todos os meses em que os ecrãs falavam «sem-stock» com hífen e um
+  // artigo esgotado voltava à lista como se estivesse por comprar.
+  //
+  // Agora a grafia vem do `compras-estado.js`, que é o dono dela, e uma
+  // divergência entre a tabela e os ecrãs falha do lado do Jest —
+  // `__tests__/o-estado-do-artigo-tem-uma-grafia.test.js`.
+  igual(lida.status[leite], SEM_STOCK, JSON.stringify(lida.status));
 });
 
 await prova('⚠ e o `puxarCasa` traduz os estados de volta para a forma da loja', async () => {
   // O servidor tem `por_comprar | confirmado | sem_stock`; a loja fala
-  // `open | done | sem stock`. Uma tabela só, nos dois sentidos.
+  // `open | done | sem-stock`. Uma tabela só, nos dois sentidos, e num
+  // ficheiro só: `src/compras-estado.js`.
   const lida = await sync.puxarCasa();
   const b = (lida.newItems || []).find(a => a.id === banana);
   if (!b) throw new Error('a banana não veio');
