@@ -270,7 +270,7 @@ const BACKUPS_ANTIGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(n => `${KEY}.ant
 //
 // O guarda é `__tests__/nenhuma-chave-sem-quem-a-leia.test.js`.
 const DATA_KEYS = [
-  'done', 'pending', 'status', 'registered', 'acertoMovs', 'partilhasPagas', 'despesasMeias', 'gastoPorEnvelope', 'vaultMoves', 'paidPts',
+  'done', 'pending', 'status', 'registered', 'gastoLocal', 'acertoMovs', 'partilhasPagas', 'despesasMeias', 'gastoPorEnvelope', 'vaultMoves', 'paidPts',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
   'newItems', 'itemGone', 'feitas', 'listasIds', 'envelopesDaCasa', 'mes',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
@@ -543,7 +543,7 @@ const proximoDomingo = () => {
 
 export const DEMO = () => ({
   done: TASKS.reduce((a, t) => (a[t.id] = !!t.done, a), {}),
-  pending: {}, status: {}, registered: 0, acertoMovs: [], partilhasPagas: {}, despesasMeias: 0, gastoPorEnvelope: {},
+  pending: {}, status: {}, registered: 0, gastoLocal: {}, acertoMovs: [], partilhasPagas: {}, despesasMeias: 0, gastoPorEnvelope: {},
   vaultMoves: [],
   paidPts: Object.fromEntries(Object.keys(MEMBERS).filter(n => MEMBERS[n].kid).map(n => [n, 0])),
   envMove: {}, added: [], newTasks: [], taskEdits: {}, taskGone: {}, taskOrder: {},
@@ -660,6 +660,10 @@ export const SEM_DINHEIRO_SEMEADO = () => ({
   monthLimits: Object.fromEntries(ENV_BASE.map(e => [e.name, 0])),
   rendimento: 0,
   registered: 0,
+  // ⚠ E a repartição também. O `registered` sozinho deixava os envelopes a
+  // mostrar o gasto da demonstração numa casa que se acabou de esvaziar — a
+  // classe de defeito «valor por omissão só numa das funções».
+  gastoLocal: {},
 });
 
 // Casa nova: os mesmos campos, todos vazios
@@ -821,7 +825,12 @@ export function StoreProvider({ children }) {
       // E quanto cada adulto pagou das despesas partilhadas — a base do acerto.
       if (casa.partilhasPagas) set({ partilhasPagas: casa.partilhasPagas });
       // E o gasto de cada envelope — sem isto, tudo caía na Mercearia.
-      if (casa.gastoPorEnvelope) set({ gastoPorEnvelope: casa.gastoPorEnvelope });
+      //
+      // ⚠ E o `gastoLocal` esvazia-se com esta leitura, senão conta duas vezes:
+      // as despesas que este telemóvel registou já vêm dentro destes números.
+      // É o mesmo raciocínio do cofre e do acerto — o que o servidor devolve
+      // SUBSTITUI o que estava de cá, não se soma a ele.
+      if (casa.gastoPorEnvelope) set({ gastoPorEnvelope: casa.gastoPorEnvelope, gastoLocal: {} });
       if (typeof casa.despesasMeias === 'number') set({ despesasMeias: casa.despesasMeias });
 
       // ── A agenda e as tarefas do servidor ─────────────────────────────────
@@ -1540,11 +1549,40 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   const gastoNoEnvelope = s.gastoPorEnvelope || {};
   const temGastoDoServidor = Object.keys(gastoNoEnvelope).length > 0;
 
+  // ⚠ E sem servidor, o gasto de cada envelope é o DELE também.
+  //
+  // Isto era `(e.name === 'Mercearia' ? s.registered : 0)`: o contador local
+  // inteiro despejado na Mercearia, e zero nos outros cinco. Sem servidor —
+  // que é como a app corre por omissão — registar uma despesa em «Casa &
+  // contas» não movia nada em ecrã nenhum. Medido: nem o envelope, nem o
+  // «Gasto», nem o «Disponível».
+  //
+  // O `gastoLocal` é a mesma coisa que o `gastoPorEnvelope` do servidor —
+  // envelope → soma do mês — do lado de cá. Duas chaves porque significam
+  // coisas diferentes: uma é a verdade do servidor, a outra é o que ainda não
+  // passou por ele. Escrever nas duas era a classe de defeito das duas fontes.
+  //
+  // ⚠ E SOMA-SE ao do servidor, não é uma alternativa a ele.
+  //
+  // A primeira correcção pôs o `gastoLocal` só no ramo de baixo, e ficou a meio
+  // pela pior das razões: o caso comum não é «nunca houve servidor», é «houve e
+  // agora não há». Nesse, o `gastoPorEnvelope` está cheio de números de ontem,
+  // o `temGastoDoServidor` é verdadeiro, e uma despesa registada hoje voltava a
+  // ser invisível — corrigida a causa, o sintoma ficou igual. Visto no
+  // navegador: `gastoLocal: {"Casa & contas": 15}` gravado, e o ecrã a dizer
+  // 357,69 € como antes.
+  //
+  // A soma não conta duas vezes porque o `gastoLocal` se esvazia na leitura que
+  // traz o `gastoPorEnvelope` — ver o `puxarCasa`. O que ainda estiver na fila
+  // deixa de aparecer até chegar lá, e isso é uma falta de um instante em vez
+  // de um número errado para sempre.
+  const gastoLocal = s.gastoLocal || {};
+
   const envelopes = baseDeEnvelopes.map(e => ({
     ...e,
-    used: temGastoDoServidor
+    used: (temGastoDoServidor
       ? (gastoNoEnvelope[e.name] || 0)
-      : (s.monthZero ? 0 : e.used) + (e.name === 'Mercearia' ? s.registered : 0),
+      : (s.monthZero ? 0 : e.used)) + (gastoLocal[e.name] || 0),
     limit: (s.monthLimits && s.monthLimits[e.name] !== undefined
       ? s.monthLimits[e.name] : e.limit) + (s.envMove[e.name] || 0),
   }));
@@ -2215,8 +2253,24 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     //
     // O acerto é uma soma de linhas do servidor, filtrada pelo mês. Não se zera
     // em lado nenhum.
+    // ⚠ Isto era `registered: x.registered + (envelope === 'Mercearia' ? v : 0)`,
+    // e o `used` de cada envelope lia esse número SÓ na Mercearia. Sem servidor
+    // a correr — que é como a app corre por omissão — uma despesa em qualquer
+    // outro envelope não fazia nada. Nada: o envelope ficava igual, o «Gasto»
+    // ficava igual, e o «Disponível» do topo continuava a dizer um número que
+    // já não era verdade. Medido: 12,00 € em «Casa & contas» ou «Sair & lazer»
+    // não movia um cêntimo em ecrã nenhum.
+    //
+    // A causa é a idade do código: nasceu quando as únicas despesas da casa
+    // eram compras de supermercado, e a Mercearia era o único destino possível.
+    // Ficou uma condição escrita à mão, com um nome de envelope no meio.
+    //
+    // Agora o gasto local é por ENVELOPE, aditivo (INVARIANTE #2), e o
+    // `registered` é o total do mês — que é o que a descrição dele sempre disse
+    // que era.
     set(x => ({
-      registered: x.registered + (envelope === 'Mercearia' ? v : 0),
+      registered: x.registered + v,
+      gastoLocal: { ...(x.gastoLocal || {}), [envelope]: ((x.gastoLocal || {})[envelope] || 0) + v },
       registo: maisRegisto(x, `Despesa de ${EUR(v)} em ${envelope}${descricao ? ` · ${descricao}` : ''}`, 'Dinheiro'),
     }));
 
@@ -2378,7 +2432,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       // ⚠ O `registered` e o `envMove` NÃO se zeram à mão. Sem servidor ficam
       // como estão até haver despesas do mês novo; com servidor, a leitura
       // seguinte traz as somas já filtradas.
-      ...(sync ? {} : { registered: 0, envMove: {} }),
+      ...(sync ? {} : { registered: 0, gastoLocal: {}, envMove: {} }),
     }));
 
     if (!sync) return;
@@ -2408,6 +2462,10 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         acertoMovs: [],
         paidPts: Object.fromEntries(criancas.map(n => [n, 0])),
         registered: 0,
+        // ⚠ O `gastoLocal` anda com o `registered`: são o total e a repartição
+        // do MESMO mês. Zerar um e deixar o outro punha o «Gasto» a zero com
+        // os envelopes ainda a mostrar o mês anterior.
+        gastoLocal: {},
         envMove: {},
       }),
       registo: maisRegisto(x, `Mês de ${x.monthName} fechado · ${EUR(x.registered || 0)} gastos`, 'Dinheiro'),
