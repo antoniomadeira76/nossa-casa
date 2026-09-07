@@ -1,0 +1,324 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Botões pequenos da Saúde — cinco desenhos</title>
+<!--
+  Os cinco botões pequenos da ficha de saúde levam o acento, e pela regra não
+  deviam: não são confirmação de diálogo, não mexem em dinheiro, não apagam.
+
+  As cores vêm do `buildTheme` do `src/theme.js` — os doze temas a sério.
+  Abra num navegador e compare nos seis esquemas e nos dois aspetos.
+-->
+<style>
+  :root { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #14161a; color: #e8eaed; padding: 24px; }
+
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .lead { font-size: 13.5px; line-height: 1.55; color: #9aa0a8; max-width: 66ch; margin: 0 0 8px; }
+  .lead b { color: #e8eaed; font-weight: 600; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em;
+         background: #22252b; padding: 1px 5px; border-radius: 4px; }
+
+  .formas { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 22px; }
+  .forma { flex: 1 1 240px; padding: 11px 13px; background: #1b1e23; border: 1px solid #2b2f36;
+           border-radius: 10px; font-size: 12.5px; line-height: 1.5; color: #9aa0a8; }
+  .forma b { display: block; color: #e8eaed; font-size: 13px; margin-bottom: 3px; }
+
+  .barra { display: flex; flex-wrap: wrap; gap: 20px; align-items: center;
+           padding: 14px 16px; background: #1b1e23; border: 1px solid #2b2f36;
+           border-radius: 12px; margin-bottom: 24px; position: sticky; top: 0; z-index: 5; }
+  .grupo { display: flex; align-items: center; gap: 8px; }
+  .grupo > span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em;
+                  color: #7c828b; font-weight: 600; }
+  .barra button { font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+                  padding: 7px 13px; border-radius: 999px; border: 1px solid #343941;
+                  background: #22252b; color: #c6cad0; min-height: 34px; }
+  .barra button[aria-pressed="true"] { background: #e8eaed; color: #14161a; border-color: #e8eaed; }
+  .bola { width: 12px; height: 12px; border-radius: 50%; display: inline-block;
+          margin-right: 6px; vertical-align: -1px; }
+
+  .grelha { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
+  .caixa { border: 1px solid #2b2f36; border-radius: 14px; overflow: hidden; background: #1b1e23; }
+  .cab { padding: 12px 16px 10px; border-bottom: 1px solid #2b2f36; }
+  .cab .letra { display: inline-flex; width: 22px; height: 22px; border-radius: 6px;
+                background: #e8eaed; color: #14161a; font-size: 12px; font-weight: 700;
+                align-items: center; justify-content: center; margin-right: 8px; }
+  .cab .nome { font-size: 14px; font-weight: 600; }
+  .cab .porque { font-size: 12px; line-height: 1.5; color: #9aa0a8; margin-top: 7px; }
+  .cab .porque em { color: #ffd479; font-style: normal; }
+  .cab .medida { font-size: 11.5px; color: #7c828b; margin-top: 6px;
+                 font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  .hoje { border-color: #4a3a1a; }
+  .hoje .cab { border-bottom-color: #4a3a1a; }
+  .hoje .cab .letra { background: #ffd479; }
+
+  .palco { padding: 18px 23.5px; display: flex; flex-direction: column; gap: 16px; }
+  .nota { font-size: 12.5px; line-height: 1.6; color: #9aa0a8; margin: 26px 0 0;
+          padding: 14px 16px; background: #1b1e23; border: 1px solid #2b2f36;
+          border-radius: 12px; max-width: 82ch; }
+  .nota b { color: #e8eaed; }
+  .nota ul { margin: 8px 0 0; padding-left: 20px; }
+  .nota li { margin: 6px 0; }
+
+  /* Peças do palco */
+  .cartao { border-radius: 8px; padding: 12px 14px; }
+  .linha { display: flex; align-items: center; gap: 12px; }
+  .linha .txt { flex: 1; min-width: 0; }
+  .t1 { font-size: 13.5px; font-weight: 500; display: block; }
+  .t2 { font-size: 11px; display: block; margin-top: 2px; }
+  .par { display: flex; gap: 8px; }
+  .par > * { flex: 1; }
+  .bt { min-height: 44px; border-radius: 6px; font-family: inherit; font-size: 12px;
+        font-weight: 600; cursor: pointer; display: inline-flex; align-items: center;
+        justify-content: center; gap: 6px; padding: 0 12px; border: 0; white-space: nowrap; }
+  .aviso { border-left-width: 3px; border-left-style: solid; }
+  svg { flex: 0 0 auto; }
+</style>
+
+<h1>Os cinco botões pequenos da Saúde — cinco desenhos</h1>
+<p class="lead">
+  Levam o <b>acento</b>, e pela regra que combinámos não deviam: não são
+  confirmação de diálogo, não mexem em dinheiro entre pessoas, não apagam.
+  Mas passá-los a <b>comum</b> põe blocos escuros dentro de uma ficha clínica —
+  e é por isso que isto merece uma escolha em vez de uma aplicação automática.
+</p>
+<p class="lead">
+  ⚠ E não são cinco botões do mesmo tipo. São <b>três formas</b> diferentes, e
+  um desenho que sirva bem uma pode servir mal outra:
+</p>
+
+<div class="formas">
+  <div class="forma"><b>1 · Marca no fim de uma linha</b>
+    «Guardada», no fim da linha de uma receita. Ao tocar, a linha passa a
+    mostrar uma pastilha verde no lugar dele — é um <em>botão que vira estado</em>.</div>
+  <div class="forma"><b>2 · Um par de decisões</b>
+    «Resolvida» / «Pendente», dentro da caixa âmbar «Precisa de ação». Já tem
+    primário e secundário — o segundo é contorno.</div>
+  <div class="forma"><b>3 · Confirmar um campo</b>
+    «Guardar receita», «Guardar» (a editar uma nota), e o «+» de acrescentar
+    nota. São <em>commits de um campo</em>, ao pé do próprio campo.</div>
+</div>
+
+<div class="barra">
+  <div class="grupo"><span>Esquema</span><div id="esquemas"></div></div>
+  <div class="grupo">
+    <span>Aspeto</span>
+    <button id="claro" aria-pressed="true">Claro</button>
+    <button id="escuro" aria-pressed="false">Escuro</button>
+  </div>
+</div>
+
+<div class="grelha" id="grelha"></div>
+<p class="nota" id="nota"></p>
+
+<script>
+const TEMAS = {"claro-Violeta":{"accent":"#722ED1","hover":"#8B4EE0","chrome":"#241239","page":"#F0F2F5","card":"#FCFCFD","surface":"#FFFFFF","subtle":"#FAFAFA","border":"#D9D9D9","divider":"#F0F2F5","text1":"#262626","text2":"#434343","text3":"#6A7282","slate":"#67769B","titulo":"#722ED1","ok":"#52C41A","okBg":"rgba(220,243,209,0.2)","okDeep":"#389E0D","okBorder":"#BAE7A3","warn":"#FAAD14","warnBg":"#FEFFD0","warnDeep":"#AD8B00"},"claro-Cião":{"accent":"#078286","hover":"#13ADB3","chrome":"#0A5B60","page":"#F0F2F5","card":"#FCFCFD","surface":"#FFFFFF","subtle":"#FAFAFA","border":"#D9D9D9","divider":"#F0F2F5","text1":"#262626","text2":"#434343","text3":"#6A7282","slate":"#67769B","titulo":"#078286","ok":"#52C41A","okBg":"rgba(220,243,209,0.2)","okDeep":"#389E0D","okBorder":"#BAE7A3","warn":"#FAAD14","warnBg":"#FEFFD0","warnDeep":"#AD8B00"},"claro-Céu":{"accent":"#1B5FA8","hover":"#2679C9","chrome":"#0C2A47","page":"#F0F2F5","card":"#FCFCFD","surface":"#FFFFFF","subtle":"#FAFAFA","border":"#D9D9D9","divider":"#F0F2F5","text1":"#262626","text2":"#434343","text3":"#6A7282","slate":"#67769B","titulo":"#1B5FA8","ok":"#52C41A","okBg":"rgba(220,243,209,0.2)","okDeep":"#389E0D","okBorder":"#BAE7A3","warn":"#FAAD14","warnBg":"#FEFFD0","warnDeep":"#AD8B00"},"claro-Rosa":{"accent":"#B5306E","hover":"#CC4285","chrome":"#8A3A5A","page":"#F0F2F5","card":"#FCFCFD","surface":"#FFFFFF","subtle":"#FAFAFA","border":"#D9D9D9","divider":"#F0F2F5","text1":"#262626","text2":"#434343","text3":"#6A7282","slate":"#67769B","titulo":"#B5306E","ok":"#52C41A","okBg":"rgba(220,243,209,0.2)","okDeep":"#389E0D","okBorder":"#BAE7A3","warn":"#FAAD14","warnBg":"#FEFFD0","warnDeep":"#AD8B00"},"claro-Menta":{"accent":"#177D5E","hover":"#1E9B75","chrome":"#2E6455","page":"#F0F2F5","card":"#FCFCFD","surface":"#FFFFFF","subtle":"#FAFAFA","border":"#D9D9D9","divider":"#F0F2F5","text1":"#262626","text2":"#434343","text3":"#6A7282","slate":"#67769B","titulo":"#177D5E","ok":"#52C41A","okBg":"rgba(220,243,209,0.2)","okDeep":"#389E0D","okBorder":"#BAE7A3","warn":"#FAAD14","warnBg":"#FEFFD0","warnDeep":"#AD8B00"},"claro-Cinza":{"accent":"#4B5563","hover":"#5E6A7C","chrome":"#646F80","page":"#F0F2F5","card":"#FCFCFD","surface":"#FFFFFF","subtle":"#FAFAFA","border":"#D9D9D9","divider":"#F0F2F5","text1":"#262626","text2":"#434343","text3":"#6A7282","slate":"#67769B","titulo":"#4B5563","ok":"#52C41A","okBg":"rgba(220,243,209,0.2)","okDeep":"#389E0D","okBorder":"#BAE7A3","warn":"#FAAD14","warnBg":"#FEFFD0","warnDeep":"#AD8B00"},"escuro-Violeta":{"accent":"#722ED1","hover":"#8B4EE0","chrome":"#241239","page":"#0A0510","card":"#211431","surface":"#211431","subtle":"#2D1D3E","border":"#402F53","divider":"#402F53","text1":"#F0F2F5","text2":"#DCE3EA","text3":"#A79CB4","slate":"#BBADCD","titulo":"#8B4EE0","ok":"#52C41A","okBg":"rgba(220,243,209,0.2)","okDeep":"#389E0D","okBorder":"#BAE7A3","warn":"#FAAD14","warnBg":"#FEFFD0","warnDeep":"#AD8B00"},"escuro-Cião":{"accent":"#078286","hover":"#13ADB3","chrome":"#0A5B60","page":"#051011","card":"#142F31","surface":"#142F31","subtle":"#1D3D3E","border":"#2F5153","divider":"#2F5153","text1":"#F0F2F5","text2":"#DCE3EA","text3":"#9CB3B4","slate":"#ADCBCD","titulo":"#13ADB3","ok":"#52C41A","okBg":"rgba(220,243,209,0.2)","okDeep":"#389E0D","okBorder":"#BAE7A3","warn":"#FAAD14","warnBg":"#FEFFD0","warnDeep":"#AD8B00"},"escuro-Céu":{"accent":"#1B5FA8","hover":"#2679C9","chrome":"#0C2A47","page":"#050B11","card":"#142331","surface":"#142331","subtle":"#1D2E3E","border":"#2F4153","divider":"#2F4153","text1":"#F0F2F5","text2":"#DCE3EA","text3":"#9CA9B4","slate":"#ADBDCD","titulo":"#2679C9","ok":"#52C41A","okBg":"rgba(220,243,209,0.2)","okDeep":"#389E0D","okBorder":"#BAE7A3","warn":"#FAAD14","warnBg":"#FEFFD0","warnDeep":"#AD8B00"},"escuro-Rosa":{"accent":"#B5306E","hover":"#CC4285","chrome":"#8A3A5A","page":"#0F060A","card":"#301420","surface":"#301420","subtle":"#3E1D2B","border":"#532F3D","divider":"#532F3D","text1":"#F0F2F5","text2":"#DCE3EA","text3":"#B49CA6","slate":"#CDADBA","titulo":"#CC4285","ok":"#52C41A","okBg":"rgba(220,243,209,0.2)","okDeep":"#389E0D","okBorder":"#BAE7A3","warn":"#FAAD14","warnBg":"#FEFFD0","warnDeep":"#AD8B00"},"escuro-Menta":{"accent":"#177D5E","hover":"#1E9B75","chrome":"#2E6455","page":"#070F0C","card":"#162F28","surface":"#162F28","subtle":"#1D3E35","border":"#2F5349","divider":"#2F5349","text1":"#F0F2F5","text2":"#DCE3EA","text3":"#9CB4AE","slate":"#ADCDC4","titulo":"#1E9B75","ok":"#52C41A","okBg":"rgba(220,243,209,0.2)","okDeep":"#389E0D","okBorder":"#BAE7A3","warn":"#FAAD14","warnBg":"#FEFFD0","warnDeep":"#AD8B00"},"escuro-Cinza":{"accent":"#4B5563","hover":"#5E6A7C","chrome":"#646F80","page":"#090A0C","card":"#1E2227","surface":"#1E2227","subtle":"#282D34","border":"#393F49","divider":"#393F49","text1":"#F0F2F5","text2":"#DCE3EA","text3":"#9EA6B3","slate":"#B5BBC5","titulo":"#606C7F","ok":"#52C41A","okBg":"rgba(220,243,209,0.2)","okDeep":"#389E0D","okBorder":"#BAE7A3","warn":"#FAAD14","warnBg":"#FEFFD0","warnDeep":"#AD8B00"}};
+const NOMES = ['Violeta','Cião','Céu','Rosa','Menta','Cinza'];
+
+let esquema = 'Violeta';
+let escuro = false;
+const t = () => TEMAS[(escuro ? 'escuro-' : 'claro-') + esquema];
+
+// `comAlfa` do tema, para os fundos suaves.
+const alfa = (hex, a) => {
+  const n = String(hex || '').replace('#', '');
+  if (n.length !== 6) return `rgba(0,0,0,${a})`;
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(n.slice(i, i + 2), 16));
+  return `rgba(${r},${g},${b},${a})`;
+};
+
+const ico = (nome, cor, tam = 16) => {
+  const d = {
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    check: '<path d="M5 12.5l5 5 9-11"/>',
+    pill: '<rect x="3" y="8" width="18" height="8" rx="4"/><path d="M12 8v8"/>',
+  }[nome];
+  return `<svg width="${tam}" height="${tam}" viewBox="0 0 24 24" fill="none"
+    stroke="${cor}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+};
+
+// ── As três formas, desenhadas por cada alternativa ───────────────────────
+//
+// `bt(c, rotulo, papel)` — cada alternativa define como pinta um botão, e as
+// três formas montam-se por cima disso. Assim compara-se a MESMA cena.
+const cena = (c, bt) => `
+  <!-- 1 · a marca no fim de uma linha -->
+  <div class="cartao" style="background:${c.card}">
+    <div class="linha">
+      <div class="txt">
+        <span class="t1" style="color:${c.text2}">Amoxicilina 500 mg</span>
+        <span class="t2" style="color:${c.text3}">Dose: 1 comp. · 8/8 h · expira em 21/10/2026</span>
+      </div>
+      ${bt('Guardada', 'principal')}
+    </div>
+  </div>
+
+  <!-- 2 · o par de decisões -->
+  <div class="cartao aviso" style="background:${c.card};border-left-color:${c.warn}">
+    <div style="font-size:11.5px;font-weight:700;color:${c.warnDeep};margin-bottom:10px">
+      Precisa de ação</div>
+    <div class="par">
+      ${bt('Resolvida', 'principal')}
+      ${bt('Pendente', 'secundario')}
+    </div>
+  </div>
+
+  <!-- 3 · confirmar um campo -->
+  <div class="cartao" style="background:${c.card}">
+    <div style="font-size:11.5px;font-weight:700;color:${c.slate};margin-bottom:8px">
+      Acrescentar uma nota</div>
+    <div class="linha" style="gap:8px">
+      <div style="flex:1;min-height:44px;border-radius:6px;border:1px solid ${c.border};
+        display:flex;align-items:center;padding:0 12px;font-size:13px;color:${c.text3}">
+        Escreva aqui…</div>
+      ${bt('Guardar', 'principal')}
+    </div>
+  </div>`;
+
+const DESENHOS = [
+  {
+    letra: 'A',
+    nome: 'Comum — a regra aplicada à letra',
+    porque: 'O escuro que os outros trinta botões da app já têm. Coerente com a '
+      + 'regra sem excepção nenhuma, e é o que se vê: <em>três blocos escuros '
+      + 'dentro de uma ficha clínica</em>, que é a razão de isto ser uma escolha '
+      + 'e não uma aplicação automática.',
+    medida: 'rótulo page sobre text1 · 13,49:1',
+    bt: (c) => (r, papel) => `<button class="bt" style="background:${papel === 'principal' ? c.text1 : 'transparent'};
+      color:${papel === 'principal' ? c.page : c.text2};
+      border:${papel === 'principal' ? '0' : `1px solid ${c.border}`}">${r}</button>`,
+  },
+  {
+    letra: 'B',
+    nome: 'Contorno na cor do perfil',
+    porque: 'A cor entra pelo <em>contorno</em>, que é um objeto gráfico e só '
+      + 'precisa de 3:1 — e o rótulo fica em <code>text2</code>. É a mesma '
+      + 'gramática do «+ agendar evento» que acabámos de acertar, e o mais leve '
+      + 'dos que ainda mostram a cor do esquema.',
+    medida: 'contorno titulo/cartão 3,01 · rótulo text2 9,65',
+    bt: (c) => (r, papel) => `<button class="bt" style="background:transparent;
+      color:${c.text2};border:1px solid ${papel === 'principal' ? c.titulo : c.border}">${r}</button>`,
+  },
+  {
+    letra: 'C',
+    nome: 'Fundo suave do esquema, sem contorno',
+    porque: 'Um véu da cor do perfil a 12 % por baixo do rótulo. Lê-se como um '
+      + 'botão sem pesar como um bloco, e a cor está presente sem estar a '
+      + 'gritar. <em>O rótulo continua em <code>text2</code></em> — sobre um '
+      + 'fundo tão claro, a cor do esquema nunca chegaria aos 4,5.',
+    medida: 'rótulo text2 sobre o véu · ≥ 8,9:1 nos doze',
+    bt: (c) => (r, papel) => `<button class="bt" style="background:${papel === 'principal' ? alfa(c.accent, 0.12) : 'transparent'};
+      color:${c.text2};border:${papel === 'principal' ? '0' : `1px solid ${c.border}`}">${r}</button>`,
+  },
+  {
+    letra: 'D',
+    nome: 'Sem caixa: só o ícone e a palavra',
+    porque: 'O botão desaparece e fica a acção. Ícone na cor do perfil, palavra '
+      + 'em <code>text2</code>, e o alvo de 44 continua lá — invisível, mas '
+      + 'inteiro. <em>É o mais leve possível</em>, e o que mais se arrisca a '
+      + 'não parecer tocável numa ficha cheia de texto.',
+    medida: 'ícone titulo 3,01 · palavra text2 9,65 · alvo 44',
+    bt: (c) => (r, papel) => `<button class="bt" style="background:transparent;border:0;
+      color:${c.text2};padding:0 8px;text-decoration:underline;text-decoration-color:${c.border};
+      text-underline-offset:4px">${papel === 'principal' ? ico('check', c.titulo) : ''}${r}</button>`,
+  },
+  {
+    letra: 'E',
+    nome: 'Cada forma com o seu idioma',
+    porque: 'Não há um desenho: há três. A marca da receita vira uma <em>pastilha '
+      + 'tocável</em> que já se parece com o estado em que vai ficar; o par de '
+      + 'decisões vira um <em>segmentado</em>, porque são duas faces da mesma '
+      + 'pergunta; e o confirmar do campo fica comum, que é o que ele é. Mais '
+      + 'trabalho, e é o único que trata cada coisa pelo que ela é.',
+    medida: 'pastilha okDeep/okBg 5,4 · segmentado branco/accent ≥ 4,62',
+    bt: (c) => (r, papel) => {
+      if (r === 'Guardada') {
+        return `<button class="bt" style="background:${c.okBg};color:${c.okDeep};
+          border:1px solid ${c.okBorder};border-radius:999px;font-size:11.5px">
+          ${ico('check', c.okDeep, 14)}${r}</button>`;
+      }
+      if (r === 'Resolvida' || r === 'Pendente') {
+        const on = r === 'Resolvida';
+        return `<button class="bt" style="background:${on ? c.accent : 'transparent'};
+          color:${on ? '#FFFFFF' : c.text2};border:1px solid ${on ? c.accent : c.border};
+          border-radius:${on ? '6px 0 0 6px' : '0 6px 6px 0'};margin:${on ? '0 -1px 0 0' : '0'}">${r}</button>`;
+      }
+      return `<button class="bt" style="background:${c.text1};color:${c.page};border:0">${r}</button>`;
+    },
+  },
+];
+
+const HOJE = {
+  letra: '·',
+  nome: 'O que a app tem hoje',
+  porque: 'Acento cheio nos cinco. É a cor que a app reservou para «isto não se '
+    + 'desfaz» — e aqui está em «Guardar nota».',
+  medida: 'branco sobre accent · 4,62 a 7,56 (legível; é o SIGNIFICADO que falha)',
+  bt: (c) => (r, papel) => `<button class="bt" style="background:${papel === 'principal' ? c.accent : 'transparent'};
+    color:${papel === 'principal' ? '#FFFFFF' : c.text2};
+    border:${papel === 'principal' ? '0' : `1px solid ${c.border}`}">${r}</button>`,
+};
+
+function pintar() {
+  const c = t();
+  const caixa = (d, hoje) => `
+    <div class="caixa${hoje ? ' hoje' : ''}">
+      <div class="cab">
+        <span class="letra">${d.letra}</span><span class="nome">${d.nome}</span>
+        <div class="porque">${d.porque}</div>
+        <div class="medida">${d.medida}</div>
+      </div>
+      <div class="palco" style="background:${c.page}">${cena(c, d.bt(c))}</div>
+    </div>`;
+  document.getElementById('grelha').innerHTML =
+    caixa(HOJE, true) + DESENHOS.map(d => caixa(d, false)).join('');
+
+  document.getElementById('nota').innerHTML = `
+    <b>O que está mesmo em causa.</b> Nenhum destes cinco é ilegível — o branco
+    sobre o acento passa nos doze temas. O que falha é o <b>significado</b>: se
+    «Guardar nota» tem a mesma cor que «Acertar Contas», a cor deixou de dizer
+    o que a app decidiu que ela diz.
+    <ul>
+      <li><b>O A é a regra sem excepção</b>, e mostra porque é que a excepção
+        se põe: três blocos escuros numa ficha de saúde.</li>
+      <li><b>O B e o C guardam a cor do perfil</b> sem o peso — o B pelo
+        contorno, o C por um véu. Os dois já estão medidos e passam.</li>
+      <li><b>O D é o mais leve</b>, e o mais arriscado: numa ficha cheia de
+        texto, uma palavra sublinhada pode não se ler como um botão. O alvo de
+        44 lá está, mas o alvo não é o que a pessoa vê.</li>
+      <li><b>O E é o único que não escolhe um desenho:</b> escolhe três, um por
+        forma. A pastilha da receita já se parece com o estado em que vai ficar,
+        o par vira segmentado, e o confirmar do campo fica comum. É mais
+        trabalho e é o que trata cada coisa pelo que ela é.</li>
+    </ul>
+    Aspeto: <b>${escuro ? 'escuro' : 'claro'}</b> · esquema <b>${esquema}</b>
+    (<code>${c.accent}</code>) · alvos de 44 px em todos.`;
+}
+
+document.getElementById('esquemas').innerHTML = NOMES.map(n => {
+  const cor = TEMAS['claro-' + n].accent;
+  return `<button data-e="${n}" aria-pressed="${n === esquema}">
+    <span class="bola" style="background:${cor}"></span>${n}</button>`;
+}).join('');
+
+document.getElementById('esquemas').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-e]');
+  if (!b) return;
+  esquema = b.dataset.e;
+  document.querySelectorAll('#esquemas button').forEach(x =>
+    x.setAttribute('aria-pressed', String(x.dataset.e === esquema)));
+  pintar();
+});
+
+for (const [id, v] of [['claro', false], ['escuro', true]]) {
+  document.getElementById(id).addEventListener('click', () => {
+    escuro = v;
+    document.getElementById('claro').setAttribute('aria-pressed', String(!v));
+    document.getElementById('escuro').setAttribute('aria-pressed', String(v));
+    pintar();
+  });
+}
+
+pintar();
+</script>
