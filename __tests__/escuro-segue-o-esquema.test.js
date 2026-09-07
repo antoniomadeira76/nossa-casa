@@ -34,7 +34,12 @@ const PARES = (t) => [
   ['titulo / card', t.titulo, t.card, 3],
   // O acento no escuro NÃO se mede contra o cartão: aí ele nunca é texto. O
   // uso a sério é o botão cheio — branco sobre o acento.
-  ['branco / accent', '#FFFFFF', t.accent, 3],
+  //
+  // ⚠ E o mínimo é 4,5, não 3. O rótulo desse botão é 15 px a 700, e o de uma
+  // pastilha selecionada é 13 — nenhum chega aos 18,66 px que a WCAG chama
+  // texto grande. Estava em 3, e foi por isso que o Cião viveu meses a 3,55
+  // com esta prova verde por cima.
+  ['branco / accent', '#FFFFFF', t.accent, 4.5],
   ['card / page',   t.card, t.page, 1.16],
   ['border / card', t.border, t.card, 1.40],
 ];

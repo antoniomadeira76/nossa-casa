@@ -33,10 +33,25 @@ describe('os esquemas de cor', () => {
         expect(contrasteComBranco(s.chrome)).toBeGreaterThanOrEqual(4.5);
       });
 
-      it('a cor de ação aguenta o rótulo a branco de um botão (≥ 3:1)', () => {
-        // Aqui 3 basta: os botões usam a fonte display a 700, que é texto
-        // grande. O Cião está em 3,55 desde sempre e é o piso real do sistema.
-        expect(contrasteComBranco(s.accent)).toBeGreaterThanOrEqual(3);
+      it('a cor de ação aguenta o rótulo a branco de um botão (≥ 4,5:1)', () => {
+        // ⚠ Esta prova exigia 3, e a razão escrita ao lado estava errada:
+        //
+        //   «Aqui 3 basta: os botões usam a fonte display a 700, que é texto
+        //    grande. O Cião está em 3,55 desde sempre e é o piso real do
+        //    sistema.»
+        //
+        // 700 não faz texto grande. O limite da WCAG são 18,66 px a negrito
+        // (ou 24 px normal) — e o `Primary` desta app é 15 px, a `Choice`
+        // selecionada é 13. Nenhum dos dois chega lá, e por isso o mínimo é
+        // 4,5 como em qualquer outro texto pequeno.
+        //
+        // A regra existia e estava calibrada uma marca abaixo do que o uso
+        // pede. Foi por isso que o Cião passou meses a 3,55 com uma prova
+        // verde por cima — a pior forma de um defeito viver, porque há algo a
+        // dizer que está medido.
+        //
+        // O acento passou de #08979C para #078286: 4,62.
+        expect(contrasteComBranco(s.accent)).toBeGreaterThanOrEqual(4.5);
       });
 
       it('as três cores são hexadecimais de seis dígitos', () => {

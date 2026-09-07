@@ -186,19 +186,27 @@ code { font-family:ui-monospace,'Cascadia Code',monospace; font-size:12.5px;
     <li><b>A sombra da ação principal</b> é o único sítio da app com relevo, e
         não se repete em mais nada.</li>
   </ul>
-  <p style="margin:12px 0 0"><strong>⚠ E dois falham o contraste, medidos:</strong></p>
-  <ul>
-    <li>com o <b>Cião</b>, branco sobre o acento dá <b>3,55:1</b> — é o botão
-        principal, em todos os ecrãs da app;</li>
-    <li>com o <b>Cinza</b>, branco sobre o <code>chrome</code> dá
-        <b>2,88:1</b> — é o filtro de membro escolhido, nas Tarefas. O Cinza é
-        o único esquema em que o cabeçalho é mais CLARO do que a cor de ação, e
-        é aí que isto parte.</li>
-  </ul>
-  <p style="margin:12px 0 0; color:var(--text3)">Texto de 13 a 15 px precisa de
-     4,5:1. A medida por baixo de cada alternativa é o <em>pior</em> caso dela
-     nos seis esquemas e nos dois aspetos — <b>as cinco passam; o que está no
-     ecrã hoje não</b>.</p>
+  <p style="margin:12px 0 0"><strong>⚠ E o contraste, que era uma falha a
+     sério — já corrigida</strong></p>
+  <p style="margin:6px 0 0">Esta página começou por dizer que <em>dois</em>
+     esquemas falhavam. Era um. O <b>Cinza</b> que eu media aqui tinha valores
+     velhos — <code>#5A6478</code> e <code>#8E99AB</code> —, e o do
+     <code>theme.js</code> é <code>#4B5563</code> e <code>#646F80</code>, que
+     dão 7,56 e 5,09. Passa desde sempre.</p>
+  <p style="margin:6px 0 0">A do <b>Cião</b> era verdadeira: branco sobre
+     <code>#08979C</code> dava <b>3,55:1</b>, e é o botão principal em todos os
+     ecrãs. O acento passou a <code>#078286</code> — 4,62 com o branco e 4,51
+     contra o cartão, onde ele também é texto.</p>
+  <p style="margin:6px 0 0">⚠ E havia uma prova a medir isto, calibrada em
+     <b>3:1</b>, com a razão escrita ao lado: «os botões usam a fonte display a
+     700, que é texto grande». Não é — a WCAG começa o texto grande nos
+     18,66 px a negrito, e o botão principal desta app é 15. A regra existia e
+     estava uma marca abaixo do que o uso pede, que é a pior forma de um
+     defeito viver: há qualquer coisa a dizer que está medido.</p>
+  <p style="margin:12px 0 0; color:var(--text3)">A medida por baixo de cada
+     alternativa é o <em>pior</em> caso dela nos seis esquemas e nos dois
+     aspetos. Com o tema corrigido, passam todas — a escolha entre elas é de
+     desenho, não de legibilidade.</p>
 </div>
 
 <div class="comandos">
@@ -214,11 +222,11 @@ code { font-family:ui-monospace,'Cascadia Code',monospace; font-size:12.5px;
 /* O tema, portado do `src/theme.js` — o mesmo cálculo, não uma aproximação. */
 const SCHEMES = [
   { name:'Violeta', accent:'#722ED1', hover:'#8B4EE0', chrome:'#241239' },
-  { name:'Cião',    accent:'#08979C', hover:'#13ADB3', chrome:'#0A5B60' },
-  { name:'Céu',     accent:'#1B5FA8', hover:'#2679C9', chrome:'#0C2A47' },
-  { name:'Rosa',    accent:'#B5306E', hover:'#CC4285', chrome:'#8A3A5A' },
-  { name:'Menta',   accent:'#177D5E', hover:'#1E9B75', chrome:'#2E6455' },
-  { name:'Cinza',   accent:'#5A6478', hover:'#6E798F', chrome:'#8E99AB' },
+  { name:'Cião', accent:'#078286', hover:'#13ADB3', chrome:'#0A5B60' },
+  { name:'Céu', accent:'#1B5FA8', hover:'#2679C9', chrome:'#0C2A47' },
+  { name:'Rosa', accent:'#B5306E', hover:'#CC4285', chrome:'#8A3A5A' },
+  { name:'Menta', accent:'#177D5E', hover:'#1E9B75', chrome:'#2E6455' },
+  { name:'Cinza', accent:'#4B5563', hover:'#5E6A7C', chrome:'#646F80' },
 ];
 const LUMES = { page:[.042,.55], card:[.135,.42], subtle:[.180,.36],
                 border:[.255,.28], text3:[.660,.14], slate:[.740,.24] };

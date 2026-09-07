@@ -31,7 +31,22 @@
 // CLAUDE.md). Um esquema laranja trá-lo-ia de volta pela porta do lado.
 export const SCHEMES = [
   { name: 'Violeta',     accent: '#722ED1', hover: '#8B4EE0', chrome: '#241239' },
-  { name: 'Cião',        accent: '#08979C', hover: '#13ADB3', chrome: '#0A5B60' },
+  // ⚠ O acento era #08979C, e dava 3,55:1 com o branco por cima.
+  //
+  // A cor de ação é FUNDO de branco em toda a app: o botão principal, a
+  // pastilha escolhida, a marca de um dia no calendário. 3,55 é abaixo dos 4,5
+  // que texto de 13 a 15 px exige — quem escolhesse o Cião ficava com o botão
+  // mais importante por baixo do mínimo legível, em todos os ecrãs.
+  //
+  // O cuidado existia para o CABEÇALHO desde que os três esquemas novos
+  // entraram — «cabeçalho entre 5:1 e 7,5:1 com o branco» — e não tinha sido
+  // aplicado ao acento. O Cião era o único dos seis a falhar.
+  //
+  // #078286 dá 4,62 com o branco e 4,51 contra o cartão (o `titulo` do modo
+  // claro É o acento, e é texto). Um passo além do limite, de propósito e pela
+  // mesma razão escrita no Cinza: sem margem, qualquer ajuste futuro atravessa
+  // a linha sem se notar.
+  { name: 'Cião',        accent: '#078286', hover: '#13ADB3', chrome: '#0A5B60' },
   { name: 'Céu',         accent: '#1B5FA8', hover: '#2679C9', chrome: '#0C2A47' },
   // Os três novos — cabeçalho entre 5:1 e 7,5:1 com o branco, contra os
   // 14–18:1 dos antigos.
