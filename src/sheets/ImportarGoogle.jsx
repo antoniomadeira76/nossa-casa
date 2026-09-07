@@ -142,9 +142,9 @@ export default function ImportarGoogle({ t, user, onClose }) {
           casa, nunca neste aparelho.
         </Text>
         {erro ? <Tile t={t} kind="err" icon="warning">{erro}</Tile> : null}
-        <Primary t={t} label={aLigar ? 'A ligar…' : 'Ligar a agenda da Google'}
+        <Primary t={t} comum label={aLigar ? 'A ligar…' : 'Ligar a agenda da Google'}
           icon="calendar" disabled={aLigar} onPress={ligarAgenda} />
-        <Primary t={t} label="Fechar" onPress={onClose} />
+        <Primary t={t} comum label="Fechar" onPress={onClose} />
       </View>
     );
   }
@@ -153,7 +153,7 @@ export default function ImportarGoogle({ t, user, onClose }) {
     return (
       <View style={{ gap: S.lg }}>
         <Tile t={t} kind="err" icon="warning">{erro}</Tile>
-        <Primary t={t} label="Fechar" onPress={onClose} />
+        <Primary t={t} comum label="Fechar" onPress={onClose} />
       </View>
     );
   }
@@ -163,7 +163,7 @@ export default function ImportarGoogle({ t, user, onClose }) {
       <View style={{ gap: S.lg }}>
         <Empty t={t} icon="calendar" title="Sem eventos novos."
           hint="Os próximos trinta dias da sua agenda já estão todos nesta casa, ou foram dispensados." />
-        <Primary t={t} label="Fechar" onPress={onClose} />
+        <Primary t={t} comum label="Fechar" onPress={onClose} />
       </View>
     );
   }
@@ -226,7 +226,7 @@ export default function ImportarGoogle({ t, user, onClose }) {
         ))}
       </View>
 
-      <Primary t={t} label={quantos === 1 ? 'Trazer 1 evento' : `Trazer ${quantos} eventos`}
+      <Primary t={t} comum label={quantos === 1 ? 'Trazer 1 evento' : `Trazer ${quantos} eventos`}
         disabled={quantos === 0} onPress={importar} />
     </View>
   );

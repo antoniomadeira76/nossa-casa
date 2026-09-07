@@ -332,6 +332,20 @@ export const Toggle = ({ t, on, onPress, label }) => (
 // ⚠ E o `sub` diz a CONSEQUÊNCIA dentro do próprio botão — «83,67 € para a
 // Rita». Numa app de dinheiro isso vale mais do que qualquer cor: quem carrega
 // não tem de se lembrar do que leu duas linhas acima.
+// ⚠ E o rótulo DESACTIVADO não é o mesmo rótulo com menos brilho.
+//
+// Era branco sobre o `border`: 1,41:1 no claro. Ilegível — a palavra estava lá
+// e não se lia. Com o `comum` a pintar o rótulo de `page` ficou 1,26:1, ainda
+// pior, e foi assim que se viu: um botão cinzento com um fantasma escrito.
+//
+// E são exactamente estes os rótulos que mais precisam de ser lidos, porque um
+// botão desactivado é o que diz o que FALTA — «Escreva um valor», «Valor
+// Indisponível». O `text3` dá 3,43 no claro e 3,89–4,61 no escuro: apagado
+// como convém a um botão que não responde, e legível como convém a uma frase
+// que explica porquê.
+const rotuloDo = (t, { disabled, comum }) =>
+  (disabled ? t.text3 : comum ? t.page : '#FFFFFF');
+
 export const Primary = ({ t, label, sub, icon, onPress, disabled, comum }) => (
   <Pressable onPress={disabled ? undefined : onPress} accessibilityRole="button"
     accessibilityLabel={sub ? `${label} — ${sub}` : label}
@@ -344,13 +358,16 @@ export const Primary = ({ t, label, sub, icon, onPress, disabled, comum }) => (
       backgroundColor: disabled ? t.border : comum ? t.text1 : t.accent,
       opacity: pressed ? 0.9 : 1, ...(disabled ? {} : elev(3)),
     })}>
-    {icon ? <Icon name={icon} size={20} color={comum ? t.page : '#FFFFFF'} /> : null}
+    {icon ? <Icon name={icon} size={20} color={rotuloDo(t, { disabled, comum })} /> : null}
     <View style={{ alignItems: 'center', gap: 1 }}>
       <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700',
-        color: comum ? t.page : '#FFFFFF', letterSpacing: 0.4 }}>{label}</Text>
+        color: rotuloDo(t, { disabled, comum }), letterSpacing: 0.4 }}>{label}</Text>
       {sub ? (
+        // O alfa afasta a consequência do rótulo sem lhe mudar a cor. ⚠ Mas
+        // não se aplica ao desactivado: ali o `text3` já está no limite, e
+        // 82 % dele sobre o cinzento deixava de se ler outra vez.
         <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, fontWeight: '500',
-          color: comum ? t.page : '#FFFFFF', opacity: 0.82 }}>{sub}</Text>
+          color: rotuloDo(t, { disabled, comum }), opacity: disabled ? 1 : 0.82 }}>{sub}</Text>
       ) : null}
     </View>
   </Pressable>

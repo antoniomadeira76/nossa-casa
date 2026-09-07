@@ -93,7 +93,7 @@ export default function NovoArtigo({ t, user, onClose }) {
           onPress={() => setForm(f => ({ ...f, staple: !f.staple }))} />
       </View>
 
-      <Primary
+      <Primary comum
         t={t}
         label="Guardar artigo"
         disabled={!canSave}

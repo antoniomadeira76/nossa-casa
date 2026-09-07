@@ -7,6 +7,11 @@ import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, 
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 
+// Com que limite nasce um envelope novo. Estava escrito no meio da chamada, sem
+// nome e sem aparecer em sítio nenhum da folha; agora tem nome e o botão diz-lhe
+// o valor antes de o somar ao orçamento da casa.
+const LIMITE_NOVO_ENVELOPE = 500;
+
 // O estilo dos campos de texto estava copiado onze vezes neste ficheiro, cada
 // uma com onze linhas iguais. Um sítio só: se o desenho do campo mudar, muda
 // em todos — que era o que já devia acontecer.
@@ -198,8 +203,8 @@ export default function Gestao({ t, user, onClose }) {
       </View>
 
       <View style={{ gap: S.md }}>
-        <Primary t={t} label="Abrir Mês" icon="calendar" onPress={() => setModal('openMonth')} />
-        <Primary t={t} label="Fechar Mês" icon="checkSquare" onPress={() => setModal('closeMonth')} />
+        <Primary t={t} comum label="Abrir Mês" icon="calendar" onPress={() => setModal('openMonth')} />
+        <Primary t={t} comum label="Fechar Mês" icon="checkSquare" onPress={() => setModal('closeMonth')} />
       </View>
 
       {envelopes && envelopes.length > 0 && (
@@ -485,7 +490,7 @@ export default function Gestao({ t, user, onClose }) {
         <Sheet t={t} title="Nome da família" sub={`Agora: ${nomeDaCasa}`}
           onClose={() => { setSheetOpen(null); setInput(''); setErro(null); }}
           action={
-            <Primary t={t} label={aGuardar ? 'A guardar…' : 'Guardar'}
+            <Primary t={t} comum label={aGuardar ? 'A guardar…' : 'Guardar'}
               disabled={aGuardar || !input.trim() || input.trim() === nomeDaCasa}
               onPress={() => executar(
                 () => renomearCasa(input),
@@ -515,7 +520,7 @@ export default function Gestao({ t, user, onClose }) {
         <Sheet t={t} title="Acrescentar membro" sub={`À casa ${nomeDaCasa}`}
           onClose={() => { setSheetOpen(null); setErro(null); }}
           action={
-            <Primary t={t} label={aGuardar ? 'A acrescentar…' : 'Acrescentar'}
+            <Primary t={t} comum label={aGuardar ? 'A acrescentar…' : 'Acrescentar'}
               disabled={aGuardar || !form.nome.trim()}
               onPress={() => executar(
                 () => acrescentarMembro(form),
@@ -605,7 +610,7 @@ export default function Gestao({ t, user, onClose }) {
           action={
             <View style={{ gap: S.md }}>
               {(s.roles[selectedMember] || 'crianca') === 'crianca' ? (
-                <Primary t={t} label="Guardar PIN" disabled={!input || !!pinMsg}
+                <Primary t={t} comum label="Guardar PIN" disabled={!input || !!pinMsg}
                   onPress={() => { if (setPin(selectedMember, input)) return; fecharMembro(); }} />
               ) : null}
               <Pressable onPress={() => { setErro(null); setModal('confirmarRemocao'); }}
@@ -637,7 +642,7 @@ export default function Gestao({ t, user, onClose }) {
                       saúde — acompanha o nome novo.
                     </Tile>
                   ) : null}
-                  <Primary t={t} label={aGuardar ? 'A guardar…' : 'Guardar nome'}
+                  <Primary t={t} comum label={aGuardar ? 'A guardar…' : 'Guardar nome'}
                     disabled={aGuardar || !form.nome.trim()}
                     onPress={() => executar(
                       () => renomearMembro(selectedMember, form.nome),
@@ -731,7 +736,7 @@ export default function Gestao({ t, user, onClose }) {
             setLimitInput('');
           }}
           action={
-            <Primary t={t} label="Guardar" onPress={() => {
+            <Primary t={t} comum label="Guardar" onPress={() => {
               if (input.trim() && limitInput.trim()) {
                 const newLimit = parseFloat(limitInput.replace(',', '.'));
                 if (isNaN(newLimit) || newLimit <= 0) return;
@@ -812,13 +817,19 @@ export default function Gestao({ t, user, onClose }) {
             setInput('');
           }}
           action={
-            <Primary t={t} label="Criar" onPress={() => {
-              if (input.trim()) {
-                criarEnvelope(input.trim(), 500);
-                setSheetOpen(null);
-                setInput('');
-              }
-            }} />
+            // ⚠ A folha só pede o nome, e criar um envelope acrescenta
+            // LIMITE_NOVO_ENVELOPE ao orçamento da casa — 500,00 € que ninguém
+            // escreveu nem viu. A linha por baixo diz o número antes de ele
+            // entrar na conta; corrige-se a seguir na folha de editar.
+            <Primary t={t} comum label="Criar"
+              sub={input.trim() ? `Limite inicial de ${EUR(LIMITE_NOVO_ENVELOPE)}` : null}
+              onPress={() => {
+                if (input.trim()) {
+                  criarEnvelope(input.trim(), LIMITE_NOVO_ENVELOPE);
+                  setSheetOpen(null);
+                  setInput('');
+                }
+              }} />
           }>
           <View style={{ gap: S.md }}>
             <View>
@@ -941,7 +952,7 @@ export default function Gestao({ t, user, onClose }) {
             setInput('');
           }}
           action={
-            <Primary t={t} label="Adicionar" onPress={() => {
+            <Primary t={t} comum label="Adicionar" onPress={() => {
               if (input.trim()) {
                 mudarListaDaCasa('stores', [...s.stores, input.trim()]);
                 setSheetOpen(null);
@@ -982,7 +993,7 @@ export default function Gestao({ t, user, onClose }) {
           }}
           action={
             <View style={{ gap: S.md }}>
-              <Primary t={t} label="Renomear" onPress={() => {
+              <Primary t={t} comum label="Renomear" onPress={() => {
                 if (input.trim()) {
                   // O renomear mantém a POSIÇÃO, e é isso que o distingue de
                   // apagar-e-criar quando a loja compara as duas listas — uma

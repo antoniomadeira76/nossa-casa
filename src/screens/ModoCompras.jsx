@@ -18,6 +18,12 @@ import Carrinho from '../sheets/Carrinho';
 //
 // Agora é uma vista de ecrã inteiro como as outras: o App põe o cabeçalho
 // (seta de voltar, título, loja) e o rodapé, e isto é só o conteúdo.
+// O envelope onde a conta das compras cai. ⚠ Num sítio SÓ: o carrinho anuncia
+// este destino ao pé do botão e o `registarDespesa` escreve nele, e as duas
+// coisas têm de dizer o mesmo. Duas cópias do nome é a classe de defeito que já
+// pôs a grelha de envelopes a mostrar uma lista e a confirmação a aplicar outra.
+const ENVELOPE_DAS_COMPRAS = 'Mercearia';
+
 export default function ModoCompras({ t, user, onClose }) {
   const { s, set, allItems, envelopes, precoDe, definirPrecoPago, registarPrecos,
           lojaDoPlano, marcarArtigo, registarDespesa, fecharIdaAsCompras } = useStore();
@@ -214,11 +220,19 @@ export default function ModoCompras({ t, user, onClose }) {
       </View>
 
       {/* A acção final vai no fim da lista, não numa barra fixa: a barra
-          ficava colada por cima do rodapé, e a referência não a tem. */}
+          ficava colada por cima do rodapé, e a referência não a tem.
+
+          Os dois são COMUNS, e por razões diferentes. O «Secção seguinte» é
+          navegação. O «Fechar Conta» não fecha conta nenhuma: abre o carrinho,
+          onde está o botão que fecha — e é esse que leva o acento. Um passo
+          intermédio pintado como decisão final ensina a família a carregar sem
+          ler. A linha por baixo diz o que vai encontrar lá dentro. */}
       {step === -1 || step >= SECTIONS.length - 1 ? (
-        <Primary t={t} label="Fechar Conta e Registar Despesa" onPress={() => setCartOpen(true)} />
+        <Primary t={t} comum label="Fechar Conta e Registar Despesa"
+          sub={cart > 0 ? `${EUR(cart)} · ${doneItems.length} ${doneItems.length === 1 ? 'artigo' : 'artigos'}` : null}
+          onPress={() => setCartOpen(true)} />
       ) : (
-        <Primary t={t} label="Secção seguinte" icon="caretRight"
+        <Primary t={t} comum label="Secção seguinte" icon="caretRight"
           onPress={() => setStep(x => Math.min(SECTIONS.length - 1, x + 1))} />
       )}
 
@@ -232,6 +246,7 @@ export default function ModoCompras({ t, user, onClose }) {
       {cartOpen ? (
         <Carrinho t={t} doneItems={doneItems} items={items} cart={cart} pago={pago}
           user={user} store={loja} who={(s.shopPlan || {}).who}
+          destino={ENVELOPE_DAS_COMPRAS}
           onClose={() => setCartOpen(false)}
           onConfirm={() => {
             // Os preços escritos no corredor viram histórico aqui, com a loja
@@ -257,7 +272,7 @@ export default function ModoCompras({ t, user, onClose }) {
               // ⚠ Sem ida marcada, quem paga é quem está a fechar a conta. Isto
               // era `s.shopPlan.who` cru: entre duas idas o `shopPlan` é nulo, e
               // fechar a conta rebentava em vez de registar a despesa.
-              envelope: 'Mercearia', valor: cart, pagador: (s.shopPlan || {}).who || user,
+              envelope: ENVELOPE_DAS_COMPRAS, valor: cart, pagador: (s.shopPlan || {}).who || user,
               descricao: loja ? `Compras · ${loja}` : 'Compras',
             });
             // E a ida fecha-se no servidor: a lista deixa de ser a aberta, e a

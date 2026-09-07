@@ -74,9 +74,10 @@ export default function Dinheiro({ t, user, onEquip }) {
   // um ponto ao lado dos 62 % que apareciam por acidente.
   //
   // A frase é sobre o rendimento: quanto dele foi para envelopes, e quanto
-  // ficou de fora. Agora as duas metades somam 100 % do mesmo número.
+  // ficou de fora. E é toda em euros — a percentagem obrigava a família a fazer
+  // a conta de cabeça para saber de quanto dinheiro se estava a falar, num ecrã
+  // onde todos os outros números já são euros. As três parcelas somam.
   const rendimento = s.rendimento || 0;
-  const pctAtribuido = rendimento > 0 ? Math.round((budget / rendimento) * 100) : 0;
   const semEnvelope = Math.max(0, rendimento - budget);
   // Os meses vêm do `format.js`, onde já viviam. Uma segunda lista escrita à
   // mão aqui era um sítio a mais para divergir — e divergiu: esta tinha os
@@ -164,7 +165,7 @@ export default function Dinheiro({ t, user, onEquip }) {
             calava-se a meio («0 % dos 0,00 €») em vez de se calar toda. */}
         {rendimento > 0 ? (
           <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 18, color: t.text3 }}>
-            {pctAtribuido} % dos {EUR(rendimento)} atribuídos aos envelopes.
+            {EUR(budget)} dos {EUR(rendimento)} atribuídos aos envelopes.
             {semEnvelope > 0 ? ` Sobram ${EUR(semEnvelope)} sem envelope.` : ''}
           </Text>
         ) : null}

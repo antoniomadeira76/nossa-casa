@@ -7,7 +7,11 @@ import Icon from '../Icon';
 
 // Validação antes de fechar a conta. Vivia dentro do Compras.jsx, ao lado do
 // modo de loja; saiu com ele.
-export default function Carrinho({ t, doneItems, items, cart, pago, user, store, who, onClose, onConfirm }) {
+// ⚠ O `destino` vem de fora, e é de propósito: o envelope onde a despesa cai é
+// escolhido por quem chama o `onConfirm`. Escrevê-lo aqui outra vez era uma
+// segunda porta para a mesma decisão — a classe de defeito que já apagou o
+// acerto de contas três vezes.
+export default function Carrinho({ t, doneItems, items, cart, pago, user, store, who, destino, onClose, onConfirm }) {
   const noStock = items.filter(i => !doneItems.includes(i));
   const hasWarnings = noStock.length > 0;
 
@@ -98,7 +102,13 @@ export default function Carrinho({ t, doneItems, items, cart, pago, user, store,
           </ScrollView>
 
           <View style={{ paddingTop: 14, paddingBottom: 30, gap: S.md }}>
+            {/* ACENTO: é dinheiro entre pessoas. Fechar a conta escreve uma
+                despesa na conta conjunta, paga por quem foi às compras — e
+                aparece no acerto de contas entre os dois adultos.
+                A linha por baixo diz para onde vai, que é o que a folha não
+                dizia: mostrava o total e ficava calada quanto ao destino. */}
             <Primary t={t} label="Fechar Conta e Registar" icon="check"
+              sub={destino ? `${EUR(cart)} em ${destino}, por ${who || user}` : null}
               onPress={onConfirm} />
             <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Cancelar"
               style={({ pressed }) => ({

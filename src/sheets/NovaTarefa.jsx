@@ -137,7 +137,7 @@ export default function NovaTarefa({ t, user, onClose }) {
         </View>
       </View>
 
-      <Primary
+      <Primary comum
         t={t}
         label="Guardar tarefa"
         disabled={!canSave}

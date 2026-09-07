@@ -20,7 +20,11 @@
  *
  * ⚠ Esta lê-a do ecrã montado e obriga as três parcelas a fecharem entre si.
  * Não confere a fórmula — confere a ARITMÉTICA do que a família vê, e por isso
- * continua a valer se a fórmula mudar outra vez.
+ * continua a valer se a fórmula mudar outra vez. E mudou: a frase é hoje toda
+ * em euros («2 020,00 € dos 3 200,00 €»), porque a percentagem obrigava a fazer
+ * a conta de cabeça para saber de quanto dinheiro se falava. A prova acompanhou
+ * sem perder nada — passou de uma igualdade com um ponto de tolerância a uma
+ * igualdade ao cêntimo.
  */
 const React = require('react');
 const TestRenderer = require('react-test-renderer');
@@ -47,11 +51,15 @@ const numero = (s) => Number(s.replace(/[\s  ]/g, '').replace(',', '.'));
 const MOEDA = '[\\d\\s.,\\u202f\\u00a0]';
 
 // A frase, partida nas três parcelas. `null` quando o ecrã não a mostra.
+//
+// As três são EUROS. Era uma percentagem no meio — «63 % dos 3 200,00 €» — e
+// obrigava a família a fazer a conta de cabeça para saber de quanto dinheiro se
+// falava, num ecrã em que todos os outros números já são euros.
 const lerFrase = (t) => {
-  const m = t.match(new RegExp(`(\\d+)\\s*%\\s*dos\\s+(${MOEDA}+?)\\s*€\\s*atribuídos aos envelopes`));
+  const m = t.match(new RegExp(`(${MOEDA}+?)\\s*€\\s*dos\\s+(${MOEDA}+?)\\s*€\\s*atribuídos aos envelopes`));
   if (!m) return null;
   const sobra = t.match(new RegExp(`Sobram\\s+(${MOEDA}+?)\\s*€\\s*sem envelope`));
-  return { pct: Number(m[1]), total: numero(m[2]), sobra: sobra ? numero(sobra[1]) : 0 };
+  return { atribuido: numero(m[1]), total: numero(m[2]), sobra: sobra ? numero(sobra[1]) : 0 };
 };
 
 // Monta o Dinheiro UMA vez e devolve como lê-lo e como mexer na casa. Um só
@@ -83,13 +91,14 @@ const abrir = () => {
 
 // A propriedade, num sítio só: o que foi atribuído mais o que sobrou é o total
 // que a própria frase nomeia. Nada mais, nada menos.
+//
+// Com as três parcelas em euros isto passou a ser uma igualdade ao cêntimo —
+// com a percentagem no meio havia um ponto de arredondamento a tolerar.
 const fecha = (f) => {
   expect(f).not.toBeNull();
-  const atribuido = f.total - f.sobra;
-  // Um ponto de tolerância, que é o arredondamento ao inteiro.
-  expect(f.pct).toBeCloseTo(Math.round((atribuido / f.total) * 100), 0);
+  expect(f.atribuido + f.sobra).toBeCloseTo(f.total, 2);
   expect(f.sobra).toBeGreaterThanOrEqual(0);
-  expect(f.sobra).toBeLessThanOrEqual(f.total);
+  expect(f.atribuido).toBeLessThanOrEqual(f.total);
 };
 
 describe('⚠ as três parcelas da frase fecham entre si', () => {
@@ -101,14 +110,16 @@ describe('⚠ as três parcelas da frase fecham entre si', () => {
     expect(f.sobra).toBeGreaterThan(0);
   });
 
-  it('depois de criar um envelope — a sobra encolhe e a percentagem sobe', () => {
+  it('depois de criar um envelope — a sobra encolhe e o atribuído sobe', () => {
     const d = abrir();
     const antes = d.frase();
     d.mexer(a => a.criarEnvelope('Férias', 300));
     const f = d.frase();
     fecha(f);
     expect(f.sobra).toBeCloseTo(antes.sobra - 300, 2);
-    expect(f.pct).toBeGreaterThan(antes.pct);
+    expect(f.atribuido).toBeCloseTo(antes.atribuido + 300, 2);
+    // E o total não se mexe: criar um envelope não muda o rendimento.
+    expect(f.total).toBeCloseTo(antes.total, 2);
   });
 
   it('depois de apagar um — a sobra cresce', () => {
@@ -127,7 +138,7 @@ describe('⚠ as três parcelas da frase fecham entre si', () => {
     d.mexer(a => a.moverEntreEnvelopes(a1.name, a2.name, 50));
     const f = d.frase();
     fecha(f);
-    expect(f.pct).toBe(antes.pct);
+    expect(f.atribuido).toBeCloseTo(antes.atribuido, 2);
     expect(f.sobra).toBeCloseTo(antes.sobra, 2);
   });
 
@@ -142,13 +153,13 @@ describe('⚠ as três parcelas da frase fecham entre si', () => {
     }));
     const f = d.frase();
     fecha(f);
-    expect(f.pct).toBe(antes.pct);
+    expect(f.atribuido).toBeCloseTo(antes.atribuido, 2);
     expect(f.sobra).toBeCloseTo(antes.sobra, 2);
   });
 });
 
 describe('e cala-se quando não tem nada a dizer', () => {
-  it('⚠ sem rendimento declarado a frase desaparece, em vez de dizer «0 % dos 0,00 €»', () => {
+  it('⚠ sem rendimento declarado a frase desaparece, em vez de dizer «0,00 € dos 0,00 €»', () => {
     const d = abrir();
     d.mexer(a => a.set({ rendimento: 0 }));
     expect(d.frase()).toBeNull();
@@ -164,7 +175,7 @@ describe('e cala-se quando não tem nada a dizer', () => {
     d.mexer(a => a.set({ rendimento: orcamento }));
     const f = d.frase();
     fecha(f);
-    expect(f.pct).toBe(100);
+    expect(f.atribuido).toBeCloseTo(f.total, 2);
     expect(f.sobra).toBe(0);
     expect(d.ecra()).not.toContain('sem envelope');
   });

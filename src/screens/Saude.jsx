@@ -832,7 +832,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
         <Sheet t={t} title="Anexar" sub="Exame, receita ou relatório"
           onClose={() => setAnexoDe(null)}
           action={
-            <Primary t={t} label="Anexar" disabled={!anexoForm.title.trim()}
+            <Primary t={t} comum label="Anexar" disabled={!anexoForm.title.trim()}
               onPress={() => {
                 const consulta = st.allHealth().find(h => h.id === anexoDe);
                 if (!consulta) return setAnexoDe(null);
@@ -1282,7 +1282,7 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
             {/* «Marcar e Pôr na Agenda», como no protótipo: promete as duas
                 coisas que acontecem, e são duas — o episódio na ficha e o
                 evento na agenda. Dizia só «Marcar Consulta». */}
-            <Primary t={t} label="Marcar e Pôr na Agenda" onPress={handleSaveConsultation}
+            <Primary t={t} comum label="Marcar e Pôr na Agenda" onPress={handleSaveConsultation}
               disabled={!form.date || !form.specialty} />
           </View>
         </View>
@@ -1433,7 +1433,7 @@ function GerirEspecialidades({ t, user, form, setForm, onClose }) {
           ) : null}
         </View>
 
-        <Primary t={t} label={aRenomear ? 'Guardar Nome' : 'Criar Especialidade'}
+        <Primary t={t} comum label={aRenomear ? 'Guardar Nome' : 'Criar Especialidade'}
           onPress={guardar} disabled={!nome.trim()} />
       </View>
     </Sheet>

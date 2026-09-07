@@ -264,7 +264,7 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
             Este evento fica só na Nossa Casa. A agenda da Google ainda não está
             ligada nesta conta.
           </Tile>
-          <Primary t={t} label={aLigar ? 'A ligar…' : 'Ligar a agenda da Google'}
+          <Primary t={t} comum label={aLigar ? 'A ligar…' : 'Ligar a agenda da Google'}
             icon="calendar" disabled={aLigar} onPress={ligarAgenda} />
           {erroAoLigar ? <Tile t={t} kind="err">{erroAoLigar}</Tile> : null}
         </View>
@@ -320,7 +320,7 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
           Não se escreve na agenda de outra pessoa: a agenda de cada um é dela,
           e o que a app pode fazer é convidar. Quem aceita, fica com o evento. */}
 
-      <Primary
+      <Primary comum
         t={t}
         label={aEditar ? 'Guardar alterações' : 'Guardar evento'}
         disabled={!canSave}

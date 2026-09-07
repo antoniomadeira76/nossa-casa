@@ -207,7 +207,7 @@ export default function Equipamentos({ t, abrir }) {
               />
             </View>
 
-            <Primary t={t} label="Guardar" onPress={handleSave} disabled={!form.name.trim()} />
+            <Primary t={t} comum label="Guardar" onPress={handleSave} disabled={!form.name.trim()} />
           </View>
         </Sheet>
       ) : null}

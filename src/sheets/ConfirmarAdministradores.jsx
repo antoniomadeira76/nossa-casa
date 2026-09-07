@@ -150,7 +150,7 @@ export default function ConfirmarAdministradores({
                         {erro[nome]}
                       </Text>
                     ) : null}
-                    <Primary t={t} label={aVerificar === nome ? 'A verificar…' : 'Confirmar'}
+                    <Primary t={t} comum label={aVerificar === nome ? 'A verificar…' : 'Confirmar'}
                       disabled={!((escrito[nome] || '').length) || aVerificar === nome}
                       onPress={() => confirmar(nome)} />
                   </View>
@@ -163,7 +163,10 @@ export default function ConfirmarAdministradores({
 
       {/* A acção destrutiva só acorda com todos confirmados. Mostrá-la
           desactivada — e não escondê-la — é o que diz que ela existe e o que
-          falta para lá chegar. */}
+          falta para lá chegar.
+
+          ACENTO: apaga. É a regra sem excepção nenhuma. Sem linha por baixo
+          porque o `aviso` acima já diz, em prosa, o que desaparece. */}
       <Primary t={t}
         label={aExecutar ? 'A apagar…' : rotuloAcao}
         icon="trash"

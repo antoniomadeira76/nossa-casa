@@ -116,6 +116,11 @@ export default function ExportarSaude({
       onClose={onClose}
       action={
         <View style={{ gap: S.md }}>
+          {/* ⚠ ACENTO, e é o único «Guardar» da app que o leva. Não é dinheiro
+              nem apaga nada — tira dados clínicos de um menor de dentro da app
+              e põe-nos num ficheiro que a app deixa de governar. Não se desfaz.
+              Sem linha por baixo porque a folha já conta o que vai lá dentro,
+              consulta a consulta e anexo a anexo, dois blocos acima. */}
           <Primary t={t} icon="printer"
             label={aGuardar ? 'A preparar…' : 'Guardar como PDF'}
             disabled={aGuardar || nada}

@@ -222,7 +222,7 @@ export default function Tarefas({ t, user, abrir }) {
 
       {task ? (
         <Sheet t={t} title={task.title} sub={subtituloDaTarefa(task)} onClose={() => setManage(null)}
-          action={<Primary t={t} label="Guardar Alterações" onPress={() => setManage(null)} />}>
+          action={<Primary t={t} comum label="Guardar Alterações" onPress={() => setManage(null)} />}>
           <View style={{ gap: S.md }}>
             <Label t={t}>Urgência</Label>
             <Segmented t={t} small value={task.urgency}
