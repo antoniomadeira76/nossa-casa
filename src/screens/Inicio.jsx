@@ -56,21 +56,24 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
   // ── A cor de cada linha diz o GÉNERO do que pede atenção ─────────────────
   //
   //   cinzento   há algo por fazer, mas nada em risco — contas, tarefas
-  //   azul       uma DATA aproxima-se — garantia, receita, consulta, agenda
+  //   âmbar      um prazo aproxima-se — garantia, receita
   //   vermelho   um limite já foi ultrapassado — envelope
+  //   azul       informação sem prazo nem risco — consulta marcada, agenda
   //
-  // ⚠ As garantias e as receitas levavam âmbar (`state.warn`), e saiu a pedido
-  // do dono da casa em 08/09/2026: nesta app não há laranja, e a especificação
-  // (item 7, «grey except real risk») já dizia que o âmbar não se usava em
-  // lado nenhum — era o código do protótipo que a contradizia. Um prazo que
-  // se aproxima é informação sobre uma data, e é isso que o azul já dizia nas
-  // consultas.
+  // É a escala do CÓDIGO do protótipo (a lista `needs` do `Nossa Casa
+  // App.dc.html`): cinzento com ícone `#6A7282` e linha `#A9B4C6`, vermelho
+  // `#CE0002` nos dois, e a garantia a expirar com ícone `#8F5600` e linha
+  // `--c-warn-yellow`. Aqui são os tokens equivalentes: `text3`+`faixa`,
+  // `err`, `warnDeep`+`warn`. O azul não está no protótipo — as consultas e a
+  // agenda vieram depois, e o azul é o estado de informação do tema.
   //
-  // ⚠ E a faixa da esquerda das linhas cinzentas tem a SUA cor (`faixa`), mais
-  // clara do que o ícone — como no protótipo, que dava `#6A7282` ao ícone e
-  // `#A9B4C6` à linha. A app usava uma cor para os dois, e as faixas ficavam
-  // quase pretas ao lado das coloridas. Nas linhas coloridas a faixa é a cor
-  // do estado, como lá.
+  // ⚠ Em 08/09/2026 o âmbar saiu e VOLTOU no mesmo dia. O dono da casa pediu
+  // «sem laranja»; a especificação (item 7) dizia que o âmbar não se usava em
+  // lado nenhum; e o protótipo usava-o. Decidiu-se seguir o protótipo, que é a
+  // regra do CLAUDE.md quando os dois discordam. O que ficou da ida e volta é o
+  // que estava errado de facto: a faixa das linhas cinzentas era o `text3` em
+  // vez da linha mais clara do protótipo, e a faixa e o ícone passaram a ser
+  // duas cores em todas as linhas — como lá.
   if (toConfirm.length) needs.push({ icon: 'clock', color: t.text3, line: t.faixa,
     title: plural(toConfirm.length, 'tarefa a confirmar', 'tarefas a confirmar'),
     sub: [...new Set(toConfirm.map(x => x.who))].join(', '), go: () => go('tarefas') });
@@ -78,14 +81,14 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
     title: 'Contas por acertar', sub: `${oNome(acerto.devedor)} deve ${EUR(settleBase)}`, go: () => go('dinheiro') });
   tight.forEach(e => needs.push({ icon: 'warning', color: t.state.err,
     title: `Envelope ${e.name} no limite`, sub: `${EUR(Math.max(0, e.limit - e.used))} disponíveis`, go: () => go('dinheiro') }));
-  garantiasAExpirar().forEach(e => needs.push({ icon: 'idcard', color: t.state.info,
+  garantiasAExpirar().forEach(e => needs.push({ icon: 'idcard', color: t.state.warnDeep, line: t.state.warn,
     title: `Garantia a expirar · ${String(e.name).split(' ').slice(0, 2).join(' ')}`,
     sub: e.dias === 0 ? 'termina hoje' : `${e.dias === 1 ? 'Falta' : 'Faltam'} ${plural(e.dias, 'dia', 'dias')}`,
     // A ficha DESTE equipamento, e não a lista onde é preciso voltar a
     // procurá-lo. Uma linha que diz «Frigorífico» e abre uma lista de doze
     // obriga a fazer a busca outra vez, depois de a app já a ter feito.
     go: () => onEquip(e.id) }));
-  receitasAExpirar(user).forEach(d => needs.push({ icon: 'idcard', color: t.state.info,
+  receitasAExpirar(user).forEach(d => needs.push({ icon: 'idcard', color: t.state.warnDeep, line: t.state.warn,
     title: `Receita a expirar · ${d.member}`,
     sub: `${d.title} · ${d.dias < 0 ? `Expirou há ${plural(-d.dias, 'dia', 'dias')}`
       : d.dias === 0 ? 'Expira hoje'
@@ -215,12 +218,14 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
                     : pend ? 'Feito — a aguardar confirmação'
                     : subtituloDaTarefa(x, d)}
                   right={<>
-                    {/* ⚠ Neutra, como na Tarefas e como a especificação diz
-                        («the points pill is neutral»). Levava borda âmbar,
-                        fundo amarelo e texto âmbar-escuro — laranja num ecrã
-                        onde a mesma pastilha, um separador ao lado, é cinzenta.
-                        Tirado a pedido do dono da casa em 08/09/2026. */}
-                    {pontosNasTarefas && x.pts > 0 && !done ? <Pill label={`${x.pts} pt`} fg={t.text2} bg={t.card} border={t.border} /> : null}
+                    {/* A pastilha dos pontos como o protótipo a desenha no
+                        Início: contorno e fundo âmbar, texto âmbar-escuro.
+                        ⚠ Passou a neutra e voltou no mesmo dia (08/09/2026):
+                        o dono da casa pediu «sem laranja» e depois «segue o
+                        esquema do design». A Tarefas tem a sua neutra por
+                        outra razão, escrita lá — o amarelo competia com o
+                        distintivo da urgência, que aqui não existe. */}
+                    {pontosNasTarefas && x.pts > 0 && !done ? <Pill label={`${x.pts} pt`} fg={t.state.warnDeep} bg={t.state.warnBg} border={t.state.warn} /> : null}
                   </>}
                   icon={done ? 'checkCircle' : pend ? 'clock' : 'infoCircle'} />
               </Card>
