@@ -3,10 +3,12 @@ import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, warrantyDaysLeft, plural, mesSeguinte } from '../format';
-import { GOALS } from '../data';
-import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Empty, usePaged, Pager, Opcao, NumField, BotaoCompacto } from '../ui';
+import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Choice, Empty, usePaged, Pager, Opcao, NumField, BotaoCompacto } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
+import Confirm from '../Confirm';
+import NovaMeta from '../sheets/NovaMeta';
+import GerirMeta from '../sheets/GerirMeta';
 
 // ⚠ O `NumField` mudou-se para o `ui.jsx`, e continua a ser importado daqui
 // para quem o leia por este nome. Vivia neste ecrã e era o controlo partilhado
@@ -45,8 +47,12 @@ function GrelhaEnvelopes({ t, envelopes, livre, escolhido, onEscolher }) {
 export default function Dinheiro({ t, user, onEquip }) {
   const st = useStore();
   const { s, set, envelopes, budget, spent, remaining, mesAberto, allEquip, isAdmin, membros: MEMBERS, adultos, criancas, acerto, acertado, pagarAcerto, oNome, aoNome, moverEntreEnvelopes, registarDespesa,
-          abrirMes, fecharMes } = st;
+          abrirMes, fecharMes, metas, reforcarMeta, apagarMeta } = st;
   const [sheet, setSheet] = useState(null);
+  const [meta, setMeta] = useState(null);        // id da meta com a folha aberta
+  const [metaAApagar, setMetaAApagar] = useState(null);
+  // O que vai para uma meta ao fechar o mês. Em EUROS, e nunca uma fracção.
+  const [fecho, setFecho] = useState({ meta: null, valor: null });
   const [mv, setMv] = useState({ from: 0, to: 3, amount: 0 });
   const [exp, setExp] = useState({ amount: 0, env: 0, payer: user, split: true });
   const [settle, setSettle] = useState({ mode: 'all', customAmount: 0 });
@@ -132,15 +138,51 @@ export default function Dinheiro({ t, user, onEquip }) {
     setSheet(null);
   };
 
-  // Fecha o mês: zera o registo e os pontos pagos. A regra dos 30 % do saldo
-  // ainda não está decidida (o texto dizia metas aqui e cofres na Gestão), por
-  // isso não se aplica nada — melhor não mover dinheiro do que movê-lo ao acaso.
+  // ── Quanto do saldo vai para uma meta ao fechar o mês ────────────────────
+  //
+  // ⚠ O protótipo dizia «30 % do que sobrou reforça as metas», e ficou por
+  // aplicar meses porque uma percentagem escrita no código não é uma decisão da
+  // família: 30 % de 771,36 € são 231,41 €, e ninguém escolheu esse número.
+  //
+  // Agora é um VALOR EM EUROS que quem administra escreve, com o saldo do mês
+  // como sugestão. É a mesma razão pela qual a frase do orçamento deixou de
+  // falar em percentagens: nesta app um número de dinheiro diz-se em euros, e
+  // uma percentagem obriga a fazer a conta de cabeça para saber de quanto se
+  // está a falar.
+  //
+  // Sugere-se o saldo inteiro e não uma fatia dele: quem quiser guardar menos
+  // baixa o número, e assim a app não escolhe por ninguém.
+  const paraMeta = fecho.valor === null ? Math.max(0, remaining) : fecho.valor;
+  const metaDoFecho = metas.find(m => m.id === fecho.meta) || null;
+  const vaiParaMeta = !!metaDoFecho && paraMeta > 0;
+
+  // A meta com a folha aberta, e a que está a ser apagada. Lidas da lista para
+  // continuarem a saber de qual falam depois de a lista já a não ter.
+  const metaAberta = metas.find(m => m.id === meta) || null;
+  const metaAApagarObj = metas.find(m => m.id === metaAApagar) || null;
+
+  // Fecha o mês: zera o registo e os pontos pagos, e leva para uma meta o que
+  // quem administra decidir — em euros.
   const handleCloseMonth = () => {
+    // ⚠ O reforço ANTES do fecho, e é de propósito: o `fecharMes` limpa os
+    // totais do mês, e a frase do registo tem de sair com o mês ainda aberto
+    // para dizer de que mês veio o dinheiro.
+    if (vaiParaMeta) {
+      reforcarMeta(metaDoFecho.id, paraMeta, `Saldo de ${s.monthName}`, user);
+    }
+    fecharMesLimpando();
+  };
+
+  const fecharMesLimpando = () => {
     // ⚠ Pelo `fecharMes` da loja. Isto escrevia `registered: 0` e `envMove: {}`
     // — zero por cima de duas SOMAS. Com as despesas e as transferências no
     // servidor, as linhas ficavam e a leitura seguinte trazia o total de
     // volta: o mês fechado reabria sozinho.
     fecharMes();
+    // ⚠ E a escolha volta ao início. Sem isto, o valor escrito para o mês
+    // passado ficava sugerido no fecho seguinte — um número de outro mês com
+    // ar de sugestão desta.
+    setFecho({ meta: null, valor: null });
     setSheet(null);
   };
 
@@ -283,25 +325,81 @@ export default function Dinheiro({ t, user, onEquip }) {
         </Card>
       </View>
 
+      {/* ── As metas da família ─────────────────────────────────────────────
+          ⚠ Eram a constante `GOALS` do `data.js` desenhada e mais nada: não
+          havia como criar, alterar, apagar nem reforçar, e a coleção `metas`
+          existia no servidor desde o primeiro dia sem que o cliente lhe
+          tocasse. Uma meta criada pela Rita não existia em sítio nenhum.
+
+          ⚠ E tudo em EUROS. O protótipo punha uma percentagem ao lado do nome;
+          a barra basta para o progresso, e um número de dinheiro nesta app
+          diz-se em euros — senão a família faz a conta de cabeça para saber de
+          quanto dinheiro se fala. */}
       <View>
-        <SectionTitle t={t}>Metas da Família</SectionTitle>
-        {s.clearedSeeds ? (
+        <SectionTitle t={t} right={
+          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
+            {EUR(metas.reduce((n, g) => n + g.at, 0))}
+          </Text>
+        }>Metas da Família</SectionTitle>
+        {!metas.length ? (
           <Empty t={t} icon="bank" title="Sem metas definidas."
             hint="Uma meta é um objetivo com valor e prazo, alimentado pelo que sobra dos envelopes." />
         ) : (
         <Card t={t} style={{ gap: S.lg }}>
-          {GOALS.map(g => (
-            <View key={g.name} style={{ gap: S.md }}>
-              <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{g.name}</Text>
-              <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
-                {EUR(g.at)} de {EUR(g.of)} · {g.when}
-              </Text>
-              {/* O progresso de uma meta não é um estado — é do esquema. */}
-              <Bar t={t} pct={(g.at / g.of) * 100} color={t.accent} height={6} />
-            </View>
-          ))}
+          {metas.map(g => {
+            const falta = Math.max(0, g.of - g.at);
+            return (
+              <View key={g.id} style={{ gap: S.sm }}>
+                {/* A primeira linha é o destino: abre a gestão da meta. O
+                    reforço é um alvo à parte, na linha de baixo — e não uma
+                    pastilha dentro desta, que é o erro #6. */}
+                <Pressable onPress={() => setMeta(g.id)} accessibilityRole="button"
+                  accessibilityLabel={`${g.name} · ${EUR(g.at)} de ${EUR(g.of)}`}
+                  accessibilityHint="Alterar a meta, reforçar, ou ver de onde veio o dinheiro"
+                  style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+                  <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>
+                    {g.name}
+                  </Text>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, color: t.text3 }}>
+                    {EUR(g.at)} de {EUR(g.of)}
+                  </Text>
+                  <Icon name="caretRight" size={16} color={t.text3} />
+                </Pressable>
+                {/* O progresso de uma meta não é um estado — é do esquema. E a
+                    barra é um objeto de interface: 3:1 basta-lhe, ao contrário
+                    de um rótulo de 12 px. */}
+                <Bar t={t} pct={g.of > 0 ? (g.at / g.of) * 100 : 0} color={t.accent} height={6} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+                  <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
+                    {[falta > 0 ? `faltam ${EUR(falta)}` : 'meta alcançada', g.when]
+                      .filter(Boolean).join(' · ')}
+                  </Text>
+                  {/* ⚠ Só quem administra reforça uma meta — é a regra da
+                      coleção, e não uma escolha da interface. Mostrar o botão a
+                      quem o servidor recusa era a divergência de sempre. */}
+                  {admin ? (
+                    <Pressable onPress={() => reforcarMeta(g.id, 50, 'Reforço rápido', user)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Reforçar ${g.name} em 50 euros`}
+                      style={({ pressed }) => ({ minHeight: 44, minWidth: 44, paddingHorizontal: 10,
+                        borderRadius: R.row, alignItems: 'center', justifyContent: 'center',
+                        backgroundColor: pressed ? t.subtle : 'transparent' })}>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, fontWeight: '600', color: t.titulo }}>
+                        + 50 €
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              </View>
+            );
+          })}
         </Card>
         )}
+        {admin ? (
+          <View style={{ marginTop: S.md }}>
+            <AddButton t={t} label="acrescentar meta" onPress={() => setSheet('novaMeta')} />
+          </View>
+        ) : null}
       </View>
 
       {admin ? (
@@ -547,11 +645,14 @@ export default function Dinheiro({ t, user, onEquip }) {
           sub="Arquivar as despesas e recomeçar a contagem"
           onClose={() => setSheet(null)}
           action={<Primary t={t} label="Confirmar Encerramento"
-            sub={`${EUR(spent)} gastos em ${s.monthName}`}
+            sub={vaiParaMeta
+              ? `${EUR(spent)} gastos · ${EUR(paraMeta)} para «${metaDoFecho.name}»`
+              : `${EUR(spent)} gastos em ${s.monthName} · o saldo fica`}
             onPress={handleCloseMonth} />}>
           <View style={{ gap: S.lg }}>
             <Text style={{ fontFamily: FONT.body, fontSize: 15, lineHeight: 22, color: t.text2 }}>
-              Ao fechar o mês, o registo de despesas e os pontos pagos voltam a zero. O saldo restante não é movido.
+              Ao fechar o mês, o registo de despesas e os pontos pagos voltam a zero.
+              {vaiParaMeta ? ' O que escolher abaixo passa para a meta.' : ' O saldo restante não é movido.'}
             </Text>
             <View style={{ gap: S.md }}>
               <Label t={t}>Resumo do Mês</Label>
@@ -561,8 +662,81 @@ export default function Dinheiro({ t, user, onEquip }) {
                 <Row t={t} title="Disponível" value={EUR(remaining)} right={<View />} last={true} />
               </View>
             </View>
+
+            {/* ── O saldo para uma meta ───────────────────────────────────────
+                ⚠ Em EUROS, e escolhido. O protótipo dizia «30 % do que sobrou
+                reforça as metas» e ficou por aplicar meses: uma percentagem
+                escrita no código não é uma decisão da família — 30 % de
+                771,36 € são 231,41 €, e ninguém escolheu esse número.
+
+                Sugere-se o saldo INTEIRO, não uma fatia: quem quiser guardar
+                menos baixa o número, e assim a app não escolhe por ninguém. */}
+            {metas.length && remaining > 0 ? (
+              <View style={{ gap: S.md }}>
+                <Label t={t}>Levar para uma meta (opcional)</Label>
+                <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
+                  {metas.map(g => (
+                    <Choice key={g.id} t={t} label={g.name}
+                      selected={fecho.meta === g.id}
+                      onPress={() => setFecho(f => ({
+                        // Voltar a tocar na meta escolhida desliga o reforço:
+                        // é a saída para quem se enganou, sem um botão «nada».
+                        ...f, meta: f.meta === g.id ? null : g.id,
+                      }))} />
+                  ))}
+                </View>
+                {fecho.meta ? (
+                  <>
+                    <NumField t={t} value={paraMeta} step={50} min={0} max={Math.max(0, remaining)}
+                      onChange={(v) => setFecho(f => ({ ...f, valor: v }))} />
+                    <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+                      {`«${metaDoFecho.name}» passa de ${EUR(metaDoFecho.at)} para `
+                        + `${EUR(metaDoFecho.at + paraMeta)}, de ${EUR(metaDoFecho.of)}.`}
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+                    Sem meta escolhida, o saldo de {EUR(remaining)} fica na conta.
+                  </Text>
+                )}
+              </View>
+            ) : null}
           </View>
         </Sheet>
+      ) : null}
+
+      {/* ── As metas: criar e gerir ─────────────────────────────────────────── */}
+      {sheet === 'novaMeta' && admin ? (
+        <Sheet t={t} title="Nova Meta" sub="Um objetivo com valor e prazo"
+          onClose={() => setSheet(null)}>
+          <NovaMeta t={t} user={user} onClose={() => setSheet(null)} />
+        </Sheet>
+      ) : null}
+
+      {metaAberta ? (
+        <Sheet t={t} title={metaAberta.name}
+          sub={`${EUR(metaAberta.at)} de ${EUR(metaAberta.of)}`}
+          onClose={() => setMeta(null)}>
+          <GerirMeta t={t} meta={metaAberta} user={user}
+            onApagar={() => setMetaAApagar(metaAberta.id)}
+            onClose={() => setMeta(null)} />
+        </Sheet>
+      ) : null}
+
+      {/* ⚠ A pergunta diz quanto se está a deixar de contar. Apagar uma meta
+          leva os movimentos dela — é dinheiro que a casa juntou, e quem apaga
+          tem de o ver escrito ANTES de decidir. */}
+      {metaAApagarObj ? (
+        <Confirm t={t} destructive icon="trash"
+          title={`Apagar «${metaAApagarObj.name}»?`}
+          message={metaAApagarObj.at > 0
+            ? `A meta sai da lista com os ${EUR(metaAApagarObj.at)} que já lhe foram `
+              + 'juntados, e o histórico de onde vieram. O dinheiro não sai da conta da casa — '
+              + 'deixa apenas de estar prometido a esta meta. Não se desfaz.'
+            : 'A meta sai da lista e não volta. Não se desfaz.'}
+          confirmLabel="Apagar"
+          onConfirm={() => { apagarMeta(metaAApagar); setMetaAApagar(null); setMeta(null); }}
+          onCancel={() => setMetaAApagar(null)} />
       ) : null}
     </>
   );

@@ -47,6 +47,12 @@ const COM_ACENTO = {
     '"Confirmar Encerramento"':
       'Fecha um período: arquiva as despesas do mês e reinicia a contagem.',
   },
+  'src/sheets/GerirMeta.jsx': {
+    '{`+ ${EUR(reforco)}`}':
+      'Move dinheiro: escreve um movimento na meta, e a linha do servidor não se '
+      + 'edita nem se apaga — desfazer é lançar o movimento contrário. O par dele, '
+      + '«retirar», leva contorno de propósito: é a acção de desistir.',
+  },
   'src/sheets/Carrinho.jsx': {
     '"Fechar Conta e Registar"':
       'Dinheiro entre pessoas: escreve uma despesa na conta conjunta, paga por quem foi às compras, e entra no acerto entre os dois adultos.',
@@ -80,6 +86,37 @@ const jsxDaApp = () => {
     .filter(p => p !== 'src/ui.jsx');
 };
 
+// ── O rótulo de uma etiqueta, inteiro ────────────────────────────────────────
+//
+// ⚠ Era `label=(\{[^}]*\}|"[^"]*")`, e parava na PRIMEIRA chave a fechar. Um
+// rótulo com interpolação — `` label={`+ ${EUR(reforco)}`} `` — saía cortado a
+// meio, e a chave que este guarda usa para casar com a lista de motivos deixava
+// de ser o rótulo: o motivo estava escrito e a prova dizia que não estava, com o
+// mesmo texto dos dois lados. Perdi uma corrida a olhar para dois valores
+// aparentemente iguais.
+//
+// Contam-se as chaves. É a classe de defeito 23 outra vez — um guarda de texto
+// que casa por acidente enquanto o código for simples.
+const rotuloDe = (bloco) => {
+  const i = bloco.indexOf('label=');
+  if (i === -1) return null;
+  const abre = bloco[i + 6];
+  if (abre === '"') {
+    const fim = bloco.indexOf('"', i + 7);
+    return fim === -1 ? null : [null, bloco.slice(i + 6, fim + 1)];
+  }
+  if (abre !== '{') return null;
+  let nivel = 0;
+  for (let j = i + 6; j < bloco.length; j++) {
+    if (bloco[j] === '{') nivel++;
+    else if (bloco[j] === '}') {
+      nivel--;
+      if (nivel === 0) return [null, bloco.slice(i + 6, j + 1)];
+    }
+  }
+  return null;
+};
+
 // Cada `<Primary` da árvore, com o ficheiro, o rótulo, e se pediu `comum`.
 const botoes = () => {
   const fora = [];
@@ -91,7 +128,7 @@ const botoes = () => {
       // propriedades — nenhum `Primary` desta app tem filhos.
       const fim = txt.indexOf('/>', i);
       const bloco = txt.slice(i, fim === -1 ? txt.length : fim);
-      const rot = bloco.match(/label=(\{[^}]*\}|"[^"]*")/);
+      const rot = rotuloDe(bloco);
       fora.push({
         ficheiro: rel,
         linha: txt.slice(0, i).split('\n').length,

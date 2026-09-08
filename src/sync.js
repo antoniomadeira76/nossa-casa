@@ -202,6 +202,42 @@ export async function puxarCasa() {
     if (m.papel === 'crianca' && paidPts[m.nome] === undefined) paidPts[m.nome] = 0;
   }
 
+  // ── As metas da família ───────────────────────────────────────────────────
+  //
+  // ⚠ O que está juntado é a SOMA dos movimentos, e não um campo lido. Havia um
+  // `metas.atual` no servidor com essa forma exacta — um saldo escrito — e saiu
+  // antes de alguém lhe escrever. É a mesma decisão do `paidPts` e do saldo do
+  // cofre, e pela mesma razão: dois telemóveis a reforçar a meta das férias no
+  // mesmo dia não se podem anular.
+  //
+  // A forma é a da LOJA — `{ name, at, of, when }` —, que é a que o `data.js`
+  // semeia e a que o ecrã do Dinheiro já lê. O servidor traduz para ela, nunca
+  // o contrário.
+  // ⚠ E a meta desce SEM o juntado. Quem soma é a loja, sobre os movimentos —
+  // um só dono do número. Devolver aqui um `at` já somado dava duas contas do
+  // mesmo valor a viver ao lado uma da outra, e é assim que elas divergem: é a
+  // classe de defeito que pôs o «Gasto» do orçamento a zero com dez despesas na
+  // base de dados.
+  const metas = (casa.metas || []).map(m => ({
+    id: m.id,
+    idServidor: m.id,
+    name: m.nome,
+    of: Number(m.alvo) || 0,
+    when: m.quando || '',
+  }));
+
+  // Os movimentos, na forma aditiva da loja — para o ecrã poder dizer de onde
+  // vieram os 50 €, e para a soma local e a do servidor serem a mesma conta.
+  const metaMovs = (casa.meta_movimentos || []).map(mv => ({
+    id: mv.id,
+    meta: mv.meta,
+    delta: Number(mv.valor) || 0,
+    label: mv.motivo || '',
+    por: nomeDoMembro[mv.por] || '',
+    day: (mv.data || '').slice(0, 10)
+      .replace(/^(\d{4})-(\d{2})-(\d{2})$/, 'd$1-$2-$3'),
+  }));
+
   // ── O mês aberto ──────────────────────────────────────────────────────────
   //
   // ⚠ É ele que define o INTERVALO por onde tudo o resto se filtra. Sem isto os
@@ -696,6 +732,8 @@ export async function puxarCasa() {
     listasIds,
     envelopesDaCasa,
     envMove,
+    metas,
+    metaMovs,
     newItems,
     itemOrder,
     status,
@@ -775,6 +813,56 @@ export async function acerto({ casa, de, para, valor, data }) {
   if (!ligado()) return { enviadas: 0, pendentes: 0 };
   return servidor.escrever.criar('acertos', {
     casa, de_membro: de, para_membro: para, valor, data,
+  });
+}
+
+// ─── As metas da família ─────────────────────────────────────────────────────
+//
+// A DEFINIÇÃO altera-se; o que está JUNTADO não. São duas coleções e duas
+// naturezas, e é o INVARIANTE #2: o alvo é um campo, o juntado é uma soma.
+//
+// ⚠ A definição vai pelo `criarOuEnfileirarCasa` porque quem chama precisa do
+// `id` que o servidor deu — sem ele não há como alterar nem apagar a meta
+// depois. O reforço vai pela FILA, como todo o dinheiro desta casa: é aditivo,
+// leva chave de idempotência, e não perde nada se a rede falhar.
+export async function criarMeta({ casa, nome, alvo, quando }) {
+  return criarOuEnfileirarCasa('metas', {
+    casa,
+    nome: String(nome || '').slice(0, 80),
+    alvo: Number(alvo) || 0,
+    quando: String(quando || '').slice(0, 40),
+  });
+}
+
+export async function alterarMeta(idNoServidor, campos = {}) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  const linha = {
+    ...(campos.nome !== undefined ? { nome: String(campos.nome).slice(0, 80) } : {}),
+    ...(campos.alvo !== undefined ? { alvo: Number(campos.alvo) || 0 } : {}),
+    ...(campos.quando !== undefined ? { quando: String(campos.quando || '').slice(0, 40) } : {}),
+  };
+  if (!Object.keys(linha).length) return { pendente: true };
+  return servidor.pb.collection('metas').update(idNoServidor, linha);
+}
+
+// ⚠ Apagar a meta leva os movimentos dela — `cascadeDelete` na relação. Sem
+// isso ficavam linhas a apontar para uma meta que já não existe: invisíveis, a
+// acumular, e a somar para uma meta que ninguém vê.
+export async function apagarMeta(idNoServidor) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('metas').delete(idNoServidor);
+}
+
+// Reforçar uma meta. ⚠ Um MOVIMENTO, nunca um total: é o que faz dois telemóveis
+// somarem-se em vez de se anularem. O valor pode ser negativo — é assim que se
+// tira dinheiro de uma meta, porque a linha não se edita nem se apaga.
+export async function reforcarMeta({ casa, meta, valor, motivo, por, data }) {
+  if (!ligado()) return { enviadas: 0, pendentes: 0 };
+  return servidor.escrever.criar('meta_movimentos', {
+    casa, meta, valor: Number(valor) || 0,
+    motivo: String(motivo || '').slice(0, 80),
+    por: por || null,
+    data: data || new Date().toISOString(),
   });
 }
 

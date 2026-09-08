@@ -62,7 +62,12 @@ const NOSSAS = [
   // apaga-se pela ordem inversa das relações, e o artigo aponta para o corredor.
   // À frente dele, a limpeza parava com «existing reference in artigos» — a
   // mesma lição da `credenciais_agenda` e dos `eventos`.
-  'metas', 'acertos', 'transferencias', 'artigos', 'listas_compras', 'lojas', 'seccoes',
+  // ⚠ `meta_movimentos` ANTES de `metas`, pela mesma razão da `seccoes`: o
+  // movimento aponta para a meta, e uma coleção não se apaga enquanto outra a
+  // referir. Fora de ordem, a limpeza para com «existing reference in
+  // meta_movimentos».
+  'meta_movimentos', 'metas',
+  'acertos', 'transferencias', 'artigos', 'listas_compras', 'lojas', 'seccoes',
   'registo', 'meses', 'preferencias', 'equipamentos', 'cofre_movimentos', 'despesas',
   'envelopes', 'tarefas_feitas', 'tarefas', 'membros', 'casas'];
 
@@ -897,14 +902,60 @@ await criar({
   updateRule: null, deleteRule: null,
 });
 
+// ── As metas da família ──────────────────────────────────────────────────────
+//
+// A DEFINIÇÃO de uma meta: o nome, quanto se quer juntar, e para quando. O que
+// já está juntado NÃO vive aqui — ver `meta_movimentos` em baixo.
+//
+// ⚠ Havia um `num('atual')` nesta linha, e era o INVARIANTE #2 ao contrário: um
+// saldo ESCRITO. Dois telefones a reforçar a meta das férias no mesmo dia
+// escreviam cada um o seu total, e o último a gravar ganhava — os 50 € do outro
+// desapareciam sem erro nenhum. É a mesma forma do `paidPts` que fez pagar a
+// semanada duas vezes, e do `status` das compras que anulava o trabalho de quem
+// estava no outro corredor.
+//
+// O campo nunca foi escrito por ninguém: o cliente não tocava nas `metas`, e a
+// lista da app era uma constante do `data.js`. Saiu antes de chegar a mentir.
 await criar({
   name: 'metas', type: 'base',
   fields: [
     rel('casa', ids.casas, { required: true, cascadeDelete: true }),
-    txt('nome', { required: true }), num('alvo', { min: 0 }), num('atual', { min: 0 }), txt('quando'),
+    txt('nome', { required: true }), num('alvo', { min: 0 }), txt('quando'),
   ],
+  // Uma meta é dinheiro da casa: vê-se entre adultos, e quem administra decide.
   listRule: `${DA_CASA} && ${ADULTO}`, viewRule: `${DA_CASA} && ${ADULTO}`,
   createRule: `${DA_CASA} && ${ADMIN}`, updateRule: `${DA_CASA} && ${ADMIN}`, deleteRule: `${DA_CASA} && ${ADMIN}`,
+});
+
+// INVARIANTE #2: o que está juntado numa meta é a SOMA destas linhas.
+//
+// Tabela de inserções, como os `cofre_movimentos` e os `acertos`: sem
+// `updateRule` nem `deleteRule`, porque não há regra que os permita e por isso
+// o servidor recusa-os. Corrigir é lançar o movimento contrário.
+//
+// ⚠ E leva `idem_key`, como as outras três: um reenvio da fila colide com o
+// índice único em vez de reforçar a meta duas vezes. É a diferença entre uma
+// rede que falha e 50 € que aparecem do nada.
+await criar({
+  name: 'meta_movimentos', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('meta', ids.metas, { required: true, cascadeDelete: true }),
+    // Sem `min`: um movimento NEGATIVO é como se tira dinheiro de uma meta, e é
+    // a única forma de corrigir uma linha que não se pode editar nem apagar.
+    num('valor', { required: true }),
+    txt('motivo'),
+    rel('por', ids.membros),
+    data('data'),
+    txt('idem_key'),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_meta_mov_idem ON meta_movimentos (casa, idem_key)'],
+  listRule: `${DA_CASA} && ${ADULTO}`, viewRule: `${DA_CASA} && ${ADULTO}`,
+  // ⚠ `meta.casa` e `por.casa`, e não só o `casa` da linha: o `casa` é escolhido
+  // por quem escreve e não prova nada. É a sexta vez que esta forma aparece —
+  // ver `provar-relacoes-ancoradas.mjs`.
+  createRule: `${DA_CASA} && ${ADMIN} && ${daCasaTambem('meta', 'por')}`,
+  updateRule: null, deleteRule: null,
 });
 
 // ── Listas da casa ───────────────────────────────────────────────────────────

@@ -187,6 +187,7 @@ nosso.tarefa = await admin.collection('tarefas').create({
 nosso.loja = await admin.collection('lojas').create({ casa: casa.id, nome: 'Continente' });
 nosso.lista = await admin.collection('listas_compras').create({ casa: casa.id, loja: nosso.loja.id });
 nosso.corredor = await admin.collection('seccoes').create({ casa: casa.id, nome: 'Mercearia', posto: 1 });
+nosso.meta = await admin.collection('metas').create({ casa: casa.id, nome: 'Férias', alvo: 3000 });
 nosso.equipamento = await admin.collection('equipamentos').create({
   casa: casa.id, nome: 'Máquina de lavar' });
 
@@ -228,6 +229,11 @@ const ATAQUES = [
   // corredor — e a prova passava sem provar a ponta que interessa.
   ['artigos', 'corredor', { rotulo: 'X', lista: () => deles.lista.id, corredor: () => nosso.corredor.id }],
   ['manutencoes', 'equipamento', { equipamento: () => nosso.equipamento.id }],
+  // ⚠ Os reforços de uma meta, 08/09/2026. A sexta vez que uma relação nova para
+  // dentro da casa chegou com a REGRA ancorada e sem o ATAQUE escrito — e a
+  // prova de cima apanhou-a, como apanhou o `corredor`. É para isso que ela
+  // enumera em vez de contar.
+  ['meta_movimentos', 'meta', { valor: 50, idem_key: 'anc-4', meta: () => nosso.meta.id }],
 ];
 
 await prova('⚠ há um ataque por relação — nenhuma fica sem ser tentada', () => {

@@ -558,7 +558,18 @@ const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
   'meses',
   // O registo de alterações da casa. «Quem mudou isto?» é uma pergunta que a
   // OUTRA pessoa faz, e um registo só local nunca lhe podia responder.
-  'registo'];
+  'registo',
+  // ── As metas da família ────────────────────────────────────────────────────
+  //
+  // A DEFINIÇÃO e os MOVIMENTOS, e é preciso ler as duas: o que está juntado
+  // numa meta é a soma dos movimentos, nunca um campo (INVARIANTE #2). Havia um
+  // `metas.atual` no servidor exactamente com essa forma errada; saiu.
+  //
+  // ⚠ A coleção `metas` existia desde o primeiro dia e o cliente NUNCA lhe
+  // escreveu nem leu: a lista da app era a constante `GOALS` do `data.js`, igual
+  // nos dois telemóveis por ser a mesma constante, e a meta que a Rita criasse
+  // não existia em sítio nenhum. Era a lacuna maior que restava.
+  'metas', 'meta_movimentos'];
 
 // ── As coleções que CRESCEM sem fim, e o que delas se lê ─────────────────────
 //
@@ -906,7 +917,11 @@ const FILA = 'nossa-casa/fila';
 //
 // A lista não se mantém de cabeça: `__tests__/idem-key-em-todas.test.js` lê os
 // índices do `criar-colecoes.mjs` e exige que cada um apareça aqui.
-const COM_IDEM = new Set(['despesas', 'cofre_movimentos', 'transferencias', 'acertos']);
+const COM_IDEM = new Set(['despesas', 'cofre_movimentos', 'transferencias', 'acertos',
+  // Os reforços de uma meta. A quinta coleção aditiva desta casa, e a razão é a
+  // mesma das quatro: sem chave, um reenvio da fila punha 50 € na meta das
+  // férias duas vezes.
+  'meta_movimentos']);
 
 const lerFila = async () => {
   try { return JSON.parse(await guarda.getItem(FILA)) || []; } catch { return []; }

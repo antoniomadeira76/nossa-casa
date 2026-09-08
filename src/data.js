@@ -77,9 +77,34 @@ export const EQUIP = [
   { id: 'dell', name: 'Portátil Dell da Rita',        cat: 'Informática',      bought: dmyRelativo(-212), shop: 'Dell Online',             price: 1099, warrantyEnd: dmyRelativo(517),   daysLeft: 517,   maint: '',                            maintDate: '' },
 ];
 
+// ── As metas da família ──────────────────────────────────────────────────────
+//
+// A DEFINIÇÃO: o nome, quanto se quer juntar, e para quando. O que já está
+// juntado NÃO está aqui — está em `META_MOVS`, e é a soma dele.
+//
+// ⚠ Isto tinha um `at: 1920` escrito, e era o INVARIANTE #2 ao contrário na
+// própria semente. Enquanto a lista era só de leitura ninguém notava; no dia em
+// que a casa passou a reforçar metas, um total escrito na semente e uma soma de
+// movimentos no servidor eram duas contas do mesmo número — a demonstração a
+// comportar-se de outra maneira, que é como metade dos defeitos desta casa se
+// esconderam.
 export const GOALS = [
-  { name: 'Férias no Algarve', at: 1920, of: 3000, when: mesEAnoRelativo(345) },
-  { name: 'Carro novo',        at: 6600, of: 30000, when: 'sem prazo' },
+  { id: 'g-ferias', name: 'Férias no Algarve', of: 3000, when: mesEAnoRelativo(345) },
+  { id: 'g-carro',  name: 'Carro novo',        of: 30000, when: 'sem prazo' },
+];
+
+// O que já está juntado, movimento a movimento — a mesma forma do `VAULT`.
+export const META_MOVS = [
+  { id: 'mm-f0', meta: 'g-ferias', delta: 1500, day: chaveRelativa(-210),
+    label: 'Poupança acumulada', por: 'Rita' },
+  { id: 'mm-f1', meta: 'g-ferias', delta: 320, day: chaveRelativa(-64),
+    label: 'Sobra do mês', por: 'Tomás' },
+  { id: 'mm-f2', meta: 'g-ferias', delta: 100, day: chaveRelativa(-31),
+    label: 'Sobra do mês', por: 'Rita' },
+  { id: 'mm-c0', meta: 'g-carro', delta: 6400, day: chaveRelativa(-240),
+    label: 'Poupança acumulada', por: 'Tomás' },
+  { id: 'mm-c1', meta: 'g-carro', delta: 200, day: chaveRelativa(-31),
+    label: 'Sobra do mês', por: 'Tomás' },
 ];
 
 // Fichas de saúde. Uma consulta é um episódio: especialidade, médico, quando,

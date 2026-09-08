@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, SECTIONS, MEMBERS, ROLES, HEALTH, HEALTH_DOCS, VAULT, DE } from './data';
+import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, SECTIONS, MEMBERS, ROLES, HEALTH, HEALTH_DOCS,
+  VAULT, GOALS, META_MOVS, DE } from './data';
 import { TODAY_KEY, TODAY, MONTHS, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY,
          chaveRelativa, plural, EUR } from './format';
 import { observacao, precosDe, estimativaDe, compararLojas } from './precos';
@@ -273,6 +274,7 @@ const DATA_KEYS = [
   'done', 'pending', 'status', 'registered', 'gastoLocal', 'acertoMovs', 'partilhasPagas', 'despesasMeias', 'gastoPorEnvelope', 'vaultMoves', 'paidPts',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
   'newItems', 'itemGone', 'itemEdits', 'itemOrder', 'feitas', 'listasIds', 'envelopesDaCasa', 'seccoesDaCasa', 'mes',
+  'metasDaCasa', 'metaMovs', 'metasProprias',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'pointValue', 'payDay', 'splitHalf',
@@ -621,6 +623,15 @@ export const DEMO = () => ({
   pontosDeTarefasApagadas: [],
   newItems: [], itemGone: {}, itemEdits: {}, itemOrder: {},
   newEquip: [], equipGone: {}, equipEdits: {},
+  // ── As metas ──────────────────────────────────────────────────────────────
+  //
+  // `metasDaCasa` são as DEFINIÇÕES e `metaMovs` os movimentos; o que está
+  // juntado é a soma dos segundos (INVARIANTE #2), nunca um campo.
+  //
+  // Vazias, a lista são as sementes — como os envelopes e os corredores. A
+  // bandeira diz se o servidor já respondeu, e é ela que distingue «esta casa
+  // não tem metas» de «esta casa ainda corre com as sementes».
+  metasDaCasa: [], metaMovs: [], metasProprias: false,
   schemeByUser: {}, themeByUser: {},
   notif: { digest: true, hour: '20:00', lead: 1 },
   rotate: {},
@@ -890,6 +901,27 @@ export function StoreProvider({ children }) {
       if (casa.vaultMoves.length) {
         set({ vaultMoves: casa.vaultMoves, paidPts: casa.paidPts || {} });
       }
+
+      // ── As metas ───────────────────────────────────────────────────────────
+      //
+      // A lista da casa SUBSTITUI as sementes, e os movimentos substituem os
+      // locais — a mesma regra do cofre e pela mesma razão: fundir duas versões
+      // de uma soma é somá-la duas vezes.
+      //
+      // ⚠ E substitui mesmo VINDO VAZIO, ao contrário do cofre. Uma casa que
+      // apaga a última meta tem zero metas, e ficar com as duas da demonstração
+      // era mostrar objetivos que ninguém tem. Quem manda na lista é o servidor
+      // — a mesma lição do `shopPlan` nulo que deixava a ida de sábado no ecrã
+      // para sempre.
+      //
+      // A bandeira `metasProprias` é o que distingue «a casa não tem metas»
+      // de «esta casa ainda corre com as sementes»: sem ela, uma casa ligada e
+      // sem metas voltava a mostrar as férias no Algarve a cada leitura.
+      set({
+        metasDaCasa: casa.metas || [],
+        metaMovs: casa.metaMovs || [],
+        metasProprias: true,
+      });
 
       // ⚠ O acerto de contas entre os adultos, pela mesma razão e com a mesma
       // regra: SUBSTITUI, nunca funde. Era uma escrita de sentido único — subia
@@ -1863,6 +1895,181 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         autorizadoPor: ses.membro, pontos,
       }).catch(() => {});
     }
+  };
+
+  // ── As metas da família ─────────────────────────────────────────────────
+  //
+  // Uma meta é um objetivo em EUROS: o nome, quanto se quer juntar, e para
+  // quando. Nada de percentagens — a barra mostra o progresso, os números
+  // dizem-se em euros.
+  //
+  // ⚠ O que está juntado é a SOMA dos movimentos (INVARIANTE #2). Havia um
+  // `metas.atual` no servidor com a forma errada — um saldo escrito — e a
+  // semente do `data.js` tinha um `at: 1920` igualmente escrito. Saíram os
+  // dois: dois telemóveis a reforçar a meta das férias no mesmo dia não se
+  // podem anular, e era exactamente isso que um total escrito fazia.
+  //
+  // A lista MATERIALIZA-SE antes de se lhe mexer, como os envelopes e os
+  // corredores: enquanto ninguém tocar nas metas, a lista são as sementes.
+  //
+  // ⚠ E a bandeira é «a casa é DONA da lista», não «o servidor respondeu».
+  // Escrita da segunda maneira — `metasDaCasa.length || metasProprias` —
+  // apagar a ÚLTIMA meta punha a lista a zero, a condição do comprimento
+  // falhava, e as duas metas da demonstração voltavam. Medido a apagar as duas
+  // seguidas: a prova entrou em ciclo infinito e o Node ficou sem memória, que
+  // é a versão barulhenta do que na app seria uma meta a ressuscitar sozinha.
+  //
+  // É a mesma armadilha do `monthZero` — uma bandeira cujo nome descreve como
+  // ela ficou verdadeira em vez de descrever o que ela significa.
+  const listaDeMetas = (x) => (x.metasProprias
+    ? (x.metasDaCasa || [])
+    : (x.clearedSeeds ? [] : GOALS.map(g => ({ ...g }))));
+
+  const todosOsMetaMovs = (x) => [
+    ...(x.clearedSeeds || x.metasProprias ? [] : META_MOVS),
+    ...(x.metaMovs || []),
+  ];
+
+  // As metas como os ecrãs as leem: com o `at` somado dos movimentos.
+  const metas = listaDeMetas(s).map(m => ({
+    ...m,
+    at: todosOsMetaMovs(s).reduce((n, mv) => (mv.meta === m.id ? n + mv.delta : n), 0),
+  }));
+
+  // Os movimentos de uma meta, do mais recente para o mais antigo — que é o que
+  // permite ao ecrã dizer de onde vieram os 50 €.
+  const movimentosDaMeta = (id) => todosOsMetaMovs(s)
+    .filter(mv => mv.meta === id)
+    .sort((a, b) => (b.day || '').localeCompare(a.day || ''));
+
+  const metaNoServidor = (id) =>
+    ((s.metasDaCasa || []).find(m => m.id === id) || {}).idServidor || null;
+
+  const criarMeta = (nome, alvo, quando) => {
+    const n = String(nome || '').trim();
+    if (!n) return 'A meta precisa de um nome.';
+    const v = Math.round(Number(alvo) * 100) / 100;
+    if (!(v > 0)) return 'Escreva quanto quer juntar, em euros.';
+    if (listaDeMetas(s).some(m => m.name.toLowerCase() === n.toLowerCase())) {
+      return 'Já existe uma meta com esse nome.';
+    }
+
+    const id = 'meta-' + Date.now();
+    set(x => ({
+      metasProprias: true,
+      metasDaCasa: [...listaDeMetas(x), { id, idServidor: null, name: n, of: v, when: String(quando || '').trim() }],
+      // ⚠ E os movimentos das SEMENTES materializam-se com a lista. Sem isto,
+      // criar a primeira meta fazia as duas da demonstração saírem da lista e
+      // os movimentos delas ficarem a somar para metas que já não existem.
+      metaMovs: todosOsMetaMovs(x),
+      registo: maisRegisto(x, `Meta criada: ${n} · ${EUR(v)}`, 'Dinheiro'),
+    }));
+
+    if (sync) {
+      const ses = sync.sessao();
+      if (ses) sync.criarMeta({ casa: ses.casa, nome: n, alvo: v, quando })
+        // O id do servidor cola-se à linha que já existe cá, e não cria uma
+        // segunda: sem isto a meta aparecia a dobrar na leitura seguinte.
+        .then(r => { if (r && r.id) set(x => ({
+          metasDaCasa: (x.metasDaCasa || []).map(m => (m.id === id ? { ...m, idServidor: r.id } : m)),
+        })); })
+        .catch(() => {});
+    }
+    return null;
+  };
+
+  const alterarMeta = (id, campos = {}) => {
+    const meta = listaDeMetas(s).find(m => m.id === id);
+    if (!meta) return 'Essa meta não existe nesta casa.';
+
+    const mudanca = {};
+    if (campos.name !== undefined) {
+      const n = String(campos.name || '').trim();
+      if (!n) return 'A meta precisa de um nome.';
+      if (listaDeMetas(s).some(m => m.id !== id && m.name.toLowerCase() === n.toLowerCase())) {
+        return 'Já existe uma meta com esse nome.';
+      }
+      mudanca.name = n;
+    }
+    if (campos.of !== undefined) {
+      const v = Math.round(Number(campos.of) * 100) / 100;
+      if (!(v > 0)) return 'Escreva quanto quer juntar, em euros.';
+      mudanca.of = v;
+    }
+    if (campos.when !== undefined) mudanca.when = String(campos.when || '').trim();
+
+    set(x => ({
+      metasProprias: true,
+      metasDaCasa: listaDeMetas(x).map(m => (m.id === id ? { ...m, ...mudanca } : m)),
+      metaMovs: todosOsMetaMovs(x),
+    }));
+
+    const noServidor = metaNoServidor(id);
+    if (sync && noServidor) {
+      sync.alterarMeta(noServidor, {
+        ...(mudanca.name !== undefined ? { nome: mudanca.name } : {}),
+        ...(mudanca.of !== undefined ? { alvo: mudanca.of } : {}),
+        ...(mudanca.when !== undefined ? { quando: mudanca.when } : {}),
+      }).catch(() => {});
+    }
+    return null;
+  };
+
+  // ⚠ Apagar uma meta leva os MOVIMENTOS dela, aqui e no servidor
+  // (`cascadeDelete`). Deixá-los era ficar com linhas a somar para uma meta que
+  // ninguém vê — invisíveis, e a acumular.
+  //
+  // E a pergunta que o ecrã faz tem de dizer quanto se está a deixar de contar:
+  // é dinheiro que a casa juntou.
+  const apagarMeta = (id) => {
+    const meta = metas.find(m => m.id === id);
+    if (!meta) return 'Essa meta não existe nesta casa.';
+    const noServidor = metaNoServidor(id);
+    if (sync && noServidor) sync.apagarMeta(noServidor).catch(() => {});
+    set(x => ({
+      metasProprias: true,
+      metasDaCasa: listaDeMetas(x).filter(m => m.id !== id),
+      metaMovs: todosOsMetaMovs(x).filter(mv => mv.meta !== id),
+      registo: maisRegisto(x, `Meta apagada: ${meta.name} · ${EUR(meta.at)} juntados`, 'Dinheiro'),
+    }));
+    return null;
+  };
+
+  // Reforçar uma meta. Um MOVIMENTO, somado — nunca um total escrito.
+  //
+  // O valor pode ser negativo: é assim que se tira dinheiro de uma meta, porque
+  // a linha do servidor não se edita nem se apaga. Corrigir é lançar o
+  // movimento contrário, como nas despesas.
+  const reforcarMeta = (id, valor, motivo, quem) => {
+    const meta = listaDeMetas(s).find(m => m.id === id);
+    if (!meta) return 'Essa meta não existe nesta casa.';
+    const v = Math.round(Number(valor) * 100) / 100;
+    if (!v) return 'Escreva um valor em euros.';
+
+    const doMovimento = {
+      id: 'mm-' + Date.now() + '-' + Math.round(Math.random() * 1e6),
+      meta: id, delta: v, day: TODAY_KEY,
+      label: String(motivo || '').trim(), por: quem || '',
+    };
+    set(x => ({
+      metasProprias: true,
+      metaMovs: [...todosOsMetaMovs(x), doMovimento],
+      metasDaCasa: listaDeMetas(x),
+      registo: maisRegisto(x, v > 0
+        ? `Meta reforçada: ${meta.name} · ${EUR(v)}`
+        : `Retirado da meta ${meta.name}: ${EUR(Math.abs(v))}`, 'Dinheiro'),
+    }));
+
+    const noServidor = metaNoServidor(id);
+    if (sync && noServidor) {
+      const ses = sync.sessao();
+      if (ses) sync.reforcarMeta({
+        casa: ses.casa, meta: noServidor, valor: v,
+        motivo: doMovimento.label, por: idDoMembro(quem),
+        data: TODAY_KEY.replace(/^d/, ''),
+      }).catch(() => {});
+    }
+    return null;
   };
 
   // ── Os pontos que uma criança GANHOU ──────────────────────────────────────
@@ -4379,6 +4586,8 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     budget, spent, remaining: budget - spent, envelopes, kidPts,
     mesAberto, mesAbertoDesde,
     vaultOf, vaultMoves, vaultAdd,
+    // As metas: a lista já com o juntado somado, e as quatro operações.
+    metas, movimentosDaMeta, criarMeta, alterarMeta, apagarMeta, reforcarMeta,
     verificarPin,
     // Os membros da casa. Quem consome isto NUNCA deve importar MEMBERS de
     // data.js: essas são as sementes da demonstração, não a casa de quem está

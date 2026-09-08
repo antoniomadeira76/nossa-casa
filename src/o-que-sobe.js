@@ -52,6 +52,9 @@ export const O_QUE_SOBE = {
 
   // ── Dinheiro ──────────────────────────────────────────────────────────────
   vaultMoves: ['linhas', 'A coleção `cofre_movimentos`, aditiva e com chave de idempotência.'],
+  metasDaCasa: ['linhas', 'A coleção `metas`: o nome, o alvo em euros, e para quando. A lista existia no servidor desde o primeiro dia e o cliente nunca lhe escreveu — a lista da app era a constante `GOALS` do `data.js`, e uma meta criada pela Rita não existia em sítio nenhum.', 'criarMeta'],
+  metaMovs: ['linhas', 'A coleção `meta_movimentos`, aditiva e com chave de idempotência. O que está juntado numa meta é a SOMA destas linhas: havia um `metas.atual` no servidor e um `at` na semente, os dois saldos ESCRITOS, e dois telemóveis a reforçar a mesma meta anulavam-se.', 'reforcarMeta'],
+  metasProprias: ['local', 'Se a CASA é dona da lista de metas, ou se ainda corre com as sementes. Fica verdadeira ao primeiro toque e na primeira leitura do servidor. Chamou-se `metasDoServidor` e era a bandeira a descrever como ficou verdadeira em vez do que significa: apagar a última meta punha a lista a zero e as duas metas da demonstração voltavam.'],
   envMove: ['linhas', 'A SOMA das `transferencias` deste mês. Era um saldo escrito, e dois telefones a mover dinheiro anulavam-se — o INVARIANTE #2 ao contrário.'],
   envelopesDaCasa: ['linhas', 'A coleção `envelopes`. Eram sementes no código, e a lista da casa não existia em lado nenhum.'],
   seccoesDaCasa: ['linhas', 'A coleção `seccoes`, ORDENADA pelo `posto`. Eram quatro nomes fixos no `data.js` e o artigo guardava um ÍNDICE — a partir do momento em que a casa os pode reordenar, um índice aponta para outra coisa a cada mudança. E sem subirem, quem reordenasse num telemóvel ficava a ser o único a ver a ordem nova.', 'criarSeccao'],

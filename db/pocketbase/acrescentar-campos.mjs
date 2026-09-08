@@ -1,5 +1,5 @@
 /**
- * Os campos que nasceram DEPOIS da base — acrescentados a um servidor a andar.
+ * O que nasceu DEPOIS da base — aplicado a um servidor a andar.
  *
  *   node db/pocketbase/acrescentar-campos.mjs
  *
@@ -21,10 +21,23 @@
  * Aqui ENUMERA-SE: a tabela `CAMPOS` diz o que cada coleção tem de ter, e o
  * script acrescenta o que faltar. Um campo novo é uma linha nesta tabela.
  *
- * ⚠ Só ACRESCENTA. Não muda tipos, não apaga, não renomeia. Mudar o tipo de um
- * campo com linhas gravadas é pedir ao PocketBase que converta dados a sério, e
- * foi por isso que o `corredor` nasceu ao lado do `seccao` em vez de o
- * substituir. Correr isto duas vezes não faz nada na segunda.
+ * ⚠ NÃO muda tipos e não renomeia. Mudar o tipo de um campo com linhas gravadas
+ * é pedir ao PocketBase que converta dados a sério, e foi por isso que o
+ * `corredor` nasceu ao lado do `seccao` em vez de o substituir.
+ *
+ * ── E três tabelas, não uma ──────────────────────────────────────────────────
+ *
+ *   CAMPOS        o que cada coleção tem de TER
+ *   COLECOES      as coleções que nasceram depois, com regras e índices
+ *   CAMPOS_A_TIRAR  o que uma coleção não pode ter
+ *
+ * A terceira existe por um caso concreto: o `metas.atual` era um saldo ESCRITO,
+ * o INVARIANTE #2 ao contrário. Um campo desses não se deixa lá «por não
+ * incomodar» — fica à espera de que alguém lhe escreva. Tirar é destrutivo, e
+ * por isso o script **recusa** tirar um campo de uma coleção que tenha linhas:
+ * aí a decisão é de quem tem os dados à frente, não de um script.
+ *
+ * Correr isto duas vezes não faz nada na segunda.
  */
 import PocketBase from 'pocketbase';
 import { SUPERUTILIZADOR, SUPER_PALAVRA, URL_DO_SERVIDOR } from './ambiente.mjs';
@@ -46,7 +59,63 @@ const CAMPOS = [
   ['artigos', 'posto', { type: 'number', min: 0, onlyInt: true }],
 ];
 
+// As coleções que nasceram depois da base. A definição é a MESMA do
+// `criar-colecoes.mjs`, campo a campo e regra a regra — os dois ficheiros têm
+// de dizer o mesmo, e há um guarda do Jest a conferi-lo.
+const COLECOES = [
+  {
+    nome: 'meta_movimentos',
+    campos: [
+      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'meta', type: 'relation', alvo: 'metas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'valor', type: 'number', required: true },
+      { name: 'motivo', type: 'text' },
+      { name: 'por', type: 'relation', alvo: 'membros', maxSelect: 1, cascadeDelete: false },
+      { name: 'data', type: 'date' },
+      { name: 'idem_key', type: 'text' },
+    ],
+    indexes: ['CREATE UNIQUE INDEX idx_meta_mov_idem ON meta_movimentos (casa, idem_key)'],
+    regras: {
+      listRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+      viewRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+      createRule: 'casa = @request.auth.casa && @request.auth.papel = "admin"'
+        + ' && meta.casa = @request.auth.casa && (por = "" || por.casa = @request.auth.casa)',
+      updateRule: null,
+      deleteRule: null,
+    },
+  },
+];
+
+// ⚠ O que uma coleção NÃO pode ter. `[coleção, campo, porquê]`.
+const CAMPOS_A_TIRAR = [
+  ['metas', 'atual',
+    'era um saldo ESCRITO (INVARIANTE #2). O que está juntado numa meta é a '
+    + 'SOMA dos `meta_movimentos` — dois telefones a reforçar a mesma meta '
+    + 'escreviam cada um o seu total e o último ganhava.'],
+];
+
 const idDaColecao = async (nome) => (await pb.collections.getOne(nome)).id;
+
+// ⚠ «as 1 coleção(ões)» foi o que este script imprimiu na primeira corrida.
+// Plural escrito à mão é a classe de defeito que já apareceu em seis sítios
+// desta casa, e o `(s)` é a mesma coisa com uma desculpa.
+const plural = (n, um, muitos) => `${n} ${n === 1 ? um : muitos}`;
+
+// ── As coleções novas ────────────────────────────────────────────────────────
+let colecoesCriadas = 0;
+for (const c of COLECOES) {
+  const existe = await pb.collections.getOne(c.nome).catch(() => null);
+  if (existe) { console.log(`${c.nome}: a coleção já existe.`); continue; }
+  const campos = [];
+  for (const { alvo, ...f } of c.campos) {
+    campos.push({ ...f, ...(alvo ? { collectionId: await idDaColecao(alvo) } : {}) });
+  }
+  await pb.collections.create({
+    name: c.nome, type: 'base', fields: campos, indexes: c.indexes || [], ...c.regras,
+  });
+  colecoesCriadas++;
+  console.log(`${c.nome}: coleção criada, com ${campos.length} campos.`);
+}
 
 let criados = 0;
 let jaLa = 0;
@@ -77,7 +146,32 @@ for (const [nome, lista] of porColecao) {
   console.log(`${nome}: acrescentado ${novos.map(f => f.name).join(', ')}.`);
 }
 
-console.log(`\n${criados} campo(s) acrescentado(s) · ${jaLa} já existiam.`);
+// ── E o que não pode lá estar ────────────────────────────────────────────────
+//
+// ⚠ Recusa-se a tirar um campo de uma coleção que tenha LINHAS. Um campo pode
+// estar errado e ter dados que alguém quer ver antes de os perder; essa decisão
+// é de quem os tem à frente.
+let tirados = 0;
+for (const [nome, campo, porque] of CAMPOS_A_TIRAR) {
+  const c = await pb.collections.getOne(nome).catch(() => null);
+  if (!c) { console.log(`${nome}: a coleção não existe.`); continue; }
+  if (!c.fields.some(f => f.name === campo)) { console.log(`${nome}.${campo}: já não existe.`); continue; }
+
+  const linhas = await pb.collection(nome).getList(1, 1).then(r => r.totalItems).catch(() => -1);
+  if (linhas !== 0) {
+    console.error(`\n✕ ${nome}.${campo} devia sair (${porque})`);
+    console.error(`  mas a coleção tem ${plural(linhas, 'linha', 'linhas')}.`
+      + ' Trate delas primeiro — este script não apaga dados.');
+    process.exit(1);
+  }
+  await pb.collections.update(c.id, { fields: c.fields.filter(f => f.name !== campo) });
+  tirados++;
+  console.log(`${nome}: tirado ${campo} — ${porque}`);
+}
+
+console.log(`\n${plural(colecoesCriadas, 'coleção criada', 'coleções criadas')}`
+  + ` · ${plural(criados, 'campo acrescentado', 'campos acrescentados')}`
+  + ` · ${jaLa} já existiam · ${plural(tirados, 'tirado', 'tirados')}.`);
 
 // ── E a prova de que ficaram lá ──────────────────────────────────────────────
 //
@@ -93,8 +187,23 @@ for (const [nome, lista] of porColecao) {
     if (f.type !== def.type) faltam.push(`${nome}.${campo} é ${f.type} e devia ser ${def.type}`);
   }
 }
+for (const c of COLECOES) {
+  const viva = await pb.collections.getOne(c.nome).catch(() => null);
+  if (!viva) { faltam.push(`a coleção ${c.nome} não ficou lá`); continue; }
+  for (const campo of c.campos) {
+    const f = viva.fields.find(x => x.name === campo.name);
+    if (!f) faltam.push(`${c.nome}.${campo.name} não ficou lá`);
+    else if (f.type !== campo.type) faltam.push(`${c.nome}.${campo.name} é ${f.type} e devia ser ${campo.type}`);
+  }
+}
+for (const [nome, campo] of CAMPOS_A_TIRAR) {
+  const viva = await pb.collections.getOne(nome).catch(() => null);
+  if (viva && viva.fields.some(f => f.name === campo)) faltam.push(`${nome}.${campo} continua lá`);
+}
 if (faltam.length) {
   console.error('\n✕ ' + faltam.join('\n✕ '));
   process.exit(1);
 }
-console.log(`✓ os ${CAMPOS.length} campos existem, com o tipo que a tabela diz.`);
+console.log(`✓ ${plural(CAMPOS.length, 'campo existe', 'campos existem')} com o tipo que a tabela diz,`
+  + ` ${plural(COLECOES.length, 'coleção existe', 'coleções existem')},`
+  + ` e ${plural(CAMPOS_A_TIRAR.length, 'campo proibido', 'campos proibidos')} já não.`);
