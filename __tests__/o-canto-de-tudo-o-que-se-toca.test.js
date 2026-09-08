@@ -209,7 +209,19 @@ describe('⚠ nenhum RETÂNGULO TOCÁVEL leva pílula', () => {
       const re = /<(Pressable|Tap)\b/g;
       let m;
       while ((m = re.exec(txt))) {
-        const fim = txt.indexOf('>', m.index);
+        // ⚠ O fim da etiqueta é o primeiro `>` FORA de chavetas — não o
+        // primeiro `>` que aparecer. Um estilo em função, `style={({ pressed })
+        // => ({ … })}`, tem um `>` no `=>`, e a primeira versão disto cortava a
+        // etiqueta aí, antes do `borderRadius`. Foi assim que os dois
+        // «Adicionar» da ficha do equipamento ficaram a `R.card` com o guarda
+        // verde — apanhados pela sonda no navegador, não por aqui.
+        let fim = -1, prof = 0;
+        for (let j = m.index; j < txt.length; j++) {
+          const ch = txt[j];
+          if (ch === '{') prof++;
+          else if (ch === '}') prof--;
+          else if (ch === '>' && prof === 0) { fim = j; break; }
+        }
         const etiqueta = txt.slice(m.index, fim === -1 ? txt.length : fim + 1);
         const s = etiqueta.indexOf('style=');
         if (s === -1) continue;

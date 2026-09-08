@@ -135,22 +135,22 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
           <View style={{ gap: S.md }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.sm }}>
               <Tap label="Ano anterior" onPress={() => setYm(v => ({ ...v, y: v.y - 1 }))}
-                style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.sm }}>
+                style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row }}>
                 <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text2 }}>‹‹</Text>
               </Tap>
               <Tap label="Mês anterior" onPress={() => setYm(v => v.m === 0 ? { y: v.y - 1, m: 11 } : { ...v, m: v.m - 1 })}
-                style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.sm }}>
+                style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row }}>
                 <Icon name="caretLeft" size={16} color={t.text3} />
               </Tap>
               <Text style={{ flex: 1, textAlign: 'center', fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
                 {MONTHS[ym.m]} de {ym.y}
               </Text>
               <Tap label="Mês seguinte" onPress={() => setYm(v => v.m === 11 ? { y: v.y + 1, m: 0 } : { ...v, m: v.m + 1 })}
-                style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.sm }}>
+                style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row }}>
                 <Icon name="caretRight" size={16} color={t.text3} />
               </Tap>
               <Tap label="Ano seguinte" onPress={() => setYm(v => ({ ...v, y: v.y + 1 }))}
-                style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.sm }}>
+                style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row }}>
                 <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text2 }}>››</Text>
               </Tap>
             </View>
@@ -179,7 +179,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                       accessibilityRole="button"
                       accessibilityLabel={`${c.n} de ${MONTHS[ym.m].toLowerCase()}${c.evs.length ? ` · ${plural(c.evs.length, 'evento', 'eventos')}` : ''}`}
                       accessibilityState={{ selected: on }}
-                      style={{ flex: 1, minHeight: 46, borderRadius: R.sm, alignItems: 'center',
+                      style={{ flex: 1, minHeight: 46, borderRadius: R.row, alignItems: 'center',
                         justifyContent: 'center', gap: 4,
                         borderWidth: on ? 2 : 0, borderColor: t.accent,
                         backgroundColor: isToday ? t.chrome : c.evs.length ? t.subtle : 'transparent' }}>

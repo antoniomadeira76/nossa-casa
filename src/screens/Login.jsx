@@ -200,7 +200,7 @@ export default function Login({ t, onEnter }) {
             ) : null}
             {adultos.map(n => (
               <Pressable key={n} onPress={() => onEnter(n)} accessibilityRole="button" accessibilityLabel={n}
-                style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: R.card, padding: 14,
+                style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: R.row, padding: 14,
                   minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
                 <View style={{ width: 40, height: 40, borderRadius: R.pill, backgroundColor: t.chrome, alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ fontFamily: FONT.display, fontSize: 17, fontWeight: '500', color: '#FFFFFF' }}>{MEMBERS[n].initial}</Text>
@@ -264,7 +264,7 @@ export default function Login({ t, onEnter }) {
               return (
                 <Pressable key={n} onPress={() => { if (hasPin) { setKid(n); setPin(''); setStep('pin'); } }}
                   accessibilityRole="button" accessibilityLabel={n} accessibilityState={{ disabled: !hasPin }}
-                  style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: R.card, padding: 14,
+                  style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: R.row, padding: 14,
                     minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 14, opacity: hasPin ? 1 : 0.55 }}>
                   <View style={{ width: 40, height: 40, borderRadius: R.pill,
                     backgroundColor: corDoMembro(n, MEMBERS[n]?.cor), alignItems: 'center', justifyContent: 'center' }}>

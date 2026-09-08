@@ -75,7 +75,8 @@ export default function GoogleCalendarImportModal({ t, events, onImportar, onIgn
               accessibilityLabel={e.title}
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44,
-                paddingVertical: 12, paddingHorizontal: 12, borderRadius: R.card, borderWidth: 1,
+                // `R.row`: é um tocável, e o canto de tudo o que se toca é 6.
+                paddingVertical: 12, paddingHorizontal: 12, borderRadius: R.row, borderWidth: 1,
                 // O preenchimento de informação é claro e fixo; no modo escuro
                 // dava texto quase branco sobre azul claro. Aí a superfície é que marca.
                 backgroundColor: on ? (t.dark ? t.subtle : t.state.infoBg) : t.card,

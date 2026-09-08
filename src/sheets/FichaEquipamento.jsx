@@ -109,7 +109,11 @@ export default function FichaEquipamento({ t, equip, onClose }) {
                   accessibilityLabel={`${uri ? 'Substituir' : 'Adicionar'} — ${a.titulo}`}
                   style={({ pressed }) => ({
                     flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60,
-                    padding: 12, borderRadius: R.card, borderWidth: 1, borderColor: t.border,
+                    // ⚠ `R.row`: é um tocável, e o canto de tudo o que se toca
+                    // é 6. Estava a `R.card` e escapou ao guarda dos cantos
+                    // porque o `=>` deste estilo em função tem um `>` que o
+                    // guarda tomava pelo fim da etiqueta.
+                    padding: 12, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
                     backgroundColor: pressed ? t.subtle : t.card,
                   })}>
                   <View style={{ width: 40, height: 40, borderRadius: R.row, overflow: 'hidden',

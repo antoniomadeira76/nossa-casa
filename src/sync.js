@@ -674,11 +674,19 @@ export async function puxarCasa() {
   // A forma da loja: `name`, `cat`, `bought`, `shop`, `price`, `warrantyEnd`,
   // `maint`, `maintDate`. O `daysLeft` NÃO vem — é derivado da garantia e do
   // dia de hoje, e um número gravado fica errado amanhã.
+  //
+  // ⚠ A categoria é um NOME — `equipamentos.categoria` é texto, e é o nome que
+  // a folha «Registar equipamento» escreve. A semente da simulação escreveu lá
+  // o ID da linha de `categorias_equip`, e a ficha do Frigorífico dizia
+  // «klb00gtqqxcckvf» por baixo do nome. Apanhado pela sonda em 08/09/2026.
+  // Se o texto for o id de uma categoria da casa, traduz-se para o nome; é a
+  // mesma defesa das duas pontas da data da receita (classe 21).
+  const nomeDaCategoria = Object.fromEntries((casa.categorias_equip || []).map(c => [c.id, c.nome]));
   const newEquip = (casa.equipamentos || []).map(e => ({
     id: e.id,
     idServidor: e.id,
     name: e.nome,
-    cat: e.categoria || '',
+    cat: nomeDaCategoria[e.categoria] || e.categoria || '',
     bought: dmyDeISO(e.comprado_em),
     shop: e.loja || '',
     price: Number(e.preco) || 0,

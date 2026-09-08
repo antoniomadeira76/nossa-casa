@@ -307,7 +307,11 @@ const EQUIP = [
 ];
 for (const [nome, cat, comprado, garantia, loja, preco] of EQUIP) {
   await pb.collection('equipamentos').create({
-    casa: casa.id, nome, categoria: categorias[cat].id,
+    // ⚠ O NOME, não o id: `equipamentos.categoria` é um campo de texto, e é o
+    // nome que a folha da app escreve. Com o id, a ficha do Frigorífico dizia
+    // «klb00gtqqxcckvf» por baixo do nome — a semente a comportar-se de outra
+    // maneira que a app, que é como estes defeitos se escondem.
+    casa: casa.id, nome, categoria: categorias[cat].nome,
     comprado_em: iso(comprado), garantia_ate: iso(garantia), loja, preco,
     ...(nome === 'Caldeira' ? { manutencao: 'Revisão anual', manutencao_ate: iso(20) } : {}),
   });

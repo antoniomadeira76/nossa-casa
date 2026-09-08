@@ -109,7 +109,7 @@ export default function EscolherAvatar({ t, user, onFeito }) {
           accessibilityRole="button" accessibilityLabel="A minha inicial"
           accessibilityState={{ selected: !usarFoto && !figura }}
           style={{ minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: S.lg,
-            paddingHorizontal: S.lg, borderRadius: R.card,
+            paddingHorizontal: S.lg, borderRadius: R.row,
             borderWidth: (!usarFoto && !figura) ? 2 : 1,
             borderColor: (!usarFoto && !figura) ? t.accent : t.border, backgroundColor: t.card }}>
           <View style={{ width: BOLA, height: BOLA, borderRadius: R.pill, backgroundColor: cor,
@@ -164,7 +164,7 @@ export default function EscolherAvatar({ t, user, onFeito }) {
             accessibilityRole="button" accessibilityLabel="Usar a fotografia da conta Google"
             accessibilityState={{ selected: usarFoto }}
             style={{ minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: S.lg,
-              paddingHorizontal: S.lg, borderRadius: R.card, borderWidth: usarFoto ? 2 : 1,
+              paddingHorizontal: S.lg, borderRadius: R.row, borderWidth: usarFoto ? 2 : 1,
               borderColor: usarFoto ? t.accent : t.border, backgroundColor: t.card }}>
             <Avatar size={BOLA} color={cor} initial={inicial} foto={foto} />
             <View style={{ flex: 1 }}>
