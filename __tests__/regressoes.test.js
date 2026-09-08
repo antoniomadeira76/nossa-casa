@@ -1455,8 +1455,41 @@ describe('As modais correm dentro da coluna da app', () => {
   const path = require('path');
   const raiz = path.join(__dirname, '..');
 
-  const COM_MODAL = ['src/Sheet.jsx', 'src/Confirm.jsx', 'src/ConfirmShare.jsx',
-    'src/sheets/Carrinho.jsx', 'src/screens/Gestao.jsx'];
+  // ⚠ ENUMERA-SE do disco: todo o ficheiro que desenhe um `<Modal` entra aqui
+  // sozinho. Era uma lista escrita à mão com cinco nomes, e envelheceu nos dois
+  // sentidos ao mesmo tempo (08/09/2026): a Gestão deixou de ter modais suas —
+  // os dois diálogos passaram ao `Confirm` — e a lista continuava a exigir-lhe
+  // um `LARGURA_APP` que já não tinha onde estar; e um ficheiro novo com um
+  // `<Modal` a 909 px passava sem ninguém lhe perguntar nada. Uma prova que
+  // fixa a lista de hoje é a classe 8 do registo desta casa.
+  //
+  // ⚠ E lê-se o CÓDIGO, sem os comentários. O Compras e o Modo Compras dizem
+  // «era um <Modal>, que no react-native-web escapa à raiz» num comentário que
+  // explica porque é que DEIXARAM de o ser — e a primeira versão deste
+  // enumerador exigia-lhes um `LARGURA_APP` por causa dessa frase. Um guarda que
+  // proíbe o comentário que documenta o defeito é a classe 20.
+  const soCodigo = (txt) => txt
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const COM_MODAL = (() => {
+    const fora = [];
+    const percorrer = (dir) => {
+      for (const e of fs.readdirSync(path.join(raiz, dir), { withFileTypes: true })) {
+        const rel = `${dir}/${e.name}`;
+        if (e.isDirectory()) percorrer(rel);
+        else if (/\.jsx$/.test(e.name) && /<Modal\b/.test(soCodigo(read(rel)))) fora.push(rel);
+      }
+    };
+    percorrer('src');
+    return fora.sort();
+  })();
+
+  test('há ficheiros com modal para conferir — senão isto não prova nada', () => {
+    expect(COM_MODAL.length).toBeGreaterThan(2);
+    // E a Gestão já não está entre eles: os diálogos dela são o `Confirm`.
+    expect(COM_MODAL).not.toContain('src/screens/Gestao.jsx');
+  });
 
   test('a largura vive no tema, e não repetida em cada ficheiro', () => {
     // Dois 460 em sítios diferentes divergem no dia em que um deles muda.

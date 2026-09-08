@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, Modal } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT, LARGURA_APP } from '../theme';
+import { S, R, FONT } from '../theme';
 import { EUR, mesComAno, mesSeguinte, dmyDeChave } from '../format';
 import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty, avatarDe, NumField, BotaoCompacto } from '../ui';
 import Icon from '../Icon';
@@ -543,11 +543,14 @@ export default function Gestao({ t, user, onClose }) {
         {tab === 'envelopes' && renderEnvelopesTab()}
         {tab === 'lojas' && renderShopsTab()}
 
-        <Pressable accessibilityRole="button" onPress={onClose} style={{ paddingVertical: S.lg }}>
-          <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.accent, textAlign: 'center' }}>
-            Fechar
-          </Text>
-        </Pressable>
+        {/* ⚠ Era um `Pressable` com o rótulo em `t.accent` a 14 px — a cor do
+            esquema num rótulo pequeno, que falha 4,5:1 em seis dos doze temas
+            (classe 24), e o acento numa acção de DESISTIR, que é o mesmo defeito
+            do «Fechar» do acesso restrito. Passa ao `Primary comum`, o desenho
+            que o «Fechar» de cima já tem. */}
+        <View style={{ paddingVertical: S.lg }}>
+          <Primary t={t} comum label="Fechar" onPress={onClose} />
+        </View>
       </View>
 
       {/* ── O nome da família ────────────────────────────────────────────── */}
@@ -754,42 +757,30 @@ export default function Gestao({ t, user, onClose }) {
 
       {/* ── Tirar da casa ────────────────────────────────────────────────── */}
       {modal === 'confirmarRemocao' && selectedMember && (
-        <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
-          <Pressable accessibilityRole="button" onPress={() => setModal(null)}
-            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <Pressable accessibilityRole="button" style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 320 }}>
-              <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
-                Tirar {selectedMember} da casa?
-              </Text>
-              <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.text2, textAlign: 'center' }}>
-                Deixa de entrar nesta casa e de aparecer nas tarefas, na agenda e
-                no dinheiro. O que já lá está — tarefas feitas, movimentos,
-                despesas — fica no histórico da casa.
-              </Text>
-              {erro ? <Tile t={t} kind="warn">{erro}</Tile> : null}
-              <View style={{ flexDirection: 'row', gap: S.md }}>
-                <Pressable onPress={() => setModal(null)} accessibilityRole="button"
-                  accessibilityLabel="Cancelar" style={{ flex: 1 }}>
-                  <View style={{ minHeight: 44, justifyContent: 'center', borderRadius: R.row, borderWidth: 1, borderColor: t.border }}>
-                    <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.text2, textAlign: 'center' }}>
-                      Cancelar
-                    </Text>
-                  </View>
-                </Pressable>
-                <Pressable disabled={aGuardar} accessibilityRole="button"
-                  accessibilityLabel={`Confirmar tirar ${selectedMember} da casa`}
-                  onPress={() => executar(() => removerMembro(selectedMember), fecharMembro)}
-                  style={{ flex: 1 }}>
-                  <View style={{ minHeight: 44, justifyContent: 'center', borderRadius: R.row, backgroundColor: t.state.err }}>
-                    <Text style={{ fontFamily: FONT.display, fontSize: 14, color: '#FFFFFF', textAlign: 'center' }}>
-                      {aGuardar ? 'A tirar…' : 'Tirar'}
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-            </Pressable>
-          </Pressable>
-        </Modal>
+          /* ⚠ Pelo `Confirm`, como os dois diálogos do mês. Era um diálogo
+              feito à mão — a segunda porta da classe 12 —, com um `Pressable`
+              a fazer de cartão para engolir o toque. Ao tirar-lhe o papel de
+              botão, troquei-o por um `View` com `onStartShouldSetResponder` e
+              na web isso NÃO engole nada: tocar no título fechava o diálogo.
+              Medido. O `Confirm` já resolve isto, e é um desenho só: o botão
+              destrutivo cheio a `errDeep` com branco por cima, 5,79 no pior
+              dos doze temas. O erro do servidor entra na mensagem, e o botão
+              diz «A tirar…» enquanto espera.
+
+              ⚠ E é um comentário JS, não JSX: dentro do `( )` de um `&&`, um
+              comentário JSX (chaveta, barra, asterisco) ao lado do `<Confirm>`
+              são DUAS expressões — e o ficheiro deixou de compilar. E a primeira
+              versão DESTA frase escrevia essa sequência por extenso, com o
+              asterisco-barra a fechar o comentário a meio. Terceira vez neste
+              ficheiro num dia. */
+          <Confirm t={t} destructive icon="trash"
+            title={`Tirar ${selectedMember} da casa?`}
+            message={'Deixa de entrar nesta casa e de aparecer nas tarefas, na agenda e '
+              + 'no dinheiro. O que já lá está — tarefas feitas, movimentos, despesas — '
+              + 'fica no histórico da casa.' + (erro ? `\n\n${erro}` : '')}
+            confirmLabel={aGuardar ? 'A tirar…' : 'Tirar'}
+            onConfirm={() => { if (!aGuardar) executar(() => removerMembro(selectedMember), fecharMembro); }}
+            onCancel={() => setModal(null)} />
       )}
 
       {sheetOpen === 'editEnvelope' && (
@@ -1027,8 +1018,13 @@ export default function Gestao({ t, user, onClose }) {
                   setInput('');
                 }
               }} disabled={!input.trim() || input === s.stores[selectedEnvelope]} />
+              {/* ⚠ Media 33 px: `paddingVertical: 8` mais a letra — um alvo que
+                  resulta de uma soma (classe 25). O par dele, «Tirar da casa»,
+                  já declarava os 44. E sem nome de loja no rótulo, um leitor de
+                  ecrã dizia «Apagar loja» sem dizer qual. */}
               <Pressable accessibilityRole="button" onPress={() => setModal('confirmDeleteShop')}
-                style={{ paddingVertical: S.md, alignItems: 'center' }}>
+                accessibilityLabel={`Apagar a loja ${s.stores[selectedEnvelope]}`}
+                style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.state.err }}>Apagar loja</Text>
               </Pressable>
             </View>
@@ -1058,32 +1054,22 @@ export default function Gestao({ t, user, onClose }) {
       )}
 
       {modal === 'confirmDeleteShop' && (
-        <Modal transparent animationType="fade" onRequestClose={() => setModal(null)}>
-          <Pressable accessibilityRole="button" onPress={() => setModal(null)}
-            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <Pressable accessibilityRole="button" style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.lg, gap: S.lg, maxWidth: 300 }}>
-              <Text style={{ fontFamily: FONT.display, fontSize: 18, color: t.text1, textAlign: 'center' }}>
-                Apagar loja?
-              </Text>
-              <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2, textAlign: 'center' }}>
-                {s.stores[selectedEnvelope]}
-              </Text>
-              <View style={{ flexDirection: 'row', gap: S.md }}>
-                <Pressable accessibilityRole="button" onPress={() => setModal(null)} style={{ flex: 1, paddingVertical: S.md, borderRadius: R.row, backgroundColor: t.border }}>
-                  <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.text2, textAlign: 'center' }}>Cancelar</Text>
-                </Pressable>
-                <Pressable accessibilityRole="button" onPress={() => {
-                  mudarListaDaCasa('stores', s.stores.filter((_, i) => i !== selectedEnvelope));
-                  setModal(null);
-                  setSheetOpen(null);
-                  setSelectedEnvelope(null);
-                }} style={{ flex: 1, paddingVertical: S.md, borderRadius: R.row, backgroundColor: t.state.err }}>
-                  <Text style={{ fontFamily: FONT.display, fontSize: 14, color: '#FFFFFF', textAlign: 'center' }}>Apagar</Text>
-                </Pressable>
-              </View>
-            </Pressable>
-          </Pressable>
-        </Modal>
+          /* Pelo `Confirm` — ver o «Tirar da casa» em cima. Os dois botões
+              deste mediam 33 px: `paddingVertical: 8` mais a letra, um alvo
+              que resulta de uma soma. E a pergunta diz o que se perde: uma
+              loja com ida marcada deixa a ida sem loja. */
+          <Confirm t={t} destructive icon="trash"
+            title={`Apagar «${s.stores[selectedEnvelope]}»?`}
+            message={'A loja sai da lista da casa. Os preços que já se registaram nela ficam, '
+              + 'para a comparação entre lojas — e uma ida marcada para esta loja fica sem loja.'}
+            confirmLabel="Apagar"
+            onConfirm={() => {
+              mudarListaDaCasa('stores', s.stores.filter((_, i) => i !== selectedEnvelope));
+              setModal(null);
+              setSheetOpen(null);
+              setSelectedEnvelope(null);
+            }}
+            onCancel={() => setModal(null)} />
       )}
     </View>
   );

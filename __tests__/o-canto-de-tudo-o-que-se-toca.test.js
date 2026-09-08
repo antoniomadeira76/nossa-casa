@@ -184,6 +184,67 @@ describe('⚠ nenhum RETÂNGULO TOCÁVEL leva pílula', () => {
     expect(maus).toEqual([]);
   });
 
+  // ── ⚠ O raio do PRÓPRIO tocável, lido do bloco de estilo inteiro ───────────
+  //
+  // As duas provas acima procuram `minHeight` e o raio NA MESMA LINHA, e é
+  // essa a assinatura que deixou passar dois casos em 08/09/2026, no
+  // varrimento com a casa a sério:
+  //
+  //   o paginador   `Tap` com `borderRadius: R.sm` no `style` — o tamanho vem
+  //                 do `size={44}` do componente, não há `minHeight` na linha
+  //   o cofre       `Pressable` a `R.card` com `flex: 1` e `padding: 14` — o
+  //                 alvo resulta do enchimento, e o raio está noutra linha
+  //
+  // A propriedade não é «minHeight e raio juntos»: é que o bloco de estilo de
+  // um `<Pressable` ou `<Tap` — inteiro, com as chaves contadas — só declare
+  // `R.row`, ou `R.pill` para o que for redondo por forma (e essa lista tem os
+  // motivos escritos em cima). `R.card` e `R.sm` num tocável são o que não pode
+  // existir.
+  const blocosDeEstiloDosTocaveis = () => {
+    const fora = [];
+    for (const rel of jsx) {
+      const txt = fs.readFileSync(path.join(RAIZ, rel), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+        .split('\n').map(l => (/^\s*(\/\/|\*)/.test(l) ? '' : l)).join('\n');
+      const re = /<(Pressable|Tap)\b/g;
+      let m;
+      while ((m = re.exec(txt))) {
+        const fim = txt.indexOf('>', m.index);
+        const etiqueta = txt.slice(m.index, fim === -1 ? txt.length : fim + 1);
+        const s = etiqueta.indexOf('style=');
+        if (s === -1) continue;
+        // ⚠ Um `Pressable` sem `onPress` não é um tocável: é o cartão de um
+        // diálogo que existe para engolir o toque e não deixar fechar o fundo
+        // (os dois da Gestão). Esse é um cartão, e um cartão leva `R.card`. O
+        // `Tap` tem sempre `onPress` — é para isso que existe.
+        if (m[1] === 'Pressable' && !/\bonPress=/.test(etiqueta)) continue;
+        // Conta chaves a partir do `{` do `style=`.
+        let nivel = 0, j = s + 6, ini = -1;
+        for (; j < etiqueta.length; j++) {
+          if (etiqueta[j] === '{') { if (nivel === 0) ini = j; nivel++; }
+          else if (etiqueta[j] === '}') { nivel--; if (nivel === 0) break; }
+        }
+        const bloco = etiqueta.slice(ini, j + 1);
+        const linha = txt.slice(0, m.index).split('\n').length;
+        fora.push({ rel, linha, bloco });
+      }
+    }
+    return fora;
+  };
+
+  it('⚠ nenhum `Pressable`/`Tap` declara `R.card` nem `R.sm` no seu próprio estilo', () => {
+    const maus = blocosDeEstiloDosTocaveis()
+      .filter(({ bloco }) => /borderRadius:\s*R\.(card|sm)\b/.test(bloco))
+      .map(({ rel, linha, bloco }) => `${rel}:${linha} → ${bloco.match(/borderRadius:\s*R\.\w+/)[0]}`);
+    expect(maus).toEqual([]);
+  });
+
+  it('e a prova lê blocos de estilo — senão não prova nada', () => {
+    // Eram 39 em 08/09/2026, sem os dois cartões de diálogo da Gestão. O piso
+    // é para apanhar o padrão a deixar de casar, não para contar botões.
+    expect(blocosDeEstiloDosTocaveis().length).toBeGreaterThan(30);
+  });
+
   it('e o `Primary`, a `Choice` e a `Opcao` levam `R.row`', () => {
     const ui = fs.readFileSync(path.join(RAIZ, 'src', 'ui.jsx'), 'utf8');
     for (const nome of ['Primary', 'Choice', 'Opcao']) {

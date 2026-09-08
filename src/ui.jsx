@@ -744,11 +744,11 @@ export const Pager = ({ t, pg }) => !pg.paged ? null : (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, paddingTop: S.md }}>
     <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{pg.label}</Text>
     <Tap onPress={pg.prev} label="Página anterior"
-      style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.sm, opacity: pg.prev ? 1 : 0.35 }}>
+      style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row, opacity: pg.prev ? 1 : 0.35 }}>
       <Icon name="caretLeft" size={16} color={t.text3} />
     </Tap>
     <Tap onPress={pg.next} label="Página seguinte"
-      style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.sm, opacity: pg.next ? 1 : 0.35 }}>
+      style={{ borderWidth: 1, borderColor: t.border, borderRadius: R.row, opacity: pg.next ? 1 : 0.35 }}>
       <Icon name="caretRight" size={16} color={t.text3} />
     </Tap>
   </View>

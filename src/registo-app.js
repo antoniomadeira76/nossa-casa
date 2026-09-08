@@ -6,7 +6,7 @@
 // Não confundir com `s.registo`, que é o histórico de alterações que a
 // FAMÍLIA faz à casa. São duas coisas diferentes, e o ecrã mostrava a segunda
 // onde a referência 17 mostra a primeira.
-export const APP_VERSION = '1.10.0';
+export const APP_VERSION = '1.11.0';
 
 // ── O que a app é, e o que cada área faz ─────────────────────────────────────
 //
@@ -47,7 +47,8 @@ export const AREAS = [
       'Regista despesas, com a opção de as dividir a meias entre os adultos',
       'Move dinheiro de um envelope para outro sem mexer no total',
       'Acerta contas entre os dois adultos: quem pagou mais recebe a diferença',
-      'Abre e fecha o mês. Fechar não apaga nada — o mês seguinte é outra contagem',
+      'Abre e fecha o mês. Fechar não apaga nada — o mês seguinte é outra contagem, e o saldo pode ir para uma meta',
+      'As metas da família, em euros: um objetivo, quanto já está junto, e de onde veio',
       'Os cofres das crianças, com a semanada e os bónus',
     ] },
 
@@ -64,7 +65,8 @@ export const AREAS = [
     o: 'A lista de compras da casa, e a ida à loja.',
     faz: [
       'A lista é de todos: as crianças também pedem artigos',
-      'O modo de loja arruma os artigos pela ordem dos corredores dessa loja',
+      'Os corredores da loja são da casa — renomeiam-se, ordenam-se e apagam-se —, e o modo de loja anda por eles nessa ordem',
+      'Cada artigo altera-se e arrasta-se para o lugar certo dentro do corredor',
       'Cada artigo marca-se como apanhado ou sem stock, e os dois telemóveis veem o mesmo',
       'Fechar a conta regista a despesa e guarda a ida no histórico',
       'Os preços pagos ficam por artigo e por loja, para se saber onde é mais barato',
@@ -140,6 +142,19 @@ export const AREAS = [
 ];
 
 export const REGISTO_APP = [
+  // ── 1.11.0 ────────────────────────────────────────────────────────────────
+  // As metas em euros, as compras que se arrumam, e a cor que faltava aos
+  // botões. E um varrimento com a casa a sério apanhou uma escrita que se
+  // perdia em silêncio.
+  { v: '1.11.0', d: '08/09/2026', k: 'novo', a: 'Dinheiro', t: 'As metas da família: criar, reforçar e ver de onde veio o dinheiro — tudo em euros, e o juntado é a soma dos reforços' },
+  { v: '1.11.0', d: '08/09/2026', k: 'alterado', a: 'Dinheiro', t: 'Fechar o mês pode levar o saldo para uma meta, no valor que quem administra escolher — e não numa percentagem' },
+  { v: '1.11.0', d: '08/09/2026', k: 'alterado', a: 'A App', t: 'Os botões seguem a cor do perfil escolhido; deixou de haver botões pretos' },
+  { v: '1.11.0', d: '08/09/2026', k: 'novo', a: 'Compras', t: 'Um artigo altera-se — nome, corredor, estimativa, habitual — e arrasta-se para mudar a ordem dentro do corredor' },
+  { v: '1.11.0', d: '08/09/2026', k: 'novo', a: 'Compras', t: '«Como fazemos compras»: quem vai, quando e a que loja, e os corredores da loja pela ordem em que se anda neles' },
+  { v: '1.11.0', d: '08/09/2026', k: 'corrigido', a: 'Compras', t: 'Passar um artigo de corredor ficava só neste telemóvel: duas escritas no mesmo instante e a primeira perdia-se em silêncio' },
+  { v: '1.11.0', d: '07/09/2026', k: 'corrigido', a: 'Saúde', t: 'Cada nota de uma consulta diz de quem é e quando foi escrita; só quem a escreveu a altera, e uma criança não escreve notas noutra' },
+  { v: '1.11.0', d: '07/09/2026', k: 'alterado', a: 'Dinheiro', t: 'O orçamento fala só em euros: saíram as percentagens da frase do rendimento e dos envelopes' },
+
   // ── 1.10.0 ────────────────────────────────────────────────────────────────
   // A casa encheu-se de dados a sério — três meses de despesas, quatro
   // consultas, dezoito artigos — e cinco defeitos apareceram que nenhuma prova

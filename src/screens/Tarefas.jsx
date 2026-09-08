@@ -91,7 +91,10 @@ export default function Tarefas({ t, user, abrir }) {
                   accessibilityRole="button" accessibilityLabel={`Cofre ${st.deNome(k)} ${k}`}
                   style={({ pressed }) => ({ flex: 1, backgroundColor: pressed ? t.card : t.subtle,
                     borderWidth: 1, borderColor: t.border,
-                    borderRadius: R.card, padding: 14, gap: S.md })}>
+                    // ⚠ `R.row`, e não `R.card`: é um tocável, e o canto de
+                    // tudo o que se toca é 6. Escapou ao varrimento de 07/09
+                    // porque parece um cartão — mas abre o cofre ao toque.
+                    borderRadius: R.row, padding: 14, gap: S.md })}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <View style={{ width: 8, height: 8, borderRadius: R.pill, backgroundColor: corDoMembro(k, MEMBERS[k]?.cor) }} />
                     <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 14.5, color: t.text2 }}>{k}</Text>
