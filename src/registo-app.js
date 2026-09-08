@@ -150,6 +150,8 @@ export const REGISTO_APP = [
   { v: '1.11.0', d: '08/09/2026', k: 'alterado', a: 'Dinheiro', t: 'Fechar o mês pode levar o saldo para uma meta, no valor que quem administra escolher — e não numa percentagem' },
   { v: '1.11.0', d: '08/09/2026', k: 'alterado', a: 'A App', t: 'Os botões seguem a cor do perfil escolhido; deixou de haver botões pretos' },
   { v: '1.11.0', d: '08/09/2026', k: 'corrigido', a: 'A App', t: 'O texto pequeno lê-se no aspeto escuro e nos seis esquemas: as datas em atraso, os valores a verde, os dias da agenda e as etiquetas estavam abaixo do contraste mínimo — medido tema a tema' },
+  { v: '1.11.0', d: '08/09/2026', k: 'alterado', a: 'A App', t: 'Um botão que ainda não pode agir fica na cor do perfil, com o contorno tracejado, em vez de cinzento — a folha do artigo abria sem uma cor do perfil à vista' },
+  { v: '1.11.0', d: '08/09/2026', k: 'alterado', a: 'Compras', t: 'Ao acrescentar um artigo, o primeiro corredor já vem escolhido — a escolha que a app fazia em silêncio passa a ver-se, e muda-se' },
   { v: '1.11.0', d: '08/09/2026', k: 'corrigido', a: 'Início', t: 'No «Precisa de Si» a faixa e o ícone de cada aviso são duas cores, como no desenho: a faixa das linhas cinzentas era da cor do ícone e ficava quase preta ao lado das coloridas' },
   { v: '1.11.0', d: '08/09/2026', k: 'novo', a: 'Compras', t: 'Um artigo altera-se — nome, corredor, estimativa, habitual — e arrasta-se para mudar a ordem dentro do corredor' },
   { v: '1.11.0', d: '08/09/2026', k: 'novo', a: 'Compras', t: '«Como fazemos compras»: quem vai, quando e a que loja, e os corredores da loja pela ordem em que se anda neles' },

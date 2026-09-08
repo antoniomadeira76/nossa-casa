@@ -155,7 +155,7 @@ export default function Gestao({ t, user, onClose }) {
           </View>
           <View>
             <Label t={t}>Disponível</Label>
-            <Text style={{ fontFamily: FONT.display, fontSize: 20, color: budget - spent >= 0 ? t.state.ok : t.state.err, marginTop: S.sm }}>
+            <Text style={{ fontFamily: FONT.display, fontSize: 20, color: budget - spent >= 0 ? t.state.okTexto : t.state.errTexto, marginTop: S.sm }}>
               {EUR(budget - spent)}
             </Text>
           </View>
@@ -283,7 +283,7 @@ export default function Gestao({ t, user, onClose }) {
                 <View style={{ gap: S.md }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{env.name}</Text>
-                    <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: over ? t.state.err : t.text3 }}>
+                    <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: over ? t.state.errTexto : t.text3 }}>
                       {over ? `excedido em ${EUR(-sobra)}` : `livre ${EUR(sobra)}`}
                     </Text>
                   </View>
@@ -386,7 +386,10 @@ export default function Gestao({ t, user, onClose }) {
                 {/* Contornada e na cor do papel, como na referência: um adulto
                     lê-se de relance sem se ler a palavra. */}
                 <Pill label={papel} bg="transparent"
-                  fg={crianca ? t.text3 : t.state.info}
+                  // ⚠ `infoTexto` no rótulo, e não `info`: azul-base a 11 px
+                  // sobre o cartão dá 3,16. A borda fica `info` — é objeto
+                  // gráfico, 3:1 — e é a mesma separação do «Precisa de Si».
+                  fg={crianca ? t.text3 : t.state.infoTexto}
                   border={crianca ? t.border : t.state.info} />
                 <Icon name="caretRight" size={18} color={t.text3} />
               </View>}
@@ -684,7 +687,7 @@ export default function Gestao({ t, user, onClose }) {
               <Pressable onPress={() => { setErro(null); setModal('confirmarRemocao'); }}
                 accessibilityRole="button" accessibilityLabel={`Tirar ${selectedMember} da casa`}
                 style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.state.err }}>
+                <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.state.errTexto }}>
                   Tirar da casa
                 </Text>
               </Pressable>
@@ -1025,7 +1028,7 @@ export default function Gestao({ t, user, onClose }) {
               <Pressable accessibilityRole="button" onPress={() => setModal('confirmDeleteShop')}
                 accessibilityLabel={`Apagar a loja ${s.stores[selectedEnvelope]}`}
                 style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.state.err }}>Apagar loja</Text>
+                <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.state.errTexto }}>Apagar loja</Text>
               </Pressable>
             </View>
           }>

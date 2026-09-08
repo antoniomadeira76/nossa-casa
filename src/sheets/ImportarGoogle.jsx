@@ -206,7 +206,7 @@ export default function ImportarGoogle({ t, user, onClose }) {
                       {dayLabel(`d${e.dia}`)}{e.hora ? ` · ${e.hora}` : ' · todo o dia'}
                     </Text>
                     {e.recorrente ? (
-                      <Pill label="Repete-se" fg={t.state.info} bg={t.state.infoBg} border={t.state.info} />
+                      <Pill label="Repete-se" fg={t.state.infoDeep} bg={t.state.infoBg} border={t.state.info} />
                     ) : null}
                   </View>
                 </View>

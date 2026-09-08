@@ -360,8 +360,16 @@ export const Toggle = ({ t, on, onPress, label }) => (
 // O acento CHEIO fica para o que não se desfaz — a lista fechada do guarda
 // `o-acento-e-reservado`. A hierarquia mantém-se: cheio é consequência, tinta é
 // tudo o resto. Só deixou de haver preto.
+//
+// ⚠ E o DESACTIVADO também segue o esquema (08/09/2026). Era cinzento — fundo
+// `border`, rótulo `text3` — e o dono da casa abriu a folha do artigo e não viu
+// uma cor do perfil em lado nenhum: «o guardar artigo não mudou?». No protótipo
+// o botão está sempre em tinta de acção. Aqui fica em tinta, com a borda
+// TRACEJADA — o «ainda não» desta app, o mesmo do `AddButton` — e sem relevo. O
+// rótulo é o `actFg` da tinta, que já mede 4,5 sobre o `actBg` nos doze temas;
+// o `text3` sobre o cinzento dava 3,43.
 const rotuloDo = (t, { disabled, comum }) =>
-  (disabled ? t.text3 : comum ? t.actFg : '#FFFFFF');
+  (disabled || comum ? t.actFg : '#FFFFFF');
 
 export const Primary = ({ t, label, sub, icon, onPress, disabled, comum }) => (
   <Pressable onPress={disabled ? undefined : onPress} accessibilityRole="button"
@@ -370,12 +378,14 @@ export const Primary = ({ t, label, sub, icon, onPress, disabled, comum }) => (
     style={({ pressed }) => ({
       minHeight: sub ? 56 : 48, borderRadius: R.row, flexDirection: 'row',
       alignItems: 'center', justifyContent: 'center', gap: 8,
-      backgroundColor: disabled ? t.border : comum ? t.actBg : t.accent,
+      backgroundColor: disabled || comum ? t.actBg : t.accent,
       // A borda é o que separa o botão em tinta da folha onde está: a tinta a
-      // 10 % sozinha dava 1,1:1 contra o cartão. O cheio e o desactivado não a
-      // precisam — separam-se pela cor.
-      borderWidth: comum && !disabled ? 1 : 0,
-      borderColor: comum && !disabled ? t.actBrd : 'transparent',
+      // 10 % sozinha dava 1,1:1 contra o cartão. O cheio não a precisa —
+      // separa-se pela cor. No desactivado é tracejada: o estado diz-se pela
+      // forma, não pelo apagamento.
+      borderWidth: disabled || comum ? 1 : 0,
+      borderColor: disabled || comum ? t.actBrd : 'transparent',
+      borderStyle: disabled ? 'dashed' : 'solid',
       opacity: pressed ? 0.9 : 1, ...(disabled ? {} : elev(3)),
     })}>
     {icon ? <Icon name={icon} size={20} color={rotuloDo(t, { disabled, comum })} /> : null}

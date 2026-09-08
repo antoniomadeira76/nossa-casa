@@ -332,7 +332,7 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
           accessibilityRole="button" accessibilityLabel={`Apagar ${evento.title}`}
           style={({ pressed }) => ({ minHeight: 44, alignItems: 'center',
             justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
-          <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.state.err }}>
+          <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.state.errTexto }}>
             Apagar evento
           </Text>
         </Pressable>

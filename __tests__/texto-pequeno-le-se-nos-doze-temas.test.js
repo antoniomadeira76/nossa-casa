@@ -190,7 +190,12 @@ describe('⚠ e nenhum ecrã volta a pintar texto pequeno com o acento ou com um
     const FICAM = {
       'src/Confirm.jsx': /./,
       'src/ui.jsx': /PastilhaVisibilidade|Adultos|Família|infoDeep|warnDeep/,
-      'src/screens/Documentacao.jsx': /corrigido:/,
+      // Os distintivos do registo e a pastilha «Repete-se»: texto sobre o
+      // tijolo do estado, na mesma linha do `xBg`.
+      'src/screens/Documentacao.jsx': /corrigido:|alterado:/,
+      'src/sheets/ImportarGoogle.jsx': /Repete-se/,
+      // A linha da próxima consulta na ficha vive num tijolo `infoBg`.
+      'src/screens/FichaSaude.jsx': /infoDeep/,
       'src/screens/Equipamentos.jsx': /Garantia a Expirar/,
       'src/sheets/FichaEquipamento.jsx': /Garantia a Expirar|tom: t\.state\.warnDeep/,
       'src/screens/Perfil.jsx': /warnBg/,
@@ -203,6 +208,26 @@ describe('⚠ e nenhum ecrã volta a pintar texto pequeno com o acento ou com um
       linhas.forEach((l, i) => {
         if (!/t\.state\.(ok|err|warn|info)Deep/.test(l)) return;
         if (FICAM[rel] && FICAM[rel].test(l)) return;
+        maus.push(`${rel}:${i + 1} → ${l.trim().slice(0, 70)}`);
+      });
+    }
+    expect(maus).toEqual([]);
+  });
+
+  it('⚠ e a cor-BASE de um estado não é texto — é borda, ícone ou barra', () => {
+    // «Administrador» a `state.info` sobre o cartão dava 3,16 (Gestão,
+    // 08/09/2026). A base do estado passa 3:1 como objeto gráfico e não passa
+    // 4,5 como texto pequeno no claro. Texto é `xTexto`; sobre o tijolo, `xDeep`.
+    const maus = [];
+    for (const rel of jsx) {
+      const linhas = soCodigo(fs.readFileSync(path.join(RAIZ, rel), 'utf8'));
+      linhas.forEach((l, i) => {
+        // `t.state.x` e também `STATE.x` — a Saúde importa a paleta directamente,
+        // e a pastilha «Ação» a `STATE.warn` sobre `STATE.warnBg` dava 1,85.
+        const texto = /(?:\bcolor:|\bfg[:=])\s*(?:\{)?(?:[^,}]*\?\s*)?(?:t\.state|STATE)\.(ok|err|warn|info)\b(?![A-Za-z])/.test(l);
+        if (!texto) return;
+        if (/backgroundColor|borderColor|borderLeftColor|<Icon|<Bar\b|\bBar\b/.test(l)) return;
+        if (/<Icon\b/.test(linhas[i - 1] || '') && !/<Text/.test(linhas[i - 1] || '')) return;
         maus.push(`${rel}:${i + 1} → ${l.trim().slice(0, 70)}`);
       });
     }

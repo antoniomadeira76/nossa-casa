@@ -8,7 +8,12 @@ export default function NovoArtigo({ t, user, onClose }) {
   const { criarArtigo, seccoes } = useStore();
   const [form, setForm] = useState({
     label: '',
-    section: null,   // o NOME do corredor; nasce vazio e o primeiro é o predefinido
+    // ⚠ O primeiro corredor já ESCOLHIDO, como no protótipo (`itemDraft.s: 0`).
+    // Nascia a `null` e «o primeiro é o predefinido» ficava só no código: a
+    // folha abria com as quatro pastilhas brancas e o botão desactivado — nem
+    // uma cor do perfil à vista, e o dono da casa perguntou porquê. A escolha
+    // que a loja ia fazer em silêncio passa a estar visível, e muda-se.
+    section: seccoes[0] || null,
     staple: false,
     est: 0,
   });

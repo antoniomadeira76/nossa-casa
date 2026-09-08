@@ -51,8 +51,8 @@ const AVISOS = [...inicio.matchAll(/needs\.push\(\{([^;]*?)\}\)\)?;/g)].map(m =>
 const ESCALA = {
   't.text3': 't.faixa',
   't.state.warnTexto': 't.state.warn',
-  't.state.err': null,
-  't.state.info': null,
+  't.state.errTexto': 't.state.err',
+  't.state.infoTexto': 't.state.info',
 };
 
 describe('⚠ cada aviso está na escala, com as duas cores', () => {

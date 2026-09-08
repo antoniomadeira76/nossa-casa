@@ -174,7 +174,7 @@ export default function Documentacao({ t, onIr, podeGerir }) {
 
   const corDo = (k) => ({
     novo:      { fg: t.state.okTexto,   bg: t.state.okBg,   br: t.state.okBorder },
-    alterado:  { fg: t.state.info,     bg: t.state.infoBg, br: t.state.info },
+    alterado:  { fg: t.state.infoDeep, bg: t.state.infoBg, br: t.state.info },
     corrigido: { fg: t.state.warnDeep, bg: t.state.warnBg, br: t.state.warn },
   }[k] || { fg: t.text3, bg: t.subtle, br: t.border });
 

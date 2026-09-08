@@ -49,7 +49,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
   // isso é o App, que conhece a camada do servidor. Este ecrã não a importa:
   // um ecrã de apresentação que fala com a rede não se monta num teste sem
   // que alguém tenha de a simular primeiro.
-  if (agendaPorLigar) needs.push({ icon: 'calendar', color: t.state.info,
+  if (agendaPorLigar) needs.push({ icon: 'calendar', color: t.state.infoTexto, line: t.state.info,
     title: 'Agenda da Google por ligar',
     sub: 'Liga-se uma vez; depois os eventos vêm sozinhos',
     go: () => onLigarAgenda?.() });
@@ -79,7 +79,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
     sub: [...new Set(toConfirm.map(x => x.who))].join(', '), go: () => go('tarefas') });
   if (!acertado) needs.push({ icon: 'wallet', color: t.text3, line: t.faixa,
     title: 'Contas por acertar', sub: `${oNome(acerto.devedor)} deve ${EUR(settleBase)}`, go: () => go('dinheiro') });
-  tight.forEach(e => needs.push({ icon: 'warning', color: t.state.err,
+  tight.forEach(e => needs.push({ icon: 'warning', color: t.state.errTexto, line: t.state.err,
     title: `Envelope ${e.name} no limite`, sub: `${EUR(Math.max(0, e.limit - e.used))} disponíveis`, go: () => go('dinheiro') }));
   garantiasAExpirar().forEach(e => needs.push({ icon: 'idcard', color: t.state.warnTexto, line: t.state.warn,
     title: `Garantia a expirar · ${String(e.name).split(' ').slice(0, 2).join(' ')}`,
@@ -94,7 +94,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
       : d.dias === 0 ? 'Expira hoje'
       : `${d.dias === 1 ? 'Falta' : 'Faltam'} ${plural(d.dias, 'dia', 'dias')}`}`,
     go: () => (onFicha ? onFicha(d.member) : onSaude()) }));
-  consultasProximas(user).forEach(c => needs.push({ icon: 'heartPulse', color: t.state.info,
+  consultasProximas(user).forEach(c => needs.push({ icon: 'heartPulse', color: t.state.infoTexto, line: t.state.info,
     title: `Consulta · ${c.member}`,
     sub: `${c.specialty} · ${dayLabel(c.day)} às ${c.time}`,
     go: () => (onFicha ? onFicha(c.member) : onSaude()) }));

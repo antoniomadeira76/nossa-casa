@@ -55,9 +55,15 @@ const ESTADOS = (t) => [
     'O rótulo é 15 px a 700 — não é texto grande em norma nenhuma.'],
   ['comum', t.actFg, t.actBg, 4.5,
     'Mesmo tamanho, mesmo peso, mesmo mínimo — e agora na cor do esquema.'],
-  ['desactivado', t.text3, t.border, 3,
+  // ⚠ Era `text3` sobre `border` — cinzento — com o piso a 3:1. Desde
+  // 08/09/2026 o desactivado é a MESMA tinta do comum, com a borda tracejada:
+  // o dono da casa abriu a folha do artigo e não viu uma cor do perfil em lado
+  // nenhum, porque o botão nasce desactivado. O estado diz-se pela forma (o
+  // tracejado, sem relevo), não pelo apagamento — e o rótulo passa a ler-se a
+  // 4,5, como o comum, porque é a mesma cor sobre o mesmo fundo.
+  ['desactivado', t.actFg, t.actBg, 4.5,
     'A WCAG isenta um controlo inactivo, e uma palavra que não se lê não é '
-    + 'isenção de nada. 3:1 é o piso: apagado, e legível.'],
+    + 'isenção de nada — e é esta a que diz o que FALTA («Escreva um valor»).'],
 ];
 
 describe.each(TEMAS)('%s', (nome, t) => {
@@ -104,29 +110,36 @@ describe('⚠ o `ui.jsx` continua a usar estes tokens, e não outros', () => {
   const fs = require('fs');
   const path = require('path');
   const ui = fs.readFileSync(path.join(__dirname, '..', 'src', 'ui.jsx'), 'utf8');
-  const bloco = ui.slice(ui.indexOf('const rotuloDo'), ui.indexOf('export const AddButton'));
+  // ⚠ Só o `Primary` — até ao «Botão compacto», que tem o seu `disabled ?
+  // t.border` legítimo — e SEM comentários: o comentário do `rotuloDo` diz
+  // «o text3 sobre o cinzento dava 3,43», e um guarda que proíbe documentar o
+  // defeito é a classe 20 do registo desta casa.
+  const bloco = ui.slice(ui.indexOf('const rotuloDo'), ui.indexOf('// ── Botão compacto'))
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n').filter(l => !/^\s*(\/\/|\*)/.test(l)).join('\n');
 
-  it('o rótulo desactivado é o `text3`, e é o PRIMEIRO ramo', () => {
-    // A ordem importa: `disabled` tem de ganhar ao `comum`, senão um botão
-    // comum desactivado volta ao `page` sobre o cinzento.
-    expect(bloco).toMatch(/disabled \? t\.text3/);
+  it('⚠ o desactivado leva a MESMA tinta do comum — `actFg` sobre `actBg`', () => {
+    // Era `disabled ? t.text3` sobre `t.border`: um botão cinzento numa folha
+    // onde nada mais tinha a cor do perfil.
+    expect(bloco).toMatch(/disabled \|\| comum \? t\.actFg : '#FFFFFF'/);
+    expect(bloco).toMatch(/backgroundColor: disabled \|\| comum \? t\.actBg : t\.accent/);
+    expect(bloco).not.toMatch(/t\.text3/);
+    expect(bloco).not.toMatch(/disabled \? t\.border/);
   });
 
-  it('⚠ o comum é `actFg` sobre `actBg`, com a borda `actBrd`', () => {
-    expect(bloco).toMatch(/comum \? t\.actFg/);
-    expect(bloco).toMatch(/comum \? t\.actBg : t\.accent/);
-    expect(bloco).toMatch(/borderColor: comum && !disabled \? t\.actBrd/);
-    // E nunca mais `text1`: era o preto.
+  it('⚠ e diz o estado pela FORMA: borda tracejada, sem relevo', () => {
+    expect(bloco).toMatch(/borderColor: disabled \|\| comum \? t\.actBrd/);
+    expect(bloco).toMatch(/borderStyle: disabled \? 'dashed' : 'solid'/);
+    expect(bloco).toMatch(/\.\.\.\(disabled \? \{\} : elev\(3\)\)/);
+  });
+
+  it('o comum nunca mais é `text1` nem `page` — era o preto', () => {
     expect(bloco).not.toMatch(/comum \? t\.text1/);
     expect(bloco).not.toMatch(/comum \? t\.page/);
   });
 
   it('o acento leva branco', () => {
     expect(bloco).toMatch(/: '#FFFFFF'/);
-  });
-
-  it('e o fundo desactivado é o `border`', () => {
-    expect(bloco).toMatch(/backgroundColor: disabled \? t\.border/);
   });
 
   it('⚠ o alfa da consequência não se aplica ao desactivado', () => {

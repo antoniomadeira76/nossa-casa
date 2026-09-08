@@ -45,7 +45,12 @@ export default function FichaEquipamento({ t, equip, onClose }) {
 
   // Botão de ação: preenchido para a ação principal, contorno para as outras.
   const Acao = ({ label, icone, onPress, preenchido, perigo, desativado, porque }) => {
-    const tom = perigo ? t.state.err : t.accent;
+    // ⚠ Dois tons, não um. O contorno e o ícone são objetos gráficos (3:1) e
+    // levam a cor-base do estado ou o `titulo`; o RÓTULO é texto de 15 px e
+    // leva o `xTexto` ou o `actFg` — «Remover Equipamento» a #FF4D4F sobre a
+    // folha dava 3,27, e o acento como texto dava 2,50 no escuro.
+    const tomGrafico = perigo ? t.state.err : t.titulo;
+    const tomTexto = perigo ? t.state.errTexto : t.actFg;
     return (
       <View style={{ gap: 4 }}>
         <Pressable onPress={desativado ? undefined : onPress} accessibilityRole="button"
@@ -54,12 +59,12 @@ export default function FichaEquipamento({ t, equip, onClose }) {
             minHeight: 48, borderRadius: R.row, borderWidth: 1,
             flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.md,
             backgroundColor: desativado ? t.subtle : preenchido ? t.state.infoBg : t.surface,
-            borderColor: desativado ? t.border : preenchido ? t.state.infoBg : tom,
+            borderColor: desativado ? t.border : preenchido ? t.state.infoBg : tomGrafico,
             opacity: pressed ? 0.85 : 1,
           })}>
-          <Icon name={icone} size={20} color={desativado ? t.text3 : tom} />
+          <Icon name={icone} size={20} color={desativado ? t.text3 : tomGrafico} />
           <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700',
-            color: desativado ? t.text3 : tom }}>{label}</Text>
+            color: desativado ? t.text3 : tomTexto }}>{label}</Text>
         </Pressable>
         {desativado && porque ? (
           <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3, textAlign: 'center' }}>

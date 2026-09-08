@@ -50,7 +50,7 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
                 <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>
                   {proxima.specialty}{proxima.doctor ? ` · ${proxima.doctor}` : ''}
                 </Text>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.info }}>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.infoDeep }}>
                   {whenLabel(proxima)}
                   {daysUntil(proxima.day) > 0
                     ? ` · faltam ${plural(daysUntil(proxima.day), 'dia', 'dias')}` : ''}

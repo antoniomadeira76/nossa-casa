@@ -266,7 +266,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                 mesma linha e obrigava a adivinhar onde tocar (erro #6 do
                 CLAUDE.md). */}
             {needsDec && (
-              <Pill label="Ação" bg={STATE.warnBg} fg={STATE.warn} border={STATE.warn} />
+              <Pill label="Ação" bg={STATE.warnBg} fg={STATE.warnDeep} border={STATE.warn} />
             )}
             <Icon name={expanded ? 'caretUp' : 'caretDown'} size={20} color={t.text3} />
           </Pressable>
@@ -298,7 +298,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                               </Text>
                             )}
                             <Text style={{
-                              fontFamily: FONT.ui, fontSize: 11, color: isExpired ? STATE.err : isWarning ? STATE.warn : t.text3,
+                              fontFamily: FONT.ui, fontSize: 11, color: isExpired ? t.state.errTexto : isWarning ? t.state.warnTexto : t.text3,
                               fontWeight: isWarning || isExpired ? '600' : '400',
                             }}>
                               {/* ⚠ Pelo `dataDaReceita`, e não cru. O campo
@@ -330,7 +330,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                               onPress={() => setRecipeDecision(record.id, recipe.id, 'guardada')} />
                           )}
                           {recipe.decision && (
-                            <Pill label={recipe.decision} bg={STATE.okBg} fg={STATE.ok} border={STATE.ok} />
+                            <Pill label={recipe.decision} bg={STATE.okBg} fg={t.state.okTexto} border={STATE.ok} />
                           )}
                         </View>
                       </View>
@@ -571,7 +571,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
               {/* Decisão/Ação necessária */}
               {needsDec && (
                 <View style={{ gap: S.md, padding: S.md, backgroundColor: t.card, borderRadius: R.row, borderLeftWidth: 3, borderLeftColor: STATE.warn }}>
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: STATE.warn }}>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.state.warnTexto }}>
                     Precisa de ação
                   </Text>
                   {/* ⚠ Duas faces da MESMA pergunta, e por isso um
@@ -635,7 +635,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                         Sem esta pastilha, uma fotografia que ficou só no
                         telemóvel parecia estar guardada em casa. */}
                     {d.foto && d.porSubir ? (
-                      <Pill label="só aqui" bg={STATE.warnBg} fg={STATE.warn} border={STATE.warn} />
+                      <Pill label="só aqui" bg={STATE.warnBg} fg={STATE.warnDeep} border={STATE.warn} />
                     ) : null}
                   </View>
                 ))}
@@ -761,7 +761,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                         {plural(n, 'consulta', 'consultas')} · {plural(d, 'documento', 'documentos')}
                       </Text>
                       {prox ? (
-                        <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.state.info }}>
+                        <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.state.infoTexto }}>
                           A seguir: {prox.specialty} · {dayLabel(prox.day).replace('Hoje · ', 'Hoje, ')}
                         </Text>
                       ) : null}
