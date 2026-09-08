@@ -53,6 +53,18 @@ Cada prova tenta o que a `docs/seguranca.html` diz que não pode acontecer e fal
 **passar**. Antes de mexer nas coleções, corra-as; depois de mexer, corra-as outra vez.
 `db/README.md` explica cada decisão.
 
+⚠ **Um campo novo precisa de DOIS sítios.** O `criar-colecoes.mjs` é a verdade de como a base
+se constrói do zero — e para o ser **apaga tudo e recria**. Numa casa com dados, correr esse
+ficheiro é perder a casa. Declare o campo lá e acrescente-o à tabela do `acrescentar-campos.mjs`:
+
+```
+npm run db:campos     # idempotente, e confere que os campos ficaram lá
+```
+
+Já falhou três vezes por esta ordem: o `membros.avatar`, o `artigos.corredor`, o `artigos.posto`.
+O PocketBase aceita um `update` e **ignora em silêncio** o campo que não conhece — uma escrita
+que não se lê de volta passa por boa.
+
 `src/pocketbase.js` é a camada de ligação. Sem `EXPO_PUBLIC_PB_URL` definido, a app corre
 local como sempre correu — a ligação é opcional, não um pré-requisito.
 

@@ -224,7 +224,11 @@ describe('e nenhum ecrã volta a ficar sem ser desenhado', () => {
   const path = require('path');
   const raiz = path.join(__dirname, '..');
 
-  it('todos os 24 são montados por alguma prova', () => {
+  // ⚠ E o título não diz um número. Dizia «todos os 24», e um ecrã novo fazia
+  // falhar a leitura do título antes de a prova falhar por bem: quem contava
+  // 25 mudava o 24 e ficava a pensar que era isso. A propriedade é «nenhum
+  // fica de fora», e o número é a contagem de hoje.
+  it('todos são montados por alguma prova', () => {
     const ecras = [];
     for (const d of ['src/screens', 'src/sheets']) {
       for (const f of fs.readdirSync(path.join(raiz, d))) {

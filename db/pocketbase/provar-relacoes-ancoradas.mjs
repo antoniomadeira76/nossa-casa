@@ -174,6 +174,7 @@ const leo  = await mk(casa, 'Leo',  'crianca', { ...s('1357') });
 const nela = await mk(outra, 'Vizinha', 'admin', { email: 'viz-anc@x.pt', ...s('palavra-longa-9') });
 
 const cVizinha = new PocketBase(URL);
+cVizinha.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
 await cVizinha.collection('membros').authWithPassword('viz-anc@x.pt', 'palavra-longa-9');
 
 // As nossas linhas, para ela tentar apontar-lhes.

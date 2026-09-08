@@ -141,6 +141,7 @@ console.log('\n── e quem pode escrever no cofre ──');
 
 await prova('⚠ uma criança não escreve no seu próprio cofre', async () => {
   const doLeo = new PocketBase(URL);
+  doLeo.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await doLeo.collection('membros').authWithPassword(leo.login, '1357');
   let passou = false;
   try {
@@ -156,6 +157,7 @@ await prova('⚠ e um movimento não se ALTERA depois de escrito', async () => {
   // `updateRule: null`. Se se pudesse alterar, os pontos pagos deixavam de ser
   // um livro aditivo e voltavam a ser um número que alguém corrige.
   const daRitaPb = new PocketBase(URL);
+  daRitaPb.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await daRitaPb.collection('membros').authWithPassword('rita-pts@x.pt', 'palavra-longa-1');
   const linha = (await daRitaPb.collection('cofre_movimentos').getFullList())
     .find(m => m.casa === casa.id);

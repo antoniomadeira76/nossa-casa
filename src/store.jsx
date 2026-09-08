@@ -272,7 +272,7 @@ const BACKUPS_ANTIGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(n => `${KEY}.ant
 const DATA_KEYS = [
   'done', 'pending', 'status', 'registered', 'gastoLocal', 'acertoMovs', 'partilhasPagas', 'despesasMeias', 'gastoPorEnvelope', 'vaultMoves', 'paidPts',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
-  'newItems', 'itemGone', 'feitas', 'listasIds', 'envelopesDaCasa', 'seccoesDaCasa', 'mes',
+  'newItems', 'itemGone', 'itemEdits', 'itemOrder', 'feitas', 'listasIds', 'envelopesDaCasa', 'seccoesDaCasa', 'mes',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'pointValue', 'payDay', 'splitHalf',
@@ -619,7 +619,8 @@ export const DEMO = () => ({
   // que permite DESMARCAR: sem o id da linha não há o que apagar do outro lado.
   feitas: {},
   pontosDeTarefasApagadas: [],
-  newItems: [], itemGone: {}, newEquip: [], equipGone: {}, equipEdits: {},
+  newItems: [], itemGone: {}, itemEdits: {}, itemOrder: {},
+  newEquip: [], equipGone: {}, equipEdits: {},
   schemeByUser: {}, themeByUser: {},
   notif: { digest: true, hour: '20:00', lead: 1 },
   rotate: {},
@@ -1015,13 +1016,19 @@ export function StoreProvider({ children }) {
       // É a mesma forma dos «saldos escritos» do INVARIANTE #2, virada ao
       // contrário: aqui não é um total que não se recalcula, é uma ausência que
       // não se propaga. Quem manda na lista ABERTA é o servidor.
+      //
+      // ⚠ E o `itemOrder` SUBSTITUI o local, como o `taskOrder` das tarefas e
+      // pela mesma razão: os postos são relativos, e fundir os do servidor com
+      // os deste telefone dá dois números iguais no mesmo corredor e uma lista
+      // que salta de cada vez que se lê.
       set(x => (casa.shopPlan
         ? {
           newItems: casa.newItems,
+          itemOrder: casa.itemOrder || {},
           status: casa.status || {},
           shopPlan: { ...x.shopPlan, ...casa.shopPlan },
         }
-        : { newItems: [], status: {}, shopPlan: null }));
+        : { newItems: [], itemOrder: {}, status: {}, shopPlan: null }));
 
       // ⚠ O histórico das idas vem à parte da lista ABERTA, e é de propósito:
       // entre duas idas não há lista aberta nenhuma — `casa.shopPlan` é nulo — e
@@ -1493,7 +1500,34 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     return null;
   };
 
-  const allItems = () => [...(s.clearedSeeds ? [] : ITEMS), ...s.newItems].filter(i => !s.itemGone[i.id]);
+  // ── Os artigos da lista de compras ──────────────────────────────────────
+  //
+  // ⚠ As alterações vivem num mapa `itemEdits`, e não escritas por cima do
+  // artigo: uma SEMENTE do `data.js` não se pode alterar — é uma constante do
+  // módulo. É a mesma forma do `taskEdits` e do `equipEdits`, e pela mesma
+  // razão.
+  //
+  // ⚠ E a ordem DENTRO do corredor é a que a mão deu, pelo `itemOrder`. Sem
+  // posto, o artigo ordena-se pela ordem de criação — que é a que a lista já
+  // tinha, é estável, e impede a lista de saltar sozinha entre desenhos.
+  //
+  // `Infinity - Infinity` é `NaN`, e um comparador que devolve NaN deixa a
+  // ordenação por conta do motor: a lista sai numa ordem qualquer. Dois sem
+  // posto EMPATAM, e o empate resolve-se no critério seguinte. Custou uma
+  // lista de tarefas a saltar sozinha para eu escrever isto duas vezes.
+  const postoDoArtigo = (i) => {
+    const n = (s.itemOrder || {})[i.id];
+    return typeof n === 'number' ? n : Infinity;
+  };
+  const allItems = () => [...(s.clearedSeeds ? [] : ITEMS), ...s.newItems]
+    .filter(i => !s.itemGone[i.id])
+    .map(i => ({ ...i, ...((s.itemEdits || {})[i.id] || {}) }))
+    .map((i, ordem) => ({ ...i, _criacao: ordem }))
+    .sort((a, b) => {
+      const x = postoDoArtigo(a), y = postoDoArtigo(b);
+      return (x === y ? 0 : x - y) || a._criacao - b._criacao;
+    })
+    .map(({ _criacao, ...i }) => i);
 
   // Apagar um artigo da lista de compras.
   //
@@ -2284,6 +2318,153 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         .catch(() => {});
     }
     return id;
+  };
+
+  // ── Alterar um artigo ───────────────────────────────────────────────────
+  //
+  // Havia criar e apagar, e mais nada: escrever «Leite meio-gordo» em vez de
+  // «Leite» era apagar e voltar a escrever, e com isso perdia-se o lugar dele
+  // no corredor e o estado desta ida.
+  //
+  // ⚠ Vai para um mapa `itemEdits` e não por cima do artigo, porque as
+  // sementes do `data.js` são uma constante do módulo. Ver o `allItems`.
+  //
+  // Os campos são os MESMOS que a folha de criar oferece — rótulo, corredor,
+  // estimativa, habitual. Nem mais um: o `by` é a frase debaixo do rótulo e o
+  // servidor é que a compõe, na leitura; escrevê-la aqui era ficar com duas
+  // versões da mesma linha.
+  const alterarArtigo = (id, campos = {}) => {
+    const artigo = allItems().find(a => a.id === id);
+    if (!artigo) return 'Esse artigo não existe nesta lista.';
+
+    const mudanca = { ...campos };
+    if (mudanca.label !== undefined) {
+      const rotulo = String(mudanca.label || '').trim();
+      if (!rotulo) return 'O artigo precisa de um nome.';
+      mudanca.label = rotulo;
+    }
+    if (mudanca.s !== undefined && !seccoes.includes(mudanca.s)) {
+      return 'Esse corredor não existe nesta casa.';
+    }
+
+    // ── Mudar de corredor põe o artigo no FIM do corredor novo ──────────────
+    //
+    // O posto é o lugar DENTRO do corredor, e levá-lo consigo punha o artigo a
+    // meio do corredor novo sem que ninguém o tivesse posto lá.
+    //
+    // ⚠ E limpá-lo não bastava — foi o que uma prova apanhou. Sem posto, o
+    // artigo ordena-se pela ordem de CRIAÇÃO, e um artigo antigo cai a meio do
+    // corredor novo exactamente como se tivesse trazido o número: medido, a
+    // banana passou para os «Frescos» e entrou à frente da manteiga.
+    //
+    // Portanto escreve-se a ordem do corredor de destino INTEIRO, com o
+    // recém-chegado no fim — a mesma volta do `reordenarArtigos`, e pela mesma
+    // razão: os postos são relativos, e escrever só um deixa o resto empatado.
+    const mudouDeCorredor = mudanca.s !== undefined && mudanca.s !== artigo.s;
+    const noDestino = mudouDeCorredor
+      ? [...allItems().filter(a => a.s === mudanca.s && a.id !== id).map(a => a.id), id]
+      : [];
+
+    set(x => ({
+      itemEdits: { ...(x.itemEdits || {}), [id]: { ...((x.itemEdits || {})[id] || {}), ...mudanca } },
+      ...(mudouDeCorredor
+        ? {
+          itemOrder: {
+            ...(x.itemOrder || {}),
+            ...Object.fromEntries(noDestino.map((k, i) => [k, i + 1])),
+          },
+        }
+        : {}),
+    }));
+
+    const paraOServidor = {
+      ...(mudanca.label !== undefined ? { rotulo: mudanca.label } : {}),
+      ...(mudanca.s !== undefined ? { corredor: seccaoNoServidor(mudanca.s) } : {}),
+      ...(mudanca.est !== undefined ? { estimativa: mudanca.est } : {}),
+      ...(mudanca.staple !== undefined ? { habitual: mudanca.staple } : {}),
+    };
+
+    if (!sync) return null;
+
+    // ⚠ UMA escrita por linha, e o artigo que muda de corredor leva o posto
+    // consigo. Eram duas — a alteração e, no mesmo tique, a ordem do corredor
+    // de destino — e as duas caíam na MESMA linha do servidor.
+    //
+    // Medido com a casa a sério: as bananas apareciam na Mercearia no ecrã e
+    // continuavam nos «Frescos» no servidor. O SDK do PocketBase cancela um
+    // pedido pendente quando lhe chega outro com a mesma chave, e a primeira
+    // escrita — a do corredor — era abortada em silêncio. O
+    // `autoCancellation(false)` do `src/pocketbase.js` fecha a porta; escrever
+    // uma vez por linha é não bater nela.
+    if (mudouDeCorredor) {
+      noDestino.forEach((k, i) => {
+        const sid = artigoNoServidor(k);
+        if (!sid) return;
+        sync.alterarArtigo(sid, {
+          ...(k === id ? paraOServidor : {}),
+          posto: i + 1,
+        }).catch(() => {});
+      });
+      return null;
+    }
+
+    const noServidor = artigoNoServidor(id);
+    if (noServidor && Object.keys(paraOServidor).length) {
+      sync.alterarArtigo(noServidor, paraOServidor).catch(() => {});
+    }
+    return null;
+  };
+
+  // ── A ordem dos artigos dentro do corredor ──────────────────────────────
+  //
+  // A mesma forma do `reordenarTarefas`, e o grupo aqui é o CORREDOR: a lista
+  // do Modo Compras leva a pessoa de corredor em corredor, e dentro de cada um
+  // a ordem é a que a mão deu. Arrastar não muda de corredor — isso é a folha
+  // de gestão, com o nome do corredor à vista.
+  const reordenarArtigos = (ids) => {
+    const lista = (Array.isArray(ids) ? ids : []).filter(Boolean);
+    if (lista.length < 2) return null;                  // nada a reordenar
+    if (new Set(lista).size !== lista.length) return 'O mesmo artigo aparece duas vezes na ordem.';
+
+    const todos = allItems();
+    const porId = new Map(todos.map(a => [a.id, a]));
+    if (lista.some(id => !porId.has(id))) return 'Esse artigo não existe nesta lista.';
+
+    const corredores = new Set(lista.map(id => porId.get(id).s));
+    if (corredores.size > 1) return 'A ordem só se muda dentro do mesmo corredor.';
+    const corredor = [...corredores][0];
+
+    // ⚠ A vista pode mostrar só parte do corredor, e então `lista` é um
+    // SUBCONJUNTO dele. Escrever postos só ao subconjunto deixava o resto sem
+    // posto, e esse resto saltava para o fim. Percorre-se o corredor INTEIRO e,
+    // em cada lugar que era de uma das arrastadas, entra a seguinte da ordem
+    // nova; quem não estava à vista fica onde estava. É a mesma volta do
+    // `reordenarTarefas`, e é por isso que reordenar uma página não desarruma
+    // a outra.
+    const grupo = todos.filter(a => a.s === corredor).map(a => a.id);
+    const fila = [...lista];
+    const nova = grupo.map(id => (lista.includes(id) ? fila.shift() : id));
+
+    // Os postos contam de UM dos dois lados: no servidor porque um `number` não
+    // é anulável e o zero faz de «sem posto», e aqui para os dois mapas terem
+    // os mesmos números.
+    set(x => ({
+      itemOrder: {
+        ...(x.itemOrder || {}),
+        ...Object.fromEntries(nova.map((id, i) => [id, i + 1])),
+      },
+    }));
+
+    // E vai para o servidor, porque a ordem é da CASA: sem isto a Rita
+    // arrastava o leite para cima e o Tomás continuava a vê-lo em terceiro.
+    // Escreve-se o corredor INTEIRO, e não só os arrastados: os postos são
+    // relativos, e dois números iguais no mesmo corredor desempatam-se pela
+    // ordem de criação — a lista saltava sozinha na leitura seguinte.
+    if (sync) {
+      const ids = nova.map(id => artigoNoServidor(id)).filter(Boolean);
+      if (ids.length === nova.length) sync.reordenarArtigos(ids).catch(() => {});
+    }
+    return null;
   };
 
   // Marcar um artigo: por comprar → apanhado → sem stock. Três estados, não
@@ -4225,7 +4406,8 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     removerTarefa, criarTarefa, editarTarefa, tarefaNoServidor, mudarRegraDaCasa, mudarListaDaCasa,
     moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope, registarDespesa,
     criarEvento, alterarEventoDaCasa, eventoNoServidor, escoarFilaGoogle,
-    criarArtigo, marcarArtigo, artigoNoServidor, mudarPlanoDeCompras, fecharIdaAsCompras,
+    criarArtigo, alterarArtigo, reordenarArtigos,
+    marcarArtigo, artigoNoServidor, mudarPlanoDeCompras, fecharIdaAsCompras,
     seccoes, criarSeccao, alterarSeccao, apagarSeccao, reordenarSeccoes,
     criarEquipamento, equipNoServidor, mudarPreferencia,
     abrirMes, fecharMes, mudarLimiteDoMes,

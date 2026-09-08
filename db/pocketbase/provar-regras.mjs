@@ -42,6 +42,7 @@ await admin.collection('envelopes').create({ casa: outraCasa.id, nome: 'Merceari
 // ── Provas ───────────────────────────────────────────────────────────────────
 const como = async (identidade, senha) => {
   const c = new PocketBase(URL);
+  c.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await c.collection('membros').authWithPassword(identidade, senha);
   return c;
 };

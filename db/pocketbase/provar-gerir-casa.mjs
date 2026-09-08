@@ -44,6 +44,7 @@ const recusa = async (o_que, fn) => {
 
 const comoMembro = async (identidade, senha) => {
   const c = new PocketBase(URL);
+  c.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await c.collection('membros').authWithPassword(identidade, senha);
   return c;
 };
@@ -84,6 +85,7 @@ await prova('a administração acrescenta uma criança, com PIN', async () => {
 
 await prova('a criança nova entra com o seu PIN', async () => {
   const c = new PocketBase(URL);
+  c.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await c.collection('membros').authWithPassword(`${casa.id}_dina`, '3691');
   igual(c.authStore.record.nome, 'Dina');
 });
@@ -157,6 +159,7 @@ await prova('a administração muda o nome, e o login acompanha', async () => {
 
 await prova('a criança entra com o login novo, e não com o antigo', async () => {
   const c = new PocketBase(URL);
+  c.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await c.collection('membros').authWithPassword(`${casa.id}_diana`, '3691');
   igual(c.authStore.record.nome, 'Diana');
   await recusa('entrar com o login antigo', () =>

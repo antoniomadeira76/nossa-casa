@@ -8,7 +8,9 @@ import { Card, SectionTitle, Label, AddButton, usePaged, Tap, Tile, Avatar, avat
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
+import ListaArrastavel, { ATRASO_PARA_PEGAR } from '../ListaArrastavel';
 import NovoArtigo from '../sheets/NovoArtigo';
+import GerirArtigo from '../sheets/GerirArtigo';
 
 // A lista partilhada. O modo de loja saiu daqui para ModoCompras.jsx: era um
 // <Modal>, que no react-native-web escapa à raiz da app e tapava o rodapé.
@@ -23,6 +25,7 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
   const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas, removerArtigo, marcarArtigo, mudarPlanoDeCompras, seccoes } = st;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [aApagar, setAApagar] = useState(null);
+  const [gerir, setGerir] = useState(null);   // id do artigo com a folha aberta
 
   // ── Dois adultos na mesma loja ────────────────────────────────────────────
   //
@@ -43,6 +46,7 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
   // O artigo que está a ser apagado — a pergunta tem de continuar a saber de
   // qual fala depois de a lista já não o ter.
   const aApagarArtigo = items.find(i => i.id === aApagar);
+  const aGerir = items.find(i => i.id === gerir);
   const doneItems = items.filter(i => stateOf(i) === 'done');
   const loja = st.lojaDoPlano();
 
@@ -226,26 +230,46 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
             <SectionTitle t={t} right={
               <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>{plural(rows.length, 'artigo', 'artigos')}</Text>
             }>{sec}</SectionTitle>
-            <View style={{ gap: S.md }}>
-              {rows.map(i => {
+            {/* ⚠ A ordem dentro do corredor é a que a mão dá. A pressão longa
+                arma o arrasto e o artigo nunca sai do seu corredor — o
+                corredor manda nos grupos, como a urgência manda nos das
+                tarefas, e mudar de corredor faz-se na folha de gestão, com o
+                nome do corredor à vista.
+
+                Uma `ListaArrastavel` por corredor, e não uma para a lista
+                toda: as secções são blocos com título pelo meio, e um só
+                responsável ao longo de todos eles media o passo por cima dos
+                títulos. Com uma por corredor, o `grupoDe` é constante e as
+                fronteiras são as do bloco. */}
+            <ListaArrastavel
+              itens={rows}
+              grupoDe={() => sec}
+              espaco={S.md}
+              aoLargar={(ids) => st.reordenarArtigos(ids)}
+              render={(i, { arrastando, armar }) => {
                 const done = stateOf(i) === 'done';
                 return (
                   <Card key={i.id} t={t} style={{
-                    borderWidth: done ? 2 : 1,
-                    borderColor: done ? t.state.okBorder : t.border,
+                    borderWidth: arrastando ? 2 : done ? 2 : 1,
+                    borderColor: arrastando ? t.accent : done ? t.state.okBorder : t.border,
                     backgroundColor: done ? t.state.okBg : t.card,
                   }}>
-                    {/* A LINHA alterna apanhado/por apanhar; o caixote é um
-                        alvo à parte, na borda. É o mesmo idioma das Tarefas,
-                        onde a linha marca a tarefa e o lápis abre a gestão.
+                    {/* A LINHA alterna apanhado/por apanhar; o lápis abre a
+                        gestão. É o mesmo idioma das Tarefas, e o caixote saiu
+                        daqui para dentro da folha: com o lápis a chegar, a
+                        linha ficava com três alvos, e o erro #6 do CLAUDE.md
+                        é exactamente esse — uma linha, um destino.
 
-                        Não é a pílula tocável dentro da linha tocável do erro
-                        #6 do CLAUDE.md — essa ficava a meio e obrigava a
-                        adivinhar onde se tinha tocado. Este está encostado à
-                        direita, com 44 de alvo, e é o último elemento. */}
+                        ⚠ É o `onLongPress` DESTA linha que arma o arrasto.
+                        Não há alça, como nas tarefas e pela mesma razão: uma
+                        alça era um terceiro alvo. O toque curto continua a
+                        marcar o artigo — a `ListaArrastavel` só toma conta do
+                        dedo depois de estar armada. */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
                       <Pressable onPress={() => toggle(i.id)} accessibilityRole="button"
+                        onLongPress={() => armar(i.id)} delayLongPress={ATRASO_PARA_PEGAR}
                         accessibilityLabel={i.label}
+                        accessibilityHint="Mantenha premido para mudar a ordem dentro do corredor"
                         style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
                         <Icon name={done ? 'checkCircle' : 'infoCircle'} size={24} color={done ? t.state.ok : t.text3} />
                         <View style={{ flex: 1, gap: 2 }}>
@@ -257,14 +281,14 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
                           {done ? EUR(i.real || i.est) : `~ ${EUR(i.est)}`}
                         </Text>
                       </Pressable>
-                      <Tap onPress={() => setAApagar(i.id)} label={`Apagar ${i.label}`}>
-                        <Icon name="trash" size={18} color={t.text3} />
+                      <Tap onPress={() => setGerir(i.id)} label={`Gerir ${i.label}`} size={44}>
+                        <Icon name="edit" size={20} color={t.text3} />
                       </Tap>
                     </View>
                   </Card>
                 );
-              })}
-            </View>
+              }}
+            />
           </View>
         );
       })}
@@ -278,8 +302,21 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
           title={`Apagar «${aApagarArtigo.label}»?`}
           message="O artigo sai da lista. Os preços que a casa já registou para ele ficam — a comparação entre lojas não se perde."
           confirmLabel="Apagar"
-          onConfirm={() => { removerArtigo(aApagar); setAApagar(null); }}
+          onConfirm={() => { removerArtigo(aApagar); setAApagar(null); setGerir(null); }}
           onCancel={() => setAApagar(null)} />
+      ) : null}
+
+      {/* Alterar o artigo: o rótulo, o corredor, a estimativa, o habitual — os
+          mesmos quatro campos com que ele foi criado. Havia criar e apagar, e
+          mais nada: mudar o nome era apagar e voltar a escrever, e com isso
+          perdia-se o lugar dele no corredor e o estado desta ida. */}
+      {aGerir ? (
+        <Sheet t={t} title={aGerir.label} sub={`Corredor · ${aGerir.s}`}
+          onClose={() => setGerir(null)}>
+          <GerirArtigo t={t} artigo={aGerir}
+            onApagar={() => setAApagar(aGerir.id)}
+            onClose={() => setGerir(null)} />
+        </Sheet>
       ) : null}
 
       <AddButton t={t} label="acrescentar artigo" onPress={() => setSheetOpen(true)} />

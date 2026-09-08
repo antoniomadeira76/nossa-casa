@@ -571,6 +571,17 @@ export async function puxarCasa() {
       : nomeDoMembro[a.pedido_por] ? `Adicionado por ${nomeDoMembro[a.pedido_por]}` : '',
   }));
 
+  // A ordem que a mão deu aos artigos dentro do corredor. ⚠ Só entra quem tem
+  // posto: um `number` do PocketBase nasce a zero em todas as linhas que já
+  // existiam, e zero quer dizer «nunca foi arrastado». Sem este filtro a lista
+  // inteira ficava empatada em primeiro e saía por ordem qualquer — foi o que
+  // aconteceu às tarefas, e está escrito no campo delas.
+  const itemOrder = {};
+  for (const a of artigosDaLista) {
+    const posto = Number(a.posto);
+    if (Number.isFinite(posto) && posto > 0) itemOrder[a.id] = posto;
+  }
+
   // ⚠ O `estado` vem DA LINHA de cada artigo, e não de uma lista à parte. É
   // isso que faz dois telefones na mesma loja fundirem-se em vez de se
   // anularem — o comentário da coleção `artigos` já o dizia antes de eu o
@@ -686,6 +697,7 @@ export async function puxarCasa() {
     envelopesDaCasa,
     envMove,
     newItems,
+    itemOrder,
     status,
     shopPlan,
     shopHistory,
@@ -977,10 +989,23 @@ export async function reordenarSeccoes(ids) {
     servidor.pb.collection('seccoes').update(id, { posto: i + 1 }).catch(() => null)));
 }
 
-// E o corredor de um artigo, quando ele muda de sítio.
+// E o corredor de um artigo, quando ele muda de sítio. ⚠ Pelo `alterarArtigo`,
+// e não com uma escrita própria: o corredor é um dos campos que ele já traduz,
+// e dois sítios a escrever o mesmo campo é a classe de defeito que pôs o
+// «sem stock» com duas grafias.
 export async function mudarCorredor(idNoServidor, idDoCorredor) {
-  if (!ligado() || !idNoServidor) return { pendente: true };
-  return servidor.pb.collection('artigos').update(idNoServidor, { corredor: idDoCorredor || null });
+  return alterarArtigo(idNoServidor, { corredor: idDoCorredor || null });
+}
+
+// A ordem dos artigos DENTRO do corredor, de uma vez.
+//
+// ⚠ Os postos contam de UM, como nas tarefas e nas secções: um `number` do
+// PocketBase não é anulável, o zero é que faz de «sem posto», e um campo novo
+// nasce a zero em todas as linhas que já existem.
+export async function reordenarArtigos(ids) {
+  if (!ligado()) return { pendente: true };
+  return Promise.all((ids || []).map((id, i) =>
+    servidor.pb.collection('artigos').update(id, { posto: i + 1 }).catch(() => null)));
 }
 
 // ── O mês ────────────────────────────────────────────────────────────────────
@@ -1173,6 +1198,30 @@ export async function marcarArtigo(idNoServidor, estado, precoReal) {
     ...(paraOServidor(estado) ? { estado: paraOServidor(estado) } : {}),
     ...(precoReal !== undefined ? { preco_real: Number(precoReal) || 0 } : {}),
   });
+}
+
+// Alterar um artigo: o rótulo, o corredor, quem pediu, o habitual, a
+// estimativa, o posto.
+//
+// ⚠ Um sítio só a traduzir os campos do artigo para os nomes do servidor. O
+// `marcarArtigo` fica à parte de propósito — o estado tem uma tabela de
+// grafias própria (`compras-estado.js`) e um preço real que só a loja escreve.
+//
+// ⚠ E cada campo entra só se quem chama o mandou: um `campos.rotulo` ausente
+// não pode virar `rotulo: ''` e apagar o nome do artigo. É a mesma forma do
+// `alterarEquipamento` e do `alterarEvento`.
+export async function alterarArtigo(idNoServidor, campos = {}) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  const linha = {
+    ...(campos.rotulo !== undefined ? { rotulo: campos.rotulo } : {}),
+    ...(campos.corredor !== undefined ? { corredor: campos.corredor || null } : {}),
+    ...(campos.pedidoPor !== undefined ? { pedido_por: campos.pedidoPor || null } : {}),
+    ...(campos.habitual !== undefined ? { habitual: !!campos.habitual } : {}),
+    ...(campos.estimativa !== undefined ? { estimativa: Number(campos.estimativa) || 0 } : {}),
+    ...(campos.posto !== undefined ? { posto: Number(campos.posto) || 0 } : {}),
+  };
+  if (!Object.keys(linha).length) return { pendente: true };
+  return servidor.pb.collection('artigos').update(idNoServidor, linha);
 }
 
 export async function apagarArtigo(idNoServidor) {

@@ -29,6 +29,7 @@ export const PREFIXO = '[provas] ';
 
 export async function ligarComoAdmin() {
   const pb = new PocketBase(URL);
+  pb.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await pb.collection('_superusers').authWithPassword(ADMIN, ADMIN_PASS);
   return pb;
 }

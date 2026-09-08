@@ -67,6 +67,25 @@ const obter = () => {
       initial: sessaoACarregar,
       clear: () => guarda.removeItem('nossa-casa/auth'),
     }));
+    // ── ⚠ Duas escritas à mesma linha no mesmo instante ─────────────────────
+    //
+    // O SDK do PocketBase cancela sozinho um pedido pendente quando lhe chega
+    // outro com a MESMA chave — coleção, acção e identificador. É útil para
+    // leituras (um ecrã que relê ao rolar) e é uma armadilha para escritas: a
+    // primeira é abortada em silêncio, sem erro, sem nada nas consolas.
+    //
+    // Medido em 08/09/2026 com a casa a sério: passar as bananas dos «Frescos»
+    // para a «Mercearia» escrevia o corredor e, no mesmo tique, escrevia os
+    // postos do corredor de destino. O ecrã mostrava as bananas na Mercearia;
+    // o servidor continuava a ter «Frescos». O outro telemóvel nunca soube.
+    //
+    // Os SCRIPTS que mexem na casa a sério — semear, migrar, acrescentar
+    // campos — têm todos `pb.autoCancellation(false)` na terceira linha:
+    // fazem escritas seguidas e sem ele perdiam-nas. A app faz as mesmas
+    // escritas e nunca o teve.
+    //
+    // Uma escrita perdida é pior do que uma leitura repetida.
+    cliente.autoCancellation(false);
   }
   return cliente;
 };

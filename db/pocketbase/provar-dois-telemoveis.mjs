@@ -28,6 +28,7 @@ const leo = await membro('Leo', 'crianca', { password: '1357', passwordConfirm: 
 // Dois clientes distintos: dois telemóveis, cada um com a sua sessão.
 const telemovel = async (identidade, senha) => {
   const c = new PocketBase(URL);
+  c.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await c.collection('membros').authWithPassword(identidade, senha);
   return c;
 };

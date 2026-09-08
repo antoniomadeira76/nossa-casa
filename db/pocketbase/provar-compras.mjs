@@ -45,6 +45,7 @@ const daRita = sync.sessao();
 
 const telemovel = async (id, senha) => {
   const c = new PocketBase(URL);
+  c.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await c.collection('membros').authWithPassword(id, senha);
   return c;
 };
@@ -105,6 +106,71 @@ await prova('⚠ uma CRIANÇA também vê a lista, e pode pedir', async () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
+console.log('\n── alterar um artigo, e a ordem dele no corredor ──');
+
+await prova('⚠ o `alterarArtigo` muda o rótulo, a estimativa e o habitual', async () => {
+  // Havia criar e apagar, e mais nada: mudar o nome era apagar e voltar a
+  // escrever, e com isso perdia-se o estado desta ida e o lugar no corredor.
+  await sync.alterarArtigo(banana, { rotulo: 'Bananas da Madeira', estimativa: 2.4, habitual: false });
+  const a = await admin.collection('artigos').getOne(banana);
+  igual(a.rotulo, 'Bananas da Madeira');
+  igual(a.estimativa, 2.4);
+  igual(a.habitual, false);
+});
+
+await prova('⚠ e não apaga o que não lhe mandaram', async () => {
+  // Um `campos.rotulo` ausente não pode virar `rotulo: ''`. É a forma do
+  // `alterarEquipamento`, e a razão pela qual cada campo entra por
+  // `!== undefined`.
+  await sync.alterarArtigo(banana, { estimativa: 2.9 });
+  const a = await admin.collection('artigos').getOne(banana);
+  igual(a.rotulo, 'Bananas da Madeira', 'o rótulo foi apagado por uma alteração que não o mandava');
+  igual(a.estimativa, 2.9);
+});
+
+await prova('⚠ o `posto` existe na coleção, e o que se escreve volta', async () => {
+  // ⚠ Terceira vez que um campo declarado no `criar-colecoes.mjs` não estava
+  // no servidor a andar — esse ficheiro APAGA e recria, e por isso um campo
+  // novo precisa do `acrescentar-campos.mjs`. E o PocketBase aceita um
+  // `update` e ignora em silêncio o campo que não conhece: uma escrita que não
+  // se lê de volta passa por boa.
+  await sync.reordenarArtigos([leite, banana]);
+  const l = await admin.collection('artigos').getOne(leite);
+  const b = await admin.collection('artigos').getOne(banana);
+  igual(l.posto, 1, 'o posto do leite não ficou gravado');
+  igual(b.posto, 2, 'o posto da banana não ficou gravado');
+});
+
+await prova('⚠ e a ordem DESCE para a loja, sem os postos a zero', async () => {
+  // Um campo novo nasce a zero em todas as linhas que já existem, e zero quer
+  // dizer «nunca foi arrastado». Sem esse filtro a lista inteira ficava
+  // empatada em primeiro e saía por ordem qualquer.
+  const cereais = await admin.collection('artigos').create({
+    casa: casa.id, lista, rotulo: 'Cereais sem posto' });
+  const lida = await sync.puxarCasa();
+  igual(lida.itemOrder[leite], 1);
+  igual(lida.itemOrder[banana], 2);
+  igual(lida.itemOrder[cereais.id], undefined, 'um posto a zero entrou no mapa');
+  await admin.collection('artigos').delete(cereais.id);
+});
+
+await prova('o corredor muda pelo `mudarCorredor`, que é o mesmo caminho', async () => {
+  const sec = await admin.collection('seccoes').create({ casa: casa.id, nome: 'Frescos', posto: 1 });
+  await sync.mudarCorredor(leite, sec.id);
+  igual((await admin.collection('artigos').getOne(leite)).corredor, sec.id);
+  // E limpa-se: nulo é um corredor válido enquanto a migração não correu.
+  await sync.mudarCorredor(leite, null);
+  igual((await admin.collection('artigos').getOne(leite)).corredor, '');
+  await admin.collection('seccoes').delete(sec.id);
+
+  // ⚠ E o artigo volta ao que era. As provas seguintes leem «Bananas» pelo
+  // nome e esperam-no habitual, e este bloco mudou-lhe as duas coisas — uma
+  // prova que deixa o mundo diferente de como o encontrou faz falhar a que vem
+  // depois por uma razão que não é a dela. Levou uma corrida a descobrir.
+  await sync.alterarArtigo(banana, { rotulo: 'Bananas', habitual: true });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
 console.log('\n── ⚠ e dois telemóveis na mesma loja NÃO se anulam ──');
 
 await prova('a Rita apanha as bananas', async () => {
@@ -148,12 +214,37 @@ await prova('⚠ e o `puxarCasa` traduz os estados de volta para a forma da loja
   // passou a montar a forma que os ecrãs leem, em 07/09/2026. Era ela que
   // estava desactualizada: com `section`, as quatro secções do Modo Compras
   // apareciam vazias.
-  igual(b.s, 0);
+  //
+  // ⚠ E depois pediu `s === 0`, que também deixou de ser verdade: a secção
+  // passou a ser o NOME do corredor em 08/09/2026, e numa casa sem corredores
+  // nenhum nome existe — o `s` é NULO, e isso é o estado de uma casa por
+  // migrar, não um defeito. Ficou a falhar dois dias porque empurrei o
+  // `sync.js` sem correr as provas do servidor.
+  igual(b.s, null, 'uma casa sem corredores não tem nome para dar ao artigo');
   igual(b.staple, true);
   // E o plano: a loja pelo ÍNDICE na lista `stores`, que é o que o ecrã lê.
   igual(lida.shopPlan.who, 'Rita');
   igual(lida.shopPlan.day, 'd2026-09-28');
   igual(lida.shopPlan.idServidor, lista);
+});
+
+await prova('⚠ e com corredores na casa, o `s` é o NOME e vem pela ordem deles', async () => {
+  // O caso da casa a sério, que a prova de cima não cobre: os ecrãs agrupam
+  // por `i.s === sec`, e uma comparação de nome contra número dava quatro
+  // secções vazias. E a ordem é o dado — a lista É o percurso da loja.
+  const frutas = await admin.collection('seccoes').create({ casa: casa.id, nome: 'Frutas', posto: 2 });
+  const frescos = await admin.collection('seccoes').create({ casa: casa.id, nome: 'Frescos', posto: 1 });
+  await sync.mudarCorredor(banana, frutas.id);
+
+  const lida = await sync.puxarCasa();
+  igual((lida.newItems || []).find(a => a.id === banana).s, 'Frutas');
+  // Pelo POSTO, e não pela ordem em que o servidor devolveu as linhas.
+  igual(JSON.stringify(lida.seccoesDaCasa), JSON.stringify(['Frescos', 'Frutas']));
+
+  // E deixa o mundo como o encontrou.
+  await sync.mudarCorredor(banana, null);
+  await admin.collection('seccoes').delete(frutas.id);
+  await admin.collection('seccoes').delete(frescos.id);
 });
 
 await prova('desmarcar volta a `por_comprar`', async () => {

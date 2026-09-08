@@ -3,6 +3,7 @@ import PocketBase from 'pocketbase';
 import { SUPERUTILIZADOR, SUPER_PALAVRA, URL_DO_SERVIDOR } from './ambiente.mjs';
 
 const pb = new PocketBase(URL_DO_SERVIDOR);
+pb.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
 // As credenciais do superutilizador vêm do ambiente OU do `.env.local`, que o
 // `.gitignore` exclui — ver `ambiente.mjs`. O valor por omissão está escrito
 // no código e este repositório é público: serve para uma base acabada de criar
@@ -776,6 +777,16 @@ await criar({
     sel('estado', ['por_comprar', 'confirmado', 'sem_stock']),
     num('estimativa', { min: 0 }), num('preco_real', { min: 0 }),
     bool('habitual'),
+    // ⚠ A ordem em que o artigo aparece DENTRO do corredor, dada pela mão que
+    // o arrastou — o mesmo campo, com o mesmo nome e a mesma contagem, que as
+    // `tarefas` e as `seccoes` têm.
+    //
+    // Conta de UM: um `number` do PocketBase não é anulável, e um campo novo
+    // nasce a zero em todas as linhas que já existem. Zero é «sem posto», e
+    // ordena-se pelo que vier depois. Com a contagem a começar em zero, a
+    // lista inteira lia-se empatada em primeiro e saía por ordem qualquer —
+    // já aconteceu às tarefas, e está escrito no campo delas.
+    num('posto', { min: 0, onlyInt: true }),
   ],
   // O estado vive na linha do artigo. Se fosse uma lista de identificadores
   // confirmados, dois telefones na mesma loja anulavam-se; assim, fundem-se.

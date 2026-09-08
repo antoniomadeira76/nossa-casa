@@ -46,6 +46,7 @@ if (!daRita) throw new Error('a sessão da Rita não abriu');
 // Um segundo telemóvel: o do Tomás, com o seu próprio cliente.
 const outroTelemovel = async (email, senha) => {
   const c = new PocketBase(URL);
+  c.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await c.collection('membros').authWithPassword(email, senha);
   return c;
 };

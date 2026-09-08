@@ -69,6 +69,7 @@ const ADMIN = doAmbiente('PB_ADMIN') || 'admin@nossacasa.local';
 const ADMIN_PASS = doAmbiente('PB_ADMIN_PASS') || 'casa-de-testes-123';
 
 const pb = new PocketBase(URL);
+pb.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
 await pb.collection('_superusers').authWithPassword(ADMIN, ADMIN_PASS);
 
 const membros = (await pb.collections.getFullList()).find(c => c.name === 'membros');

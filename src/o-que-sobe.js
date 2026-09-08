@@ -72,6 +72,8 @@ export const O_QUE_SOBE = {
   status: ['linhas', 'O `estado` de cada artigo vive NA LINHA — por comprar, confirmado, sem stock. Era um mapa que cada telefone reescrevia, e o esquema já avisava: «se fosse uma lista de identificadores confirmados, dois telefones na mesma loja anulavam-se».'],
   shopPlan: ['campo', 'A `listas_compras` aberta: a loja, quem vai, e para quando.'],
   itemGone: ['local', 'Lápides de artigos-semente. Um artigo do servidor apaga-se lá.'],
+  itemEdits: ['campo', 'As alterações de um artigo — rótulo, corredor, estimativa, habitual — vão para a própria linha em `artigos`. O mapa existe porque uma SEMENTE do `data.js` não se pode editar no sítio, e é a mesma forma do `taskEdits`.', 'alterarArtigo'],
+  itemOrder: ['campo', 'O `posto` da linha do artigo, dentro do corredor. É da CASA e não de quem olha: a lista do Modo Compras é o percurso da loja, e se a ordem fosse de cada um os dois adultos andavam por caminhos diferentes. Mesma razão do `taskOrder`.'],
   shopHistory: ['linhas', 'As últimas dez `listas_compras` FECHADAS, com o `total` que a ida custou. Era uma lista escrita no telefone de quem foi ao supermercado: quem não tinha ido via o histórico vazio.', 'shopHistory'],
   precos: ['local', 'O histórico de preços por artigo e loja. Não tem coleção no servidor: são observações deste dispositivo, e a comparação entre lojas ainda é local. É a lacuna maior que resta nas compras.'],
   precoPago: ['local', 'O que se escreveu no corredor NESTA ida. É um rascunho: vira observações ao fechar a conta, e limpa-se.'],

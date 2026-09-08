@@ -285,15 +285,30 @@ describe('apagar um artigo de compras', () => {
       .split('\n').map(l => l.replace(/(^|\s)\/\/.*$/, '')).join('\n');
 
     it('⚠ pergunta antes de apagar', () => {
+      // ⚠ O apagar MUDOU DE SÍTIO em 08/09/2026, e esta prova exigia o sítio
+      // antigo: `setAApagar(i.id)` na linha da lista. Com o lápis a chegar, a
+      // linha ficava com três alvos — marcar, gerir, apagar — e o erro #6 do
+      // CLAUDE.md é exactamente esse. O apagar passou para dentro da folha de
+      // gestão, que é onde as Tarefas o têm.
+      //
+      // A propriedade que a prova defende não mudou: NÃO se apaga ao toque, e
+      // a pergunta é destrutiva. Só mudou de que botão ela parte — e por isso
+      // olha-se para os dois ficheiros.
       expect(semComentarios).not.toMatch(/onPress=\{\(\) => removerArtigo/);
-      expect(semComentarios).toMatch(/setAApagar\(i\.id\)/);
+      expect(semComentarios).toMatch(/setAApagar\(aGerir\.id\)/);
       expect(semComentarios).toMatch(/<Confirm/);
       expect(semComentarios).toMatch(/destructive/);
+
+      const folha = fs.readFileSync(
+        path.join(__dirname, '..', 'src', 'sheets', 'GerirArtigo.jsx'), 'utf8');
+      // A folha não apaga: PEDE. Quem apaga é o ecrã, depois da pergunta.
+      expect(folha).toMatch(/onPress=\{onApagar\}/);
+      expect(folha).not.toMatch(/removerArtigo/);
     });
 
     it('a linha continua a alternar apanhado/por apanhar', () => {
-      // O caixote é um alvo À PARTE, na borda. Se a linha passasse a apagar,
-      // a lista deixava de servir para o que serve.
+      // Se a linha passasse a apagar, ou a abrir a folha, a lista deixava de
+      // servir para o que serve — marcar o que já se apanhou.
       expect(semComentarios).toMatch(/onPress=\{\(\) => toggle\(i\.id\)\}/);
     });
 

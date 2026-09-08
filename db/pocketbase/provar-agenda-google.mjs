@@ -30,8 +30,10 @@ const linha = await admin.collection('credenciais_agenda').create({
 });
 
 const comoRita = new PocketBase(URL);
+comoRita.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
 await comoRita.collection('membros').authWithPassword('rita.agenda@exemplo.pt', 'palavra-de-provas-1');
 const comoTomas = new PocketBase(URL);
+comoTomas.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
 await comoTomas.collection('membros').authWithPassword('tomas.agenda@exemplo.pt', 'palavra-de-provas-2');
 
 console.log('\n── o refresh token não sai pela API ──');

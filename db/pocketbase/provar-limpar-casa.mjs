@@ -67,6 +67,7 @@ const quantos = async (casa) => {
 
 const entrar = async (email, n) => {
   const c = new PocketBase(URL);
+  c.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await c.collection('membros').authWithPassword(email, `palavra-de-provas-${n}`);
   return c;
 };
@@ -89,6 +90,7 @@ await prova('um ADULTO da casa não é administrador, e recusa', async () => {
 
 await prova('uma CRIANÇA não apaga a casa', async () => {
   const c = new PocketBase(URL);
+  c.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   // As crianças entram pelo `login`, não por e-mail: não têm conta própria (§8).
   await c.collection('membros').authWithPassword(criancaA.login, PIN_DO_LEO);
   const r = await chamar(c.authStore.token);

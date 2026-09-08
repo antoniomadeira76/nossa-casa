@@ -101,6 +101,7 @@ await prova('e desarrumar uma tarefa tira-lhe o posto', async () => {
 
 await prova('⚠ uma criança não muda a ordem das tarefas', async () => {
   const doLeo = new PocketBase(URL);
+  doLeo.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await doLeo.collection('membros').authWithPassword(leo.login, '1357');
   await recusado(() => doLeo.collection('tarefas').update(cama, { posto: 9 }));
 });
@@ -147,6 +148,7 @@ await prova('⚠ um registo NÃO se altera nem se apaga', async () => {
   // Um registo que se corrige não é um registo: quem administra a casa apagava
   // a linha que diz que se deu administração a si próprio.
   const daRitaPb = new PocketBase(URL);
+  daRitaPb.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await daRitaPb.collection('membros').authWithPassword('rita-ord@x.pt', 'palavra-longa-1');
   const linha = (await daRitaPb.collection('registo').getFullList())
     .find(r => r.casa === casa.id);
@@ -158,6 +160,7 @@ await prova('⚠ uma criança não lê o registo da casa', async () => {
   // Diz quem passou a administrar, quem entrou e quem saiu. É administração da
   // casa, como o orçamento.
   const doLeo = new PocketBase(URL);
+  doLeo.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await doLeo.collection('membros').authWithPassword(leo.login, '1357');
   igual((await doLeo.collection('registo').getFullList()).length, 0);
 });
@@ -168,6 +171,7 @@ await prova('⚠ e a vizinha não assina uma linha desta casa', async () => {
     nome: 'Vizinha', login: `${outra.id}_Vizinha`, casa: outra.id, papel: 'admin',
     email: 'viz-ord@x.pt', ...s('palavra-longa-9'), verified: true });
   const dela = new PocketBase(URL);
+  dela.autoCancellation(false);   // uma escrita não se perde por chegar outra atrás
   await dela.collection('membros').authWithPassword('viz-ord@x.pt', 'palavra-longa-9');
 
   igual((await dela.collection('registo').getFullList()).length, 0);
