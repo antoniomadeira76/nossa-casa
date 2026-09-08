@@ -461,6 +461,15 @@ function Shell() {
     },
     loja: {
       icon: 'fileDone', titulo: 'Modo Compras', fechar: () => setLoja(false),
+      // ⚠ Dona da sua COLUNA: a linha da loja e os separadores por corredor
+      // ficam parados por cima da lista, e a lista rola por baixo — como no
+      // protótipo (bloco «isLoja», a barra é `flex:none` por cima de um
+      // `overflow:auto`). Dentro do ScrollView único da app, a barra rolava com
+      // a lista: a sonda do varrimento de 08/09/2026 encontrou-a 564 px acima
+      // do ecrã, e para mudar de corredor era voltar ao topo. Com `coluna`, o
+      // App.jsx desenha a vista EM VEZ do ScrollView; o cabeçalho e o rodapé
+      // ficam exactamente onde estão (INVARIANTE #1).
+      coluna: true,
       // ⚠ Sem ida marcada, `s.shopPlan` é NULO — entre duas idas e numa casa
       // acabada de abrir. Isto lia-o cru e rebentava no CABEÇALHO, que corre
       // antes do ecrã: tocar em «iniciar compras na loja» dava branco, e a
@@ -732,6 +741,11 @@ function Shell() {
           de ecrã inteiro. Antes as vistas eram um cartão centrado com véu por
           cima disto, e o cabeçalho ficava cortado a meio por trás. */}
       <View style={{ flex: 1, minHeight: 0 }}>
+        {/* ⚠ Uma vista com `coluna` é dona do seu scroll: desenha-se AQUI, em
+            vez do ScrollView, e é ela que decide o que fica fixo e o que rola.
+            É o Modo Compras, com os corredores parados por cima da lista. As
+            outras continuam a ser filhas do ScrollView único. */}
+        {V && V.coluna ? V.render() : (
         <ScrollView style={{ flex: 1, minHeight: 0 }}
           contentContainerStyle={{ padding: 16, gap: S.xl, paddingBottom: S.xl }}>
           {V ? V.render()
@@ -753,6 +767,7 @@ function Shell() {
                   abrirImportar={tab === 'agenda' && importarNaAgenda}
                   onImportarAberto={() => setImportarNaAgenda(false)} />}
         </ScrollView>
+        )}
       </View>
 
       {/* rodapé — último filho da raiz, sempre (INVARIANTE #1) */}

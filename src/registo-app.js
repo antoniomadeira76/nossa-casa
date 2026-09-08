@@ -152,6 +152,7 @@ export const REGISTO_APP = [
   { v: '1.11.0', d: '08/09/2026', k: 'novo', a: 'Compras', t: 'Um artigo altera-se — nome, corredor, estimativa, habitual — e arrasta-se para mudar a ordem dentro do corredor' },
   { v: '1.11.0', d: '08/09/2026', k: 'novo', a: 'Compras', t: '«Como fazemos compras»: quem vai, quando e a que loja, e os corredores da loja pela ordem em que se anda neles' },
   { v: '1.11.0', d: '08/09/2026', k: 'corrigido', a: 'Compras', t: 'Passar um artigo de corredor ficava só neste telemóvel: duas escritas no mesmo instante e a primeira perdia-se em silêncio' },
+  { v: '1.11.0', d: '08/09/2026', k: 'alterado', a: 'Compras', t: 'No Modo Compras a loja e os separadores por corredor ficam por cima da lista, e a lista rola por baixo — deixou de ser preciso voltar ao topo para mudar de corredor' },
   { v: '1.11.0', d: '07/09/2026', k: 'corrigido', a: 'Saúde', t: 'Cada nota de uma consulta diz de quem é e quando foi escrita; só quem a escreveu a altera, e uma criança não escreve notas noutra' },
   { v: '1.11.0', d: '07/09/2026', k: 'alterado', a: 'Dinheiro', t: 'O orçamento fala só em euros: saíram as percentagens da frase do rendimento e dos envelopes' },
 

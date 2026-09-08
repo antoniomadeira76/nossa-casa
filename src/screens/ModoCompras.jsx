@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, TextInput } from 'react-native';
+import { View, Text, Pressable, TextInput, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, elev } from '../theme';
 import { EUR, plural } from '../format';
@@ -79,7 +79,18 @@ export default function ModoCompras({ t, user, onClose }) {
   const barColor = pctCart > 100 ? t.state.err : pctCart > 80 ? t.state.warn : t.accent;
 
   return (
-    <>
+    // ⚠ Esta vista é dona da sua COLUNA (`coluna: true` no registo do App.jsx):
+    // a loja e os separadores por corredor em `flex: 0`, parados, e um
+    // ScrollView próprio para o resto. Dentro do ScrollView único da app a
+    // barra rolava com a lista — a sonda do varrimento de 08/09/2026 encontrou
+    // os cinco separadores 564 px acima do ecrã, e para mudar de corredor era
+    // voltar ao topo. No protótipo (bloco «isLoja») a barra é `flex:none` por
+    // cima de um `overflow:auto`. O cabeçalho e o rodapé são do App e não se
+    // mexem (INVARIANTE #1).
+    <View style={{ flex: 1, minHeight: 0 }}>
+      {/* ── O que fica parado: a loja e os corredores ─────────────────── */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, gap: S.md,
+        backgroundColor: t.surface, borderBottomWidth: 1, borderBottomColor: t.divider }}>
       {/* A loja e a ordem por que se percorre — o que a referência mostra
           por cima dos separadores de corredor. */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
@@ -116,7 +127,13 @@ export default function ModoCompras({ t, user, onClose }) {
           );
         })}
       </View>
+      </View>
 
+      {/* ── O que rola: o carrinho, os artigos, o paginador e o botão ───────
+          O mesmo enchimento e o mesmo espaço do ScrollView da app, para a
+          lista ler igual à de qualquer outro ecrã. */}
+      <ScrollView style={{ flex: 1, minHeight: 0 }}
+        contentContainerStyle={{ padding: 16, gap: S.xl, paddingBottom: S.xl }}>
       <Card t={t} style={{ gap: S.md }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
           <View style={{ flex: 1, gap: 2 }}>
@@ -245,6 +262,7 @@ export default function ModoCompras({ t, user, onClose }) {
         <Primary t={t} comum label="Secção seguinte" icon="caretRight"
           onPress={() => setStep(x => seccoes[Math.min(seccoes.length - 1, seccoes.indexOf(x) + 1)])} />
       )}
+      </ScrollView>
 
       {novoArtigo ? (
         <Sheet t={t} title="Novo Artigo" sub="Acrescentar à lista de compras"
@@ -292,6 +310,6 @@ export default function ModoCompras({ t, user, onClose }) {
             onClose();
           }} />
       ) : null}
-    </>
+    </View>
   );
 }

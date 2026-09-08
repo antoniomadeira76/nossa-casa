@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modo Compras — corredores fixos</title>
+<!--
+  Como está, e como fica: os separadores por corredor do Modo Compras.
+
+  Hoje rolam com a lista, porque todas as vistas de ecrã inteiro vivem dentro
+  do ScrollView único do App.jsx. No protótipo (design/Nossa Casa App.dc.html,
+  bloco «isLoja»), a barra dos corredores é flex:none por cima de uma área
+  overflow:auto — fica parada, a lista rola por baixo.
+
+  Os dois telefones em baixo têm a MESMA lista e rolam de forma independente.
+  Role o da esquerda e veja os corredores desaparecerem; role o da direita e
+  veja-os ficar. Cores do buildTheme (Violeta), claro e escuro.
+-->
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; background: #14161a; color: #e6e6e6; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .pagina { max-width: 1040px; margin: 0 auto; padding: 22px 18px 60px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .lead { font-size: 13.5px; line-height: 1.55; color: #9aa0a8; max-width: 72ch; margin: 0 0 14px; }
+  .lead b { color: #e6e6e6; font-weight: 600; }
+  .controlos { display: flex; gap: 8px; align-items: center; margin: 0 0 18px; font-size: 13px; color: #9aa0a8; }
+  .controlos button { font: inherit; padding: 8px 12px; border-radius: 6px; border: 1px solid #3a3f47; background: #1c1f24; color: #e6e6e6; cursor: pointer; min-height: 36px; }
+  .controlos button[aria-pressed="true"] { background: #722ED1; border-color: #722ED1; color: #fff; }
+  .lado-a-lado { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+  .coluna { display: flex; flex-direction: column; gap: 10px; }
+  .rotulo { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #9aa0a8; font-weight: 600; }
+  .rotulo b { color: #e6e6e6; }
+  .nota { font-size: 12.5px; line-height: 1.5; color: #9aa0a8; max-width: 412px; }
+  .nota code { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: #d8c9ab; }
+
+  /* ── o telefone ────────────────────────────────────────────────────────── */
+  .fone { width: 412px; height: 794px; border-radius: 22px; overflow: hidden; display: flex; flex-direction: column;
+          box-shadow: 0 18px 50px rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); }
+  .cab { flex: 0 0 auto; padding: 14px 16px 12px; display: flex; align-items: center; gap: 12px; }
+  .cab .seta { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; margin-left: -10px; }
+  .cab .titulo { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+  .cab .sub { font-size: 12px; margin-top: 2px; }
+  .cab .avatar { margin-left: auto; width: 44px; height: 44px; border-radius: 100px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .rodape { flex: 0 0 auto; height: 58px; display: flex; align-items: center; justify-content: space-around; }
+  .rodape .aba { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10.5px; min-width: 44px; min-height: 44px; justify-content: center; }
+  .rodape .aba .ic { width: 18px; height: 18px; border-radius: 4px; border: 1.75px solid currentColor; }
+
+  .miolo { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .rola { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* a linha da loja e a barra de corredores */
+  .loja { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+  .barra { display: flex; gap: 8px; }
+  .barra .passo { flex: 1; min-height: 44px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  .barra .traco { height: 4px; border-radius: 100px; }
+  .barra .nome { font-size: 11px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* ⚠ FIXA: fora da área que rola, com fundo da superfície e uma linha por baixo — como no protótipo */
+  .fixa { flex: 0 0 auto; padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 12px; }
+
+  .cartao { border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .cartao .linha { display: flex; align-items: flex-end; gap: 12px; }
+  .cartao .etq { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
+  .cartao .grande { font-size: 28px; }
+  .cartao .dir { margin-left: auto; text-align: right; font-size: 12px; line-height: 1.45; }
+  .cartao .prog { height: 8px; border-radius: 100px; overflow: hidden; }
+  .cartao .prog > div { height: 100%; width: 0%; border-radius: 6px; }
+
+  .sec { font-size: 20px; font-weight: 700; }
+  .lista { display: flex; flex-direction: column; gap: 8px; }
+  .artigo { border-radius: 8px; border: 1px solid; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .artigo .top { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+  .artigo .ic { width: 24px; height: 24px; border-radius: 100px; border: 1.75px solid; flex: none; }
+  .artigo .txt { flex: 1; min-width: 0; }
+  .artigo .txt .n { font-size: 15.5px; }
+  .artigo .txt .e { font-size: 11.5px; margin-top: 2px; }
+  .artigo .acoes { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .artigo .acoes .b { min-height: 44px; min-width: 44px; display: flex; align-items: center; padding: 0 10px; border-radius: 6px; font-size: 12.5px; font-weight: 600; }
+  .artigo .preco { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+  .artigo .preco .campo { flex: 1; min-height: 44px; border-radius: 6px; border: 1px solid; display: flex; align-items: center; padding: 0 12px; font-size: 14px; }
+  .botao { min-height: 48px; border-radius: 6px; border: 1px solid; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; letter-spacing: 0.4px; }
+  .tracejado { min-height: 44px; border-radius: 6px; border: 1px dashed; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13.5px; }
+
+  .medidas { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 12.5px; color: #9aa0a8; max-width: 412px; }
+  .medidas b { color: #e6e6e6; font-weight: 600; }
+  .mudanca { margin-top: 26px; padding: 16px 18px; border: 1px solid #3a3f47; border-radius: 12px; max-width: 86ch; font-size: 13.5px; line-height: 1.6; color: #c9ced6; }
+  .mudanca h2 { font-size: 14px; margin: 0 0 8px; color: #e6e6e6; }
+  .mudanca code { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: #d8c9ab; }
+  .mudanca ol { margin: 6px 0 0; padding-left: 20px; }
+  .mudanca li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<div class="pagina">
+  <h1>Modo Compras — os corredores ficam por cima da lista</h1>
+  <p class="lead">Os dois telefones têm a <b>mesma lista</b> e rolam de forma independente. Role o da esquerda: a linha da loja e os separadores por corredor desaparecem com a lista, e para mudar de corredor é preciso voltar ao topo. Role o da direita: ficam no sítio, e a lista rola por baixo — é assim no protótipo.</p>
+  <div class="controlos">
+    <span>Aspeto</span>
+    <button id="claro" aria-pressed="true">Claro</button>
+    <button id="escuro" aria-pressed="false">Escuro</button>
+    <span style="margin-left:14px">Violeta · 412 px</span>
+  </div>
+
+  <div class="lado-a-lado">
+    <div class="coluna">
+      <div class="rotulo">Como está — <b>rola tudo</b></div>
+      <div class="fone" id="fone-a"></div>
+      <div class="medidas">
+        <span>Barra dos corredores</span><b>rola com a lista</b>
+        <span>Para mudar de corredor</span><b>voltar ao topo</b>
+        <span>Rodapé</span><b>736–784, fixo</b>
+      </div>
+    </div>
+    <div class="coluna">
+      <div class="rotulo">Como fica — <b>corredores fixos</b></div>
+      <div class="fone" id="fone-b"></div>
+      <div class="medidas">
+        <span>Barra dos corredores</span><b>fixa, 44 px de alvo por corredor</b>
+        <span>Linha da loja</span><b>fixa, por cima da barra</b>
+        <span>Área que rola</span><b>o resto: carrinho, artigos, botão</b>
+        <span>Rodapé</span><b>736–784, fixo — não muda</b>
+      </div>
+    </div>
+  </div>
+
+  <div class="mudanca">
+    <h2>O que muda no código</h2>
+    Hoje todas as vistas de ecrã inteiro são filhas do <code>ScrollView</code> único do <code>App.jsx</code>. Para a barra ficar parada, o Modo Compras precisa de ser dono da sua coluna:
+    <ol>
+      <li>a entrada <code>loja</code> do registo de vistas ganha <code>coluna: true</code>; para essas, o <code>App.jsx</code> desenha <code>V.render()</code> <b>em vez</b> do <code>ScrollView</code> — o cabeçalho e o rodapé ficam exactamente onde estão (INVARIANTE #1);</li>
+      <li>o <code>ModoCompras</code> passa a ser <code>flex: 1</code> em coluna: a linha da loja e a barra dos corredores em <code>flex: 0</code>, e um <code>ScrollView</code> próprio com o carrinho, os artigos, o paginador e o botão;</li>
+      <li>uma prova nova mede que, com a lista rolada até ao fim, a barra continua no topo e o rodapé no fundo — nos dois aspetos.</li>
+    </ol>
+    Nada muda nas outras vistas. A folha «Novo Artigo» e o Carrinho continuam a ser <code>Modal</code>, dentro da raiz.
+  </div>
+</div>
+
+<script>
+const TEMAS = {
+  claro:  {"page":"#F0F2F5","card":"#FCFCFD","surface":"#FFFFFF","subtle":"#FAFAFA","border":"#D9D9D9","text1":"#262626","text2":"#434343","text3":"#6A7282","slate":"#67769B","divider":"#F0F2F5","accent":"#722ED1","hover":"#8B4EE0","chrome":"#241239","titulo":"#722ED1","actBg":"#F1EAFA","actBrd":"#A275E1","actFg":"#722ED1","ok":"#52C41A","okBg":"rgba(220,243,209,0.2)","okBorder":"#BAE7A3","okDeep":"#389E0D","chromeSub":"rgba(255,255,255,0.72)"},
+  escuro: {"page":"#0A0510","card":"#211431","surface":"#211431","subtle":"#2D1D3E","border":"#402F53","text1":"#F0F2F5","text2":"#DCE3EA","text3":"#A79CB4","slate":"#BBADCD","divider":"#402F53","accent":"#722ED1","hover":"#8B4EE0","chrome":"#241239","titulo":"#8B4EE0","actBg":"#311951","actBrd":"#7F48CD","actFg":"#A579E2","ok":"#52C41A","okBg":"rgba(220,243,209,0.2)","okBorder":"#BAE7A3","okDeep":"#389E0D","chromeSub":"rgba(255,255,255,0.72)"},
+};
+
+const ARTIGOS = [
+  { n: 'Leite meio-gordo · 6 un.', e: 'estimativa 5,10 €', feito: true, pago: '4,98' },
+  { n: 'Ovos · 12', e: 'estimativa 2,60 €' },
+  { n: 'Iogurtes das crianças · 8', e: 'estimativa 4,60 €' },
+  { n: 'Queijo flamengo fatiado', e: 'estimativa 3,20 €', feito: true, pago: '3,05' },
+  { n: 'Manteiga sem sal', e: 'estimativa 2,50 €' },
+  { n: 'Arroz agulha · 1 kg', e: 'estimativa 1,30 €' },
+  { n: 'Massa espirais · 500 g', e: 'estimativa 0,95 €', feito: true, pago: '0,89' },
+  { n: 'Café moído · 250 g', e: 'estimativa 3,80 €' },
+  { n: 'Pão de forma', e: 'estimativa 1,60 €' },
+  { n: 'Papel de cozinha · 6 rolos', e: 'estimativa 4,20 €' },
+];
+const CORREDORES = ['Todos', 'Frutas', 'Frescos', 'Mercearia', 'Casa'];
+
+const cab = (t) => `
+  <div class="cab" style="background:${t.chrome};color:#fff">
+    <div class="seta"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></div>
+    <div><div class="titulo">Modo Compras</div><div class="sub" style="color:${t.chromeSub}">Rita · Pingo Doce do Restelo</div></div>
+    <div class="avatar" style="background:${t.accent};color:#fff">A</div>
+  </div>`;
+
+const rodape = (t) => `
+  <div class="rodape" style="background:${t.chrome};color:${t.chromeSub}">
+    ${['Início','Dinheiro','Tarefas','Compras','Agenda'].map(n => `<div class="aba" style="${n==='Compras'?'color:#fff':''}"><div class="ic"></div>${n}</div>`).join('')}
+  </div>`;
+
+const loja = (t) => `
+  <div class="loja" style="color:${t.text2}">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${t.slate}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v3a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M5 14v6h14v-6"/></svg>
+    <span>Pingo Doce do Restelo · ordem do corredor</span>
+  </div>`;
+
+const barra = (t) => `
+  <div class="barra">
+    ${CORREDORES.map((c, i) => {
+      const on = i === 2, limpo = i === 1;
+      const cor = on ? t.accent : limpo ? t.ok : t.border;
+      const txt = on ? t.accent : limpo ? t.okDeep : t.text3;
+      return `<div class="passo" role="tab" aria-selected="${on}"><div class="traco" style="background:${cor}"></div><div class="nome" style="color:${txt};font-weight:${on||limpo?600:400}">${c}</div></div>`;
+    }).join('')}
+  </div>`;
+
+const cartao = (t) => `
+  <div class="cartao" style="background:${t.card};border:1px solid ${t.border}">
+    <div class="linha">
+      <div><div class="etq" style="color:${t.slate}">TOTAL NO CARRINHO</div><div class="grande" style="color:${t.text2}">8,92 €</div></div>
+      <div class="dir" style="color:${t.text3}">estimativa 29,85 €<br>envelope 43,40 €</div>
+    </div>
+    <div class="prog" style="background:${t.page}"><div style="width:21%;background:${t.accent}"></div></div>
+  </div>`;
+
+const artigos = (t) => `
+  <div class="sec" style="color:${t.titulo}">Frescos · 10 artigos</div>
+  <div class="lista">
+    ${ARTIGOS.map(a => a.feito ? `
+      <div class="artigo" style="background:${t.okBg};border-color:${t.okBorder};border-width:2px">
+        <div class="top">
+          <div class="ic" style="border-color:${t.ok};background:${t.ok}"></div>
+          <div class="txt"><div class="n" style="color:${t.text2}">${a.n}</div><div class="e" style="color:${t.text3}">${a.e}</div></div>
+          <div class="acoes"><div class="b" style="color:${t.text2}">Desfazer</div></div>
+        </div>
+        <div class="preco" style="color:${t.text3}"><span style="font-weight:600">Preço pago</span><div class="campo" style="border-color:${t.border};background:${t.surface};color:${t.text2}">${a.pago}</div><span>€</span></div>
+      </div>` : `
+      <div class="artigo" style="background:${t.card};border-color:${t.border}">
+        <div class="top">
+          <div class="ic" style="border-color:${t.text3}"></div>
+          <div class="txt"><div class="n" style="color:${t.text2}">${a.n}</div><div class="e" style="color:${t.text3}">${a.e}</div></div>
+          <div class="acoes"><div class="b" style="color:${t.actFg}">Confirmar</div><div class="b" style="color:${t.text3};font-weight:400;min-height:32px">Sem stock</div></div>
+        </div>
+      </div>`).join('')}
+  </div>
+  <div class="tracejado" style="border-color:${t.titulo};color:${t.text2}">+ acrescentar artigo à lista</div>
+  <div class="botao" style="background:${t.actBg};border-color:${t.actBrd};color:${t.actFg}">Secção seguinte ›</div>`;
+
+function desenhar(nome) {
+  const t = TEMAS[nome];
+  document.getElementById('fone-a').innerHTML = `
+    ${cab(t)}
+    <div class="miolo" style="background:${t.page}">
+      <div class="rola">${loja(t)}${barra(t)}${cartao(t)}${artigos(t)}</div>
+    </div>
+    ${rodape(t)}`;
+  document.getElementById('fone-b').innerHTML = `
+    ${cab(t)}
+    <div class="miolo" style="background:${t.page}">
+      <div class="fixa" style="background:${t.surface};border-bottom:1px solid ${t.divider}">${loja(t)}${barra(t)}</div>
+      <div class="rola">${cartao(t)}${artigos(t)}</div>
+    </div>
+    ${rodape(t)}`;
+  document.getElementById('claro').setAttribute('aria-pressed', String(nome === 'claro'));
+  document.getElementById('escuro').setAttribute('aria-pressed', String(nome === 'escuro'));
+}
+document.getElementById('claro').onclick = () => desenhar('claro');
+document.getElementById('escuro').onclick = () => desenhar('escuro');
+desenhar('claro');
+</script>
+</body>
+</html>
