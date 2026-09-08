@@ -151,6 +151,7 @@ export const REGISTO_APP = [
   { v: '1.11.0', d: '08/09/2026', k: 'alterado', a: 'A App', t: 'Os botões seguem a cor do perfil escolhido; deixou de haver botões pretos' },
   { v: '1.11.0', d: '08/09/2026', k: 'corrigido', a: 'A App', t: 'O texto pequeno lê-se no aspeto escuro e nos seis esquemas: as datas em atraso, os valores a verde, os dias da agenda e as etiquetas estavam abaixo do contraste mínimo — medido tema a tema' },
   { v: '1.11.0', d: '08/09/2026', k: 'alterado', a: 'A App', t: 'Um botão que ainda não pode agir fica na cor do perfil, com o contorno tracejado, em vez de cinzento — a folha do artigo abria sem uma cor do perfil à vista' },
+  { v: '1.11.0', d: '08/09/2026', k: 'corrigido', a: 'A App', t: 'Nos esquemas de cabeçalho claro — Cinza, Menta, Rosa, Cião — o subtítulo do cabeçalho e os rótulos do rodapé ficavam abaixo do contraste mínimo; o branco passa a calcular-se para o cumprir' },
   { v: '1.11.0', d: '08/09/2026', k: 'alterado', a: 'Compras', t: 'Ao acrescentar um artigo, o primeiro corredor já vem escolhido — a escolha que a app fazia em silêncio passa a ver-se, e muda-se' },
   { v: '1.11.0', d: '08/09/2026', k: 'corrigido', a: 'Início', t: 'No «Precisa de Si» a faixa e o ícone de cada aviso são duas cores, como no desenho: a faixa das linhas cinzentas era da cor do ícone e ficava quase preta ao lado das coloridas' },
   { v: '1.11.0', d: '08/09/2026', k: 'novo', a: 'Compras', t: 'Um artigo altera-se — nome, corredor, estimativa, habitual — e arrasta-se para mudar a ordem dentro do corredor' },

@@ -55,7 +55,9 @@ const sobre = (topo, fundo) => {
 };
 const lum = ({ r, g, b }) => 0.2126 * canal(r / 255) + 0.7152 * canal(g / 255) + 0.0722 * canal(b / 255);
 const contraste = (texto, fundo) => {
-  const a = lum(rgb(texto)), b = lum(typeof fundo === 'string' ? rgb(fundo) : fundo);
+  // Os dois lados aceitam uma cor escrita OU um já composto pelo `sobre`.
+  const a = lum(typeof texto === 'string' ? rgb(texto) : texto);
+  const b = lum(typeof fundo === 'string' ? rgb(fundo) : fundo);
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 };
 
@@ -118,6 +120,14 @@ describe('⚠ o texto pequeno chega aos 4,5:1 sobre as superfícies, nos doze te
       ['text3/okBg sobre o cartão', t.text3, sobre(t.state.okBg, t.card)],
       ['text2/tijolo do vazio', t.text2, sobre(acentoComAlfa(t), t.card)],
     ], 4.5)).toEqual([]);
+  });
+
+  it('⚠ o branco com alfa do cabeçalho lê-se a 4,5 nos seis esquemas', () => {
+    // O subtítulo do cabeçalho e os rótulos do rodapé são `onChrome(t.chrome)`,
+    // um branco com alfa sobre a cor do cabeçalho. No Cinza — o cabeçalho mais
+    // claro — o alfa estimado dava 3,93 a 10,5 px. Agora resolve-se para 4,6.
+    const { onChrome } = require('../src/theme');
+    expect(falhas(t => [['onChrome/chrome', sobre(onChrome(t.chrome), t.chrome), t.chrome]], 4.5)).toEqual([]);
   });
 
   it('⚠ branco sobre os preenchimentos que levam branco', () => {

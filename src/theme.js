@@ -438,12 +438,30 @@ export const buildTheme = (schemeIdx = 0, dark = false) => {
 
 // Alfa do branco sobre o cabeçalho, calculado da luminância real da cor —
 // não um literal. Foi o que evitou texto ilegível quando os esquemas mudaram.
+//
+// ⚠ E o alfa RESOLVE-SE para os 4,5:1, não se estima. A fórmula antiga —
+// `0,55 + L × 1,6`, com tecto a 0,92 — dava 0,80 no Cinza (#646F80) e o
+// subtítulo do cabeçalho e os rótulos do rodapé mediam 3,93 a 10,5–13 px.
+// Medido em 09/09/2026 pela sonda de contraste.
+//
+// ⚠ E resolve-se NUMERICAMENTE, no espaço sRGB. A primeira correcção resolveu
+// a equação em luz linear — `a + (1 − a)·L` — e dava 3,94 no Menta onde
+// prometia 4,6: o navegador mistura o branco com o fundo canal a canal, COM a
+// gama, e só depois é que a luminância se calcula. Não há fórmula fechada;
+// procura-se o menor alfa (ao centésimo) que dê 4,6, e o piso de 0,65 continua
+// a mandar nos cabeçalhos escuros.
 export const onChrome = (chromeHex, target = 0.65) => {
-  const h = (i) => parseInt(chromeHex.slice(i, i + 2), 16) / 255;
+  const canal = (i) => parseInt(chromeHex.slice(i, i + 2), 16) / 255;
   const lin = (v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
-  const L = 0.2126 * lin(h(1)) + 0.7152 * lin(h(3)) + 0.0722 * lin(h(5));
-  // quanto mais claro o cabeçalho, mais opaco tem de ser o branco
-  const a = Math.min(0.92, Math.max(target, 0.55 + L * 1.6));
+  const fundo = [canal(1), canal(3), canal(5)];
+  const lumDe = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  const Lf = lumDe(fundo);
+  const contrasteA = (a) => {
+    const misto = fundo.map(v => a + (1 - a) * v);      // canal a canal, em sRGB
+    return (lumDe(misto) + 0.05) / (Lf + 0.05);
+  };
+  let a = target;
+  while (a < 0.96 && contrasteA(a) < 4.6) a = Math.round((a + 0.01) * 100) / 100;
   return `rgba(255,255,255,${a.toFixed(2)})`;
 };
 
