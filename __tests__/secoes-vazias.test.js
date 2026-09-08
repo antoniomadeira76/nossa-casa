@@ -31,6 +31,13 @@ const NUNCA_VAZIAS = {
   // reorganizado. Foi esta prova que deu por isso — é para isso que ela existe.
   'src/screens/Perfil.jsx :: Aparência':
     'os três aspetos e os seis esquemas de cor são constantes do tema',
+  // ⚠ A lista nunca fica vazia por CONSTRUÇÃO, e não por sorte: sem secções
+  // da casa a loja devolve as sementes, e o `apagarSeccao` recusa apagar a
+  // última — «A casa tem de ter pelo menos uma secção». Um corredor a menos é
+  // uma escolha; nenhum corredor é uma lista de compras sem sítios onde pôr
+  // artigos.
+  'src/screens/ComoFazemosCompras.jsx :: Corredores da loja':
+    'a loja devolve as sementes quando a casa não tem lista, e o `apagarSeccao` recusa apagar a última',
 };
 
 // `].map(` é um array escrito na própria linha — as opções de um Segmented, os

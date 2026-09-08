@@ -35,6 +35,14 @@ const P = {
   // porta.
   storefront: 'M3.5 4.5h17l1.5 5H2z|M5 9.5V20h14V9.5|M10 20v-6h4v6',
   idcard: 'M3 6h18v12H3z|M7 10h3M7 14h6M14 10h3',
+  // ⚠ `grip` quer dizer «isto arrasta-se», e só isso — os ícones desta app têm
+  // um sentido exclusivo cada um (CLAUDE.md). Seis pontos em duas colunas, que
+  // é o desenho que toda a gente já leu noutro sítio como uma pega.
+  //
+  // A linha do corredor não tem alça tocável: o arrasto arma-se com pressão
+  // longa, para não haver um segundo alvo na linha (erro #6). Isto é o SINAL
+  // de que o gesto existe, não o alvo dele.
+  grip: 'M9 7h.01M9 12h.01M9 17h.01M15 7h.01M15 12h.01M15 17h.01|',
   smile: 'M8.5 14s1.2 1.5 3.5 1.5S15.5 14 15.5 14|',
   sun: 'M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M17.7 6.3l-1.4 1.4M7.7 16.3l-1.4 1.4|',
   moon: 'M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z',

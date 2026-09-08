@@ -18,7 +18,7 @@ const diaDaSemana = (k) => {
   return o ? WD[(new Date(o.y, o.m, o.d).getDay() + 6) % 7].toLowerCase() : '';
 };
 
-export default function Compras({ t, user, onModoCompras }) {
+export default function Compras({ t, user, onModoCompras, onIda }) {
   const st = useStore();
   const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas, removerArtigo, marcarArtigo, mudarPlanoDeCompras, seccoes } = st;
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -160,13 +160,17 @@ export default function Compras({ t, user, onModoCompras }) {
 
               E tinha `minHeight: 44` sem `minWidth`: a palavra media 42 px de
               largura. O INVARIANTE #5 é nas duas medidas. */}
+          {/* ⚠ Levava as compras ao adulto seguinte, e mais nada — o dia, a
+              hora e a loja não se mudavam de sítio nenhum. Agora abre o ecrã
+              «Como fazemos compras», onde as três estão juntas com as lojas e
+              os corredores. Desenho E de `design/ida-as-compras.dc.html`. */}
           <Pressable accessibilityRole="button"
-            accessibilityLabel={proximoComprador ? `Passar as compras para ${proximoComprador}` : 'Alterar quem vai às compras'}
-            disabled={!proximoComprador}
-            onPress={proximoComprador ? () => mudarPlanoDeCompras({ who: proximoComprador }) : undefined}
+            accessibilityLabel="Alterar a ida às compras"
+            accessibilityHint="Quem vai, o dia e a hora, e a loja"
+            onPress={onIda}
             style={{ minHeight: 44, minWidth: 44, paddingHorizontal: S.sm, justifyContent: 'center' }}>
             <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '700',
-              color: proximoComprador ? t.accent : t.text3 }}>Alterar</Text>
+              color: t.titulo }}>Alterar</Text>
           </Pressable>
         </View>
       </Card>

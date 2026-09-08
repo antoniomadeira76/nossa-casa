@@ -120,6 +120,25 @@ const chaveDeISO = (iso) => {
 };
 const isoDeChave = (chave) => String(chave || '').replace(/^d/, '') || null;
 
+// A data de uma ida às compras, com a hora quando ela existe.
+//
+// ⚠ A HORA cabe aqui e sempre coube: o `planeada_para` é um campo `date` do
+// PocketBase, e um `date` guarda o instante. O que não existia era ninguém a
+// escrevê-la — o `time` do `shopPlan` era um campo só da demonstração, e foi
+// tirado em 07/09/2026 por isso mesmo. Volta agora com sítio dos dois lados.
+const isoComHora = (chave, hora) => {
+  const dia = isoDeChave(chave);
+  if (!dia) return null;
+  return /^\d{2}:\d{2}$/.test(String(hora || '')) ? `${dia} ${hora}:00` : dia;
+};
+
+// E de volta: «10:30», ou nada quando a linha só tem o dia.
+export const horaDeISO = (iso) => {
+  const m = String(iso || '').match(/\d{4}-\d{2}-\d{2}[ T](\d{2}):(\d{2})/);
+  if (!m) return null;
+  return m[1] === '00' && m[2] === '00' ? null : `${m[1]}:${m[2]}`;
+};
+
 // A recorrência: a loja fala português corrido, o servidor tem um `select`.
 //
 // ⚠ Se esta tabela ficar incompleta, o PocketBase recusa o valor — ao contrário
@@ -598,6 +617,9 @@ export async function puxarCasa() {
     store: (listas.stores || []).indexOf(nomeDaLoja[aberta.loja]),
     who: nomeDoMembro[aberta.comprador] || null,
     day: chaveDeISO(aberta.planeada_para),
+    // A hora, quando a linha a tem. `null` quando só há dia — e é o `null` que
+    // faz a linha do ecrã não deixar um separador pendurado.
+    time: horaDeISO(aberta.planeada_para),
   } : null;
 
   // ── Os equipamentos ───────────────────────────────────────────────────────
@@ -1098,10 +1120,10 @@ export async function apagarEquipamento(idNoServidor) {
 // `compras-estado.js`, que é o dono do vocabulário e que as provas conseguem
 // ler — ver lá o relato inteiro.
 
-export async function listaDeCompras({ casa, loja, comprador, planeadaPara }) {
+export async function listaDeCompras({ casa, loja, comprador, planeadaPara, hora }) {
   return criarOuEnfileirarCasa('listas_compras', {
     casa, loja: loja || null, comprador: comprador || null,
-    planeada_para: planeadaPara ? isoDeChave(planeadaPara) : null,
+    planeada_para: planeadaPara ? isoComHora(planeadaPara, hora) : null,
   });
 }
 
@@ -1110,7 +1132,11 @@ export async function alterarListaDeCompras(idNoServidor, campos) {
   const linha = {};
   if ('loja' in campos) linha.loja = campos.loja || null;
   if ('comprador' in campos) linha.comprador = campos.comprador || null;
-  if ('planeadaPara' in campos) linha.planeada_para = campos.planeadaPara ? isoDeChave(campos.planeadaPara) : null;
+  // ⚠ O dia e a hora vão JUNTOS. Mandar a hora sozinha não faz sentido — uma
+  // hora sem dia não é um instante —, e por isso quem chama manda os dois.
+  if ('planeadaPara' in campos) {
+    linha.planeada_para = campos.planeadaPara ? isoComHora(campos.planeadaPara, campos.hora) : null;
+  }
   // Fechar a conta é pôr a data: a lista deixa de ser a aberta.
   if ('fechadaEm' in campos) linha.fechada_em = campos.fechadaEm ? isoDeChave(campos.fechadaEm) : null;
   // E quanto custou, que é o que faz o histórico chegar ao outro telemóvel.

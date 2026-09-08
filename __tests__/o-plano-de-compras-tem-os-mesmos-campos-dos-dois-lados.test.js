@@ -125,10 +125,18 @@ describe('⚠ o `shopPlan` tem os mesmos campos na semente e no servidor', () =>
     expect(aMais).toEqual([]);
   });
 
-  it("o `time` desapareceu dos dois lados — uma ida às compras tem dia, não hora", () => {
-    expect(DA_SEMENTE.has('time')).toBe(false);
-    expect(DO_SERVIDOR.has('time')).toBe(false);
-    expect([...LIDOS.keys()]).not.toContain('time');
+  it("⚠ e o `time` está nos DOIS — voltou com sítio no servidor", () => {
+    // Esta prova exigia o contrário, e é a mesma regra vista do outro lado.
+    //
+    // Em 07/09/2026 a hora foi TIRADA porque só a semente a tinha: o
+    // `planeada_para` descia sem ela e a linha lia-se «Quarta, 09/09 ·  ·
+    // Pingo Doce». Em 08/09 voltou, agora escrita pelo `mudarPlanoDeCompras`
+    // no mesmo campo `date` que sempre soube guardar o instante.
+    //
+    // O que a prova sempre defendeu não mudou: os dois lados têm os MESMOS
+    // campos. Só mudou de que lado estava o buraco.
+    expect(DA_SEMENTE.has('time')).toBe(true);
+    expect(DO_SERVIDOR.has('time')).toBe(true);
   });
 });
 
@@ -206,7 +214,11 @@ describe('⚠ o «Alterar» faz alguma coisa', () => {
   const compras = soCodigo(ler('src/screens/Compras.jsx'));
 
   it('tem `onPress` — era um botão que não fazia nada', () => {
-    const i = compras.indexOf('Alterar quem vai às compras');
+    // ⚠ O rótulo mudou de «Alterar quem vai às compras» para «Alterar a ida às
+    // compras» em 08/09/2026: o botão deixou de trocar de pessoa e passou a
+    // abrir o ecrã onde as três coisas se mudam. A propriedade que esta prova
+    // defende é a mesma — tem destino, e tem alvo nas duas medidas.
+    const i = compras.indexOf('Alterar a ida às compras');
     expect(i).toBeGreaterThan(0);
     // O bloco do `Pressable` à volta do rótulo.
     const inicio = compras.lastIndexOf('<Pressable', i);
@@ -215,7 +227,7 @@ describe('⚠ o «Alterar» faz alguma coisa', () => {
   });
 
   it('e declara as DUAS medidas de 44 — media 42 de largura', () => {
-    const i = compras.indexOf('Alterar quem vai às compras');
+    const i = compras.indexOf('Alterar a ida às compras');
     const inicio = compras.lastIndexOf('<Pressable', i);
     const bloco = compras.slice(inicio, compras.indexOf('</Pressable>', i));
     expect(bloco).toMatch(/minHeight: 44/);
@@ -223,6 +235,10 @@ describe('⚠ o «Alterar» faz alguma coisa', () => {
   });
 
   it('e os adultos vêm do quadro da casa, não de uma lista escrita à mão', () => {
-    expect(compras).toMatch(/Object\.keys\(MEMBERS\)\.filter\(n => !MEMBERS\[n\]\.kid\)/);
+    // ⚠ Este pedaço saiu do Compras com o botão: quem escolhe o adulto é agora
+    // o ecrã «Como fazemos compras», e é lá que os adultos vêm do quadro da
+    // casa — pelo `adultos` da loja, que é a mesma leitura num sítio só.
+    const ecra = ler('src/screens/ComoFazemosCompras.jsx');
+    expect(ecra).toMatch(/membros=\{adultos\}/);
   });
 });

@@ -668,7 +668,14 @@ export const DEMO = () => ({
     // servidor não trazem, depois do `today` das tarefas e do `used` dos
     // envelopes. Guarda:
     // `__tests__/o-plano-de-compras-tem-os-mesmos-campos-dos-dois-lados.test.js`.
-    day: proximoDomingo(), store: 0,
+    // ⚠ A hora está aqui OUTRA VEZ, e desta vez com sítio no servidor.
+    //
+    // Foi tirada em 07/09/2026 porque só a demonstração a tinha: o
+    // `planeada_para` descia sem hora e a linha do plano lia-se «Quarta, 09/09
+    // ·  · Pingo Doce» — dois separadores com nada no meio. O `planeada_para`
+    // é um campo `date` e sempre soube guardar o instante; o que faltava era
+    // alguém a escrevê-la. Agora o `mudarPlanoDeCompras` escreve-a.
+    day: proximoDomingo(), time: '10:30', store: 0,
   },
   shopHistory: [],
   // O histórico de preços da casa: uma observação por artigo, loja e dia.
@@ -2307,7 +2314,15 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     const linha = {
       ...(campos.store !== undefined ? { loja: daLoja((s.stores || [])[campos.store]) } : {}),
       ...(campos.who !== undefined ? { comprador: idDoMembro(campos.who) } : {}),
-      ...(campos.day !== undefined ? { planeadaPara: campos.day } : {}),
+      // ⚠ O dia e a hora vão sempre JUNTOS: uma hora sem dia não é um
+      // instante, e o servidor guarda os dois no mesmo campo. Mudar só a hora
+      // manda o dia que já lá está.
+      ...(campos.day !== undefined || campos.time !== undefined
+        ? {
+          planeadaPara: campos.day !== undefined ? campos.day : (s.shopPlan || {}).day,
+          hora: campos.time !== undefined ? campos.time : (s.shopPlan || {}).time,
+        }
+        : {}),
     };
     if (!Object.keys(linha).length) return;
 
@@ -2315,7 +2330,8 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     if (lista) { sync.alterarListaDeCompras(lista, linha).catch(() => {}); return; }
     sync.listaDeCompras({
       casa: ses.casa,
-      loja: linha.loja, comprador: linha.comprador, planeadaPara: linha.planeadaPara,
+      loja: linha.loja, comprador: linha.comprador,
+      planeadaPara: linha.planeadaPara, hora: linha.hora,
     })
       .then((r) => { if (r && r.id) set(x => ({ shopPlan: { ...x.shopPlan, idServidor: r.id } })); })
       .catch(() => {});

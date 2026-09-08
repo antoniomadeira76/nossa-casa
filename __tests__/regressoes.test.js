@@ -273,12 +273,27 @@ describe('Vistas de ecrã inteiro — cabeçalho próprio, rodapé intacto', () 
     expect(app).not.toMatch(/maxHeight: '85vh'/);
   });
 
-  it('as cinco vistas declaram ícone, título e legenda', () => {
-    for (const v of ['saude', 'equip', 'gestao', 'doc', 'loja']) {
-      expect(app).toMatch(new RegExp(`\\n    ${v}: \\{`));
+  // ⚠ Isto exigia CINCO, com os cinco nomes escritos à mão. Uma prova que fixa
+  // o número de hoje envelhece a fechar os olhos: a sexta vista — «Como
+  // fazemos compras», 08/09/2026 — fê-la falhar sem que houvesse nada de errado,
+  // e a saída fácil era mudar o 5 para 6 e voltar a esperar.
+  //
+  // A propriedade não é «são cinco»: é que CADA vista registada declare o que o
+  // cabeçalho precisa. Enumera-se do próprio registo.
+  it('⚠ cada vista de ecrã inteiro declara ícone, título e como fechar', () => {
+    const nomes = [...app.matchAll(/^    (\w+): \{\n      icon: /gm)].map(m => m[1]);
+    // Se isto der pouco, o registo mudou de forma e a prova deixou de o ler.
+    expect(nomes.length).toBeGreaterThan(4);
+
+    const semTudo = [];
+    for (const nome of nomes) {
+      const i = app.indexOf(`    ${nome}: {\n      icon: `);
+      const fim = app.indexOf('\n    },', i);
+      const bloco = app.slice(i, fim === -1 ? app.length : fim);
+      const falta = ['icon:', 'titulo:', 'fechar:', 'render:'].filter(k => !bloco.includes(k));
+      if (falta.length) semTudo.push(`${nome} → falta ${falta.join(', ')}`);
     }
-    const decls = app.match(/icon: '[a-zA-Z]+', titulo: '[^']+', fechar:/g) || [];
-    expect(decls.length).toBe(5);
+    expect(semTudo).toEqual([]);
   });
 
   it('a raiz continua a ter três filhos, com o rodapé em último', () => {

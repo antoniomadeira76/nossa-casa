@@ -17,6 +17,7 @@ import Dinheiro from './src/screens/Dinheiro';
 import Tarefas from './src/screens/Tarefas';
 import Compras from './src/screens/Compras';
 import ModoCompras from './src/screens/ModoCompras';
+import ComoFazemosCompras from './src/screens/ComoFazemosCompras';
 import Agenda from './src/screens/Agenda';
 import Equipamentos from './src/screens/Equipamentos';
 import Saude from './src/screens/Saude';
@@ -111,6 +112,7 @@ function Shell() {
   const [gestao, setGestao] = useState(false);
   const [doc, setDoc] = useState(false);
   const [loja, setLoja] = useState(false);   // modo de compras na loja
+  const [ida, setIda] = useState(false);     // como esta casa faz compras
   const [ficha, setFicha] = useState(null); // membro cuja ficha de saúde está aberta
   const [marcarPara, setMarcarPara] = useState(null); // membro a pré-seleccionar ao marcar
   const [googleImport, setGoogleImport] = useState(false);
@@ -452,6 +454,11 @@ function Shell() {
       render: () => <Documentacao t={t} onClose={() => setDoc(false)}
         onIr={irDoRegisto} podeGerir={isAdmin(user)} />,
     },
+    ida: {
+      icon: 'storefront', titulo: 'Como fazemos compras', fechar: () => setIda(false),
+      sub: () => 'A ida marcada, as lojas e os corredores',
+      render: () => <ComoFazemosCompras t={t} user={user} onClose={() => setIda(false)} />,
+    },
     loja: {
       icon: 'fileDone', titulo: 'Modo Compras', fechar: () => setLoja(false),
       // ⚠ Sem ida marcada, `s.shopPlan` é NULO — entre duas idas e numa casa
@@ -478,7 +485,7 @@ function Shell() {
   // O rodapé tem de levar sempre onde diz que leva.
   const fecharVistas = () => {
     setFicha(null); setSaude(false); setEquip(false);
-    setGestao(false); setDoc(false); setLoja(false);
+    setGestao(false); setDoc(false); setLoja(false); setIda(false);
   };
 
   // Onde uma linha do registo da casa leva. O destino vem da ÁREA dela — ver o
@@ -498,7 +505,7 @@ function Shell() {
   };
 
   const vistaAberta = ficha ? 'ficha' : saude ? 'saude' : equip ? 'equip'
-    : gestao ? 'gestao' : doc ? 'doc' : loja ? 'loja' : null;
+    : gestao ? 'gestao' : doc ? 'doc' : loja ? 'loja' : ida ? 'ida' : null;
   const V = vistaAberta ? vistas[vistaAberta] : null;
 
   // No monitor, a coluna da app não se estica.
@@ -741,6 +748,7 @@ function Shell() {
                   onLigarAgenda={ligarAgenda} />
               : <Screen t={t} user={user} go={setTab} onEquip={() => setEquip(true)}
                   onModoCompras={() => setLoja(true)}
+                  onIda={() => setIda(true)}
                   abrir={abrirNoTab && abrirNoTab.tab === tab ? abrirNoTab.id : null}
                   abrirImportar={tab === 'agenda' && importarNaAgenda}
                   onImportarAberto={() => setImportarNaAgenda(false)} />}
