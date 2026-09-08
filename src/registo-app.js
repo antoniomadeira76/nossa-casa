@@ -149,6 +149,7 @@ export const REGISTO_APP = [
   { v: '1.11.0', d: '08/09/2026', k: 'novo', a: 'Dinheiro', t: 'As metas da família: criar, reforçar e ver de onde veio o dinheiro — tudo em euros, e o juntado é a soma dos reforços' },
   { v: '1.11.0', d: '08/09/2026', k: 'alterado', a: 'Dinheiro', t: 'Fechar o mês pode levar o saldo para uma meta, no valor que quem administra escolher — e não numa percentagem' },
   { v: '1.11.0', d: '08/09/2026', k: 'alterado', a: 'A App', t: 'Os botões seguem a cor do perfil escolhido; deixou de haver botões pretos' },
+  { v: '1.11.0', d: '08/09/2026', k: 'alterado', a: 'Início', t: 'No «Precisa de Si» a cor diz o género do aviso: cinzento para o que há por fazer, azul para uma data que se aproxima, vermelho para um limite ultrapassado — saiu o laranja das garantias' },
   { v: '1.11.0', d: '08/09/2026', k: 'novo', a: 'Compras', t: 'Um artigo altera-se — nome, corredor, estimativa, habitual — e arrasta-se para mudar a ordem dentro do corredor' },
   { v: '1.11.0', d: '08/09/2026', k: 'novo', a: 'Compras', t: '«Como fazemos compras»: quem vai, quando e a que loja, e os corredores da loja pela ordem em que se anda neles' },
   { v: '1.11.0', d: '08/09/2026', k: 'corrigido', a: 'Compras', t: 'Passar um artigo de corredor ficava só neste telemóvel: duas escritas no mesmo instante e a primeira perdia-se em silêncio' },

@@ -68,6 +68,12 @@ const LIGHT = {
   text1: '#262626', text2: '#434343', text3: '#6A7282', slate: '#67769B',
   divider: '#F0F2F5', tileWarn: 'rgba(255,251,230,0.8)', tileInfo: 'rgba(232,244,255,0.8)',
   tileErr: 'rgba(255,241,240,0.9)',
+  // A faixa da esquerda de uma linha informativa do «Precisa de Si» — mais
+  // clara do que o ícone (`text3`), como no protótipo: o ícone é `#6A7282` e a
+  // linha `#A9B4C6`. A app usava uma cor para os dois, e as faixas cinzentas
+  // ficavam quase pretas ao lado das coloridas. É um sinal redundante com o
+  // ícone, não um objeto que se leia sozinho — por isso não lhe pede 3:1.
+  faixa: '#A9B4C6',
 };
 // ── O escuro segue o esquema ─────────────────────────────────────────────────
 //
@@ -126,6 +132,7 @@ const LUMES = {
   card:    [0.135, 0.42],   // cartões, folhas, rodapé
   subtle:  [0.180, 0.36],   // a superfície de dentro de um cartão
   border:  [0.255, 0.28],   // linhas e divisórias
+  faixa:   [0.420, 0.20],   // a faixa informativa do Início: entre a linha e o texto
   text3:   [0.660, 0.14],   // texto terciário — pouca cor, muito contraste
   slate:   [0.740, 0.24],   // as etiquetas pequenas
 };
@@ -241,7 +248,7 @@ const escuroDoEsquema = (chrome) => {
     // O texto claro fica NEUTRO. Tingi-lo também punha cor a competir com o
     // acento em cada palavra do ecrã, e a cor de ação deixava de saltar.
     text1: '#F0F2F5', text2: '#DCE3EA',
-    text3: tom('text3'), slate: tom('slate'),
+    text3: tom('text3'), slate: tom('slate'), faixa: tom('faixa'),
     tileWarn: 'rgba(250,173,20,0.16)', tileInfo: 'rgba(24,144,255,0.16)',
     tileErr: 'rgba(255,77,79,0.16)',
   };

@@ -53,21 +53,39 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
     title: 'Agenda da Google por ligar',
     sub: 'Liga-se uma vez; depois os eventos vêm sozinhos',
     go: () => onLigarAgenda?.() });
-  if (toConfirm.length) needs.push({ icon: 'clock', color: t.text3,
+  // ── A cor de cada linha diz o GÉNERO do que pede atenção ─────────────────
+  //
+  //   cinzento   há algo por fazer, mas nada em risco — contas, tarefas
+  //   azul       uma DATA aproxima-se — garantia, receita, consulta, agenda
+  //   vermelho   um limite já foi ultrapassado — envelope
+  //
+  // ⚠ As garantias e as receitas levavam âmbar (`state.warn`), e saiu a pedido
+  // do dono da casa em 08/09/2026: nesta app não há laranja, e a especificação
+  // (item 7, «grey except real risk») já dizia que o âmbar não se usava em
+  // lado nenhum — era o código do protótipo que a contradizia. Um prazo que
+  // se aproxima é informação sobre uma data, e é isso que o azul já dizia nas
+  // consultas.
+  //
+  // ⚠ E a faixa da esquerda das linhas cinzentas tem a SUA cor (`faixa`), mais
+  // clara do que o ícone — como no protótipo, que dava `#6A7282` ao ícone e
+  // `#A9B4C6` à linha. A app usava uma cor para os dois, e as faixas ficavam
+  // quase pretas ao lado das coloridas. Nas linhas coloridas a faixa é a cor
+  // do estado, como lá.
+  if (toConfirm.length) needs.push({ icon: 'clock', color: t.text3, line: t.faixa,
     title: plural(toConfirm.length, 'tarefa a confirmar', 'tarefas a confirmar'),
     sub: [...new Set(toConfirm.map(x => x.who))].join(', '), go: () => go('tarefas') });
-  if (!acertado) needs.push({ icon: 'wallet', color: t.text3,
+  if (!acertado) needs.push({ icon: 'wallet', color: t.text3, line: t.faixa,
     title: 'Contas por acertar', sub: `${oNome(acerto.devedor)} deve ${EUR(settleBase)}`, go: () => go('dinheiro') });
   tight.forEach(e => needs.push({ icon: 'warning', color: t.state.err,
     title: `Envelope ${e.name} no limite`, sub: `${EUR(Math.max(0, e.limit - e.used))} disponíveis`, go: () => go('dinheiro') }));
-  garantiasAExpirar().forEach(e => needs.push({ icon: 'idcard', color: t.state.warn,
+  garantiasAExpirar().forEach(e => needs.push({ icon: 'idcard', color: t.state.info,
     title: `Garantia a expirar · ${String(e.name).split(' ').slice(0, 2).join(' ')}`,
     sub: e.dias === 0 ? 'termina hoje' : `${e.dias === 1 ? 'Falta' : 'Faltam'} ${plural(e.dias, 'dia', 'dias')}`,
     // A ficha DESTE equipamento, e não a lista onde é preciso voltar a
     // procurá-lo. Uma linha que diz «Frigorífico» e abre uma lista de doze
     // obriga a fazer a busca outra vez, depois de a app já a ter feito.
     go: () => onEquip(e.id) }));
-  receitasAExpirar(user).forEach(d => needs.push({ icon: 'idcard', color: t.state.warn,
+  receitasAExpirar(user).forEach(d => needs.push({ icon: 'idcard', color: t.state.info,
     title: `Receita a expirar · ${d.member}`,
     sub: `${d.title} · ${d.dias < 0 ? `Expirou há ${plural(-d.dias, 'dia', 'dias')}`
       : d.dias === 0 ? 'Expira hoje'
@@ -77,7 +95,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
     title: `Consulta · ${c.member}`,
     sub: `${c.specialty} · ${dayLabel(c.day)} às ${c.time}`,
     go: () => (onFicha ? onFicha(c.member) : onSaude()) }));
-  if (overdue.length) needs.push({ icon: 'checkSquare', color: t.text3,
+  if (overdue.length) needs.push({ icon: 'checkSquare', color: t.text3, line: t.faixa,
     title: plural(overdue.length, 'tarefa por fazer hoje', 'tarefas por fazer hoje'),
     sub: [...new Set(overdue.map(x => x.who))].join(', '), go: () => go('tarefas') });
 
@@ -132,7 +150,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
         ) : (
           <View style={{ gap: S.md }}>
             {needsPg.slice.map((n, i) => (
-              <Card key={i} t={t} style={{ borderLeftWidth: 4, borderLeftColor: n.color }}>
+              <Card key={i} t={t} style={{ borderLeftWidth: 4, borderLeftColor: n.line || n.color }}>
                 <Row t={t} title={n.title} sub={n.sub} onPress={n.go} last
                   icon={n.icon} iconColor={n.color}
                   right={<Icon name="caretRight" size={18} color={t.text3} />} />
@@ -197,7 +215,12 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
                     : pend ? 'Feito — a aguardar confirmação'
                     : subtituloDaTarefa(x, d)}
                   right={<>
-                    {pontosNasTarefas && x.pts > 0 && !done ? <Pill label={`${x.pts} pt`} fg={t.state.warnDeep} bg={t.state.warnBg} border={t.state.warn} /> : null}
+                    {/* ⚠ Neutra, como na Tarefas e como a especificação diz
+                        («the points pill is neutral»). Levava borda âmbar,
+                        fundo amarelo e texto âmbar-escuro — laranja num ecrã
+                        onde a mesma pastilha, um separador ao lado, é cinzenta.
+                        Tirado a pedido do dono da casa em 08/09/2026. */}
+                    {pontosNasTarefas && x.pts > 0 && !done ? <Pill label={`${x.pts} pt`} fg={t.text2} bg={t.card} border={t.border} /> : null}
                   </>}
                   icon={done ? 'checkCircle' : pend ? 'clock' : 'infoCircle'} />
               </Card>
