@@ -81,14 +81,14 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
     title: 'Contas por acertar', sub: `${oNome(acerto.devedor)} deve ${EUR(settleBase)}`, go: () => go('dinheiro') });
   tight.forEach(e => needs.push({ icon: 'warning', color: t.state.err,
     title: `Envelope ${e.name} no limite`, sub: `${EUR(Math.max(0, e.limit - e.used))} disponíveis`, go: () => go('dinheiro') }));
-  garantiasAExpirar().forEach(e => needs.push({ icon: 'idcard', color: t.state.warnDeep, line: t.state.warn,
+  garantiasAExpirar().forEach(e => needs.push({ icon: 'idcard', color: t.state.warnTexto, line: t.state.warn,
     title: `Garantia a expirar · ${String(e.name).split(' ').slice(0, 2).join(' ')}`,
     sub: e.dias === 0 ? 'termina hoje' : `${e.dias === 1 ? 'Falta' : 'Faltam'} ${plural(e.dias, 'dia', 'dias')}`,
     // A ficha DESTE equipamento, e não a lista onde é preciso voltar a
     // procurá-lo. Uma linha que diz «Frigorífico» e abre uma lista de doze
     // obriga a fazer a busca outra vez, depois de a app já a ter feito.
     go: () => onEquip(e.id) }));
-  receitasAExpirar(user).forEach(d => needs.push({ icon: 'idcard', color: t.state.warnDeep, line: t.state.warn,
+  receitasAExpirar(user).forEach(d => needs.push({ icon: 'idcard', color: t.state.warnTexto, line: t.state.warn,
     title: `Receita a expirar · ${d.member}`,
     sub: `${d.title} · ${d.dias < 0 ? `Expirou há ${plural(-d.dias, 'dia', 'dias')}`
       : d.dias === 0 ? 'Expira hoje'

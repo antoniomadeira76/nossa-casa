@@ -81,8 +81,8 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
                   style={({ pressed }) => ({ minHeight: 44, paddingHorizontal: S.lg, borderRadius: R.row,
                     flexDirection: 'row', alignItems: 'center', gap: S.sm,
                     backgroundColor: pressed ? t.card : t.subtle, borderWidth: 1, borderColor: t.border })}>
-                  <Icon name="plus" size={16} color={t.accent} />
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.accent }}>Marcar</Text>
+                  <Icon name="plus" size={16} color={t.titulo} />
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.actFg }}>Marcar</Text>
                 </Pressable>
               ) : null}
             </View>

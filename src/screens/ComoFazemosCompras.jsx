@@ -234,7 +234,7 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
               <Pressable accessibilityRole="button" accessibilityLabel={`Apagar a loja ${aEditar}`}
                 onPress={() => { setFolha(null); setAApagar({ tipo: 'loja', nome: aEditar }); }}
                 style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.state.errDeep }}>
+                <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.state.errTexto }}>
                   Apagar esta loja
                 </Text>
               </Pressable>

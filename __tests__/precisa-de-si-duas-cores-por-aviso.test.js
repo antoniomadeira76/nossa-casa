@@ -45,9 +45,12 @@ const AVISOS = [...inicio.matchAll(/needs\.push\(\{([^;]*?)\}\)\)?;/g)].map(m =>
 });
 
 // A escala: ícone → faixa que lhe corresponde. `null` quer dizer «a mesma cor».
+// ⚠ `warnTexto`, e não `warnDeep`: o ícone está sobre o CARTÃO, e sobre o
+// cartão escuro o âmbar-escuro do protótipo dá 2,89. O `warnTexto` é o deep no
+// claro e o próprio âmbar no escuro — ver `STATE` no `theme.js`.
 const ESCALA = {
   't.text3': 't.faixa',
-  't.state.warnDeep': 't.state.warn',
+  't.state.warnTexto': 't.state.warn',
   't.state.err': null,
   't.state.info': null,
 };
@@ -79,7 +82,7 @@ describe('⚠ cada aviso está na escala, com as duas cores', () => {
   it('a garantia e a receita a expirar são âmbar — o protótipo ganha à especificação', () => {
     const idcard = AVISOS.filter(a => a.icone === 'idcard');
     expect(idcard.length).toBe(2);
-    for (const a of idcard) expect(a.cor).toBe('t.state.warnDeep');
+    for (const a of idcard) expect(a.cor).toBe('t.state.warnTexto');
   });
 });
 

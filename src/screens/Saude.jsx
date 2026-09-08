@@ -342,8 +342,8 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                     onPress={() => setExpandedNote(expandedNote === `rx-${record.id}` ? null : `rx-${record.id}`)}
                     style={{ paddingVertical: S.sm, paddingHorizontal: S.md, gap: S.sm, flexDirection: 'row', alignItems: 'center' }}
                   >
-                    <Icon name="plus" size={16} color={t.accent} />
-                    <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.accent }}>
+                    <Icon name="plus" size={16} color={t.titulo} />
+                    <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.actFg }}>
                       Adicionar receita
                     </Text>
                   </Pressable>
@@ -562,7 +562,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                 </View>
 
                 {erroDaNota ? (
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.errDeep }}>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.errTexto }}>
                     {erroDaNota}
                   </Text>
                 ) : null}
@@ -803,7 +803,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                   justifyContent: 'center',
                 }}
               >
-                <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: !memberFilter ? t.accent : t.text3 }}>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: !memberFilter ? t.actFg : t.text3 }}>
                   Todos
                 </Text>
               </Pressable>
@@ -922,9 +922,9 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                         borderColor: escolhido ? t.accent : t.border,
                         backgroundColor: escolhido ? t.subtle : pressed ? t.subtle : 'transparent',
                       })}>
-                      <Icon name={icone} size={18} color={escolhido ? t.accent : t.text3} />
+                      <Icon name={icone} size={18} color={escolhido ? t.titulo : t.text3} />
                       <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600',
-                        color: escolhido ? t.accent : t.text3 }}>{k}</Text>
+                        color: escolhido ? t.actFg : t.text3 }}>{k}</Text>
                     </Pressable>
                   );
                 })}
@@ -1140,7 +1140,7 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
         <View style={{ gap: S.lg }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
               <Text style={{ flex: 1, fontFamily: FONT.display, fontSize: 16,
-                fontWeight: '600', color: t.titulo || t.slate }}>
+                fontWeight: '600', color: t.actFg }}>
                 A consulta
               </Text>
               {/* Só a quem administra: as listas da casa são dele, e é o
@@ -1256,11 +1256,11 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
                             borderTopWidth: 1, borderTopColor: t.divider,
                             backgroundColor: form.specialty === spec ? t.subtle : 'transparent' }}>
                           <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13,
-                            color: form.specialty === spec ? t.accent : t.text2 }}>
+                            color: form.specialty === spec ? t.actFg : t.text2 }}>
                             {spec}
                           </Text>
                           {form.specialty === spec ? (
-                            <Icon name="check" size={16} color={t.accent} />
+                            <Icon name="check" size={16} color={t.titulo} />
                           ) : null}
                         </Pressable>
                       ))}
@@ -1333,7 +1333,7 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
               borderWidth: 1, borderColor: t.state.err }}>
               <Icon name="lock" size={19} color={t.state.err} />
               <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 13,
-                lineHeight: 19, color: t.state.errDeep }}>
+                lineHeight: 19, color: t.state.errTexto }}>
                 {paraCrianca
                   ? `A consulta entra na Agenda como Só os adultos. ${oNome(form.member)} não a vê, nem as outras crianças.`
                   : 'A consulta entra na sua Agenda como Só eu. Ninguém mais vê o motivo.'}
@@ -1439,7 +1439,7 @@ function GerirEspecialidades({ t, user, form, setForm, onClose }) {
                 </View>
                 <Tap label={aEditar ? `A renomear ${esp}` : `Renomear ${esp}`}
                   onPress={() => { setARenomear(esp); setNome(esp); setErro(null); }}>
-                  <Icon name="edit" size={18} color={aEditar ? t.accent : t.text3} />
+                  <Icon name="edit" size={18} color={aEditar ? t.titulo : t.text3} />
                 </Tap>
                 {usadas ? (
                   // Em uso: diz-se, e não se oferece. Um alvo que não faz nada
@@ -1488,7 +1488,7 @@ function GerirEspecialidades({ t, user, form, setForm, onClose }) {
             acompanha as consultas e o título do evento na agenda.
           </Text>
           {erro ? (
-            <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.errDeep }}>
+            <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.errTexto }}>
               {erro}
             </Text>
           ) : null}

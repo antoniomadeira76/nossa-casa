@@ -21,7 +21,7 @@ function Movimento({ t, m }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52,
       paddingVertical: S.md, borderBottomWidth: 1, borderBottomColor: t.divider }}>
-      <Icon name={icon} size={22} color={up ? t.state.okDeep : t.state.errDeep} />
+      <Icon name={icon} size={22} color={up ? t.state.okTexto : t.state.errTexto} />
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{m.label}</Text>
         {m.sub ? (
@@ -29,7 +29,7 @@ function Movimento({ t, m }) {
         ) : null}
       </View>
       <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '600',
-        color: up ? t.state.okDeep : t.state.errDeep }}>
+        color: up ? t.state.okTexto : t.state.errTexto }}>
         {up ? '+' : '−'} {EUR(Math.abs(m.delta))}
       </Text>
     </View>

@@ -170,7 +170,7 @@ export default function CampoData({ t, valor, onChange, placeholder = 'dd/mm/aaa
             width: 46, alignItems: 'center', justifyContent: 'center',
             backgroundColor: aberto ? t.subtle : pressed ? t.subtle : 'transparent',
           })}>
-          <Icon name="calendar" size={19} color={aberto ? t.accent : t.text3} />
+          <Icon name="calendar" size={19} color={aberto ? t.titulo : t.text3} />
         </Pressable>
       </View>
 
@@ -237,7 +237,7 @@ export default function CampoData({ t, valor, onChange, placeholder = 'dd/mm/aaa
                       }}>
                         <Text style={{ fontFamily: FONT.ui, fontSize: 14.5,
                           fontWeight: escolhido || hoje ? '600' : '400',
-                          color: escolhido ? '#FFFFFF' : hoje ? t.accent : t.text2 }}>
+                          color: escolhido ? '#FFFFFF' : hoje ? t.actFg : t.text2 }}>
                           {dia}
                         </Text>
                       </View>
@@ -312,7 +312,7 @@ export default function CampoData({ t, valor, onChange, placeholder = 'dd/mm/aaa
             accessibilityRole="button" accessibilityLabel="Escolher hoje"
             style={({ pressed }) => ({ minHeight: 44, alignItems: 'center', justifyContent: 'center',
               borderTopWidth: 1, borderTopColor: t.divider, opacity: pressed ? 0.6 : 1 })}>
-            <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.accent }}>
+            <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.actFg }}>
               Hoje
             </Text>
           </Pressable>

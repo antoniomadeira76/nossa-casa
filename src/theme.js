@@ -65,7 +65,14 @@ export const SCHEMES = [
 
 const LIGHT = {
   page: '#F0F2F5', card: '#FCFCFD', surface: '#FFFFFF', subtle: '#FAFAFA', border: '#D9D9D9',
-  text1: '#262626', text2: '#434343', text3: '#6A7282', slate: '#67769B',
+  // ⚠ `text3` e `slate` estão UM TOM abaixo do protótipo (`#6A7282` e
+  // `#67769B`), e é medido: a 11,5–12 px pedem 4,5:1, e sobre a PÁGINA
+  // (#F0F2F5) o protótipo dava 4,31 e 4,03 — e o `slate` dava 4,41 até sobre o
+  // cartão. Todas as etiquetas pequenas da app falhavam por uma unha, em todos
+  // os esquemas claros. Apanhado em 08/09/2026 pela sonda de contraste no
+  // navegador; o CLAUDE.md afirmava que o slate chegava aos 4,5 e era falso.
+  // 0,95 e 0,93 do valor original: 4,69/5,13 e 4,53/4,96 (página/cartão).
+  text1: '#262626', text2: '#434343', text3: '#656C7C', slate: '#606E90',
   divider: '#F0F2F5', tileWarn: 'rgba(255,251,230,0.8)', tileInfo: 'rgba(232,244,255,0.8)',
   tileErr: 'rgba(255,241,240,0.9)',
   // A faixa da esquerda de uma linha informativa do «Precisa de Si» — mais
@@ -255,13 +262,43 @@ const escuroDoEsquema = (chrome) => {
 };
 
 // Estado — do sistema, não dos esquemas
+//
+// ⚠ Cada estado tem TRÊS papéis, e eram dois nomes:
+//
+//   `x`        o objeto gráfico — a barra, a borda, o ícone (3:1)
+//   `xDeep`    o texto sobre o TIJOLO desse estado (`xBg`, que é claro nos dois
+//              aspetos) e o preenchimento que leva branco por cima — constante
+//   `xTexto`   o texto pequeno sobre as SUPERFÍCIES do tema — no claro é o
+//              `xDeep`, no escuro é o próprio `x`. Vive no `buildTheme`.
+//
+// Faltava o terceiro. Os «deep» foram calibrados para o claro e, como texto de
+// 11–13 px sobre o cartão ESCURO, medem 3,00 (errDeep), 2,82 (infoDeep), 2,89
+// (warnDeep): «Léo · atrasada 1 dia» a vermelho ilegível em todos os esquemas
+// escuros. Medido em 08/09/2026 pela sonda de contraste no navegador.
 export const STATE = {
-  info: '#1890FF', infoBg: '#E8F4FF',
-  ok: '#52C41A', okBorder: '#BAE7A3', okBg: 'rgba(220,243,209,0.2)', okDeep: '#389E0D',
-  warn: '#FAAD14', warnBg: '#FEFFD0', warnDeep: '#AD8B00',
+  // `infoDeep` não existia: a pastilha «Família» punha o azul claro sobre o
+  // tijolo azul-claro, 2,91. O valor é o azul-8 da mesma escala (5,52).
+  info: '#1890FF', infoBg: '#E8F4FF', infoDeep: '#0958D9',
+  // `okBg` a 0,12 e não 0,2: o cartão de uma tarefa feita ficava a #ECF2EE e o
+  // `text3` dava 4,27 em cima dele. A 0,12 dá #F8FBF8 e 4,64.
+  // `okDeep` #237804 e não #389E0D: sobre esse tijolo o verde antigo dava
+  // 3,32 — o «0,00 €» de um artigo apanhado não se lia.
+  ok: '#52C41A', okBorder: '#BAE7A3', okBg: 'rgba(220,243,209,0.12)', okDeep: '#237804',
+  // `warnDeep` é o `#8F5600` do protótipo. O `#AD8B00` que aqui estava dava
+  // 3,16 sobre o tijolo amarelo — a pastilha «2 pt» ilegível nos dois aspetos.
+  warn: '#FAAD14', warnBg: '#FEFFD0', warnDeep: '#8F5600',
   // errBg faltava — havia okBg e warnBg, e uma pastilha de erro ficava sem
   // fundo. O valor é o do protótipo (`rgba(255,77,79,.08)` em hExpiry).
   err: '#FF4D4F', errBg: 'rgba(255,77,79,0.08)', errDeep: '#CE0002',
+  // ⚠ O texto de erro e de informação no ESCURO. O `err` e o `info` chegam aos
+  // 4,5 sobre o cartão escuro do Violeta (5,32 e 5,35) e não sobre os do Cião,
+  // Céu, Menta e Cinza, que são mais claros (4,24–4,40 no cartão, 3,58 no
+  // subtil). Um tom acima na mesma escala — o vermelho-4 e o azul-4 — passa nos
+  // seis. O verde e o âmbar não precisam: 6,8 e 8,1 no pior caso.
+  errClaro: '#FF7875', infoClaro: '#69B1FF',
+  // E o verde, por uma unha: sobre o cartão TINGIDO de uma tarefa feita, no
+  // Cião e no Menta escuros, o `ok` dava 4,46 e 4,48. O verde-5 passa.
+  okClaro: '#73D13D',
   violet: '#722ED1', cyan: '#08979C',
 };
 
@@ -387,7 +424,16 @@ export const buildTheme = (schemeIdx = 0, dark = false) => {
   // como este falhou. Isto não tem como falhar em silêncio: ou sobe, ou o
   // limite baixa, e um limite baixado vê-se no código.
   const titulo = dark ? clarearAte(s.hover, c.card, 3) : s.accent;
-  return { ...c, ...s, dark, titulo, ...botaoDeAcao(s, c, dark), state: STATE };
+  // O texto pequeno de cada estado sobre as superfícies do tema: o «deep» no
+  // claro, a própria cor no escuro. Ver o comentário do `STATE`.
+  const state = {
+    ...STATE,
+    okTexto: dark ? STATE.okClaro : STATE.okDeep,
+    errTexto: dark ? STATE.errClaro : STATE.errDeep,
+    warnTexto: dark ? STATE.warn : STATE.warnDeep,
+    infoTexto: dark ? STATE.infoClaro : STATE.infoDeep,
+  };
+  return { ...c, ...s, dark, titulo, ...botaoDeAcao(s, c, dark), state };
 };
 
 // Alfa do branco sobre o cabeçalho, calculado da luminância real da cor —
@@ -412,3 +458,16 @@ export const chromeLine = (chromeHex) => {
   const a = Math.min(0.55, 0.18 + L * 1.1);
   return `rgba(255,255,255,${a.toFixed(2)})`;
 };
+
+// ── A cor da inicial sobre a cor de um membro ────────────────────────────────
+//
+// ⚠ Era branco sempre. A paleta dos membros tem cores claras — o azul #1890FF,
+// o cião #08979C, o âmbar #AD8B00 — e uma inicial branca a 11 px sobre elas dá
+// 3,24, 3,55 e 2,5: os «L» e «T» dos avatares pequenos da Agenda e das Tarefas
+// não se liam. Apanhado pela sonda de contraste em 08/09/2026.
+//
+// Branco quando chega aos 4,5:1, senão PRETO. Não o `text1` (#262626): sobre o
+// cião #08979C e o verde #389E0D da paleta, o cinzento-escuro dá 4,26 e 4,37 —
+// as cores médias não têm par a 4,5 senão o preto puro (5,8 e 5,9). É a única
+// inicial preta da app, e é sobre um disco de cor, não sobre uma superfície.
+export const corSobre = (hex) => (luminancia(hex) <= 0.1833 ? '#FFFFFF' : '#000000');

@@ -120,7 +120,7 @@ export default function ConfirmarAdministradores({
                   {feito ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Icon name="checkCircle" size={18} color={t.state.ok} />
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.okDeep }}>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.okTexto }}>
                         {nome === user ? 'já está nesta sessão' : 'confirmado'}
                       </Text>
                     </View>
@@ -146,7 +146,7 @@ export default function ConfirmarAdministradores({
                         fontFamily: FONT.body, fontSize: 15, color: t.text1,
                         backgroundColor: t.surface }} />
                     {erro[nome] ? (
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.errDeep }}>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.errTexto }}>
                         {erro[nome]}
                       </Text>
                     ) : null}

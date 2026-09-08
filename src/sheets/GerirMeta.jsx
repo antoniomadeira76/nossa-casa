@@ -123,7 +123,7 @@ export default function GerirMeta({ t, meta, user, onApagar, onClose }) {
                   </Text>
                 </View>
                 <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
-                  color: mv.delta > 0 ? t.state.okDeep : t.state.errDeep }}>
+                  color: mv.delta > 0 ? t.state.okTexto : t.state.errTexto }}>
                   {mv.delta > 0 ? '+ ' : '− '}{EUR(Math.abs(mv.delta))}
                 </Text>
               </View>
@@ -177,7 +177,7 @@ export default function GerirMeta({ t, meta, user, onApagar, onClose }) {
       </View>
 
       {erro ? (
-        <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.state.errDeep }}>
+        <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.state.errTexto }}>
           {erro}
         </Text>
       ) : null}
@@ -196,8 +196,8 @@ export default function GerirMeta({ t, meta, user, onApagar, onClose }) {
         accessibilityRole="button" accessibilityLabel={`Apagar a meta ${meta.name}`}
         style={{ minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.state.err,
           flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-        <Icon name="trash" size={18} color={t.state.errDeep} />
-        <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.state.errDeep }}>
+        <Icon name="trash" size={18} color={t.state.errTexto} />
+        <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.state.errTexto }}>
           Apagar meta
         </Text>
       </Pressable>

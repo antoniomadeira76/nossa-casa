@@ -306,8 +306,8 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
                 accessibilityRole="button" accessibilityLabel="Repor dados de demonstração"
                 style={{ flex: 1, minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.state.err,
                   flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                <Icon name="refresh" size={18} color={t.state.errDeep} />
-                <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 13.5, fontWeight: '500', color: t.state.errDeep }}>
+                <Icon name="refresh" size={18} color={t.state.errTexto} />
+                <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 13.5, fontWeight: '500', color: t.state.errTexto }}>
                   Repor Demonstração
                 </Text>
               </Pressable>
@@ -315,8 +315,8 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
                 accessibilityRole="button" accessibilityLabel="Começar de zero, casa nova"
                 style={{ flex: 1, minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.state.err,
                   flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                <Icon name="trash" size={18} color={t.state.errDeep} />
-                <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 13.5, fontWeight: '500', color: t.state.errDeep }}>
+                <Icon name="trash" size={18} color={t.state.errTexto} />
+                <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 13.5, fontWeight: '500', color: t.state.errTexto }}>
                   Começar de Zero
                 </Text>
               </Pressable>

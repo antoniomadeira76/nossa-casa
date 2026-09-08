@@ -13,13 +13,13 @@ import Confirm from '../Confirm';
 // Estado da garantia: a mesma regra de três estados da lista, para a ficha e a
 // lista nunca discordarem.
 const estado = (t, dias, fim) => {
-  if (dias <= 0) return { titulo: 'Fora de Garantia', tom: t.state.errDeep,
+  if (dias <= 0) return { titulo: 'Fora de Garantia', tom: t.state.errTexto,
     cor: t.state.err, fundo: t.tileErr,
     linha: `Terminou há ${plural(Math.abs(dias), 'dia', 'dias')}${fim ? ` · terminou a ${fim}.` : '.'}` };
   if (dias <= 90) return { titulo: 'Garantia a Expirar', tom: t.state.warnDeep,
     cor: t.state.warn, fundo: t.tileWarn,
     linha: `Faltam ${plural(dias, 'dia', 'dias')}${fim ? ` · termina a ${fim}.` : '.'}` };
-  return { titulo: 'Em Garantia', tom: t.state.okDeep,
+  return { titulo: 'Em Garantia', tom: t.state.okTexto,
     cor: t.state.okBorder, fundo: t.state.okBg,
     linha: `Faltam ${plural(dias, 'dia', 'dias')}${fim ? ` · termina a ${fim}.` : '.'}` };
 };
@@ -128,7 +128,7 @@ export default function FichaEquipamento({ t, equip, onClose }) {
                       {uri ? 'Guardada' : 'Por adicionar'}
                     </Text>
                   </View>
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.accent }}>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.actFg }}>
                     {uri ? 'Substituir' : 'Adicionar'}
                   </Text>
                 </Pressable>

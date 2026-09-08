@@ -72,7 +72,7 @@ function VaultTransaction({ t, entry }) {
         alignItems: 'center', justifyContent: 'center',
       }}>
         <Icon name={isCredit ? 'caretUp' : 'caretDown'} size={18}
-          color={isCredit ? t.state.okDeep : t.text3} />
+          color={isCredit ? t.state.okTexto : t.text3} />
       </View>
 
       <View style={{ flex: 1, gap: 2 }}>
@@ -86,7 +86,7 @@ function VaultTransaction({ t, entry }) {
 
       <Text style={{
         fontFamily: FONT.display, fontSize: 15, fontWeight: '600',
-        color: isCredit ? t.state.okDeep : t.text2,
+        color: isCredit ? t.state.okTexto : t.text2,
       }}>
         {isCredit ? '+' : '−'}{EUR(Math.abs(entry.delta))}
       </Text>
@@ -248,9 +248,9 @@ function KidVaultView({ t, kid }) {
               backgroundColor: pressed ? t.subtle : 'transparent',
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
             })}>
-            <Icon name="smile" size={20} color={t.accent} />
+            <Icon name="smile" size={20} color={t.titulo} />
             <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700',
-              color: t.accent, letterSpacing: 0.3 }}>Pedir para Usar o Dinheiro</Text>
+              color: t.actFg, letterSpacing: 0.3 }}>Pedir para Usar o Dinheiro</Text>
           </Pressable>
         ) : (
           <>

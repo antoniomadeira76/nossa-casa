@@ -146,7 +146,7 @@ describe('⚠ as duas acções destrutivas', () => {
 
   it('levam a cor de ERRO, que é do sistema e não do esquema', () => {
     expect(bloco()).toMatch(/borderColor: t\.state\.err/);
-    expect(bloco()).toMatch(/color: t\.state\.errDeep/);
+    expect(bloco()).toMatch(/color: t\.state\.errTexto/);
   });
 
   it('e a secção diz de antemão o que as espera', () => {

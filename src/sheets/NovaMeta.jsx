@@ -77,7 +77,7 @@ export default function NovaMeta({ t, user, onClose }) {
       </View>
 
       {erro ? (
-        <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.state.errDeep }}>
+        <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.state.errTexto }}>
           {erro}
         </Text>
       ) : null}

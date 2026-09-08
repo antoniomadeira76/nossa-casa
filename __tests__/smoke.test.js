@@ -349,7 +349,11 @@ describe('🔥 Smoke Tests — Nossa Casa', () => {
         expect(buildTheme(i, false).titulo).toBe(SCHEMES[i].accent);
       }
       // E as etiquetas pequenas continuam em slate, que é outra decisão.
-      expect(buildTheme(0, false).slate).toBe('#67769B');
+      // ⚠ Um tom abaixo do `#67769B` do protótipo desde 08/09/2026: a 12 px
+      // pedem 4,5:1 e o original dava 4,03 sobre a página e 4,41 sobre o
+      // cartão — todas as etiquetas da app falhavam por uma unha, em todos os
+      // esquemas claros. Continua slate; ver `texto-pequeno-le-se-nos-doze-temas`.
+      expect(buildTheme(0, false).slate).toBe('#606E90');
     });
   });
 

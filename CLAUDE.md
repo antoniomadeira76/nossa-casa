@@ -173,7 +173,21 @@ chega aos 3:1 contra a página escura em três dos seis esquemas (Cinza 2,55, Vi
 Céu 2,98). Ver `titulo` em `src/theme.js`.
 
 **As etiquetas pequenas (`Label`) continuam em slate**, e é uma decisão: 12 px precisam de
-4,5:1, e aí o Cião falha no claro e o Cinza no escuro.
+4,5:1, e aí o Cião falha no claro e o Cinza no escuro. ⚠ Esta frase dizia que o slate chegava
+aos 4,5 e **era falso**: o `#67769B` do protótipo dá 4,03 sobre a página e 4,41 sobre o cartão.
+Desde 08/09/2026 o `slate` e o `text3` claros estão **um tom abaixo** do protótipo (`#606E90`,
+`#656C7C`), medidos. Uma afirmação num documento não é um guarda — o guarda é
+`__tests__/texto-pequeno-le-se-nos-doze-temas.test.js`, que calcula os pares de tokens nos doze
+temas.
+
+**Texto pequeno em cor: só três tokens servem.** O acento e o `titulo` falham como texto de
+11–14 px no escuro em cinco dos seis esquemas (2,12–4,08). Texto em cor de ação leva **`actFg`**
+(≥ 4,5 nos doze temas); ícone em cor de ação leva `titulo` (3:1). Cada estado tem três papéis:
+`x` é o objeto gráfico (barra, borda, ícone), **`xTexto`** é o texto sobre as superfícies do
+tema (o «deep» no claro, um tom claro no escuro), e `xDeep` fica **só** para o texto sobre o
+tijolo do próprio estado (`xBg`, opaco e claro nos dois aspetos) e para o preenchimento que leva
+branco. Os «deep» eram usados como texto no escuro: `errDeep` sobre o cartão escuro dá 3,00.
+A inicial de um avatar é `corSobre(cor)` — branco ou preto, conforme a cor do membro.
 
 **Espaçamento: 2 / 4 / 8 / 16 / 24.** Cinco valores, mais nada. Enchimento dos cartões 14/16.
 

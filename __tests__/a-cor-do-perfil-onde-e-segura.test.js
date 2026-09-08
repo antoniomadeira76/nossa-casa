@@ -78,9 +78,14 @@ describe('⚠ e o que NÃO serve — para a prova não ser optimista', () => {
       .toBeLessThan(4.5);
   });
 
-  it('e o `text3` também não, sobre a página', () => {
-    // 4,31 no Violeta claro. Era o que o `AddButton` tinha.
-    expect(pior(t => contraste(t.text3, t.page))).toBeLessThan(4.5);
+  it('e o `text3` PASSOU a servir sobre a página — um tom abaixo do protótipo', () => {
+    // Dava 4,31 no Violeta claro, e era o que o `AddButton` tinha; esta prova
+    // exigia que continuasse a falhar, para não ser optimista. Em 08/09/2026
+    // o `text3` claro baixou de #6A7282 para #656C7C (4,69 sobre a página),
+    // porque as etiquetas pequenas de toda a app falhavam por uma unha — ver
+    // `texto-pequeno-le-se-nos-doze-temas`. A prova de não-optimismo fica com
+    // o acento sobre o cartão escuro, em cima, que continua a falhar.
+    expect(pior(t => contraste(t.text3, t.page))).toBeGreaterThanOrEqual(4.5);
   });
 });
 

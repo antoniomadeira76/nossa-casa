@@ -70,9 +70,9 @@ export default function Equipamentos({ t, abrir }) {
   // onde se lê sem ter de perceber em que secção se está.
   const estadoDe = (e) => {
     const d = byWarranty(e);
-    if (d < 0) return { label: 'Fora de Garantia', cor: t.state.err, fundo: t.state.errBg, texto: t.state.errDeep };
+    if (d < 0) return { label: 'Fora de Garantia', cor: t.state.err, fundo: t.state.errBg, texto: t.state.errTexto };
     if (d <= 90) return { label: 'Garantia a Expirar', cor: t.state.warn, fundo: t.state.warnBg, texto: t.state.warnDeep };
-    return { label: 'Em Garantia', cor: t.state.ok, fundo: t.state.okBg, texto: t.state.okDeep };
+    return { label: 'Em Garantia', cor: t.state.ok, fundo: t.state.okBg, texto: t.state.okTexto };
   };
 
   const valor = eq.reduce((a, e) => a + (e.price || 0), 0);
@@ -91,8 +91,8 @@ export default function Equipamentos({ t, abrir }) {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: S.lg }}>
           {[['Equipamentos', String(eq.length), t.text2],
             ['Valor registado', EUR(valor), t.text2],
-            ['Garantias a expirar', String(aExpirar), aExpirar ? t.state.warnDeep : t.text2],
-            ['Garantias expiradas', String(expiradas), expiradas ? t.state.errDeep : t.text2]].map(([rot, val, cor]) => (
+            ['Garantias a expirar', String(aExpirar), aExpirar ? t.state.warnTexto : t.text2],
+            ['Garantias expiradas', String(expiradas), expiradas ? t.state.errTexto : t.text2]].map(([rot, val, cor]) => (
             <View key={rot} style={{ width: '50%', gap: 2 }}>
               <Label t={t}>{rot}</Label>
               <Text style={{ fontFamily: FONT.display, fontSize: 21, color: cor }}>{val}</Text>

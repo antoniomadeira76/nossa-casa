@@ -140,7 +140,7 @@ export default function GoogleCalendarImportModal({ t, events, onImportar, onIgn
             opacity: pressed ? 0.85 : 1,
           })}>
           <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700',
-            color: n ? t.accent : t.text3 }}>
+            color: n ? t.actFg : t.text3 }}>
             Adicionar {n} evento{n === 1 ? '' : 's'}
           </Text>
         </Pressable>

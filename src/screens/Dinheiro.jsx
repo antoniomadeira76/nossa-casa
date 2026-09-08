@@ -196,7 +196,7 @@ export default function Dinheiro({ t, user, onEquip }) {
           <View style={{ flex: 1, gap: 2 }}>
             <Label t={t}>Disponível</Label>
             <Text style={{ fontFamily: FONT.display, fontSize: 28,
-              color: remaining >= 0 ? t.state.okDeep : t.state.errDeep }}>{EUR(remaining)}</Text>
+              color: remaining >= 0 ? t.state.okTexto : t.state.errTexto }}>{EUR(remaining)}</Text>
           </View>
           <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3, textAlign: 'right' }}>
             {EUR(spent)} gastos{'\n'}de {EUR(budget)}
@@ -243,13 +243,13 @@ export default function Dinheiro({ t, user, onEquip }) {
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: S.md }}>
                   <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{e.name}</Text>
                   <Text style={{ fontFamily: FONT.ui, fontSize: 13,
-                    color: tight ? t.state.errDeep : t.text3 }}>{EUR(e.used)} / {EUR(e.limit)}</Text>
+                    color: tight ? t.state.errTexto : t.text3 }}>{EUR(e.used)} / {EUR(e.limit)}</Text>
                 </View>
                 <Bar t={t} pct={e.limit > 0 ? (e.used / e.limit) * 100 : 0} color={e.color} height={6} />
                 {tight ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
                     <Icon name="warning" size={16} color={t.state.warn} />
-                    <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 11.5, color: t.state.warnDeep }}>
+                    <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 11.5, color: t.state.warnTexto }}>
                       Restam {EUR(e.limit - e.used)} neste envelope.
                     </Text>
                     {/* «Reforçar» leva à folha de mover dinheiro — o passo
@@ -257,7 +257,7 @@ export default function Dinheiro({ t, user, onEquip }) {
                     <Pressable onPress={() => setSheet('mover')} accessibilityRole="button"
                       accessibilityLabel={`Reforçar o envelope ${e.name}`}
                       style={{ minHeight: 44, justifyContent: 'center' }}>
-                      <Text style={{ fontFamily: FONT.display, fontSize: 13, fontWeight: '700', color: t.accent }}>
+                      <Text style={{ fontFamily: FONT.display, fontSize: 13, fontWeight: '700', color: t.actFg }}>
                         Reforçar
                       </Text>
                     </Pressable>
@@ -301,7 +301,7 @@ export default function Dinheiro({ t, user, onEquip }) {
               </Text>
             </View>
             <Pill label={acertado ? 'Concluído' : 'A Decorrer'}
-              fg={acertado ? t.state.okDeep : t.state.info}
+              fg={acertado ? t.state.okTexto : t.state.info}
               bg={acertado ? t.state.okBg : t.state.infoBg}
               border={acertado ? t.state.okBorder : t.state.info} />
           </View>
@@ -384,7 +384,7 @@ export default function Dinheiro({ t, user, onEquip }) {
                       style={({ pressed }) => ({ minHeight: 44, minWidth: 44, paddingHorizontal: 10,
                         borderRadius: R.row, alignItems: 'center', justifyContent: 'center',
                         backgroundColor: pressed ? t.subtle : 'transparent' })}>
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, fontWeight: '600', color: t.titulo }}>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, fontWeight: '600', color: t.actFg }}>
                         + 50 €
                       </Text>
                     </Pressable>
@@ -528,11 +528,11 @@ export default function Dinheiro({ t, user, onEquip }) {
                 onChange={(v) => setMv(m => ({ ...m, amount: v }))} />
               <Pressable onPress={() => setMv(m => ({ ...m, amount: free }))} accessibilityRole="button"
                 accessibilityLabel="Usar o máximo disponível" style={{ minHeight: 44, justifyContent: 'center' }}>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, color: t.accent, fontWeight: '600' }}>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, color: t.actFg, fontWeight: '600' }}>
                   Usar o máximo · {EUR(free)}
                 </Text>
               </Pressable>
-              <Text style={{ fontFamily: FONT.body, fontSize: 14.5, lineHeight: 21, color: over ? t.state.errDeep : t.text2 }}>
+              <Text style={{ fontFamily: FONT.body, fontSize: 14.5, lineHeight: 21, color: over ? t.state.errTexto : t.text2 }}>
                 {over ? `Só há ${EUR(free)} livres em ${envelopes[mv.from].name}.`
                   : `O limite de ${envelopes[mv.from].name} passa a ${EUR(envelopes[mv.from].limit - mv.amount)} e o de ${envelopes[mv.to].name} a ${EUR(envelopes[mv.to].limit + mv.amount)}. Não sai dinheiro da conta.`}
               </Text>

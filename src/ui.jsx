@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TextInput, Pressable, Image, Platform } from 'react-native';
-import { S, R, elev, FONT, corDoMembro, comAlfa } from './theme';
+import { S, R, elev, FONT, corDoMembro, comAlfa, corSobre } from './theme';
 import { EUR } from './format';
 import Icon from './Icon';
 import Figura from './Avatares';
@@ -38,7 +38,7 @@ export function NumField({ t, value, onChange, step = 5, min = 0, max = 99999, s
       accessibilityLabel={rotulo}
       style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
         alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.accent }}>{sinal}</Text>
+      <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.actFg }}>{sinal}</Text>
     </Pressable>
   );
   return (
@@ -220,7 +220,9 @@ export const EscolherMembros = ({ t, valor = [], onEscolher, membros, cores = {}
 // aviso, só eu em cinzento.
 export const PastilhaVisibilidade = ({ t, evento }) => {
   const v = visibilidadeDe(evento);
-  const cfg = v === 'familia' ? { rotulo: 'Família', fg: t.state.info, bg: t.state.infoBg, bd: t.state.info }
+  // ⚠ `infoDeep` no texto, e não `info`: azul claro sobre tijolo azul-claro
+  // dava 2,91. A borda fica `info`, que é objeto gráfico (3:1).
+  const cfg = v === 'familia' ? { rotulo: 'Família', fg: t.state.infoDeep, bg: t.state.infoBg, bd: t.state.info }
     : v === 'adultos' ? { rotulo: 'Adultos', fg: t.state.warnDeep, bg: t.state.warnBg, bd: t.state.warn }
     : { rotulo: 'Só eu', fg: t.text3, bg: t.subtle, bd: t.border };
   return <Pill label={cfg.rotulo} fg={cfg.fg} bg={cfg.bg} border={cfg.bd} />;
@@ -654,7 +656,7 @@ export const Avatar = ({ initial, color, size = 24, foto, figura }) => {
       // perdia a forma nos 24 px a que ela aparece numa linha de tarefa.
       <Figura nome={figura} size={size * 0.66} color="#FFFFFF" />
     ) : (
-      <Text style={{ fontFamily: FONT.ui, fontSize: size * 0.46, fontWeight: '700', color: '#FFFFFF' }}>{initial}</Text>
+      <Text style={{ fontFamily: FONT.ui, fontSize: size * 0.46, fontWeight: '700', color: corSobre(color) }}>{initial}</Text>
     )}
   </View>
   );
@@ -713,14 +715,17 @@ export const Tile = ({ t, kind = 'info', icon, children }) => {
 export const Empty = ({ t, icon, title, hint }) => (
   <View style={{ flexDirection: 'row', gap: 12, padding: 14, borderRadius: R.card,
     borderWidth: 1, borderColor: t.accent, backgroundColor: comAlfa(t.accent, t.dark ? 0.18 : 0.09) }}>
-    <Icon name={icon || 'infoCircle'} size={20} color={t.accent} />
+    <Icon name={icon || 'infoCircle'} size={20} color={t.titulo} />
     <View style={{ flex: 1, gap: 2 }}>
       <Text style={{ fontFamily: FONT.body, fontSize: 14.5, lineHeight: 21, color: t.text2 }}>{title}</Text>
       {/* A dica fica: é ela que diz o que fazer a seguir, e um aviso que só
           constata é meio aviso. Vai por baixo, mais pequena, e não numa
           segunda caixa. */}
       {hint ? (
-        <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>{hint}</Text>
+        /* `text2`, não `text3`: o tijolo do vazio é tingido com o acento, e
+           sobre ele o `text3` dava 3,75 a 11,5 px. (Comentário JS e não JSX:
+           está dentro do ternário, ao lado de um só elemento.) */
+        <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text2 }}>{hint}</Text>
       ) : null}
     </View>
   </View>

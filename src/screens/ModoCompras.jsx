@@ -122,7 +122,7 @@ export default function ModoCompras({ t, user, onClose }) {
                 backgroundColor: on ? t.accent : limpo ? t.state.ok : t.border }} />
               <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11, textAlign: 'center',
                 fontWeight: on || limpo ? '600' : '400',
-                color: on ? t.accent : limpo ? t.state.okDeep : t.text3 }}>{x.label}</Text>
+                color: on ? t.actFg : limpo ? t.state.okTexto : t.text3 }}>{x.label}</Text>
             </Pressable>
           );
         })}

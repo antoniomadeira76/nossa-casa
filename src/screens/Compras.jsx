@@ -124,7 +124,7 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
             <View key={k} style={{ width: '50%', gap: 2, paddingBottom: S.lg }}>
               <Label t={t}>{k}</Label>
               <Text style={{ fontFamily: FONT.display, fontSize: 20,
-                color: i === 3 ? t.state.okDeep : t.text2 }}>{v}</Text>
+                color: i === 3 ? t.state.okTexto : t.text2 }}>{v}</Text>
             </View>
           ))}
         </View>
@@ -174,7 +174,7 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
             onPress={onIda}
             style={{ minHeight: 44, minWidth: 44, paddingHorizontal: S.sm, justifyContent: 'center' }}>
             <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '700',
-              color: t.titulo }}>Alterar</Text>
+              color: t.actFg }}>Alterar</Text>
           </Pressable>
         </View>
       </Card>
@@ -191,7 +191,7 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
       {comparacao ? (
         <Card t={t} style={{ gap: S.md, borderLeftWidth: 4, borderLeftColor: t.state.ok }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Icon name="storefront" size={22} color={t.state.okDeep} />
+            <Icon name="storefront" size={22} color={t.state.okTexto} />
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>
                 Esta lista sai {EUR(comparacao.poupanca)} mais barata no {comparacao.loja}
@@ -211,7 +211,7 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
               style={({ pressed }) => ({ minHeight: 44, borderRadius: R.row, borderWidth: 1,
                 borderColor: t.border, alignItems: 'center', justifyContent: 'center',
                 backgroundColor: pressed ? t.subtle : 'transparent' })}>
-              <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '600', color: t.accent }}>
+              <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '600', color: t.actFg }}>
                 Passar as compras para o {comparacao.loja}
               </Text>
             </Pressable>
@@ -277,7 +277,7 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
                           <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{i.by}</Text>
                         </View>
                         <Text style={{ fontFamily: FONT.ui, fontSize: 13,
-                          fontWeight: done ? '600' : '400', color: done ? t.state.okDeep : t.text3 }}>
+                          fontWeight: done ? '600' : '400', color: done ? t.state.okTexto : t.text3 }}>
                           {done ? EUR(i.real || i.est) : `~ ${EUR(i.est)}`}
                         </Text>
                       </Pressable>

@@ -94,7 +94,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
           <Text style={{ flex: 1, fontFamily: FONT.display, fontSize: 17, fontWeight: '500', color: t.text1 }}>
             {MONTHS[ym.m]} de {ym.y}
           </Text>
-          <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.accent }}>
+          <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.actFg }}>
             {open ? 'Ver semana' : 'Ver mês'}
           </Text>
           <Icon name={open ? 'caretUp' : 'caretDown'} size={20} color={t.text3} />
@@ -124,7 +124,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                   {/* Um travessão quando não há nada: uma coluna vazia lê-se
                       como «não carregou», um travessão lê-se como «nada». */}
                   <Text style={{ fontFamily: FONT.ui, fontSize: 11,
-                    color: d.n ? t.accent : t.text3 }}>{d.n || '—'}</Text>
+                    color: d.n ? t.actFg : t.text3 }}>{d.n || '—'}</Text>
                 </Pressable>
               );
             })}
@@ -206,7 +206,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
               ) : (
                 <Pressable onPress={() => setYm({ y: TODAY.y, m: TODAY.m })} accessibilityRole="button"
                   accessibilityLabel="Voltar a hoje" style={{ minHeight: 44, justifyContent: 'center' }}>
-                  <Text style={{ fontFamily: FONT.display, fontSize: 12.5, fontWeight: '700', color: t.accent }}>Voltar a hoje</Text>
+                  <Text style={{ fontFamily: FONT.display, fontSize: 12.5, fontWeight: '700', color: t.actFg }}>Voltar a hoje</Text>
                 </Pressable>
               )}
             </View>

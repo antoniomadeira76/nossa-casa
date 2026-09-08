@@ -531,9 +531,9 @@ export default function Gestao({ t, user, onClose }) {
               style={{ minHeight: 44, minWidth: 44, paddingHorizontal: 10,
                 alignItems: 'center', justifyContent: 'flex-end', paddingBottom: S.sm,
                 borderBottomWidth: tab === key ? 2 : 0,
-                borderBottomColor: tab === key ? t.accent : 'transparent' }}>
+                borderBottomColor: tab === key ? t.titulo : 'transparent' }}>
               <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600',
-                color: tab === key ? t.accent : t.text3 }}>{label}</Text>
+                color: tab === key ? t.actFg : t.text3 }}>{label}</Text>
             </Pressable>
           ))}
         </View>

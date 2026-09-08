@@ -121,7 +121,7 @@ export default function EscolherAvatar({ t, user, onFeito }) {
           <Text style={{ flex: 1, fontFamily: FONT.display, fontSize: 14.5, color: t.text1 }}>
             A minha inicial
           </Text>
-          {(!usarFoto && !figura) ? <Icon name="check" size={20} color={t.accent} /> : null}
+          {(!usarFoto && !figura) ? <Icon name="check" size={20} color={t.titulo} /> : null}
         </Pressable>
       </View>
 
@@ -175,7 +175,7 @@ export default function EscolherAvatar({ t, user, onFeito }) {
                 {usarFoto ? 'A ser usada' : 'Tocar para usar'}
               </Text>
             </View>
-            {usarFoto ? <Icon name="check" size={20} color={t.accent} /> : null}
+            {usarFoto ? <Icon name="check" size={20} color={t.titulo} /> : null}
           </Pressable>
         ) : (
           // ⚠ Esta frase dizia «Aparece aqui depois de entrar com a conta
@@ -215,7 +215,7 @@ export default function EscolherAvatar({ t, user, onFeito }) {
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.md,
                 opacity: aTrazer ? 0.5 : 1 }}>
               <GoogleG size={18} />
-              <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '700', color: t.accent }}>
+              <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '700', color: t.actFg }}>
                 {aTrazer ? 'A perguntar à Google…' : 'Trazer a fotografia da Google'}
               </Text>
             </Pressable>

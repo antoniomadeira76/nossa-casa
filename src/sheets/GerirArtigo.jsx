@@ -125,7 +125,7 @@ export default function GerirArtigo({ t, artigo, onApagar, onClose }) {
       </View>
 
       {erro ? (
-        <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.state.errDeep }}>
+        <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.state.errTexto }}>
           {erro}
         </Text>
       ) : null}
@@ -143,8 +143,8 @@ export default function GerirArtigo({ t, artigo, onApagar, onClose }) {
         accessibilityRole="button" accessibilityLabel={`Apagar ${artigo.label}`}
         style={{ minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.state.err,
           flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-        <Icon name="trash" size={18} color={t.state.errDeep} />
-        <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.state.errDeep }}>
+        <Icon name="trash" size={18} color={t.state.errTexto} />
+        <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.state.errTexto }}>
           Apagar artigo
         </Text>
       </Pressable>

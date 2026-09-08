@@ -18,7 +18,7 @@ export default function ConfirmShare({ t, type, isPrivate, onConfirm, onCancel }
         alignItems: 'center', justifyContent: 'center', padding: S.lg }}>
         <View style={{ backgroundColor: t.surface, borderRadius: R.card, padding: S.xl, gap: S.lg, maxWidth: 320 }}>
           <View style={{ alignItems: 'center', gap: S.md }}>
-            <Icon name={icon} size={32} color={t.accent} />
+            <Icon name={icon} size={32} color={t.titulo} />
             <Text style={{ fontFamily: FONT.display, fontSize: 18, fontWeight: '500', color: t.text1, textAlign: 'center' }}>
               Confirmar como {label}
             </Text>

@@ -46,7 +46,7 @@ const AreaAberta = ({ t, g, corDo }) => {
   return (
     <Card t={t} style={{ gap: S.sm }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-        <Icon name={g.icon || 'fileText'} size={20} color={t.accent} />
+        <Icon name={g.icon || 'fileText'} size={20} color={t.titulo} />
         <Text style={{ flex: 1, fontFamily: FONT.display, fontSize: 17,
           fontWeight: '600', color: t.text1 }}>
           {g.area}
@@ -65,7 +65,7 @@ const AreaAberta = ({ t, g, corDo }) => {
               não «isto está feito». É o único sítio da app onde aparece com
               este sentido, e por isso não colide com nenhum outro. */}
           <View style={{ paddingTop: 3 }}>
-            <Icon name="check" size={15} color={t.state.okDeep} />
+            <Icon name="check" size={15} color={t.state.okTexto} />
           </View>
           <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 14, lineHeight: 21, color: t.text2 }}>
             {linha}
@@ -173,7 +173,7 @@ export default function Documentacao({ t, onIr, podeGerir }) {
   const [filtroArea, setFiltroArea] = useState(null);
 
   const corDo = (k) => ({
-    novo:      { fg: t.state.okDeep,   bg: t.state.okBg,   br: t.state.okBorder },
+    novo:      { fg: t.state.okTexto,   bg: t.state.okBg,   br: t.state.okBorder },
     alterado:  { fg: t.state.info,     bg: t.state.infoBg, br: t.state.info },
     corrigido: { fg: t.state.warnDeep, bg: t.state.warnBg, br: t.state.warn },
   }[k] || { fg: t.text3, bg: t.subtle, br: t.border });

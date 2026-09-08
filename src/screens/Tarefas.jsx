@@ -15,7 +15,10 @@ import Cofre from '../sheets/Cofre';
 // Urgência: a caixa do número leva a cor, e a lista ordena-se por ela.
 // A forma acompanha a cor — cheia, tracejada, contorno — para não depender do matiz.
 const URG = [
-  { key: 0, label: 'Urgente',    fill: true,  color: '#FF4D4F', dash: false },
+  // ⚠ `#CE0002` (o `errDeep`) e não `#FF4D4F`: a caixa é CHEIA e leva o número
+  // a branco, e branco sobre #FF4D4F dá 3,27 — a 11 px pede 4,5. Sobre #CE0002
+  // dá 5,79, e é o mesmo par do botão destrutivo do `Confirm`.
+  { key: 0, label: 'Urgente',    fill: true,  color: '#CE0002', dash: false },
   { key: 1, label: 'Normal',     fill: false, color: '#FAAD14', dash: true },
   { key: 2, label: 'Sem pressa', fill: false, color: '#D9D9D9', dash: false },
 ];
@@ -105,7 +108,7 @@ export default function Tarefas({ t, user, abrir }) {
                   <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{EUR(pend * s.pointValue)} por pagar</Text>
                   ) : null}
                   <View style={{ height: 1, backgroundColor: t.divider }} />
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.state.okDeep }}>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.state.okTexto }}>
                     No cofre {EUR(st.vaultOf(k))}
                   </Text>
                 </Pressable>
@@ -189,7 +192,7 @@ export default function Tarefas({ t, user, abrir }) {
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{x.title}</Text>
                         <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5,
-                          color: d && d.late ? t.state.errDeep : d && d.soon ? t.state.warnDeep : t.text3 }}>
+                          color: d && d.late ? t.state.errTexto : d && d.soon ? t.state.warnTexto : t.text3 }}>
                           {done && rec ? 'feita hoje · volta amanhã'
                             : pend ? 'Feito — a aguardar confirmação'
                             : subtituloDaTarefa(x, d)}
@@ -276,7 +279,7 @@ export default function Tarefas({ t, user, abrir }) {
               )}
             </View>
             {dueOf(task) && (
-              <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: dueOf(task).late ? t.state.errDeep : dueOf(task).soon ? t.state.warnDeep : t.text3 }}>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: dueOf(task).late ? t.state.errTexto : dueOf(task).soon ? t.state.warnTexto : t.text3 }}>
                 Prazo: {dueOf(task).text}
               </Text>
             )}
@@ -316,8 +319,8 @@ export default function Tarefas({ t, user, abrir }) {
             accessibilityRole="button" accessibilityLabel={`Apagar ${task.title}`}
             style={{ minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.state.err,
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <Icon name="trash" size={18} color={t.state.errDeep} />
-            <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.state.errDeep }}>
+            <Icon name="trash" size={18} color={t.state.errTexto} />
+            <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.state.errTexto }}>
               Apagar Tarefa
             </Text>
           </Pressable>
