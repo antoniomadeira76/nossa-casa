@@ -4,7 +4,7 @@
  * O `Primary` tem três roupas e nenhuma prova as media:
  *
  *   acento        rótulo branco sobre a cor do esquema — o que não se desfaz
- *   comum         rótulo `page` sobre `text1` — tudo o resto
+ *   comum         `actFg` sobre `actBg`, com borda `actBrd` — tudo o resto
  *   desactivado   rótulo sobre o `border` — o que diz o que FALTA fazer
  *
  * ⚠ E o terceiro estava ilegível desde sempre. Branco sobre o `border` dá
@@ -15,6 +15,22 @@
  * botão desactivado é o único que tem de explicar porque não responde, e era o
  * único que não se lia. A app tinha uma prova para o rótulo branco sobre o
  * acento (esta é a irmã dela) e nenhuma para os outros dois estados.
+ *
+ * ── O comum deixou de ser preto (08/09/2026) ─────────────────────────────────
+ *
+ * Era `page` sobre `text1`: um botão preto no claro, branco no escuro, igual nos
+ * seis esquemas. O dono da casa perguntou três vezes «porque é que está a preto
+ * e não à cor do perfil?», e a resposta estava no protótipo desde o início: os
+ * botões principais dele são `--c-act-bg` / `--c-act-brd` / `--c-act-fg` — o
+ * acento a 10 % em fundo, o acento escurecido em texto, e uma borda do acento.
+ * Os três tokens nunca tinham chegado à app. Agora são `actBg`, `actBrd` e
+ * `actFg` no `buildTheme`, e são CALCULADOS: o texto escurece ou clareia até
+ * 4,5:1 sobre o fundo real do botão, e a borda sobe até 3:1 contra a superfície.
+ *
+ * ⚠ E no escuro a borda parte do `hover`, não do acento: contra a superfície
+ * escura o acento não chega aos 3:1 nem a 100 % (Cinza 2,12, medido). A
+ * primeira versão subia o alfa do acento até ao fim e ficava aquém, em silêncio
+ * — esta prova apanhou-a em cinco dos seis esquemas escuros.
  *
  * ⚠ Os mínimos aqui são os da WCAG, não os valores de hoje. Uma prova que fixa
  * o que mediu envelhece a fechar os olhos — foi assim que o Cião viveu meses a
@@ -37,8 +53,8 @@ const ESTADOS = (t) => [
   // [nome, rótulo, fundo, mínimo, porquê]
   ['acento', '#FFFFFF', t.accent, 4.5,
     'O rótulo é 15 px a 700 — não é texto grande em norma nenhuma.'],
-  ['comum', t.page, t.text1, 4.5,
-    'Mesmo tamanho, mesmo peso, mesmo mínimo.'],
+  ['comum', t.actFg, t.actBg, 4.5,
+    'Mesmo tamanho, mesmo peso, mesmo mínimo — e agora na cor do esquema.'],
   ['desactivado', t.text3, t.border, 3,
     'A WCAG isenta um controlo inactivo, e uma palavra que não se lê não é '
     + 'isenção de nada. 3:1 é o piso: apagado, e legível.'],
@@ -49,13 +65,37 @@ describe.each(TEMAS)('%s', (nome, t) => {
     expect(contraste(fg, bg)).toBeGreaterThanOrEqual(min);
   });
 
-  // O botão também tem de se ver contra o que está atrás dele. Num ecrã é a
-  // página, numa folha é a superfície — e são diferentes no claro.
+  // O botão também tem de se ver contra o que está atrás dele. A tinta a 10 %
+  // sozinha dá 1,1:1 contra a superfície — é a BORDA que separa o botão comum
+  // do que o rodeia, e é ela que se mede. Num ecrã é a página, numa folha é a
+  // superfície, e são diferentes no claro.
   it.each([['página', t.page], ['folha', t.surface], ['cartão', t.card]])(
-    'e o botão comum separa-se da %s (≥ 3:1, objeto de interface)',
+    'e a borda do comum separa-o da %s (≥ 3:1, objeto de interface)',
     (onde, fundo) => {
-      expect(contraste(t.text1, fundo)).toBeGreaterThanOrEqual(3);
+      expect(contraste(t.actBrd, fundo)).toBeGreaterThanOrEqual(3);
     });
+
+  it('e os três tokens do botão existem, e são cores', () => {
+    for (const k of ['actBg', 'actBrd', 'actFg']) {
+      expect(t[k]).toMatch(/^#[0-9A-F]{6}$/i);
+    }
+  });
+
+  it('⚠ e o comum já não é preto nem branco — é o esquema', () => {
+    // A propriedade que o dono da casa pediu: o botão segue a cor escolhida.
+    // Um fundo neutro dava o mesmo botão nos seis esquemas.
+    expect(t.actBg).not.toBe(t.text1);
+    expect(t.actBg).not.toBe(t.page);
+    expect(t.actFg).not.toBe(t.page);
+  });
+});
+
+describe('e os seis esquemas dão seis botões diferentes', () => {
+  // Se dois esquemas dessem o mesmo `actBg`, a cor não estaria a vir do esquema.
+  it.each([false, true])('no %s', (escuro) => {
+    const fundos = SCHEMES.map((_, i) => buildTheme(i, escuro).actBg);
+    expect(new Set(fundos).size).toBe(SCHEMES.length);
+  });
 });
 
 describe('⚠ o `ui.jsx` continua a usar estes tokens, e não outros', () => {
@@ -72,9 +112,13 @@ describe('⚠ o `ui.jsx` continua a usar estes tokens, e não outros', () => {
     expect(bloco).toMatch(/disabled \? t\.text3/);
   });
 
-  it('o comum é `page` sobre `text1`', () => {
-    expect(bloco).toMatch(/comum \? t\.page/);
-    expect(bloco).toMatch(/comum \? t\.text1 : t\.accent/);
+  it('⚠ o comum é `actFg` sobre `actBg`, com a borda `actBrd`', () => {
+    expect(bloco).toMatch(/comum \? t\.actFg/);
+    expect(bloco).toMatch(/comum \? t\.actBg : t\.accent/);
+    expect(bloco).toMatch(/borderColor: comum && !disabled \? t\.actBrd/);
+    // E nunca mais `text1`: era o preto.
+    expect(bloco).not.toMatch(/comum \? t\.text1/);
+    expect(bloco).not.toMatch(/comum \? t\.page/);
   });
 
   it('o acento leva branco', () => {
@@ -94,5 +138,17 @@ describe('⚠ o `ui.jsx` continua a usar estes tokens, e não outros', () => {
     // Uma cor literal no botão principal é o erro #3 do CLAUDE.md a voltar.
     const literais = [...bloco.matchAll(/'#[0-9A-Fa-f]{6}'/g)].map(m => m[0]);
     expect(new Set(literais)).toEqual(new Set(["'#FFFFFF'"]));
+  });
+
+  it('⚠ e o `BotaoCompacto` comum usa os MESMOS tokens', () => {
+    // Um compacto preto ao lado de um principal em tinta parecia de outra app.
+    const inicio = ui.indexOf('export function BotaoCompacto');
+    const fim = ui.indexOf('export const PastilhaTocavel');
+    expect(inicio).toBeGreaterThan(0);
+    expect(fim).toBeGreaterThan(inicio);
+    const compacto = ui.slice(inicio, fim);
+    expect(compacto).toMatch(/tom === 'comum' \? t\.actBg/);
+    expect(compacto).toMatch(/tom === 'comum' \? t\.actFg/);
+    expect(compacto).not.toMatch(/tom === 'comum' \? t\.text1/);
   });
 });

@@ -150,6 +150,15 @@ que o desenho está a divergir.
 (seis esquemas, `SCHEMES`), e é **por perfil**: a Rita pode ter violeta e o Tomás cião.
 Nunca escreva uma cor de ação literal; leia-a do tema.
 
+**Os botões seguem o esquema — não há botão preto.** O protótipo pinta todos os botões
+principais com três tokens do esquema, e estão no `buildTheme`: `actBg` (o acento em tinta),
+`actBrd` (a borda, a 3:1 contra página, folha e cartão) e `actFg` (o acento escurecido ou
+clareado até 4,5:1 sobre o fundo real do botão). Um `Primary comum` é isto. O acento **cheio**
+fica para o que não se desfaz — a lista fechada de `__tests__/o-acento-e-reservado.test.js`.
+O dono da casa perguntou três vezes «porque é que está a preto?» antes de se descobrir que os
+tokens do protótipo nunca tinham chegado à app. Antes de dar cor a um componente novo, procure
+o token no protótipo.
+
 **Cuidado com o branco.** `white` é primeiro plano (texto sobre cabeçalho e sobre botões de
 ação) e `surface` é superfície (cartões, folhas, rodapé). No modo escuro só a segunda escurece.
 Sobrecarregar as duas com o mesmo valor apagou metade da interface uma vez.

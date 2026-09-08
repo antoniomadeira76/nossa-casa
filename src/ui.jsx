@@ -343,8 +343,23 @@ export const Toggle = ({ t, on, onPress, label }) => (
 // Indisponível». O `text3` dá 3,43 no claro e 3,89–4,61 no escuro: apagado
 // como convém a um botão que não responde, e legível como convém a uma frase
 // que explica porquê.
+//
+// ⚠ E o COMUM segue o esquema, em tinta — não é preto.
+//
+// Era `page` sobre `text1`: um botão preto no claro, branco no escuro, igual em
+// todos os seis esquemas. O dono da casa perguntou três vezes «porque é que está
+// a preto e não à cor do perfil?», e a resposta estava no protótipo desde o
+// início: os botões principais dele são `--c-act-bg` / `--c-act-fg`, o acento a
+// 10 % com o acento escurecido por cima. Os três tokens nunca tinham chegado à
+// app. Agora vivem no `buildTheme` (`actBg`, `actBrd`, `actFg`), medidos: o texto
+// escurece ou clareia até 4,5:1 sobre o fundo real do botão, e a borda sobe até
+// separar o botão da superfície a 3:1.
+//
+// O acento CHEIO fica para o que não se desfaz — a lista fechada do guarda
+// `o-acento-e-reservado`. A hierarquia mantém-se: cheio é consequência, tinta é
+// tudo o resto. Só deixou de haver preto.
 const rotuloDo = (t, { disabled, comum }) =>
-  (disabled ? t.text3 : comum ? t.page : '#FFFFFF');
+  (disabled ? t.text3 : comum ? t.actFg : '#FFFFFF');
 
 export const Primary = ({ t, label, sub, icon, onPress, disabled, comum }) => (
   <Pressable onPress={disabled ? undefined : onPress} accessibilityRole="button"
@@ -353,9 +368,12 @@ export const Primary = ({ t, label, sub, icon, onPress, disabled, comum }) => (
     style={({ pressed }) => ({
       minHeight: sub ? 56 : 48, borderRadius: R.row, flexDirection: 'row',
       alignItems: 'center', justifyContent: 'center', gap: 8,
-      // O tom do texto no comum, o acento no que não se desfaz. `text1` sobre
-      // a página dá 13:1 no claro e 15:1 no escuro — nunca é o elo fraco.
-      backgroundColor: disabled ? t.border : comum ? t.text1 : t.accent,
+      backgroundColor: disabled ? t.border : comum ? t.actBg : t.accent,
+      // A borda é o que separa o botão em tinta da folha onde está: a tinta a
+      // 10 % sozinha dava 1,1:1 contra o cartão. O cheio e o desactivado não a
+      // precisam — separam-se pela cor.
+      borderWidth: comum && !disabled ? 1 : 0,
+      borderColor: comum && !disabled ? t.actBrd : 'transparent',
       opacity: pressed ? 0.9 : 1, ...(disabled ? {} : elev(3)),
     })}>
     {icon ? <Icon name={icon} size={20} color={rotuloDo(t, { disabled, comum })} /> : null}
@@ -401,12 +419,15 @@ export const Primary = ({ t, label, sub, icon, onPress, disabled, comum }) => (
 // dois sítios quebrou uma prova que existia justamente para isso — e a prova
 // tinha razão.
 export function BotaoCompacto({ t, label, etiqueta, tom = 'contorno', disabled, onPress, largura }) {
+  // O comum em TINTA do esquema, como o `Primary` — os mesmos três tokens do
+  // protótipo, senão um botão compacto preto ao lado de um principal em tinta
+  // parecia de outra app.
   const fundo = disabled ? t.border
     : tom === 'acento' ? t.accent
-      : tom === 'comum' ? t.text1 : 'transparent';
+      : tom === 'comum' ? t.actBg : 'transparent';
   const cor = disabled ? t.text3
     : tom === 'acento' ? '#FFFFFF'
-      : tom === 'comum' ? t.page : t.text2;
+      : tom === 'comum' ? t.actFg : t.text2;
   return (
     <Pressable onPress={disabled ? undefined : onPress}
       accessibilityRole="button" accessibilityLabel={etiqueta || label}

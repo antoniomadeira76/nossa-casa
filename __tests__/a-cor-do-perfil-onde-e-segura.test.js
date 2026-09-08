@@ -151,12 +151,17 @@ describe('e os dois botões de mês do Dinheiro deixaram de ter o defeito', () =
     }
   });
 
-  it('e o rótulo dele é branco sobre o acento, ou `text2` — nunca o acento', () => {
+  it('e o rótulo dele é branco sobre o acento, `actFg` em tinta, ou `text2` — nunca o acento cru', () => {
     const ui = ler('src/ui.jsx');
     const bloco = ui.slice(ui.indexOf('export function BotaoCompacto'), ui.indexOf('export const PastilhaTocavel'));
-    // Os três pesos, e nenhum deles põe a cor do esquema num rótulo pequeno.
+    // Os três pesos. ⚠ O comum passou de `page` sobre `text1` (preto) para
+    // `actFg` sobre `actBg` em 08/09/2026 — os tokens do botão de ação do
+    // protótipo, que nunca tinham chegado à app. O `actFg` É a cor do esquema,
+    // mas escurecida ou clareada até 4,5:1 sobre o fundo real do botão, nos
+    // doze temas — medido em `o-botao-principal-le-se-nos-tres-estados`. O que
+    // esta prova proíbe é o acento CRU num rótulo pequeno, e continua a proibir.
     expect(bloco).toMatch(/tom === 'acento' \? '#FFFFFF'/);
-    expect(bloco).toMatch(/tom === 'comum' \? t\.page : t\.text2/);
-    expect(bloco).not.toMatch(/color[\s\S]{0,60}t\.accent/);
+    expect(bloco).toMatch(/tom === 'comum' \? t\.actFg : t\.text2/);
+    expect(bloco).not.toMatch(/color[\s\S]{0,60}t\.accent\b/);
   });
 });

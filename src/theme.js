@@ -156,6 +156,80 @@ const clarearAte = (hex, fundo, alvo) => {
   return '#FFFFFF';
 };
 
+// Escurece uma cor até ela cumprir um contraste contra um fundo — o par do
+// `clarearAte`, para o aspeto claro.
+const escurecerAte = (hex, fundo, alvo) => {
+  const { h, s, l } = hsl(hex);
+  for (let x = l; x >= 0; x -= 0.01) {
+    const c = paraHex(h, s, x);
+    if (contraste(c, fundo) >= alvo) return c;
+  }
+  return '#000000';
+};
+
+// A cor `a` pintada com transparência `alfa` sobre `fundo`, já composta num hex
+// sólido. Sólido de propósito: um `rgba()` no ecrã compõe-se com o que estiver
+// por baixo, e o contraste só se mede sobre a cor que resulta.
+const mistura = (a, fundo, alfa) => {
+  const c = (hex) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  const [r1, g1, b1] = c(a);
+  const [r2, g2, b2] = c(fundo);
+  const m = (x, y) => Math.round(x * alfa + y * (1 - alfa)).toString(16).padStart(2, '0');
+  return `#${m(r1, r2)}${m(g1, g2)}${m(b1, b2)}`.toUpperCase();
+};
+
+// ── O botão de ação do protótipo ─────────────────────────────────────────────
+//
+// O protótipo pinta TODOS os botões principais com a cor do esquema, em três
+// tokens: `--c-act-bg` (o acento a 10 % no claro, 20 % no escuro), `--c-act-brd`
+// (o acento a 38 % / 45 %) e `--c-act-fg` (o acento escurecido até se ler no
+// claro, clareado no escuro). É o «Guardar Tarefa», o «Guardar Evento», o
+// «Guardar Equipamento» — e nenhum deles é preto.
+//
+// ⚠ Estes três tokens nunca tinham chegado à app. O `Primary` nasceu com duas
+// cores inventadas aqui — o acento cheio e um preto «comum» — e o dono da casa
+// perguntou três vezes «porque é que está a preto e não à cor do perfil?». A
+// resposta certa era a que o protótipo já tinha, e que o CLAUDE.md manda seguir
+// quando os dois discordam.
+//
+// O acento CHEIO continua a existir, e continua reservado ao que não se desfaz
+// — é a lista fechada do guarda `o-acento-e-reservado`. O que muda é o comum:
+// deixa de ser preto e passa a ser o esquema, em tinta.
+//
+// ⚠ Nada aqui é um alfa fixo. O texto escurece ou clareia até 4,5:1 sobre o
+// FUNDO REAL do botão; a borda sobe a partir do alfa do protótipo até separar o
+// botão da superfície a 3:1. Um alfa fixo calibrado num esquema falhava no
+// seguinte — foi assim com o `chromeSub`.
+const botaoDeAcao = (s, c, dark) => {
+  const superficie = c.surface;
+  const bg = mistura(s.accent, superficie, dark ? 0.20 : 0.10);
+  // ⚠ No escuro a borda parte do `hover`, não do acento — pela mesma razão do
+  // `titulo`: contra a superfície escura o acento não chega aos 3:1 nem a 100 %
+  // (Cinza 2,12, Céu 2,47, Violeta 2,50, medidos). Subir o alfa do acento até ao
+  // fim e ficar aquém era o que a primeira versão disto fazia, em silêncio.
+  const base = dark ? s.hover : s.accent;
+  // ⚠ A borda mede-se contra os TRÊS fundos onde um botão pode estar — a
+  // página, a folha e o cartão —, e não só contra a folha. Medida só contra a
+  // folha (branca, no claro), passava a 3,01 e falhava contra a página cinzenta
+  // a 2,68 em oito dos doze temas: o mesmo botão, legível numa folha e sem
+  // contorno num ecrã. O guarda apanhou-o à primeira corrida.
+  const fundos = [c.page, c.surface, c.card];
+  const separa = (cor) => fundos.every(f => contraste(cor, f) >= 3);
+  let alfa = dark ? 0.45 : 0.38;
+  let brd = mistura(base, superficie, alfa);
+  while (!separa(brd) && alfa < 1) {
+    alfa = Math.min(1, alfa + 0.02);
+    brd = mistura(base, superficie, alfa);
+  }
+  // E se nem a cor inteira chegar, clareia-se — como o `titulo`.
+  if (!separa(brd)) {
+    const maisDificil = fundos.reduce((a, b) => (contraste(base, a) < contraste(base, b) ? a : b));
+    brd = clarearAte(base, maisDificil, 3);
+  }
+  const fg = dark ? clarearAte(s.accent, bg, 4.5) : escurecerAte(s.accent, bg, 4.5);
+  return { actBg: bg, actBrd: brd, actFg: fg };
+};
+
 const escuroDoEsquema = (chrome) => {
   const { h, s } = hsl(chrome);
   const tom = (k) => paraHex(h, Math.min(s, LUMES[k][1]), LUMES[k][0]);
@@ -306,7 +380,7 @@ export const buildTheme = (schemeIdx = 0, dark = false) => {
   // como este falhou. Isto não tem como falhar em silêncio: ou sobe, ou o
   // limite baixa, e um limite baixado vê-se no código.
   const titulo = dark ? clarearAte(s.hover, c.card, 3) : s.accent;
-  return { ...c, ...s, dark, titulo, state: STATE };
+  return { ...c, ...s, dark, titulo, ...botaoDeAcao(s, c, dark), state: STATE };
 };
 
 // Alfa do branco sobre o cabeçalho, calculado da luminância real da cor —
