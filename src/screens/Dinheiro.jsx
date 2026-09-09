@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT } from '../theme';
+import { S, R, FONT, onChrome } from '../theme';
 import { EUR, warrantyDaysLeft, plural, mesSeguinte } from '../format';
 import { Card, SectionTitle, Linha, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Choice, Empty, usePaged, Pager, Opcao, NumField, BotaoCompacto } from '../ui';
 import Icon from '../Icon';
@@ -36,7 +36,7 @@ function GrelhaEnvelopes({ t, envelopes, livre, escolhido, onEscolher }) {
             <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
               color: on ? '#FFFFFF' : t.text2 }}>{e.name}</Text>
             <Text style={{ fontFamily: FONT.ui, fontSize: 11.5,
-              color: on ? 'rgba(255,255,255,0.7)' : t.text3 }}>livre {EUR(livre(i))}</Text>
+              color: on ? onChrome(t.accent) : t.text3 }}>livre {EUR(livre(i))}</Text>
           </Pressable>
         );
       })}
@@ -591,7 +591,7 @@ export default function Dinheiro({ t, user, onEquip }) {
                 <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
                   color: exp.env === i ? '#FFFFFF' : t.text2 }}>{e.name}</Text>
                 <Text style={{ fontFamily: FONT.ui, fontSize: 11.5,
-                  color: exp.env === i ? 'rgba(255,255,255,0.7)' : t.text3 }}>livre {EUR(freeOf(i))}</Text>
+                  color: exp.env === i ? onChrome(t.accent) : t.text3 }}>livre {EUR(freeOf(i))}</Text>
               </Pressable>
             ))}
           </View>

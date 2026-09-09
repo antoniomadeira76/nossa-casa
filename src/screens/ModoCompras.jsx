@@ -195,7 +195,9 @@ export default function ModoCompras({ t, user, onClose }) {
                   accessibilityLabel={`${feito ? 'Desconfirmar' : 'Confirmar'} ${i.label}`}
                   style={{ minHeight: 44, minWidth: 88, alignItems: 'flex-end', justifyContent: 'center' }}>
                   <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '700',
-                    color: feito ? t.text3 : t.accent, letterSpacing: 0.4 }}>
+                    // ⚠ `actFg`, não `accent`: 14 px é texto pequeno, e sobre a
+                    // linha sem stock (âmbar) o acento Cião dava 4,49 (09/09/2026).
+                    color: feito ? t.text3 : t.actFg, letterSpacing: 0.4 }}>
                     {feito ? 'Desfazer' : 'Confirmar'}
                   </Text>
                 </Pressable>

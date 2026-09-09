@@ -182,13 +182,37 @@ describe('⚠ e nenhum ecrã volta a pintar texto pequeno com o acento ou com um
     for (const rel of jsx) {
       const linhas = soCodigo(fs.readFileSync(path.join(RAIZ, rel), 'utf8'));
       linhas.forEach((l, i) => {
-        if (!/color:\s*(?:[^,}]*\?\s*)?t\.(accent|titulo|hover)\b/.test(l)) return;
+        // ⚠ Em QUALQUER ramo do ternário. Era só «logo a seguir ao `?`», e
+        // `color: feito ? t.text3 : t.accent` passava — o «Confirmar» do
+        // Modo Compras, a 4,49 sobre a linha sem stock (09/09/2026).
+        if (!/color:\s*[^,}\n]*\bt\.(accent|titulo|hover)\b/.test(l)) return;
+        // O acento como ARGUMENTO do `onChrome` é o fundo, não o texto.
+        if (/onChrome\(/.test(l)) return;
         if (/backgroundColor|borderColor|borderLeftColor|borderBottomColor|Bar\b|<Icon/.test(l)) return;
         // A linha do `SectionTitle` no `ui.jsx`.
         if (rel === 'src/ui.jsx' && /letterSpacing: 0\.1/.test(l)) return;
         // Uma linha de `<Icon` partida em duas: a cor na linha, o `<Icon` na de cima.
         if (/<Icon\b/.test(linhas[i - 1] || '') && !/<Text/.test(linhas[i - 1] || '')) return;
         maus.push(`${rel}:${i + 1} → ${l.trim().slice(0, 70)}`);
+      });
+    }
+    expect(maus).toEqual([]);
+  });
+
+  it('⚠ nenhum texto leva branco com alfa FIXO — sobre o acento, o alfa calcula-se (`onChrome`)', () => {
+    // «livre 62,00 €» na escolha do envelope, em branco a 70 % sobre o acento
+    // Cião: 3,07 a 11,5 px (09/09/2026). O mesmo erro #4 do CLAUDE.md — alfas
+    // de branco calibrados para um fundo escuro — noutro sítio. O `onChrome`
+    // sobe o alfa até aos 4,6 contra o fundo REAL; um literal não sabe qual é.
+    // A Entrada fica de fora: o fundo dela é a fotografia com o véu, sempre o
+    // mesmo, e está medida à mão.
+    const maus = [];
+    for (const rel of jsx) {
+      if (rel === 'src/screens/Login.jsx') continue;
+      soCodigo(fs.readFileSync(path.join(RAIZ, rel), 'utf8')).forEach((l, i) => {
+        if (/color:\s*(?:[^,}]*\?\s*)?'rgba\(255,\s*255,\s*255,\s*0?\.\d+\)'/.test(l)) {
+          maus.push(`${rel}:${i + 1} → ${l.trim().slice(0, 70)}`);
+        }
       });
     }
     expect(maus).toEqual([]);

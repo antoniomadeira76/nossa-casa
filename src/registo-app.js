@@ -153,6 +153,8 @@ export const REGISTO_APP = [
   { v: '1.11.1', d: '09/09/2026', k: 'novo', a: 'Entrada', t: 'No modo criança, tocar na bola do nome abre «O meu PIN»: a criança muda o seu PIN sabendo o atual; sem o atual, é um adulto que define outro na Gestão da Casa' },
   { v: '1.11.1', d: '09/09/2026', k: 'corrigido', a: 'Entrada', t: 'No modo criança, o cabeçalho e o rodapé levam a cor da criança escurecida até o branco se ler por cima — o azul do Léo dava 3,2 de contraste com o «Olá, Léo», o resumo e os rótulos; e a inicial passa a ler-se na bola' },
   { v: '1.11.1', d: '09/09/2026', k: 'corrigido', a: 'Entrada', t: 'No monitor, o modo criança ia de ponta a ponta da janela; passa a viver na mesma coluna que a app dos adultos' },
+  { v: '1.11.1', d: '09/09/2026', k: 'corrigido', a: 'A App', t: 'Três textos pequenos na cor do perfil abaixo do contraste mínimo, apanhados no varrimento: o «livre» do envelope escolhido ao registar despesa, o «Confirmar» de um artigo sem stock no Modo Compras, e «Pagar Semanada» no cofre' },
+  { v: '1.11.1', d: '09/09/2026', k: 'alterado', a: 'Saúde', t: 'As consultas do arquivo clínico passaram a linhas planas, como o resto das listas' },
   { v: '1.11.1', d: '09/09/2026', k: 'corrigido', a: 'Gestão da Casa', t: 'Na lista de envelopes da Gestão, o limite e o que está livre colavam-se num número só — «590,00 €43,40 €»; a linha passa a ocupar o cartão todo' },
 
   // ── 1.11.0 ────────────────────────────────────────────────────────────────

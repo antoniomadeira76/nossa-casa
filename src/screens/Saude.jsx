@@ -228,10 +228,10 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
     });
 
     return (
-      <Card
-        t={t}
-        style={{ borderLeftWidth: 3, borderLeftColor: corDoMembro(record.member, MEMBERS[record.member]?.cor) || t.accent }}
-      >
+      /* Linha plana, sem cartão — desenho C (09/09/2026). A cor do membro,
+         que era a borda esquerda do cartão, é a faixa da linha. */
+      <Linha t={t} style={{ paddingVertical: S.md }}
+        faixa={corDoMembro(record.member, MEMBERS[record.member]?.cor) || t.accent}>
         <View style={{ gap: S.md }}>
           {/* ⚠ O `Pressable` está DENTRO do cartão, e é o único sítio onde
               pode estar. O `Card` não aceita `onPress` — nem nunca aceitou —
@@ -688,7 +688,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
             </View>
           )}
         </View>
-      </Card>
+      </Linha>
     );
   };
 
@@ -836,7 +836,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
             {needsDecision.length > 0 && (
               <View>
                 <SectionTitle t={t}>Precisa de ação ({needsDecision.length})</SectionTitle>
-                <View style={{ gap: S.md }}>
+                <View>
                   {filtered.filter(h => needsDecision.includes(h)).map(record => (
                     <RecordCard key={record.id} record={record} />
                   ))}
@@ -847,7 +847,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
             {filtered.filter(h => !needsDecision.includes(h)).length > 0 && (
               <View>
                 <SectionTitle t={t}>Arquivo clínico</SectionTitle>
-                <View style={{ gap: S.md }}>
+                <View>
                   {filtered.filter(h => !needsDecision.includes(h)).map(record => (
                     <RecordCard key={record.id} record={record} />
                   ))}
@@ -863,7 +863,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
             {arquivadas.length > 0 && (
               <View>
                 <SectionTitle t={t}>Arquivadas ({arquivadas.length})</SectionTitle>
-                <View style={{ gap: S.md }}>
+                <View>
                   {arquivadas.map(record => (
                     <RecordCard key={record.id} record={record} />
                   ))}
