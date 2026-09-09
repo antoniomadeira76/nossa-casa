@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
 import { dayLabel, parseKey, chaveDeDMY, dmyDeChave } from '../format';
 import { Card, SectionTitle, Label, Row, Tap, Avatar, avatarDe, Tile, Empty,
-         BotaoCompacto, EscolherMembro, AddButton, Choice } from '../ui';
+         BotaoCompacto, EscolherMembro, AddButton, Choice, Linha } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -68,7 +68,8 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
           não se mudavam de sítio nenhum. */}
       <View>
         <SectionTitle t={t}>A próxima ida</SectionTitle>
-        <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+        {/* Linhas planas, sem cartão — desenho C (09/09/2026). */}
+        <View style={{ paddingHorizontal: S.xs }}>
           <Row t={t} icon="user" title={quem || 'Por escolher'} sub="quem vai às compras"
             leading={quem ? <Avatar {...avatarDe(quem, MEMBERS[quem], t.text3)} size={28} /> : null}
             onPress={() => setFolha('quem')} last={false} />
@@ -80,7 +81,7 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
             sub="quando" onPress={() => setFolha('quando')} last={false} />
           <Row t={t} icon="storefront" title={loja || 'Por escolher'} sub="onde"
             onPress={() => setFolha('onde')} last />
-        </Card>
+        </View>
       </View>
 
       {/* ── As lojas ────────────────────────────────────────────────────── */}
@@ -94,14 +95,14 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
           <Empty t={t} icon="storefront" title="Sem lojas."
             hint="Acrescente onde esta casa costuma fazer compras — é entre elas que a app compara preços." />
         ) : (
-          <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+          <View style={{ paddingHorizontal: S.xs }}>
             {lojas.map((nome, i) => (
               <Row key={nome} t={t} icon="storefront" title={nome}
                 sub={nome === loja ? 'a loja desta ida' : undefined}
                 onPress={() => { setAEditar(nome); setTexto(nome); setErro(null); setFolha('loja'); }}
                 last={i === lojas.length - 1} />
             ))}
-          </Card>
+          </View>
         )}
         <AddButton t={t} label="acrescentar loja"
           onPress={() => { setAEditar(null); setTexto(''); setErro(null); setFolha('loja'); }} />
@@ -120,16 +121,14 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
         <ListaArrastavel
           itens={seccoes.map(n => ({ id: n }))}
           grupoDe={() => 'corredores'}
-          espaco={S.md}
+          espaco={0}
           aoLargar={(ids) => reordenarSeccoes(ids)}
           render={(x, { arrastando, armar }) => {
             const n = quantos(x.id);
             return (
-              <Card key={x.id} t={t} pad={false} style={{
-                paddingHorizontal: 14,
-                borderWidth: arrastando ? 2 : 1,
-                borderColor: arrastando ? t.accent : t.border,
-              }}>
+              <Linha key={x.id} t={t}
+                faixa={arrastando ? t.accent : undefined}
+                tinta={arrastando ? t.subtle : undefined}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <Pressable
                     onPress={() => { setAEditar(x.id); setTexto(x.id); setErro(null); setFolha('seccao'); }}
@@ -152,7 +151,7 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
                     <Icon name="trash" size={17} color={t.state.err} />
                   </Tap>
                 </View>
-              </Card>
+              </Linha>
             );
           }} />
         <View style={{ height: S.md }} />

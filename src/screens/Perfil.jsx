@@ -120,7 +120,8 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
           entradas da casa estavam por baixo do Aspeto. */}
       <View>
         <SectionTitle t={t}>A Casa</SectionTitle>
-        <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+        {/* Linhas planas, sem cartão — desenho C (09/09/2026). */}
+        <View style={{ paddingHorizontal: S.xs }}>
           {admin ? (
             <Row t={t} icon="houseGear" title="Gestão da Casa"
               sub="Rendimento, envelopes, semanada, membros"
@@ -136,7 +137,7 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
               <Icon name="caretRight" size={18} color={t.text3} />
             </View>}
             onPress={() => { onClose(); onSaude?.(); }} last />
-        </Card>
+        </View>
       </View>
 
       {/* ── Aparência ──────────────────────────────────────────────────────
@@ -148,14 +149,14 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
           que aquilo era tocável. Um gesto que não se anuncia não existe. */}
       <View>
         <SectionTitle t={t}>Aparência</SectionTitle>
-        <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+        <View style={{ paddingHorizontal: S.xs }}>
           <Row t={t} icon="user" title="Avatar" sub={COMO_APARECE}
             right={<View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
               <Avatar {...avatarDe(user, MEMBERS[user], t.text3)} size={28} />
               <Icon name="caretRight" size={18} color={t.text3} />
             </View>}
             onPress={() => setAEscolherAvatar(true)} last />
-        </Card>
+        </View>
       </View>
 
       <Card t={t} style={{ gap: S.lg }}>
@@ -250,10 +251,10 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
           que não separava nada com nome. */}
       <View>
         <SectionTitle t={t}>A App</SectionTitle>
-        <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+        <View style={{ paddingHorizontal: S.xs }}>
           <Row t={t} icon="fileText" title="Documentação" sub="O que a app faz, versão a versão"
             onPress={() => { onClose(); onDoc?.(); }} last />
-        </Card>
+        </View>
         {/* ⚠ Isto era uma LINHA, com ícone, título e subtítulo — igual à
             Documentação ao lado, que abre um ecrã. Uma afirmação vestida de
             navegação: parecia tocável e não era. É uma nota de rodapé, e passa

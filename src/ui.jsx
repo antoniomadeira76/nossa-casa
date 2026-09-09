@@ -68,13 +68,39 @@ export const Card = ({ t, children, style, pad = true }) => (
   }, style]}>{children}</View>
 );
 
-// Título de secção — slate, nunca preto, e 8 px acima do que rotula
+// Título de secção — desenho C de `design/titulos-e-cartoes.dc.html`
+// (escolhido pelo dono da casa em 09/09/2026, entre cinco): uma linha de
+// 13 px na cor de ação, com o que vier à direita (contagem, ligação) e uma
+// régua por baixo. Era 20 px a negro na cor do esquema, e pesava mais do que
+// o conteúdo que rotulava.
+//
+// ⚠ `actFg`, e não `titulo`: a 13 px isto é texto PEQUENO, e precisa de 4,5.
+// O `titulo` (o acento no claro) falha isso em cinco dos seis esquemas no
+// escuro; o `actFg` é o acento levado aos 4,5 nos doze temas — a regra do
+// CLAUDE.md para texto em cor de ação.
 export const SectionTitle = ({ t, children, right }) => (
-  <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: S.md, marginBottom: S.md }}>
-    <Text style={{ flex: 1, fontFamily: FONT.display, fontSize: 20, fontWeight: '700',
-      color: t.titulo || t.slate, letterSpacing: 0.1 }}>{children}</Text>
+  <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: S.md,
+    paddingBottom: S.md, paddingHorizontal: S.xs,
+    borderBottomWidth: 1, borderBottomColor: t.border }}>
+    <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
+      color: t.actFg, letterSpacing: 0.2 }}>{children}</Text>
     {right}
   </View>
+);
+
+// Uma linha de lista PLANA — o resto do desenho C. Assenta na página, sem
+// cartão: divisória por baixo, 52 de altura mínima, e a faixa de cor (quando
+// há) por dentro da linha, à esquerda. `tinta` pinta a linha inteira — o
+// verde de uma tarefa feita, por exemplo. Substitui o «um cartão por item»,
+// que pagava a moldura de um cartão inteiro por cada linha.
+export const Linha = ({ t, children, faixa, tinta, last, style }) => (
+  <View style={[{
+    minHeight: 52, justifyContent: 'center',
+    paddingVertical: S.sm, paddingHorizontal: S.xs,
+    borderBottomWidth: last ? 0 : 1, borderBottomColor: t.divider,
+    ...(faixa ? { borderLeftWidth: 3, borderLeftColor: faixa, paddingLeft: S.md + S.xs } : {}),
+    ...(tinta ? { backgroundColor: tinta } : {}),
+  }, style]}>{children}</View>
 );
 
 export const Label = ({ t, children }) => (

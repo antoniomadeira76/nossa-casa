@@ -329,6 +329,18 @@ export const corDoMembro = (nome, cor) => {
   return PALETA_MEMBROS[h % PALETA_MEMBROS.length];
 };
 
+// O cabeçalho e o rodapé da app da criança levam a cor DELA — mas escurecida
+// até o branco se ler por cima. Medido em 09/09/2026: o Léo é #1890FF e o
+// branco dava 3,24 sobre ele — «Olá, Léo» a 18 px, o resumo a 12 e os rótulos
+// do rodapé a 11, todos abaixo dos 4,5. Metade da paleta falha assim: o azul,
+// o verde, o âmbar. O tom e a saturação ficam; só a claridade desce, e nas
+// cores já escuras (o índigo, o violeta) não muda nada.
+//
+// O alvo é 5,0 e não 4,5: o subtítulo é branco COM ALFA (`onChrome`, que pára
+// nos 96 %), e sobre um cabeçalho onde o branco cheio dá 4,6 o branco a 96 %
+// fica em 4,4. Com 5,0 os dois passam — provado em `o-cabecalho-da-crianca-le-se`.
+export const chromeDaCrianca = (cor) => escurecerAte(cor, '#FFFFFF', 5.0);
+
 // A largura da coluna da app.
 //
 // Estava só no App.jsx, e as modais não a viam: no monitor, uma folha abria de

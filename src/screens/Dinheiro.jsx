@@ -3,7 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, warrantyDaysLeft, plural, mesSeguinte } from '../format';
-import { Card, SectionTitle, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Choice, Empty, usePaged, Pager, Opcao, NumField, BotaoCompacto } from '../ui';
+import { Card, SectionTitle, Linha, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Choice, Empty, usePaged, Pager, Opcao, NumField, BotaoCompacto } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -216,30 +216,32 @@ export default function Dinheiro({ t, user, onEquip }) {
       {/* Registar despesa é a acção mais frequente deste ecrã e estava no fim
           do cartão dos envelopes, como um «+ registar despesa» pequeno. Na
           referência é a primeira linha depois do saldo. */}
-      <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+      {/* Linha plana, sem cartão — desenho C (09/09/2026). */}
+      <Linha t={t} last>
         <Row t={t} icon="plus" title="Registar Despesa"
           sub="Combustível, farmácia, restaurante…"
           onPress={() => setSheet('despesa')} last />
-      </Card>
+      </Linha>
 
       <View>
         <SectionTitle t={t}>Envelopes</SectionTitle>
         {admin ? (
-          <Card t={t} pad={false} style={{ paddingHorizontal: 16, marginBottom: S.md }}>
+          <Linha t={t}>
             <Row t={t} icon="fileAdd" title={`Abrir ${proximoMes}`}
               sub="Distribuir o rendimento e reiniciar os envelopes"
               onPress={() => setSheet('openMonth')} last />
-          </Card>
+          </Linha>
         ) : null}
         {envelopes.length === 0 ? (
           <Empty t={t} icon="wallet" title="Sem envelopes."
             hint="Crie-os na Gestão da Casa e abra o mês para os alimentar." />
         ) : (
-        <Card t={t} style={{ gap: S.lg }}>
+        <View>
+          {/* Um envelope por linha plana, sem cartão — desenho C (09/09/2026). */}
           {envPg.slice.map((e, i) => {
             const tight = e.limit > 0 && e.used / e.limit >= 0.94;
             return (
-              <View key={e.name} style={{ gap: S.md }}>
+              <Linha key={e.name} t={t} style={{ gap: S.md, paddingVertical: S.md }}>
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: S.md }}>
                   <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{e.name}</Text>
                   <Text style={{ fontFamily: FONT.ui, fontSize: 13,
@@ -269,13 +271,12 @@ export default function Dinheiro({ t, user, onEquip }) {
                     </Pressable>
                   </View>
                 ) : null}
-              </View>
+              </Linha>
             );
           })}
           <Pager t={t} pg={envPg} />
-          <View style={{ height: 1, backgroundColor: t.divider }} />
           <AddButton t={t} label="mover dinheiro entre envelopes" onPress={() => setSheet('mover')} />
-        </Card>
+        </View>
         )}
       </View>
 
@@ -322,14 +323,14 @@ export default function Dinheiro({ t, user, onEquip }) {
 
       <View>
         <SectionTitle t={t}>Equipamentos da Casa</SectionTitle>
-        <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+        <Linha t={t} last>
           <Row t={t} icon="camera" title="Equipamentos registados"
             // ⚠ Três contagens, três plurais escritos à mão. Com duas garantias a
             // expirar dizia «2 garantia a expirar»; com um equipamento,
             // «1 equipamentos». O `plural` do `format.js` faz as três.
             sub={`${plural(eq.length, 'equipamento', 'equipamentos')} · ${plural(eqWarn, 'garantia a expirar', 'garantias a expirar')} · ${eqOut} fora de garantia`}
             onPress={onEquip} last />
-        </Card>
+        </Linha>
       </View>
 
       {/* ── As metas da família ─────────────────────────────────────────────
@@ -352,11 +353,12 @@ export default function Dinheiro({ t, user, onEquip }) {
           <Empty t={t} icon="bank" title="Sem metas definidas."
             hint="Uma meta é um objetivo com valor e prazo, alimentado pelo que sobra dos envelopes." />
         ) : (
-        <Card t={t} style={{ gap: S.lg }}>
-          {metas.map(g => {
+        <View>
+          {/* Uma meta por linha plana, sem cartão — desenho C (09/09/2026). */}
+          {metas.map((g, k) => {
             const falta = Math.max(0, g.of - g.at);
             return (
-              <View key={g.id} style={{ gap: S.sm }}>
+              <Linha key={g.id} t={t} last={k === metas.length - 1} style={{ gap: S.sm, paddingVertical: S.md }}>
                 {/* A primeira linha é o destino: abre a gestão da meta. O
                     reforço é um alvo à parte, na linha de baixo — e não uma
                     pastilha dentro desta, que é o erro #6. */}
@@ -397,10 +399,10 @@ export default function Dinheiro({ t, user, onEquip }) {
                     </Pressable>
                   ) : null}
                 </View>
-              </View>
+              </Linha>
             );
           })}
-        </Card>
+        </View>
         )}
         {admin ? (
           <View style={{ marginTop: S.md }}>

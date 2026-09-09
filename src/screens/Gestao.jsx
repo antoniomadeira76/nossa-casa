@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, mesComAno, mesSeguinte, dmyDeChave } from '../format';
-import { Card, SectionTitle, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty, avatarDe, NumField, BotaoCompacto } from '../ui';
+import { Card, SectionTitle, Linha, Label, Primary, AddButton, Row, Tap, Avatar, Tile, Segmented, Toggle, Pill, Choice, Empty, avatarDe, NumField, BotaoCompacto } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -279,8 +279,8 @@ export default function Gestao({ t, user, onClose }) {
             // «livre −43,40 €»: diz-se que excedeu, que é o que aconteceu.
             const sobra = env.limit - env.used;
             return (
-              <Card key={env.name} t={t}>
-                <View style={{ gap: S.md }}>
+              <Linha key={env.name} t={t} last={i === envelopes.length - 1}>
+                <View style={{ gap: S.md, paddingVertical: S.sm }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{env.name}</Text>
                     <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: over ? t.state.errTexto : t.text3 }}>
@@ -301,7 +301,7 @@ export default function Gestao({ t, user, onClose }) {
                     </Text>
                   </View>
                 </View>
-              </Card>
+              </Linha>
             );
           })}
         </View>
@@ -317,7 +317,7 @@ export default function Gestao({ t, user, onClose }) {
           hint="Acrescente as lojas onde a casa costuma comprar." />
       ) : null}
       {s.stores && s.stores.map((shop, i) => (
-        <Card key={i} t={t} pad={false}>
+        <Linha key={i} t={t} last={i === s.stores.length - 1}>
           <Row t={t} icon="storefront" title={shop} last
             onPress={() => {
               setSelectedEnvelope(i);
@@ -326,7 +326,7 @@ export default function Gestao({ t, user, onClose }) {
             }}
             right={<Icon name="caretRight" size={18} color={t.text3} />}
           />
-        </Card>
+        </Linha>
       ))}
       <AddButton t={t} label="adicionar loja" onPress={() => {
         setInput('');
@@ -348,13 +348,13 @@ export default function Gestao({ t, user, onClose }) {
   const renderMembersTab = () => (
     <View style={{ gap: S.md }}>
       <SectionTitle t={t}>A Casa</SectionTitle>
-      <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+      <Linha t={t} last>
         <Row t={t} last icon="houseGear"
           title="Nome da família"
           sub={nomeDaCasa}
           onPress={() => { setInput(nomeDaCasa); setErro(null); setSheetOpen('nomeDaCasa'); }}
           right={<Icon name="caretRight" size={18} color={t.text3} />} />
-      </Card>
+      </Linha>
 
       {/* Sem servidor a casa que se vê é a de demonstração, e configurar uma
           amostra não configura nada. Dizê-lo aqui, uma vez, é melhor do que
@@ -367,7 +367,8 @@ export default function Gestao({ t, user, onClose }) {
       ) : null}
 
       <SectionTitle t={t}>Membros e PIN</SectionTitle>
-      <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+      {/* Linhas planas, sem cartão — desenho C (09/09/2026). */}
+      <View style={{ paddingHorizontal: S.xs }}>
         {Object.entries(MEMBERS).map(([name, info], i, arr) => {
           const role = s.roles[name] || 'crianca';
           const hasPin = !!s.pins[name];
@@ -396,7 +397,7 @@ export default function Gestao({ t, user, onClose }) {
               icon={undefined} />
           );
         })}
-      </Card>
+      </View>
 
       <AddButton t={t} label="acrescentar membro" onPress={() => {
         setForm({ nome: '', papel: 'crianca', email: '', fem: false, segredo: '' });
@@ -422,14 +423,14 @@ export default function Gestao({ t, user, onClose }) {
         <Empty t={t} icon="wallet" title="Sem envelopes."
           hint="Um envelope é uma categoria com um limite mensal." />
       ) : null}
-      {envelopes && envelopes.map((env) => (
-        <Card key={env.name} t={t} pad={false}>
+      {envelopes && envelopes.map((env, i) => (
+        <Linha key={env.name} t={t} last={i === envelopes.length - 1}>
           <Tap label={`Editar ${env.name}`} onPress={() => {
             setSelectedEnvelope(env.name);
             setInput(env.name);
             setLimitInput(String(env.limit));
             setSheetOpen('editEnvelope');
-          }} style={{ padding: 14, alignItems: 'stretch' }}>
+          }} style={{ paddingVertical: S.sm, alignItems: 'stretch' }}>
             {/* ⚠ O `Tap` centra os filhos — é um alvo de ícone, não uma linha.
                 Sem o `stretch`, a linha lá dentro ficava com a largura do
                 texto e o «Limite: 590,00 €» colava-se ao «43,40 € livre»:
@@ -452,7 +453,7 @@ export default function Gestao({ t, user, onClose }) {
               <Icon name="caretRight" size={18} color={t.text3} style={{ marginLeft: S.md }} />
             </View>
           </Tap>
-        </Card>
+        </Linha>
       ))}
 
       <AddButton t={t} label="Criar novo envelope" onPress={() => {

@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
 import { MONTHS, WD_SHORT, TODAY, TODAY_KEY, dkey, dayLabel, evTime, plural } from '../format';
 
-import { Card, SectionTitle, Avatar, Empty, AddButton, Tap, usePaged, Pager, PastilhaVisibilidade, avatarDe } from '../ui';
+import { Card, SectionTitle, Linha, Avatar, Empty, AddButton, Tap, usePaged, Pager, PastilhaVisibilidade, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import NovoEvento from '../sheets/NovoEvento';
@@ -252,15 +252,16 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
             {evs.length === 0 ? (
               <Empty t={t} icon="calendar" title="Nada agendado." />
             ) : (
-              <View style={{ gap: S.md }}>
-                {evs.map(e => (
-                  <Card key={e.id} t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+              <View>
+                {/* Linhas planas, sem cartão — desenho C (09/09/2026). */}
+                {evs.map((e, i) => (
+                  <Linha key={e.id} t={t} last={i === evs.length - 1}>
                     <Pressable
                       onPress={() => podeEditarEvento(e, user) && setEditar(e)}
                       accessibilityRole={podeEditarEvento(e, user) ? 'button' : undefined}
                       accessibilityLabel={podeEditarEvento(e, user) ? `Editar ${e.title}` : undefined}
                       style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center',
-                        gap: 12, minHeight: 52, paddingVertical: 14,
+                        gap: 12, minHeight: 44,
                         opacity: pressed ? 0.7 : 1 })}>
                       <Text style={{ width: 42, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3 }}>{evTime(e.time)}</Text>
                       <Avatar {...avatarDe(e.owner, MEMBERS[e.owner], t.text3)} />
@@ -273,7 +274,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                         ? <Icon name="caretRight" size={18} color={t.text3} />
                         : null}
                     </Pressable>
-                  </Card>
+                  </Linha>
                 ))}
               </View>
             )}

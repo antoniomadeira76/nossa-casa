@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
 import { S, R, FONT, elev , LARGURA_APP } from '../theme';
 import { EUR } from '../format';
-import { Card, Label, Primary, Tile } from '../ui';
+import { Label, Primary, Tile } from '../ui';
 import Icon from '../Icon';
 
 // Validação antes de fechar a conta. Vivia dentro do Compras.jsx, ao lado do
@@ -41,7 +41,7 @@ export default function Carrinho({ t, doneItems, items, cart, pago, user, store,
             {/* Artigos Comprados */}
             <View style={{ gap: S.md }}>
               <Label t={t}>Artigos Confirmados ({doneItems.length})</Label>
-              <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+              <View style={{ paddingHorizontal: S.xs }}>
                 {doneItems.map((i, idx, arr) => (
                   <View key={i.id} style={{
                     minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -56,7 +56,7 @@ export default function Carrinho({ t, doneItems, items, cart, pago, user, store,
                     </Text>
                   </View>
                 ))}
-              </Card>
+              </View>
             </View>
 
             {/* Total */}
@@ -76,7 +76,7 @@ export default function Carrinho({ t, doneItems, items, cart, pago, user, store,
             {noStock.length > 0 ? (
               <View style={{ gap: S.md }}>
                 <Label t={t}>Artigos Pendentes ({noStock.length})</Label>
-                <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+                <View style={{ paddingHorizontal: S.xs }}>
                   {noStock.slice(0, 5).map((i, idx, arr) => (
                     <View key={i.id} style={{
                       minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -91,7 +91,7 @@ export default function Carrinho({ t, doneItems, items, cart, pago, user, store,
                       </Text>
                     </View>
                   ))}
-                </Card>
+                </View>
                 {noStock.length > 5 ? (
                   <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3, textAlign: 'center' }}>
                     +{noStock.length - 5} artigo{noStock.length - 5 !== 1 ? 's' : ''} pendente{noStock.length - 5 !== 1 ? 's' : ''}

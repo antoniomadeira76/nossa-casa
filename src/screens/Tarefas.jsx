@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
 import { EUR, subtituloDaTarefa } from '../format';
 
-import { Card, SectionTitle, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe } from '../ui';
+import { Card, SectionTitle, Linha, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -142,7 +142,7 @@ export default function Tarefas({ t, user, abrir }) {
             <ListaArrastavel
               itens={pg.slice}
               grupoDe={(x) => x.urgency}
-              espaco={S.md}
+              espaco={0}
               aoLargar={(ids) => st.reordenarTarefas(ids)}
               render={(x, { arrastando, armar }) => {
               const idx = shown.indexOf(x) + 1;
@@ -157,12 +157,12 @@ export default function Tarefas({ t, user, abrir }) {
               // passa a ser redundante. A borda diz só o estado: feita, ou à
               // espera de confirmação.
               return (
-                <Card key={x.id} t={t} style={{
-                  borderWidth: arrastando ? 2 : done ? 2 : 1,
-                  borderColor: arrastando ? t.accent
-                    : done ? t.state.okBorder : pend ? t.state.info : t.border,
-                  backgroundColor: done ? t.state.okBg : t.card,
-                }}>
+                <Linha key={x.id} t={t}
+                  // O estado que era a borda do cartão passa a ser a faixa e a
+                  // tinta da linha (desenho C, 09/09/2026): verde feita, azul à
+                  // espera, o acento enquanto se arrasta.
+                  faixa={arrastando ? t.accent : done ? t.state.okBorder : pend ? t.state.info : undefined}
+                  tinta={arrastando ? t.subtle : done ? t.state.okBg : undefined}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     {/* ⚠ É o `onLongPress` DESTE Pressable que arma o arrasto.
                         Não há alça, e é de propósito: uma alça era o sexto
@@ -206,7 +206,7 @@ export default function Tarefas({ t, user, abrir }) {
                       <Icon name="edit" size={20} color={t.text3} />
                     </Tap>
                   </View>
-                </Card>
+                </Linha>
               );
               }}
             />

@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Títulos de secção e cartões — cinco alternativas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Inter:wght@400;600&display=swap">
+<style>
+  /* Tokens do esquema Violeta, aspeto claro — os mesmos de src/theme.js */
+  :root {
+    --chrome: #241239; --accent: #722ED1; --titulo: #722ED1; --act-fg: #5B21B6;
+    --page: #F0F2F5; --card: #FFFFFF; --subtle: #F6F7F9;
+    --text1: #262626; --text2: #434343; --text3: #656C7C; --slate: #606E90;
+    --border: #E3E7EE; --divider: #EEF1F5;
+    --info-fg: #0958D9; --info-bg: #E6F4FF; --info-brd: #91CAFF;
+    --warn-fg: #8F5600; --warn-bg: #FFF7E6; --warn-brd: #FFD591; --warn: #FAAD14;
+    --err: #FF4D4F; --err-fg: #A8071A; --faixa: #A9B4C6;
+    --display: 'Roboto', system-ui, sans-serif; --ui: 'Inter', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #1B1B22; color: #E8E8EE; font-family: var(--ui); }
+  header.topo { padding: 22px 28px 14px; }
+  header.topo h1 { font-family: var(--display); font-weight: 500; font-size: 22px; margin: 0 0 6px; }
+  header.topo p { margin: 0; font-size: 13px; color: #A8A8B8; max-width: 70ch; line-height: 1.5; }
+  .controlos { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 28px 16px; align-items: center; }
+  .controlos .grupo { display: flex; gap: 6px; flex-wrap: wrap; }
+  .controlos .rot { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #8A8A9C; margin-right: 6px; }
+  button.opc { font: 600 12px var(--ui); padding: 8px 12px; border-radius: 6px; border: 1px solid #3A3A48; background: #26262F; color: #DADAE6; cursor: pointer; min-height: 36px; }
+  button.opc[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .palco { display: grid; grid-template-columns: 402px 1fr; gap: 28px; padding: 0 28px 40px; align-items: start; }
+  @media (max-width: 900px) { .palco { grid-template-columns: 1fr; } }
+
+  /* O telefone */
+  .fone { width: 402px; height: 760px; border-radius: 28px; overflow: hidden; background: var(--page); display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.5); border: 1px solid #333; }
+  .cab { flex: none; min-height: 80px; background: var(--chrome); display: flex; align-items: center; gap: 12px; padding: 18px 16px; color: #fff; }
+  .cab .ico { width: 26px; height: 26px; border: 1.75px solid #fff; border-radius: 5px; }
+  .cab .tit { font: 500 20px var(--display); letter-spacing: .25px; }
+  .cab .sub { font: 400 12px var(--ui); color: rgba(255,255,255,.72); margin-top: 2px; }
+  .cab .av { margin-left: auto; width: 44px; height: 44px; border-radius: 50%; background: #fff; border: 2px solid rgba(255,255,255,.5); }
+  .conteudo { flex: 1; min-height: 0; overflow: auto; padding: 16px 16px 24px; }
+  .rod { flex: none; height: 64px; background: var(--chrome); display: flex; justify-content: space-around; align-items: center; }
+  .rod span { font: 600 10px var(--ui); color: rgba(255,255,255,.72); display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .rod span i { width: 20px; height: 20px; border: 1.75px solid currentColor; border-radius: 4px; display: block; }
+  .rod span.on { color: #fff; }
+
+  /* Peças comuns */
+  .linha { display: flex; align-items: center; gap: 12px; color: var(--text2); }
+  .hora { font: 600 13px var(--ui); color: var(--text2); width: 42px; }
+  .bola { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 500 13px var(--display); color: #fff; flex: none; }
+  .foto { background: #B9A99A; }
+  .txt { flex: 1; min-width: 0; }
+  .txt .t { font: 400 15px var(--display); color: var(--text2); }
+  .txt .s { font: 400 11.5px var(--ui); color: var(--text3); margin-top: 2px; }
+  .pill { font: 600 11px var(--ui); padding: 4px 10px; border-radius: 100px; border: 1px solid; }
+  .pill.fam { color: var(--info-fg); background: var(--info-bg); border-color: var(--info-brd); }
+  .pill.adu { color: var(--warn-fg); background: var(--warn-bg); border-color: var(--warn-brd); }
+  .pill.pt { color: var(--text2); background: var(--subtle); border-color: var(--border); }
+  .chev { width: 8px; height: 8px; border-right: 1.75px solid var(--text3); border-top: 1.75px solid var(--text3); transform: rotate(45deg); flex: none; margin-right: 4px; }
+  .ico16 { width: 18px; height: 18px; border: 1.75px solid var(--slate); border-radius: 4px; flex: none; }
+  .barra { height: 6px; border-radius: 100px; background: var(--page); overflow: hidden; margin-top: 6px; }
+  .barra i { display: block; height: 100%; background: var(--accent); }
+  .valor { font: 600 13px var(--ui); color: var(--text2); white-space: nowrap; }
+  .valor small { display: block; font-weight: 400; font-size: 11px; color: var(--text3); text-align: right; }
+
+  /* ── ATUAL: título 20/700 acento, um cartão por item, 16 de espaço ─────── */
+  .v-atual .sec { margin-bottom: 24px; }
+  .v-atual .tit { font: 700 20px var(--display); color: var(--titulo); letter-spacing: .1px; margin-bottom: 8px; }
+  .v-atual .item { background: var(--card); border-radius: 8px; padding: 14px 16px; min-height: 64px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(76,123,166,.10); display: flex; }
+  .v-atual .item.faixa { border-left: 4px solid var(--f, var(--faixa)); }
+
+  /* ── A · Etiqueta: título 12 maiúsculas em slate; um cartão por secção ─── */
+  .v-a .sec { margin-bottom: 16px; }
+  .v-a .tit { font: 600 12px var(--ui); letter-spacing: .06em; text-transform: uppercase; color: var(--slate); margin: 0 2px 6px; }
+  .v-a .tit b { font-weight: 400; color: var(--text3); text-transform: none; letter-spacing: 0; margin-left: 6px; }
+  .v-a .grupo { background: var(--card); border-radius: 8px; box-shadow: 0 2px 6px rgba(76,123,166,.10); overflow: hidden; }
+  .v-a .item { padding: 0 14px; min-height: 56px; display: flex; border-bottom: 1px solid var(--divider); }
+  .v-a .item:last-child { border-bottom: 0; }
+  .v-a .item.faixa { box-shadow: inset 4px 0 0 var(--f, var(--faixa)); }
+
+  /* ── B · Título discreto: 15/500 em text1, data em text3; cartão por secção */
+  .v-b .sec { margin-bottom: 18px; }
+  .v-b .tit { font: 500 15px var(--display); color: var(--text1); margin: 0 2px 6px; display: flex; align-items: baseline; gap: 8px; }
+  .v-b .tit b { font: 400 12px var(--ui); color: var(--text3); }
+  .v-b .grupo { background: var(--card); border-radius: 8px; box-shadow: 0 2px 6px rgba(76,123,166,.10); overflow: hidden; }
+  .v-b .item { padding: 0 14px; min-height: 56px; display: flex; border-bottom: 1px solid var(--divider); }
+  .v-b .item:last-child { border-bottom: 0; }
+  .v-b .item.faixa { box-shadow: inset 4px 0 0 var(--f, var(--faixa)); }
+
+  /* ── C · Lista plana: sem cartões; título 13/600 acento; divisórias ──── */
+  .v-c .conteudo { padding-top: 4px; }
+  .v-c .sec { margin-bottom: 8px; }
+  .v-c .tit { font: 600 13px var(--ui); color: var(--titulo); padding: 14px 2px 6px; border-bottom: 1px solid var(--border); margin-bottom: 0; display: flex; justify-content: space-between; }
+  .v-c .tit b { font-weight: 400; color: var(--text3); }
+  .v-c .item { padding: 0 2px; min-height: 52px; display: flex; border-bottom: 1px solid var(--divider); }
+  .v-c .item.faixa { box-shadow: inset 3px 0 0 var(--f, var(--faixa)); padding-left: 10px; }
+
+  /* ── D · Cabeçalho dentro do cartão ─────────────────────────────────────── */
+  .v-d .sec { margin-bottom: 16px; }
+  .v-d .grupo { background: var(--card); border-radius: 8px; box-shadow: 0 2px 6px rgba(76,123,166,.10); overflow: hidden; }
+  .v-d .tit { font: 500 14px var(--display); color: var(--text2); padding: 10px 14px; background: var(--subtle); border-bottom: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: baseline; margin: 0; }
+  .v-d .tit b { font: 600 11px var(--ui); color: var(--text3); }
+  .v-d .item { padding: 0 14px; min-height: 56px; display: flex; border-bottom: 1px solid var(--divider); }
+  .v-d .item:last-child { border-bottom: 0; }
+  .v-d .item.faixa { box-shadow: inset 4px 0 0 var(--f, var(--faixa)); }
+
+  /* ── E · Cartões encostados: título 14/500 acento; cartões sem espaço ──── */
+  .v-e .sec { margin-bottom: 18px; }
+  .v-e .tit { font: 500 14px var(--display); color: var(--titulo); margin: 0 2px 6px; }
+  .v-e .tit b { font: 400 12px var(--ui); color: var(--text3); margin-left: 6px; }
+  .v-e .grupo { display: flex; flex-direction: column; gap: 2px; }
+  .v-e .item { background: var(--card); padding: 0 14px; min-height: 56px; display: flex; box-shadow: 0 1px 3px rgba(76,123,166,.08); border-radius: 3px; }
+  .v-e .item:first-child { border-radius: 8px 8px 3px 3px; }
+  .v-e .item:last-child { border-radius: 3px 3px 8px 8px; }
+  .v-e .item.faixa { border-left: 4px solid var(--f, var(--faixa)); }
+
+  /* Painel de leitura */
+  .painel { color: #DADAE6; }
+  .painel h2 { font: 500 18px var(--display); margin: 8px 0 6px; }
+  .painel p { font-size: 13px; line-height: 1.55; color: #B8B8C8; margin: 0 0 10px; max-width: 62ch; }
+  table.med { border-collapse: collapse; font-size: 12.5px; margin-top: 14px; min-width: 420px; }
+  table.med th, table.med td { text-align: left; padding: 7px 10px; border-bottom: 1px solid #33333F; font-variant-numeric: tabular-nums; }
+  table.med th { color: #8A8A9C; font-weight: 600; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
+  table.med tr.sel td { color: #fff; background: rgba(114,46,209,.18); }
+  .nota { font-size: 12px; color: #8A8A9C; margin-top: 12px; max-width: 62ch; line-height: 1.5; }
+</style>
+</head>
+<body>
+<header class="topo">
+  <h1>Títulos de secção e cartões — cinco alternativas</h1>
+  <p>O mesmo conteúdo, com o título de secção e a organização dos cartões a mudar. O cabeçalho da app e o rodapé ficam como estão. Os números da tabela são medidos na página: a altura que as secções ocupam, contra o que ocupam hoje.</p>
+</header>
+<div class="controlos">
+  <span class="rot">Alternativa</span>
+  <div class="grupo" id="alts"></div>
+  <span class="rot" style="margin-left:18px">Ecrã</span>
+  <div class="grupo" id="ecras"></div>
+</div>
+<div class="palco">
+  <div class="fone v-atual" id="fone">
+    <div class="cab"><div class="ico"></div><div><div class="tit" id="cab-tit">Agenda</div><div class="sub" id="cab-sub">7 – 13 de setembro de 2026</div></div><div class="av"></div></div>
+    <div class="conteudo" id="conteudo"></div>
+    <div class="rod"><span><i></i>Início</span><span><i></i>Dinheiro</span><span><i></i>Tarefas</span><span><i></i>Compras</span><span class="on"><i></i>Agenda</span></div>
+  </div>
+  <div class="painel">
+    <h2 id="p-tit"></h2>
+    <p id="p-desc"></p>
+    <p id="p-troca"></p>
+    <table class="med" id="med"></table>
+    <p class="nota">Altura medida das secções do ecrã escolhido, título incluído, na coluna de 402. O que se vê sem rolar é 616 px (760 menos cabeçalho e rodapé).</p>
+  </div>
+</div>
+
+<script>
+const ALTS = [
+  { k: 'atual', nome: 'Atual', desc: 'Título a 20 px, a negro, na cor do esquema; um cartão por item com 14/16 de enchimento e 8 de espaço entre eles; 24 entre secções.', troca: 'É o ponto de partida. O título pesa mais do que o conteúdo que rotula, e cada linha paga a moldura de um cartão inteiro.' },
+  { k: 'a', nome: 'A · Etiqueta', desc: 'O título passa a etiqueta: 12 px, maiúsculas, em slate — o mesmo idioma das etiquetas pequenas dos formulários. Os itens de cada secção vivem num só cartão, separados por divisórias de 1 px; as faixas de cor passam para o interior da linha.', troca: 'É a opção mais calma e a que mais cabe no ecrã. Perde-se a cor do esquema nos títulos; a data deixa de ser um título e passa a rótulo de grupo. Compacto sem parecer apertado.' },
+  { k: 'b', nome: 'B · Título discreto', desc: 'Título a 15 px, peso médio, em text1 (o preto da app), com a parte secundária — o dia da semana, a contagem — em 12 px cinzento ao lado. Um cartão por secção, com divisórias.', troca: 'Mantém um título legível sem gritar. A cor do esquema sai dos títulos e fica só onde age: botões, escolhas, barras. É o que mais se parece com uma lista de sistema (iOS/Android).' },
+  { k: 'c', nome: 'C · Lista plana', desc: 'Sem cartões. As linhas assentam directamente na página, separadas por divisórias; o título é uma linha de 13 px na cor do esquema, com a contagem à direita, e uma régua por baixo.', troca: 'A maior densidade das cinco. Deixa de haver «cartões» — o que muda a identidade da app, que é feita deles. Fica bem na Agenda e nas Tarefas; nos ecrãs com cartões de números (Dinheiro, Início) teria de conviver com eles.' },
+  { k: 'd', nome: 'D · Cabeçalho no cartão', desc: 'O título é a primeira linha do próprio cartão: 14 px em text2 sobre um fundo subtil, com a contagem à direita, e uma divisória a separá-lo dos itens. Um cartão por secção.', troca: 'Cada secção é um objeto fechado — lê-se como uma tabela com cabeçalho. Bom para o Dinheiro e a Gestão. Na Agenda, a data dentro do cartão perde a leitura de «linha do tempo».' },
+  { k: 'e', nome: 'E · Cartões encostados', desc: 'Guarda a ideia de um cartão por item — mas os cartões encostam-se, com 2 px entre eles e os cantos só nos extremos do grupo. Título a 14 px, peso médio, na cor do esquema.', troca: 'É a alteração mais pequena ao que existe: a mesma cor nos títulos, os mesmos cartões, só mais próximos e mais baixos. Ganha-se um terço da altura sem mudar de idioma.' },
+];
+
+// ── Os três ecrãs, como dados ─────────────────────────────────────────────────
+const ECRAS = {
+  agenda: { tit: 'Agenda', sub: '7 – 13 de setembro de 2026', secs: [
+    { t: 'Hoje', b: 'Quarta, 09/09', itens: [ { hora: '10:00', bola: 'T', cor: '#08979C', t: 'Futebol do Léo', pill: ['fam', 'Família'] } ] },
+    { t: 'Amanhã', b: 'Quinta, 10/09', itens: [ { hora: '19:30', foto: true, t: 'Jantar de anos da avó', pill: ['fam', 'Família'] } ] },
+    { t: 'Sábado', b: '12/09', itens: [ { hora: '18:00', bola: 'R', cor: '#722ED1', t: 'Reunião na escola', pill: ['adu', 'Adultos'] } ] },
+    { t: 'Terça', b: '15/09', itens: [ { hora: '10:00', bola: 'R', cor: '#722ED1', t: 'Consulta da Mia', s: 'Mia', pill: ['fam', 'Família'] } ] },
+    { t: 'Sexta', b: '18/09', itens: [ { hora: '17:00', bola: 'L', cor: '#006ED5', t: 'Treino do Léo', pill: ['fam', 'Família'] }, { hora: '20:30', bola: 'A', cor: '#241239', t: 'Cinema', pill: ['adu', 'Adultos'] } ] },
+  ] },
+  inicio: { tit: 'Início', sub: 'Quarta, 09/09', secs: [
+    { t: 'Precisa de Si', b: '3', itens: [
+      { ico: true, f: 'var(--err)', t: 'Contas por acertar', s: 'A Rita deve 83,67 €', chev: true },
+      { ico: true, f: 'var(--warn)', t: 'Garantia a expirar · Frigorífico', s: 'Faltam 23 dias', chev: true },
+      { ico: true, f: '#1677FF', t: '4 tarefas por fazer hoje', s: 'Léo, Mia, Rita', chev: true } ] },
+    { t: 'Agenda de Hoje', b: '1', itens: [ { hora: '10:00', bola: 'T', cor: '#08979C', t: 'Futebol do Léo', pill: ['fam', 'Família'] } ] },
+    { t: 'Tarefas de Hoje', b: '5', itens: [
+      { ico: true, t: 'Levar o lixo', s: 'Léo · atrasada 2 dias', pill: ['pt', '2 pt'] },
+      { ico: true, t: 'Fazer a cama', s: 'feita hoje · volta amanhã' },
+      { ico: true, t: 'Pôr a mesa', s: 'Mia · Todos os dias', pill: ['pt', '1 pt'] },
+      { ico: true, t: 'Arrumar o quarto', s: 'Mia · atrasada 2 dias', pill: ['pt', '3 pt'] },
+      { ico: true, t: 'Regar as plantas', s: 'Rita · atrasada 1 dia', pill: ['pt', '1 pt'] } ] },
+  ] },
+  dinheiro: { tit: 'Dinheiro', sub: 'Conta conjunta · Setembro de 2026', secs: [
+    { t: 'Envelopes', b: '6', itens: [
+      { env: true, t: 'Mercearia', v: '546,60 €', vs: 'de 590,00 €', pct: 93 },
+      { env: true, t: 'Casa & contas', v: '357,69 €', vs: 'de 780,00 €', pct: 46 },
+      { env: true, t: 'Transportes', v: '178,00 €', vs: 'de 240,00 €', pct: 74 },
+      { env: true, t: 'Lazer', v: '90,40 €', vs: 'de 140,00 €', pct: 65 },
+      { env: true, t: 'Saúde', v: '53,45 €', vs: 'de 175,00 €', pct: 31 },
+      { env: true, t: 'Escola', v: '22,50 €', vs: 'de 95,00 €', pct: 24 } ] },
+    { t: 'Contas entre Nós', b: '19 despesas', itens: [ { ico: true, t: 'A Rita deve ao António 83,67 €', s: '19 despesas partilhadas este mês', chev: true } ] },
+    { t: 'Metas da Família', b: '0,00 €', itens: [ { ico: true, t: 'Sem metas definidas.', s: 'Uma meta é um objetivo com valor e prazo.', chev: true } ] },
+  ] },
+};
+
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const linha = (it) => {
+  let h = '<div class="linha" style="flex:1">';
+  if (it.hora) h += `<span class="hora">${it.hora}</span>`;
+  if (it.bola) h += `<span class="bola" style="background:${it.cor}">${it.bola}</span>`;
+  if (it.foto) h += '<span class="bola foto"></span>';
+  if (it.ico) h += '<span class="ico16"></span>';
+  h += `<span class="txt"><div class="t">${esc(it.t)}</div>${it.s ? `<div class="s">${esc(it.s)}</div>` : ''}${it.env ? `<div class="barra"><i style="width:${it.pct}%"></i></div>` : ''}</span>`;
+  if (it.v) h += `<span class="valor">${it.v}<small>${it.vs}</small></span>`;
+  if (it.pill) h += `<span class="pill ${it.pill[0]}">${it.pill[1]}</span>`;
+  if (it.chev || it.hora) h += '<span class="chev"></span>';
+  return h + '</div>';
+};
+
+function render(alt, ecraK) {
+  const ecra = ECRAS[ecraK];
+  const fone = document.getElementById('fone');
+  fone.className = 'fone v-' + alt;
+  document.getElementById('cab-tit').textContent = ecra.tit;
+  document.getElementById('cab-sub').textContent = ecra.sub;
+  document.querySelectorAll('.rod span').forEach(s => s.classList.toggle('on', s.textContent.trim().toLowerCase() === (ecraK === 'inicio' ? 'início' : ecraK)));
+  const agrupa = alt !== 'atual';
+  let html = '';
+  for (const sec of ecra.secs) {
+    const titulo = alt === 'atual'
+      ? `<div class="tit">${esc(sec.t)}${ecraK === 'agenda' ? ' · ' + esc(sec.b) : ''}</div>`
+      : `<div class="tit">${esc(sec.t)}<b>${esc(sec.b)}</b></div>`;
+    const itens = sec.itens.map(it => `<div class="item${it.f ? ' faixa' : ''}" style="${it.f ? '--f:' + it.f : ''}">${linha(it)}</div>`).join('');
+    if (alt === 'd') html += `<section class="sec"><div class="grupo">${titulo}${itens}</div></section>`;
+    else if (agrupa) html += `<section class="sec">${titulo}<div class="grupo">${itens}</div></section>`;
+    else html += `<section class="sec">${titulo}${itens}</section>`;
+  }
+  document.getElementById('conteudo').innerHTML = html;
+}
+
+// Mede a altura das secções de UM ecrã em cada alternativa, para a tabela.
+function medir(ecraK) {
+  const fone = document.getElementById('fone');
+  const antes = fone.className;
+  const out = {};
+  for (const a of ALTS) {
+    render(a.k, ecraK);
+    const secs = [...document.querySelectorAll('#conteudo .sec')];
+    const h = secs.reduce((acc, s) => acc + s.getBoundingClientRect().height, 0);
+    const primeiroTit = document.querySelector('#conteudo .tit');
+    out[a.k] = { total: Math.round(h), tit: primeiroTit ? Math.round(primeiroTit.getBoundingClientRect().height) : 0,
+      linha: Math.round(document.querySelector('#conteudo .item').getBoundingClientRect().height) };
+  }
+  fone.className = antes;
+  return out;
+}
+
+let altAtual = 'atual', ecraAtual = 'agenda';
+function pintar() {
+  render(altAtual, ecraAtual);
+  const a = ALTS.find(x => x.k === altAtual);
+  document.getElementById('p-tit').textContent = a.nome;
+  document.getElementById('p-desc').textContent = a.desc;
+  document.getElementById('p-troca').textContent = a.troca;
+  const m = medir(ecraAtual);
+  render(altAtual, ecraAtual);
+  const base = m.atual.total;
+  document.getElementById('med').innerHTML = '<tr><th>Alternativa</th><th>Título</th><th>Linha</th><th>Secções</th><th>Contra o atual</th></tr>'
+    + ALTS.map(x => `<tr class="${x.k === altAtual ? 'sel' : ''}"><td>${x.nome}</td><td>${m[x.k].tit} px</td><td>${m[x.k].linha} px</td><td>${m[x.k].total} px</td><td>${x.k === 'atual' ? '—' : (m[x.k].total - base) + ' px · ' + Math.round((m[x.k].total - base) / base * 100) + ' %'}</td></tr>`).join('');
+  document.querySelectorAll('#alts button').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === altAtual));
+  document.querySelectorAll('#ecras button').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === ecraAtual));
+}
+document.getElementById('alts').innerHTML = ALTS.map(a => `<button class="opc" data-k="${a.k}">${a.nome}</button>`).join('');
+document.getElementById('ecras').innerHTML = [['agenda', 'Agenda'], ['inicio', 'Início'], ['dinheiro', 'Dinheiro']].map(([k, n]) => `<button class="opc" data-k="${k}">${n}</button>`).join('');
+document.getElementById('alts').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { altAtual = b.dataset.k; pintar(); } });
+document.getElementById('ecras').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { ecraAtual = b.dataset.k; pintar(); } });
+document.fonts ? document.fonts.ready.then(pintar) : pintar();
+pintar();
+</script>
+</body>
+</html>

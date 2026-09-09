@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A linha — cinco organizações dos dados</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Inter:wght@400;600&display=swap">
+<style>
+  :root {
+    --chrome: #241239; --accent: #722ED1; --act-fg: #5B21B6; --act-bg: rgba(114,46,209,.10);
+    --page: #F0F2F5; --card: #FFFFFF; --subtle: #F6F7F9;
+    --text1: #262626; --text2: #434343; --text3: #656C7C; --slate: #606E90;
+    --border: #E3E7EE; --divider: #EEF1F5;
+    --info-fg: #0958D9; --info-bg: #E6F4FF; --info-brd: #91CAFF; --info: #1677FF;
+    --warn-fg: #8F5600; --warn-bg: #FFF7E6; --warn-brd: #FFD591; --warn: #FAAD14;
+    --err: #FF4D4F; --err-fg: #A8071A; --ok: #52C41A; --ok-fg: #237804; --ok-bg: #EEF9E6;
+    --display: 'Roboto', system-ui, sans-serif; --ui: 'Inter', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #1B1B22; color: #E8E8EE; font-family: var(--ui); }
+  header.topo { padding: 22px 28px 14px; }
+  header.topo h1 { font-family: var(--display); font-weight: 500; font-size: 22px; margin: 0 0 6px; }
+  header.topo p { margin: 0; font-size: 13px; color: #A8A8B8; max-width: 72ch; line-height: 1.5; }
+  .controlos { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 28px 16px; align-items: center; }
+  .rot { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #8A8A9C; margin-right: 6px; }
+  button.opc { font: 600 12px var(--ui); padding: 8px 12px; border-radius: 6px; border: 1px solid #3A3A48; background: #26262F; color: #DADAE6; cursor: pointer; min-height: 36px; }
+  button.opc[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .palco { display: grid; grid-template-columns: 402px 1fr; gap: 28px; padding: 0 28px 40px; align-items: start; }
+  @media (max-width: 900px) { .palco { grid-template-columns: 1fr; } }
+  .fone { width: 402px; height: 760px; border-radius: 28px; overflow: hidden; background: var(--page); display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.5); border: 1px solid #333; }
+  .cab { flex: none; min-height: 80px; background: var(--chrome); display: flex; align-items: center; gap: 12px; padding: 18px 16px; color: #fff; }
+  .cab .ico { width: 26px; height: 26px; border: 1.75px solid #fff; border-radius: 5px; }
+  .cab .tit { font: 500 20px var(--display); }
+  .cab .sub { font: 400 12px var(--ui); color: rgba(255,255,255,.72); margin-top: 2px; }
+  .cab .av { margin-left: auto; width: 44px; height: 44px; border-radius: 50%; background: #fff; border: 2px solid rgba(255,255,255,.5); }
+  .conteudo { flex: 1; min-height: 0; overflow: auto; padding: 8px 16px 24px; }
+  .rod { flex: none; height: 64px; background: var(--chrome); display: flex; justify-content: space-around; align-items: center; }
+  .rod span { font: 600 10px var(--ui); color: rgba(255,255,255,.72); display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .rod span i { width: 20px; height: 20px; border: 1.75px solid currentColor; border-radius: 4px; display: block; }
+  .rod span.on { color: #fff; }
+
+  /* Desenho C — o título e a lista plana, já escolhidos */
+  .sec { margin-bottom: 8px; }
+  .stit { font: 600 13px var(--ui); color: var(--act-fg); padding: 14px 2px 8px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; letter-spacing: .2px; }
+  .stit b { font-weight: 400; color: var(--text3); }
+  .item { min-height: 52px; padding: 4px 2px; border-bottom: 1px solid var(--divider); display: flex; align-items: center; gap: 12px; color: var(--text2); }
+  .item.faixa { box-shadow: inset 3px 0 0 var(--f, var(--border)); padding-left: 10px; }
+  .item.tinta { background: var(--ok-bg); }
+
+  /* Peças */
+  .hora { font: 600 13px var(--ui); color: var(--text2); width: 42px; font-variant-numeric: tabular-nums; }
+  .bola { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 500 13px var(--display); color: #fff; flex: none; }
+  .bola.p { width: 22px; height: 22px; font-size: 11px; }
+  .foto { background: #B9A99A; }
+  .txt { flex: 1; min-width: 0; }
+  .t { font: 400 15px var(--display); color: var(--text2); }
+  .s { font: 400 11.5px var(--ui); color: var(--text3); margin-top: 2px; }
+  .s.l { color: var(--err-fg); } .s.b { color: var(--warn-fg); }
+  .pill { font: 600 11px var(--ui); padding: 4px 10px; border-radius: 100px; border: 1px solid; white-space: nowrap; }
+  .pill.fam { color: var(--info-fg); background: var(--info-bg); border-color: var(--info-brd); }
+  .pill.adu { color: var(--warn-fg); background: var(--warn-bg); border-color: var(--warn-brd); }
+  .pill.pt { color: var(--text2); background: var(--card); border-color: var(--border); }
+  .pill.so { color: var(--text3); background: transparent; border-color: var(--border); }
+  .chev { width: 8px; height: 8px; border-right: 1.75px solid var(--text3); border-top: 1.75px solid var(--text3); transform: rotate(45deg); flex: none; margin-right: 4px; }
+  .ico { width: 18px; height: 18px; border: 1.75px solid var(--slate); border-radius: 4px; flex: none; }
+  .ico.ok { border-color: var(--ok); border-radius: 50%; } .ico.esp { border-color: var(--info); border-radius: 50%; }
+  .num { width: 20px; height: 20px; border-radius: 4px; display: grid; place-items: center; font: 700 11px var(--ui); flex: none; }
+  .num.u { background: #CE0002; color: #fff; } .num.n { border: 1.5px solid var(--slate); color: var(--text2); } .num.s { border: 1.5px dashed var(--slate); color: var(--text2); }
+  .ponto { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
+  .lock { width: 10px; height: 8px; border: 1.5px solid var(--text3); border-radius: 2px; position: relative; flex: none; }
+  .lock::before { content: ''; position: absolute; left: 1.5px; top: -5px; width: 5px; height: 5px; border: 1.5px solid var(--text3); border-bottom: 0; border-radius: 4px 4px 0 0; }
+  .meta { font: 400 11.5px var(--ui); color: var(--text3); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .meta i { font-style: normal; color: var(--border); }
+  .bloco { width: 54px; flex: none; text-align: center; padding: 6px 0; border-radius: 6px; background: var(--subtle); }
+  .bloco .h { font: 600 13px var(--ui); color: var(--text2); } .bloco .d { font: 400 10.5px var(--ui); color: var(--text3); }
+  .col { display: grid; grid-template-columns: 44px 1fr 62px 18px; gap: 10px; align-items: center; width: 100%; }
+  .col .quem { font: 400 12px var(--ui); color: var(--text3); text-align: right; }
+
+  .painel { color: #DADAE6; }
+  .painel h2 { font: 500 18px var(--display); margin: 8px 0 6px; }
+  .painel p { font-size: 13px; line-height: 1.55; color: #B8B8C8; margin: 0 0 10px; max-width: 62ch; }
+  table.med { border-collapse: collapse; font-size: 12.5px; margin-top: 14px; min-width: 420px; }
+  table.med th, table.med td { text-align: left; padding: 7px 10px; border-bottom: 1px solid #33333F; font-variant-numeric: tabular-nums; }
+  table.med th { color: #8A8A9C; font-weight: 600; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
+  table.med tr.sel td { color: #fff; background: rgba(114,46,209,.18); }
+  .nota { font-size: 12px; color: #8A8A9C; margin-top: 12px; max-width: 62ch; line-height: 1.5; }
+</style>
+</head>
+<body>
+<header class="topo">
+  <h1>A linha — cinco organizações dos dados</h1>
+  <p>Com o desenho C já escolhido para os títulos e para as listas, isto é o que muda DENTRO de cada linha: onde fica a hora, quem é o avatar, o que a pastilha diz, e se há seta. Aplicado à Agenda e às Tarefas, que são as duas listas que mais se leem. Os números são medidos na página.</p>
+</header>
+<div class="controlos">
+  <span class="rot">Organização</span><div id="alts" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  <span class="rot" style="margin-left:18px">Lista</span><div id="ecras" style="display:flex;gap:6px"></div>
+</div>
+<div class="palco">
+  <div class="fone">
+    <div class="cab"><div class="ico"></div><div><div class="tit" id="cab-tit">Agenda</div><div class="sub" id="cab-sub">7 – 13 de setembro de 2026</div></div><div class="av"></div></div>
+    <div class="conteudo" id="conteudo"></div>
+    <div class="rod"><span><i></i>Início</span><span><i></i>Dinheiro</span><span id="rod-t"><i></i>Tarefas</span><span><i></i>Compras</span><span id="rod-a" class="on"><i></i>Agenda</span></div>
+  </div>
+  <div class="painel">
+    <h2 id="p-tit"></h2><p id="p-desc"></p><p id="p-troca"></p>
+    <table class="med" id="med"></table>
+    <p class="nota">Altura média de uma linha e altura total das secções mostradas, na coluna de 402. Uma linha nunca desce dos 52 px (alvo de toque de 44 com 4 de folga por lado).</p>
+  </div>
+</div>
+<script>
+const ALTS = [
+  { k: 'atual', nome: 'Atual', desc: 'Hora · avatar · título com «quem» por baixo · pastilha da visibilidade · seta. Nas tarefas: número da urgência · ícone do estado · avatar · título com prazo por baixo · pontos · lápis.', troca: 'Seis coisas numa linha de 355 px. A pastilha e a seta pesam tanto como o título; o «quem» repete o avatar.' },
+  { k: 'r1', nome: '1 · Hora em bloco', desc: 'A hora vive num bloco tingido à esquerda, com a duração ou o dia por baixo em 10,5 px. Sem avatar: o «quem» é um ponto de cor antes do nome, na linha de baixo. A visibilidade só aparece quando NÃO é família — um cadeado pequeno. Sem seta: a linha toda toca.', troca: 'É a mais «agenda» das cinco: a coluna das horas alinha, e a linha fica com duas coisas (quando e o quê). Perde-se o avatar como imagem; a cor do membro fica só no ponto.' },
+  { k: 'r2', nome: '2 · Avatar primeiro', desc: 'O avatar abre a linha (é quem manda no evento). Título em cima; por baixo, numa só linha de meta: hora · quem · visibilidade em texto. Sem pastilha e sem seta.', troca: 'Uma linha, dois níveis: o que é, e o resto em cinzento. É a organização mais parecida com uma lista de mensagens — lê-se depressa, mas a hora perde a coluna e deixa de se varrer verticalmente.' },
+  { k: 'r3', nome: '3 · Título a toda a largura', desc: 'O título ocupa a primeira linha inteira. A segunda é a linha de meta — hora · quem · visibilidade — e o avatar pequeno (22 px) fecha a linha à direita, no lugar da seta.', troca: 'Dá ao título o máximo de espaço: «Entregar os livros na biblioteca» cabe sem partir. Custa 4–6 px de altura por linha e põe o avatar onde o dedo espera a seta.' },
+  { k: 'r4', nome: '4 · Tabela', desc: 'Colunas fixas: hora (44) · título · quem (62, nome curto) · visibilidade (ícone de 18). Sem avatar, sem pastilha, sem seta. A cor do membro vai no nome.', troca: 'A mais densa e a mais legível em varrimento vertical — tudo alinha. É também a mais fria: parece uma folha de cálculo, e o nome sem avatar pede leitura.' },
+  { k: 'r5', nome: '5 · Só o essencial', desc: 'Hora · título · avatar à direita. Mais nada por omissão: o «quem» está no avatar, a visibilidade só se mostra quando é «Só eu» ou «Adultos» (pastilha contornada, cinzenta), e a seta desaparece — a linha toca.', troca: 'A alteração mais pequena com o maior alívio: saem a pastilha «Família» e a seta, que estavam em quase todas as linhas sem dizer nada de novo. Mantém a coluna das horas e a cara do membro.' },
+];
+const EVS = [
+  { hora: '10:00', dur: '1 h', bola: 'T', cor: '#08979C', quem: 'Tomás', t: 'Futebol do Léo', vis: 'fam' },
+  { hora: '19:30', dur: '2 h', foto: true, cor: '#241239', quem: 'António', t: 'Jantar de anos da avó', vis: 'fam' },
+  { hora: '18:00', dur: '45 min', bola: 'R', cor: '#722ED1', quem: 'Rita', t: 'Reunião na escola', vis: 'adu' },
+  { hora: '10:00', dur: '30 min', bola: 'R', cor: '#722ED1', quem: 'Rita', t: 'Consulta da Mia', sub: 'Mia', vis: 'fam' },
+  { hora: '17:00', dur: '1 h 30', bola: 'L', cor: '#006ED5', quem: 'Léo', t: 'Treino do Léo', vis: 'fam' },
+  { hora: '20:30', dur: '2 h', bola: 'A', cor: '#241239', quem: 'António', t: 'Cinema', vis: 'so' },
+];
+const TAREFAS = [
+  { n: 1, u: 'u', est: '', bola: 'A', cor: '#241239', quem: 'António', t: 'Pagar o condomínio', s: 'hoje às 00:00 · falta 23h08', cl: 'b', pt: 0 },
+  { n: 2, u: 'u', est: '', bola: 'L', cor: '#006ED5', quem: 'Léo', t: 'Levar o lixo', s: 'atrasada 2 dias', cl: 'l', pt: 2 },
+  { n: 1, u: 'n', est: 'ok', bola: 'L', cor: '#006ED5', quem: 'Léo', t: 'Fazer a cama', s: 'feita hoje · volta amanhã', pt: 0, done: true },
+  { n: 2, u: 'n', est: 'esp', bola: 'M', cor: '#011B58', quem: 'Mia', t: 'Pôr a mesa', s: 'Feito — a aguardar confirmação', pt: 1 },
+  { n: 3, u: 'n', est: '', bola: 'M', cor: '#011B58', quem: 'Mia', t: 'Arrumar o quarto', s: 'atrasada 2 dias', cl: 'l', pt: 3 },
+  { n: 1, u: 's', est: '', bola: 'R', cor: '#722ED1', quem: 'Rita', t: 'Entregar os livros na biblioteca', s: 'Rita · sem prazo', pt: 1 },
+];
+const VIS = { fam: ['fam', 'Família'], adu: ['adu', 'Adultos'], so: ['so', 'Só eu'] };
+const bola = (e, p) => e.foto ? `<span class="bola foto${p ? ' p' : ''}"></span>` : `<span class="bola${p ? ' p' : ''}" style="background:${e.cor}">${e.bola}</span>`;
+const pill = (v) => `<span class="pill ${VIS[v][0]}">${VIS[v][1]}</span>`;
+
+const EV = {
+  atual: (e) => `<span class="hora">${e.hora}</span>${bola(e)}<span class="txt"><div class="t">${e.t}</div><div class="s">${e.sub || e.quem}</div></span>${pill(e.vis)}<span class="chev"></span>`,
+  r1: (e) => `<span class="bloco"><div class="h">${e.hora}</div><div class="d">${e.dur}</div></span><span class="txt"><div class="t">${e.t}</div><div class="meta"><span class="ponto" style="background:${e.cor}"></span>${e.quem}${e.sub ? ' · ' + e.sub : ''}${e.vis !== 'fam' ? ' <i>·</i> ' + VIS[e.vis][1] : ''}</div></span>${e.vis !== 'fam' ? '<span class="lock"></span>' : ''}`,
+  r2: (e) => `${bola(e)}<span class="txt"><div class="t">${e.t}</div><div class="meta">${e.hora} <i>·</i> ${e.quem}${e.sub ? ' <i>·</i> ' + e.sub : ''} <i>·</i> ${VIS[e.vis][1]}</div></span>`,
+  r3: (e) => `<span class="txt"><div class="t">${e.t}</div><div class="meta">${e.hora} <i>·</i> ${e.quem}${e.sub ? ' <i>·</i> ' + e.sub : ''} <i>·</i> ${VIS[e.vis][1]}</div></span>${bola(e, true)}`,
+  r4: (e) => `<span class="col"><span class="hora">${e.hora}</span><span class="t">${e.t}${e.sub ? `<span class="s"> · ${e.sub}</span>` : ''}</span><span class="quem" style="color:${e.cor}">${e.quem}</span>${e.vis !== 'fam' ? '<span class="lock"></span>' : '<span></span>'}</span>`,
+  r5: (e) => `<span class="hora">${e.hora}</span><span class="txt"><div class="t">${e.t}</div>${e.sub ? `<div class="s">${e.sub}</div>` : ''}</span>${e.vis !== 'fam' ? `<span class="pill so">${VIS[e.vis][1]}</span>` : ''}${bola(e)}`,
+};
+const TA = {
+  atual: (x) => `<span class="num ${x.u}">${x.n}</span><span class="ico ${x.est}"></span>${bola(x)}<span class="txt"><div class="t">${x.t}</div><div class="s ${x.cl || ''}">${x.s}</div></span>${x.pt ? `<span class="pill pt">${x.pt} pt</span>` : ''}<span class="ico" style="border-radius:4px;width:20px;height:20px"></span>`,
+  r1: (x) => `<span class="bloco"><div class="h">${x.u === 'u' ? 'Urg.' : x.u === 'n' ? 'Normal' : 'Calma'}</div><div class="d">nº ${x.n}</div></span><span class="txt"><div class="t">${x.t}</div><div class="meta"><span class="ponto" style="background:${x.cor}"></span>${x.quem} <i>·</i> <span class="${x.cl || ''}">${x.s}</span>${x.pt ? ` <i>·</i> ${x.pt} pt` : ''}</div></span><span class="ico ${x.est}"></span>`,
+  r2: (x) => `${bola(x)}<span class="txt"><div class="t">${x.t}</div><div class="meta"><span class="num ${x.u}" style="width:16px;height:16px;font-size:9.5px">${x.n}</span><span class="${x.cl || ''}">${x.s}</span>${x.pt ? ` <i>·</i> ${x.pt} pt` : ''}</div></span><span class="ico ${x.est}"></span>`,
+  r3: (x) => `<span class="txt"><div class="t">${x.t}</div><div class="meta"><span class="num ${x.u}" style="width:16px;height:16px;font-size:9.5px">${x.n}</span>${x.quem} <i>·</i> <span class="${x.cl || ''}">${x.s}</span>${x.pt ? ` <i>·</i> ${x.pt} pt` : ''}</div></span><span class="ico ${x.est}"></span>${bola(x, true)}`,
+  r4: (x) => `<span class="col"><span class="num ${x.u}" style="margin:0 auto">${x.n}</span><span class="t">${x.t}<span class="s ${x.cl || ''}"> · ${x.s}</span></span><span class="quem" style="color:${x.cor}">${x.quem}</span><span class="ico ${x.est}"></span></span>`,
+  r5: (x) => `<span class="num ${x.u}">${x.n}</span><span class="txt"><div class="t">${x.t}</div><div class="s ${x.cl || ''}">${x.s}${x.pt ? ` · ${x.pt} pt` : ''}</div></span><span class="ico ${x.est}"></span>${bola(x)}`,
+};
+
+function render(alt, lista) {
+  const c = document.getElementById('conteudo');
+  document.getElementById('rod-a').classList.toggle('on', lista === 'agenda');
+  document.getElementById('rod-t').classList.toggle('on', lista === 'tarefas');
+  document.getElementById('cab-tit').textContent = lista === 'agenda' ? 'Agenda' : 'Tarefas';
+  document.getElementById('cab-sub').textContent = lista === 'agenda' ? '7 – 13 de setembro de 2026' : 'Semana de 07/09 · rotinas e tarefas';
+  if (lista === 'agenda') {
+    const secs = [['Hoje', 'Quarta, 09/09', [EVS[0]]], ['Amanhã', 'Quinta, 10/09', [EVS[1]]], ['Sábado', '12/09', [EVS[2]]], ['Terça', '15/09', [EVS[3]]], ['Sexta', '18/09', [EVS[4], EVS[5]]]];
+    c.innerHTML = secs.map(([t, b, evs]) => `<section class="sec"><div class="stit">${t}<b>${b}</b></div>${evs.map(e => `<div class="item">${EV[alt](e)}</div>`).join('')}</section>`).join('');
+  } else {
+    c.innerHTML = `<section class="sec"><div class="stit">Rotinas e Tarefas<b>por urgência</b></div>${TAREFAS.map(x => `<div class="item${x.done ? ' faixa tinta' : x.est === 'esp' ? ' faixa' : ''}" style="${x.done ? '--f:var(--ok)' : x.est === 'esp' ? '--f:var(--info)' : ''}">${TA[alt](x)}</div>`).join('')}</section>`;
+  }
+}
+function medir(lista) {
+  const out = {};
+  for (const a of ALTS) { render(a.k, lista); const itens = [...document.querySelectorAll('#conteudo .item')]; const secs = [...document.querySelectorAll('#conteudo .sec')];
+    out[a.k] = { linha: Math.round(itens.reduce((s, i) => s + i.getBoundingClientRect().height, 0) / itens.length), total: Math.round(secs.reduce((s, x) => s + x.getBoundingClientRect().height, 0)),
+      pecas: Math.round(itens.reduce((s, i) => s + [...i.querySelectorAll(':scope > *, :scope > .col > *')].filter(el => !el.classList.contains('col')).length, 0) / itens.length * 10) / 10 }; }
+  return out;
+}
+let alt = 'atual', lista = 'agenda';
+function pintar() {
+  const m = medir(lista); render(alt, lista);
+  const a = ALTS.find(x => x.k === alt);
+  document.getElementById('p-tit').textContent = a.nome; document.getElementById('p-desc').textContent = a.desc; document.getElementById('p-troca').textContent = a.troca;
+  const base = m.atual.total;
+  document.getElementById('med').innerHTML = '<tr><th>Organização</th><th>Peças por linha</th><th>Linha</th><th>Secções</th><th>Contra o atual</th></tr>' + ALTS.map(x => `<tr class="${x.k === alt ? 'sel' : ''}"><td>${x.nome}</td><td>${m[x.k].pecas}</td><td>${m[x.k].linha} px</td><td>${m[x.k].total} px</td><td>${x.k === 'atual' ? '—' : (m[x.k].total - base) + ' px · ' + Math.round((m[x.k].total - base) / base * 100) + ' %'}</td></tr>`).join('');
+  document.querySelectorAll('#alts button').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === alt));
+  document.querySelectorAll('#ecras button').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === lista));
+}
+document.getElementById('alts').innerHTML = ALTS.map(a => `<button class="opc" data-k="${a.k}">${a.nome}</button>`).join('');
+document.getElementById('ecras').innerHTML = [['agenda', 'Agenda'], ['tarefas', 'Tarefas']].map(([k, n]) => `<button class="opc" data-k="${k}">${n}</button>`).join('');
+document.getElementById('alts').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { alt = b.dataset.k; pintar(); } });
+document.getElementById('ecras').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { lista = b.dataset.k; pintar(); } });
+(document.fonts ? document.fonts.ready : Promise.resolve()).then(pintar); pintar();
+</script>
+</body>
+</html>

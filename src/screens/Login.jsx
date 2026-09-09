@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { S, R, FONT, elev, corDoMembro, LARGURA_APP } from '../theme';
+import { S, R, FONT, elev, corDoMembro, chromeDaCrianca, LARGURA_APP } from '../theme';
+
+// O cinzento do texto pequeno sobre os cartões brancos da entrada. Era
+// #6A7282: 4,17 sobre o cartão a 95 % de branco — abaixo dos 4,5 que 12 px
+// pedem. É o `text3` do aspeto claro, medido a 4,54 (09/09/2026). Literal
+// porque a entrada é sempre a mesma nos dois aspetos: o `t` que aqui chega
+// pode ser o escuro, e o `text3` escuro é claro demais para um cartão branco.
+const CINZA_DO_CARTAO = '#656C7C';
 import Icon, { Marca, GoogleG as G } from '../Icon';
 import { FEM } from '../data';
 import { useStore } from '../store';
@@ -207,12 +214,12 @@ export default function Login({ t, onEnter }) {
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={{ fontFamily: FONT.body, fontSize: 16, color: '#262626' }}>{n} {nomeDaCasa}</Text>
-                  <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 12, color: '#6A7282' }}>{MEMBERS[n].email}</Text>
+                  <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 12, color: CINZA_DO_CARTAO }}>{MEMBERS[n].email}</Text>
                 </View>
                 {/* Pastilha contornada, como na referência 02 — e com a
                     concordância certa: dizia «Administração» para a Rita. */}
                 <Pill label={s.roles[n] === 'admin' ? (FEM(n) ? 'Administradora' : 'Administrador') : 'Adulto'}
-                  fg="#6A7282" bg="transparent" border="#D6DBE4" />
+                  fg={CINZA_DO_CARTAO} bg="transparent" border="#D6DBE4" />
               </Pressable>
             ))}
             {/* A referência 02 tem esta entrada: quem chega com outra conta
@@ -267,16 +274,16 @@ export default function Login({ t, onEnter }) {
                   style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: R.row, padding: 14,
                     minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 14, opacity: hasPin ? 1 : 0.55 }}>
                   <View style={{ width: 40, height: 40, borderRadius: R.pill,
-                    backgroundColor: corDoMembro(n, MEMBERS[n]?.cor), alignItems: 'center', justifyContent: 'center' }}>
+                    backgroundColor: chromeDaCrianca(corDoMembro(n, MEMBERS[n]?.cor)), alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ fontFamily: FONT.display, fontSize: 17, fontWeight: '500', color: '#FFFFFF' }}>{MEMBERS[n].initial}</Text>
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
                     <Text style={{ fontFamily: FONT.body, fontSize: 16, color: '#262626' }}>{n}</Text>
-                    <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: '#6A7282' }}>
+                    <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: CINZA_DO_CARTAO }}>
                       {hasPin ? 'Perfil de criança' : 'Ainda sem PIN — pedir a um adulto'}
                     </Text>
                   </View>
-                  {hasPin ? <Icon name="caretRight" size={22} color="#6A7282" /> : null}
+                  {hasPin ? <Icon name="caretRight" size={22} color={CINZA_DO_CARTAO} /> : null}
                 </Pressable>
               );
             })}
@@ -289,7 +296,7 @@ export default function Login({ t, onEnter }) {
           <View style={glass}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
               <View style={{ width: 44, height: 44, borderRadius: R.pill,
-                backgroundColor: corDoMembro(kid, MEMBERS[kid]?.cor) || t.chrome,
+                backgroundColor: chromeDaCrianca(corDoMembro(kid, MEMBERS[kid]?.cor) || t.chrome),
                 alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontFamily: FONT.display, fontSize: 18, fontWeight: '500', color: '#FFFFFF' }}>
                   {(MEMBERS[kid] || { initial: '?' }).initial}

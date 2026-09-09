@@ -5,7 +5,7 @@ import CampoData from '../CampoData';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro, STATE } from '../theme';
 import { DE } from '../data';
-import { Card, SectionTitle, Empty, AddButton, Label, Primary, Pill, Tile, Tap, Avatar, avatarDe, BotaoCompacto, PastilhaTocavel, Segmented } from '../ui';
+import { Card, SectionTitle, Linha, Empty, AddButton, Label, Primary, Pill, Tile, Tap, Avatar, avatarDe, BotaoCompacto, PastilhaTocavel, Segmented } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -740,13 +740,14 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
             <Empty t={t} icon="heartPulse" title="Ainda não há nada nas fichas desta casa."
               hint="Use Marcar Consulta para a primeira. A sua ficha é privada; as das crianças são visíveis aos adultos." />
           ) : null}
-          <View style={{ gap: S.md }}>
-            {(semNada ? [] : fichas).map(m => {
+          <View>
+            {/* Linhas planas, sem cartão — desenho C (09/09/2026). */}
+            {(semNada ? [] : fichas).map((m, k) => {
               const n = st.healthOf(m, user).length;
               const d = st.docsOf(m, user).length;
               const prox = st.nextHealth(m, user);
               return (
-                <Card key={m} t={t} style={{ borderLeftWidth: 3, borderLeftColor: corDoMembro(m, MEMBERS[m]?.cor) }}>
+                <Linha key={m} t={t} faixa={corDoMembro(m, MEMBERS[m]?.cor)} last={k === fichas.length - 1}>
                   <Pressable onPress={() => onAbrirFicha(m)} accessibilityRole="button"
                     accessibilityLabel={m === user ? 'A minha ficha' : `Saúde ${DE(m)} ${m}`}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52 }}>
@@ -768,7 +769,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                     </View>
                     <Icon name="caretRight" size={18} color={t.text3} />
                   </Pressable>
-                </Card>
+                </Linha>
               );
             })}
           </View>

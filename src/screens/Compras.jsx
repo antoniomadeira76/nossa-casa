@@ -4,7 +4,7 @@ import { View, Text, Pressable, Modal } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, dayLabel, parseKey, WD, plural } from '../format';
-import { Card, SectionTitle, Label, AddButton, usePaged, Tap, Tile, Avatar, avatarDe } from '../ui';
+import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Tile, Avatar, avatarDe } from '../ui';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -244,16 +244,17 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
             <ListaArrastavel
               itens={rows}
               grupoDe={() => sec}
-              espaco={S.md}
+              espaco={0}
               aoLargar={(ids) => st.reordenarArtigos(ids)}
               render={(i, { arrastando, armar }) => {
                 const done = stateOf(i) === 'done';
                 return (
-                  <Card key={i.id} t={t} style={{
-                    borderWidth: arrastando ? 2 : done ? 2 : 1,
-                    borderColor: arrastando ? t.accent : done ? t.state.okBorder : t.border,
-                    backgroundColor: done ? t.state.okBg : t.card,
-                  }}>
+                  <Linha key={i.id} t={t}
+                    // Linha plana (desenho C, 09/09/2026): o estado que era a
+                    // borda do cartão passa a faixa e tinta — verde apanhado,
+                    // o acento enquanto se arrasta.
+                    faixa={arrastando ? t.accent : done ? t.state.okBorder : undefined}
+                    tinta={arrastando ? t.subtle : done ? t.state.okBg : undefined}>
                     {/* A LINHA alterna apanhado/por apanhar; o lápis abre a
                         gestão. É o mesmo idioma das Tarefas, e o caixote saiu
                         daqui para dentro da folha: com o lápis a chegar, a
@@ -285,7 +286,7 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
                         <Icon name="edit" size={20} color={t.text3} />
                       </Tap>
                     </View>
-                  </Card>
+                  </Linha>
                 );
               }}
             />
@@ -325,7 +326,8 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
       {s.shopHistory.length ? (
         <View>
           <SectionTitle t={t}>Histórico de Compras</SectionTitle>
-          <Card t={t} pad={false} style={{ paddingHorizontal: 16 }}>
+          {/* Linhas planas, sem cartão — desenho C (09/09/2026). */}
+          <View style={{ paddingHorizontal: S.xs }}>
             {s.shopHistory.slice(0, 10).map((h, i, arr) => (
               <Pressable key={h.at} onPress={() => {
                 // Repetir esta lista: readd items from the purchase
@@ -346,7 +348,7 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
                 </View>
               </Pressable>
             ))}
-          </Card>
+          </View>
         </View>
       ) : null}
 

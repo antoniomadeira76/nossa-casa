@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from './store';
-import { buildTheme, onChrome, S, R, FONT, corDoMembro, elev } from './theme';
+import { buildTheme, onChrome, S, R, FONT, corDoMembro, chromeDaCrianca, elev, LARGURA_APP } from './theme';
 import { EUR, parseKey, pad2, plural } from './format';
 import Icon from './Icon';
 import { Card, SectionTitle, Pill, Empty } from './ui';
@@ -160,7 +160,9 @@ function KidTasksView({ t, kid, tasks }) {
           <SectionTitle t={t}>As Minhas Tarefas</SectionTitle>
         </View>
         {tasksByKid.length > 0 ? (
-          <Card t={t} pad={false} style={{ marginHorizontal: 16 }}>
+          /* Linhas planas, sem cartão — desenho C (09/09/2026). A linha já
+             traz a sua divisória. */
+          <View style={{ marginHorizontal: 16 }}>
             {tasksByKid.map((task, idx) => (
               <KidTaskRow
                 key={task.id}
@@ -170,7 +172,7 @@ function KidTasksView({ t, kid, tasks }) {
                 onPress={() => st.set(s => ({ done: { ...s.done, [task.id]: !s.done[task.id] } }))}
               />
             ))}
-          </Card>
+          </View>
         ) : (
           <Empty t={t} icon="checkSquare" title="Sem tarefas agora" sub="Bom trabalho!" />
         )}
@@ -222,7 +224,7 @@ function KidVaultView({ t, kid }) {
       {/* Secção de Movimentos */}
       <View>
         <SectionTitle t={t}>Movimentos</SectionTitle>
-        <Card t={t} pad={false}>
+        <View>
           {moves.length > 0 ? moves.map(m => (
             <VaultTransaction key={m.id} t={t} entry={m} />
           )) : (
@@ -232,7 +234,7 @@ function KidVaultView({ t, kid }) {
               }}>Sem movimentos ainda</Text>
             </View>
           )}
-        </Card>
+        </View>
       </View>
 
       {/* Botão de pedido */}
@@ -254,7 +256,8 @@ function KidVaultView({ t, kid }) {
           </Pressable>
         ) : (
           <>
-            <Pressable accessibilityRole="button" disabled style={{
+            <Pressable accessibilityRole="button" disabled
+              accessibilityLabel="Pedido a aguardar autorização" style={{
               minHeight: 52, borderRadius: R.row, borderWidth: 1,
               borderColor: t.border, backgroundColor: t.subtle,
               alignItems: 'center', justifyContent: 'center',
@@ -284,35 +287,46 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
   const sysDark = useColorScheme() === 'dark';
   const insets = useSafeAreaInsets();
 
-  // Cor da criança
+  // Cor da criança — e o cabeçalho é ela ESCURECIDA até o branco se ler por
+  // cima (`chromeDaCrianca`). O #1890FF do Léo dava 3,24 com o branco: o
+  // título, o resumo e os rótulos do rodapé, todos abaixo dos 4,5 que o texto
+  // pequeno pede. Medido em 09/09/2026.
   const kidColor = corDoMembro(kid);
+  const chrome = chromeDaCrianca(kidColor);
 
   // Tema: versão escura do tema geral, com fundo na cor da criança
   const mode = (s.themeByUser[kid]) || 'claro';
   const dark = mode === 'escuro' || (mode === 'sistema' && sysDark);
   const t = buildTheme(0, dark);
-  const onC = onChrome(kidColor);
+  const onC = onChrome(chrome);
   const tasks = allTasks();
 
+  // ⚠ A coluna vive na PRÓPRIA raiz, como no App.jsx — um <View> a mais em
+  // volta dela é o erro #1 do CLAUDE.md. Sem isto a app da criança ia de ponta
+  // a ponta do monitor enquanto a dos adultos vivia numa coluna de 460.
   return (
-    <View style={{ flex: 1, backgroundColor: t.page }}>
+    <View style={{ flex: 1, backgroundColor: t.page,
+      width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto' }}>
 
       {/* Cabeçalho */}
       <View style={{
         flexGrow: 0, flexShrink: 0, flexBasis: 'auto',
-        backgroundColor: kidColor, overflow: 'hidden',
+        backgroundColor: chrome, overflow: 'hidden',
         paddingTop: insets.top + 10, paddingBottom: 14, paddingHorizontal: 16,
         flexDirection: 'row', alignItems: 'center', gap: 12, ...elev(3),
       }}>
+        {/* A bola é branca e a inicial leva o cabeçalho — o mesmo par do
+            `AvatarDeCabecalho` dos adultos. Era branco a 22 % com a inicial
+            branca por cima: 2,51. */}
         <View style={{
           width: 40, height: 40, borderRadius: R.pill,
-          backgroundColor: 'rgba(255,255,255,0.22)',
+          backgroundColor: '#FFFFFF',
           borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)',
           alignItems: 'center', justifyContent: 'center',
         }}>
           <Text style={{
             fontFamily: FONT.display, fontSize: 17, fontWeight: '500',
-            color: '#FFFFFF',
+            color: chrome,
           }}>{kid.charAt(0)}</Text>
         </View>
 
@@ -352,7 +366,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
       {/* Rodapé — dois separadores */}
       <View style={{
         flexGrow: 0, flexShrink: 0, flexBasis: 'auto',
-        backgroundColor: kidColor, flexDirection: 'row',
+        backgroundColor: chrome, flexDirection: 'row',
         paddingTop: 6, paddingBottom: Math.max(insets.bottom, 10), paddingHorizontal: 4,
       }}>
         {[

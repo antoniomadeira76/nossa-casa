@@ -4,7 +4,7 @@ import CampoData from '../CampoData';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { TODAY, pad2, plural, warrantyDaysLeft, daysUntil, EUR, chaveDeDMY, dmyDeChave, TODAY_KEY } from '../format';
-import { Card, SectionTitle, Empty, AddButton, Label, Choice, Primary, Pill } from '../ui';
+import { Card, SectionTitle, Linha, Empty, AddButton, Label, Choice, Primary, Pill } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import FichaEquipamento from '../sheets/FichaEquipamento';
@@ -114,11 +114,13 @@ export default function Equipamentos({ t, abrir }) {
             <Empty t={t} icon="houseGear" title="Sem equipamentos registados."
               hint="Registe um para a app avisar antes de a garantia acabar." />
           ) : null}
-          <View style={{ gap: S.md }}>
-            {eq.map(e => {
+          <View>
+            {/* Linhas planas (desenho C, 09/09/2026): o estado da garantia,
+                que era a borda do cartão, passa a faixa da linha. */}
+            {eq.map((e, k) => {
               const est = estadoDe(e);
               return (
-                <Card key={e.id} t={t} style={{ borderWidth: 1, borderColor: est.cor }}>
+                <Linha key={e.id} t={t} faixa={est.cor} last={k === eq.length - 1}>
                   <Pressable onPress={() => setFicha(e.id)} accessibilityRole="button"
                     accessibilityLabel={e.name}
                     style={{ gap: S.md, minHeight: 52, justifyContent: 'center' }}>
@@ -146,7 +148,7 @@ export default function Equipamentos({ t, abrir }) {
                       </View>
                     ) : null}
                   </Pressable>
-                </Card>
+                </Linha>
               );
             })}
           </View>

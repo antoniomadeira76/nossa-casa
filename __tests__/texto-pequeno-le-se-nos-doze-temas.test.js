@@ -175,8 +175,9 @@ const soCodigo = (txt) => txt
 
 describe('⚠ e nenhum ecrã volta a pintar texto pequeno com o acento ou com um «deep» fora do tijolo', () => {
   it('nenhum `<Text` leva `color: t.accent`, `t.titulo` ou `t.hover` — só o título de secção', () => {
-    // O `SectionTitle` é 20 px a 700: texto GRANDE, 3:1, e o `titulo` foi
-    // desenhado para isso. Tudo o resto é pequeno e leva `actFg`.
+    // O `SectionTitle` passou a 13 px (desenho C, 09/09/2026) e leva `actFg`
+    // como todo o texto pequeno; a excepção do `titulo` abaixo fica para o
+    // dia em que voltar a haver texto grande na cor do esquema.
     const maus = [];
     for (const rel of jsx) {
       const linhas = soCodigo(fs.readFileSync(path.join(RAIZ, rel), 'utf8'));

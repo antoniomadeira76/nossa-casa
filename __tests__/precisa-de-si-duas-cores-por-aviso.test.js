@@ -75,8 +75,10 @@ describe('⚠ cada aviso está na escala, com as duas cores', () => {
     expect(maus).toEqual([]);
   });
 
-  it('e o cartão pinta a faixa com a `line` quando ela existe', () => {
-    expect(inicio).toMatch(/borderLeftColor:\s*n\.line \|\| n\.color/);
+  it('e a linha pinta a faixa com a `line` quando ela existe', () => {
+    // Era `borderLeftColor` num cartão; desde o desenho C (09/09/2026) é a
+    // `faixa` da `Linha` plana — a mesma cor, no mesmo sítio.
+    expect(inicio).toMatch(/faixa=\{n\.line \|\| n\.color\}/);
   });
 
   it('a garantia e a receita a expirar são âmbar — o protótipo ganha à especificação', () => {

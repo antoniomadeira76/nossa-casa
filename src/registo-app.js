@@ -143,8 +143,14 @@ export const AREAS = [
 
 export const REGISTO_APP = [
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
-  // O varrimento continuou pelas folhas da Gestão, do Perfil e das tarefas.
+  // O varrimento continuou pelas folhas da Gestão, do Perfil e das tarefas. E
+  // o dono da casa achou os títulos de secção grandes e os cartões a mais:
+  // cinco alternativas em `design/titulos-e-cartoes.dc.html`, escolheu a C.
+  { v: '1.11.1', d: '09/09/2026', k: 'alterado', a: 'A App', t: 'Os títulos de secção passaram de 20 px a negro para uma linha de 13 px na cor do perfil, com uma régua por baixo — pesavam mais do que o que rotulavam' },
+  { v: '1.11.1', d: '09/09/2026', k: 'alterado', a: 'A App', t: 'As listas deixaram de ter um cartão por item: as linhas assentam na página, separadas por divisórias, e a cor do estado passa para uma faixa à esquerda — Agenda, Início, Tarefas, Compras, Dinheiro, Gestão, Saúde, Equipamentos, Perfil e modo criança' },
   { v: '1.11.1', d: '09/09/2026', k: 'corrigido', a: 'A App', t: 'A Gestão, a Saúde e os outros ecrãs inteiros abertos a partir do Início ficavam sem o avatar no cabeçalho — e sem caminho para o Perfil; o avatar está lá venha-se de onde se vier' },
+  { v: '1.11.1', d: '09/09/2026', k: 'corrigido', a: 'Entrada', t: 'No modo criança, o cabeçalho e o rodapé levam a cor da criança escurecida até o branco se ler por cima — o azul do Léo dava 3,2 de contraste com o «Olá, Léo», o resumo e os rótulos; e a inicial passa a ler-se na bola' },
+  { v: '1.11.1', d: '09/09/2026', k: 'corrigido', a: 'Entrada', t: 'No monitor, o modo criança ia de ponta a ponta da janela; passa a viver na mesma coluna que a app dos adultos' },
   { v: '1.11.1', d: '09/09/2026', k: 'corrigido', a: 'Gestão da Casa', t: 'Na lista de envelopes da Gestão, o limite e o que está livre colavam-se num número só — «590,00 €43,40 €»; a linha passa a ocupar o cartão todo' },
 
   // ── 1.11.0 ────────────────────────────────────────────────────────────────

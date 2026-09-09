@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { dayLabel, plural, TODAY_KEY, parseKey } from '../format';
 
-import { Card, SectionTitle, Empty, Pill } from '../ui';
+import { Card, SectionTitle, Linha, Empty, Pill } from '../ui';
 import Icon from '../Icon';
 import ExportarSaude from '../sheets/ExportarSaude';
 
@@ -93,13 +93,16 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
             <Empty t={t} icon="heartPulse" title="Sem consultas registadas."
               hint="Use Marcar consulta para registar a primeira." />
           ) : (
-            <View style={{ gap: S.md }}>
-              {consultas.map(h => {
+            <View>
+              {/* Linhas planas (desenho C, 09/09/2026): a consulta futura
+                  leva a faixa e a tinta azuis em vez da borda do cartão. */}
+              {consultas.map((h, k) => {
                 const anexos = docs.filter(d => d.healthId === h.id).length;
                 const futura = h.day >= TODAY_KEY;
                 return (
-                  <Card key={h.id} t={t} style={futura ? {
-                    borderColor: t.state.info, backgroundColor: t.state.infoBg } : null}>
+                  <Linha key={h.id} t={t} last={k === consultas.length - 1}
+                    faixa={futura ? t.state.info : undefined}
+                    tinta={futura ? t.state.infoBg : undefined}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                       <Icon name="calendar" size={20}
                         color={futura ? t.state.info : t.text3} />
@@ -127,7 +130,7 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
                         <Icon name="printer" size={18} color={t.text3} />
                       </Pressable>
                     </View>
-                  </Card>
+                  </Linha>
                 );
               })}
             </View>
@@ -146,11 +149,11 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
           {docs.length === 0 ? (
             <Empty t={t} icon="fileText" title="Sem documentos." />
           ) : (
-            <View style={{ gap: S.md }}>
-              {docs.map(d => {
+            <View>
+              {docs.map((d, k) => {
                 const h = consultas.find(x => x.id === d.healthId);
                 return (
-                  <Card key={d.id} t={t}>
+                  <Linha key={d.id} t={t} last={k === docs.length - 1}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                       <Icon name="fileText" size={20} color={t.text3} />
                       <View style={{ flex: 1, gap: 2 }}>
@@ -161,7 +164,7 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
                         </Text>
                       </View>
                     </View>
-                  </Card>
+                  </Linha>
                 );
               })}
             </View>

@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, FONT } from '../theme';
 import { EUR, plural, evTime, TODAY_KEY, dayLabel, agoraNaApp, subtituloDaTarefa } from '../format';
 
-import { Card, SectionTitle, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade, avatarDe } from '../ui';
+import { Card, SectionTitle, Linha, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade, avatarDe } from '../ui';
 import Icon from '../Icon';
 
 export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir,
@@ -151,13 +151,15 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
           <Empty t={t} icon="checkCircle" title="Nada à sua espera."
             hint="As tarefas de hoje, os prazos e as contas estão em dia." />
         ) : (
-          <View style={{ gap: S.md }}>
+          <View>
+            {/* Linhas planas, sem cartão — desenho C (09/09/2026). A faixa
+                de cor do aviso passa para dentro da linha. */}
             {needsPg.slice.map((n, i) => (
-              <Card key={i} t={t} style={{ borderLeftWidth: 4, borderLeftColor: n.line || n.color }}>
+              <Linha key={i} t={t} faixa={n.line || n.color}>
                 <Row t={t} title={n.title} sub={n.sub} onPress={n.go} last
                   icon={n.icon} iconColor={n.color}
                   right={<Icon name="caretRight" size={18} color={t.text3} />} />
-              </Card>
+              </Linha>
             ))}
             <Pager t={t} pg={needsPg} />
           </View>
@@ -170,9 +172,9 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
           <Empty t={t} icon="calendar" title="Nada agendado para hoje."
             hint="Use Agendar Evento na Agenda para acrescentar o primeiro." />
         ) : (
-          <View style={{ gap: S.md }}>
-            {today.map(e => (
-              <Card key={e.id} t={t}>
+          <View>
+            {today.map((e, i) => (
+              <Linha key={e.id} t={t} last={i === today.length - 1}>
                 <Pressable
                   onPress={() => (onAbrir ? onAbrir('agenda', e.id) : go('agenda'))}
                   accessibilityRole="button"
@@ -188,7 +190,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
                   </View>
                   <PastilhaVisibilidade t={t} evento={e} />
                 </Pressable>
-              </Card>
+              </Linha>
             ))}
           </View>
         )}
@@ -200,17 +202,17 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
           <Empty t={t} icon="checkSquare" title="Nada para hoje."
             hint="As tarefas de hoje aparecem aqui. Use Nova Tarefa nas Tarefas." />
         ) : (
-        <View style={{ gap: S.md }}>
+        <View>
           {todayTasks.map((x, i) => {
             const done = !!s.done[x.id], pend = !!s.pending[x.id];
             const d = dueOf(x);
             const rec = isRecurring(x);
+            // O estado que era a borda do cartão passa a ser a faixa e a
+            // tinta da linha: verde feita, azul à espera de confirmação.
             return (
-              <Card key={x.id} t={t} style={{
-                borderWidth: done ? 2 : 1,
-                borderColor: done ? t.state.okBorder : pend ? t.state.info : t.border,
-                backgroundColor: done ? t.state.okBg : t.card,
-              }}>
+              <Linha key={x.id} t={t} last={i === todayTasks.length - 1}
+                faixa={done ? t.state.okBorder : pend ? t.state.info : undefined}
+                tinta={done ? t.state.okBg : undefined}>
                 <Row t={t} last
                   onPress={() => (onAbrir ? onAbrir('tarefas', x.id) : go('tarefas'))}
                   title={x.title}
@@ -228,7 +230,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
                     {pontosNasTarefas && x.pts > 0 && !done ? <Pill label={`${x.pts} pt`} fg={t.state.warnDeep} bg={t.state.warnBg} border={t.state.warn} /> : null}
                   </>}
                   icon={done ? 'checkCircle' : pend ? 'clock' : 'infoCircle'} />
-              </Card>
+              </Linha>
             );
           })}
         </View>
