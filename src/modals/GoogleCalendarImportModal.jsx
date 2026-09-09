@@ -79,7 +79,9 @@ export default function GoogleCalendarImportModal({ t, events, onImportar, onIgn
                 paddingVertical: 12, paddingHorizontal: 12, borderRadius: R.row, borderWidth: 1,
                 // O preenchimento de informação é claro e fixo; no modo escuro
                 // dava texto quase branco sobre azul claro. Aí a superfície é que marca.
-                backgroundColor: on ? (t.dark ? t.subtle : t.state.infoBg) : t.card,
+                // `tileInfo` faz as duas coisas sozinho: azul-claro no claro,
+                // azul a 16 % sobre o escuro. Era um ternário por aspeto.
+                backgroundColor: on ? t.tileInfo : t.card,
                 borderColor: on ? t.accent : t.border,
               }}>
               <View style={{
@@ -136,7 +138,11 @@ export default function GoogleCalendarImportModal({ t, events, onImportar, onIgn
           style={({ pressed }) => ({
             flex: 1.4, minHeight: 44, borderRadius: R.row,
             alignItems: 'center', justifyContent: 'center',
-            backgroundColor: n ? t.state.infoBg : t.subtle,
+            // `actBg`, o preenchimento do botão comum — o `actFg` só é
+            // garantido sobre ele. O `infoBg` é um tijolo opaco e claro nos
+            // dois aspetos, e no escuro dava 2,23 com o `actFg` por cima.
+            backgroundColor: n ? t.actBg : t.subtle,
+            borderWidth: 1, borderColor: n ? t.actBrd : t.border,
             opacity: pressed ? 0.85 : 1,
           })}>
           <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700',

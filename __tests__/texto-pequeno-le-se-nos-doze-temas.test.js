@@ -218,6 +218,27 @@ describe('⚠ e nenhum ecrã volta a pintar texto pequeno com o acento ou com um
     expect(maus).toEqual([]);
   });
 
+  it('⚠ e o tijolo OPACO (`infoBg`, `warnBg`) só leva texto «deep» por cima — nunca `actFg`, `text1`, `text2`', () => {
+    // O varrimento no escuro de 09/09/2026 apanhou a mesma forma quatro vezes:
+    // um botão ou uma linha pintados com `state.infoBg`/`warnBg` — tijolos
+    // opacos e CLAROS nos dois aspetos — com `actFg`, `text1` ou `text3` por
+    // cima, que no escuro são claros: «Agendar Manutenção» a 2,23, «Pagar
+    // Semanada» a 2,23, «Papel de cozinha» a 1,26. Um tijolo `xBg` aceita
+    // `xDeep` e mais nada; para tingir uma linha ou um cartão com texto normal
+    // há o `tileInfo`/`tileWarn` (alfa, escurece no escuro) ou o `actBg`.
+    const maus = [];
+    for (const rel of jsx) {
+      const linhas = soCodigo(fs.readFileSync(path.join(RAIZ, rel), 'utf8'));
+      linhas.forEach((l, i) => {
+        if (!/t\.state\.(infoBg|warnBg)\b/.test(l)) return;
+        const janela = [linhas[i - 1] || '', l, linhas[i + 1] || ''].join('\n');
+        if (/(infoDeep|warnDeep)/.test(janela)) return;
+        maus.push(`${rel}:${i + 1} → ${l.trim().slice(0, 70)}`);
+      });
+    }
+    expect(maus).toEqual([]);
+  });
+
   it('⚠ um «deep» como texto só vive sobre o seu tijolo ou como preenchimento', () => {
     // Fora dos tijolos e do `Confirm`, o texto de estado é `xTexto`. Quem
     // escrever `color: t.state.errDeep` num cartão volta ao vermelho a 3,00
@@ -229,8 +250,6 @@ describe('⚠ e nenhum ecrã volta a pintar texto pequeno com o acento ou com um
       // tijolo do estado, na mesma linha do `xBg`.
       'src/screens/Documentacao.jsx': /corrigido:|alterado:/,
       'src/sheets/ImportarGoogle.jsx': /Repete-se/,
-      // A linha da próxima consulta na ficha vive num tijolo `infoBg`.
-      'src/screens/FichaSaude.jsx': /infoDeep/,
       'src/screens/Equipamentos.jsx': /Garantia a Expirar/,
       'src/sheets/FichaEquipamento.jsx': /Garantia a Expirar|tom: t\.state\.warnDeep/,
       'src/screens/Perfil.jsx': /warnBg/,

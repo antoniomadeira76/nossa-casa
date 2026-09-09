@@ -473,7 +473,11 @@ export const onChrome = (chromeHex, target = 0.65) => {
     return (lumDe(misto) + 0.05) / (Lf + 0.05);
   };
   let a = target;
-  while (a < 0.96 && contrasteA(a) < 4.6) a = Math.round((a + 0.01) * 100) / 100;
+  // ⚠ Até 1,00, e não até 0,96. O tecto de 0,96 parava a subida com o alvo por
+  // alcançar: sobre o acento Cião o branco cheio dá 4,62 e o branco a 96 % dá
+  // 4,39 — o «livre» do envelope escolhido ficou a 4,39 no escuro (09/09/2026).
+  // Quando só o branco cheio serve, é o branco cheio que se devolve.
+  while (a < 1 && contrasteA(a) < 4.6) a = Math.min(1, Math.round((a + 0.01) * 100) / 100);
   return `rgba(255,255,255,${a.toFixed(2)})`;
 };
 

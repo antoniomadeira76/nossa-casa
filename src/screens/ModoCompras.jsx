@@ -3,7 +3,7 @@ import { View, Text, Pressable, TextInput, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, elev } from '../theme';
 import { EUR, plural } from '../format';
-import { Card, Label, Bar, Primary, AddButton, usePaged, Pager } from '../ui';
+import { Card, Label, Bar, Primary, AddButton, usePaged, Pager, Linha } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import NovoArtigo from '../sheets/NovoArtigo';
@@ -170,19 +170,24 @@ export default function ModoCompras({ t, user, onClose }) {
           const feito = estado === 'done';
           const sem = estado === 'sem-stock';
           return (
-            <View key={i.id} style={{
-              minHeight: 64, borderRadius: R.row, padding: 16, gap: 12, borderWidth: feito ? 2 : 1,
-              borderColor: feito ? t.state.okBorder : sem ? t.state.warn : t.border,
-              backgroundColor: feito ? t.state.okBg : sem ? t.state.warnBg : t.card, ...elev(1),
-            }}>
+            /* Linha plana, sem cartão — desenho C (09/09/2026), com os 64 px
+               que a loja exige (INVARIANTE #5). O estado é a faixa: verde
+               apanhado, âmbar sem stock. ⚠ A linha sem stock era pintada com o
+               `warnBg` — o tijolo âmbar OPACO e claro nos dois aspetos — e levava
+               por cima `text2`/`text3`, que no escuro são claros: «Papel de
+               cozinha» ficava a 1,26. Um tijolo `xBg` só aceita `xDeep`; a
+               linha fica na página e o estado na faixa. */
+            <Linha key={i.id} t={t} style={{ minHeight: 64, paddingVertical: S.md, gap: 12 }}
+              faixa={feito ? t.state.okBorder : sem ? t.state.warn : undefined}
+              tinta={feito ? t.state.okBg : undefined}>
              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
               <Icon name={feito ? 'checkCircle' : sem ? 'closeCircle' : 'infoCircle'} size={30}
-                color={feito ? t.state.ok : sem ? t.state.warnDeep : t.text3} />
+                color={feito ? t.state.ok : sem ? t.state.warn : t.text3} />
               <View style={{ flex: 1, gap: 3 }}>
                 <Text style={{ fontFamily: FONT.body, fontSize: 16, color: t.text2 }}>{i.label}</Text>
                 {/* O que a app SABE, e de onde. Uma estimativa sem origem não
                     ajuda a decidir se vale a pena verificar a prateleira. */}
-                <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: sem ? t.state.warnTexto : t.text3 }}>
                   {sem ? 'Sem stock na loja' : legendaDoPreco(i)}
                 </Text>
               </View>
@@ -206,7 +211,8 @@ export default function ModoCompras({ t, user, onClose }) {
                     accessibilityLabel={`${sem ? 'Repor' : 'Marcar sem stock'} ${i.label}`}
                     style={{ minHeight: 44, minWidth: 88, alignItems: 'flex-end', justifyContent: 'center' }}>
                     <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, fontWeight: '600',
-                      color: sem ? t.state.warnDeep : t.text3 }}>
+                      // `warnTexto`: já não há tijolo por baixo, é a página.
+                      color: sem ? t.state.warnTexto : t.text3 }}>
                       {sem ? 'Repor' : 'Sem stock'}
                     </Text>
                   </Pressable>
@@ -240,7 +246,7 @@ export default function ModoCompras({ t, user, onClose }) {
                  <Text style={{ fontFamily: FONT.display, fontSize: 16, color: t.text3 }}>€</Text>
                </View>
              ) : null}
-            </View>
+            </Linha>
           );
         })}
 

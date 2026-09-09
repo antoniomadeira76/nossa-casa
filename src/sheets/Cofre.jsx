@@ -68,8 +68,11 @@ export default function Cofre({ t, kid, onClose }) {
       style={({ pressed }) => ({
         minHeight: 48, borderRadius: R.row, borderWidth: 1,
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.md,
-        backgroundColor: disabled ? t.subtle : filled ? t.state.infoBg : t.surface,
-        borderColor: disabled ? t.border : filled ? t.state.infoBg : t.border,
+        // ⚠ `actBg`/`actBrd`, os tokens do botão comum — e não o `infoBg`, um
+        // tijolo OPACO e claro nos dois aspetos: no escuro «Pagar Semanada» em
+        // `actFg` clareado por cima dele dava 2,23 (09/09/2026).
+        backgroundColor: disabled ? t.subtle : filled ? t.actBg : t.surface,
+        borderColor: disabled ? t.border : filled ? t.actBrd : t.border,
         opacity: pressed ? 0.85 : 1,
       })}>
       {icon ? <Icon name={icon} size={20} color={disabled ? t.text3 : t.accent} /> : null}

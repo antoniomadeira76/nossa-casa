@@ -425,6 +425,27 @@ describe('O PIN não fica gravado em claro', () => {
     expect(MIGRATIONS[4]({ v: 3 }).pins).toEqual({});
   });
 
+  it('⚠ nenhuma folha desliza na web — o `slide` do Modal ficava preso fora do ecrã', () => {
+    // Duas folhas empilhadas (o avatar sobre o Perfil): a segunda arrancava com
+    // `translateY(100%)` à espera do fim de uma animação CSS que não chegava, e
+    // ficava a 794 px, invisível e a bloquear a de baixo. Medido duas vezes em
+    // 09/09/2026. Na web a folha abre sem animação (`ANIMACAO_DA_FOLHA`); no
+    // telemóvel desliza. Nenhum `Modal` da app escreve `"slide"` à mão.
+    const culpados = [];
+    const percorrer = (dir) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) percorrer(p);
+        else if (/\.jsx$/.test(e.name) && /animationType="slide"/.test(semComentarios(fs.readFileSync(p, 'utf8')))) {
+          culpados.push(path.relative(path.join(__dirname, '..'), p));
+        }
+      }
+    };
+    percorrer(path.join(__dirname, '..', 'src'));
+    expect(culpados).toEqual([]);
+    expect(read('src/Sheet.jsx')).toMatch(/Platform\.OS === 'web' \? 'none' : 'slide'/);
+  });
+
   it('a entrada nunca compara o PIN em claro — pergunta à loja, que vai ao servidor', () => {
     // Era `verificarPin(kid, p)` — resumo contra resumo, no dispositivo. Desde
     // 09/09/2026 é `entrarCrianca`, que entra no servidor e só sem ele compara

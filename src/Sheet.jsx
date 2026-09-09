@@ -1,5 +1,14 @@
 import React from 'react';
-import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
+import { View, Text, Pressable, Modal, ScrollView, Platform } from 'react-native';
+
+// ⚠ Na WEB a folha abre sem animação. O `animationType="slide"` do
+// react-native-web arranca com `translateY(100%)` e espera pelo fim de uma
+// animação CSS para o tirar; com uma folha aberta por cima de outra (o avatar
+// sobre o Perfil) esse fim não chegava e a segunda folha ficava PRESA fora do
+// ecrã, a 794 px, invisível e a bloquear a de baixo. Medido duas vezes em
+// 09/09/2026, no varrimento no escuro. No telemóvel a animação é nativa e não
+// tem este problema — fica.
+export const ANIMACAO_DA_FOLHA = Platform.OS === 'web' ? 'none' : 'slide';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { S, R, FONT, elev, LARGURA_APP } from './theme';
 import Icon from './Icon';
@@ -9,7 +18,7 @@ import Icon from './Icon';
 export default function Sheet({ t, title, sub, onClose, children, action, headerRight, leading }) {
   const insets = useSafeAreaInsets();
   return (
-    <Modal transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+    <Modal transparent animationType={ANIMACAO_DA_FOLHA} onRequestClose={onClose} statusBarTranslucent>
       {/* ⚠ A folha corre DENTRO da coluna da app.
           O <Modal> do react-native-web sai da raiz e vai para o topo do DOM —
           é o que o faz escapar ao `maxWidth` da coluna. No monitor, uma folha

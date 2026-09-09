@@ -43,14 +43,18 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
         {/* Próxima consulta */}
         {proxima ? (
           <Card t={t} style={{ borderLeftWidth: 4, borderLeftColor: t.state.info,
-            backgroundColor: t.state.infoBg }}>
+            // `tileInfo` (alfa, escurece no escuro), não o tijolo opaco
+            // `infoBg`: o título leva `text1`, que no escuro é claro.
+            backgroundColor: t.tileInfo }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <Icon name="calendar" size={22} color={t.state.info} />
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>
                   {proxima.specialty}{proxima.doctor ? ` · ${proxima.doctor}` : ''}
                 </Text>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.infoDeep }}>
+                {/* `infoTexto`, e não `infoDeep`: o cartão passou a `tileInfo`
+                    (escurece no escuro) e o «deep» dava 2,58 lá em cima. */}
+                <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.infoTexto }}>
                   {whenLabel(proxima)}
                   {daysUntil(proxima.day) > 0
                     ? ` · faltam ${plural(daysUntil(proxima.day), 'dia', 'dias')}` : ''}
@@ -102,7 +106,10 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
                 return (
                   <Linha key={h.id} t={t} last={k === consultas.length - 1}
                     faixa={futura ? t.state.info : undefined}
-                    tinta={futura ? t.state.infoBg : undefined}>
+                    // `tileInfo`, não `infoBg`: a tinta de uma linha com texto
+                    // `text1`/`text3` tem de escurecer no escuro; o `infoBg` é
+                    // um tijolo opaco e claro, só para texto `infoDeep`.
+                    tinta={futura ? t.tileInfo : undefined}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                       <Icon name="calendar" size={20}
                         color={futura ? t.state.info : t.text3} />

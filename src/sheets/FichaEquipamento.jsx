@@ -58,8 +58,12 @@ export default function FichaEquipamento({ t, equip, onClose }) {
           style={({ pressed }) => ({
             minHeight: 48, borderRadius: R.row, borderWidth: 1,
             flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.md,
-            backgroundColor: desativado ? t.subtle : preenchido ? t.state.infoBg : t.surface,
-            borderColor: desativado ? t.border : preenchido ? t.state.infoBg : tomGrafico,
+            // ⚠ `actBg`/`actBrd`, os tokens do botão comum — e não o `infoBg`,
+            // que é um tijolo OPACO e claro nos dois aspetos: no escuro o
+            // `actFg` (clareado) por cima dele dava 2,23 (09/09/2026). O
+            // `actFg` só é garantido sobre o `actBg`.
+            backgroundColor: desativado ? t.subtle : preenchido ? t.actBg : t.surface,
+            borderColor: desativado ? t.border : preenchido ? t.actBrd : tomGrafico,
             opacity: pressed ? 0.85 : 1,
           })}>
           <Icon name={icone} size={20} color={desativado ? t.text3 : tomGrafico} />

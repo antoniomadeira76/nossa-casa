@@ -4,6 +4,7 @@ import { S, R, FONT, elev , LARGURA_APP } from '../theme';
 import { EUR } from '../format';
 import { Label, Primary, Tile } from '../ui';
 import Icon from '../Icon';
+import { ANIMACAO_DA_FOLHA } from '../Sheet';
 
 // Validação antes de fechar a conta. Vivia dentro do Compras.jsx, ao lado do
 // modo de loja; saiu com ele.
@@ -16,7 +17,7 @@ export default function Carrinho({ t, doneItems, items, cart, pago, user, store,
   const hasWarnings = noStock.length > 0;
 
   return (
-    <Modal transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+    <Modal transparent animationType={ANIMACAO_DA_FOLHA} onRequestClose={onClose} statusBarTranslucent>
       {/* Dentro da coluna da app — ver o comentário no `Sheet.jsx`. */}
       <View style={{ flex: 1, justifyContent: 'flex-end',
         width: '100%', maxWidth: LARGURA_APP, marginHorizontal: 'auto' }}>
