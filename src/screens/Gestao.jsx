@@ -60,7 +60,7 @@ function CartaoDoMes({ t, nome, aberto, desde, gasto, orcamento, onAbrir, onFech
 }
 
 export default function Gestao({ t, user, onClose }) {
-  const { s, set, isAdmin, budget, spent, mesAberto, mesAbertoDesde, envelopes, pinError, setPin, canChangeRole, setRole,
+  const { s, set, isAdmin, budget, spent, mesAberto, mesAbertoDesde, envelopes, pinError, setPin, temPin, canChangeRole, setRole,
           kidPts, pontosNasTarefas, mudarRegraDaCasa, mudarListaDaCasa,
           criarEnvelope, alterarEnvelope, apagarEnvelope, membros: MEMBERS, nomeDaCasa, podeGerirCasa,
           renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
@@ -371,7 +371,7 @@ export default function Gestao({ t, user, onClose }) {
       <View style={{ paddingHorizontal: S.xs }}>
         {Object.entries(MEMBERS).map(([name, info], i, arr) => {
           const role = s.roles[name] || 'crianca';
-          const hasPin = !!s.pins[name];
+          const hasPin = temPin(name);
           const crianca = role === 'crianca';
           const papel = crianca ? 'Criança'
             : role === 'admin' ? (info.fem ? 'Administradora' : 'Administrador') : 'Adulto';
@@ -711,7 +711,7 @@ export default function Gestao({ t, user, onClose }) {
                   {/* O aviso aparece ANTES de se guardar, não depois. Um PIN
                       apagado sem avisar é uma criança que não entra e não
                       percebe porquê. */}
-                  {s.pins[selectedMember] ? (
+                  {temPin(selectedMember) ? (
                     <Tile t={t} kind="warn">
                       O PIN é apagado quando o nome muda, e terá de ser definido
                       outra vez aqui. O que está feito — tarefas, cofre, ficha de
@@ -751,7 +751,7 @@ export default function Gestao({ t, user, onClose }) {
 
             {(s.roles[selectedMember] || 'crianca') === 'crianca' ? (
               <View>
-                <Label t={t}>{s.pins[selectedMember] ? 'Alterar o PIN' : 'Definir o PIN'}</Label>
+                <Label t={t}>{temPin(selectedMember) ? 'Alterar o PIN' : 'Definir o PIN'}</Label>
                 <TextInput placeholder="0000" keyboardType="numeric" maxLength={4} secureTextEntry
                   value={input} onChangeText={setInput} style={campo(t)} />
                 {pinMsg ? <View style={{ marginTop: S.md }}><Tile t={t} kind="warn">{pinMsg}</Tile></View> : null}

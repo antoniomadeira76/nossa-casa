@@ -46,7 +46,7 @@ não estão escritas e esperadas — estão **provadas a correr**:
 npm run db:servir     # o servidor. Sem ele a app corre local, e o ecrã de
                       # entrada diz que o servidor não responde — não que a
                       # Google esteja mal configurada. Já enganou duas vezes.
-npm run db:provar     # 368 provas, vinte e dois ficheiros
+npm run db:provar     # 412 provas, vinte e três ficheiros
 ```
 
 Cada prova tenta o que a `docs/seguranca.html` diz que não pode acontecer e falha se
@@ -62,6 +62,14 @@ npm run db:campos     # idempotente, e confere que os campos ficaram lá
 ```
 
 Já falhou três vezes por esta ordem: o `membros.avatar`, o `artigos.corredor`, o `artigos.posto`.
+O quarto, `membros.pin_definido` (09/09/2026), já nasceu nos dois sítios.
+
+**O PIN vive no servidor.** A criança entra com `authWithPassword` (o `login`
+`casa_nome` e o PIN como palavra-passe), o «tem PIN» é o `pin_definido` do membro
+(escrito pelo hook e pela rota, nunca pelo cliente), quem administra repõe pela rota
+`/api/casa/pin` e a criança muda o seu por `/api/casa/pin/proprio` sabendo o atual.
+O resumo local (`resumoPin`) serve a entrada SEM servidor e mais nada. Guardas:
+`a-entrada-da-crianca-e-no-servidor` e `provar-regras-da-casa.mjs`.
 O PocketBase aceita um `update` e **ignora em silêncio** o campo que não conhece — uma escrita
 que não se lê de volta passa por boa.
 

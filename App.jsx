@@ -379,7 +379,11 @@ function Shell() {
 
   // Renderizar KidApp se o utilizador for uma criança
   if (euNaCasa?.kid) {
-    return <KidApp kid={user} kidTab={kidTab} setKidTab={setKidTab} onLogout={() => setUser(null)} />;
+    // ⚠ `sair()` também: a criança entra no SERVIDOR desde 09/09/2026 e tem
+    // um token dela. Sem isto o token ficava no dispositivo depois de ela
+    // sair, e o adulto seguinte a abrir a app retomava a sessão DELA.
+    return <KidApp kid={user} kidTab={kidTab} setKidTab={setKidTab}
+      onLogout={() => { servidor.auth.sair(); setUser(null); }} />;
   }
 
   const meta = TABS.find(x => x.key === tab);

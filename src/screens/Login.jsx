@@ -17,7 +17,7 @@ import * as servidor from '../pocketbase';
 import { Pill } from '../ui';
 
 export default function Login({ t, onEnter }) {
-  const { s, pinError, verificarPin, membros: MEMBERS, nomeDaCasa, criancas, adultos } = useStore();
+  const { s, entrarCrianca, temPin, membros: MEMBERS, nomeDaCasa, criancas, adultos } = useStore();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState('login');   // login | contas | criancas | pin
   const [kid, setKid] = useState(null);
@@ -25,17 +25,30 @@ export default function Login({ t, onEnter }) {
   const [tries, setTries] = useState(0);
   const [blocked, setBlocked] = useState(0);
   const [erroGoogle, setErroGoogle] = useState(null);
+  const [aEntrar, setAEntrar] = useState(false);
+  const [erroPin, setErroPin] = useState(null);
 
   const glass = {
     backgroundColor: 'rgba(0,21,41,0.55)', borderRadius: R.card,
     paddingHorizontal: 20, paddingTop: 24, paddingBottom: 30, gap: S.lg,
   };
 
-  const submitPin = (p) => {
-    if (blocked > Date.now()) return;
-    if (verificarPin(kid, p)) { setTries(0); onEnter(kid); return; }
+  // ⚠ A criança entra no SERVIDOR (09/09/2026). Era `verificarPin` — um
+  // resumo comparado no dispositivo, que é «um PIN que está no dispositivo»
+  // (docs/seguranca.html §3). Sem servidor continua a ser o resumo, e é a
+  // loja que decide qual dos dois; este ecrã só pergunta.
+  const submitPin = async (p) => {
+    if (blocked > Date.now() || aEntrar) return;
+    setAEntrar(true);
+    const r = await entrarCrianca(kid, p);
+    setAEntrar(false);
+    if (r.ok) { setTries(0); setErroPin(null); onEnter(kid); return; }
+    setPin('');
+    // O servidor em baixo não é um PIN errado: diz-se, e não gasta tentativa.
+    if (r.erro) { setErroPin(r.erro); return; }
+    setErroPin(null);
     const n = tries + 1;
-    setTries(n); setPin('');
+    setTries(n);
     if (n >= 5) { setBlocked(Date.now() + 60000); setTries(0); }
   };
 
@@ -267,7 +280,7 @@ export default function Login({ t, onEnter }) {
                 : 'Um adulto acrescenta-as em Gestão da Casa, e dá a cada uma o seu PIN de 4 dígitos.'}
             </Text>
             {criancas.map(n => {
-              const hasPin = !!s.pins[n];
+              const hasPin = temPin(n);
               return (
                 <Pressable key={n} onPress={() => { if (hasPin) { setKid(n); setPin(''); setStep('pin'); } }}
                   accessibilityRole="button" accessibilityLabel={n} accessibilityState={{ disabled: !hasPin }}
@@ -320,6 +333,10 @@ export default function Login({ t, onEnter }) {
             ) : tries > 0 ? (
               <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: '#FFB27A', textAlign: 'center' }}>
                 PIN incorreto. Faltam {5 - tries} tentativas.
+              </Text>
+            ) : erroPin ? (
+              <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: '#FFB27A', textAlign: 'center' }}>
+                {erroPin}
               </Text>
             ) : null}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>

@@ -83,7 +83,7 @@ export const O_QUE_SOBE = {
 
   // ── Regras e listas da casa ───────────────────────────────────────────────
   roles: ['campo', 'O `papel` de cada membro. Decide o que o servidor DEVOLVE — mudá-lo só no cliente mudava a aparência e mais nada.', 'editarMembro'],
-  pins: ['campo', 'A palavra-passe do membro, por uma rota própria: o PocketBase exige `oldPassword` e quem põe o PIN de uma criança não o sabe. O resumo local serve a entrada sem servidor.', 'definirPin'],
+  pins: ['campo', 'A palavra-passe do membro, por uma rota própria: o PocketBase exige `oldPassword` e quem põe o PIN de uma criança não o sabe. A criança ENTRA no servidor com ele, e muda-o por outra rota sabendo o atual; o `pin_definido` do membro diz se já tem PIN. O resumo local serve só a entrada sem servidor.', 'definirPin'],
   pontosLigados: ['campo', 'O `pontos_ligados` da casa. A Rita desligava os pontos e o Tomás continuava a vê-los.'],
   pointValue: ['campo', 'O `valor_ponto` da casa. Os dois telefones pagavam semanadas de valores diferentes.'],
   payDay: ['campo', 'O `dia_pagamento` da casa: em que dia da semana a semanada se paga.'],

@@ -69,7 +69,58 @@ routerAdd('POST', '/api/casa/pin', (e) => {
   }
 
   alvo.setPassword(pin);
+  // A app le isto para dizer «PIN definido» sem nunca ver o PIN.
+  alvo.set('pin_definido', true);
   $app.save(alvo);
 
   return e.json(200, { ok: true });
+});
+
+// A crianca muda o SEU PIN, sabendo o atual.
+//
+// A reposicao sem o PIN atual continua a ser so de quem administra (a rota
+// acima): isto e mudar, nao recuperar. Pedido pelo dono da casa em 09/09/2026:
+// «o Administrador pode fazer reset e as criancas podem alterar o PIN».
+//
+// Porque e uma rota e nao um update da propria coleccao: a `updateRule` de
+// `membros` e so para quem administra -- e bem, porque e ela que guarda o
+// papel e a casa. Abrir o update ao proprio membro para mudar a palavra-passe
+// abria-lhe tambem o `papel`. A rota muda UM campo, do PROPRIO, e mais nada.
+//
+// Mudar a palavra-passe invalida o token com que a crianca entrou (o PocketBase
+// roda a chave do token). O cliente volta a entrar com o PIN novo a seguir --
+// e por isso a resposta devolve o `login`, para ele nao ter de o adivinhar.
+routerAdd('POST', '/api/casa/pin/proprio', (e) => {
+  const quem = e.auth;
+  if (!quem) throw new UnauthorizedError('Entre primeiro.');
+  if (quem.get('papel') !== 'crianca') {
+    throw new ForbiddenError('So uma crianca muda o PIN por aqui; um adulto muda a palavra-passe.');
+  }
+
+  const corpo = new DynamicModel({ atual: '', novo: '' });
+  e.bindBody(corpo);
+  const atual = String(corpo.atual || '').trim();
+  const novo = String(corpo.novo || '').trim();
+
+  // O PIN atual primeiro: sem ele, quem apanhar um telemovel desbloqueado
+  // trocava o PIN da crianca e ficava com o perfil dela.
+  if (!quem.validatePassword(atual)) {
+    throw new BadRequestError('O PIN atual nao esta certo.');
+  }
+
+  // A mesma qualidade da rota de cima -- repetida aqui porque cada handler do
+  // JSVM corre isolado e nao ve funcoes de fora.
+  if (!/^[0-9]{4}$/.test(novo)) throw new BadRequestError('O PIN tem de ter 4 digitos.');
+  if (/^([0-9])\1{3}$/.test(novo)) throw new BadRequestError('Nao pode ter os quatro digitos iguais.');
+  if ('0123456789'.indexOf(novo) >= 0 || '9876543210'.indexOf(novo) >= 0) {
+    throw new BadRequestError('Nao pode ser uma sequencia.');
+  }
+  if (novo === atual) throw new BadRequestError('O PIN novo e igual ao atual.');
+
+  const eu = $app.findRecordById('membros', quem.id);
+  eu.setPassword(novo);
+  eu.set('pin_definido', true);
+  $app.save(eu);
+
+  return e.json(200, { ok: true, login: eu.getString('login') });
 });

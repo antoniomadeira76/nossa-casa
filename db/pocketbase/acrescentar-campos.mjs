@@ -57,6 +57,9 @@ const CAMPOS = [
   ['membros', 'figura', { type: 'text', max: 24 }],
   ['artigos', 'corredor', { type: 'relation', alvo: 'seccoes', maxSelect: 1, cascadeDelete: false }],
   ['artigos', 'posto', { type: 'number', min: 0, onlyInt: true }],
+  // Se a criança já tem PIN — posto pelo hook e pela rota, lido pela entrada
+  // e pela Gestão. A quarta vez que um campo precisou destes dois sítios.
+  ['membros', 'pin_definido', { type: 'bool' }],
 ];
 
 // As coleções que nasceram depois da base. A definição é a MESMA do

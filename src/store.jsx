@@ -3645,7 +3645,12 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   const setPin = (name, pin) => {
     const err = pinError(name, pin);
     if (err) return err;
-    set(x => ({ pins: { ...x.pins, [name]: resumoPin(name, pin) } }));
+    set(x => ({
+      pins: { ...x.pins, [name]: resumoPin(name, pin) },
+      // O «tem PIN» do servidor, antecipado: o `puxarCasa` seguinte confirma.
+      ...(x.membros && x.membros[name]
+        ? { membros: { ...x.membros, [name]: { ...x.membros[name], pinDefinido: true } } } : {}),
+    }));
 
     // ⚠ E sobe — como PALAVRA-PASSE do membro, não como resumo.
     //
@@ -3670,6 +3675,61 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // Verificar é comparar resumos, nunca o valor. O ecrã de entrada fazia
   // `p === s.pins[kid]`, contra o PIN em claro.
   const verificarPin = (name, pin) => !!s.pins[name] && s.pins[name] === resumoPin(name, pin);
+
+  // ── O PIN vive no SERVIDOR (09/09/2026) ─────────────────────────────────────
+  //
+  // O dono da casa: «tudo deve ser guardado no servidor; o administrador pode
+  // fazer reset e as crianças podem alterar o PIN». Três coisas, e as três
+  // estavam a meio: o PIN subia como palavra-passe, mas a criança ENTRAVA
+  // contra o resumo local, o «tem PIN» era esse resumo — que só existia no
+  // telemóvel onde o PIN fora posto —, e a criança não tinha como mudá-lo.
+  //
+  // O resumo local FICA, com um papel só: a entrada sem servidor. Com servidor,
+  // acompanha o que lá está, para a casa continuar a abrir sem rede.
+
+  // Se a criança tem PIN. Com servidor é o `pin_definido` do membro, escrito
+  // pelo hook e pela rota; sem servidor, o resumo local.
+  const temPin = (name) => {
+    const m = (s.membros || {})[name];
+    if (sync && sync.ligado() && m && m.pinDefinido !== undefined) return !!m.pinDefinido;
+    return !!s.pins[name];
+  };
+
+  // A criança entra. Devolve `{ ok }`; `erro` só quando a culpa não é do PIN
+  // — servidor em baixo, por exemplo — para o ecrã não gastar uma das cinco
+  // tentativas com uma coisa que a criança não fez.
+  const entrarCrianca = async (name, pin) => {
+    const m = (s.membros || {})[name];
+    if (sync && sync.ligado() && m && m.login) {
+      try {
+        await sync.entrarCrianca(m.login, pin);
+      } catch (e) {
+        const status = e && e.status;
+        if (status === 400 || status === 401 || status === 403) return { ok: false };
+        return { ok: false, erro: 'O servidor da casa não está a responder. Tente outra vez daqui a nada.' };
+      }
+      set(x => ({ pins: { ...x.pins, [name]: resumoPin(name, pin) } }));
+      return { ok: true };
+    }
+    return { ok: verificarPin(name, pin) };
+  };
+
+  // A criança muda o seu PIN, sabendo o atual. Devolve a mensagem de erro, ou
+  // null. A qualidade verifica-se aqui para ela saber porquê enquanto escreve;
+  // o servidor verifica outra vez, e é ele que manda.
+  const mudarMeuPin = async (name, atual, novo) => {
+    const err = pinError(name, novo);
+    if (err) return err;
+    const ses = sync && sync.ligado() ? sync.sessao() : null;
+    if (ses && ses.nome === name) {
+      try { await sync.mudarMeuPin(atual, novo); }
+      catch (e) { return e.message || 'Não foi possível mudar o PIN.'; }
+    } else if (!verificarPin(name, atual)) {
+      return 'O PIN atual não está certo.';
+    }
+    set(x => ({ pins: { ...x.pins, [name]: resumoPin(name, novo) } }));
+    return null;
+  };
 
   // ─── Gerir a casa: nome, e quem lá vive ────────────────────────────────────
   //
@@ -4588,7 +4648,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     vaultOf, vaultMoves, vaultAdd,
     // As metas: a lista já com o juntado somado, e as quatro operações.
     metas, movimentosDaMeta, criarMeta, alterarMeta, apagarMeta, reforcarMeta,
-    verificarPin,
+    verificarPin, temPin, entrarCrianca, mudarMeuPin,
     // Os membros da casa. Quem consome isto NUNCA deve importar MEMBERS de
     // data.js: essas são as sementes da demonstração, não a casa de quem está
     // a usar a app.

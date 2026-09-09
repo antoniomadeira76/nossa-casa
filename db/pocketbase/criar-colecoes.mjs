@@ -309,6 +309,14 @@ if (casaHabitada) {
     // um deles escrevia «Saúde do Mia». Fica ao lado do nome, no servidor,
     // porque é a casa que sabe como cada membro quer ser tratado.
     bool('fem'),
+    // Se a criança já tem PIN. O PocketBase não diz se uma palavra-passe está
+    // definida, e a app precisava de o saber para o escolhedor da entrada
+    // («Ainda sem PIN — pedir a um adulto») e para a Gestão — lia-o de um
+    // resumo LOCAL, que só existia no telemóvel onde o PIN fora posto. É o
+    // hook `membros.pb.js` e a rota `pin.pb.js` que o põem a verdadeiro;
+    // ninguém o escreve pela coleção. (09/09/2026 — o dono da casa: «tudo
+    // deve ser guardado no servidor».)
+    bool('pin_definido'),
   ],
   indexes: ['CREATE UNIQUE INDEX idx_membro_login ON membros (login)'],
   listRule: 'casa = @request.auth.casa',

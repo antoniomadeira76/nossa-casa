@@ -513,6 +513,23 @@ export const auth = {
     return d;
   },
 
+  // A criança muda o PRÓPRIO PIN, sabendo o atual. Rota, pela mesma razão da
+  // de cima ao contrário: a `updateRule` de `membros` é só de quem administra,
+  // e abri-la ao próprio para a palavra-passe abria-lhe também o papel. Ver
+  // `db/pocketbase/pb_hooks/pin.pb.js`. A resposta traz o `login`, porque a
+  // palavra-passe nova invalida o token e é preciso voltar a entrar.
+  async mudarMeuPin(atual, novo) {
+    if (!estaLigado()) throw new Error('Servidor não configurado.');
+    const r = await fetch(`${URL.replace(/\/+$/, '')}/api/casa/pin/proprio`, {
+      method: 'POST',
+      headers: { Authorization: pb.authStore.token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ atual: String(atual || ''), novo: String(novo || '') }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.message || 'Não foi possível mudar o PIN.');
+    return d;
+  },
+
   erroDaFotografia: () => erroDaFotografia,
 
   sair: () => { if (estaLigado()) { pb.authStore.clear(); esquecerToken(); agendaLigada = null; } },

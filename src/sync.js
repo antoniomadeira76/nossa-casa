@@ -102,6 +102,12 @@ export const membrosDoServidor = (linhas) => Object.fromEntries(
     papel: m.papel,
     fem: !!m.fem,
     cor: m.cor || null,
+    // O identificador com que a criança ENTRA (`casa_nome`) e se ela já tem
+    // PIN. Os dois vêm do servidor: a entrada da criança passou a ser lá
+    // (09/09/2026), e o «ainda sem PIN» do escolhedor deixou de ser um resumo
+    // local que só existia no telemóvel onde o PIN fora posto.
+    login: m.login || null,
+    pinDefinido: !!m.pin_definido,
     // A fotografia da conta Google, se houver. É uma URL, não um ficheiro: a
     // imagem vive na Google, e copiá-la para o servidor da casa seria guardar
     // um dado pessoal que não é preciso guardar.
@@ -1765,6 +1771,21 @@ export const guardarAspeto = (campos) => servidor.auth.guardarAspeto(campos);
 // PocketBase exige `oldPassword` para mudar uma palavra-passe, e quem põe o PIN
 // de uma criança não sabe o antigo. Ver `pb_hooks/pin.pb.js`.
 export const definirPin = (membroId, pin) => servidor.auth.definirPin(membroId, pin);
+
+// A criança entra no SERVIDOR, com o PIN como palavra-passe — e recebe a sessão
+// dela, com o que as regras lhe devolvem (INVARIANTE #3). Era um resumo
+// comparado no dispositivo, que é «um PIN que está no dispositivo»
+// (docs/seguranca.html §3). Devolve o registo, ou rebenta com a recusa.
+export const entrarCrianca = (login, pin) => servidor.auth.entrarCrianca(login, pin);
+
+// A criança muda o seu PIN sabendo o atual — pela rota `/api/casa/pin/proprio`.
+// Mudar a palavra-passe invalida o token, por isso volta-se a entrar a seguir
+// com o PIN novo: quem chama fica com a sessão como estava, e o PIN trocado.
+export async function mudarMeuPin(atual, novo) {
+  const r = await servidor.auth.mudarMeuPin(atual, novo);
+  await servidor.auth.entrarCrianca(r.login, novo);
+  return r;
+}
 export const trazerFotografiaDaGoogle = () => servidor.auth.trazerFotografiaDaGoogle();
 
 // ── A agenda da Google, pela mesma porta ─────────────────────────────────────

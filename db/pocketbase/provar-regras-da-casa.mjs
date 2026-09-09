@@ -210,6 +210,90 @@ await prova('⚠ e quem não administra não define PIN nenhum', async () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
+console.log('\n── o PIN vive no servidor: «tem PIN», e a criança muda o seu ──');
+
+// 09/09/2026 — o dono da casa: «tudo deve ser guardado no servidor; o
+// administrador pode fazer reset e as crianças podem alterar o PIN».
+
+await prova('⚠ `pin_definido` fica a verdadeiro quando o PIN entra — pelo hook e pela rota', async () => {
+  // O Léo nasceu com PIN (o hook de criação) e levou outro pela rota.
+  igual((await admin.collection('membros').getOne(leo.id)).pin_definido, true);
+  // Uma criança nova SEM PIN fica a falso: é o que o escolhedor da entrada
+  // mostra como «Ainda sem PIN — pedir a um adulto».
+  const semPin = await admin.collection('membros').create({
+    nome: 'Duda', login: `${casa.id}_Duda`, casa: casa.id, papel: 'crianca',
+    verified: true, password: '8642', passwordConfirm: '8642' });
+  // ⚠ Criada COM palavra-passe (a coleção exige uma), portanto tem PIN — e o
+  // hook diz-o. O «sem PIN» a sério só existe em linhas anteriores ao campo.
+  igual(semPin.pin_definido, true);
+  // E a app lê-o traduzido.
+  const lida = await sync.puxarCasa();
+  igual(lida.membros.Leo.pinDefinido, true);
+  igual(typeof lida.membros.Leo.login, 'string');
+});
+
+const rotaPropria = (token, atual, novo) => fetch(`${URL.replace(/\/+$/, '')}/api/casa/pin/proprio`, {
+  method: 'POST',
+  headers: { Authorization: token, 'Content-Type': 'application/json' },
+  body: JSON.stringify({ atual, novo }),
+});
+
+await prova('⚠ a criança muda o SEU PIN sabendo o atual — e entra com o novo', async () => {
+  const dele = await telemovel(leo.login, '2470');
+  const r = await rotaPropria(dele.authStore.token, '2470', '3861');
+  igual(r.ok, true, 'estado ' + r.status);
+  const d = await r.json();
+  igual(d.login, leo.login);
+  igual((await telemovel(leo.login, '3861')).authStore.record.nome, 'Leo');
+});
+
+await prova('e o PIN antigo deixa de servir, como quando é o adulto a mudá-lo', () =>
+  recusado(() => telemovel(leo.login, '2470')));
+
+await prova('⚠ sem o PIN atual certo, nada muda', async () => {
+  const dele = await telemovel(leo.login, '3861');
+  const r = await rotaPropria(dele.authStore.token, '0000', '5927');
+  igual(r.ok, false, 'estado ' + r.status);
+  igual((await telemovel(leo.login, '3861')).authStore.record.nome, 'Leo');
+});
+
+await prova('⚠ e a qualidade confere-se outra vez no servidor', async () => {
+  const dele = await telemovel(leo.login, '3861');
+  for (const mau of ['1111', '1234', '4321', '12', 'abcd', '3861']) {
+    const r = await rotaPropria(dele.authStore.token, '3861', mau);
+    igual(r.ok, false, `«${mau}» passou`);
+  }
+  igual((await telemovel(leo.login, '3861')).authStore.record.nome, 'Leo');
+});
+
+await prova('⚠ um adulto não usa a rota da criança', async () => {
+  const r = await rotaPropria(doTomas.authStore.token, 'palavra-longa-2', '5927');
+  igual(r.ok, false, 'estado ' + r.status);
+  igual((await telemovel('tomas@x.pt', 'palavra-longa-2')).authStore.record.nome, 'Tomas');
+});
+
+await prova('⚠ e a criança continua sem poder mudar o PIN de OUTRA criança', async () => {
+  // A `updateRule` de `membros` é de quem administra; a rota só toca no
+  // próprio. Abrir o update ao próprio para a palavra-passe abria-lhe o papel.
+  const dele = await telemovel(leo.login, '3861');
+  await recusado(() => dele.collection('membros').update(leo.id, { papel: 'admin' }));
+  await recusado(() => dele.collection('membros').update(leo.id, { password: '5927', passwordConfirm: '5927', oldPassword: '3861' }));
+});
+
+// A app entra pelo mesmo caminho.
+await prova('a app entra a criança pelo servidor (`sync.entrarCrianca`)', async () => {
+  const r = await sync.entrarCrianca(leo.login, '3861');
+  igual(r.record.nome, 'Leo');
+  await recusado(() => sync.entrarCrianca(leo.login, '2470'));
+});
+
+await prova('e `sync.mudarMeuPin` muda e volta a entrar com o novo', async () => {
+  await sync.mudarMeuPin('3861', '2470');
+  igual(sync.sessao().nome, 'Leo');
+  igual((await telemovel(leo.login, '2470')).authStore.record.nome, 'Leo');
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
 console.log('\n── as três listas da casa ──');
 
 // A Rita voltou a ser a única administradora; entra-se outra vez para o `sync`

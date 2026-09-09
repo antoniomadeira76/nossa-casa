@@ -1,11 +1,80 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, useColorScheme } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from './store';
 import { buildTheme, onChrome, S, R, FONT, corDoMembro, chromeDaCrianca, elev, LARGURA_APP } from './theme';
 import { EUR, parseKey, pad2, plural } from './format';
 import Icon from './Icon';
-import { Card, SectionTitle, Pill, Empty } from './ui';
+import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile } from './ui';
+import Sheet from './Sheet';
+
+// A criança muda o SEU PIN, sabendo o atual (09/09/2026 — «as crianças podem
+// alterar o PIN»). A reposição sem o atual continua a ser de quem administra,
+// na Gestão. Três campos e um botão: o que uma criança de sete anos consegue
+// fazer sozinha, e o servidor confere tudo outra vez.
+function FolhaDoPin({ t, kid, onClose }) {
+  const { mudarMeuPin } = useStore();
+  const [atual, setAtual] = useState('');
+  const [novo, setNovo] = useState('');
+  const [outraVez, setOutraVez] = useState('');
+  const [erro, setErro] = useState(null);
+  const [feito, setFeito] = useState(false);
+  const [aGuardar, setAGuardar] = useState(false);
+
+  const campo = {
+    marginTop: S.sm, paddingHorizontal: S.md, paddingVertical: S.md, minHeight: 44,
+    borderWidth: 1, borderColor: t.border, borderRadius: R.row, backgroundColor: t.card,
+    fontFamily: FONT.ui, fontSize: 16, color: t.text1, letterSpacing: 4,
+  };
+  const pronto = /^\d{4}$/.test(atual) && /^\d{4}$/.test(novo) && /^\d{4}$/.test(outraVez);
+
+  const guardar = async () => {
+    if (novo !== outraVez) { setErro('O PIN novo não está igual nas duas caixas.'); return; }
+    setAGuardar(true);
+    const e = await mudarMeuPin(kid, atual, novo);
+    setAGuardar(false);
+    if (e) { setErro(e); return; }
+    setErro(null); setFeito(true);
+  };
+
+  return (
+    <Sheet t={t} title="O meu PIN" sub="Quatro dígitos, só seus" onClose={onClose}
+      action={feito
+        ? <Primary t={t} comum label="Fechar" onPress={onClose} />
+        : <Primary t={t} comum label={aGuardar ? 'A guardar…' : 'Guardar o PIN novo'}
+            disabled={!pronto || aGuardar} onPress={guardar} />}>
+      {feito ? (
+        <Tile t={t} kind="info">O PIN mudou. Da próxima vez que entrar, use o novo.</Tile>
+      ) : (
+        <View style={{ gap: S.lg }}>
+          <View>
+            <Label t={t}>PIN atual</Label>
+            <TextInput value={atual} onChangeText={setAtual} keyboardType="numeric" maxLength={4}
+              secureTextEntry placeholder="••••" placeholderTextColor={t.text3}
+              accessibilityLabel="PIN atual" style={campo} />
+          </View>
+          <View>
+            <Label t={t}>PIN novo</Label>
+            <TextInput value={novo} onChangeText={setNovo} keyboardType="numeric" maxLength={4}
+              secureTextEntry placeholder="••••" placeholderTextColor={t.text3}
+              accessibilityLabel="PIN novo" style={campo} />
+          </View>
+          <View>
+            <Label t={t}>PIN novo, outra vez</Label>
+            <TextInput value={outraVez} onChangeText={setOutraVez} keyboardType="numeric" maxLength={4}
+              secureTextEntry placeholder="••••" placeholderTextColor={t.text3}
+              accessibilityLabel="PIN novo, outra vez" style={campo} />
+          </View>
+          <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+            Não pode ter os quatro dígitos iguais nem ser uma sequência. Se se esquecer do PIN,
+            um adulto define outro na Gestão da Casa.
+          </Text>
+          {erro ? <Tile t={t} kind="warn">{erro}</Tile> : null}
+        </View>
+      )}
+    </Sheet>
+  );
+}
 
 // dkey → dd/mm, para a linha do movimento
 const dayShort = (k) => {
@@ -300,6 +369,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
   const t = buildTheme(0, dark);
   const onC = onChrome(chrome);
   const tasks = allTasks();
+  const [mudarPin, setMudarPin] = useState(false);
 
   // ⚠ A coluna vive na PRÓPRIA raiz, como no App.jsx — um <View> a mais em
   // volta dela é o erro #1 do CLAUDE.md. Sem isto a app da criança ia de ponta
@@ -317,18 +387,25 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
       }}>
         {/* A bola é branca e a inicial leva o cabeçalho — o mesmo par do
             `AvatarDeCabecalho` dos adultos. Era branco a 22 % com a inicial
-            branca por cima: 2,51. */}
-        <View style={{
-          width: 40, height: 40, borderRadius: R.pill,
-          backgroundColor: '#FFFFFF',
-          borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)',
-          alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Text style={{
-            fontFamily: FONT.display, fontSize: 17, fontWeight: '500',
-            color: chrome,
-          }}>{kid.charAt(0)}</Text>
-        </View>
+            branca por cima: 2,51.
+
+            E é ELA que abre «O meu PIN» — o mesmo gesto do avatar dos
+            adultos, que abre o Perfil. Alvo de 44 à volta da bola de 40. */}
+        <Pressable onPress={() => setMudarPin(true)} accessibilityRole="button"
+          accessibilityLabel="O meu PIN" accessibilityHint="Mudar o PIN com que entra"
+          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{
+            width: 40, height: 40, borderRadius: R.pill,
+            backgroundColor: '#FFFFFF',
+            borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)',
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Text style={{
+              fontFamily: FONT.display, fontSize: 17, fontWeight: '500',
+              color: chrome,
+            }}>{kid.charAt(0)}</Text>
+          </View>
+        </Pressable>
 
         <View style={{ flex: 1, gap: 1 }}>
           <Text style={{
@@ -388,6 +465,9 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
           );
         })}
       </View>
+
+      {/* A folha vive DENTRO da raiz, com o rodapé por baixo dela (INVARIANTE #1). */}
+      {mudarPin ? <FolhaDoPin t={t} kid={kid} onClose={() => setMudarPin(false)} /> : null}
     </View>
   );
 }

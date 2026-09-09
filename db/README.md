@@ -57,6 +57,14 @@ exatamente o que a §3.2 exige — função lenta, com sal, verificada no servid
 sem escrever criptografia nenhuma. Foi a razão principal para o esquema
 PostgreSQL, que precisava de `crypt()` e de uma função à mão, ficar para trás.
 
+E é no servidor que a criança **entra** (`authWithPassword` por `login`, desde
+09/09/2026 — antes comparava um resumo local), que se sabe se ela **tem PIN**
+(`membros.pin_definido`, posto a verdadeiro pelo hook quando a palavra-passe
+entra e pela rota do PIN), e que ela o **muda** sabendo o atual
+(`POST /api/casa/pin/proprio`, `pb_hooks/pin.pb.js`). A reposição sem o atual
+continua a ser só de quem administra (`POST /api/casa/pin`). O resumo local
+do cliente serve a entrada sem servidor e mais nada.
+
 **As crianças entram por `login`, não por e-mail.** O campo de identidade tem de
 ser único em toda a coleção, e `nome` não pode ser: duas casas podem ter um Léo.
 O `login` é um identificador interno, `casa_nome`. As crianças continuam sem

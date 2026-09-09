@@ -31,6 +31,9 @@ function validarMembro(e) {
     if (papel === 'crianca') {
       const erro = pinInvalido(senha);
       if (erro) throw new BadRequestError(erro);
+      // A verdade sobre «tem PIN» escreve-se AQUI, onde a palavra-passe entra
+      // — e não no cliente, que só a via no telemóvel onde o PIN fora posto.
+      e.record.set('pin_definido', true);
     } else if (senha.length < MIN_ADULTO) {
       throw new BadRequestError(
         'A palavra-passe de um adulto tem de ter pelo menos ' + MIN_ADULTO + ' caracteres.');

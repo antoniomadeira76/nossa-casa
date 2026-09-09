@@ -425,10 +425,14 @@ describe('O PIN não fica gravado em claro', () => {
     expect(MIGRATIONS[4]({ v: 3 }).pins).toEqual({});
   });
 
-  it('a entrada compara resumos, não o valor', () => {
+  it('a entrada nunca compara o PIN em claro — pergunta à loja, que vai ao servidor', () => {
+    // Era `verificarPin(kid, p)` — resumo contra resumo, no dispositivo. Desde
+    // 09/09/2026 é `entrarCrianca`, que entra no servidor e só sem ele compara
+    // o resumo. Ver `a-entrada-da-crianca-e-no-servidor`.
     const login = semComentarios(read('src/screens/Login.jsx'));
     expect(login).not.toMatch(/p === s\.pins\[kid\]/);
-    expect(login).toMatch(/verificarPin\(kid, p\)/);
+    expect(login).not.toMatch(/s\.pins\[/);
+    expect(login).toMatch(/await entrarCrianca\(kid, p\)/);
   });
 
   // A única comparação legítima é resumo com resumo, e vive na loja. O que
