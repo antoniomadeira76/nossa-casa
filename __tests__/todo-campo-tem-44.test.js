@@ -64,6 +64,20 @@ describe('⚠ todo o campo de texto tem 44 px', () => {
     expect(maus).toEqual([]);
   });
 
+  it('⚠ e cada `<TextInput` tem um rótulo em voz — a etiqueta visível não chega a um leitor de ecrã', () => {
+    // 33 campos tinham um `<Label>` por cima e nenhum `accessibilityLabel`: o
+    // leitor de ecrã dizia «campo de texto» e mais nada (09/09/2026). O rótulo
+    // repete a etiqueta, ou diz o que o placeholder insinua («Hora do prazo»).
+    const maus = [];
+    for (const f of jsx) {
+      const rel = path.relative(RAIZ, f).split(path.sep).join('/');
+      for (const { linha, tag } of etiquetas(soCodigo(fs.readFileSync(f, 'utf8')))) {
+        if (!/accessibilityLabel=/.test(tag)) maus.push(`${rel}:${linha}`);
+      }
+    }
+    expect(maus).toEqual([]);
+  });
+
   it('e o `campo(t)` da Gestão tem mesmo os 44', () => {
     const gestao = fs.readFileSync(path.join(RAIZ, 'src/screens/Gestao.jsx'), 'utf8');
     const i = gestao.indexOf('const campo = (t)');

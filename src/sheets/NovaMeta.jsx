@@ -39,7 +39,7 @@ export default function NovaMeta({ t, user, onClose }) {
     <View style={{ gap: S.lg }}>
       <View style={{ gap: S.sm }}>
         <Label t={t}>Meta</Label>
-        <TextInput
+        <TextInput accessibilityLabel="Nome da meta"
           value={form.name}
           onChangeText={(v) => { setErro(null); setForm(f => ({ ...f, name: v })); }}
           placeholder="Ex: Férias no Algarve"
@@ -62,7 +62,7 @@ export default function NovaMeta({ t, user, onClose }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Para quando (opcional)</Label>
-        <TextInput
+        <TextInput accessibilityLabel="Para quando"
           value={form.when}
           onChangeText={(v) => setForm(f => ({ ...f, when: v }))}
           placeholder="Ex: julho de 2027 · ou deixe em branco"

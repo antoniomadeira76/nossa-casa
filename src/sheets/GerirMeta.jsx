@@ -65,7 +65,7 @@ export default function GerirMeta({ t, meta, user, onApagar, onClose }) {
         <Label t={t}>Reforçar ou retirar</Label>
         <NumField t={t} value={reforco} step={50} min={0} max={999999}
           onChange={(v) => { setErro(null); setReforco(v); }} />
-        <TextInput
+        <TextInput accessibilityLabel="Motivo do movimento"
           value={motivo}
           onChangeText={setMotivo}
           placeholder="De onde veio (opcional)"
@@ -140,7 +140,7 @@ export default function GerirMeta({ t, meta, user, onApagar, onClose }) {
       {/* ── Alterar a meta ─────────────────────────────────────────────────── */}
       <View style={{ gap: S.sm }}>
         <Label t={t}>Nome</Label>
-        <TextInput
+        <TextInput accessibilityLabel="Nome da meta"
           value={form.name}
           onChangeText={(v) => { setErro(null); setForm(f => ({ ...f, name: v })); }}
           placeholder="Ex: Férias no Algarve"
@@ -162,7 +162,7 @@ export default function GerirMeta({ t, meta, user, onApagar, onClose }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Para quando (opcional)</Label>
-        <TextInput
+        <TextInput accessibilityLabel="Para quando"
           value={form.when}
           onChangeText={(v) => setForm(f => ({ ...f, when: v }))}
           placeholder="Ex: julho de 2027 · ou deixe em branco"

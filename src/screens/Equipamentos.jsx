@@ -165,7 +165,7 @@ export default function Equipamentos({ t, abrir }) {
           <View style={{ gap: S.lg }}>
             <View style={{ gap: S.sm }}>
               <Label t={t}>Nome</Label>
-              <TextInput
+              <TextInput accessibilityLabel="Nome do equipamento"
                 value={form.name}
                 onChangeText={(v) => setForm(f => ({ ...f, name: v }))}
                 placeholder="Ex: Frigorífico LG"
@@ -197,7 +197,7 @@ export default function Equipamentos({ t, abrir }) {
 
             <View style={{ gap: S.sm }}>
               <Label t={t}>Garantia (dias)</Label>
-              <TextInput
+              <TextInput accessibilityLabel="Garantia em dias"
                 value={String(form.warranty)}
                 onChangeText={(v) => setForm(f => ({ ...f, warranty: parseInt(v) || 365 }))}
                 keyboardType="number-pad"

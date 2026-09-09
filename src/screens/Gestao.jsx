@@ -575,7 +575,7 @@ export default function Gestao({ t, user, onClose }) {
           <View style={{ gap: S.md }}>
             <View>
               <Label t={t}>Como se chama esta casa</Label>
-              <TextInput
+              <TextInput accessibilityLabel="Nome da casa"
                 placeholder="Ex: Bengui"
                 value={input}
                 onChangeText={setInput}
@@ -622,7 +622,7 @@ export default function Gestao({ t, user, onClose }) {
 
             <View>
               <Label t={t}>Nome</Label>
-              <TextInput placeholder="Ex: Ana" value={form.nome} maxLength={30}
+              <TextInput accessibilityLabel="Nome do membro" placeholder="Ex: Ana" value={form.nome} maxLength={30}
                 onChangeText={(v) => setForm(f => ({ ...f, nome: v }))} style={campo(t)} />
             </View>
 
@@ -644,7 +644,7 @@ export default function Gestao({ t, user, onClose }) {
             {form.papel === 'crianca' ? (
               <View>
                 <Label t={t}>PIN de 4 dígitos</Label>
-                <TextInput placeholder="0000" keyboardType="numeric" maxLength={4} secureTextEntry
+                <TextInput accessibilityLabel="PIN de 4 dígitos" placeholder="0000" keyboardType="numeric" maxLength={4} secureTextEntry
                   value={form.segredo} onChangeText={(v) => setForm(f => ({ ...f, segredo: v }))}
                   style={campo(t)} />
               </View>
@@ -652,13 +652,13 @@ export default function Gestao({ t, user, onClose }) {
               <>
                 <View>
                   <Label t={t}>Endereço de e-mail</Label>
-                  <TextInput placeholder="nome@gmail.com" keyboardType="email-address"
+                  <TextInput accessibilityLabel="Endereço de e-mail" placeholder="nome@gmail.com" keyboardType="email-address"
                     autoCapitalize="none" value={form.email}
                     onChangeText={(v) => setForm(f => ({ ...f, email: v }))} style={campo(t)} />
                 </View>
                 <View>
                   <Label t={t}>Palavra-passe do servidor</Label>
-                  <TextInput placeholder="Pelo menos 8 caracteres" secureTextEntry
+                  <TextInput accessibilityLabel="Palavra-passe do servidor" placeholder="Pelo menos 8 caracteres" secureTextEntry
                     value={form.segredo} onChangeText={(v) => setForm(f => ({ ...f, segredo: v }))}
                     style={campo(t)} />
                   <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3, marginTop: S.sm }}>
@@ -704,7 +704,7 @@ export default function Gestao({ t, user, onClose }) {
                 que a família não usa. */}
             <View>
               <Label t={t}>Nome</Label>
-              <TextInput value={form.nome} maxLength={30}
+              <TextInput accessibilityLabel="Nome do membro" value={form.nome} maxLength={30}
                 onChangeText={(v) => setForm(f => ({ ...f, nome: v }))} style={campo(t)} />
               {form.nome.trim() !== selectedMember ? (
                 <View style={{ gap: S.md, marginTop: S.md }}>
@@ -752,7 +752,7 @@ export default function Gestao({ t, user, onClose }) {
             {(s.roles[selectedMember] || 'crianca') === 'crianca' ? (
               <View>
                 <Label t={t}>{temPin(selectedMember) ? 'Alterar o PIN' : 'Definir o PIN'}</Label>
-                <TextInput placeholder="0000" keyboardType="numeric" maxLength={4} secureTextEntry
+                <TextInput accessibilityLabel="PIN de 4 dígitos" placeholder="0000" keyboardType="numeric" maxLength={4} secureTextEntry
                   value={input} onChangeText={setInput} style={campo(t)} />
                 {pinMsg ? <View style={{ marginTop: S.md }}><Tile t={t} kind="warn">{pinMsg}</Tile></View> : null}
               </View>

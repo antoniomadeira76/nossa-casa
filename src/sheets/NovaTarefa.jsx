@@ -40,7 +40,7 @@ export default function NovaTarefa({ t, user, onClose }) {
     <View style={{ gap: S.lg }}>
       <View style={{ gap: S.sm }}>
         <Label t={t}>Título da tarefa</Label>
-        <TextInput
+        <TextInput accessibilityLabel="Título da tarefa"
           value={form.title}
           onChangeText={(v) => setForm(f => ({ ...f, title: v }))}
           placeholder="Ex: Lavar a louça"
@@ -76,7 +76,7 @@ export default function NovaTarefa({ t, user, onClose }) {
       {pontosNasTarefas ? (
       <View style={{ gap: S.sm }}>
         <Label t={t}>Pontos de bónus</Label>
-        <TextInput
+        <TextInput accessibilityLabel="Pontos de bónus"
           value={String(form.pts)}
           onChangeText={(v) => setForm(f => ({ ...f, pts: parseInt(v) || 0 }))}
           placeholder="0"
@@ -121,7 +121,7 @@ export default function NovaTarefa({ t, user, onClose }) {
             </Text>
           </Pressable>
           {form.dueKey && (
-            <TextInput
+            <TextInput accessibilityLabel="Hora do prazo"
               value={form.dueTime}
               onChangeText={(v) => setForm(f => ({ ...f, dueTime: v }))}
               placeholder="18:00"

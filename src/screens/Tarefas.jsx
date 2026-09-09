@@ -264,7 +264,7 @@ export default function Tarefas({ t, user, abrir }) {
                 </Text>
               </Pressable>
               {task.dueKey && (
-                <TextInput
+                <TextInput accessibilityLabel="Hora do prazo"
                   value={task.dueTime || '18:00'}
                   onChangeText={(v) => set(x => ({ due: { ...x.due, [task.id]: { key: task.dueKey, time: v } } }))}
                   placeholder="18:00"

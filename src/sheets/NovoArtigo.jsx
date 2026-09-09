@@ -42,7 +42,7 @@ export default function NovoArtigo({ t, user, onClose }) {
     <View style={{ gap: S.lg }}>
       <View style={{ gap: S.sm }}>
         <Label t={t}>Artigo</Label>
-        <TextInput
+        <TextInput accessibilityLabel="Nome do artigo"
           value={form.label}
           onChangeText={(v) => setForm(f => ({ ...f, label: v }))}
           placeholder="Ex: Leite meio-gordo · 1 L"
@@ -76,7 +76,7 @@ export default function NovoArtigo({ t, user, onClose }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Preço estimado (€)</Label>
-        <TextInput
+        <TextInput accessibilityLabel="Preço estimado em euros"
           value={String(form.est)}
           onChangeText={(v) => setForm(f => ({ ...f, est: parseFloat(v) || 0 }))}
           placeholder="0,00"

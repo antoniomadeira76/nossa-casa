@@ -182,7 +182,7 @@ export default function FichaEquipamento({ t, equip, onClose }) {
             onPress={() => { editEquip(equip.id, manut); setManut(null); }} />}>
           <View style={{ gap: S.sm }}>
             <Label t={t}>O que é preciso fazer</Label>
-            <TextInput value={manut.maint}
+            <TextInput accessibilityLabel="O que é preciso fazer" value={manut.maint}
               onChangeText={(v) => setManut(m => ({ ...m, maint: v }))}
               placeholder="Ex: Revisão anual obrigatória" placeholderTextColor={t.text3}
               style={{ minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body, fontSize: 15,

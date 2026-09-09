@@ -192,7 +192,7 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
     <View style={{ gap: S.lg }}>
       <View style={{ gap: S.sm }}>
         <Label t={t}>Título do evento</Label>
-        <TextInput
+        <TextInput accessibilityLabel="Título do evento"
           value={form.title}
           onChangeText={(v) => setForm(f => ({ ...f, title: v }))}
           placeholder="Ex: Reunião com professor"
@@ -218,7 +218,7 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Hora</Label>
-        <TextInput
+        <TextInput accessibilityLabel="Hora do evento"
           value={form.time}
           onChangeText={(v) => setForm(f => ({ ...f, time: v }))}
           placeholder="HH:MM"

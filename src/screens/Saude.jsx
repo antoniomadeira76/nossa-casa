@@ -350,7 +350,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
 
                   {expandedNote === `rx-${record.id}` && (
                     <View style={{ gap: S.md, padding: S.md, backgroundColor: t.card, borderRadius: R.row }}>
-                      <TextInput
+                      <TextInput accessibilityLabel="Nome da receita"
                         value={recipeForm.name}
                         onChangeText={(v) => setRecipeForm(f => ({ ...f, name: v }))}
                         placeholder="Nome da receita"
@@ -362,7 +362,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                         }}
                       />
                       <View style={{ flexDirection: 'row', gap: S.sm }}>
-                        <TextInput
+                        <TextInput accessibilityLabel="Dose"
                           value={recipeForm.dosage}
                           onChangeText={(v) => setRecipeForm(f => ({ ...f, dosage: v }))}
                           placeholder="Dose"
@@ -373,7 +373,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                             borderColor: t.border, backgroundColor: t.surface,
                           }}
                         />
-                        <TextInput
+                        <TextInput accessibilityLabel="Quantidade"
                           value={recipeForm.quantity}
                           onChangeText={(v) => setRecipeForm(f => ({ ...f, quantity: v }))}
                           placeholder="Qtd"
@@ -384,7 +384,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                             borderColor: t.border, backgroundColor: t.surface,
                           }}
                         />
-                        <TextInput
+                        <TextInput accessibilityLabel="Unidade"
                           value={recipeForm.unit}
                           onChangeText={(v) => setRecipeForm(f => ({ ...f, unit: v }))}
                           placeholder="Unid"
@@ -781,7 +781,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
         {/* Searchbar */}
         {showArchive && (
           <View style={{ gap: S.sm }}>
-            <TextInput
+            <TextInput accessibilityLabel="Procurar por especialidade"
               value={searchText}
               onChangeText={setSearchText}
               placeholder="Procurar por especialidade..."
@@ -1464,7 +1464,7 @@ function GerirEspecialidades({ t, user, form, setForm, onClose }) {
         <View style={{ gap: S.sm }}>
           <Label t={t}>{aRenomear ? `Renomear «${aRenomear}»` : 'Nova especialidade'}</Label>
           <View style={{ flexDirection: 'row', gap: S.sm }}>
-            <TextInput
+            <TextInput accessibilityLabel="Nome da especialidade"
               value={nome}
               onChangeText={(v) => { setNome(v); setErro(null); }}
               placeholder="Ex.: Fisioterapia"

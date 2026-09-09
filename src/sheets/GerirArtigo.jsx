@@ -65,7 +65,7 @@ export default function GerirArtigo({ t, artigo, onApagar, onClose }) {
     <View style={{ gap: S.lg }}>
       <View style={{ gap: S.sm }}>
         <Label t={t}>Artigo</Label>
-        <TextInput
+        <TextInput accessibilityLabel="Nome do artigo"
           value={form.label}
           onChangeText={(v) => { setErro(null); setForm(f => ({ ...f, label: v })); }}
           placeholder="Ex: Leite meio-gordo · 1 L"
@@ -94,7 +94,7 @@ export default function GerirArtigo({ t, artigo, onApagar, onClose }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Preço estimado (€)</Label>
-        <TextInput
+        <TextInput accessibilityLabel="Preço estimado em euros"
           value={String(form.est)}
           onChangeText={(v) => setForm(f => ({ ...f, est: parseFloat(String(v).replace(',', '.')) || 0 }))}
           placeholder="0,00"
