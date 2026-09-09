@@ -182,7 +182,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                       style={{ flex: 1, minHeight: 46, borderRadius: R.row, alignItems: 'center',
                         justifyContent: 'center', gap: 4,
                         borderWidth: on ? 2 : 0, borderColor: t.accent,
-                        backgroundColor: isToday ? t.chrome : c.evs.length ? t.subtle : 'transparent' }}>
+                        backgroundColor: isToday ? t.accent : c.evs.length ? t.subtle : 'transparent' }}>
                       <Text style={{ fontFamily: FONT.ui, fontSize: 14, fontWeight: '600',
                         color: isToday ? '#FFFFFF' : t.text2 }}>{c.n}</Text>
                       <View style={{ flexDirection: 'row', gap: 3, height: 5 }}>

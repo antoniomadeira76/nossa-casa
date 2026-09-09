@@ -218,6 +218,10 @@ describe('⚠ e nenhum ecrã volta a pintar texto pequeno com o acento ou com um
       linhas.forEach((l, i) => {
         if (!/t\.state\.(ok|err|warn|info)Deep/.test(l)) return;
         if (FICAM[rel] && FICAM[rel].test(l)) return;
+        // Uma `Pill` escreve as props em linhas seguidas: o `fg` numa, o `bg`
+        // na de baixo. Se o tijolo (`xBg`) está a duas linhas, o «deep» é dele.
+        const volta = linhas.slice(Math.max(0, i - 2), i + 3).join(' ');
+        if (/t\.state\.(ok|err|warn|info)Bg|STATE\.(ok|err|warn|info)Bg|tile(Warn|Info|Err)/.test(volta)) return;
         maus.push(`${rel}:${i + 1} → ${l.trim().slice(0, 70)}`);
       });
     }
@@ -234,11 +238,34 @@ describe('⚠ e nenhum ecrã volta a pintar texto pequeno com o acento ou com um
       linhas.forEach((l, i) => {
         // `t.state.x` e também `STATE.x` — a Saúde importa a paleta directamente,
         // e a pastilha «Ação» a `STATE.warn` sobre `STATE.warnBg` dava 1,85.
-        const texto = /(?:\bcolor:|\bfg[:=])\s*(?:\{)?(?:[^,}]*\?\s*)?(?:t\.state|STATE)\.(ok|err|warn|info)\b(?![A-Za-z])/.test(l);
+        // Em qualquer ramo de um ternário: `fg={acertado ? okDeep : t.state.info}`
+        // escondia a base no ramo do «senão» — a pastilha «A Decorrer» dava 2,91.
+        // Só o VALOR do `color:`/`fg=` — até à vírgula ou à chaveta — senão o
+        // `border={t.state.warn}` da mesma linha, que é legítimo, entrava aqui.
+        const m = l.match(/(?:\bcolor:|\bfg[:=])\s*\{?\s*([^},\n]*)/);
+        const texto = m && /(?:t\.state|STATE)\.(ok|err|warn|info)\b(?![A-Za-z])/.test(m[1]);
         if (!texto) return;
         if (/backgroundColor|borderColor|borderLeftColor|<Icon|<Bar\b|\bBar\b/.test(l)) return;
         if (/<Icon\b/.test(linhas[i - 1] || '') && !/<Text/.test(linhas[i - 1] || '')) return;
         maus.push(`${rel}:${i + 1} → ${l.trim().slice(0, 70)}`);
+      });
+    }
+    expect(maus).toEqual([]);
+  });
+
+  it('⚠ uma barra pintada com a cor de um dado tem sempre um valor por omissão', () => {
+    // Os envelopes da casa vêm do servidor com `cor` vazia — só as sementes
+    // tinham cor — e `<Bar color={e.color}>` pintava o preenchimento com
+    // `null`: cinco barras transparentes com «546,60 € / 590,00 €» ao lado.
+    // Uma cor lida de um dado leva `|| t.…` na mesma linha.
+    const maus = [];
+    for (const rel of jsx) {
+      const linhas = soCodigo(fs.readFileSync(path.join(RAIZ, rel), 'utf8'));
+      linhas.forEach((l, i) => {
+        if (!/<Bar\b/.test(l)) return;
+        const m = l.match(/color=\{([^}]*)\}/);
+        if (!m) return;
+        if (/\.(color|cor)\b/.test(m[1]) && !/\|\|/.test(m[1])) maus.push(`${rel}:${i + 1} → ${m[0]}`);
       });
     }
     expect(maus).toEqual([]);

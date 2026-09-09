@@ -170,7 +170,7 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
               <Pressable key={o.k} onPress={() => mudarPreferencia(user, { aspeto: o.k })}
                 accessibilityRole="button" accessibilityLabel={`Aspeto ${o.label}`} accessibilityState={{ selected: on }}
                 style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1,
-                  borderColor: on ? t.chrome : t.border, backgroundColor: on ? t.chrome : 'transparent',
+                  borderColor: on ? t.accent : t.border, backgroundColor: on ? t.accent : 'transparent',
                   alignItems: 'center', justifyContent: 'center' }}>
                 <Icon name={o.icon} size={20} color={on ? '#FFFFFF' : t.text2} />
               </Pressable>

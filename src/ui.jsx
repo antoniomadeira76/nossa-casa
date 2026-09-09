@@ -286,7 +286,12 @@ export const Segmented = ({ t, options, value, onChange, small }) => (
           // mesma decisão do interruptor — o alvo cresce, o desenho não.
           style={{
             flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center',
-            backgroundColor: on ? t.chrome : 'transparent',
+            // ⚠ O escolhido leva o ACENTO, como a `Choice`. Levava o `chrome` —
+            // a cor do cabeçalho, quase preta no Violeta — e o dono da casa viu
+            // «Urgente» e «Léo» a preto ao lado de pastilhas em violeta e
+            // perguntou porquê. Eram dois idiomas de escolha para a mesma coisa;
+            // fica um. Branco sobre o acento dá 4,62 no pior dos seis.
+            backgroundColor: on ? t.accent : 'transparent',
             borderLeftWidth: i === 0 ? 0 : 1, borderLeftColor: t.border,
           }}>
           <Text style={{ fontFamily: FONT.ui, fontSize: small ? 12 : 13,
@@ -309,7 +314,9 @@ export const Toggle = ({ t, on, onPress, label }) => (
     accessibilityLabel={label} hitSlop={10}
     style={{ minWidth: 46, minHeight: 44, alignItems: 'flex-end', justifyContent: 'center' }}>
     <View style={{ width: 46, height: 27, borderRadius: R.pill, padding: 3,
-      backgroundColor: on ? t.chrome : t.border,
+      // Ligado é o ACENTO, como qualquer escolha — era o `chrome`, quase preto
+      // no Violeta. Ver `a-escolha-e-o-acento`.
+      backgroundColor: on ? t.accent : t.border,
       alignItems: on ? 'flex-end' : 'flex-start', justifyContent: 'center' }}>
       <View style={{ width: 21, height: 21, borderRadius: R.pill, backgroundColor: '#FFFFFF', ...elev(1) }} />
     </View>

@@ -61,7 +61,7 @@ export default function Tarefas({ t, user, abrir }) {
               // deste ecrã abaixo dos 44 do INVARIANTE #5 — e são o primeiro
               // que a mão encontra ao abrir as Tarefas.
               style={{ minHeight: 44, paddingHorizontal: 14, borderRadius: R.row, borderWidth: 1,
-                borderColor: on ? t.chrome : t.border, backgroundColor: on ? t.chrome : 'transparent',
+                borderColor: on ? t.accent : t.border, backgroundColor: on ? t.accent : 'transparent',
                 flexDirection: 'row', alignItems: 'center', gap: 7 }}>
               {n !== 'Todos' ? <View style={{ width: 8, height: 8, borderRadius: R.pill,
                 backgroundColor: on ? '#FFFFFF' : corDoMembro(n, MEMBERS[n]?.cor) }} /> : null}
@@ -256,7 +256,7 @@ export default function Tarefas({ t, user, abrir }) {
                 })}
                 style={{
                   flex: 1, minHeight: 44, paddingHorizontal: S.md, borderRadius: R.row, borderWidth: 1,
-                  borderColor: task.dueKey ? t.chrome : t.border, backgroundColor: task.dueKey ? t.chrome : t.card,
+                  borderColor: task.dueKey ? t.accent : t.border, backgroundColor: task.dueKey ? t.accent : t.card,
                   justifyContent: 'center',
                 }}>
                 <Text style={{ fontFamily: FONT.body, fontSize: 15, color: task.dueKey ? '#FFFFFF' : t.text2 }}>

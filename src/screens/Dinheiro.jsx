@@ -31,8 +31,8 @@ function GrelhaEnvelopes({ t, envelopes, livre, escolhido, onEscolher }) {
             accessibilityState={{ selected: on }}
             style={{ width: '47%', minHeight: 56, borderRadius: R.row, borderWidth: 1,
               paddingHorizontal: 12, justifyContent: 'center', gap: 2,
-              borderColor: on ? t.chrome : t.border,
-              backgroundColor: on ? t.chrome : t.subtle }}>
+              borderColor: on ? t.accent : t.border,
+              backgroundColor: on ? t.accent : t.subtle }}>
             <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
               color: on ? '#FFFFFF' : t.text2 }}>{e.name}</Text>
             <Text style={{ fontFamily: FONT.ui, fontSize: 11.5,
@@ -245,7 +245,13 @@ export default function Dinheiro({ t, user, onEquip }) {
                   <Text style={{ fontFamily: FONT.ui, fontSize: 13,
                     color: tight ? t.state.errTexto : t.text3 }}>{EUR(e.used)} / {EUR(e.limit)}</Text>
                 </View>
-                <Bar t={t} pct={e.limit > 0 ? (e.used / e.limit) * 100 : 0} color={e.color} height={6} />
+                {/* ⚠ `|| t.accent`: os envelopes da casa vêm do servidor com
+                    `cor` vazia — só as sementes tinham cor —, e uma barra
+                    pintada com `null` é transparente: cinco barras que
+                    pareciam a zero com 546,60 € de 590,00 € escrito ao lado.
+                    O dono da casa perguntou porque não enchiam. A cor do
+                    esquema é a mesma da barra do orçamento e das metas. */}
+                <Bar t={t} pct={e.limit > 0 ? (e.used / e.limit) * 100 : 0} color={e.color || t.accent} height={6} />
                 {tight ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
                     <Icon name="warning" size={16} color={t.state.warn} />
@@ -301,7 +307,8 @@ export default function Dinheiro({ t, user, onEquip }) {
               </Text>
             </View>
             <Pill label={acertado ? 'Concluído' : 'A Decorrer'}
-              fg={acertado ? t.state.okTexto : t.state.info}
+              // `infoDeep` sobre o tijolo azul-claro: o `info` dava 2,91.
+              fg={acertado ? t.state.okTexto : t.state.infoDeep}
               bg={acertado ? t.state.okBg : t.state.infoBg}
               border={acertado ? t.state.okBorder : t.state.info} />
           </View>
@@ -576,8 +583,8 @@ export default function Dinheiro({ t, user, onEquip }) {
               <Pressable key={e.name} onPress={() => setExp(x => ({ ...x, env: i }))}
                 accessibilityRole="button" accessibilityLabel={e.name} accessibilityState={{ selected: exp.env === i }}
                 style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: 14,
-                  borderColor: exp.env === i ? t.chrome : t.border,
-                  backgroundColor: exp.env === i ? t.chrome : t.subtle,
+                  borderColor: exp.env === i ? t.accent : t.border,
+                  backgroundColor: exp.env === i ? t.accent : t.subtle,
                   flexDirection: 'row', alignItems: 'center', gap: S.md }}>
                 <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
                   color: exp.env === i ? '#FFFFFF' : t.text2 }}>{e.name}</Text>

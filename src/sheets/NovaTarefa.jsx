@@ -113,7 +113,7 @@ export default function NovaTarefa({ t, user, onClose }) {
             onPress={() => setForm(f => ({ ...f, dueKey: form.dueKey ? null : TODAY_KEY }))}
             style={{
               flex: 1, minHeight: 44, paddingHorizontal: S.md, borderRadius: R.row, borderWidth: 1,
-              borderColor: form.dueKey ? t.chrome : t.border, backgroundColor: form.dueKey ? t.chrome : t.card,
+              borderColor: form.dueKey ? t.accent : t.border, backgroundColor: form.dueKey ? t.accent : t.card,
               justifyContent: 'center',
             }}>
             <Text style={{ fontFamily: FONT.body, fontSize: 15, color: form.dueKey ? '#FFFFFF' : t.text2 }}>
