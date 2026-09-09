@@ -108,7 +108,8 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
               return (
                 <Pressable key={d.key} onPress={() => setSel(escolhido ? null : d.key)}
                   accessibilityRole="button"
-                  accessibilityLabel={`${d.wd} ${d.dia}${d.n ? ` · ${d.n} eventos` : ''}`}
+                  // ⚠ `plural`: o rótulo lido em voz dizia «1 eventos» (09/09/2026).
+                  accessibilityLabel={`${d.wd} ${d.dia}${d.n ? ` · ${plural(d.n, 'evento', 'eventos')}` : ''}`}
                   accessibilityState={{ selected: hoje || escolhido }}
                   style={{ flex: 1, minHeight: 64, borderRadius: R.row, paddingVertical: 6,
                     alignItems: 'center', justifyContent: 'center', gap: 2,
