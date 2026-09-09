@@ -833,41 +833,25 @@ export default function Gestao({ t, user, onClose }) {
           <View style={{ gap: S.md }}>
             <View>
               <Label t={t}>Nome do envelope</Label>
+              {/* ⚠ `campo(t)`: os dois campos desta folha tinham 36 px de
+                  altura — abaixo dos 44 do INVARIANTE #5 — e nenhum rótulo em
+                  voz (09/09/2026). O estilo escrito à mão não trazia o
+                  `minHeight` que o `campo` tem. */}
               <TextInput
-                placeholder="Nome"
+                placeholder="Nome" accessibilityLabel="Nome do envelope"
                 value={input}
                 onChangeText={setInput}
-                style={{
-                  marginTop: S.sm,
-                  paddingHorizontal: S.md,
-                  paddingVertical: S.md,
-                  borderRadius: R.row,
-                  borderWidth: 1,
-                  borderColor: t.border,
-                  fontFamily: FONT.body,
-                  fontSize: 15,
-                  color: t.text1,
-                }}
+                style={campo(t)}
               />
             </View>
             <View>
               <Label t={t}>Limite mensal (€)</Label>
               <TextInput
-                placeholder="0,00"
+                placeholder="0,00" accessibilityLabel="Limite mensal em euros"
                 keyboardType="decimal-pad"
                 value={limitInput}
                 onChangeText={setLimitInput}
-                style={{
-                  marginTop: S.sm,
-                  paddingHorizontal: S.md,
-                  paddingVertical: S.md,
-                  borderRadius: R.row,
-                  borderWidth: 1,
-                  borderColor: t.border,
-                  fontFamily: FONT.body,
-                  fontSize: 15,
-                  color: t.text1,
-                }}
+                style={campo(t)}
               />
             </View>
           </View>
@@ -899,20 +883,10 @@ export default function Gestao({ t, user, onClose }) {
             <View>
               <Label t={t}>Nome do envelope</Label>
               <TextInput
-                placeholder="Ex: Entretenimento"
+                placeholder="Ex: Entretenimento" accessibilityLabel="Nome do envelope"
                 value={input}
                 onChangeText={setInput}
-                style={{
-                  marginTop: S.sm,
-                  paddingHorizontal: S.md,
-                  paddingVertical: S.md,
-                  borderRadius: R.row,
-                  borderWidth: 1,
-                  borderColor: t.border,
-                  fontFamily: FONT.body,
-                  fontSize: 16,
-                  color: t.text1,
-                }}
+                style={campo(t)}
               />
             </View>
           </View>
@@ -985,20 +959,10 @@ export default function Gestao({ t, user, onClose }) {
             <View>
               <Label t={t}>Nome da loja</Label>
               <TextInput
-                placeholder="Ex: Continente"
+                placeholder="Ex: Continente" accessibilityLabel="Nome da loja"
                 value={input}
                 onChangeText={setInput}
-                style={{
-                  marginTop: S.sm,
-                  paddingHorizontal: S.md,
-                  paddingVertical: S.md,
-                  borderRadius: R.row,
-                  borderWidth: 1,
-                  borderColor: t.border,
-                  fontFamily: FONT.body,
-                  fontSize: 15,
-                  color: t.text1,
-                }}
+                style={campo(t)}
               />
             </View>
           </View>
@@ -1041,20 +1005,10 @@ export default function Gestao({ t, user, onClose }) {
             <View>
               <Label t={t}>Nome da loja</Label>
               <TextInput
-                placeholder="Nome da loja"
+                placeholder="Nome da loja" accessibilityLabel="Nome da loja"
                 value={input}
                 onChangeText={setInput}
-                style={{
-                  marginTop: S.sm,
-                  paddingHorizontal: S.md,
-                  paddingVertical: S.md,
-                  borderRadius: R.row,
-                  borderWidth: 1,
-                  borderColor: t.border,
-                  fontFamily: FONT.body,
-                  fontSize: 15,
-                  color: t.text1,
-                }}
+                style={campo(t)}
               />
             </View>
           </View>
