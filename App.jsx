@@ -727,7 +727,13 @@ function Shell() {
             de voltar e do ícone do ecrã, e enfiar o avatar entre eles daria
             três coisas antes do título. O alvo tem 44 e a bola 36, que é o
             desenho da referência 04. */}
-        {isHome ? null : (
+        {/* ⚠ `isHome && !V`, e não `isHome`. Com uma vista de ecrã inteiro
+            aberta por cima do Início — a Gestão, a Saúde, o Modo Compras — o
+            cabeçalho é o da vista, e o avatar junto ao nome já não se desenha;
+            escondê-lo também aqui deixava o mesmo ecrã com avatar quando se
+            vinha das Tarefas e sem ele quando se vinha do Início, e sem
+            nenhum caminho para o Perfil (medido em 09/09/2026). */}
+        {isHome && !V ? null : (
           <Tap onPress={() => setPerfil(true)} label="Perfil e ajustes" size={44}>
             {/* 44, o MESMO do Início. Eram 36 aqui e 44 lá: o avatar mudava de
                 tamanho ao mudar de ecrã, e a bola da mesma pessoa não tem duas

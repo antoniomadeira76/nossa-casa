@@ -6,7 +6,7 @@
 // Não confundir com `s.registo`, que é o histórico de alterações que a
 // FAMÍLIA faz à casa. São duas coisas diferentes, e o ecrã mostrava a segunda
 // onde a referência 17 mostra a primeira.
-export const APP_VERSION = '1.11.0';
+export const APP_VERSION = '1.11.1';
 
 // ── O que a app é, e o que cada área faz ─────────────────────────────────────
 //
@@ -142,6 +142,11 @@ export const AREAS = [
 ];
 
 export const REGISTO_APP = [
+  // ── 1.11.1 ────────────────────────────────────────────────────────────────
+  // O varrimento continuou pelas folhas da Gestão, do Perfil e das tarefas.
+  { v: '1.11.1', d: '09/09/2026', k: 'corrigido', a: 'A App', t: 'A Gestão, a Saúde e os outros ecrãs inteiros abertos a partir do Início ficavam sem o avatar no cabeçalho — e sem caminho para o Perfil; o avatar está lá venha-se de onde se vier' },
+  { v: '1.11.1', d: '09/09/2026', k: 'corrigido', a: 'Gestão da Casa', t: 'Na lista de envelopes da Gestão, o limite e o que está livre colavam-se num número só — «590,00 €43,40 €»; a linha passa a ocupar o cartão todo' },
+
   // ── 1.11.0 ────────────────────────────────────────────────────────────────
   // As metas em euros, as compras que se arrumam, e a cor que faltava aos
   // botões. E um varrimento com a casa a sério apanhou uma escrita que se

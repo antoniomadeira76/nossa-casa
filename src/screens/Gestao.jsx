@@ -429,7 +429,11 @@ export default function Gestao({ t, user, onClose }) {
             setInput(env.name);
             setLimitInput(String(env.limit));
             setSheetOpen('editEnvelope');
-          }} style={{ padding: 14 }}>
+          }} style={{ padding: 14, alignItems: 'stretch' }}>
+            {/* ⚠ O `Tap` centra os filhos — é um alvo de ícone, não uma linha.
+                Sem o `stretch`, a linha lá dentro ficava com a largura do
+                texto e o «Limite: 590,00 €» colava-se ao «43,40 € livre»:
+                lia-se «590,00 €43,40 €» (09/09/2026). */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
               <View style={{ gap: 2 }}>
                 <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{env.name}</Text>

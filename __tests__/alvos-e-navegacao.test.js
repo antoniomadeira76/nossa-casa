@@ -201,6 +201,16 @@ describe('o cabeçalho é o mesmo em todos os ecrãs', () => {
     expect(nome).not.toMatch(/onPress/);
   });
 
+  it('⚠ nos outros cabeçalhos o avatar está lá MESMO com uma vista aberta por cima do Início', () => {
+    // A condição era `isHome ? null : <Tap>`. Com a Gestão aberta por cima do
+    // Início, o cabeçalho é o da vista — o avatar junto ao nome não se
+    // desenha — e o da direita também não: o mesmo ecrã tinha avatar quando
+    // se vinha das Tarefas e nenhum quando se vinha do Início, sem caminho
+    // para o Perfil (medido em 09/09/2026).
+    expect(app).toMatch(/\{isHome && !V \? null : \(/);
+    expect(app).not.toMatch(/\{isHome \? null :/);
+  });
+
   it('e o sair vive no cabeçalho, a branco como os outros ícones', () => {
     const i = app.indexOf('label="Terminar sessão"');
     expect(i).toBeGreaterThan(0);
