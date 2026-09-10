@@ -233,7 +233,9 @@ O protótipo foi construído com medição, não com impressão. Mantenha isso:
 - A largura útil do conteúdo é **355 px** num telefone de 402. Títulos longos partem.
 - Teste com os seis esquemas de cor e nos dois aspetos (claro e escuro), não só no predefinido.
 - Teste o modo criança: PIN, tarefas, cofre — e confirme que **nenhuma informação de orçamento**
-  aparece lá.
+  aparece lá. E nos seis esquemas também: a app da criança segue o `esquema_cor` e o `aspeto`
+  da linha DELA em `preferencias`. Esteve presa no Violeta até 10/09/2026 com o servidor a dizer
+  Cião — o guarda é `__tests__/a-crianca-tem-o-seu-esquema.test.js`.
 
 ---
 

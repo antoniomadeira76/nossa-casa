@@ -363,10 +363,19 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
   const kidColor = corDoMembro(kid);
   const chrome = chromeDaCrianca(kidColor);
 
-  // Tema: versão escura do tema geral, com fundo na cor da criança
+  // Tema: o da PRÓPRIA criança — esquema e aspeto da linha dela em
+  // `preferencias`, que o servidor devolve a quem entra e o `puxarCasa` põe em
+  // `schemeByUser[kid]` e `themeByUser[kid]`.
+  //
+  // ⚠ Era `buildTheme(0, dark)`: o aspeto seguia a criança e o esquema ficava
+  // preso no Violeta, fosse qual fosse o `esquema_cor` guardado. Uma preferência
+  // que o servidor guarda, o `store` lê e o ecrã ignora é a forma de
+  // «escrita que não se lê de volta» aplicada ao tema — deu-se por ela em
+  // 10/09/2026, ao tentar varrer o modo criança nos seis esquemas e ver o
+  // título «As Minhas Tarefas» em Violeta com o servidor a dizer Cião.
   const mode = (s.themeByUser[kid]) || 'claro';
   const dark = mode === 'escuro' || (mode === 'sistema' && sysDark);
-  const t = buildTheme(0, dark);
+  const t = buildTheme(s.schemeByUser[kid] ?? 0, dark);
   const onC = onChrome(chrome);
   const tasks = allTasks();
   const [mudarPin, setMudarPin] = useState(false);
