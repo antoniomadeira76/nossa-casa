@@ -356,12 +356,16 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
   const sysDark = useColorScheme() === 'dark';
   const insets = useSafeAreaInsets();
 
-  // Cor da criança — e o cabeçalho é ela ESCURECIDA até o branco se ler por
-  // cima (`chromeDaCrianca`). O #1890FF do Léo dava 3,24 com o branco: o
-  // título, o resumo e os rótulos do rodapé, todos abaixo dos 4,5 que o texto
-  // pequeno pede. Medido em 09/09/2026.
+  // Cor da criança — fica na BOLA do avatar, escurecida até a inicial branca
+  // se ler por cima (`chromeDaCrianca`; o #1890FF do Léo dava 3,24 com o
+  // branco, medido em 09/09/2026). É ela que diz quem entrou.
+  //
+  // ⚠ O cabeçalho e o rodapé levavam esta cor, e não o `chrome` do esquema: a
+  // criança mudava de esquema e o cabeçalho ficava azul. O dono da casa
+  // perguntou porquê em 10/09/2026 e decidiu: seguem o esquema, como nos
+  // adultos, e a cor do membro fica na bola.
   const kidColor = corDoMembro(kid);
-  const chrome = chromeDaCrianca(kidColor);
+  const bola = chromeDaCrianca(kidColor);
 
   // Tema: o da PRÓPRIA criança — esquema e aspeto da linha dela em
   // `preferencias`, que o servidor devolve a quem entra e o `puxarCasa` põe em
@@ -376,7 +380,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
   const mode = (s.themeByUser[kid]) || 'claro';
   const dark = mode === 'escuro' || (mode === 'sistema' && sysDark);
   const t = buildTheme(s.schemeByUser[kid] ?? 0, dark);
-  const onC = onChrome(chrome);
+  const onC = onChrome(t.chrome);
   const tasks = allTasks();
   const [mudarPin, setMudarPin] = useState(false);
 
@@ -390,13 +394,15 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
       {/* Cabeçalho */}
       <View style={{
         flexGrow: 0, flexShrink: 0, flexBasis: 'auto',
-        backgroundColor: chrome, overflow: 'hidden',
+        backgroundColor: t.chrome, overflow: 'hidden',
         paddingTop: insets.top + 10, paddingBottom: 14, paddingHorizontal: 16,
         flexDirection: 'row', alignItems: 'center', gap: 12, ...elev(3),
       }}>
-        {/* A bola é branca e a inicial leva o cabeçalho — o mesmo par do
-            `AvatarDeCabecalho` dos adultos. Era branco a 22 % com a inicial
-            branca por cima: 2,51.
+        {/* A bola leva a cor do MEMBRO escurecida e a inicial branca — é a
+            única coisa no cabeçalho que diz quem entrou, agora que o fundo é o
+            do esquema. O anel branco de 2 px separa-a do cabeçalho quando os
+            dois são da mesma família (o azul do Léo sobre o Céu). Era branca com
+            a inicial na cor do cabeçalho; antes disso, branco a 22 %: 2,51.
 
             E é ELA que abre «O meu PIN» — o mesmo gesto do avatar dos
             adultos, que abre o Perfil. Alvo de 44 à volta da bola de 40. */}
@@ -405,13 +411,13 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
           style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
           <View style={{
             width: 40, height: 40, borderRadius: R.pill,
-            backgroundColor: '#FFFFFF',
-            borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)',
+            backgroundColor: bola,
+            borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)',
             alignItems: 'center', justifyContent: 'center',
           }}>
             <Text style={{
               fontFamily: FONT.display, fontSize: 17, fontWeight: '500',
-              color: chrome,
+              color: '#FFFFFF',
             }}>{kid.charAt(0)}</Text>
           </View>
         </Pressable>
@@ -452,7 +458,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
       {/* Rodapé — dois separadores */}
       <View style={{
         flexGrow: 0, flexShrink: 0, flexBasis: 'auto',
-        backgroundColor: chrome, flexDirection: 'row',
+        backgroundColor: t.chrome, flexDirection: 'row',
         paddingTop: 6, paddingBottom: Math.max(insets.bottom, 10), paddingHorizontal: 4,
       }}>
         {[

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cabeçalho da Criança</title>
+<style>
+  :root { --pagina: #F0F2F5; --texto: #262626; --texto2: #656C7C; --cartao: #FCFCFD; --borda: #D9D9D9; }
+  body { margin: 0; background: var(--pagina); color: var(--texto); font: 14px/1.45 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--texto2); margin: 0 0 24px; max-width: 70ch; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+  .esquema { background: var(--cartao); border: 1px solid var(--borda); border-radius: 8px; padding: 16px; }
+  .esquema h2 { font-size: 13px; font-weight: 600; margin: 0 0 12px; letter-spacing: .02em; text-transform: uppercase; color: var(--texto2); }
+  .par { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .rotulo { font-size: 11px; font-weight: 600; color: var(--texto2); margin: 0 0 6px; }
+  .tel { border-radius: 8px; overflow: hidden; border: 1px solid var(--borda); }
+  .cab { display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px; }
+  .bola { width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; font-weight: 500; font-size: 13px; flex: none; }
+  .nome { color: #fff; font-weight: 500; font-size: 13px; line-height: 1.2; }
+  .resumo { font-size: 9px; line-height: 1.3; }
+  .pag { height: 56px; padding: 8px 10px; font-size: 10px; font-weight: 600; }
+  .rod { display: flex; padding: 5px 4px 7px; }
+  .rod div { flex: 1; text-align: center; font-size: 8px; font-weight: 600; }
+  .med { font-size: 11px; color: var(--texto2); margin: 8px 0 0; font-variant-numeric: tabular-nums; }
+  .med b { color: var(--texto); font-weight: 600; }
+  .mau { color: #B4232C; font-weight: 600; }
+  .nota { margin-top: 24px; max-width: 78ch; color: var(--texto2); }
+  .nota code { background: #E9EBEF; padding: 0 4px; border-radius: 3px; color: var(--texto); }
+  .escolhas { display: flex; gap: 16px; align-items: center; margin: 0 0 20px; font-size: 13px; }
+  .escolhas label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>Cabeçalho e rodapé da app da criança</h1>
+<p class="sub">À esquerda o atual: a cor do membro escurecida (<code>chromeDaCrianca</code>), igual em todos os esquemas.
+À direita o proposto: o <code>chrome</code> do esquema, como nos adultos; a bola do avatar guarda a cor do membro, com um anel branco para se destacar quando o cabeçalho tem a mesma família de cor. Cada medida é calculada aqui, com a mesma mistura em sRGB que o navegador faz.</p>
+
+<div class="escolhas">
+  <span>Criança:</span>
+  <label><input type="radio" name="kid" value="Léo" checked> Léo (#1890FF)</label>
+  <label><input type="radio" name="kid" value="Mia"> Mia (#011B58)</label>
+  <label><input type="radio" name="kid" value="Tiago"> criança nova, âmbar (#AD8B00)</label>
+  <span style="margin-left:16px">Aspeto:</span>
+  <label><input type="radio" name="aspeto" value="claro" checked> claro</label>
+  <label><input type="radio" name="aspeto" value="escuro"> escuro</label>
+</div>
+
+<div class="grelha" id="grelha"></div>
+
+<div class="nota">
+  <p><b>O que muda no código.</b> No <code>KidApp.jsx</code>, o fundo do cabeçalho e do rodapé passa de <code>chromeDaCrianca(kidColor)</code> para <code>t.chrome</code>; o alfa do subtítulo e dos rótulos passa a <code>onChrome(t.chrome)</code>. A bola do avatar deixa de ser branca com a inicial na cor do cabeçalho e passa a ser <code>chromeDaCrianca(kidColor)</code> com a inicial branca e um anel branco de 2 px — é ela que diz quem entrou. A folha do PIN e o ecrã de entrada não mudam.</p>
+  <p><b>O que se mede.</b> Branco sobre o cabeçalho (≥ 4,5 para «Olá, Léo» a 18 px), o subtítulo com alfa (≥ 4,5 a 12 px), o rótulo do rodapé com alfa (≥ 4,5 a 11 px), e a inicial branca sobre a bola (≥ 4,5 a 17 px). O anel garante ≥ 3:1 entre a bola e o cabeçalho como objeto gráfico.</p>
+</div>
+
+<script>
+  const SCHEMES = [
+    { name: 'Violeta', accent: '#722ED1', hover: '#8B4EE0', chrome: '#241239' },
+    { name: 'Cião',    accent: '#078286', hover: '#13ADB3', chrome: '#0A5B60' },
+    { name: 'Céu',     accent: '#1B5FA8', hover: '#2679C9', chrome: '#0C2A47' },
+    { name: 'Rosa',    accent: '#B5306E', hover: '#CC4285', chrome: '#8A3A5A' },
+    { name: 'Menta',   accent: '#177D5E', hover: '#1E9B75', chrome: '#2E6455' },
+    { name: 'Cinza',   accent: '#4B5563', hover: '#5E6A7C', chrome: '#646F80' },
+  ];
+  const KIDS = { 'Léo': '#1890FF', 'Mia': '#011B58', 'Tiago': '#AD8B00' };
+
+  const hex = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const toHex = (rgb) => '#' + rgb.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+  const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const lum = (rgb) => 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2]);
+  const contraste = (a, b) => { const la = lum(a), lb = lum(b); return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05); };
+  // `escurecerAte(cor, '#FFFFFF', 5.0)`: baixa a claridade até o branco chegar a 5:1, mantendo o tom.
+  const escurecerAte = (h, alvo) => { let rgb = hex(h); let k = 1; while (contraste(rgb, [255, 255, 255]) < alvo && k > 0.02) { k -= 0.01; rgb = hex(h).map(v => v * k); } return toHex(rgb); };
+  // `onChrome`: o menor alfa de branco (piso 0,65) que dá 4,6 sobre o fundo, misturado em sRGB.
+  const onChrome = (h) => { const f = hex(h); let a = 0.65; const c = (a) => contraste(f.map(v => a * 255 + (1 - a) * v), f); while (a < 1 && c(a) < 4.6) a = Math.round((a + 0.01) * 100) / 100; return a; };
+  const mistura = (a, h) => hex(h).map(v => a * 255 + (1 - a) * v);
+  const f2 = (x) => x.toFixed(2).replace('.', ',');
+  const paginaDe = (chrome, escuro) => escuro ? toHex(hex(chrome).map(v => v * 0.28 + 2)) : '#F0F2F5';
+  const textoDe = (escuro) => escuro ? '#E6E8EC' : '#262626';
+
+  const tel = (chrome, bola, inicialCor, anel, kid, escuro, s, marcado) => {
+    const a = onChrome(chrome);
+    const sub = `rgba(255,255,255,${a.toFixed(2)})`;
+    return `<div class="tel">
+      <div class="cab" style="background:${chrome}">
+        <div class="bola" style="background:${bola};color:${inicialCor};${anel ? 'box-shadow: 0 0 0 2px rgba(255,255,255,.9)' : 'border:1px solid rgba(255,255,255,.5)'}">${kid.charAt(0)}</div>
+        <div><div class="nome">Olá, ${kid}</div><div class="resumo" style="color:${sub}">3 pontos por pagar · 1,20 € no cofre</div></div>
+      </div>
+      <div class="pag" style="background:${paginaDe(chrome, escuro)};color:${escuro ? s.hover : s.accent}">As Minhas Tarefas</div>
+      <div class="rod" style="background:${chrome}"><div style="color:#fff">Tarefas</div><div style="color:${sub}">O Meu Cofre</div></div>
+    </div>`;
+  };
+
+  const medidas = (chrome, bola, inicialCor) => {
+    const a = onChrome(chrome);
+    const cBranco = contraste([255, 255, 255], hex(chrome));
+    const cSub = contraste(mistura(a, chrome), hex(chrome));
+    const cIni = contraste(hex(inicialCor), hex(bola));
+    const cBola = contraste(hex(bola), hex(chrome));
+    const m = (v, min) => `<b class="${v < min ? 'mau' : ''}">${f2(v)}</b>`;
+    return `<p class="med">branco ${m(cBranco, 4.5)} · subtítulo a ${Math.round(a * 100)} % ${m(cSub, 4.5)} · inicial ${m(cIni, 4.5)} · bola/cabeçalho ${m(cBola, 3)}${cBola < 3 ? ' (o anel resolve)' : ''}</p>`;
+  };
+
+  const desenhar = () => {
+    const kid = document.querySelector('input[name=kid]:checked').value;
+    const escuro = document.querySelector('input[name=aspeto]:checked').value === 'escuro';
+    const corKid = KIDS[kid];
+    const chromeKid = escurecerAte(corKid, 5.0);
+    document.getElementById('grelha').innerHTML = SCHEMES.map(s => `
+      <section class="esquema">
+        <h2>${s.name}</h2>
+        <div class="par">
+          <div><p class="rotulo">Atual — cor do membro</p>${tel(chromeKid, '#FFFFFF', chromeKid, false, kid, escuro, s)}${medidas(chromeKid, '#FFFFFF', chromeKid)}</div>
+          <div><p class="rotulo">Proposto — chrome do esquema</p>${tel(s.chrome, chromeKid, '#FFFFFF', true, kid, escuro, s)}${medidas(s.chrome, chromeKid, '#FFFFFF')}</div>
+        </div>
+      </section>`).join('');
+  };
+  document.querySelectorAll('input').forEach(i => i.addEventListener('change', desenhar));
+  desenhar();
+</script>
+</body>
+</html>

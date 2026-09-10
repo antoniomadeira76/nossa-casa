@@ -26,7 +26,11 @@ const React = require('react');
 const TestRenderer = require('react-test-renderer');
 const { SafeAreaProvider } = require('react-native-safe-area-context');
 const { StoreProvider, useStore } = require('../src/store');
-const { buildTheme, SCHEMES } = require('../src/theme');
+const { buildTheme, SCHEMES, chromeDaCrianca, corDoMembro, R } = require('../src/theme');
+
+// Um estilo do react-native pode ser objeto, lista ou lista de listas.
+const achatar = (style) => [].concat(style || []).flat(Infinity).filter(Boolean)
+  .reduce((a, b) => ({ ...a, ...b }), {});
 
 const RAIZ = path.join(__dirname, '..');
 const KidApp = require('../src/KidApp').default;
@@ -73,6 +77,26 @@ describe('⚠ a app da criança segue o esquema de cor da criança', () => {
     expect(cor).toBe(buildTheme(i, false).actFg);
     // E não o do Violeta — a menos que ESTE seja o Violeta.
     if (i !== 0) expect(cor).not.toBe(buildTheme(0, false).actFg);
+  });
+
+  // ⚠ Segunda descoberta do mesmo dia: o acento seguia o esquema e o CABEÇALHO
+  // e o RODAPÉ continuavam na cor do membro — «o cabeçalho e rodapé não estão a
+  // mudar quando se escolhe outro esquema». Decisão do dono da casa: seguem o
+  // `chrome` do esquema, como nos adultos; a cor do membro fica na bola.
+  it.each(SCHEMES.map((sc, i) => [sc.name, i]))('%s: o cabeçalho e o rodapé levam o `chrome` desse esquema, e a bola a cor do membro', (nome, i) => {
+    const r = kidCom({ schemeByUser: { Léo: i } });
+    const chrome = buildTheme(i, false).chrome;
+    const fundos = r.root.findAll(n => n.type === 'View')
+      .map(n => achatar(n.props.style).backgroundColor).filter(Boolean);
+    // Duas superfícies com o chrome: o cabeçalho e o rodapé.
+    expect(fundos.filter(c => c === chrome).length).toBeGreaterThanOrEqual(2);
+    // E NENHUMA com a cor do membro escurecida — essa é só a bola, que é um
+    // círculo (borderRadius) e não uma faixa.
+    const bolas = r.root.findAll(n => n.type === 'View' && achatar(n.props.style).backgroundColor === chromeDaCrianca(corDoMembro('Léo')));
+    expect(bolas).toHaveLength(1);
+    expect(achatar(bolas[0].props.style).borderRadius).toBe(R.pill);
+    // A inicial branca sobre a bola lê-se.
+    expect(corDoTexto(r, 'L')).toBe('#FFFFFF');
   });
 
   it('sem preferência guardada fica no primeiro esquema — o que a app sempre fez', () => {

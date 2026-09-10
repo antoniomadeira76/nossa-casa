@@ -60,14 +60,16 @@ describe('⚠ o cabeçalho da criança lê-se em todas as cores da paleta', () =
     expect(chromeDaCrianca(corDoMembro('Léo'))).not.toBe(corDoMembro('Léo'));
   });
 
-  it('a KidApp pinta o cabeçalho e o rodapé com `chromeDaCrianca`, nunca com a cor crua', () => {
-    expect(kidApp).toMatch(/const chrome = chromeDaCrianca\(kidColor\)/);
+  it('a KidApp pinta a BOLA com `chromeDaCrianca`, nunca com a cor crua — e o cabeçalho com o esquema', () => {
+    // Desde 10/09/2026 o cabeçalho e o rodapé são o `chrome` do esquema da
+    // criança (ver `a-crianca-tem-o-seu-esquema`); a cor do membro, escurecida,
+    // fica na bola do avatar com a inicial branca por cima.
+    expect(kidApp).toMatch(/const bola = chromeDaCrianca\(kidColor\)/);
     expect(kidApp).not.toMatch(/backgroundColor: kidColor/);
-    expect(kidApp).toMatch(/onChrome\(chrome\)/);
-    // A inicial leva o cabeçalho sobre a bola branca, como no `AvatarDeCabecalho`.
+    expect(kidApp).toMatch(/onChrome\(t\.chrome\)/);
     const bola = kidApp.slice(kidApp.indexOf('kid.charAt(0)') - 500, kidApp.indexOf('kid.charAt(0)'));
-    expect(bola).toMatch(/backgroundColor: '#FFFFFF'/);
-    expect(bola).toMatch(/color: chrome/);
+    expect(bola).toMatch(/backgroundColor: bola/);
+    expect(bola).toMatch(/color: '#FFFFFF'/);
   });
 
   it('a bola da criança na ENTRADA leva o mesmo cabeçalho — e o cinzento do cartão lê-se', () => {

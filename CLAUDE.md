@@ -234,8 +234,10 @@ O protótipo foi construído com medição, não com impressão. Mantenha isso:
 - Teste com os seis esquemas de cor e nos dois aspetos (claro e escuro), não só no predefinido.
 - Teste o modo criança: PIN, tarefas, cofre — e confirme que **nenhuma informação de orçamento**
   aparece lá. E nos seis esquemas também: a app da criança segue o `esquema_cor` e o `aspeto`
-  da linha DELA em `preferencias`. Esteve presa no Violeta até 10/09/2026 com o servidor a dizer
-  Cião — o guarda é `__tests__/a-crianca-tem-o-seu-esquema.test.js`.
+  da linha DELA em `preferencias` — acento, cabeçalho e rodapé (`t.chrome`, como nos adultos);
+  a cor do membro fica só na bola do avatar. Esteve presa no Violeta até 10/09/2026 com o
+  servidor a dizer Cião, e o cabeçalho ficou azul mais umas horas — o guarda é
+  `__tests__/a-crianca-tem-o-seu-esquema.test.js`.
 
 ---
 

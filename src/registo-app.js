@@ -143,6 +143,7 @@ export const AREAS = [
 
 export const REGISTO_APP = [
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
+  { v: '1.11.1', d: '10/09/2026', k: 'alterado', a: 'A App', t: 'Na app da criança o cabeçalho e o rodapé passam a ter a cor do esquema, como nos adultos. Tinham a cor da criança e não mudavam com o esquema; essa cor fica agora na bola do avatar, que é o que diz quem entrou' },
   { v: '1.11.1', d: '10/09/2026', k: 'corrigido', a: 'A App', t: 'A app da criança segue o esquema de cor guardado para ela, como já seguia o aspeto claro ou escuro. Ficava sempre em Violeta, fosse qual fosse a preferência no servidor' },
   { v: '1.11.1', d: '10/09/2026', k: 'corrigido', a: 'A App', t: 'A data passa sozinha à meia-noite: a app deixada aberta dizia «Quarta, 09/09» na quinta até recarregar. Agora confere o dia a cada meio minuto e ao voltar à frente, sem recarregar nem reiniciar a sessão' },
   { v: '1.11.1', d: '10/09/2026', k: 'alterado', a: 'Dinheiro', t: 'Os cofres das crianças vivem no Dinheiro, como «Cofres das Crianças»: uma linha por criança com os pontos por pagar e o saldo, e a linha abre o cofre. Estavam nas Tarefas, onde só a origem dos pontos fazia sentido' },
