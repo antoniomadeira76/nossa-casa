@@ -216,12 +216,13 @@ Saudação com a data e a contagem viva de eventos e tarefas. Três números no 
 (só admin). **Abrir mês seguinte** — distribuir o rendimento, reinicia os gastos.
 **Contas entre Nós** com extrato e *Acertar Contas* (parcial). **Registar Despesa** — valor
 escrevível, envelope em acordeão, quem pagou, divisão, fotografia do recibo.
-**Equipamentos da Casa** e **Saúde da Família** como duas linhas num contentor. **Metas**.
+**Cofres das Crianças** — uma linha por criança (pontos por pagar, saldo), toque abre o cofre;
+veio das Tarefas em 10/09/2026. **Equipamentos da Casa** e **Saúde da Família** como duas
+linhas num contentor. **Metas**.
 
 ## 3.6 Tarefas
 
-CTA **Acrescentar tarefa**. Filtro por membro com pontos de cor. **Semanada das Crianças** —
-cartão por criança, toque abre o cofre. **Rotinas e Tarefas** — as linhas, ordenadas por
+CTA **Acrescentar tarefa**. Filtro por membro com pontos de cor. **Rotinas e Tarefas** — as linhas, ordenadas por
 urgência. O lápis abre *Gerir Tarefa*: reatribuir, pontos, urgência, prazo, rotação, ordem,
 remover.
 

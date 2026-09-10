@@ -64,8 +64,9 @@ const FICAM_REDONDOS = {
   'src/CampoData.jsx': ['disco do dia escolhido no calendário'],
   'src/screens/ModoCompras.jsx': ['barra de progresso do corredor'],
   'src/screens/Tarefas.jsx': [
+    // O «disco de cor da criança no cofre» saiu daqui com a semanada, que
+    // passou ao Dinheiro em 10/09/2026 — e lá a linha usa o `Avatar`.
     'disco de cor do membro na pastilha de filtro, 8 px',
-    'disco de cor da criança no cofre, 8 px',
   ],
   'src/sheets/EscolherAvatar.jsx': [
     'bola do avatar de uma figura',

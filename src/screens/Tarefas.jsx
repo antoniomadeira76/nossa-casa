@@ -2,15 +2,14 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
-import { EUR, subtituloDaTarefa } from '../format';
+import { subtituloDaTarefa } from '../format';
 
-import { Card, SectionTitle, Linha, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe } from '../ui';
+import { SectionTitle, Linha, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
 import ListaArrastavel, { ATRASO_PARA_PEGAR } from '../ListaArrastavel';
 import NovaTarefa from '../sheets/NovaTarefa';
-import Cofre from '../sheets/Cofre';
 
 // Urgência: a caixa do número leva a cor, e a lista ordena-se por ela.
 // A forma acompanha a cor — cheia, tracejada, contorno — para não depender do matiz.
@@ -27,14 +26,13 @@ const URG = [
 // chegada — é o que faz uma tarefa tocada no Início levar àquela tarefa.
 export default function Tarefas({ t, user, abrir }) {
   const st = useStore();
-  const { s, set, allTasks, kidPts, dueOf, isRecurring, removerTarefa, membros: MEMBERS,
+  const { s, set, allTasks, dueOf, isRecurring, removerTarefa, membros: MEMBERS,
           membrosDaCasa, criancas, pontosNasTarefas, editarTarefa } = st;
   const [filter, setFilter] = useState('Todos');
   const [manage, setManage] = useState(abrir || null);
   React.useEffect(() => { if (abrir) setManage(abrir); }, [abrir]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [aApagar, setAApagar] = useState(null);
-  const [cofre, setCofre] = useState(null);   // criança cujo cofre está aberto
 
   const all = allTasks();
   const shown = filter === 'Todos' ? all : all.filter(x => x.who === filter);
@@ -71,53 +69,13 @@ export default function Tarefas({ t, user, abrir }) {
         })}
       </View>
 
-      {criancas.length === 0 || !pontosNasTarefas ? null : (
-      <View>
-        <SectionTitle t={t}>Semanada das Crianças</SectionTitle>
-        <Card t={t} style={{ gap: S.lg }}>
-          {/* A 0 EUR os pontos contam e nao valem dinheiro — a linha do
-              cambio nao teria sentido. */}
-          <Label t={t}>{s.pointValue > 0 ? `1 pt = ${EUR(s.pointValue)}` : 'Pontos sem valor em euros'}</Label>
-          <View style={{ flexDirection: 'row', gap: S.md }}>
-            {criancas.map(k => {
-              // ⚠ Sem os valores por omissão, uma criança acrescentada à
-              // casa mostrava «NaN pt».
-              //
-              // O DEMO() semeia o `paidPts` só para as crianças da
-              // demonstração; uma criança nova não tinha entrada, e
-              // `numero - undefined` é NaN. Este era o ÚNICO sítio que
-              // subtraía sem defesa — o Cofre, o KidApp e a Gestão já a
-              // tinham, o que fez o defeito aparecer num ecrã só.
-              const pend = (kidPts[k] ?? 0) - (s.paidPts[k] ?? 0);
-              return (
-                <Pressable key={k} onPress={() => setCofre(k)}
-                  accessibilityRole="button" accessibilityLabel={`Cofre ${st.deNome(k)} ${k}`}
-                  style={({ pressed }) => ({ flex: 1, backgroundColor: pressed ? t.card : t.subtle,
-                    borderWidth: 1, borderColor: t.border,
-                    // ⚠ `R.row`, e não `R.card`: é um tocável, e o canto de
-                    // tudo o que se toca é 6. Escapou ao varrimento de 07/09
-                    // porque parece um cartão — mas abre o cofre ao toque.
-                    borderRadius: R.row, padding: 14, gap: S.md })}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <View style={{ width: 8, height: 8, borderRadius: R.pill, backgroundColor: corDoMembro(k, MEMBERS[k]?.cor) }} />
-                    <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 14.5, color: t.text2 }}>{k}</Text>
-                    <Icon name="caretRight" size={16} color={t.text3} />
-                  </View>
-                  <Text style={{ fontFamily: FONT.display, fontSize: 20, color: t.text2 }}>{pend} pt</Text>
-                  {s.pointValue > 0 ? (
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{EUR(pend * s.pointValue)} por pagar</Text>
-                  ) : null}
-                  <View style={{ height: 1, backgroundColor: t.divider }} />
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.state.okTexto }}>
-                    No cofre {EUR(st.vaultOf(k))}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </Card>
-      </View>
-      )}
+      {/* ⚠ A «Semanada das Crianças» SAIU daqui (10/09/2026). O dono da casa
+          achou que não fazia sentido junto das tarefas, e tinha razão: o que
+          liga as duas coisas é só a origem dos pontos. O valor do ponto, o
+          que está por pagar, o saldo e a folha do cofre são DINHEIRO da casa
+          — e a Documentação já os descrevia no Dinheiro. Vive agora lá, como
+          «Cofres das Crianças». Aqui ficam só as tarefas; os pontos de cada
+          uma leem-se na pastilha da linha e no filtro por membro. */}
 
       <View>
         <SectionTitle t={t} right={<Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>por urgência</Text>}>
@@ -343,7 +301,6 @@ export default function Tarefas({ t, user, abrir }) {
           onCancel={() => setAApagar(null)} />
       ) : null}
 
-      {cofre ? <Cofre t={t} kid={cofre} onClose={() => setCofre(null)} /> : null}
     </>
   );
 }

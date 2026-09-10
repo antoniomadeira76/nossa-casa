@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cofres das crianças no Dinheiro</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Inter:wght@400;600&display=swap">
+<style>
+  /* Tokens do esquema Cião, aspeto claro — o perfil do dono da casa */
+  :root {
+    --chrome: #0A5B60; --accent: #078286; --act-fg: #06797C; --act-bg: rgba(7,130,134,.10); --act-brd: rgba(7,130,134,.38);
+    --page: #F0F2F5; --card: #FFFFFF; --subtle: #F6F7F9;
+    --text1: #262626; --text2: #434343; --text3: #656C7C; --slate: #606E90;
+    --border: #E3E7EE; --divider: #EEF1F5;
+    --ok-fg: #237804; --err-fg: #A8071A; --warn-fg: #8F5600; --warn-bg: #FFF7E6; --warn-brd: #FFD591;
+    --leo: #006ED5; --mia: #011B58;
+    --display: 'Roboto', system-ui, sans-serif; --ui: 'Inter', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #1B1B22; color: #E8E8EE; font-family: var(--ui); }
+  header.topo { padding: 22px 28px 14px; }
+  header.topo h1 { font-family: var(--display); font-weight: 500; font-size: 22px; margin: 0 0 6px; }
+  header.topo p { margin: 0; font-size: 13px; color: #A8A8B8; max-width: 72ch; line-height: 1.5; }
+  .controlos { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 28px 16px; align-items: center; }
+  .rot { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #8A8A9C; margin-right: 6px; }
+  button.opc { font: 600 12px var(--ui); padding: 8px 12px; border-radius: 6px; border: 1px solid #3A3A48; background: #26262F; color: #DADAE6; cursor: pointer; min-height: 36px; }
+  button.opc[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .palco { display: grid; grid-template-columns: 402px 402px 1fr; gap: 24px; padding: 0 28px 40px; align-items: start; }
+  @media (max-width: 1100px) { .palco { grid-template-columns: 402px 1fr; } }
+  @media (max-width: 860px) { .palco { grid-template-columns: 1fr; } }
+  .fone { width: 402px; height: 760px; border-radius: 28px; overflow: hidden; background: var(--page); display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.5); border: 1px solid #333; }
+  .cab { flex: none; min-height: 80px; background: var(--chrome); display: flex; align-items: center; gap: 12px; padding: 18px 16px; color: #fff; }
+  .cab .ico { width: 26px; height: 26px; border: 1.75px solid #fff; border-radius: 5px; }
+  .cab .tit { font: 500 20px var(--display); }
+  .cab .sub { font: 400 12px var(--ui); color: rgba(255,255,255,.72); margin-top: 2px; }
+  .cab .av { margin-left: auto; width: 44px; height: 44px; border-radius: 50%; background: #fff; border: 2px solid rgba(255,255,255,.5); }
+  .conteudo { flex: 1; min-height: 0; overflow: auto; padding: 16px 16px 24px; display: flex; flex-direction: column; gap: 24px; }
+  .rod { flex: none; height: 64px; background: var(--chrome); display: flex; justify-content: space-around; align-items: center; }
+  .rod span { font: 600 10px var(--ui); color: rgba(255,255,255,.72); display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .rod span i { width: 20px; height: 20px; border: 1.75px solid currentColor; border-radius: 4px; display: block; }
+  .rod span.on { color: #fff; }
+
+  /* Desenho C, já na app */
+  .stit { font: 600 13px var(--ui); color: var(--act-fg); padding: 0 2px 8px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; letter-spacing: .2px; }
+  .stit b { font-weight: 400; color: var(--text3); }
+  .item { min-height: 52px; padding: 4px 2px; border-bottom: 1px solid var(--divider); display: flex; align-items: center; gap: 12px; color: var(--text2); }
+  .item:last-child { border-bottom: 0; }
+  .card { background: var(--card); border-radius: 8px; padding: 14px 16px; box-shadow: 0 2px 6px rgba(76,123,166,.10); }
+  .label { font: 600 12px var(--ui); color: var(--slate); }
+  .num { font: 400 28px var(--display); color: var(--text2); }
+  .t { font: 400 15px var(--display); color: var(--text2); }
+  .s { font: 400 11.5px var(--ui); color: var(--text3); margin-top: 2px; }
+  .ponto { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
+  .bola { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 500 13px var(--display); color: #fff; flex: none; }
+  .chev { width: 8px; height: 8px; border-right: 1.75px solid var(--text3); border-top: 1.75px solid var(--text3); transform: rotate(45deg); flex: none; margin-right: 4px; }
+  .valor { font: 600 13px var(--ui); color: var(--text2); white-space: nowrap; text-align: right; }
+  .valor.ok { color: var(--ok-fg); } .valor.err { color: var(--err-fg); }
+  .valor small { display: block; font-weight: 400; font-size: 11px; color: var(--text3); }
+  .btn { font: 700 13px var(--display); color: var(--act-fg); background: var(--act-bg); border: 1px solid var(--act-brd); border-radius: 6px; min-height: 44px; padding: 0 12px; display: inline-flex; align-items: center; }
+  .btn.cheio { width: 100%; justify-content: center; min-height: 48px; }
+  .add { border: 1px dashed var(--act-brd); border-radius: 6px; min-height: 44px; display: flex; align-items: center; justify-content: center; font: 500 14px var(--display); color: var(--act-fg); }
+  .pill { font: 600 11px var(--ui); padding: 4px 10px; border-radius: 100px; border: 1px solid; }
+  .pill.pt { color: var(--text2); background: var(--card); border-color: var(--border); }
+  .chip { font: 600 13px var(--ui); padding: 0 14px; min-height: 44px; border-radius: 6px; border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 7px; color: var(--text2); }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tile { display: flex; gap: 8px; }
+  .tile > div { flex: 1; background: var(--subtle); border: 1px solid var(--border); border-radius: 6px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .tile .nome { display: flex; align-items: center; gap: 8px; font: 400 14.5px var(--display); color: var(--text2); }
+  .tile .pts { font: 400 20px var(--display); color: var(--text2); }
+  .tile .sub { font: 400 11.5px var(--ui); color: var(--text3); }
+  .tile hr { border: 0; border-top: 1px solid var(--divider); margin: 0; }
+  .tile .cofre { font: 400 11.5px var(--ui); color: var(--ok-fg); }
+  .tile .cofre.err { color: var(--err-fg); }
+
+  .painel { color: #DADAE6; }
+  .painel h2 { font: 500 18px var(--display); margin: 8px 0 6px; }
+  .painel h3 { font: 600 11px var(--ui); letter-spacing: .06em; text-transform: uppercase; color: #8A8A9C; margin: 18px 0 6px; }
+  .painel p { font-size: 13px; line-height: 1.55; color: #B8B8C8; margin: 0 0 10px; max-width: 60ch; }
+  table.med { border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+  table.med th, table.med td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #33333F; font-variant-numeric: tabular-nums; }
+  table.med th { color: #8A8A9C; font-weight: 600; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
+  table.med tr.sel td { color: #fff; background: rgba(7,130,134,.22); }
+  .legenda { font-size: 11px; color: #8A8A9C; text-align: center; margin: 6px 0 0; }
+</style>
+</head>
+<body>
+<header class="topo">
+  <h1>Cofres das crianças no Dinheiro</h1>
+  <p>O cartão «Semanada das Crianças» sai das Tarefas e passa ao Dinheiro, onde a Documentação já o descreve. À esquerda o Dinheiro com a secção nova, entre «Contas entre Nós» e «Equipamentos»; ao meio as Tarefas depois da mudança. Três desenhos para a secção e dois para o que fica nas Tarefas. Os números da tabela são medidos na página.</p>
+</header>
+<div class="controlos">
+  <span class="rot">Secção no Dinheiro</span><div id="alts" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  <span class="rot" style="margin-left:18px">O que fica nas Tarefas</span><div id="tars" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+</div>
+<div class="palco">
+  <div>
+    <div class="fone"><div class="cab"><div class="ico"></div><div><div class="tit">Dinheiro</div><div class="sub">Conta conjunta · Setembro de 2026</div></div><div class="av"></div></div>
+      <div class="conteudo" id="dinheiro"></div>
+      <div class="rod"><span><i></i>Início</span><span class="on"><i></i>Dinheiro</span><span><i></i>Tarefas</span><span><i></i>Compras</span><span><i></i>Agenda</span></div></div>
+    <p class="legenda">Dinheiro, com a secção nova</p>
+  </div>
+  <div>
+    <div class="fone"><div class="cab"><div class="ico"></div><div><div class="tit">Tarefas</div><div class="sub">Semana de 07/09 · rotinas e tarefas</div></div><div class="av"></div></div>
+      <div class="conteudo" id="tarefas"></div>
+      <div class="rod"><span><i></i>Início</span><span><i></i>Dinheiro</span><span class="on"><i></i>Tarefas</span><span><i></i>Compras</span><span><i></i>Agenda</span></div></div>
+    <p class="legenda">Tarefas, depois da mudança</p>
+  </div>
+  <div class="painel">
+    <h2 id="p-tit"></h2><p id="p-desc"></p><p id="p-troca"></p>
+    <h3>Nas Tarefas</h3><p id="t-desc"></p>
+    <h3>Alturas medidas</h3>
+    <table class="med" id="med"></table>
+    <p style="font-size:12px;color:#8A8A9C;margin-top:10px">Hoje o cartão nas Tarefas mede <span id="hoje"></span> px, com o título. A folha do cofre (movimentos, pagar semanada, dar bónus) vai com a secção e não muda.</p>
+  </div>
+</div>
+<script>
+const CRIANCAS = [
+  { n: 'Léo', cor: 'var(--leo)', ini: 'L', pts: 3, porPagar: '0,30 €', cofre: '1,20 €', neg: false },
+  { n: 'Mia', cor: 'var(--mia)', ini: 'M', pts: 2, porPagar: '0,20 €', cofre: '−2,20 €', neg: true },
+];
+const ALTS = [
+  { k: 'a', nome: 'A · Cartões lado a lado', desc: 'O cartão de hoje, mudado de sítio: um tijolo por criança, com os pontos em grande, o que está por pagar, e o saldo do cofre em baixo. A linha «1 pt = 0,10 €» fica no topo.', troca: 'É a mudança mais pequena — o mesmo desenho noutro ecrã. Mas é o único cartão de tijolos do Dinheiro: os envelopes e as metas já são linhas planas, e isto fica a parecer de outra app. Com três crianças os tijolos apertam.' },
+  { k: 'b', nome: 'B · Uma linha por criança', desc: 'Desenho C, como os envelopes e as metas: uma linha por criança com o avatar, o nome, «3 pt · 0,30 € por pagar» por baixo, e o saldo do cofre à direita. O «1 pt = 0,10 €» vai à direita do título. Toca-se na linha e abre o cofre.', troca: 'Fica igual ao resto do Dinheiro e cresce bem com mais crianças. Perde-se o número grande dos pontos — mas os pontos são das Tarefas; aqui o que interessa é o dinheiro.' },
+  { k: 'c', nome: 'C · Linha com «Pagar» à mão', desc: 'Como a B, mas cada linha traz o botão «Pagar 0,30 €» à direita, em tinta, e o saldo passa para a segunda linha. Pagar a semanada deixa de pedir a folha; a folha fica para o bónus e os movimentos.', troca: 'Um toque a menos para a ação mais frequente, no dia da semanada. Em troca a linha tem dois alvos — o botão e a linha —, que é o erro #6 do CLAUDE.md a rondar; e o saldo perde destaque.' },
+];
+const TARS = [
+  { k: 't1', nome: 'T1 · Só os pontos', desc: 'Uma linha por criança com os pontos da semana, «3 pt · 2 por confirmar», sem euros. É o que as Tarefas sabem: quantos pontos cada criança ganhou.' },
+  { k: 't2', nome: 'T2 · Nada', desc: 'A secção sai por inteiro. O filtro por membro no topo já mostra as tarefas de cada criança, e os pontos ganhos veem-se na Semana do modo criança e no cofre.' },
+];
+const cabecaDinheiro = `
+  <div class="card"><div class="label">Disponível</div><div class="num">771,36 €</div><div class="s">1 248,64 € gastos · de 2 020,00 €</div></div>
+  <div class="item"><span class="ponto" style="background:var(--slate)"></span><span style="flex:1"><div class="t">Registar Despesa</div><div class="s">Combustível, farmácia, restaurante…</div></span><span class="chev"></span></div>
+  <section><div class="stit">Envelopes<b>6</b></div>
+    <div class="item"><span style="flex:1"><div class="t">Mercearia</div></span><span class="valor">546,60 €<small>de 590,00 €</small></span></div>
+    <div class="item"><span style="flex:1"><div class="t">Casa &amp; contas</div></span><span class="valor">357,69 €<small>de 780,00 €</small></span></div></section>
+  <section><div class="stit">Contas entre Nós<b>19 despesas</b></div>
+    <div class="card" style="margin-top:8px"><div class="t">A Rita deve ao António 83,67 €</div><div class="s">19 despesas partilhadas este mês</div></div></section>`;
+const secaoCofres = (alt) => {
+  const tit = `<div class="stit">Cofres das Crianças<b>1 pt = 0,10 €</b></div>`;
+  if (alt === 'a') return `<section id="sec-cofres"><div class="stit">Cofres das Crianças<b>pago aos sábados</b></div>
+    <div class="card" style="margin-top:8px;display:flex;flex-direction:column;gap:16px"><div class="label">1 pt = 0,10 €</div>
+    <div class="tile">${CRIANCAS.map(c => `<div><div class="nome"><span class="ponto" style="background:${c.cor}"></span><span style="flex:1">${c.n}</span><span class="chev"></span></div><div class="pts">${c.pts} pt</div><div class="sub">${c.porPagar} por pagar</div><hr><div class="cofre ${c.neg ? 'err' : ''}">No cofre ${c.cofre}</div></div>`).join('')}</div></div></section>`;
+  if (alt === 'b') return `<section id="sec-cofres">${tit}${CRIANCAS.map(c => `<div class="item"><span class="bola" style="background:${c.cor}">${c.ini}</span><span style="flex:1"><div class="t">${c.n}</div><div class="s">${c.pts} pt · ${c.porPagar} por pagar</div></span><span class="valor ${c.neg ? 'err' : 'ok'}">${c.cofre}<small>no cofre</small></span><span class="chev"></span></div>`).join('')}</section>`;
+  return `<section id="sec-cofres">${tit}${CRIANCAS.map(c => `<div class="item"><span class="bola" style="background:${c.cor}">${c.ini}</span><span style="flex:1"><div class="t">${c.n}</div><div class="s">${c.pts} pt esta semana · <span class="${c.neg ? 'valor err' : 'valor ok'}" style="font-size:11.5px">${c.cofre}</span> no cofre</div></span><span class="btn">Pagar ${c.porPagar}</span></div>`).join('')}</section>`;
+};
+const caudaDinheiro = `
+  <section><div class="stit">Equipamentos da Casa</div><div class="item"><span style="flex:1"><div class="t">Equipamentos registados</div><div class="s">4 equipamentos · 1 garantia a expirar</div></span><span class="chev"></span></div></section>
+  <section><div class="stit">Metas da Família<b>0,00 €</b></div><div class="add" style="margin-top:8px">+ acrescentar meta</div></section>`;
+const tarefasHoje = `<div class="card" id="hoje-card" style="display:flex;flex-direction:column;gap:16px"><div class="label">1 pt = 0,10 €</div>
+    <div class="tile">${CRIANCAS.map(c => `<div><div class="nome"><span class="ponto" style="background:${c.cor}"></span><span style="flex:1">${c.n}</span><span class="chev"></span></div><div class="pts">${c.pts} pt</div><div class="sub">${c.porPagar} por pagar</div><hr><div class="cofre ${c.neg ? 'err' : ''}">No cofre ${c.cofre}</div></div>`).join('')}</div></div>`;
+const tarefas = (tar) => `
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="chip on">Todos</span><span class="chip"><span class="ponto" style="background:var(--leo)"></span>Léo</span><span class="chip"><span class="ponto" style="background:#241239"></span>António</span><span class="chip"><span class="ponto" style="background:#722ED1"></span>Rita</span></div>
+  ${tar === 't1' ? `<section id="sec-pontos"><div class="stit">Pontos da Semana<b>por confirmar 2</b></div>${CRIANCAS.map(c => `<div class="item"><span class="ponto" style="background:${c.cor}"></span><span style="flex:1"><div class="t">${c.n}</div></span><span class="valor">${c.pts} pt<small>${c.n === 'Léo' ? '2 por confirmar' : 'tudo confirmado'}</small></span></div>`).join('')}</section>` : ''}
+  <section><div class="stit">Rotinas e Tarefas<b>por urgência</b></div>
+    <div class="item"><span class="pill pt" style="background:#CE0002;color:#fff;border-color:#CE0002">1</span><span class="bola" style="background:#241239">A</span><span style="flex:1"><div class="t">Pagar o condomínio</div><div class="s" style="color:var(--warn-fg)">António · hoje às 00:00</div></span></div>
+    <div class="item"><span class="pill pt" style="background:#CE0002;color:#fff;border-color:#CE0002">2</span><span class="bola" style="background:var(--leo)">L</span><span style="flex:1"><div class="t">Levar o lixo</div><div class="s" style="color:var(--err-fg)">Léo · atrasada 2 dias</div></span><span class="pill pt">2 pt</span></div>
+    <div class="item"><span class="pill pt">3</span><span class="bola" style="background:#08979C">T</span><span style="flex:1"><div class="t">Entregar os livros na biblioteca</div><div class="s">Tomás · atrasada 2 dias</div></span></div>
+    <div class="item"><span class="pill pt">4</span><span class="bola" style="background:var(--mia)">M</span><span style="flex:1"><div class="t">Pôr a mesa</div><div class="s">Mia · Todos os dias</div></span><span class="pill pt">1 pt</span></div>
+  </section>`;
+
+let alt = 'b', tar = 't1';
+function pintar() {
+  document.getElementById('dinheiro').innerHTML = cabecaDinheiro + secaoCofres(alt) + caudaDinheiro;
+  document.getElementById('tarefas').innerHTML = tarefas(tar);
+  const a = ALTS.find(x => x.k === alt), t = TARS.find(x => x.k === tar);
+  document.getElementById('p-tit').textContent = a.nome; document.getElementById('p-desc').textContent = a.desc; document.getElementById('p-troca').textContent = a.troca;
+  document.getElementById('t-desc').textContent = t.nome + ' — ' + t.desc;
+  // medir as três secções e o cartão de hoje
+  const h = {}; for (const x of ALTS) { document.getElementById('dinheiro').innerHTML = cabecaDinheiro + secaoCofres(x.k) + caudaDinheiro; h[x.k] = Math.round(document.getElementById('sec-cofres').getBoundingClientRect().height); }
+  document.getElementById('dinheiro').innerHTML = cabecaDinheiro + secaoCofres(alt) + caudaDinheiro;
+  const tmp = document.createElement('div'); tmp.className = 'conteudo'; tmp.style.cssText = 'position:absolute;left:-9999px;width:402px'; tmp.innerHTML = `<section><div class="stit">Semanada das Crianças</div>${tarefasHoje}</section>`; document.body.appendChild(tmp); const hoje = Math.round(tmp.firstElementChild.getBoundingClientRect().height); tmp.remove();
+  const ht = {}; for (const x of TARS) { document.getElementById('tarefas').innerHTML = tarefas(x.k); const s = document.getElementById('sec-pontos'); ht[x.k] = s ? Math.round(s.getBoundingClientRect().height) : 0; }
+  document.getElementById('tarefas').innerHTML = tarefas(tar);
+  document.getElementById('hoje').textContent = hoje;
+  document.getElementById('med').innerHTML = '<tr><th>Desenho</th><th>Altura</th><th>Contra o cartão de hoje</th></tr>'
+    + ALTS.map(x => `<tr class="${x.k === alt ? 'sel' : ''}"><td>${x.nome}</td><td>${h[x.k]} px</td><td>${h[x.k] - hoje} px</td></tr>`).join('')
+    + TARS.map(x => `<tr class="${x.k === tar ? 'sel' : ''}"><td>${x.nome} (Tarefas)</td><td>${ht[x.k]} px</td><td>${ht[x.k] - hoje} px</td></tr>`).join('');
+  // A secção nova fica à vista sem rolar: o resto do Dinheiro é o que já existe.
+  const sec = document.getElementById('sec-cofres'); if (sec) document.getElementById('dinheiro').scrollTop = Math.max(0, sec.offsetTop - 16);
+  document.querySelectorAll('#alts button').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === alt));
+  document.querySelectorAll('#tars button').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === tar));
+}
+document.getElementById('alts').innerHTML = ALTS.map(a => `<button class="opc" data-k="${a.k}">${a.nome}</button>`).join('');
+document.getElementById('tars').innerHTML = TARS.map(a => `<button class="opc" data-k="${a.k}">${a.nome}</button>`).join('');
+document.getElementById('alts').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { alt = b.dataset.k; pintar(); } });
+document.getElementById('tars').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { tar = b.dataset.k; pintar(); } });
+(document.fonts ? document.fonts.ready : Promise.resolve()).then(pintar); pintar();
+</script>
+</body>
+</html>

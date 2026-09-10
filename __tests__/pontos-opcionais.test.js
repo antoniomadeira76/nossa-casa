@@ -203,21 +203,44 @@ describe('a Gestão da Casa', () => {
 describe('as Tarefas', () => {
   const Tarefas = require('../src/screens/Tarefas').default;
 
-  it('⚠ desligados, a semanada das crianças e as pastilhas de pontos saem', () => {
+  it('⚠ desligados, as pastilhas de pontos saem — e a semanada já não vive aqui', () => {
+    // A «Semanada das Crianças» passou ao Dinheiro em 10/09/2026 («Cofres das
+    // Crianças»): o dono da casa achou que não fazia sentido junto das tarefas.
     const ligado = ecraCom(Tarefas, null);
-    expect(ligado.texto()).toContain('Semanada das Crianças');
+    expect(ligado.texto()).not.toContain('Semanada das Crianças');
     expect(ligado.texto()).toMatch(/\d+ pt/);
 
     const { texto } = ecraCom(Tarefas, { pontosLigados: false });
-    expect(texto()).not.toContain('Semanada das Crianças');
     expect(texto()).not.toMatch(/\d+ pt\b/);
   });
+});
 
-  it('a 0 € o câmbio dá lugar a uma frase que não mente', () => {
-    const { texto } = ecraCom(Tarefas, { pointValue: 0 });
-    expect(texto()).toContain('Pontos sem valor em euros');
+describe('o Dinheiro — os cofres das crianças', () => {
+  const Dinheiro = require('../src/screens/Dinheiro').default;
+
+  it('mostra os cofres com o câmbio e o que está por pagar', () => {
+    const { texto } = ecraCom(Dinheiro, null);
+    expect(texto()).toContain('Cofres das Crianças');
+    // `\s+`: o «1 pt = » e o valor são dois nós de texto, e o `junta` põe um
+    // espaço entre eles.
+    expect(texto()).toMatch(/1 pt =\s+\d+,\d{2}\s*€/);
+    expect(texto()).toMatch(/por pagar/);
+    expect(texto()).toMatch(/no cofre/);
+  });
+
+  it('⚠ desligados, os cofres FICAM — são dinheiro, não pontos — mas sem câmbio nem «por pagar»', () => {
+    const { texto } = ecraCom(Dinheiro, { pontosLigados: false });
+    expect(texto()).toContain('Cofres das Crianças');
+    expect(texto()).toContain('Pontos desligados');
+    expect(texto()).not.toMatch(/1 pt =/);
+    expect(texto()).not.toMatch(/por pagar/);
+  });
+
+  it('a 0 € o câmbio não se escreve, e ninguém tem «0,00 € por pagar»', () => {
+    const { texto } = ecraCom(Dinheiro, { pointValue: 0 });
     expect(texto()).not.toMatch(/1 pt = 0,00/);
     expect(texto()).not.toMatch(/0,00\s*€\s*por pagar/);
+    expect(texto()).toMatch(/\d+ pontos?\b/);
   });
 });
 

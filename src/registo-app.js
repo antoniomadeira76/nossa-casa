@@ -58,7 +58,7 @@ export const AREAS = [
       'Tarefas com responsável, prazo, recorrência e pontos',
       'A urgência manda na ordem; dentro de cada grupo, arrastar muda o lugar',
       'Uma criança marca a tarefa como feita e um adulto confirma — os pontos só contam depois disso',
-      'Os pontos viram semanada ao valor que a casa definir, e podem ser desligados',
+      'Os pontos viram semanada no Dinheiro, ao valor que a casa definir, e podem ser desligados',
     ] },
 
   { area: 'Compras', icon: 'storefront',
@@ -143,6 +143,8 @@ export const AREAS = [
 
 export const REGISTO_APP = [
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
+  { v: '1.11.1', d: '10/09/2026', k: 'alterado', a: 'Dinheiro', t: 'Os cofres das crianças vivem no Dinheiro, como «Cofres das Crianças»: uma linha por criança com os pontos por pagar e o saldo, e a linha abre o cofre. Estavam nas Tarefas, onde só a origem dos pontos fazia sentido' },
+  { v: '1.11.1', d: '10/09/2026', k: 'alterado', a: 'Tarefas', t: 'O cartão «Semanada das Crianças» saiu — o dinheiro é do Dinheiro. Os pontos de cada tarefa continuam na linha, e o filtro por membro mostra as de cada criança' },
   // O varrimento continuou pelas folhas da Gestão, do Perfil e das tarefas. E
   // o dono da casa achou os títulos de secção grandes e os cartões a mais:
   // cinco alternativas em `design/titulos-e-cartoes.dc.html`, escolheu a C.

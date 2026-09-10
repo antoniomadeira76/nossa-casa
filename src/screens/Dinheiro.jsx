@@ -3,12 +3,13 @@ import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, onChrome } from '../theme';
 import { EUR, warrantyDaysLeft, plural, mesSeguinte } from '../format';
-import { Card, SectionTitle, Linha, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Choice, Empty, usePaged, Pager, Opcao, NumField, BotaoCompacto } from '../ui';
+import { Card, SectionTitle, Linha, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Choice, Empty, usePaged, Pager, Opcao, NumField, BotaoCompacto, Avatar, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
 import NovaMeta from '../sheets/NovaMeta';
 import GerirMeta from '../sheets/GerirMeta';
+import Cofre from '../sheets/Cofre';
 
 // ⚠ O `NumField` mudou-se para o `ui.jsx`, e continua a ser importado daqui
 // para quem o leia por este nome. Vivia neste ecrã e era o controlo partilhado
@@ -47,8 +48,9 @@ function GrelhaEnvelopes({ t, envelopes, livre, escolhido, onEscolher }) {
 export default function Dinheiro({ t, user, onEquip }) {
   const st = useStore();
   const { s, set, envelopes, budget, spent, remaining, mesAberto, allEquip, isAdmin, membros: MEMBERS, adultos, criancas, acerto, acertado, pagarAcerto, oNome, aoNome, moverEntreEnvelopes, registarDespesa,
-          abrirMes, fecharMes, metas, reforcarMeta, apagarMeta } = st;
+          abrirMes, fecharMes, metas, reforcarMeta, apagarMeta, kidPts, pontosNasTarefas } = st;
   const [sheet, setSheet] = useState(null);
+  const [cofre, setCofre] = useState(null);      // criança cujo cofre está aberto
   const [meta, setMeta] = useState(null);        // id da meta com a folha aberta
   const [metaAApagar, setMetaAApagar] = useState(null);
   // O que vai para uma meta ao fechar o mês. Em EUROS, e nunca uma fracção.
@@ -321,6 +323,53 @@ export default function Dinheiro({ t, user, onEquip }) {
         </Card>
       </View>
 
+      {/* ── Os cofres das crianças ─────────────────────────────────────────
+          Veio das Tarefas (10/09/2026): o dono da casa achou que a semanada
+          não fazia sentido junto das tarefas. O que as liga é só a origem dos
+          pontos; o valor do ponto, o que está por pagar, o saldo e a folha do
+          cofre são dinheiro da casa — e a Documentação já os descrevia aqui.
+          Desenho B de `design/cofres-no-dinheiro.dc.html`: uma linha por
+          criança, como os envelopes e as metas. A linha toda abre o cofre.
+
+          ⚠ `?? 0` nas duas somas: uma criança acrescentada à casa não tem
+          entrada em `paidPts`, e `numero - undefined` é NaN. */}
+      {criancas.length ? (
+        <View>
+          <SectionTitle t={t} right={pontosNasTarefas && s.pointValue > 0 ? (
+            <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>1 pt = {EUR(s.pointValue)}</Text>
+          ) : null}>Cofres das Crianças</SectionTitle>
+          {criancas.map((k, i) => {
+            const pend = pontosNasTarefas ? (kidPts[k] ?? 0) - (s.paidPts[k] ?? 0) : 0;
+            const saldo = st.vaultOf(k);
+            return (
+              <Linha key={k} t={t} last={i === criancas.length - 1}>
+                <Pressable onPress={() => setCofre(k)} accessibilityRole="button"
+                  accessibilityLabel={`Cofre ${st.deNome(k)} ${k}`}
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12,
+                    minHeight: 44, opacity: pressed ? 0.7 : 1 })}>
+                  <Avatar {...avatarDe(k, MEMBERS[k], t.text3)} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{k}</Text>
+                    <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
+                      {pontosNasTarefas
+                        ? `${plural(pend, 'ponto', 'pontos')}${s.pointValue > 0 ? ` · ${EUR(pend * s.pointValue)} por pagar` : ''}`
+                        : 'Pontos desligados'}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                    {/* Negativo a vermelho: o cofre pode ficar a dever por uma retirada. */}
+                    <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
+                      color: saldo < 0 ? t.state.errTexto : t.state.okTexto }}>{EUR(saldo)}</Text>
+                    <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>no cofre</Text>
+                  </View>
+                  <Icon name="caretRight" size={18} color={t.text3} />
+                </Pressable>
+              </Linha>
+            );
+          })}
+        </View>
+      ) : null}
+
       <View>
         <SectionTitle t={t}>Equipamentos da Casa</SectionTitle>
         <Linha t={t} last>
@@ -440,6 +489,8 @@ export default function Dinheiro({ t, user, onEquip }) {
       ) : null}
 
       {/* Settle Accounts Sheet */}
+      {cofre ? <Cofre t={t} kid={cofre} onClose={() => setCofre(null)} /> : null}
+
       {sheet === 'settle' ? (() => {
         const settleAmount = settle.mode === 'half' ? settleBase / 2 : settle.mode === 'custom' ? settle.customAmount : settleBase;
         return (
