@@ -9,7 +9,7 @@ import { buildTheme, onChrome, chromeLine, S, R, FONT, elev, LARGURA_APP } from 
 import Icon, { Marca } from './src/Icon';
 import { AvatarDeCabecalho, Tap } from './src/ui';
 import { FEM, DE } from './src/data';
-import { EUR, dayLabel, TODAY, TODAY_KEY, warrantyDaysLeft, semanaDeHoje, plural,
+import { EUR, dayLabel, TODAY, TODAY_KEY, atualizarHoje, warrantyDaysLeft, semanaDeHoje, plural,
          chaveRelativa } from './src/format';
 import Login from './src/screens/Login';
 import Inicio from './src/screens/Inicio';
@@ -30,8 +30,6 @@ import GoogleCalendarImportModal from './src/modals/GoogleCalendarImportModal';
 import Confirm from './src/Confirm';
 import { APP_VERSION } from './src/registo-app';
 import * as servidor from './src/pocketbase';
-
-const TODAY_ANO = TODAY.y;
 
 // A imagem do ecrã de entrada, reaproveitada como fundo à volta da coluna no
 // monitor. É a mesma que o `Login.jsx` usa — uma só imagem, um só sítio de onde
@@ -85,7 +83,9 @@ const TABS = [
   { key: 'inicio',   label: 'Início',   icon: 'home',        title: 'Nossa Casa',
     sub: (ctx) => `Família ${ctx.casa} · ${plural(ctx.nMembros, 'membro', 'membros')}` },
   { key: 'dinheiro', label: 'Dinheiro', icon: 'wallet',      title: 'Dinheiro',
-    sub: (ctx) => `Conta conjunta · ${ctx.mes} de ${TODAY_ANO}` },
+    // `TODAY.y` lido AQUI, e não numa constante do módulo: o ano muda sem
+    // recarregar, como o resto do «hoje» (ver `atualizarHoje`).
+    sub: (ctx) => `Conta conjunta · ${ctx.mes} de ${TODAY.y}` },
   { key: 'tarefas',  label: 'Tarefas',  icon: 'checkSquare', title: 'Tarefas',
     sub: (ctx) => `${ctx.semana.curta} · rotinas e tarefas` },
   { key: 'compras',  label: 'Compras',  icon: 'fileDone',    title: 'Lista de Compras',
@@ -149,6 +149,29 @@ function Shell() {
     const id = setTimeout(() => setBooting(false), 600);
     return () => clearTimeout(id);
   }, [fontsReady]);
+
+  // ── O relógio do «hoje» ───────────────────────────────────────────────────
+  //
+  // O «hoje» da app era lido uma vez ao carregar. Deixada aberta a passar a
+  // meia-noite, dizia «Quarta, 09/09» na quinta (10/09/2026) até recarregar —
+  // e recarregar custa a sessão a quem a tem. Isto pergunta a cada meio
+  // minuto, e no instante em que a janela volta à frente, se o dia mudou;
+  // quando muda, o `atualizarHoje` já mexeu no `TODAY` e no `TODAY_KEY`
+  // (ligações vivas — ver `src/format.js`) e este estado só serve para voltar
+  // a desenhar tudo. Sem recarregar, sem reiniciar a sessão.
+  const [, setDiaDeHoje] = useState(TODAY_KEY);
+  useEffect(() => {
+    const conferir = () => { if (atualizarHoje()) setDiaDeHoje(TODAY_KEY); };
+    const id = setInterval(conferir, 30 * 1000);
+    const temDoc = typeof document !== 'undefined' && document.addEventListener;
+    if (temDoc) document.addEventListener('visibilitychange', conferir);
+    if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('focus', conferir);
+    return () => {
+      clearInterval(id);
+      if (temDoc) document.removeEventListener('visibilitychange', conferir);
+      if (typeof window !== 'undefined' && window.removeEventListener) window.removeEventListener('focus', conferir);
+    };
+  }, []);
 
   // Retomar a sessão que já existe.
   //

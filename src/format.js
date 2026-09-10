@@ -76,14 +76,26 @@ export const dmyDeChave = (k) => {
 // provas e as capturas de referência usam — um teste que dependa do dia em que
 // corre falha sozinho a certa altura, e ninguém sabe porquê.
 //
-// ⚠ É lido UMA vez, ao carregar o módulo. Uma app deixada aberta a passar a
-// meia-noite continua no dia anterior até recarregar. É o comportamento que
-// já existia e não se resolve com uma constante — resolve-se com um relógio
-// que avisa, e isso é outra tarefa.
+// ⚠ Era lido UMA vez, ao carregar o módulo, e uma app deixada aberta a passar
+// a meia-noite ficava no dia anterior até recarregar — o dono da casa viu a
+// app dizer «Quarta, 09/09» na quinta (10/09/2026). Agora o `App.jsx` tem um
+// relógio que pergunta a cada meio minuto, e quando a janela volta à frente,
+// se o dia mudou (`atualizarHoje`); e o «hoje» muda SEM recarregar:
+//
+//   • `TODAY` é um objeto e muda POR DENTRO — quem o importou vê os valores
+//     novos na próxima leitura, porque tem a mesma referência.
+//   • `TODAY_KEY` é `let` exportado e volta a ser atribuído — um `export let`
+//     é uma LIGAÇÃO viva: quem faz `import { TODAY_KEY }` lê o valor actual,
+//     não uma cópia do arranque. Quarenta e sete sítios ficam certos sem se
+//     tocar em nenhum.
+//
+// O que se calcula ao carregar e guarda em constante próprio (as sementes do
+// `data.js`, o `monthName` inicial da loja) fica como estava, e é isso que se
+// quer: são valores de arranque, não o «hoje».
 const HOJE_FIXO = (typeof process !== 'undefined' && process.env
   && process.env.EXPO_PUBLIC_HOJE) || null;
 
-const agora = (() => {
+const lerAgora = () => {
   if (HOJE_FIXO) {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(HOJE_FIXO);
     // Meio-dia, e não meia-noite: à meia-noite, um fuso a oeste de Greenwich
@@ -91,10 +103,25 @@ const agora = (() => {
     if (m) return new Date(+m[1], +m[2] - 1, +m[3], 12, 0, 0);
   }
   return new Date();
-})();
+};
+const agora = lerAgora();
 
 export const TODAY = { y: agora.getFullYear(), m: agora.getMonth(), d: agora.getDate() };
-export const TODAY_KEY = dkey(TODAY.y, TODAY.m, TODAY.d);
+export let TODAY_KEY = dkey(TODAY.y, TODAY.m, TODAY.d);
+
+// Volta a ler o relógio. Devolve `true` se o dia mudou — e só então mexe no
+// `TODAY` e no `TODAY_KEY`, para ninguém voltar a desenhar por nada. Com o dia
+// fixado por `EXPO_PUBLIC_HOJE` nunca muda: as provas e as capturas dependem
+// disso. O `data` é para as provas.
+export const atualizarHoje = (data) => {
+  if (HOJE_FIXO && !data) return false;
+  const a = data || new Date();
+  const y = a.getFullYear(), m = a.getMonth(), d = a.getDate();
+  if (y === TODAY.y && m === TODAY.m && d === TODAY.d) return false;
+  TODAY.y = y; TODAY.m = m; TODAY.d = d;
+  TODAY_KEY = dkey(y, m, d);
+  return true;
+};
 
 // ⚠ Amanhã conta-se com um `Date`, não com `d + 1`.
 //

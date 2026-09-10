@@ -143,6 +143,7 @@ export const AREAS = [
 
 export const REGISTO_APP = [
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
+  { v: '1.11.1', d: '10/09/2026', k: 'corrigido', a: 'A App', t: 'A data passa sozinha à meia-noite: a app deixada aberta dizia «Quarta, 09/09» na quinta até recarregar. Agora confere o dia a cada meio minuto e ao voltar à frente, sem recarregar nem reiniciar a sessão' },
   { v: '1.11.1', d: '10/09/2026', k: 'alterado', a: 'Dinheiro', t: 'Os cofres das crianças vivem no Dinheiro, como «Cofres das Crianças»: uma linha por criança com os pontos por pagar e o saldo, e a linha abre o cofre. Estavam nas Tarefas, onde só a origem dos pontos fazia sentido' },
   { v: '1.11.1', d: '10/09/2026', k: 'alterado', a: 'Tarefas', t: 'O cartão «Semanada das Crianças» saiu — o dinheiro é do Dinheiro. Os pontos de cada tarefa continuam na linha, e o filtro por membro mostra as de cada criança' },
   // O varrimento continuou pelas folhas da Gestão, do Perfil e das tarefas. E
