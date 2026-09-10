@@ -264,6 +264,12 @@ PIN de 4 dígitos, sem valor de fábrica, com limite de tentativas e bloqueio. D
 **Tarefas** (alvos maiores, marca como *a confirmar*) e **O Meu Cofre** (saldo, movimentos,
 *Pedir para Usar o Dinheiro* sujeito a autorização). **Nada de orçamento.**
 
+A bola do nome, no cabeçalho, abre **O meu perfil** (10/09/2026): o **avatar** (figura e cor,
+a mesma folha dos adultos sem a fotografia da Google — a criança não tem conta), a **cor do
+perfil** (os seis esquemas) e **O meu PIN** (muda-o sabendo o atual). O cabeçalho, o rodapé e o
+acento seguem o esquema escolhido, como nos adultos; a cor do membro fica na bola. As escolhas
+sobem ao servidor pela rota do próprio membro e pela linha de preferências da criança.
+
 ---
 
 # 4. Confirmações

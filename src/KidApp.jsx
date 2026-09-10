@@ -2,11 +2,74 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from './store';
-import { buildTheme, onChrome, S, R, FONT, corDoMembro, chromeDaCrianca, elev, LARGURA_APP } from './theme';
+import { buildTheme, onChrome, S, R, FONT, SCHEMES, corDoMembro, chromeDaCrianca, elev, LARGURA_APP } from './theme';
 import { EUR, parseKey, pad2, plural } from './format';
 import Icon from './Icon';
-import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile } from './ui';
+import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe } from './ui';
 import Sheet from './Sheet';
+import EscolherAvatar from './sheets/EscolherAvatar';
+import EscolhaDeEsquema from './EsquemaDeCor';
+import Figura from './Avatares';
+
+// A folha «O meu perfil» — o que é da criança e só dela: o avatar (figura e
+// cor), o esquema de cor, e o PIN com que entra.
+//
+// 10/09/2026 — o dono da casa: «as crianças também podem escolher esquema de
+// cor e avatar». As duas escolhas são EXACTAMENTE as dos adultos — a mesma
+// folha de avatar e as mesmas seis bolas — e sobem pelos mesmos caminhos: a
+// figura e a cor pela rota `/api/membro/aspeto`, que escreve no próprio membro
+// autenticado, e o esquema pela linha de `preferencias` da criança, cuja regra
+// é `membro = @request.auth.id`. Nada de novo no servidor. A fotografia da
+// conta Google fica de fora: a criança não tem conta (§8 da segurança).
+function FolhaDoPerfil({ t, kid, onClose }) {
+  const { s, membros: MEMBROS, mudarPreferencia } = useStore();
+  const [aEscolherAvatar, setAEscolherAvatar] = useState(false);
+  const [aMudarPin, setAMudarPin] = useState(false);
+  const scheme = s.schemeByUser[kid] ?? 0;
+
+  return (
+    <Sheet t={t} title="O meu perfil" sub={`Como ${kid} aparece, e o PIN com que entra`} onClose={onClose}>
+      <View style={{ gap: S.xl }}>
+        <View>
+          <SectionTitle t={t}>Aparência</SectionTitle>
+          <Row t={t} icon="user" title="Avatar" sub="A figura e a cor com que aparece na casa"
+            right={<View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+              <Avatar {...avatarDe(kid, MEMBROS[kid], t.text3)} size={28} />
+              <Icon name="caretRight" size={18} color={t.text3} />
+            </View>}
+            onPress={() => setAEscolherAvatar(true)} last />
+        </View>
+
+        <View style={{ gap: S.md }}>
+          <SectionTitle t={t}>Cor do perfil</SectionTitle>
+          <EscolhaDeEsquema t={t} escolhido={scheme}
+            onEscolher={(i) => mudarPreferencia(kid, { esquema: i })} />
+          <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+            {SCHEMES[scheme].name}. Vale só para {kid} — os outros membros mantêm o que escolheram.
+          </Text>
+        </View>
+
+        <View>
+          <SectionTitle t={t}>Entrada</SectionTitle>
+          <Row t={t} icon="idcard" title="O meu PIN" sub="Mudar o PIN sabendo o atual"
+            right={<Icon name="caretRight" size={18} color={t.text3} />}
+            onPress={() => setAMudarPin(true)} last />
+        </View>
+      </View>
+
+      {/* As folhas empilhadas vivem DENTRO desta, como no Perfil dos adultos:
+          o rodapé continua por baixo de todas (INVARIANTE #1). */}
+      {aEscolherAvatar ? (
+        <Sheet t={t} title="Avatar" sub={`Como ${kid} aparece na casa`}
+          onClose={() => setAEscolherAvatar(false)}>
+          <EscolherAvatar t={t} user={kid} comFotografia={false}
+            onFeito={() => setAEscolherAvatar(false)} />
+        </Sheet>
+      ) : null}
+      {aMudarPin ? <FolhaDoPin t={t} kid={kid} onClose={() => setAMudarPin(false)} /> : null}
+    </Sheet>
+  );
+}
 
 // A criança muda o SEU PIN, sabendo o atual (09/09/2026 — «as crianças podem
 // alterar o PIN»). A reposição sem o atual continua a ser de quem administra,
@@ -89,11 +152,19 @@ const TaskIcon = ({ size = 32, color = '#67769B' }) => (
 
 // Linha de tarefa da criança
 function KidTaskRow({ t, task, kid, onPress }) {
-  const pending = useStore().s.done[task.id] ? 0 : 1;
-  const isDone = useStore().s.done[task.id];
+  const { s } = useStore();
+  // Três estados: por fazer, «a confirmar» (a criança marcou, um adulto ainda
+  // não deu por feita) e feita (confirmada). A criança marca e desmarca a sua;
+  // o que um adulto já confirmou não se desfaz daqui — e o servidor também
+  // não deixaria.
+  const isDone = !!s.done[task.id];
+  const isPending = !isDone && !!s.pending[task.id];
 
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={task.title}
+    <Pressable onPress={isDone ? undefined : onPress} disabled={isDone}
+      accessibilityRole="button"
+      accessibilityLabel={task.title}
+      accessibilityState={{ checked: isDone ? true : isPending ? 'mixed' : false, disabled: isDone }}
       style={({ pressed }) => ({
         minHeight: 64, paddingHorizontal: 16, paddingVertical: 12,
         flexDirection: 'row', alignItems: 'center', gap: 16,
@@ -103,7 +174,7 @@ function KidTaskRow({ t, task, kid, onPress }) {
       })}>
 
       <View style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-        <TaskIcon size={28} color={isDone ? t.state.ok : t.slate} />
+        <TaskIcon size={28} color={isDone ? t.state.ok : isPending ? t.state.info : t.slate} />
       </View>
 
       <View style={{ flex: 1, gap: 4 }}>
@@ -112,7 +183,10 @@ function KidTaskRow({ t, task, kid, onPress }) {
           color: isDone ? t.text3 : t.text2,
           textDecorationLine: isDone ? 'line-through' : 'none',
         }}>{task.title}</Text>
-        {task.meta ? <Text numberOfLines={1} style={{
+        {isPending ? <Text numberOfLines={1} style={{
+          fontFamily: FONT.ui, fontSize: 12, color: t.state.infoTexto,
+        }}>A confirmar por um adulto</Text>
+        : task.meta ? <Text numberOfLines={1} style={{
           fontFamily: FONT.ui, fontSize: 12, color: t.text3,
         }}>{task.meta}</Text> : null}
       </View>
@@ -238,7 +312,12 @@ function KidTasksView({ t, kid, tasks }) {
                 t={t}
                 task={task}
                 kid={kid}
-                onPress={() => st.set(s => ({ done: { ...s.done, [task.id]: !s.done[task.id] } }))}
+                // ⚠ Pela loja, como CRIANÇA: a tarefa fica «a confirmar», não
+                // feita — é um adulto que a dá por feita, e são os pontos dele
+                // que contam (`docs/funcionalidades.md` §3.12). Escrevia `done`
+                // directamente: a criança confirmava-se a si própria, e nada
+                // subia ao servidor. Apanhado em 10/09/2026.
+                onPress={() => st.tapTask(task.id, true)}
               />
             ))}
           </View>
@@ -382,7 +461,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
   const t = buildTheme(s.schemeByUser[kid] ?? 0, dark);
   const onC = onChrome(t.chrome);
   const tasks = allTasks();
-  const [mudarPin, setMudarPin] = useState(false);
+  const [perfil, setPerfil] = useState(false);
 
   // ⚠ A coluna vive na PRÓPRIA raiz, como no App.jsx — um <View> a mais em
   // volta dela é o erro #1 do CLAUDE.md. Sem isto a app da criança ia de ponta
@@ -404,10 +483,12 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
             dois são da mesma família (o azul do Léo sobre o Céu). Era branca com
             a inicial na cor do cabeçalho; antes disso, branco a 22 %: 2,51.
 
-            E é ELA que abre «O meu PIN» — o mesmo gesto do avatar dos
-            adultos, que abre o Perfil. Alvo de 44 à volta da bola de 40. */}
-        <Pressable onPress={() => setMudarPin(true)} accessibilityRole="button"
-          accessibilityLabel="O meu PIN" accessibilityHint="Mudar o PIN com que entra"
+            E é ELA que abre «O meu perfil» — o mesmo gesto do avatar dos
+            adultos, que abre o Perfil. Abria só «O meu PIN» até 10/09/2026; o
+            PIN passou a ser uma das linhas da folha. Alvo de 44 à volta da bola
+            de 40. */}
+        <Pressable onPress={() => setPerfil(true)} accessibilityRole="button"
+          accessibilityLabel="O meu perfil" accessibilityHint="O avatar, a cor do perfil e o PIN"
           style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
           <View style={{
             width: 40, height: 40, borderRadius: R.pill,
@@ -415,10 +496,17 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
             borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)',
             alignItems: 'center', justifyContent: 'center',
           }}>
-            <Text style={{
-              fontFamily: FONT.display, fontSize: 17, fontWeight: '500',
-              color: '#FFFFFF',
-            }}>{kid.charAt(0)}</Text>
+            {/* A figura escolhida, se houver — senão a inicial. Sem isto a
+                criança escolhia uma figura em «O meu perfil» e o seu próprio
+                cabeçalho continuava a mostrar a letra (provado em 10/09/2026). */}
+            {st.membros[kid]?.figura ? (
+              <Figura nome={st.membros[kid].figura} size={24} color="#FFFFFF" />
+            ) : (
+              <Text style={{
+                fontFamily: FONT.display, fontSize: 17, fontWeight: '500',
+                color: '#FFFFFF',
+              }}>{kid.charAt(0)}</Text>
+            )}
           </View>
         </Pressable>
 
@@ -482,7 +570,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
       </View>
 
       {/* A folha vive DENTRO da raiz, com o rodapé por baixo dela (INVARIANTE #1). */}
-      {mudarPin ? <FolhaDoPin t={t} kid={kid} onClose={() => setMudarPin(false)} /> : null}
+      {perfil ? <FolhaDoPerfil t={t} kid={kid} onClose={() => setPerfil(false)} /> : null}
     </View>
   );
 }

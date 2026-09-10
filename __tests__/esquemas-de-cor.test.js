@@ -94,13 +94,15 @@ describe('os esquemas de cor', () => {
 });
 
 describe('a bola do esquema, com o risco em diagonal', () => {
-  // A geometria vive no Perfil como três constantes. Este teste repete o
-  // cálculo a partir da definição — «a aresta do quadrado rodado passa pelo
-  // centro da bola» — e falha se as constantes deixarem de a cumprir.
+  // A geometria vive em `EsquemaDeCor.jsx` como três constantes (vivia no
+  // Perfil até 10/09/2026, quando a escolha passou a servir também a app da
+  // criança). Este teste repete o cálculo a partir da definição — «a aresta do
+  // quadrado rodado passa pelo centro da bola» — e falha se as constantes
+  // deixarem de a cumprir.
   const fs = require('fs');
   const path = require('path');
   const perfil = fs.readFileSync(
-    path.join(__dirname, '..', 'src', 'screens', 'Perfil.jsx'), 'utf8');
+    path.join(__dirname, '..', 'src', 'EsquemaDeCor.jsx'), 'utf8');
 
   // As constantes lêem-se do ficheiro e avaliam-se, para o teste medir os
   // valores a sério e não uma cópia que envelhece ao lado deles. `RECUO` é

@@ -240,6 +240,33 @@ await prova('⚠ e uma criança não confirma a sua própria tarefa', async () =
     confirmada_por: leo.id, confirmada_em: '2026-09-21 20:00:00.000Z' }));
 });
 
+// Desmarcar APAGA a linha (INVARIANTE #2). A criança desmarca a sua enquanto
+// está «a confirmar»; o que um adulto confirmou já são pontos contados.
+// (10/09/2026 — a marcação da criança passou a subir ao servidor.)
+await prova('o Léo DESMARCA a sua tarefa enquanto ninguém a confirmou — a linha apaga-se', async () => {
+  const r = await cLeo.collection('tarefas_feitas').create({
+    casa: casa.id, tarefa: tarefa.id, data: '2026-09-26', marcada_por: leo.id });
+  await cLeo.collection('tarefas_feitas').delete(r.id);
+  const resta = (await admin.collection('tarefas_feitas').getFullList())
+    .find(x => x.id === r.id);
+  if (resta) throw new Error('a linha ficou');
+});
+
+await prova('⚠ mas não desfaz a que um adulto JÁ confirmou', async () => {
+  const feita = (await admin.collection('tarefas_feitas').getFullList())
+    .find(x => x.tarefa === tarefa.id && x.data.slice(0, 10) === '2026-09-20');
+  if (!feita.confirmada_em) throw new Error('a prova anterior devia tê-la confirmado');
+  await recusado(() => cLeo.collection('tarefas_feitas').delete(feita.id));
+});
+
+await prova('⚠ e a Mia não apaga a marcação do Léo, mesmo por confirmar', async () => {
+  const cMia = await como(mia.login, '2468');
+  const doLeo = (await admin.collection('tarefas_feitas').getFullList())
+    .find(x => x.tarefa === tarefa.id && x.data.slice(0, 10) === '2026-09-21');
+  if (doLeo.confirmada_em) throw new Error('esta devia estar por confirmar');
+  await recusado(() => cMia.collection('tarefas_feitas').delete(doLeo.id));
+});
+
 // ═════════════════════════════════════════════════════════════════════════════
 // 3. E NADA DISTO ATRAVESSA CASAS
 // ═════════════════════════════════════════════════════════════════════════════

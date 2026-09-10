@@ -131,13 +131,28 @@ await prova('⚠ e o SEGUNDO telemóvel a marcar não duplica — devolve a que 
   igual(todas.length, 1, 'ficaram ' + todas.length + ' linhas');
 });
 
-await prova('⚠ o `puxarCasa` dá a tarefa como feita HOJE', async () => {
+await prova('⚠ SEM confirmação, o `puxarCasa` dá a tarefa como «a confirmar» — não como feita', async () => {
+  // Uma linha sem `confirmada_em` é a marcação de uma criança à espera de um
+  // adulto (10/09/2026). Entrava em `done`: a criança marcava no telemóvel
+  // dela e no da mãe a tarefa aparecia FEITA, sem ninguém a confirmar.
   const casaLida = await sync.puxarCasa();
-  igual(!!casaLida.done[idDaTarefa], true);
+  igual(!!casaLida.pending[idDaTarefa], true);
+  igual(!!casaLida.done[idDaTarefa], false);
   // E guarda o id da linha, que é o que permite desmarcar.
   const guardada = casaLida.feitas[`${idDaTarefa}|${hoje}`];
   if (!guardada) throw new Error('não guardou a linha por «tarefa|dia»');
   igual(guardada.id, idDaLinha);
+  igual(guardada.confirmada, false);
+});
+
+await prova('⚠ e CONFIRMADA por um adulto, o `puxarCasa` dá-a como feita HOJE', async () => {
+  // É o que a app faz quando é um adulto a marcar: cria a linha e confirma-a
+  // a seguir. Só então os pontos contam.
+  await sync.confirmarTarefaFeita(idDaLinha, daRita.membro);
+  const casaLida = await sync.puxarCasa();
+  igual(!!casaLida.done[idDaTarefa], true);
+  igual(!!casaLida.pending[idDaTarefa], false);
+  igual(casaLida.feitas[`${idDaTarefa}|${hoje}`].confirmada, true);
 });
 
 await prova('desmarcar APAGA a linha — não escreve um booleano', async () => {

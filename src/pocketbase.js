@@ -473,11 +473,18 @@ export const auth = {
   //
   // Os campos são opcionais e independentes: quem manda só a cor não perde a
   // fotografia. Uma cadeia vazia LIMPA — é diferente de não mandar.
-  async guardarAspeto({ avatar, cor } = {}) {
+  //
+  // ⚠ A `figura` faltava aqui. O `definirAvatar` do store mandava-a, a rota
+  // aceitava-a e escrevia-a, e esta função deitava-a fora antes de a enviar: a
+  // figura escolhida ficava só neste aparelho e o outro telemóvel via a
+  // inicial. Uma escrita que não se lê de volta — a classe do `db:campos`,
+  // do lado do cliente. Apanhada em 10/09/2026 ao dar o avatar à criança.
+  async guardarAspeto({ avatar, cor, figura } = {}) {
     if (!estaLigado()) throw new Error('Servidor não configurado.');
     const corpo = {};
     if (avatar !== undefined) corpo.avatar = String(avatar || '');
     if (cor !== undefined) corpo.cor = String(cor || '');
+    if (figura !== undefined) corpo.figura = String(figura || '');
     if (!Object.keys(corpo).length) return null;
 
     const r = await fetch(`${URL.replace(/\/+$/, '')}/api/membro/aspeto`, {

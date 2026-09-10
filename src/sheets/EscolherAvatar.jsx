@@ -31,7 +31,10 @@ const Etiqueta = ({ t, children }) => (
     letterSpacing: 0.4, textTransform: 'uppercase' }}>{children}</Text>
 );
 
-export default function EscolherAvatar({ t, user, onFeito }) {
+// `comFotografia`: a secção da fotografia da conta Google. Os adultos têm-na;
+// a criança entra por PIN e não tem conta nenhuma (§8 da segurança) — oferecer-lhe
+// «trazer a fotografia da Google» era mandá-la a uma porta que não existe.
+export default function EscolherAvatar({ t, user, onFeito, comFotografia = true }) {
   const { membros: MEMBROS, definirAvatar, trazerFotografia } = useStore();
   const eu = MEMBROS[user] || {};
   const [erro, setErro] = useState(null);
@@ -157,6 +160,7 @@ export default function EscolherAvatar({ t, user, onFeito }) {
       </View>
 
       {/* ── A fotografia da conta ──────────────────────────────────────── */}
+      {comFotografia ? (
       <View style={{ gap: S.md }}>
         <Etiqueta t={t}>Fotografia da conta</Etiqueta>
         {foto ? (
@@ -222,6 +226,7 @@ export default function EscolherAvatar({ t, user, onFeito }) {
           </View>
         )}
       </View>
+      ) : null}
 
       {/* O erro é um Tile de erro — a forma dos avisos desta app, e não uma
           caixa desenhada aqui. Um aviso com outro aspeto lê-se como sendo de

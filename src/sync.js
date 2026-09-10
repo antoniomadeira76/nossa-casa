@@ -467,13 +467,18 @@ export async function puxarCasa() {
   // meia-noite. Portanto só as linhas de hoje entram.
   const hoje = new Date().toISOString().slice(0, 10);
   const done = {};
+  const pending = {};
   const feitas = {};
   for (const f of casa.tarefas_feitas || []) {
     const dia = String(f.data || '').slice(0, 10);
     // Guarda-se o id da LINHA para se poder desmarcar: sem ele, desmarcar no
     // servidor não tinha o que apagar.
     feitas[`${f.tarefa}|${dia}`] = { id: f.id, confirmada: !!f.confirmada_em };
-    if (dia === hoje) done[f.tarefa] = true;
+    // ⚠ Uma linha SEM `confirmada_em` é uma marcação de criança à espera de um
+    // adulto: é `pending`, não `done`. Entrava em `done` — a criança marcava
+    // no telemóvel dela e no da mãe a tarefa aparecia FEITA, sem ninguém a
+    // confirmar. Apanhado em 10/09/2026, ao ligar a marcação da criança.
+    if (dia === hoje) { if (f.confirmada_em) done[f.tarefa] = true; else pending[f.tarefa] = true; }
   }
 
   // ── As regras da casa ─────────────────────────────────────────────────────
@@ -760,6 +765,7 @@ export async function puxarCasa() {
     due,
     taskOrder,
     done,
+    pending,
     feitas,
     // O servidor manda: se responder, é esta a casa e são estes os membros.
     // Sem servidor, a app fica com a família de demonstração — e diz-o.

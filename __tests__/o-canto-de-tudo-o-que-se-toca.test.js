@@ -82,7 +82,9 @@ const FICAM_REDONDOS = {
   ],
   'src/screens/Gestao.jsx': ['barra do envelope', 'preenchimento da barra do envelope'],
   'src/KidApp.jsx': ['forma do cabeçalho da app da criança', 'forma do cabeçalho da app da criança'],
-  'src/screens/Perfil.jsx': ['o quadrado rodado do ícone da app'],
+  // A bola do esquema saiu do Perfil para um componente partilhado com a app
+  // da criança (10/09/2026). É uma amostra de cor, como as do avatar.
+  'src/EsquemaDeCor.jsx': ['bola do esquema de cor — é uma amostra de cor'],
   'App.jsx': ['a forma do ecrã de arranque'],
 };
 

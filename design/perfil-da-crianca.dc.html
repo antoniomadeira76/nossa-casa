@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O Meu Perfil da Criança</title>
+<style>
+  body { margin: 0; background: #F0F2F5; color: #262626; font: 14px/1.45 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #656C7C; margin: 0 0 20px; max-width: 72ch; }
+  .escolhas { display: flex; gap: 16px; align-items: center; margin: 0 0 20px; font-size: 13px; flex-wrap: wrap; }
+  .escolhas label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .palco { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+  .tel { width: 402px; height: 784px; border-radius: 12px; overflow: hidden; border: 1px solid #D9D9D9; position: relative; display: flex; flex-direction: column; }
+  .cab { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+  .bola { width: 40px; height: 40px; border-radius: 999px; display: grid; place-items: center; font-weight: 500; font-size: 17px; color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.9); flex: none; }
+  .nome { color: #fff; font-weight: 500; font-size: 18px; line-height: 1.2; }
+  .resumo { font-size: 12px; }
+  .conteudo { flex: 1; }
+  .rod { display: flex; padding: 6px 4px 10px; }
+  .rod div { flex: 1; text-align: center; font-size: 11px; font-weight: 600; min-height: 48px; display: grid; place-items: center; }
+  .veu { position: absolute; inset: 0; background: rgba(0,0,0,.35); }
+  .folha { position: absolute; left: 0; right: 0; bottom: 48px; border-radius: 16px 16px 0 0; padding: 16px 16px 20px; display: flex; flex-direction: column; gap: 16px; }
+  .folha h2 { font-size: 20px; margin: 0; font-weight: 600; }
+  .folha .s { font-size: 12.5px; margin: 2px 0 0; }
+  .fechar { position: absolute; right: 8px; top: 8px; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 999px; font-size: 18px; }
+  .titulo { font-size: 13px; font-weight: 600; padding-bottom: 8px; border-bottom: 1px solid; }
+  .linha { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 4px; border-bottom: 1px solid; }
+  .linha:last-child { border-bottom: 0; }
+  .linha .ico { width: 24px; text-align: center; }
+  .linha .tx { flex: 1; }
+  .linha .tx b { font-weight: 500; font-size: 15px; display: block; }
+  .linha .tx span { font-size: 12px; }
+  .linha .dir { display: flex; align-items: center; gap: 8px; }
+  .mini { width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 600; }
+  .bolas { display: flex; gap: 8px; flex-wrap: wrap; }
+  .alvo { width: 44px; height: 44px; display: grid; place-items: center; }
+  .esq { width: 34px; height: 34px; border-radius: 999px; position: relative; overflow: hidden; }
+  .esq i { position: absolute; width: 60px; height: 60px; left: -13px; top: -13px; transform: rotate(45deg); }
+  .esq.on { box-shadow: 0 0 0 2px #1F9D55; }
+  .nota { font-size: 11.5px; line-height: 18px; }
+  .med { font-size: 11px; color: #656C7C; margin: 12px 0 0; font-variant-numeric: tabular-nums; }
+  .texto { max-width: 78ch; color: #656C7C; margin-top: 20px; }
+  .texto code { background: #E9EBEF; padding: 0 4px; border-radius: 3px; color: #262626; }
+</style>
+</head>
+<body>
+<h1>«O meu perfil» — a folha da criança</h1>
+<p class="sub">A bola do avatar deixa de abrir só «O meu PIN» e passa a abrir «O meu perfil»: avatar, cor do perfil (o esquema) e o PIN. As duas primeiras escolhas usam exatamente o que os adultos já têm — a folha de avatar (figuras, cor, sem fotografia da Google porque a criança não tem conta) e as seis bolas do esquema — e sobem ao servidor pela rota do próprio membro e pela linha de preferências dela.</p>
+
+<div class="escolhas">
+  <span>Esquema:</span>
+  <label><input type="radio" name="esq" value="0" checked> Violeta</label>
+  <label><input type="radio" name="esq" value="1"> Cião</label>
+  <label><input type="radio" name="esq" value="2"> Céu</label>
+  <label><input type="radio" name="esq" value="3"> Rosa</label>
+  <label><input type="radio" name="esq" value="4"> Menta</label>
+  <label><input type="radio" name="esq" value="5"> Cinza</label>
+  <span style="margin-left:16px">Aspeto:</span>
+  <label><input type="radio" name="aspeto" value="claro" checked> claro</label>
+  <label><input type="radio" name="aspeto" value="escuro"> escuro</label>
+</div>
+
+<div class="palco" id="palco"></div>
+
+<div class="texto">
+  <p><b>Medidas.</b> Folha com título 20 px; linhas de 52 px com divisória (a <code>Linha</code> do desenho C); bolas do esquema de 34 px dentro de alvos de 44; a linha do PIN abre a folha que já existe, empilhada. O rodapé fica visível por baixo da folha (INVARIANTE #1).</p>
+  <p><b>O que sobe.</b> A figura e a cor vão pela rota <code>/api/membro/aspeto</code>, que escreve no próprio membro autenticado — serve a criança tal como serve os adultos. O esquema vai pela linha de <code>preferencias</code> dela, com a regra <code>membro = @request.auth.id</code>. Nada de novo no servidor.</p>
+  <p><b>Fora daqui.</b> O aspeto claro/escuro fica como está (segue a preferência, sem seletor na folha): não foi pedido, e acrescenta-se numa linha se fizer falta.</p>
+</div>
+
+<script>
+  const SCHEMES = [
+    { name: 'Violeta', accent: '#722ED1', hover: '#8B4EE0', chrome: '#241239' },
+    { name: 'Cião',    accent: '#078286', hover: '#13ADB3', chrome: '#0A5B60' },
+    { name: 'Céu',     accent: '#1B5FA8', hover: '#2679C9', chrome: '#0C2A47' },
+    { name: 'Rosa',    accent: '#B5306E', hover: '#CC4285', chrome: '#8A3A5A' },
+    { name: 'Menta',   accent: '#177D5E', hover: '#1E9B75', chrome: '#2E6455' },
+    { name: 'Cinza',   accent: '#4B5563', hover: '#5E6A7C', chrome: '#646F80' },
+  ];
+  const LEO = '#006ED5'; // chromeDaCrianca('#1890FF'), medido na app
+  const hex = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const lum = (rgb) => 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2]);
+  const contraste = (a, b) => { const la = lum(a), lb = lum(b); return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05); };
+  const onChrome = (h) => { const f = hex(h); let a = 0.65; const c = (a) => contraste(f.map(v => a * 255 + (1 - a) * v), f); while (a < 1 && c(a) < 4.6) a = Math.round((a + 0.01) * 100) / 100; return a; };
+  const toHex = (rgb) => '#' + rgb.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+  const f2 = (x) => x.toFixed(2).replace('.', ',');
+
+  const desenhar = () => {
+    const i = +document.querySelector('input[name=esq]:checked').value;
+    const escuro = document.querySelector('input[name=aspeto]:checked').value === 'escuro';
+    const s = SCHEMES[i];
+    const pagina = escuro ? toHex(hex(s.chrome).map(v => v * 0.28 + 2)) : '#F0F2F5';
+    const folha = escuro ? toHex(hex(s.chrome).map(v => v * 0.45 + 10)) : '#FFFFFF';
+    const texto1 = escuro ? '#E6E8EC' : '#262626', texto3 = escuro ? '#9AA3B2' : '#656C7C';
+    const borda = escuro ? 'rgba(255,255,255,.14)' : '#D9D9D9';
+    const acFg = escuro ? s.hover : s.accent;
+    const a = onChrome(s.chrome);
+    const sub = `rgba(255,255,255,${a.toFixed(2)})`;
+    const bolas = SCHEMES.map((x, j) => `<div class="alvo"><div class="esq ${j === i ? 'on' : ''}" style="background:${x.accent}" title="${x.name}"><i style="background:${x.chrome}"></i></div></div>`).join('');
+
+    const tel = (comFolha) => `<div class="tel" style="background:${pagina}">
+      <div class="cab" style="background:${s.chrome}">
+        <div class="bola" style="background:${LEO}">L</div>
+        <div style="flex:1"><div class="nome">Olá, Léo</div><div class="resumo" style="color:${sub}">3 pontos por pagar · 1,20 € no cofre</div></div>
+        <div style="color:#fff;width:44px;text-align:center">⇥</div>
+      </div>
+      <div class="conteudo" style="padding:16px;color:${acFg};font-size:13px;font-weight:600">As Minhas Tarefas</div>
+      ${comFolha ? `<div class="veu"></div>
+      <div class="folha" style="background:${folha};color:${texto1}">
+        <div><h2>O meu perfil</h2><p class="s" style="color:${texto3}">Como o Léo aparece, e o PIN com que entra</p></div>
+        <div class="fechar" style="color:${texto3}">✕</div>
+        <div>
+          <div class="titulo" style="color:${acFg};border-color:${borda}">Avatar</div>
+          <div class="linha" style="border-color:${borda}"><div class="ico" style="color:${acFg}">☺</div><div class="tx"><b>Avatar</b><span style="color:${texto3}">A figura e a cor com que aparece na casa</span></div><div class="dir"><div class="mini" style="background:${LEO}">L</div><span style="color:${texto3}">›</span></div></div>
+        </div>
+        <div>
+          <div class="titulo" style="color:${acFg};border-color:${borda}">Cor do perfil</div>
+          <div class="bolas" style="margin-top:8px">${bolas}</div>
+          <p class="nota" style="color:${texto3};margin:8px 0 0">${s.name}. Vale só para o Léo — os outros membros mantêm o que escolheram.</p>
+        </div>
+        <div>
+          <div class="titulo" style="color:${acFg};border-color:${borda}">Entrada</div>
+          <div class="linha" style="border-color:${borda}"><div class="ico" style="color:${acFg}">⚿</div><div class="tx"><b>O meu PIN</b><span style="color:${texto3}">Mudar o PIN sabendo o atual</span></div><div class="dir"><span style="color:${texto3}">›</span></div></div>
+        </div>
+      </div>` : ''}
+      <div class="rod" style="background:${s.chrome}"><div style="color:#fff">☑ Tarefas</div><div style="color:${sub}">⌂ O Meu Cofre</div></div>
+    </div>`;
+
+    document.getElementById('palco').innerHTML = `
+      <div><p class="med"><b>Antes</b> — a bola abre «O meu PIN»</p>${tel(false)}</div>
+      <div><p class="med"><b>Proposto</b> — a bola abre «O meu perfil»</p>${tel(true)}
+        <p class="med">título da folha 20 px · linhas 52 px · bolas 34 em alvos de 44 · branco sobre o cabeçalho ${f2(contraste([255,255,255], hex(s.chrome)))} · subtítulo a ${Math.round(a*100)} %</p></div>`;
+  };
+  document.querySelectorAll('input').forEach(i => i.addEventListener('change', desenhar));
+  desenhar();
+</script>
+</body>
+</html>

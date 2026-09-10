@@ -1094,6 +1094,11 @@ export function StoreProvider({ children }) {
           // O `done` do servidor é o de HOJE. Funde-se, senão uma tarefa
           // marcada neste telefone e ainda por subir voltava a por fazer.
           done: { ...x.done, ...casa.done },
+          // E o `pending` — as marcações de criança à espera de um adulto —
+          // pela mesma razão. O que o servidor já dá por FEITO deixa de estar
+          // à espera, seja o que for que este telefone pensava.
+          pending: { ...x.pending, ...(casa.pending || {}),
+            ...Object.fromEntries(Object.keys(casa.done || {}).map(id => [id, false])) },
           feitas: casa.feitas || {},
         }));
       }
@@ -3333,17 +3338,44 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // tem um índice único em (tarefa, dia) que faz dois telefones colidirem em
     // vez de se anularem.
     //
-    // Se `done` não muda (o caminho da criança, que só põe `pending`), não há
-    // nada a subir: a confirmação é outra coisa e ainda não está ligada.
-    if (!sync || !('done' in patch)) return;
-    const ficouFeita = !!patch.done[id];
-    if (ficouFeita === !!s.done[id]) return;
-
+    if (!sync) return;
     const ses = sync.sessao();
     const tarefa = tarefaNoServidor(id);
     if (!ses || !tarefa) return;          // tarefa ainda só local: nada a subir
-
     const hoje = TODAY_KEY.replace(/^d/, '');
+
+    // ── O caminho da CRIANÇA: «a confirmar» ───────────────────────────────
+    //
+    // ⚠ Dizia aqui «se `done` não muda, não há nada a subir» — e a marcação
+    // da criança nunca subia: ficava no telemóvel dela, e a mãe não a via.
+    // Marcar cria a MESMA linha (sem `confirmada_em`: os pontos não contam
+    // ainda); desmarcar apaga-a, e o servidor só deixa a criança apagar a
+    // sua, enquanto ninguém a confirmou. Ligado em 10/09/2026.
+    const mudouDone = 'done' in patch && !!patch.done[id] !== !!s.done[id];
+    const mudouPend = 'pending' in patch && !!patch.pending[id] !== !!s.pending[id];
+    if (byChild && !mudouDone && mudouPend) {
+      if (patch.pending[id]) {
+        sync.marcarTarefaFeita({ casa: ses.casa, tarefa, dia: TODAY_KEY, marcadaPor: ses.membro })
+          .then((r) => { if (r && r.id) set(x => ({
+            feitas: { ...x.feitas, [`${tarefa}|${hoje}`]: { id: r.id, confirmada: false } },
+          })); })
+          .catch(() => {});
+      } else {
+        const linha = (s.feitas || {})[`${tarefa}|${hoje}`];
+        if (linha && !linha.confirmada) {
+          sync.desmarcarTarefaFeita(linha.id)
+            .then(() => set(x => {
+              const { [`${tarefa}|${hoje}`]: fora, ...resto } = x.feitas || {};
+              return { feitas: resto };
+            }))
+            .catch(() => {});
+        }
+      }
+      return;
+    }
+
+    if (!mudouDone) return;
+    const ficouFeita = !!patch.done[id];
     if (ficouFeita) {
       sync.marcarTarefaFeita({ casa: ses.casa, tarefa, dia: TODAY_KEY, marcadaPor: ses.membro })
         .then((r) => { if (r && r.id) {

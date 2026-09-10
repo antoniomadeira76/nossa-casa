@@ -143,6 +143,9 @@ export const AREAS = [
 
 export const REGISTO_APP = [
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
+  { v: '1.11.1', d: '10/09/2026', k: 'corrigido', a: 'Tarefas', t: 'No modo criança, marcar uma tarefa deixa-a «a confirmar por um adulto» e chega ao servidor: a mãe vê-a à espera no telemóvel dela e confirma-a nas Tarefas. Ficava feita só no telemóvel da criança, sem confirmação de ninguém. A criança desmarca a sua enquanto ninguém a confirmou; o que já foi confirmado não se desfaz daí' },
+  { v: '1.11.1', d: '10/09/2026', k: 'novo', a: 'Entrada', t: 'No modo criança, a bola do nome abre «O meu perfil»: a criança escolhe o avatar (figura e cor) e o esquema de cor, e continua a poder mudar o PIN. As escolhas ficam no servidor, como as dos adultos' },
+  { v: '1.11.1', d: '10/09/2026', k: 'corrigido', a: 'Perfil', t: 'A figura escolhida para o avatar chega ao servidor. Ficava só no aparelho onde se escolheu, e o outro telemóvel continuava a ver a inicial' },
   { v: '1.11.1', d: '10/09/2026', k: 'alterado', a: 'A App', t: 'Na app da criança o cabeçalho e o rodapé passam a ter a cor do esquema, como nos adultos. Tinham a cor da criança e não mudavam com o esquema; essa cor fica agora na bola do avatar, que é o que diz quem entrou' },
   { v: '1.11.1', d: '10/09/2026', k: 'corrigido', a: 'A App', t: 'A app da criança segue o esquema de cor guardado para ela, como já seguia o aspeto claro ou escuro. Ficava sempre em Violeta, fosse qual fosse a preferência no servidor' },
   { v: '1.11.1', d: '10/09/2026', k: 'corrigido', a: 'A App', t: 'A data passa sozinha à meia-noite: a app deixada aberta dizia «Quarta, 09/09» na quinta até recarregar. Agora confere o dia a cada meio minuto e ao voltar à frente, sem recarregar nem reiniciar a sessão' },

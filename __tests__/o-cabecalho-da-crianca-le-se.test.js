@@ -67,8 +67,11 @@ describe('⚠ o cabeçalho da criança lê-se em todas as cores da paleta', () =
     expect(kidApp).toMatch(/const bola = chromeDaCrianca\(kidColor\)/);
     expect(kidApp).not.toMatch(/backgroundColor: kidColor/);
     expect(kidApp).toMatch(/onChrome\(t\.chrome\)/);
-    const bola = kidApp.slice(kidApp.indexOf('kid.charAt(0)') - 500, kidApp.indexOf('kid.charAt(0)'));
+    // 1 100 caracteres: entre a bola e a inicial há agora a figura escolhida
+    // (`Figura`, branca também) e o comentário que a explica.
+    const bola = kidApp.slice(kidApp.indexOf('kid.charAt(0)') - 1100, kidApp.indexOf('kid.charAt(0)'));
     expect(bola).toMatch(/backgroundColor: bola/);
+    expect(bola).toMatch(/<Figura nome=\{st\.membros\[kid\]\.figura\} size=\{24\} color="#FFFFFF" \/>/);
     expect(bola).toMatch(/color: '#FFFFFF'/);
   });
 

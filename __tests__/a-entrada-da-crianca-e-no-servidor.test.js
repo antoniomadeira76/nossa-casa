@@ -70,9 +70,12 @@ describe('⚠ o PIN vive no servidor', () => {
     // invalida o token.
     const sync = ler('src/sync.js');
     expect(sync).toMatch(/await servidor\.auth\.mudarMeuPin\(atual, novo\);\s*await servidor\.auth\.entrarCrianca\(r\.login, novo\)/);
-    // E a KidApp tem onde: a bola do cabeçalho abre «O meu PIN».
+    // E a KidApp tem onde: a bola do cabeçalho abre «O meu perfil», e uma das
+    // linhas dessa folha é «O meu PIN» (desde 10/09/2026; antes a bola abria
+    // o PIN directamente).
     const kid = ler('src/KidApp.jsx');
-    expect(kid).toMatch(/accessibilityLabel="O meu PIN"/);
+    expect(kid).toMatch(/accessibilityLabel="O meu perfil"/);
+    expect(kid).toMatch(/title="O meu PIN"/);
     expect(kid).toMatch(/mudarMeuPin\(kid, atual, novo\)/);
   });
 

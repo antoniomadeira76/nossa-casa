@@ -574,7 +574,13 @@ await criar({
     + ` && (tarefa.atribuido_a = @request.auth.id || ${ADULTO})`,
   // a confirmação que valida os pontos exige adulto
   updateRule: `${DA_CASA} && tarefa.casa = @request.auth.casa && ${ADULTO}`,
-  deleteRule: `${DA_CASA} && tarefa.casa = @request.auth.casa && ${ADULTO}`,
+  // Desmarcar APAGA a linha (INVARIANTE #2). Um adulto apaga qualquer uma; a
+  // criança apaga só a que ELA marcou e ninguém confirmou ainda — foi ela que
+  // a pôs, e enquanto está «a confirmar» é dela. Uma linha confirmada é
+  // pontos contados: desfazê-la é de adulto. (10/09/2026, ao ligar a marcação
+  // da criança ao servidor.)
+  deleteRule: `${DA_CASA} && tarefa.casa = @request.auth.casa`
+    + ` && (${ADULTO} || (marcada_por = @request.auth.id && confirmada_em = ""))`,
 });
 
 // ── Dinheiro ─────────────────────────────────────────────────────────────────
