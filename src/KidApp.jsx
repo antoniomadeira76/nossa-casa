@@ -5,7 +5,7 @@ import { useStore } from './store';
 import { buildTheme, onChrome, S, R, FONT, SCHEMES, corDoMembro, chromeDaCrianca, elev, LARGURA_APP } from './theme';
 import { EUR, parseKey, pad2, plural } from './format';
 import Icon from './Icon';
-import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe } from './ui';
+import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe, Linha, Choice } from './ui';
 import Sheet from './Sheet';
 import EscolherAvatar from './sheets/EscolherAvatar';
 import EscolhaDeEsquema from './EsquemaDeCor';
@@ -329,6 +329,108 @@ function KidTasksView({ t, kid, tasks }) {
   );
 }
 
+// ── As Compras da criança ────────────────────────────────────────────────────
+//
+// 11/09/2026 — a documentação dizia «a lista é de todos: as crianças também
+// pedem artigos», e a app da criança não tinha lista nenhuma. Passa a ter: a
+// lista da casa, corredor a corredor, e «Pedir um artigo». SEM preços — o modo
+// criança não mostra dinheiro da casa — e SEM as prendas: um artigo «só adultos» não
+// chega sequer ao telemóvel dela (INVARIANTE #3, na regra de leitura do
+// servidor). O filtro daqui é para a demonstração sem servidor e para o que já
+// estivesse gravado neste aparelho.
+function FolhaPedirArtigo({ t, kid, onClose }) {
+  const { criarArtigo, seccoes } = useStore();
+  const [rotulo, setRotulo] = useState('');
+  const [seccao, setSeccao] = useState(seccoes[0] || null);
+  const pronto = !!rotulo.trim();
+  const pedir = () => {
+    if (!pronto) return;
+    // Pela loja, como tudo o resto: é ela que o manda ao servidor, com o
+    // `pedido_por` da criança. A visibilidade é sempre «familia» — a criança
+    // não esconde artigos aos adultos.
+    criarArtigo({ label: rotulo, section: seccao || seccoes[0], est: 0, staple: false, by: kid, vis: 'familia' });
+    onClose();
+  };
+  return (
+    <Sheet t={t} title="Pedir um artigo" sub="Entra na lista da casa, com o seu nome" onClose={onClose}
+      action={<Primary t={t} comum label="Pedir" disabled={!pronto} onPress={pedir} />}>
+      <View style={{ gap: S.lg }}>
+        <View style={{ gap: S.sm }}>
+          <Label t={t}>Artigo</Label>
+          <TextInput value={rotulo} onChangeText={setRotulo} maxLength={60}
+            placeholder="Ex: Iogurtes de morango" placeholderTextColor={t.text3}
+            accessibilityLabel="Nome do artigo"
+            style={{ minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body, fontSize: 16,
+              color: t.text1, borderRadius: R.row, borderWidth: 1, borderColor: t.border, backgroundColor: t.card }} />
+        </View>
+        <View style={{ gap: S.sm }}>
+          <Label t={t}>Corredor</Label>
+          <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
+            {seccoes.map(sec => (
+              <Choice key={sec} t={t} label={sec} selected={seccao === sec} onPress={() => setSeccao(sec)} />
+            ))}
+          </View>
+        </View>
+      </View>
+    </Sheet>
+  );
+}
+
+function KidComprasView({ t, kid }) {
+  const st = useStore();
+  const { s, allItems, seccoes } = st;
+  const [aPedir, setAPedir] = useState(false);
+  const visiveis = allItems().filter(i => i.vis !== 'adultos');
+  const stateOf = (i) => s.status[i.id] || (i.real ? 'done' : 'open');
+
+  return (
+    <ScrollView style={{ flex: 1, minHeight: 0 }} contentContainerStyle={{ paddingBottom: S.xl }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+        <Primary t={t} comum label="Pedir um artigo" onPress={() => setAPedir(true)} />
+      </View>
+
+      {seccoes.map(sec => {
+        const rows = visiveis.filter(i => i.s === sec);
+        if (!rows.length) return null;
+        return (
+          <View key={sec} style={{ marginTop: S.xl, gap: S.md }}>
+            <View style={{ paddingHorizontal: 16 }}>
+              <SectionTitle t={t}>{sec}</SectionTitle>
+            </View>
+            <View style={{ marginHorizontal: 16 }}>
+              {rows.map(i => {
+                const done = stateOf(i) === 'done';
+                return (
+                  <Linha key={i.id} t={t}
+                    faixa={done ? t.state.okBorder : undefined}
+                    tinta={done ? t.state.okBg : undefined}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
+                      <Icon name={done ? 'checkCircle' : 'infoCircle'} size={24} color={done ? t.state.ok : t.text3} />
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 16, color: done ? t.text3 : t.text2,
+                          textDecorationLine: done ? 'line-through' : 'none' }}>{i.label}</Text>
+                        {i.by ? <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>{i.by}</Text> : null}
+                      </View>
+                    </View>
+                  </Linha>
+                );
+              })}
+            </View>
+          </View>
+        );
+      })}
+
+      {!visiveis.length ? (
+        <View style={{ paddingHorizontal: 16, paddingTop: S.xl }}>
+          <Empty t={t} icon="storefront" title="A lista está vazia" hint="Peça o primeiro artigo." />
+        </View>
+      ) : null}
+
+      {aPedir ? <FolhaPedirArtigo t={t} kid={kid} onClose={() => setAPedir(false)} /> : null}
+    </ScrollView>
+  );
+}
+
 // Vista do Cofre
 function KidVaultView({ t, kid }) {
   const st = useStore();
@@ -538,12 +640,14 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
       <View style={{ flex: 1, minHeight: 0 }}>
         {kidTab === 'tarefas' ? (
           <KidTasksView t={t} kid={kid} tasks={tasks} />
+        ) : kidTab === 'compras' ? (
+          <KidComprasView t={t} kid={kid} />
         ) : (
           <KidVaultView t={t} kid={kid} />
         )}
       </View>
 
-      {/* Rodapé — dois separadores */}
+      {/* Rodapé — três separadores (as Compras entraram em 11/09/2026) */}
       <View style={{
         flexGrow: 0, flexShrink: 0, flexBasis: 'auto',
         backgroundColor: t.chrome, flexDirection: 'row',
@@ -551,6 +655,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
       }}>
         {[
           { key: 'tarefas', label: 'Tarefas', icon: 'checkSquare' },
+          { key: 'compras', label: 'Compras', icon: 'storefront' },
           { key: 'cofre', label: 'O Meu Cofre', icon: 'bank' },
         ].map(x => {
           const on = kidTab === x.key;

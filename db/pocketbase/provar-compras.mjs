@@ -324,6 +324,47 @@ await prova('a lista ABERTA não entra no histórico', async () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
+// As prendas: um artigo «só os adultos» não chega ao telemóvel da criança.
+// (11/09/2026 — INVARIANTE #3 aplicado à lista de compras.)
+console.log('\n── as prendas: o que a criança NÃO recebe ──');
+
+let prenda = null;
+const doLeo = await telemovel(`${casa.id}_Leo`, '1357');
+
+await prova('a Rita põe uma prenda na lista, «só os adultos»', async () => {
+  const r = await comId(sync.artigoDeCompras({
+    casa: daRita.casa, lista, rotulo: 'Prenda de anos do Leo', pedidoPor: daRita.membro,
+    estimativa: 14.9, visibilidade: 'adultos' }), 'artigoDeCompras(prenda)');
+  prenda = r.id;
+  const a = await admin.collection('artigos').getOne(prenda);
+  igual(a.visibilidade, 'adultos');
+});
+
+await prova('⚠ o telemóvel do Léo pede a lista e a prenda NÃO vem', async () => {
+  const dele = await doLeo.collection('artigos').getFullList();
+  if (dele.some(a => a.id === prenda)) throw new Error('a prenda chegou à criança');
+  // E os outros artigos vêm: a lista continua a ser dele também.
+  if (!dele.some(a => a.id === banana)) throw new Error('a criança deixou de ver a lista');
+});
+
+await prova('⚠ nem pedindo a linha pelo id', () =>
+  recusado(() => doLeo.collection('artigos').getOne(prenda)));
+
+await prova('o Tomás vê a prenda — é adulto', async () => {
+  const a = await doTomas.collection('artigos').getOne(prenda);
+  igual(a.rotulo, 'Prenda de anos do Leo');
+});
+
+await prova('e o Léo PEDE um artigo, com o nome dele', async () => {
+  const r = await doLeo.collection('artigos').create({
+    casa: casa.id, lista, rotulo: 'Iogurtes de morango', pedido_por: leo.id, estado: 'por_comprar' });
+  igual(r.pedido_por, leo.id);
+  // Sem visibilidade escrita, lê-se como «familia»: a Rita vê-o.
+  const naRita = await admin.collection('artigos').getOne(r.id);
+  igual(naRita.visibilidade === 'adultos', false);
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
 console.log('\n── e nada disto atravessa casas ──');
 
 await prova('⚠ apagar a lista leva os artigos dela', async () => {

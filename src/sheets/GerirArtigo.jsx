@@ -35,19 +35,22 @@ export default function GerirArtigo({ t, artigo, onApagar, onClose }) {
     s: artigo.s,
     est: artigo.est || 0,
     staple: !!artigo.staple,
+    vis: artigo.vis === 'adultos' ? 'adultos' : 'familia',
   });
   const [erro, setErro] = useState(null);
 
   const rotulo = form.label.trim();
   const mudouCorredor = form.s !== artigo.s;
+  const visAntes = artigo.vis === 'adultos' ? 'adultos' : 'familia';
   const mudou = rotulo !== (artigo.label || '')
     || mudouCorredor
     || Number(form.est) !== Number(artigo.est || 0)
-    || form.staple !== !!artigo.staple;
+    || form.staple !== !!artigo.staple
+    || form.vis !== visAntes;
 
   const guardar = () => {
     const msg = alterarArtigo(artigo.id, {
-      label: rotulo, s: form.s, est: Number(form.est) || 0, staple: form.staple,
+      label: rotulo, s: form.s, est: Number(form.est) || 0, staple: form.staple, vis: form.vis,
     });
     if (msg) { setErro(msg); return; }
     onClose();
@@ -122,6 +125,23 @@ export default function GerirArtigo({ t, artigo, onApagar, onClose }) {
         </View>
         <Toggle t={t} on={form.staple} label="Artigo habitual"
           onPress={() => setForm(f => ({ ...f, staple: !f.staple }))} />
+      </View>
+
+      {/* Quem vê — a mesma escolha da folha de criar, pela mesma razão que
+          os outros campos: o que se cria com cinco coisas altera-se com cinco. */}
+      <View style={{ gap: S.sm }}>
+        <Label t={t}>Quem vê</Label>
+        <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
+          <Choice t={t} label="A casa toda" selected={form.vis !== 'adultos'}
+            onPress={() => setForm(f => ({ ...f, vis: 'familia' }))} />
+          <Choice t={t} label="Só os adultos" selected={form.vis === 'adultos'}
+            onPress={() => setForm(f => ({ ...f, vis: 'adultos' }))} />
+        </View>
+        <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+          {form.vis === 'adultos'
+            ? 'Uma prenda: as crianças não veem esta linha, nem no telemóvel delas.'
+            : 'Todos os membros da casa veem este artigo.'}
+        </Text>
       </View>
 
       {erro ? (

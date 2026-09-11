@@ -16,6 +16,9 @@ export default function NovoArtigo({ t, user, onClose }) {
     section: seccoes[0] || null,
     staple: false,
     est: 0,
+    // Quem vê: a casa toda, salvo se for uma prenda. Predefinição «familia»,
+    // que é o que a lista sempre foi.
+    vis: 'familia',
   });
 
   const handleSave = () => {
@@ -31,6 +34,7 @@ export default function NovoArtigo({ t, user, onClose }) {
       est: form.est || 0,
       staple: form.staple,
       by: user,
+      vis: form.vis,
     });
 
     onClose();
@@ -99,6 +103,24 @@ export default function NovoArtigo({ t, user, onClose }) {
         </View>
         <Toggle t={t} on={form.staple} label="Artigo habitual"
           onPress={() => setForm(f => ({ ...f, staple: !f.staple }))} />
+      </View>
+
+      {/* Quem vê o artigo. «Só os adultos» é a prenda: a criança não a recebe
+          do servidor (INVARIANTE #3) e a app dela não a mostra. Esta folha é
+          dos adultos — a criança pede artigos pela dela, sem esta escolha. */}
+      <View style={{ gap: S.sm }}>
+        <Label t={t}>Quem vê</Label>
+        <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
+          <Choice t={t} label="A casa toda" selected={form.vis !== 'adultos'}
+            onPress={() => setForm(f => ({ ...f, vis: 'familia' }))} />
+          <Choice t={t} label="Só os adultos" selected={form.vis === 'adultos'}
+            onPress={() => setForm(f => ({ ...f, vis: 'adultos' }))} />
+        </View>
+        <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+          {form.vis === 'adultos'
+            ? 'Uma prenda: as crianças não veem esta linha, nem no telemóvel delas.'
+            : 'Todos os membros da casa veem este artigo.'}
+        </Text>
       </View>
 
       <Primary comum

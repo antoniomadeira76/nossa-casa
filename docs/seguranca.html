@@ -257,6 +257,7 @@ class Component extends DCLogic {
         { op: 'Definir valor do ponto e dia da semanada', ...R.admin, check: 'Valor dentro dos limites aceites no servidor (0,01–5,00 €), não apenas no campo.' },
         { op: 'Gerir membros, papéis e PINs', ...R.admin, check: 'Além do papel: recusar a remoção ou despromoção do último administrador, e recusar a transição adulto → criança.' },
         { op: 'Registar despesa e fechar compras', ...R.adulto, check: 'Papel adulto ou administração; o pagador indicado tem de ser um membro adulto da casa.' },
+        { op: 'Ver e pedir artigos da lista', ...R.qualquer, check: 'Qualquer membro lê a lista e pede artigos com o seu nome. Um artigo «só os adultos» (a prenda) não é devolvido a uma criança — pela regra de leitura, não pelo ecrã (11/09/2026).' },
         { op: 'Pagar semanada e dar bónus', ...R.adulto, check: 'Papel adulto; o destino é um perfil de criança da mesma casa.' },
         { op: 'Concluir uma tarefa', ...R.qualquer, check: 'Qualquer membro conclui, mas só a si mesmo atribuído; a confirmação que valida os pontos exige adulto. Desmarcar apaga a linha: um adulto apaga qualquer uma, a criança só a que ela marcou e ninguém confirmou (10/09/2026).' },
         { op: 'Ler ou escrever a própria ficha de saúde', ...R.proprio, check: 'Identificador do membro na sessão igual ao dono da ficha, ou adulto quando o dono é uma criança da casa. Nunca por parâmetro do pedido.' },

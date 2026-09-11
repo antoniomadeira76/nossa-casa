@@ -6,7 +6,7 @@
 // Não confundir com `s.registo`, que é o histórico de alterações que a
 // FAMÍLIA faz à casa. São duas coisas diferentes, e o ecrã mostrava a segunda
 // onde a referência 17 mostra a primeira.
-export const APP_VERSION = '1.11.1';
+export const APP_VERSION = '1.12.0';
 
 // ── O que a app é, e o que cada área faz ─────────────────────────────────────
 //
@@ -143,6 +143,9 @@ export const AREAS = [
 
 export const REGISTO_APP = [
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
+  // ── 1.12.0 ────────────────────────────────────────────────────────────────
+  { v: '1.12.0', d: '11/09/2026', k: 'novo', a: 'Compras', t: 'Um artigo pode ser «só os adultos»: a prenda de anos que a criança não deve ver. Não é escondida no ecrã, é o servidor que não a manda ao telemóvel dela. Na lista aparece com a pastilha «Só adultos»' },
+  { v: '1.12.0', d: '11/09/2026', k: 'novo', a: 'Compras', t: 'O modo criança ganhou o separador Compras: a lista da casa, corredor a corredor, sem preços, e «Pedir um artigo», que entra na lista com o nome da criança. A documentação prometia-o desde o início e a app não o tinha' },
   { v: '1.11.1', d: '10/09/2026', k: 'corrigido', a: 'Tarefas', t: 'No modo criança, marcar uma tarefa deixa-a «a confirmar por um adulto» e chega ao servidor: a mãe vê-a à espera no telemóvel dela e confirma-a nas Tarefas. Ficava feita só no telemóvel da criança, sem confirmação de ninguém. A criança desmarca a sua enquanto ninguém a confirmou; o que já foi confirmado não se desfaz daí' },
   { v: '1.11.1', d: '10/09/2026', k: 'novo', a: 'Entrada', t: 'No modo criança, a bola do nome abre «O meu perfil»: a criança escolhe o avatar (figura e cor) e o esquema de cor, e continua a poder mudar o PIN. As escolhas ficam no servidor, como as dos adultos' },
   { v: '1.11.1', d: '10/09/2026', k: 'corrigido', a: 'Perfil', t: 'A figura escolhida para o avatar chega ao servidor. Ficava só no aparelho onde se escolheu, e o outro telemóvel continuava a ver a inicial' },

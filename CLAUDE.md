@@ -46,7 +46,7 @@ não estão escritas e esperadas — estão **provadas a correr**:
 npm run db:servir     # o servidor. Sem ele a app corre local, e o ecrã de
                       # entrada diz que o servidor não responde — não que a
                       # Google esteja mal configurada. Já enganou duas vezes.
-npm run db:provar     # 416 provas, vinte e três ficheiros
+npm run db:provar     # 421 provas, vinte e três ficheiros
 ```
 
 Cada prova tenta o que a `docs/seguranca.html` diz que não pode acontecer e falha se
@@ -62,7 +62,10 @@ npm run db:campos     # idempotente, e confere que os campos ficaram lá
 ```
 
 Já falhou três vezes por esta ordem: o `membros.avatar`, o `artigos.corredor`, o `artigos.posto`.
-O quarto, `membros.pin_definido` (09/09/2026), já nasceu nos dois sítios.
+O quarto, `membros.pin_definido` (09/09/2026), e o quinto, `artigos.visibilidade` (11/09/2026), já
+nasceram nos dois sítios. **E uma REGRA que mude depois da base precisa do mesmo par**: a
+declaração no `criar-colecoes.mjs` e uma linha na tabela `REGRAS` do `acrescentar-campos.mjs`,
+que a aplica ao servidor a andar — aconteceu ao `tarefas_feitas` (apagar) e aos `artigos` (ler).
 
 **O PIN vive no servidor.** A criança entra com `authWithPassword` (o `login`
 `casa_nome` e o PIN como palavra-passe), o «tem PIN» é o `pin_definido` do membro

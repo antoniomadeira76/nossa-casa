@@ -2498,10 +2498,14 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // idas — e isso é um estado válido, não um erro.
   const listaAberta = () => (s.shopPlan || {}).idServidor || null;
 
-  const criarArtigo = ({ label, section, est, staple, by }) => {
+  // `vis`: quem vê o artigo — `familia` (todos) ou `adultos` (a prenda que a
+  // criança não pode ver). É o servidor que não a devolve à criança; aqui
+  // guarda-se para a pastilha e para a leitura sem servidor.
+  const criarArtigo = ({ label, section, est, staple, by, vis }) => {
     const rotulo = String(label || '').trim();
     if (!rotulo) return null;
     const id = 'art-' + Date.now();
+    const visibilidade = vis === 'adultos' ? 'adultos' : 'familia';
     set(x => ({
       // ⚠ O NOME do corredor, e não o índice. Quem chama pode mandar as duas
       // coisas — a folha do artigo ainda escolhe por posição —, e a tradução
@@ -2509,7 +2513,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       newItems: [...(x.newItems || []), {
         id,
         s: typeof section === 'number' ? (listaDeSeccoes(x)[section] || listaDeSeccoes(x)[0]) : section,
-        label: rotulo, est: est || 0, staple, by,
+        label: rotulo, est: est || 0, staple, by, vis: visibilidade,
       }],
     }));
 
@@ -2523,6 +2527,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         corredor: seccaoNoServidor(
           typeof section === 'number' ? (seccoes[section] || seccoes[0]) : section),
         pedidoPor: idDoMembro(by), habitual: !!staple, estimativa: est,
+        visibilidade,
       })
         .then((r) => { if (r && r.id) set(x => ({
           newItems: (x.newItems || []).map(a => (a.id === id ? { ...a, idServidor: r.id } : a)),
@@ -2594,6 +2599,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       ...(mudanca.s !== undefined ? { corredor: seccaoNoServidor(mudanca.s) } : {}),
       ...(mudanca.est !== undefined ? { estimativa: mudanca.est } : {}),
       ...(mudanca.staple !== undefined ? { habitual: mudanca.staple } : {}),
+      ...(mudanca.vis !== undefined ? { visibilidade: mudanca.vis } : {}),
     };
 
     if (!sync) return null;

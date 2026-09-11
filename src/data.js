@@ -58,6 +58,9 @@ export const ITEMS = [
   { id: 'pao',    s: 'Mercearia', label: 'Pão de forma',              est: 1.60, by: 'Adicionado por Rita · há 3 min' },
   { id: 'papel',  s: 'Casa', label: 'Papel de cozinha · 6 rolos',est: 4.20, staple: true, by: 'Artigo habitual' },
   { id: 'det',    s: 'Casa', label: 'Detergente da louça',       est: 2.30, staple: true, by: 'Artigo habitual' },
+  // Uma prenda: só os adultos a veem. Numa casa ligada é o servidor que não a
+  // devolve à criança; na demonstração é a app da criança que a não mostra.
+  { id: 'prenda', s: 'Casa', label: 'Prenda de anos do Léo · livro', est: 14.90, by: `Adicionado por Rita · ${ddmmRelativo(0)}`, vis: 'adultos' },
 ];
 
 export const EVENTS = [

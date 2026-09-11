@@ -806,10 +806,21 @@ await criar({
     // lista inteira lia-se empatada em primeiro e saía por ordem qualquer —
     // já aconteceu às tarefas, e está escrito no campo delas.
     num('posto', { min: 0, onlyInt: true }),
+    // Quem vê o artigo. `familia` (ou vazio) é a lista de todos; `adultos` é a
+    // prenda de anos do Léo, que o Léo não pode ver — e, pelo INVARIANTE #3,
+    // não pode sequer CHEGAR ao telemóvel dele. É a regra de leitura que a
+    // impõe, não o ecrã. (11/09/2026, a pedido do dono da casa: «prendas com
+    // visibilidade».) O quinto campo a nascer nos dois sítios.
+    sel('visibilidade', ['familia', 'adultos']),
   ],
   // O estado vive na linha do artigo. Se fosse uma lista de identificadores
   // confirmados, dois telefones na mesma loja anulavam-se; assim, fundem-se.
-  listRule: DA_CASA, viewRule: DA_CASA,
+  //
+  // ⚠ A leitura filtra a visibilidade no SERVIDOR: uma criança que peça a
+  // lista não recebe as linhas «adultos». Vazio lê-se como «familia», que é o
+  // que todas as linhas anteriores a este campo são.
+  listRule: `${DA_CASA} && (visibilidade != "adultos" || ${ADULTO})`,
+  viewRule: `${DA_CASA} && (visibilidade != "adultos" || ${ADULTO})`,
   createRule: `${DA_CASA} && ${daCasaTambem('lista', 'pedido_por', 'corredor')}`,
   updateRule: `${DA_CASA} && ${daCasaTambem('lista', 'pedido_por', 'corredor')}`,
   deleteRule: `${DA_CASA} && ${ADULTO}`,

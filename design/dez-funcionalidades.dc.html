@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dez Funcionalidades</title>
+<style>
+  :root { --pagina: #F0F2F5; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --t1: #262626; --t2: #3B3F48; --t3: #656C7C;
+    --ac: #078286; --acfg: #076F73; --chrome: #0A5B60; --ok: #1F9D55; --okbg: #E6F6EC; --oktx: #146B3A; --warnbg: #FEFFD0; --warntx: #7A5110; --infobg: #E8F4FF; --infotx: #0B4F8A; --errbg: #FDECEC; --errtx: #8E1C23; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 78ch; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 20px; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; grid-template-columns: 220px 1fr; gap: 16px; }
+  section h2 { grid-column: 1 / -1; margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  .tel { border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; background: var(--pagina); font-size: 10.5px; }
+  .cab { background: var(--chrome); color: #fff; padding: 8px 10px; font-weight: 600; font-size: 11px; }
+  .cab span { display: block; font-weight: 400; color: rgba(255,255,255,.82); font-size: 9.5px; }
+  .corpo { padding: 8px; display: grid; gap: 6px; }
+  .tit { color: var(--acfg); font-weight: 600; font-size: 10px; border-bottom: 1px solid var(--borda); padding-bottom: 3px; }
+  .linha { background: var(--cartao); border-bottom: 1px solid var(--div); padding: 6px 8px; display: flex; align-items: center; gap: 8px; min-height: 30px; }
+  .linha b { font-weight: 500; }
+  .linha .dir { margin-left: auto; color: var(--t3); font-variant-numeric: tabular-nums; }
+  .chip { display: inline-block; font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 999px; }
+  .ok { background: var(--okbg); color: var(--oktx); } .warn { background: var(--warnbg); color: var(--warntx); } .info { background: var(--infobg); color: var(--infotx); } .err { background: var(--errbg); color: var(--errtx); }
+  .barra { height: 6px; background: var(--div); border-radius: 3px; overflow: hidden; } .barra i { display: block; height: 100%; background: var(--ok); }
+  .botao { border: 1.5px solid var(--ac); color: var(--acfg); border-radius: 8px; padding: 6px; text-align: center; font-weight: 600; font-size: 10px; }
+  .grade { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; } .grade div { background: var(--cartao); border: 1px solid var(--div); border-radius: 4px; padding: 3px; font-size: 8.5px; min-height: 26px; } .grade div b { display: block; color: var(--t3); font-weight: 600; font-size: 8px; }
+  .rod { background: var(--chrome); display: flex; } .rod div { flex: 1; text-align: center; color: rgba(255,255,255,.82); font-size: 8px; padding: 6px 0; } .rod .on { color: #fff; font-weight: 600; }
+  dl { margin: 0; display: grid; grid-template-columns: 86px 1fr; gap: 4px 10px; font-size: 12.5px; align-content: start; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  code { background: var(--div); padding: 0 4px; border-radius: 3px; font-size: 11.5px; color: var(--t1); }
+  .nota { grid-column: 1 / -1; font-size: 12px; color: var(--t3); border-top: 1px dashed var(--borda); padding-top: 8px; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Dez funcionalidades, por ordem de implementação</h1>
+<p class="sub">Cada bloco tem o ecrã como vai ficar, à esquerda, e o que muda na loja, no servidor e nos invariantes, à direita. Medidas do desenho C: títulos de secção 13 px, linhas de 52 px, alvos de 44. Os números são os da casa de demonstração.</p>
+
+<div class="grelha">
+
+<section>
+  <h2>1. Prendas com visibilidade <small>Compras</small></h2>
+  <div class="tel">
+    <div class="cab">Compras<span>Sábado · Continente de Belém</span></div>
+    <div class="corpo">
+      <div class="tit">Novo artigo</div>
+      <div class="linha"><b>Rótulo</b><span class="dir">Bicicleta para o Léo</span></div>
+      <div class="linha"><b>Quem vê</b><span class="dir"><span class="chip ok">A casa toda</span> <span class="chip info">Só os adultos</span></span></div>
+      <div class="tit">Na lista (o Léo não vê esta linha)</div>
+      <div class="linha"><b>Bicicleta para o Léo</b> <span class="chip info">só adultos</span><span class="dir">120,00 €</span></div>
+      <div class="linha"><b>Leite · 6 un.</b><span class="dir">4,80 €</span></div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div class="on">Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Um alternador «Quem vê» na folha do artigo (predefinição: a casa toda) e uma pastilha «só adultos» na linha. No Modo Compras a linha aparece a quem a vê.</dd>
+    <dt>Dados</dt><dd>Campo <code>artigos.visibilidade</code>: <code>familia</code> ou <code>adultos</code>. Nasce nos dois sítios (<code>criar-colecoes</code> e <code>acrescentar-campos</code>).</dd>
+    <dt>Servidor</dt><dd>A <code>listRule</code> e a <code>viewRule</code> passam a <code>DA_CASA && (visibilidade != "adultos" || ADULTO)</code>. A criança não recebe a linha (INVARIANTE #3), não é o ecrã a escondê-la.</dd>
+    <dt>Provas</dt><dd>Léo lista artigos e não vê a prenda; Rita vê; Mia não a marca. Prova de ponta a ponta pelo <code>puxarCasa</code>.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>2. Objetivo do cofre <small>Modo criança · Dinheiro</small></h2>
+  <div class="tel">
+    <div class="cab">Olá, Léo<span>3 pontos por pagar · 1,20 € no cofre</span></div>
+    <div class="corpo">
+      <div class="tit">O meu objetivo</div>
+      <div class="linha" style="display:block"><b>Bicicleta</b> <span class="dir" style="float:right">1,20 € de 120,00 €</span><div class="barra" style="margin-top:6px"><i style="width:1%"></i></div><span style="color:var(--t3)">Faltam 118,80 € · ao ritmo de agora, 2 anos</span></div>
+      <div class="botao">Mudar o objetivo</div>
+      <div class="tit">Movimentos</div>
+      <div class="linha">Semanada<span class="dir">+1,20 €</span></div>
+    </div>
+    <div class="rod"><div>Tarefas</div><div class="on">O Meu Cofre</div></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Cartão no cofre da criança com nome, alvo, barra e a frase do ritmo; a criança define e muda. No Dinheiro dos adultos, a linha do cofre ganha «a juntar para: Bicicleta».</dd>
+    <dt>Dados</dt><dd>Coleção <code>objetivos_cofre</code>: <code>membro</code>, <code>nome</code>, <code>alvo</code>. O juntado é o saldo do cofre (soma dos <code>cofre_movimentos</code>), nunca um campo (INVARIANTE #2).</dd>
+    <dt>Servidor</dt><dd>Regra: a criança escreve o seu (<code>membro = @request.auth.id</code>); adultos leem os da casa. Um por criança (índice único).</dd>
+    <dt>Provas</dt><dd>Léo cria o seu; não cria o da Mia; Rita lê; o alvo aceita 0,01 a 1 000 €.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>3. Ementa da semana <small>Compras</small></h2>
+  <div class="tel">
+    <div class="cab">Compras<span>Ementa · 14 – 20 de setembro</span></div>
+    <div class="corpo">
+      <div class="grade">
+        <div><b>Seg</b>Massa à bolonhesa</div><div><b>Ter</b>Sopa e omelete</div><div><b>Qua</b>Frango no forno</div><div><b>Qui</b>—</div><div><b>Sex</b>Pizza</div><div><b>Sáb</b>Bacalhau</div><div><b>Dom</b>Almoço fora</div>
+      </div>
+      <div class="tit">Frango no forno · o que falta</div>
+      <div class="linha">Frango inteiro<span class="dir"><span class="chip warn">entra na lista</span></span></div>
+      <div class="linha">Batata · 2 kg<span class="dir"><span class="chip ok">já na lista</span></span></div>
+      <div class="botao">Pôr o que falta na lista</div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div class="on">Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Segunda aba das Compras: sete dias, um prato por dia; cada prato é uma lista de artigos com corredor. «Pôr o que falta» acrescenta só os que não estão na lista aberta.</dd>
+    <dt>Dados</dt><dd><code>pratos</code> (casa, nome, ingredientes como linhas <code>prato_artigos</code> com rótulo e corredor) e <code>ementa</code> (casa, dia, prato). Os artigos criados são artigos normais, com <code>pedido_por</code> quem pôs.</dd>
+    <dt>Servidor</dt><dd>Regras da casa, escrita de adultos; a criança vê a ementa (é o jantar dela). Relações ancoradas à casa, como as doze que já há.</dd>
+    <dt>Provas</dt><dd>«Pôr o que falta» não duplica; um prato de outra casa não entra; a criança lê e não escreve.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>4. Contas fixas com prazo <small>Dinheiro · Agenda</small></h2>
+  <div class="tel">
+    <div class="cab">Dinheiro<span>Setembro · 771,36 € disponíveis</span></div>
+    <div class="corpo">
+      <div class="tit">Contas fixas</div>
+      <div class="linha"><b>Renda</b> · dia 1 · Casa & contas<span class="dir"><span class="chip ok">paga</span> 850,00 €</span></div>
+      <div class="linha"><b>EDP</b> · dia 15 · Casa & contas<span class="dir"><span class="chip warn">em 4 dias</span> 62,40 €</span></div>
+      <div class="linha"><b>Internet</b> · dia 20 · Casa & contas<span class="dir">34,99 €</span></div>
+      <div class="botao">Marcar a EDP como paga</div>
+    </div>
+    <div class="rod"><div>Início</div><div class="on">Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Secção «Contas fixas» no Dinheiro; cada conta aparece na Agenda no dia e no «Precisa de si» dois dias antes. «Marcar como paga» regista a despesa no envelope com um toque.</dd>
+    <dt>Dados</dt><dd><code>contas_fixas</code>: nome, valor, dia do mês, envelope, quem paga. Pagar cria uma <code>despesa</code> normal com <code>conta_fixa</code> a apontar; «paga» é a existência dessa despesa no mês (soma, não campo).</dd>
+    <dt>Servidor</dt><dd>Adultos escrevem; a criança não lê (é orçamento). Ancorada à casa e ao envelope.</dd>
+    <dt>Provas</dt><dd>Pagar duas vezes no mês colide no índice (conta, mês); o valor pode mudar sem reescrever o histórico.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>5. Contratos e renovações <small>Equipamentos</small></h2>
+  <div class="tel">
+    <div class="cab">Equipamentos e contratos<span>3 equipamentos · 4 contratos</span></div>
+    <div class="corpo">
+      <div class="tit">Contratos</div>
+      <div class="linha"><b>Seguro do carro</b> · Fidelidade<span class="dir"><span class="chip warn">renova em 23 dias</span></span></div>
+      <div class="linha"><b>Internet</b> · MEO · fidelização<span class="dir">até 03/2027</span></div>
+      <div class="linha"><b>Inspeção do carro</b><span class="dir"><span class="chip err">passou há 4 dias</span></span></div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Segunda secção no ecrã dos Equipamentos, com a mesma linha e a mesma ficha (data, quem trata, documento anexo). Os avisos entram no «Precisa de si» como as garantias.</dd>
+    <dt>Dados</dt><dd><code>contratos</code>: nome, fornecedor, <code>renova_em</code>, <code>fidelizacao_ate</code>, responsável, ficheiro. Aviso a 30 dias, como as garantias.</dd>
+    <dt>Servidor</dt><dd>Mesmas regras dos equipamentos (adultos). Ficheiro pelo mesmo caminho da fatura.</dd>
+    <dt>Provas</dt><dd>Criança não lê; outra casa não lê; o ficheiro sobe e volta igual.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>6. Medicação a partir da receita <small>Saúde</small></h2>
+  <div class="tel">
+    <div class="cab">Saúde do Léo<span>Pediatria · Dr.ª Neves</span></div>
+    <div class="corpo">
+      <div class="tit">Receita · Ferro 30 mg</div>
+      <div class="linha">1 comprimido · ao pequeno-almoço<span class="dir">14 dias</span></div>
+      <div class="linha">Caixa de 20 · começou 09/09<span class="dir"><span class="chip warn">acaba a 28/09</span></span></div>
+      <div class="botao">Pôr as tomas na Agenda (só adultos)</div>
+      <div class="tit">Hoje</div>
+      <div class="linha"><span class="chip ok">tomado</span> 08:10 · Rita</div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div class="on">Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Na receita: dose, frequência, duração, tamanho da caixa. «Pôr na Agenda» cria os eventos «só adultos»; cada toma marca-se e fica com quem e quando. Aviso quando a caixa acaba antes da receita.</dd>
+    <dt>Dados</dt><dd><code>receitas_saude</code> ganha <code>frequencia</code>, <code>duracao_dias</code>, <code>caixa</code>; <code>tomas_saude</code> (receita, quando, por) é aditiva.</dd>
+    <dt>Servidor</dt><dd>Mesmo travão da Saúde: só servidor em casa; regra <code>PELO_EPISODIO</code>. A criança não vê as suas tomas.</dd>
+    <dt>Provas</dt><dd>Duas tomas na mesma hora colidem; a criança não lê; outra casa não lê.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>7. Ficha de emergência <small>Saúde</small></h2>
+  <div class="tel">
+    <div class="cab">Saúde do Léo<span>Ficha de emergência</span></div>
+    <div class="corpo">
+      <div class="linha"><b>Alergias</b><span class="dir">Amendoim · grave</span></div>
+      <div class="linha"><b>Medicação atual</b><span class="dir">Ferro 30 mg</span></div>
+      <div class="linha"><b>Médico</b><span class="dir">Dr.ª Neves · 21 000 0000</span></div>
+      <div class="linha"><b>Contactos</b><span class="dir">Rita · Tomás</span></div>
+      <div class="botao">Exportar em PDF para a escola</div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Uma folha na ficha da criança com alergias, medicação em curso (das receitas), médico e contactos; «Exportar» usa o PDF que a Saúde já tem.</dd>
+    <dt>Dados</dt><dd><code>alergias_saude</code> (membro, nome, gravidade, nota). O resto é derivado do que existe.</dd>
+    <dt>Servidor</dt><dd>Regras da Saúde, travão da casa. A criança não lê a própria ficha; o PDF sai do telemóvel de um adulto.</dd>
+    <dt>Provas</dt><dd>Criança não lê; adulto lê a do filho e não a do outro adulto; o PDF tem as quatro secções.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>8. Troca de tarefas entre irmãos <small>Modo criança · Tarefas</small></h2>
+  <div class="tel">
+    <div class="cab">Olá, Mia<span>2 pontos por pagar · 0,80 € no cofre</span></div>
+    <div class="corpo">
+      <div class="tit">Trocas</div>
+      <div class="linha"><b>Léo propõe:</b> o lixo pela mesa<span class="dir"><span class="chip info">a aceitar</span></span></div>
+      <div class="botao">Aceitar a troca</div>
+      <div class="tit">As Minhas Tarefas</div>
+      <div class="linha">Levantar a mesa<span class="dir">2 pt</span></div>
+    </div>
+    <div class="rod"><div class="on">Tarefas</div><div>O Meu Cofre</div></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Na tarefa da criança, «Propor troca» escolhe uma tarefa do irmão; o irmão aceita ou recusa; os adultos veem a troca no Início. Vale só para hoje.</dd>
+    <dt>Dados</dt><dd><code>trocas_tarefas</code>: dia, tarefa de, tarefa para, proposta por, aceite em. A atribuição do dia é derivada: a tarefa fica com quem a troca diz.</dd>
+    <dt>Servidor</dt><dd>A criança cria a sua; só o outro aceita; um adulto anula. Ancorada à casa nas duas tarefas.</dd>
+    <dt>Provas</dt><dd>Mia não aceita por si própria; a troca de outra casa não entra; à meia-noite acabou.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>9. Lista partilhada com quem não tem a app <small>Compras</small></h2>
+  <div class="tel">
+    <div class="cab">Compras<span>Partilhar a lista</span></div>
+    <div class="corpo">
+      <div class="linha">Endereço só de leitura<span class="dir"><span class="chip warn">1 hora</span></span></div>
+      <div class="linha" style="font-family:monospace;font-size:9px">…/lista/k7f3…9q</div>
+      <div class="botao">Copiar o endereço</div>
+      <div class="linha">Sem prendas «só adultos», sem preços, sem nomes.<span class="dir"></span></div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div class="on">Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Um botão na lista que gera um endereço com prazo; quem o abre vê só rótulos e corredores, sem entrar.</dd>
+    <dt>Dados</dt><dd>Rota do servidor com um sinal de uso único e prazo; não é uma conta. Nada se escreve por lá.</dd>
+    <dt>Servidor</dt><dd><b>Depende de uma decisão sua:</b> hoje o servidor vive em <code>127.0.0.1</code> e ninguém de fora lhe chega. Esta funcionalidade só faz sentido no dia em que o servidor for acessível fora de casa, e nesse dia é a Saúde que decide o calendário.</dd>
+    <dt>Provas</dt><dd>Sinal expirado recusa; sinal não lê prendas nem preços; não há escrita possível.</dd>
+  </dl>
+  <p class="nota">Fica em último e só se implementa depois da decisão sobre o servidor. Até lá, desenho apenas.</p>
+</section>
+
+<section>
+  <h2>10. Retrato do mês <small>Dinheiro · Documentação</small></h2>
+  <div class="tel">
+    <div class="cab">Setembro de 2026<span>Retrato do mês</span></div>
+    <div class="corpo">
+      <div class="tit">Dinheiro</div>
+      <div class="linha">Mercearia<span class="dir">412,30 € de 450,00 €</span></div>
+      <div class="linha">Casa & contas<span class="dir">947,39 € de 990,00 €</span></div>
+      <div class="tit">Tarefas</div>
+      <div class="linha">Léo · 22 feitas · 41 pontos<span class="dir"></span></div>
+      <div class="linha">Mia · 19 feitas · 35 pontos<span class="dir"></span></div>
+      <div class="botao">Exportar em PDF</div>
+    </div>
+    <div class="rod"><div>Início</div><div class="on">Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Ao fechar o mês, e depois em Documentação › Nesta casa, uma página por mês: gasto por envelope contra o limite, tarefas e pontos por criança, o que a casa decidiu. Exporta em PDF pelo caminho da Saúde.</dd>
+    <dt>Dados</dt><dd>Nenhum campo novo: é uma soma das linhas do mês (<code>despesas</code>, <code>tarefas_feitas</code>, <code>registo</code>), calculada na leitura.</dd>
+    <dt>Servidor</dt><dd>Nada muda. Só adultos veem (é orçamento).</dd>
+    <dt>Provas</dt><dd>A soma do retrato é igual à soma das linhas do mês, e o retrato de um mês fechado não muda quando o seguinte abre.</dd>
+  </dl>
+</section>
+
+</div>
+</body>
+</html>

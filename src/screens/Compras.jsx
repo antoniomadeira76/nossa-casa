@@ -4,7 +4,7 @@ import { View, Text, Pressable, Modal } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, dayLabel, parseKey, WD, plural } from '../format';
-import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Tile, Avatar, avatarDe } from '../ui';
+import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Tile, Avatar, avatarDe, Pill } from '../ui';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -275,7 +275,15 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
                         <Icon name={done ? 'checkCircle' : 'infoCircle'} size={24} color={done ? t.state.ok : t.text3} />
                         <View style={{ flex: 1, gap: 2 }}>
                           <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{i.label}</Text>
-                          <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{i.by}</Text>
+                          {/* Uma prenda: a criança não recebe esta linha do
+                              servidor. A pastilha diz-o a quem a vê, para
+                              ninguém a ler em voz alta à mesa. */}
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.sm }}>
+                            {i.vis === 'adultos' ? (
+                              <Pill label="Só adultos" fg={t.state.infoTexto} bg={t.state.tileInfo} border={t.state.info} />
+                            ) : null}
+                            <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{i.by}</Text>
+                          </View>
                         </View>
                         <Text style={{ fontFamily: FONT.ui, fontSize: 13,
                           fontWeight: done ? '600' : '400', color: done ? t.state.okTexto : t.text3 }}>

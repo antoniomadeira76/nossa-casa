@@ -60,6 +60,9 @@ const CAMPOS = [
   // Se a criança já tem PIN — posto pelo hook e pela rota, lido pela entrada
   // e pela Gestão. A quarta vez que um campo precisou destes dois sítios.
   ['membros', 'pin_definido', { type: 'bool' }],
+  // Quem vê o artigo: `familia` (todos) ou `adultos` (a prenda que a criança
+  // não pode ver). A quinta vez. (11/09/2026)
+  ['artigos', 'visibilidade', { type: 'select', values: ['familia', 'adultos'], maxSelect: 1 }],
 ];
 
 // As coleções que nasceram depois da base. A definição é a MESMA do
@@ -95,6 +98,30 @@ const CAMPOS_A_TIRAR = [
     'era um saldo ESCRITO (INVARIANTE #2). O que está juntado numa meta é a '
     + 'SOMA dos `meta_movimentos` — dois telefones a reforçar a mesma meta '
     + 'escreviam cada um o seu total e o último ganhava.'],
+];
+
+// ── E as REGRAS que mudaram depois da base ───────────────────────────────────
+//
+// ⚠ Segunda vez, e por isso uma tabela. Uma regra de coleção é, como um campo,
+// coisa que nasce em dois sítios: no `criar-colecoes.mjs`, para quem criar a
+// base amanhã, e aqui, para o servidor que já está a andar. A primeira mudança
+// (o `deleteRule` das `tarefas_feitas`, 10/09/2026) foi aplicada com um guião
+// descartável; a segunda (a leitura dos `artigos` com visibilidade, 11/09/2026)
+// ganhou esta tabela. O texto é o MESMO do `criar-colecoes.mjs`, letra a letra
+// — os dois ficheiros têm de dizer o mesmo, e o guarda do Jest confere-o.
+//
+// `[coleção, { regra: texto }]`. Só as regras listadas mudam; as outras ficam.
+const DA_CASA = 'casa = @request.auth.casa';
+const ADULTO = '@request.auth.papel != "crianca"';
+const REGRAS = [
+  ['tarefas_feitas', {
+    deleteRule: `${DA_CASA} && tarefa.casa = @request.auth.casa`
+      + ` && (${ADULTO} || (marcada_por = @request.auth.id && confirmada_em = ""))`,
+  }],
+  ['artigos', {
+    listRule: `${DA_CASA} && (visibilidade != "adultos" || ${ADULTO})`,
+    viewRule: `${DA_CASA} && (visibilidade != "adultos" || ${ADULTO})`,
+  }],
 ];
 
 const idDaColecao = async (nome) => (await pb.collections.getOne(nome)).id;
@@ -172,9 +199,24 @@ for (const [nome, campo, porque] of CAMPOS_A_TIRAR) {
   console.log(`${nome}: tirado ${campo} — ${porque}`);
 }
 
+// ── As regras ────────────────────────────────────────────────────────────────
+//
+// ⚠ Só DEPOIS dos campos: uma regra que fale de um campo que ainda não existe é
+// recusada pelo PocketBase.
+let regrasMudadas = 0;
+for (const [nome, regras] of REGRAS) {
+  const c = await pb.collections.getOne(nome);
+  const diferentes = Object.entries(regras).filter(([r, texto]) => c[r] !== texto);
+  if (!diferentes.length) { console.log(`${nome}: as regras já são estas.`); continue; }
+  await pb.collections.update(c.id, Object.fromEntries(diferentes));
+  regrasMudadas += diferentes.length;
+  console.log(`${nome}: ${diferentes.map(([r]) => r).join(', ')} — regra aplicada.`);
+}
+
 console.log(`\n${plural(colecoesCriadas, 'coleção criada', 'coleções criadas')}`
   + ` · ${plural(criados, 'campo acrescentado', 'campos acrescentados')}`
-  + ` · ${jaLa} já existiam · ${plural(tirados, 'tirado', 'tirados')}.`);
+  + ` · ${jaLa} já existiam · ${plural(tirados, 'tirado', 'tirados')}`
+  + ` · ${plural(regrasMudadas, 'regra aplicada', 'regras aplicadas')}.`);
 
 // ── E a prova de que ficaram lá ──────────────────────────────────────────────
 //
@@ -202,6 +244,14 @@ for (const c of COLECOES) {
 for (const [nome, campo] of CAMPOS_A_TIRAR) {
   const viva = await pb.collections.getOne(nome).catch(() => null);
   if (viva && viva.fields.some(f => f.name === campo)) faltam.push(`${nome}.${campo} continua lá`);
+}
+// E as regras leem-se de volta, pela mesma razão que os campos.
+for (const [nome, regras] of REGRAS) {
+  const viva = await pb.collections.getOne(nome).catch(() => null);
+  if (!viva) { faltam.push(`a coleção ${nome} não existe`); continue; }
+  for (const [r, texto] of Object.entries(regras)) {
+    if (viva[r] !== texto) faltam.push(`${nome}.${r} não ficou como a tabela diz`);
+  }
 }
 if (faltam.length) {
   console.error('\n✕ ' + faltam.join('\n✕ '));

@@ -616,6 +616,9 @@ export async function puxarCasa() {
     // tem. Sem `pedido_por`, fica vazia em vez de dizer «undefined».
     by: a.habitual ? 'Artigo habitual'
       : nomeDoMembro[a.pedido_por] ? `Adicionado por ${nomeDoMembro[a.pedido_por]}` : '',
+    // Quem vê: `adultos` é a prenda que a criança não pode ver. O servidor já
+    // não a devolve a uma criança; aqui é só a pastilha «só adultos» na linha.
+    vis: a.visibilidade === 'adultos' ? 'adultos' : 'familia',
   }));
 
   // A ordem que a mão deu aos artigos dentro do corredor. ⚠ Só entra quem tem
@@ -1279,7 +1282,7 @@ export async function alterarListaDeCompras(idNoServidor, campos) {
 
 // ⚠ O `corredor` é uma RELAÇÃO e vem de quem chama. O `seccao` numérico deixou
 // de ser escrito: era um índice, e a casa passou a poder reordenar as secções.
-export async function artigoDeCompras({ casa, lista, rotulo, corredor, pedidoPor, habitual, estimativa }) {
+export async function artigoDeCompras({ casa, lista, rotulo, corredor, pedidoPor, habitual, estimativa, visibilidade }) {
   if (!lista) throw new Error('Um artigo sem lista não se grava — não teria onde aparecer.');
   return criarOuEnfileirarCasa('artigos', {
     casa, lista, rotulo,
@@ -1288,6 +1291,7 @@ export async function artigoDeCompras({ casa, lista, rotulo, corredor, pedidoPor
     estado: 'por_comprar',
     habitual: !!habitual,
     estimativa: Number(estimativa) || 0,
+    visibilidade: visibilidade === 'adultos' ? 'adultos' : 'familia',
   });
 }
 
@@ -1327,6 +1331,7 @@ export async function alterarArtigo(idNoServidor, campos = {}) {
     ...(campos.habitual !== undefined ? { habitual: !!campos.habitual } : {}),
     ...(campos.estimativa !== undefined ? { estimativa: Number(campos.estimativa) || 0 } : {}),
     ...(campos.posto !== undefined ? { posto: Number(campos.posto) || 0 } : {}),
+    ...(campos.visibilidade !== undefined ? { visibilidade: campos.visibilidade === 'adultos' ? 'adultos' : 'familia' } : {}),
   };
   if (!Object.keys(linha).length) return { pendente: true };
   return servidor.pb.collection('artigos').update(idNoServidor, linha);
