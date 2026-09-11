@@ -338,6 +338,41 @@ export async function puxarCasa() {
     gastoPorEnvelope[nome] = (gastoPorEnvelope[nome] || 0) + (Number(d.valor) || 0);
   }
 
+  // ── As contas fixas, e quais estão pagas ──────────────────────────────────
+  //
+  // A definição vem da coleção, na forma da loja: o envelope e quem paga pelo
+  // NOME, que é como os ecrãs falam deles. O servidor só devolve a lista a um
+  // adulto — a criança recebe vazio, e é assim que tem de ser (§5).
+  //
+  // ⚠ «Paga» NÃO é um campo da conta: é a despesa do mês que aponta para ela
+  // (INVARIANTE #2). Sai daqui como lista de pagamentos `{ conta, mes, dia,
+  // valor, por }`, uma por despesa com `conta_fixa`, e a loja pergunta «há
+  // pagamento desta conta neste mês?». Duas contas iguais em dois telemóveis
+  // colidem na chave `conta-fixa:<id>:<mês>` em vez de pagarem a renda duas
+  // vezes.
+  const contasFixas = (casa.contas_fixas || []).map(c => ({
+    id: c.id,
+    idServidor: c.id,
+    nome: c.nome,
+    valor: Number(c.valor) || 0,
+    dia: Number(c.dia) || 1,
+    envelope: envelopePorId[c.envelope] || null,
+    quemPaga: nomeDoMembro[c.quem_paga] || null,
+  }));
+  // ⚠ Sem um `return {` aqui dentro: o guarda `o-que-desce-e-usado` procura o
+  // objeto que o `puxarCasa` DEVOLVE pela primeira ocorrência dessas palavras,
+  // e um `return {` no meio da função fazia-o ler a linha errada.
+  const diaDaDespesa = (d) => String(d.data || '').slice(0, 10);
+  const contasPagas = (casa.despesas || [])
+    .filter(d => d.conta_fixa && !d.anula_id)
+    .map(d => ({
+      conta: d.conta_fixa,
+      mes: diaDaDespesa(d).slice(0, 7),
+      dia: /^\d{4}-\d{2}-\d{2}$/.test(diaDaDespesa(d)) ? `d${diaDaDespesa(d)}` : null,
+      valor: Number(d.valor) || 0,
+      por: nomeDoMembro[d.pagador] || null,
+    }));
+
   // ── Quanto cada um pagou das despesas PARTILHADAS deste mês ───────────────
   //
   // ⚠ É a base do acerto de contas, e não existia.
@@ -790,6 +825,8 @@ export async function puxarCasa() {
     objetivosCofre,
     pratos,
     ementa,
+    contasFixas,
+    contasPagas,
     newItems,
     itemOrder,
     status,
@@ -837,10 +874,15 @@ export async function movimentoDeCofre({ casa, membro, tipo, valor, motivo, data
   });
 }
 
-export async function despesa({ casa, envelope, valor, pagador, descricao, data, divideMeias }) {
+// `contaFixa` é a conta que esta despesa paga, quando é o caso; `idemKey` é a
+// chave que faz a SEGUNDA do mês colidir — `conta-fixa:<id>:<AAAA-MM>`. Sem
+// chave dada, a fila põe uma ao acaso, como sempre pôs.
+export async function despesa({ casa, envelope, valor, pagador, descricao, data, divideMeias, contaFixa, idemKey }) {
   if (!ligado()) return { enviadas: 0, pendentes: 0 };
   return servidor.escrever.criar('despesas', {
     casa, envelope, valor, pagador, descricao, data, divide_meias: divideMeias,
+    conta_fixa: contaFixa || null,
+    ...(idemKey ? { idem_key: idemKey } : {}),
   });
 }
 
@@ -973,6 +1015,45 @@ export async function jantarDoDia({ casa, dia, prato }) {
   }
   if (ja) return servidor.pb.collection('ementa').update(ja.id, { prato });
   return servidor.pb.collection('ementa').create({ casa, dia: data, prato });
+}
+
+// ── As contas fixas ──────────────────────────────────────────────────────────
+//
+// Só a DEFINIÇÃO passa por aqui. Pagar uma conta é uma `despesa` normal com o
+// `contaFixa` a apontar — vai pela fila, com a chave do mês, como todo o
+// dinheiro desta casa. ⚠ Não há «marcar como paga» no servidor: «paga» é a
+// despesa existir (INVARIANTE #2).
+//
+// ⚠ Os nomes são os da COLEÇÃO: `quem_paga`, e não `quemPaga`.
+export async function contaFixaDaCasa({ casa, nome, valor, dia, envelope, quemPaga }) {
+  return criarOuEnfileirarCasa('contas_fixas', {
+    casa,
+    nome: String(nome || '').trim().slice(0, 60),
+    valor: Math.round((Number(valor) || 0) * 100) / 100,
+    dia: Math.max(1, Math.min(31, Math.round(Number(dia) || 1))),
+    envelope,
+    quem_paga: quemPaga || null,
+  });
+}
+
+export async function alterarContaFixa(idNoServidor, campos = {}) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  const linha = {
+    ...(campos.nome !== undefined ? { nome: String(campos.nome || '').trim().slice(0, 60) } : {}),
+    ...(campos.valor !== undefined ? { valor: Math.round((Number(campos.valor) || 0) * 100) / 100 } : {}),
+    ...(campos.dia !== undefined ? { dia: Math.max(1, Math.min(31, Math.round(Number(campos.dia) || 1))) } : {}),
+    ...(campos.envelope !== undefined ? { envelope: campos.envelope } : {}),
+    ...(campos.quemPaga !== undefined ? { quem_paga: campos.quemPaga || null } : {}),
+  };
+  if (!Object.keys(linha).length) return { pendente: true };
+  return servidor.pb.collection('contas_fixas').update(idNoServidor, linha);
+}
+
+// Apagar a conta NÃO apaga as despesas que a pagaram: o dinheiro saiu, e fica
+// no envelope. O servidor limpa-lhes a relação e mais nada.
+export async function apagarContaFixa(idNoServidor) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('contas_fixas').delete(idNoServidor);
 }
 
 // Reforçar uma meta. ⚠ Um MOVIMENTO, nunca um total: é o que faz dois telemóveis

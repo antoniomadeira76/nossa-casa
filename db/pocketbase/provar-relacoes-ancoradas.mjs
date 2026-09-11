@@ -194,6 +194,10 @@ nosso.equipamento = await admin.collection('equipamentos').create({
 // ementa dela — e o Léo, para ela lhe tentar escrever um objetivo do cofre.
 nosso.prato = await admin.collection('pratos').create({
   casa: casa.id, nome: 'Frango no forno', ingredientes: [{ rotulo: 'Frango', s: 'Frescos' }] });
+// As contas fixas (12/09/2026): a renda desta casa, para a vizinha tentar
+// pagá-la com uma despesa da casa dela.
+nosso.contaFixa = await admin.collection('contas_fixas').create({
+  casa: casa.id, nome: 'Renda', valor: 850, dia: 1, envelope: nosso.envelope.id });
 
 // E uma linha DELA, para os ataques que precisam de uma ponta legítima — sem
 // isso, a transferência era recusada por ter as duas pontas de fora e a prova
@@ -216,6 +220,13 @@ const ATAQUES = [
   ['ementa', 'prato', { dia: '2026-09-20', prato: () => nosso.prato.id }],
   ['objetivos_cofre', 'membro', { nome: 'X', alvo: 10, membro: () => leo.id }],
   ['despesas', 'envelope', { valor: 9, pagador: '@eu', idem_key: 'anc-1', envelope: () => nosso.envelope.id }],
+  // As três relações das contas fixas (12/09/2026). A conta aponta ao
+  // envelope e a quem paga; a despesa que a paga aponta à conta. Cada ataque
+  // tem as OUTRAS pontas legítimas — o envelope dela —, senão a recusa vinha
+  // por outra razão e a prova passava sem provar a ponta que interessa.
+  ['contas_fixas', 'envelope', { nome: 'Renda deles', valor: 10, dia: 1, envelope: () => nosso.envelope.id }],
+  ['contas_fixas', 'quem_paga', { nome: 'Luz deles', valor: 10, dia: 1, envelope: () => deles.envelope.id, quem_paga: () => rita.id }],
+  ['despesas', 'conta_fixa', { valor: 9, pagador: '@eu', idem_key: 'anc-cf', envelope: () => deles.envelope.id, conta_fixa: () => nosso.contaFixa.id }],
   // ⚠ As DUAS pontas da transferência, uma de cada vez. A prova «há um ataque
   // por relação» apanhou-me a esquecer o `para_envelope` — que é exactamente
   // o género de omissão que ela existe para apanhar, e que me escapou cinco

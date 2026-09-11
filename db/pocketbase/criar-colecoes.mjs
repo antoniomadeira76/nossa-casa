@@ -72,6 +72,9 @@ const NOSSAS = [
   'meta_movimentos', 'metas',
   'acertos', 'transferencias', 'artigos', 'listas_compras', 'lojas', 'seccoes',
   'registo', 'meses', 'preferencias', 'equipamentos', 'cofre_movimentos', 'despesas',
+  // ⚠ `contas_fixas` DEPOIS das `despesas` e ANTES dos `envelopes`: a despesa
+  // aponta para a conta (`conta_fixa`), e a conta aponta para o envelope.
+  'contas_fixas',
   'envelopes', 'tarefas_feitas', 'tarefas', 'membros', 'casas'];
 
 // ── Uma casa habitada não se apaga ───────────────────────────────────────────
@@ -603,6 +606,40 @@ await criar({
   deleteRule: `${DA_CASA} && ${ADMIN}`,
 });
 
+// ── As contas fixas ──────────────────────────────────────────────────────────
+//
+// A renda, a luz, a internet: o que se paga todos os meses no mesmo dia. A
+// linha é a DEFINIÇÃO — nome, valor, dia do mês, envelope, quem paga. «Paga
+// este mês» NÃO é um campo: é a existência de uma `despesas` deste mês com o
+// `conta_fixa` a apontar para cá (INVARIANTE #2 — um estado que se soma, não
+// que se escreve). Pagar duas vezes no mesmo mês colide na chave de
+// idempotência da despesa, `conta-fixa:<id>:<AAAA-MM>`, que é o índice único
+// `(casa, idem_key)` que as despesas já tinham. (12/09/2026 — a quarta das dez
+// funcionalidades.)
+//
+// É orçamento: a criança não lê (§5, «ausentes da resposta»). Os adultos
+// escrevem. ⚠ `envelope.casa` e `quem_paga.casa`, e não só o `casa` da linha —
+// a forma de defeito que já apareceu doze vezes nesta base.
+await criar({
+  name: 'contas_fixas', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    txt('nome', { required: true, max: 60 }),
+    num('valor', { required: true, min: 0.01 }),
+    num('dia', { required: true, min: 1, max: 31, onlyInt: true }),
+    rel('envelope', ids.envelopes, { required: true }),
+    rel('quem_paga', ids.membros),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_conta_fixa_por_casa ON contas_fixas (casa, nome)'],
+  listRule: `${DA_CASA} && ${ADULTO}`,
+  viewRule: `${DA_CASA} && ${ADULTO}`,
+  createRule: `${DA_CASA} && ${ADULTO} && envelope.casa = @request.auth.casa`
+    + ` && (quem_paga = "" || quem_paga.casa = @request.auth.casa)`,
+  updateRule: `${DA_CASA} && ${ADULTO} && envelope.casa = @request.auth.casa`
+    + ` && (quem_paga = "" || quem_paga.casa = @request.auth.casa)`,
+  deleteRule: `${DA_CASA} && ${ADULTO}`,
+});
+
 await criar({
   name: 'despesas', type: 'base',
   fields: [
@@ -617,6 +654,12 @@ await criar({
     txt('anula_id'),
     // §6: chave de idempotência. Um reenvio colide em vez de duplicar.
     txt('idem_key'),
+    // A conta fixa que esta despesa paga, quando é o caso (12/09/2026). Apagar
+    // a conta NÃO leva a despesa: o dinheiro saiu, e fica no envelope — a
+    // relação é opcional e sem cascata, e o PocketBase limpa-a ao apagar.
+    // ⚠ O sexto campo que nasceu nos DOIS sítios — a tabela `CAMPOS` do
+    // `acrescentar-campos.mjs` tem a mesma linha.
+    rel('conta_fixa', ids.contas_fixas),
   ],
   indexes: ['CREATE UNIQUE INDEX idx_despesa_idem ON despesas (casa, idem_key)'],
   listRule: `${DA_CASA} && ${ADULTO}`,
@@ -625,8 +668,11 @@ await criar({
   // vez o mesmo defeito de forma: o `casa` da linha é escolhido por quem
   // escreve e não prova nada. Uma adulta de outra casa lançava uma despesa
   // contra um envelope DESTA — e o orçamento desta casa mostrava-a gasta.
+  // E o `conta_fixa.casa` pela mesma razão — é uma regra que mudou depois da
+  // base, e por isso está também na tabela `REGRAS` do `acrescentar-campos`.
   createRule: `${DA_CASA} && ${ADULTO} && pagador.papel != "crianca"`
-    + ` && envelope.casa = @request.auth.casa && pagador.casa = @request.auth.casa`,
+    + ` && envelope.casa = @request.auth.casa && pagador.casa = @request.auth.casa`
+    + ` && (conta_fixa = "" || conta_fixa.casa = @request.auth.casa)`,
   updateRule: null,     // não se edita uma despesa; anula-se
   deleteRule: null,
 });

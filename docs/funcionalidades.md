@@ -216,6 +216,12 @@ Saudação com a data e a contagem viva de eventos e tarefas. Três números no 
 (só admin). **Abrir mês seguinte** — distribuir o rendimento, reinicia os gastos.
 **Contas entre Nós** com extrato e *Acertar Contas* (parcial). **Registar Despesa** — valor
 escrevível, envelope em acordeão, quem pagou, divisão, fotografia do recibo.
+**Contas Fixas** (12/09/2026) — a renda, a luz, a internet: uma linha por conta com o dia do
+mês, o envelope, quem paga, a pastilha do estado (paga · em N dias · atrasada) e o valor; o total
+à direita do título é a soma das linhas. A linha abre *Gerir conta* (marcar como paga, alterar,
+apagar); o botão de baixo marca a próxima por pagar. «Paga» é a despesa do mês com a conta a
+apontar — nunca um campo — e a segunda do mês colide no servidor. Cada conta entra na Agenda no
+dia em que vence (este mês e o seguinte) e no «Precisa de Si» dois dias antes.
 **Cofres das Crianças** — uma linha por criança (pontos por pagar, saldo), toque abre o cofre;
 veio das Tarefas em 10/09/2026. **Equipamentos da Casa** e **Saúde da Família** como duas
 linhas num contentor. **Metas**.

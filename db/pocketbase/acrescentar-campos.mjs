@@ -63,6 +63,10 @@ const CAMPOS = [
   // Quem vê o artigo: `familia` (todos) ou `adultos` (a prenda que a criança
   // não pode ver). A quinta vez. (11/09/2026)
   ['artigos', 'visibilidade', { type: 'select', values: ['familia', 'adultos'], maxSelect: 1 }],
+  // A conta fixa que uma despesa paga. A sexta vez. (12/09/2026) ⚠ O alvo é
+  // uma coleção que nasce na tabela `COLECOES` abaixo — e o guião cria as
+  // coleções ANTES de acrescentar os campos, senão isto não resolvia o id.
+  ['despesas', 'conta_fixa', { type: 'relation', alvo: 'contas_fixas', maxSelect: 1, cascadeDelete: false }],
 ];
 
 // As coleções que nasceram depois da base. A definição é a MESMA do
@@ -143,6 +147,28 @@ const COLECOES = [
       deleteRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
     },
   },
+  // As contas fixas (12/09/2026): a definição — nome, valor, dia do mês,
+  // envelope, quem paga. «Paga» é a despesa do mês que aponta para cá, nunca um
+  // campo. A mesma definição do `criar-colecoes.mjs`, letra a letra.
+  {
+    nome: 'contas_fixas',
+    campos: [
+      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'nome', type: 'text', required: true, max: 60 },
+      { name: 'valor', type: 'number', required: true, min: 0.01 },
+      { name: 'dia', type: 'number', required: true, min: 1, max: 31, onlyInt: true },
+      { name: 'envelope', type: 'relation', alvo: 'envelopes', maxSelect: 1, required: true, cascadeDelete: false },
+      { name: 'quem_paga', type: 'relation', alvo: 'membros', maxSelect: 1, cascadeDelete: false },
+    ],
+    indexes: ['CREATE UNIQUE INDEX idx_conta_fixa_por_casa ON contas_fixas (casa, nome)'],
+    regras: {
+      listRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+      viewRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+      createRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca" && envelope.casa = @request.auth.casa && (quem_paga = "" || quem_paga.casa = @request.auth.casa)',
+      updateRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca" && envelope.casa = @request.auth.casa && (quem_paga = "" || quem_paga.casa = @request.auth.casa)',
+      deleteRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+    },
+  },
 ];
 
 // ⚠ O que uma coleção NÃO pode ter. `[coleção, campo, porquê]`.
@@ -174,6 +200,14 @@ const REGRAS = [
   ['artigos', {
     listRule: `${DA_CASA} && (visibilidade != "adultos" || ${ADULTO})`,
     viewRule: `${DA_CASA} && (visibilidade != "adultos" || ${ADULTO})`,
+  }],
+  // A terceira (12/09/2026): a despesa ganhou o `conta_fixa`, e uma relação
+  // para dentro da casa leva a âncora — senão uma adulta de outra casa pagava
+  // a renda DESTA com uma despesa da casa dela.
+  ['despesas', {
+    createRule: `${DA_CASA} && ${ADULTO} && pagador.papel != "crianca"`
+      + ' && envelope.casa = @request.auth.casa && pagador.casa = @request.auth.casa'
+      + ' && (conta_fixa = "" || conta_fixa.casa = @request.auth.casa)',
   }],
 ];
 

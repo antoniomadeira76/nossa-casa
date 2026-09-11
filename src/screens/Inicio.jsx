@@ -13,7 +13,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
   const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring,
           garantiasAExpirar, receitasAExpirar, consultasProximas, membros: MEMBERS,
           acerto, acertado, artigo, oNome, aoNome, podeVerEvento,
-          pontosNasTarefas } = st;
+          pontosNasTarefas, contasAVencer, contasNaAgenda } = st;
 
   // Era `const hour = 9`, e a app dizia «Bom dia» às onze da noite.
   const hora = agoraNaApp().getHours();
@@ -81,6 +81,27 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
     title: 'Contas por acertar', sub: `${oNome(acerto.devedor)} deve ${EUR(settleBase)}`, go: () => go('dinheiro') });
   tight.forEach(e => needs.push({ icon: 'warning', color: t.state.errTexto, line: t.state.err,
     title: `Envelope ${e.name} no limite`, sub: `${EUR(Math.max(0, e.limit - e.used))} disponíveis`, go: () => go('dinheiro') }));
+  // As contas fixas por pagar que vencem dentro de dois dias — ou que já
+  // venceram. Âmbar enquanto o prazo se aproxima, vermelho depois de passar
+  // (a escala das linhas, acima). `wallet` é o dinheiro da casa, e é ao
+  // Dinheiro que a linha leva. Só um adulto chega aqui: a lista da criança
+  // vem vazia do servidor e da loja.
+  // ⚠ Dois `push`, e não um com a cor num ternário: o guarda
+  // `precisa-de-si-duas-cores-por-aviso` lê as duas cores de cada aviso por
+  // texto, e um ternário é uma cor que ele não consegue conferir.
+  contasAVencer(2).forEach(c => {
+    const titulo = `${c.nome} · ${EUR(c.valor)}`;
+    if (c.dias < 0) {
+      needs.push({ icon: 'wallet', color: t.state.errTexto, line: t.state.err,
+        title: titulo, sub: `Venceu há ${plural(-c.dias, 'dia', 'dias')} · por pagar`,
+        go: () => go('dinheiro') });
+    } else {
+      needs.push({ icon: 'wallet', color: t.state.warnTexto, line: t.state.warn,
+        title: titulo,
+        sub: c.dias === 0 ? 'Vence hoje · por pagar' : `Vence em ${plural(c.dias, 'dia', 'dias')} · dia ${c.dia}`,
+        go: () => go('dinheiro') });
+    }
+  });
   garantiasAExpirar().forEach(e => needs.push({ icon: 'idcard', color: t.state.warnTexto, line: t.state.warn,
     title: `Garantia a expirar · ${String(e.name).split(' ').slice(0, 2).join(' ')}`,
     sub: e.dias === 0 ? 'termina hoje' : `${e.dias === 1 ? 'Falta' : 'Faltam'} ${plural(e.dias, 'dia', 'dias')}`,
@@ -103,8 +124,12 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
     sub: [...new Set(overdue.map(x => x.who))].join(', '), go: () => go('tarefas') });
 
   const needsPg = usePaged(needs, 5);
-  const today = allEvents().filter(e => e.day === TODAY_KEY && podeVerEvento(e, user))
-    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  // E as contas fixas que vencem hoje, como na Agenda: não são eventos —
+  // não se editam — e a linha leva ao Dinheiro, onde se marcam como pagas.
+  const today = [
+    ...allEvents().filter(e => e.day === TODAY_KEY && podeVerEvento(e, user)),
+    ...contasNaAgenda(user).filter(e => e.day === TODAY_KEY),
+  ].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
   const todayTasks = tasks.filter(x => x.today);
   // Sem orçamento definido, não há percentagem a mostrar. `0/0` é NaN, e NaN
   // não rebenta — escreve «NaN %» no ecrã, que é pior do que rebentar.
@@ -176,7 +201,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
             {today.map((e, i) => (
               <Linha key={e.id} t={t} last={i === today.length - 1}>
                 <Pressable
-                  onPress={() => (onAbrir ? onAbrir('agenda', e.id) : go('agenda'))}
+                  onPress={() => (e.contaFixa ? go('dinheiro') : onAbrir ? onAbrir('agenda', e.id) : go('agenda'))}
                   accessibilityRole="button"
                   accessibilityLabel={`Abrir ${e.title}`}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>

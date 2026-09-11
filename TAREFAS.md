@@ -40,6 +40,21 @@
         mês, e o apagar de um envelope pela interface.
 - [x] Dinheiro — ver envelope Mercearia após compras
 - [x] Marcar como Pago — acertar contas
+- [x] **Contas fixas com prazo** (12/09/2026, a quarta das dez funcionalidades de
+      `design/dez-funcionalidades.dc.html`). Coleção `contas_fixas` (nome, valor, dia do
+      mês, envelope, quem paga) e o campo `despesas.conta_fixa`, nos dois sítios.
+      - ⚠ **«paga» não é um campo**: é a despesa do mês com `conta_fixa` a apontar
+        (INVARIANTE #2). Marcar como paga regista uma despesa NORMAL — o gasto e o
+        acerto mexem — e a segunda do mês colide na chave `conta-fixa:<id>:<AAAA-MM>`,
+        que é o índice `(casa, idem_key)` que as despesas já tinham. A fila trata a
+        colisão como «já lá está», e é isso mesmo.
+      - o vencimento respeita o mês: a conta do dia 31 vence a 30 de setembro.
+      - a Agenda mostra a conta no dia (este mês e o seguinte), sem a deixar editar; o
+        «Precisa de Si» avisa dois dias antes e fica a vermelho depois de vencer. A
+        criança não recebe a lista — é orçamento — nem do servidor nem da loja.
+      - guarda: `__tests__/as-contas-fixas.test.js`; provas: `provar-contas-fixas.mjs`
+        (11) e três ataques novos em `provar-relacoes-ancoradas.mjs`.
+      - **falta**: ver no navegador como António (só ele entra pela Google).
 - [ ] **PENDENTE:** Abrir o mês — distribuir rendimento e reiniciar
 - [ ] **PENDENTE:** Fecho do mês — arquivar e 30% para metas
 

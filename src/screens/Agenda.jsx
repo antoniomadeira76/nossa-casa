@@ -13,7 +13,7 @@ import ImportarGoogle from '../sheets/ImportarGoogle';
 // `abrir` é o id de um evento cuja folha de edição deve estar aberta à
 // chegada.
 export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto }) {
-  const { s, allEvents, membros: MEMBERS, podeVerEvento, podeEditarEvento } = useStore();
+  const { s, allEvents, membros: MEMBERS, podeVerEvento, podeEditarEvento, contasNaAgenda } = useStore();
   const [open, setOpen] = useState(false);
   const [ym, setYm] = useState({ y: TODAY.y, m: TODAY.m });
   const [sel, setSel] = useState(null);
@@ -40,7 +40,13 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
   // A regra vive na loja, não aqui: dois ecrãs a escreverem o mesmo filtro
   // divergem, e um filtro de visibilidade que diverge mostra a alguém o que
   // não devia.
-  const mine = allEvents().filter(e => podeVerEvento(e, user));
+  //
+  // E as contas fixas, no dia em que vencem — este mês e o seguinte. Não são
+  // eventos: não se editam nem se apagam daqui (a conta gere-se no Dinheiro),
+  // e só um adulto as recebe — a loja devolve vazio a uma criança, tal como o
+  // servidor. Por isso a edição pergunta primeiro se a linha É um evento.
+  const mine = [...allEvents().filter(e => podeVerEvento(e, user)), ...contasNaAgenda(user)];
+  const editavel = (e) => !e.contaFixa && podeEditarEvento(e, user);
 
   // A Agenda começa em hoje — o passado vive na ficha de cada membro
   const keys = [...new Set([TODAY_KEY, ...mine.map(e => e.day)])].filter(k => k >= TODAY_KEY).sort();
@@ -258,9 +264,9 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                 {evs.map((e, i) => (
                   <Linha key={e.id} t={t} last={i === evs.length - 1}>
                     <Pressable
-                      onPress={() => podeEditarEvento(e, user) && setEditar(e)}
-                      accessibilityRole={podeEditarEvento(e, user) ? 'button' : undefined}
-                      accessibilityLabel={podeEditarEvento(e, user) ? `Editar ${e.title}` : undefined}
+                      onPress={() => editavel(e) && setEditar(e)}
+                      accessibilityRole={editavel(e) ? 'button' : undefined}
+                      accessibilityLabel={editavel(e) ? `Editar ${e.title}` : undefined}
                       style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center',
                         gap: 12, minHeight: 44,
                         opacity: pressed ? 0.7 : 1 })}>
@@ -271,7 +277,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                         <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{e.who}</Text>
                       </View>
                       <PastilhaVisibilidade t={t} evento={e} />
-                      {podeEditarEvento(e, user)
+                      {editavel(e)
                         ? <Icon name="caretRight" size={18} color={t.text3} />
                         : null}
                     </Pressable>

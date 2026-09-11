@@ -50,6 +50,7 @@ export const AREAS = [
       'Abre e fecha o mês. Fechar não apaga nada — o mês seguinte é outra contagem, e o saldo pode ir para uma meta',
       'As metas da família, em euros: um objetivo, quanto já está junto, e de onde veio',
       'Os cofres das crianças, com a semanada e os bónus',
+      'As contas fixas — a renda, a luz, a internet — com o dia em que vencem; marcar como paga regista a despesa no envelope, e a conta aparece na Agenda no dia e no Início dois dias antes',
     ] },
 
   { area: 'Tarefas', icon: 'checkSquare',
@@ -145,6 +146,9 @@ export const AREAS = [
 export const REGISTO_APP = [
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
   // ── 1.12.0 ────────────────────────────────────────────────────────────────
+  { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Dinheiro', t: 'As contas fixas: a renda, a luz, a internet, cada uma com o valor, o dia do mês em que vence, o envelope e quem paga. «Marcar como paga» regista a despesa do mês no envelope com um toque, e a segunda do mesmo mês não entra. «Paga» é a despesa existir, nunca um número escrito' },
+  { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Início', t: 'Uma conta fixa por pagar entra no «Precisa de Si» dois dias antes de vencer — e fica lá, a vermelho, depois de vencer' },
+  { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Agenda', t: 'As contas fixas aparecem na Agenda no dia em que vencem, este mês e o seguinte, só para os adultos. Não são eventos: gerem-se no Dinheiro' },
   { v: '1.12.0', d: '11/09/2026', k: 'novo', a: 'Compras', t: 'A ementa da semana: sete jantares, um prato por dia, nas Compras. Cada prato tem os seus ingredientes, e «Pôr o que falta na lista» acrescenta só os que a lista ainda não tem, com o seu nome. A criança vê o jantar de hoje na lista dela' },
   { v: '1.12.0', d: '11/09/2026', k: 'novo', a: 'Dinheiro', t: 'A criança escolhe um objetivo para o cofre — «Bicicleta, 120 €» — e vê a barra a encher com a semanada e os bónus, e quantas semanadas faltam ao ritmo de agora. Os adultos veem para que ela junta na linha do cofre. O juntado é o saldo do cofre, nunca um número escrito' },
   { v: '1.12.0', d: '11/09/2026', k: 'novo', a: 'Compras', t: 'Um artigo pode ser «só os adultos»: a prenda de anos que a criança não deve ver. Não é escondida no ecrã, é o servidor que não a manda ao telemóvel dela. Na lista aparece com a pastilha «Só adultos»' },

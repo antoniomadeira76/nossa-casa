@@ -94,6 +94,10 @@ const ECRAS = [
   // A ementa da semana (11/09/2026): a folha do jantar de um dia e a do prato novo.
   ['Jantar do Dia',      '../src/sheets/JantarDoDia', { dia: 'd2026-08-20', titulo: 'Prato', onNovoPrato: () => {}, onApagarPrato: () => {} }],
   ['Novo Prato',         '../src/sheets/NovoPrato', { onCriado: () => {} }],
+  // As contas fixas (12/09/2026): a folha de criar e a de gerir uma conta.
+  ['Nova Conta Fixa',    '../src/sheets/NovaContaFixa', {}],
+  ['Campos da Conta Fixa', '../src/sheets/CamposContaFixa', { form: { nome: 'Renda', valor: 850, dia: 1, envelope: 'Casa & contas', quemPaga: null }, onChange: () => {} }],
+  ['Gerir Conta Fixa',   '../src/sheets/GerirContaFixa', { conta: { id: 'cf-1', nome: 'Renda', valor: 850, dia: 1, envelope: 'Casa & contas', quemPaga: null, paga: false, vence: 'd2026-08-01', dias: -19 }, onApagar: () => {} }],
   ['Importar da Google', '../src/sheets/ImportarGoogle', {}],
 ];
 
