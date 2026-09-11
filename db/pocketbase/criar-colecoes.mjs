@@ -32,6 +32,9 @@ const data = (name, o = {}) => ({ name, type: 'date', ...o });
 const sel = (name, values, o = {}) => ({ name, type: 'select', values, maxSelect: 1, ...o });
 const rel = (name, collectionId, o = {}) => ({ name, type: 'relation', collectionId, maxSelect: 1, cascadeDelete: false, ...o });
 const fich = (name, o = {}) => ({ name, type: 'file', maxSelect: 1, maxSize: 8388608, ...o });
+// Um valor estruturado pequeno — a lista de ingredientes de um prato. Não é
+// para dados que se consultem ou anexem linha a linha: esses são coleções.
+const json = (name, o = {}) => ({ name, type: 'json', maxSize: 20000, ...o });
 
 const ids = {};
 
@@ -1016,6 +1019,45 @@ await criar({
   createRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id || ${ADULTO})`,
   updateRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id || ${ADULTO})`,
   deleteRule: `${DA_CASA} && (membro = @request.auth.id || ${ADULTO})`,
+});
+
+// ── A ementa da semana ───────────────────────────────────────────────────────
+//
+// Sete jantares, um prato por dia; cada prato é uma lista de ingredientes com
+// corredor, e «pôr o que falta na lista» acrescenta os que a lista aberta não
+// tem. (11/09/2026 — a terceira das dez funcionalidades.)
+//
+// Os ingredientes vão em JSON dentro do prato, e não numa coleção à parte: são
+// o MOLDE do prato, não artigos — um artigo só nasce quando se põe na lista, e
+// aí é um `artigos` normal, com `pedido_por` quem o pôs. O corredor guarda-se
+// pelo NOME, como a loja faz, e resolve-se ao entrar na lista.
+await criar({
+  name: 'pratos', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    txt('nome', { required: true, max: 60 }),
+    json('ingredientes'),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_prato_por_casa ON pratos (casa, nome)'],
+  // A criança lê (é o jantar dela); os adultos escrevem.
+  listRule: DA_CASA, viewRule: DA_CASA,
+  createRule: `${DA_CASA} && ${ADULTO}`, updateRule: `${DA_CASA} && ${ADULTO}`, deleteRule: `${DA_CASA} && ${ADULTO}`,
+});
+
+await criar({
+  name: 'ementa', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    data('dia', { required: true }),
+    rel('prato', ids.pratos, { required: true, cascadeDelete: true }),
+  ],
+  // Um jantar por dia: marcar outra vez ALTERA a linha do dia.
+  indexes: ['CREATE UNIQUE INDEX idx_ementa_por_dia ON ementa (casa, dia)'],
+  listRule: DA_CASA, viewRule: DA_CASA,
+  // ⚠ `prato.casa`: o prato de outra casa não entra na ementa desta.
+  createRule: `${DA_CASA} && ${ADULTO} && prato.casa = @request.auth.casa`,
+  updateRule: `${DA_CASA} && ${ADULTO} && prato.casa = @request.auth.casa`,
+  deleteRule: `${DA_CASA} && ${ADULTO}`,
 });
 
 await criar({

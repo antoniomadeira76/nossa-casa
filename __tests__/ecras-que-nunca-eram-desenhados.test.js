@@ -91,6 +91,9 @@ const ECRAS = [
   ['Cofre',              '../src/sheets/Cofre', { kid: 'Léo' }],
   ['Nova Tarefa',        '../src/sheets/NovaTarefa', {}],
   ['Novo Artigo',        '../src/sheets/NovoArtigo', {}],
+  // A ementa da semana (11/09/2026): a folha do jantar de um dia e a do prato novo.
+  ['Jantar do Dia',      '../src/sheets/JantarDoDia', { dia: 'd2026-08-20', titulo: 'Prato', onNovoPrato: () => {}, onApagarPrato: () => {} }],
+  ['Novo Prato',         '../src/sheets/NovoPrato', { onCriado: () => {} }],
   ['Importar da Google', '../src/sheets/ImportarGoogle', {}],
 ];
 

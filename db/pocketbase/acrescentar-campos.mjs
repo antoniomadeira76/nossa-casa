@@ -109,6 +109,40 @@ const COLECOES = [
       deleteRule: 'casa = @request.auth.casa && (membro = @request.auth.id || @request.auth.papel != "crianca")',
     },
   },
+  // A ementa da semana (11/09/2026): os pratos, com os ingredientes em JSON,
+  // e um jantar por dia. A mesma definição do `criar-colecoes.mjs`.
+  {
+    nome: 'pratos',
+    campos: [
+      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'nome', type: 'text', required: true, max: 60 },
+      { name: 'ingredientes', type: 'json', maxSize: 20000 },
+    ],
+    indexes: ['CREATE UNIQUE INDEX idx_prato_por_casa ON pratos (casa, nome)'],
+    regras: {
+      listRule: 'casa = @request.auth.casa',
+      viewRule: 'casa = @request.auth.casa',
+      createRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+      updateRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+      deleteRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+    },
+  },
+  {
+    nome: 'ementa',
+    campos: [
+      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'dia', type: 'date', required: true },
+      { name: 'prato', type: 'relation', alvo: 'pratos', maxSelect: 1, required: true, cascadeDelete: true },
+    ],
+    indexes: ['CREATE UNIQUE INDEX idx_ementa_por_dia ON ementa (casa, dia)'],
+    regras: {
+      listRule: 'casa = @request.auth.casa',
+      viewRule: 'casa = @request.auth.casa',
+      createRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca" && prato.casa = @request.auth.casa',
+      updateRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca" && prato.casa = @request.auth.casa',
+      deleteRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+    },
+  },
 ];
 
 // ⚠ O que uma coleção NÃO pode ter. `[coleção, campo, porquê]`.

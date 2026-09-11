@@ -229,8 +229,11 @@ remover.
 ## 3.7 Compras
 
 Resumo (artigos, por comprar, estimativa, envelope). **Quem vai às compras** — toque em *Alterar*
-abre quem, quando, onde. Secções com os artigos; o lápis abre *Gerir Artigo* (adiar, remover,
-ordem). **Artigos Habituais**. **Últimas 10 compras** com média. **Acrescentar artigo** e
+abre quem, quando, onde. **Ementa da Semana** (11/09/2026): sete linhas, segunda a domingo, um
+prato por jantar; a linha abre *Jantar de…*, onde se escolhe o prato (ou nenhum), se cria um novo
+(nome e ingredientes, um por linha) e se põe na lista o que falta — só o que a lista aberta ainda
+não tem, com o nome de quem pôs. Secções com os artigos; o lápis abre *Gerir Artigo* (adiar,
+remover, ordem). **Artigos Habituais**. **Últimas 10 compras** com média. **Acrescentar artigo** e
 **Iniciar Compras**, ambos a rolar com a lista.
 
 ## 3.8 Modo de loja (ecrã inteiro)

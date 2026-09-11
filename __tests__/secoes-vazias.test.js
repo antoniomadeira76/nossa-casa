@@ -27,6 +27,10 @@ const NUNCA_VAZIAS = {
   // exactamente o que a prova de baixo apanha.
   'src/screens/Gestao.jsx :: Membros e PIN':
     'quem abre a Gestão é membro da casa, logo a lista tem-no sempre',
+  // A ementa percorre os SETE dias da semana, com ou sem jantar marcado: um
+  // dia sem prato diz «Sem jantar marcado», e a lista nunca está vazia.
+  'src/screens/Compras.jsx :: Ementa da Semana':
+    'são sempre os sete dias da semana; um dia sem prato é uma linha, não uma ausência',
   // Chamava-se «O Meu Perfil» e passou a «Aparência» quando o ecrã foi
   // reorganizado. Foi esta prova que deu por isso — é para isso que ela existe.
   'src/screens/Perfil.jsx :: Aparência':

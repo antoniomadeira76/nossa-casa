@@ -68,6 +68,7 @@ export const AREAS = [
       'Os corredores da loja são da casa — renomeiam-se, ordenam-se e apagam-se —, e o modo de loja anda por eles nessa ordem',
       'Cada artigo altera-se e arrasta-se para o lugar certo dentro do corredor',
       'Cada artigo marca-se como apanhado ou sem stock, e os dois telemóveis veem o mesmo',
+      'A ementa da semana: um prato por jantar, e os ingredientes que faltam entram na lista com um toque',
       'Fechar a conta regista a despesa e guarda a ida no histórico',
       'Os preços pagos ficam por artigo e por loja, para se saber onde é mais barato',
     ] },
@@ -144,6 +145,7 @@ export const AREAS = [
 export const REGISTO_APP = [
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
   // ── 1.12.0 ────────────────────────────────────────────────────────────────
+  { v: '1.12.0', d: '11/09/2026', k: 'novo', a: 'Compras', t: 'A ementa da semana: sete jantares, um prato por dia, nas Compras. Cada prato tem os seus ingredientes, e «Pôr o que falta na lista» acrescenta só os que a lista ainda não tem, com o seu nome. A criança vê o jantar de hoje na lista dela' },
   { v: '1.12.0', d: '11/09/2026', k: 'novo', a: 'Dinheiro', t: 'A criança escolhe um objetivo para o cofre — «Bicicleta, 120 €» — e vê a barra a encher com a semanada e os bónus, e quantas semanadas faltam ao ritmo de agora. Os adultos veem para que ela junta na linha do cofre. O juntado é o saldo do cofre, nunca um número escrito' },
   { v: '1.12.0', d: '11/09/2026', k: 'novo', a: 'Compras', t: 'Um artigo pode ser «só os adultos»: a prenda de anos que a criança não deve ver. Não é escondida no ecrã, é o servidor que não a manda ao telemóvel dela. Na lista aparece com a pastilha «Só adultos»' },
   { v: '1.12.0', d: '11/09/2026', k: 'novo', a: 'Compras', t: 'O modo criança ganhou o separador Compras: a lista da casa, corredor a corredor, sem preços, e «Pedir um artigo», que entra na lista com o nome da criança. A documentação prometia-o desde o início e a app não o tinha' },

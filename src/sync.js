@@ -256,6 +256,25 @@ export async function puxarCasa() {
     objetivosCofre[nome] = { id: o.id, nome: o.nome, alvo: Number(o.alvo) || 0 };
   }
 
+  // ── A ementa da semana ────────────────────────────────────────────────────
+  //
+  // Os pratos na forma da loja, com os ingredientes `{ rotulo, s }` (o
+  // corredor pelo nome), e a ementa por CHAVE de dia (`dAAAA-MM-DD`), que é
+  // como os ecrãs tratam os dias.
+  const pratos = (casa.pratos || []).map(p => ({
+    id: p.id,
+    idServidor: p.id,
+    nome: p.nome,
+    ingredientes: (Array.isArray(p.ingredientes) ? p.ingredientes : [])
+      .map(i => ({ rotulo: String((i && i.rotulo) || '').trim(), s: (i && i.s) || null }))
+      .filter(i => i.rotulo),
+  }));
+  const ementa = {};
+  for (const e of casa.ementa || []) {
+    const dia = String(e.dia || '').slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dia) && e.prato) ementa[`d${dia}`] = e.prato;
+  }
+
   // ── O mês aberto ──────────────────────────────────────────────────────────
   //
   // ⚠ É ele que define o INTERVALO por onde tudo o resto se filtra. Sem isto os
@@ -769,6 +788,8 @@ export async function puxarCasa() {
     metas,
     metaMovs,
     objetivosCofre,
+    pratos,
+    ementa,
     newItems,
     itemOrder,
     status,
@@ -906,6 +927,52 @@ export async function definirObjetivoDoCofre({ casa, membro, nome, alvo }) {
 export async function apagarObjetivoDoCofre(idNoServidor) {
   if (!ligado() || !idNoServidor) return { pendente: true };
   return servidor.pb.collection('objetivos_cofre').delete(idNoServidor);
+}
+
+// ── A ementa da semana ───────────────────────────────────────────────────────
+//
+// Um prato é um molde: o nome e os ingredientes `{ rotulo, s }`. Os artigos só
+// nascem quando se põe o prato na lista, pelo `artigoDeCompras`.
+const ingredientesLimpos = (lista) => (Array.isArray(lista) ? lista : [])
+  .map(i => ({ rotulo: String((i && i.rotulo) || '').trim().slice(0, 60), s: (i && i.s) || null }))
+  .filter(i => i.rotulo)
+  .slice(0, 40);
+
+export async function pratoDaCasa({ casa, nome, ingredientes }) {
+  return criarOuEnfileirarCasa('pratos', {
+    casa, nome: String(nome || '').trim().slice(0, 60), ingredientes: ingredientesLimpos(ingredientes),
+  });
+}
+
+export async function alterarPrato(idNoServidor, campos = {}) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  const linha = {
+    ...(campos.nome !== undefined ? { nome: String(campos.nome || '').trim().slice(0, 60) } : {}),
+    ...(campos.ingredientes !== undefined ? { ingredientes: ingredientesLimpos(campos.ingredientes) } : {}),
+  };
+  if (!Object.keys(linha).length) return { pendente: true };
+  return servidor.pb.collection('pratos').update(idNoServidor, linha);
+}
+
+export async function apagarPrato(idNoServidor) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('pratos').delete(idNoServidor);
+}
+
+// O jantar de um dia. Um por dia (índice único): marcar outra vez ALTERA a
+// linha; `prato` nulo APAGA-A — «sem jantar marcado» é a ausência da linha.
+export async function jantarDoDia({ casa, dia, prato }) {
+  if (!ligado()) return { pendente: true };
+  const data = isoDeChave(dia);
+  const ja = await servidor.pb.collection('ementa')
+    .getFirstListItem(`casa="${casa}" && dia>="${data} 00:00:00" && dia<="${data} 23:59:59"`)
+    .catch(() => null);
+  if (!prato) {
+    if (ja) await servidor.pb.collection('ementa').delete(ja.id);
+    return { id: ja ? ja.id : null, apagada: !!ja };
+  }
+  if (ja) return servidor.pb.collection('ementa').update(ja.id, { prato });
+  return servidor.pb.collection('ementa').create({ casa, dia: data, prato });
 }
 
 // Reforçar uma meta. ⚠ Um MOVIMENTO, nunca um total: é o que faz dois telemóveis

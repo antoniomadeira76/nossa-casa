@@ -96,7 +96,7 @@ describe('⚠ o objetivo do cofre: o servidor', () => {
     expect(sync).toMatch(/objetivosCofre\[nome\] = \{ id: o\.id, nome: o\.nome, alvo: Number\(o\.alvo\) \|\| 0 \};/);
     expect(sync).toMatch(/export async function definirObjetivoDoCofre\(/);
     expect(sync).toMatch(/getFirstListItem\(`membro="\$\{membro\}"`\)/);
-    expect(ler('src/pocketbase.js')).toMatch(/'objetivos_cofre'\]/);
+    expect(ler('src/pocketbase.js')).toMatch(/'objetivos_cofre'[,\]]/);
     const sobe = ler('src/o-que-sobe.js');
     expect(sobe).toMatch(/objetivosCofre: \['linhas',[^\n]*'definirObjetivoDoCofre'\]/);
   });

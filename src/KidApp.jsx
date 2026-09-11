@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, TextInput, useColorScheme } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from './store';
 import { buildTheme, onChrome, S, R, FONT, SCHEMES, corDoMembro, chromeDaCrianca, elev, LARGURA_APP } from './theme';
-import { EUR, parseKey, pad2, plural } from './format';
+import { EUR, parseKey, pad2, plural, TODAY_KEY } from './format';
 import Icon from './Icon';
 import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe, Linha, Choice } from './ui';
 import Sheet from './Sheet';
@@ -382,10 +382,21 @@ function KidComprasView({ t, kid }) {
   const [aPedir, setAPedir] = useState(false);
   const visiveis = allItems().filter(i => i.vis !== 'adultos');
   const stateOf = (i) => s.status[i.id] || (i.real ? 'done' : 'open');
+  // O jantar de hoje, da ementa da casa — é o jantar da criança também.
+  const jantarDeHoje = (s.pratos || []).find(p => p.id === (s.ementa || {})[TODAY_KEY]) || null;
 
   return (
     <ScrollView style={{ flex: 1, minHeight: 0 }} contentContainerStyle={{ paddingBottom: S.xl }}>
-      <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 16, gap: S.md }}>
+        {jantarDeHoje ? (
+          <Card t={t} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Icon name="storefront" size={22} color={t.titulo} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text3 }}>Jantar de hoje</Text>
+              <Text style={{ fontFamily: FONT.body, fontSize: 16, color: t.text1 }}>{jantarDeHoje.nome}</Text>
+            </View>
+          </Card>
+        ) : null}
         <Primary t={t} comum label="Pedir um artigo" onPress={() => setAPedir(true)} />
       </View>
 

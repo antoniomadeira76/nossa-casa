@@ -190,6 +190,10 @@ nosso.corredor = await admin.collection('seccoes').create({ casa: casa.id, nome:
 nosso.meta = await admin.collection('metas').create({ casa: casa.id, nome: 'Férias', alvo: 3000 });
 nosso.equipamento = await admin.collection('equipamentos').create({
   casa: casa.id, nome: 'Máquina de lavar' });
+// A ementa (11/09/2026): um prato desta casa, para a vizinha tentar pô-lo na
+// ementa dela — e o Léo, para ela lhe tentar escrever um objetivo do cofre.
+nosso.prato = await admin.collection('pratos').create({
+  casa: casa.id, nome: 'Frango no forno', ingredientes: [{ rotulo: 'Frango', s: 'Frescos' }] });
 
 // E uma linha DELA, para os ataques que precisam de uma ponta legítima — sem
 // isso, a transferência era recusada por ter as duas pontas de fora e a prova
@@ -206,6 +210,11 @@ const ATAQUES = [
   ['eventos', 'episodio', { dia: '2026-09-20', titulo: 'X', autor: '@eu', visibilidade: 'familia', episodio: () => nosso.episodio.id }],
   ['tarefas', 'atribuido_a', { titulo: 'X', pontos: 1, atribuido_a: () => leo.id }],
   ['tarefas_feitas', 'tarefa', { data: '2026-09-20', marcada_por: '@eu', tarefa: () => nosso.tarefa.id }],
+  // As duas relações que nasceram em 11/09/2026. O `objetivos_cofre.membro`
+  // aponta a UMA PESSOA desta casa: a vizinha, adulta, tenta escrever o
+  // objetivo do nosso Léo assinando a casa dela — e o `membro.casa` prende.
+  ['ementa', 'prato', { dia: '2026-09-20', prato: () => nosso.prato.id }],
+  ['objetivos_cofre', 'membro', { nome: 'X', alvo: 10, membro: () => leo.id }],
   ['despesas', 'envelope', { valor: 9, pagador: '@eu', idem_key: 'anc-1', envelope: () => nosso.envelope.id }],
   // ⚠ As DUAS pontas da transferência, uma de cada vez. A prova «há um ataque
   // por relação» apanhou-me a esquecer o `para_envelope` — que é exactamente

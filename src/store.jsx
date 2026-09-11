@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, SECTIONS, MEMBERS, ROLES, HEALTH, HEALTH_DOCS,
   VAULT, GOALS, META_MOVS, DE } from './data';
 import { TODAY_KEY, TODAY, MONTHS, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY,
-         chaveRelativa, plural, EUR } from './format';
+         chaveRelativa, plural, EUR, parseKey } from './format';
 import { observacao, precosDe, estimativaDe, compararLojas } from './precos';
 // As decisões sobre o que vai para a agenda da Google — puras, e num ficheiro
 // à parte porque o `pocketbase.js` traz um SDK que o Jest não importa.
@@ -274,7 +274,7 @@ const DATA_KEYS = [
   'done', 'pending', 'status', 'registered', 'gastoLocal', 'acertoMovs', 'partilhasPagas', 'despesasMeias', 'gastoPorEnvelope', 'vaultMoves', 'paidPts',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
   'newItems', 'itemGone', 'itemEdits', 'itemOrder', 'feitas', 'listasIds', 'envelopesDaCasa', 'seccoesDaCasa', 'mes',
-  'metasDaCasa', 'metaMovs', 'metasProprias', 'objetivosCofre',
+  'metasDaCasa', 'metaMovs', 'metasProprias', 'objetivosCofre', 'pratos', 'ementa',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'pointValue', 'payDay', 'splitHalf',
@@ -635,6 +635,9 @@ export const DEMO = () => ({
   // O objetivo do cofre de cada criança, por nome: `{ Léo: { id, nome, alvo } }`.
   // O juntado é o saldo do cofre, nunca um campo daqui.
   objetivosCofre: {},
+  // A ementa da semana: os pratos da casa (`{ id, nome, ingredientes: [{ rotulo, s }] }`)
+  // e o jantar de cada dia, por chave de dia (`{ 'd2026-09-14': pratoId }`).
+  pratos: [], ementa: {},
   schemeByUser: {}, themeByUser: {},
   notif: { digest: true, hour: '20:00', lead: 1 },
   rotate: {},
@@ -927,6 +930,9 @@ export function StoreProvider({ children }) {
         // O servidor devolve só os objetivos que quem pergunta pode ver: a
         // criança o seu, os adultos todos. Substitui-se, não se funde.
         objetivosCofre: casa.objetivosCofre || {},
+        // A ementa é da casa: o servidor manda, substitui-se por inteiro.
+        pratos: casa.pratos || [],
+        ementa: casa.ementa || {},
       });
 
       // ⚠ O acerto de contas entre os adultos, pela mesma razão e com a mesma
@@ -1990,6 +1996,109 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       const { [kid]: fora, ...resto } = x.objetivosCofre || {};
       return { objetivosCofre: resto, registo: maisRegisto(x, `Objetivo do cofre ${DE(kid)} ${kid} retirado: ${o.nome}`, 'Dinheiro') };
     });
+  };
+
+  // ── A ementa da semana ──────────────────────────────────────────────────
+  //
+  // Um prato é um molde: nome e ingredientes `{ rotulo, s }`. Os artigos só
+  // nascem quando se põe o prato na lista — pelo `criarArtigo`, como qualquer
+  // outro, com `pedido_por` quem o pôs.
+  const pratoNoServidor = (id) => ((s.pratos || []).find(p => p.id === id) || {}).idServidor || null;
+  const normal = (txt) => String(txt || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+  // Devolve `{ id }` quando ficou, ou a frase do que falta.
+  const criarPrato = (nome, ingredientes) => {
+    const n = String(nome || '').trim();
+    if (!n) return 'O prato precisa de um nome.';
+    if ((s.pratos || []).some(p => normal(p.nome) === normal(n))) return 'Já existe um prato com esse nome.';
+    const ing = (Array.isArray(ingredientes) ? ingredientes : [])
+      .map(ig => ({ rotulo: String((ig && ig.rotulo) || '').trim(), s: (ig && ig.s) || null }))
+      .filter(ig => ig.rotulo);
+    if (!ing.length) return 'Escreva pelo menos um ingrediente.';
+    const id = 'prato-' + Date.now();
+    set(x => ({
+      pratos: [...(x.pratos || []), { id, idServidor: null, nome: n, ingredientes: ing }],
+      registo: maisRegisto(x, `Prato criado: ${n} · ${plural(ing.length, 'ingrediente', 'ingredientes')}`, 'Compras'),
+    }));
+    if (sync) {
+      const ses = sync.sessao();
+      if (ses) sync.pratoDaCasa({ casa: ses.casa, nome: n, ingredientes: ing })
+        .then(r => { if (r && r.id) set(x => ({
+          pratos: (x.pratos || []).map(p => (p.id === id ? { ...p, idServidor: r.id } : p)),
+        })); })
+        .catch(() => {});
+    }
+    return { id };
+  };
+
+  const alterarPrato = (id, campos = {}) => {
+    const prato = (s.pratos || []).find(p => p.id === id);
+    if (!prato) return 'Esse prato não existe nesta casa.';
+    const mudanca = {};
+    if (campos.nome !== undefined) {
+      const n = String(campos.nome || '').trim();
+      if (!n) return 'O prato precisa de um nome.';
+      if ((s.pratos || []).some(p => p.id !== id && normal(p.nome) === normal(n))) return 'Já existe um prato com esse nome.';
+      mudanca.nome = n;
+    }
+    if (campos.ingredientes !== undefined) {
+      const ing = (Array.isArray(campos.ingredientes) ? campos.ingredientes : [])
+        .map(ig => ({ rotulo: String((ig && ig.rotulo) || '').trim(), s: (ig && ig.s) || null }))
+        .filter(ig => ig.rotulo);
+      if (!ing.length) return 'Escreva pelo menos um ingrediente.';
+      mudanca.ingredientes = ing;
+    }
+    set(x => ({ pratos: (x.pratos || []).map(p => (p.id === id ? { ...p, ...mudanca } : p)) }));
+    if (sync && prato.idServidor) sync.alterarPrato(prato.idServidor, mudanca).catch(() => {});
+    return null;
+  };
+
+  const apagarPrato = (id) => {
+    const prato = (s.pratos || []).find(p => p.id === id);
+    if (!prato) return;
+    if (sync && prato.idServidor) sync.apagarPrato(prato.idServidor).catch(() => {});
+    set(x => ({
+      pratos: (x.pratos || []).filter(p => p.id !== id),
+      // Os dias que o tinham ficam sem jantar — o servidor faz o mesmo em cascata.
+      ementa: Object.fromEntries(Object.entries(x.ementa || {}).filter(([, pid]) => pid !== id)),
+      registo: maisRegisto(x, `Prato apagado: ${prato.nome}`, 'Compras'),
+    }));
+  };
+
+  // O jantar de um dia (chave `dAAAA-MM-DD`). `null` tira o jantar do dia.
+  const marcarJantar = (dia, pratoId) => {
+    if (!parseKey(dia)) return 'Esse dia não é uma data.';
+    if (pratoId && !(s.pratos || []).some(p => p.id === pratoId)) return 'Esse prato não existe nesta casa.';
+    set(x => {
+      const { [dia]: fora, ...resto } = x.ementa || {};
+      return { ementa: pratoId ? { ...resto, [dia]: pratoId } : resto };
+    });
+    if (sync) {
+      const ses = sync.sessao();
+      const noServidor = pratoId ? pratoNoServidor(pratoId) : null;
+      // Um prato acabado de criar ainda pode não ter id no servidor: o dia
+      // sobe na leitura seguinte da app, quando o prato já lá estiver.
+      if (ses && (!pratoId || noServidor)) sync.jantarDoDia({ casa: ses.casa, dia, prato: noServidor }).catch(() => {});
+    }
+    return null;
+  };
+
+  // Que ingredientes do prato já estão na lista, e quais entram.
+  const oQueFalta = (pratoId) => {
+    const prato = (s.pratos || []).find(p => p.id === pratoId);
+    if (!prato) return [];
+    const naLista = new Set(allItems().map(a => normal(a.label)));
+    return prato.ingredientes.map(ig => ({ ...ig, jaNaLista: naLista.has(normal(ig.rotulo)) }));
+  };
+
+  // Põe na lista os ingredientes que faltam — artigos normais, com quem os pôs.
+  // Devolve quantos entraram.
+  const porOQueFaltaNaLista = (pratoId, quem) => {
+    const faltam = oQueFalta(pratoId).filter(ig => !ig.jaNaLista);
+    for (const ig of faltam) {
+      criarArtigo({ label: ig.rotulo, section: ig.s || seccoes[0], est: 0, staple: false, by: quem, vis: 'familia' });
+    }
+    return faltam.length;
   };
 
   const criarMeta = (nome, alvo, quando) => {
@@ -4757,6 +4866,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     criarEvento, alterarEventoDaCasa, eventoNoServidor, escoarFilaGoogle,
     criarArtigo, alterarArtigo, reordenarArtigos,
     definirObjetivo, apagarObjetivo,
+    criarPrato, alterarPrato, apagarPrato, marcarJantar, oQueFalta, porOQueFaltaNaLista,
     marcarArtigo, artigoNoServidor, mudarPlanoDeCompras, fecharIdaAsCompras,
     seccoes, criarSeccao, alterarSeccao, apagarSeccao, reordenarSeccoes,
     criarEquipamento, equipNoServidor, mudarPreferencia,

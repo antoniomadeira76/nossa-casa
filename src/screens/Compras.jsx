@@ -3,7 +3,7 @@ import { View, Text, Pressable, Modal } from 'react-native';
 
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { EUR, dayLabel, parseKey, WD, plural } from '../format';
+import { EUR, dayLabel, parseKey, WD, WD_SHORT, plural, dkey, semanaDeHoje, pad2 } from '../format';
 import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Tile, Avatar, avatarDe, Pill } from '../ui';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
@@ -11,6 +11,8 @@ import Confirm from '../Confirm';
 import ListaArrastavel, { ATRASO_PARA_PEGAR } from '../ListaArrastavel';
 import NovoArtigo from '../sheets/NovoArtigo';
 import GerirArtigo from '../sheets/GerirArtigo';
+import JantarDoDia from '../sheets/JantarDoDia';
+import NovoPrato from '../sheets/NovoPrato';
 
 // A lista partilhada. O modo de loja saiu daqui para ModoCompras.jsx: era um
 // <Modal>, que no react-native-web escapa à raiz da app e tapava o rodapé.
@@ -26,6 +28,10 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [aApagar, setAApagar] = useState(null);
   const [gerir, setGerir] = useState(null);   // id do artigo com a folha aberta
+  // A ementa: o dia cuja folha está aberta, e se a folha do prato novo está por cima.
+  const [jantar, setJantar] = useState(null);
+  const [novoPrato, setNovoPrato] = useState(false);
+  const [aApagarPrato, setAApagarPrato] = useState(null);
 
   // ── Dois adultos na mesma loja ────────────────────────────────────────────
   //
@@ -179,6 +185,74 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
         </View>
       </Card>
       )}
+
+      {/* A ementa da semana — sete jantares, um prato por dia. A linha do dia
+          abre a folha onde se escolhe o prato e se põe na lista o que falta.
+          (11/09/2026 — a terceira das dez funcionalidades.) */}
+      {(() => {
+        const semana = semanaDeHoje();
+        const dias = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date(semana.seg); d.setDate(semana.seg.getDate() + i); return d;
+        });
+        const intervalo = <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{semana.intervalo}</Text>;
+        // São sempre os sete dias: esta secção nunca fica vazia, e o guarda
+        // das secções vazias sabe-o pelo nome.
+        return (
+          <View>
+            <SectionTitle t={t} right={intervalo}>Ementa da Semana</SectionTitle>
+            <View style={{ paddingHorizontal: S.xs }}>
+              {dias.map((d, i) => {
+                const k = dkey(d.getFullYear(), d.getMonth(), d.getDate());
+                const prato = (s.pratos || []).find(p => p.id === (s.ementa || {})[k]) || null;
+                return (
+                  <Linha key={k} t={t} last={i === 6}>
+                    <Pressable onPress={() => setJantar(k)} accessibilityRole="button"
+                      accessibilityLabel={`Jantar de ${WD[i]}`}
+                      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12,
+                        minHeight: 44, opacity: pressed ? 0.7 : 1 })}>
+                      <View style={{ width: 44, gap: 1 }}>
+                        <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text2 }}>{WD_SHORT[i]}</Text>
+                        <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>{`${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`}</Text>
+                      </View>
+                      <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15.5,
+                        color: prato ? t.text2 : t.text3 }}>{prato ? prato.nome : 'Sem jantar marcado'}</Text>
+                      <Icon name="caretRight" size={18} color={t.text3} />
+                    </Pressable>
+                  </Linha>
+                );
+              })}
+            </View>
+          </View>
+        );
+      })()}
+
+      {jantar ? (() => {
+        const o = parseKey(jantar);
+        const titulo = o ? `${WD[(new Date(o.y, o.m, o.d).getDay() + 6) % 7]}, ${pad2(o.d)}/${pad2(o.m + 1)}` : '';
+        return (
+          <Sheet t={t} title={`Jantar de ${titulo}`} sub="Escolha o prato e ponha na lista o que falta"
+            onClose={() => setJantar(null)}>
+            <JantarDoDia t={t} user={user} dia={jantar} titulo="Prato"
+              onNovoPrato={() => setNovoPrato(true)}
+              onApagarPrato={(p) => setAApagarPrato(p)}
+              onClose={() => setJantar(null)} />
+            {novoPrato ? (
+              <Sheet t={t} title="Novo Prato" sub="O nome e os ingredientes" onClose={() => setNovoPrato(false)}>
+                <NovoPrato t={t} onClose={() => setNovoPrato(false)}
+                  onCriado={(id) => { st.marcarJantar(jantar, id); setNovoPrato(false); }} />
+              </Sheet>
+            ) : null}
+            {aApagarPrato ? (
+              <Confirm t={t} destructive icon="trash"
+                title={`Apagar «${aApagarPrato.nome}»?`}
+                message="O prato sai da casa e os dias que o tinham ficam sem jantar. Os artigos que já entraram na lista ficam."
+                confirmLabel="Apagar"
+                onConfirm={() => { st.apagarPrato(aApagarPrato.id); setAApagarPrato(null); }}
+                onCancel={() => setAApagarPrato(null)} />
+            ) : null}
+          </Sheet>
+        );
+      })() : null}
 
       {/* Onde a lista sai mais barata.
           Só aparece quando há o que dizer: a comparação faz-se sobre os
