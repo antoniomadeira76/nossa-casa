@@ -62,10 +62,11 @@ npm run db:campos     # idempotente, e confere que os campos ficaram lá
 ```
 
 Já falhou três vezes por esta ordem: o `membros.avatar`, o `artigos.corredor`, o `artigos.posto`.
-O quarto, `membros.pin_definido` (09/09/2026), e o quinto, `artigos.visibilidade` (11/09/2026), já
-nasceram nos dois sítios. **E uma REGRA que mude depois da base precisa do mesmo par**: a
-declaração no `criar-colecoes.mjs` e uma linha na tabela `REGRAS` do `acrescentar-campos.mjs`,
-que a aplica ao servidor a andar — aconteceu ao `tarefas_feitas` (apagar) e aos `artigos` (ler).
+O quarto, `membros.pin_definido` (09/09/2026), o quinto, `artigos.visibilidade` (11/09/2026), e o
+sexto, `despesas.conta_fixa` (12/09/2026), já nasceram nos dois sítios. **E uma REGRA que mude
+depois da base precisa do mesmo par**: a declaração no `criar-colecoes.mjs` e uma linha na tabela
+`REGRAS` do `acrescentar-campos.mjs`, que a aplica ao servidor a andar — aconteceu ao
+`tarefas_feitas` (apagar), aos `artigos` (ler) e às `despesas` (criar, com a âncora da conta fixa).
 
 **O PIN vive no servidor.** A criança entra com `authWithPassword` (o `login`
 `casa_nome` e o PIN como palavra-passe), o «tem PIN» é o `pin_definido` do membro

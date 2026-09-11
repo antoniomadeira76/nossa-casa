@@ -597,6 +597,9 @@ const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
   // O objetivo do cofre de cada criança: uma linha por criança, com o nome e o
   // alvo. O juntado é o saldo do cofre, e vem dos `cofre_movimentos`.
   'objetivos_cofre',
+  // As contas fixas: a definição de cada uma. «Paga este mês» lê-se das
+  // `despesas`, que já vêm acima — não há segunda leitura.
+  'contas_fixas',
   // A ementa da semana: os pratos da casa (com os ingredientes dentro) e o
   // jantar de cada dia.
   'pratos', 'ementa'];

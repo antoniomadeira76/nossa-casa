@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, SECTIONS, MEMBERS, ROLES, HEALTH, HEALTH_DOCS,
   VAULT, GOALS, META_MOVS, DE } from './data';
 import { TODAY_KEY, TODAY, MONTHS, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY,
-         chaveRelativa, plural, EUR, parseKey } from './format';
+         chaveRelativa, plural, EUR, parseKey, dkey, pad2 } from './format';
 import { observacao, precosDe, estimativaDe, compararLojas } from './precos';
 // As decisões sobre o que vai para a agenda da Google — puras, e num ficheiro
 // à parte porque o `pocketbase.js` traz um SDK que o Jest não importa.
@@ -275,6 +275,7 @@ const DATA_KEYS = [
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
   'newItems', 'itemGone', 'itemEdits', 'itemOrder', 'feitas', 'listasIds', 'envelopesDaCasa', 'seccoesDaCasa', 'mes',
   'metasDaCasa', 'metaMovs', 'metasProprias', 'objetivosCofre', 'pratos', 'ementa',
+  'contasFixas', 'contasPagas',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'pointValue', 'payDay', 'splitHalf',
@@ -638,6 +639,10 @@ export const DEMO = () => ({
   // A ementa da semana: os pratos da casa (`{ id, nome, ingredientes: [{ rotulo, s }] }`)
   // e o jantar de cada dia, por chave de dia (`{ 'd2026-09-14': pratoId }`).
   pratos: [], ementa: {},
+  // As contas fixas: a definição (`{ id, idServidor, nome, valor, dia, envelope,
+  // quemPaga }`) e os pagamentos (`{ conta, mes, dia, valor, por }`). «Paga
+  // este mês» é haver um pagamento da conta no mês — nunca um campo da conta.
+  contasFixas: [], contasPagas: [],
   schemeByUser: {}, themeByUser: {},
   notif: { digest: true, hour: '20:00', lead: 1 },
   rotate: {},
@@ -933,6 +938,11 @@ export function StoreProvider({ children }) {
         // A ementa é da casa: o servidor manda, substitui-se por inteiro.
         pratos: casa.pratos || [],
         ementa: casa.ementa || {},
+        // As contas fixas e os pagamentos delas, pela mesma regra. Os
+        // pagamentos são as despesas com `conta_fixa` — SUBSTITUEM, não se
+        // fundem: fundir duas versões da mesma lista é pagar duas vezes.
+        contasFixas: casa.contasFixas || [],
+        contasPagas: casa.contasPagas || [],
       });
 
       // ⚠ O acerto de contas entre os adultos, pela mesma razão e com a mesma
@@ -2101,6 +2111,158 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     return faltam.length;
   };
 
+  // ── As contas fixas ─────────────────────────────────────────────────────
+  //
+  // A renda, a luz, a internet: o que se paga todos os meses no mesmo dia. A
+  // conta é a DEFINIÇÃO; «paga este mês» é haver uma despesa deste mês a
+  // apontar para ela (INVARIANTE #2 — um estado que se lê de linhas, nunca um
+  // campo que se escreve). O mês é o do CALENDÁRIO, e não o mês aberto do
+  // orçamento: uma conta que vence «dia 1» é do mês em que o dia 1 cai.
+  //
+  // 12/09/2026 — a quarta das dez funcionalidades.
+  const mesDeHoje = () => `${TODAY.y}-${pad2(TODAY.m + 1)}`;
+  const contaFixaPorId = (id) => (s.contasFixas || []).find(c => c.id === id) || null;
+
+  // Em que dia vence num mês: o dia da conta, ou o último do mês quando ele
+  // não existe — a conta do dia 31 vence a 28 de fevereiro, não a «31».
+  const vencimentoNoMes = (dia, y = TODAY.y, m = TODAY.m) => {
+    const ultimo = new Date(y, m + 1, 0).getDate();
+    return dkey(y, m, Math.min(Math.max(1, Number(dia) || 1), ultimo));
+  };
+
+  // ⚠ Pelo id LOCAL ou pelo do servidor: uma conta criada neste telemóvel tem
+  // `cf-…` cá e o id do servidor lá, e o pagamento que desce traz o segundo.
+  const contaPagaNoMes = (c, mes = mesDeHoje()) => (s.contasPagas || [])
+    .some(p => p.mes === mes && (p.conta === c.id || (c.idServidor && p.conta === c.idServidor)));
+
+  // As contas como o ecrã as lê: com «paga», o vencimento deste mês e os dias
+  // até lá. Por pagar primeiro, pelo dia; as pagas no fim.
+  const contasDoMes = () => (s.contasFixas || [])
+    .map(c => {
+      const vence = vencimentoNoMes(c.dia);
+      return { ...c, paga: contaPagaNoMes(c), vence, dias: daysUntil(vence) };
+    })
+    .sort((a, b) => (a.paga !== b.paga ? (a.paga ? 1 : -1)
+      : (a.dia - b.dia) || String(a.nome).localeCompare(String(b.nome))));
+
+  // O que vence dentro de `dias` e ainda não está pago — inclui o que já
+  // passou. É a linha do «Precisa de Si».
+  const contasAVencer = (dias = 2) => contasDoMes()
+    .filter(c => !c.paga && c.dias <= dias)
+    .sort((a, b) => a.dias - b.dias);
+
+  const validarConta = ({ nome, valor, dia, envelope, quemPaga }, excepto = null) => {
+    const n = String(nome || '').trim();
+    if (!n) return 'Dê um nome à conta.';
+    if ((s.contasFixas || []).some(c => c.id !== excepto && normal(c.nome) === normal(n))) return 'Já existe uma conta com esse nome.';
+    const v = Math.round(Number(String(valor).replace(',', '.')) * 100) / 100;
+    if (!(v >= 0.01)) return 'Escreva o valor da conta, em euros.';
+    const d = Number(dia);
+    if (!(Number.isInteger(d) && d >= 1 && d <= 31)) return 'O dia do mês vai de 1 a 31.';
+    if (!envelopes.some(e => e.name === envelope)) return 'Escolha um envelope da casa.';
+    if (quemPaga && !adultos.includes(quemPaga)) return 'Quem paga tem de ser um adulto da casa.';
+    return { nome: n, valor: v, dia: d, envelope, quemPaga: quemPaga || null };
+  };
+
+  // Devolve `{ id }` quando ficou, ou a frase do que falta.
+  const criarContaFixa = (campos) => {
+    const ok = validarConta(campos);
+    if (typeof ok === 'string') return ok;
+    const id = 'cf-' + Date.now();
+    set(x => ({
+      contasFixas: [...(x.contasFixas || []), { id, idServidor: null, ...ok }],
+      registo: maisRegisto(x, `Conta fixa criada: ${ok.nome} · ${EUR(ok.valor)} · dia ${ok.dia}`, 'Dinheiro'),
+    }));
+    if (sync) {
+      const ses = sync.sessao();
+      const idEnv = envelopeNoServidor(ok.envelope);
+      // Sem envelopes do servidor a conta não tem onde entrar: a casa ainda
+      // corre com as sementes, e fica local.
+      if (ses && idEnv) sync.contaFixaDaCasa({
+        casa: ses.casa, nome: ok.nome, valor: ok.valor, dia: ok.dia, envelope: idEnv,
+        quemPaga: ok.quemPaga ? idDoMembro(ok.quemPaga) : null,
+      })
+        .then(r => { if (r && r.id) set(x => ({
+          contasFixas: (x.contasFixas || []).map(c => (c.id === id ? { ...c, idServidor: r.id } : c)),
+        })); })
+        .catch(() => {});
+    }
+    return { id };
+  };
+
+  const alterarContaFixa = (id, campos = {}) => {
+    const conta = contaFixaPorId(id);
+    if (!conta) return 'Essa conta não existe nesta casa.';
+    const ok = validarConta({ ...conta, ...campos }, id);
+    if (typeof ok === 'string') return ok;
+    set(x => ({ contasFixas: (x.contasFixas || []).map(c => (c.id === id ? { ...c, ...ok } : c)) }));
+    if (sync && conta.idServidor) {
+      const idEnv = envelopeNoServidor(ok.envelope);
+      if (idEnv) sync.alterarContaFixa(conta.idServidor, {
+        nome: ok.nome, valor: ok.valor, dia: ok.dia, envelope: idEnv,
+        quemPaga: ok.quemPaga ? idDoMembro(ok.quemPaga) : null,
+      }).catch(() => {});
+    }
+    return null;
+  };
+
+  // Apagar a conta não apaga o que já se pagou: as despesas ficam no envelope.
+  const apagarContaFixa = (id) => {
+    const conta = contaFixaPorId(id);
+    if (!conta) return;
+    if (sync && conta.idServidor) sync.apagarContaFixa(conta.idServidor).catch(() => {});
+    set(x => ({
+      contasFixas: (x.contasFixas || []).filter(c => c.id !== id),
+      contasPagas: (x.contasPagas || []).filter(p => p.conta !== id && p.conta !== conta.idServidor),
+      registo: maisRegisto(x, `Conta fixa apagada: ${conta.nome}`, 'Dinheiro'),
+    }));
+  };
+
+  // Marcar como paga = registar a despesa da conta, no envelope dela, com quem
+  // paga. É uma despesa NORMAL — entra no gasto, na conta entre os dois se a
+  // casa divide, e sobe pela fila com a chave do mês. Devolve `null` quando
+  // ficou, ou a frase do que impede.
+  const pagarContaFixa = (id, quem) => {
+    const c = contaFixaPorId(id);
+    if (!c) return 'Essa conta não existe nesta casa.';
+    const mes = mesDeHoje();
+    if (contaPagaNoMes(c, mes)) return `«${c.nome}» já está paga este mês.`;
+    const pagador = c.quemPaga || quem;
+    if (!adultos.includes(pagador)) return 'Quem paga tem de ser um adulto da casa.';
+    registarDespesa({
+      envelope: c.envelope, valor: c.valor, descricao: c.nome, pagador,
+      divideMeias: s.splitHalf !== false, contaFixa: c, mes,
+    });
+    set(x => ({
+      contasPagas: [...(x.contasPagas || []), { conta: c.id, mes, dia: TODAY_KEY, valor: c.valor, por: pagador }],
+    }));
+    return null;
+  };
+
+  // As contas fixas na Agenda: uma linha por vencimento, este mês e o
+  // seguinte. Não são eventos — não se editam nem se apagam — e só um adulto
+  // as vê: é orçamento, e a criança não a recebe do servidor nem daqui
+  // (INVARIANTE #3).
+  const contasNaAgenda = (viewer) => {
+    if (!quadro[viewer] || quadro[viewer].kid) return [];
+    const meses = [[TODAY.y, TODAY.m], TODAY.m === 11 ? [TODAY.y + 1, 0] : [TODAY.y, TODAY.m + 1]];
+    return (s.contasFixas || []).flatMap(c => meses.map(([y, m]) => {
+      const mes = `${y}-${pad2(m + 1)}`;
+      const paga = contaPagaNoMes(c, mes);
+      return {
+        id: `conta-fixa:${c.id}:${mes}`,
+        day: vencimentoNoMes(c.dia, y, m),
+        time: '',
+        title: `${c.nome} · ${EUR(c.valor)}`,
+        who: `Conta fixa · ${c.envelope}${paga ? ' · paga' : ''}`,
+        owner: c.quemPaga || viewer,
+        visibilidade: 'adultos',
+        contaFixa: c.id,
+        paga,
+      };
+    }));
+  };
+
   const criarMeta = (nome, alvo, quando) => {
     const n = String(nome || '').trim();
     if (!n) return 'A meta precisa de um nome.';
@@ -2913,7 +3075,9 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   //
   // ⚠ E é uma INSERÇÃO, nunca a substituição de um total. Corrigir uma despesa
   // é anular e recriar: a coleção não tem `updateRule` nem `deleteRule`.
-  const registarDespesa = ({ envelope, valor, descricao, pagador, divideMeias, dia = TODAY_KEY }) => {
+  // `contaFixa` e `mes` vêm só do `pagarContaFixa`: a conta que esta despesa
+  // paga, e o mês em que a paga — é o que faz a segunda do mês colidir.
+  const registarDespesa = ({ envelope, valor, descricao, pagador, divideMeias, dia = TODAY_KEY, contaFixa = null, mes = null }) => {
     const v = Math.round(Number(valor) * 100) / 100;
     if (!(v > 0)) return;
 
@@ -2952,10 +3116,17 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       const idPagador = idDoMembro(pagador);
       // Sem envelopes do servidor a despesa não tem onde entrar: a casa ainda
       // corre com as sementes, e fica local.
+      // ⚠ A conta só vai se já tiver id no servidor — uma conta acabada de
+      // criar sem rede ainda não o tem, e a despesa sobe na mesma, só que sem
+      // a ligação. O dinheiro sai do envelope de qualquer maneira; o que se
+      // perde é a marca «paga» no outro telemóvel até à leitura seguinte.
+      const idConta = contaFixa ? contaFixa.idServidor || null : null;
       if (ses && idEnv && idPagador) sync.despesa({
         casa: ses.casa, envelope: idEnv, valor: v, pagador: idPagador,
         descricao: descricao || '', data: dia.replace(/^d/, ''),
         divideMeias: divideMeias !== false,
+        contaFixa: idConta,
+        idemKey: idConta && mes ? `conta-fixa:${idConta}:${mes}` : null,
       }).catch(() => {});
     }
   };
@@ -4867,6 +5038,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     criarArtigo, alterarArtigo, reordenarArtigos,
     definirObjetivo, apagarObjetivo,
     criarPrato, alterarPrato, apagarPrato, marcarJantar, oQueFalta, porOQueFaltaNaLista,
+    contasDoMes, contasAVencer, contasNaAgenda, criarContaFixa, alterarContaFixa, apagarContaFixa, pagarContaFixa,
     marcarArtigo, artigoNoServidor, mudarPlanoDeCompras, fecharIdaAsCompras,
     seccoes, criarSeccao, alterarSeccao, apagarSeccao, reordenarSeccoes,
     criarEquipamento, equipNoServidor, mudarPreferencia,

@@ -10,6 +10,9 @@ import Confirm from '../Confirm';
 import NovaMeta from '../sheets/NovaMeta';
 import GerirMeta from '../sheets/GerirMeta';
 import Cofre from '../sheets/Cofre';
+import NovaContaFixa from '../sheets/NovaContaFixa';
+import GerirContaFixa from '../sheets/GerirContaFixa';
+import { estadoDaConta, totalDasContas } from '../contas-fixas';
 
 // ⚠ O `NumField` mudou-se para o `ui.jsx`, e continua a ser importado daqui
 // para quem o leia por este nome. Vivia neste ecrã e era o controlo partilhado
@@ -48,11 +51,15 @@ function GrelhaEnvelopes({ t, envelopes, livre, escolhido, onEscolher }) {
 export default function Dinheiro({ t, user, onEquip }) {
   const st = useStore();
   const { s, set, envelopes, budget, spent, remaining, mesAberto, allEquip, isAdmin, membros: MEMBERS, adultos, criancas, acerto, acertado, pagarAcerto, oNome, aoNome, moverEntreEnvelopes, registarDespesa,
-          abrirMes, fecharMes, metas, reforcarMeta, apagarMeta, kidPts, pontosNasTarefas } = st;
+          abrirMes, fecharMes, metas, reforcarMeta, apagarMeta, kidPts, pontosNasTarefas,
+          contasDoMes, pagarContaFixa, apagarContaFixa } = st;
   const [sheet, setSheet] = useState(null);
   const [cofre, setCofre] = useState(null);      // criança cujo cofre está aberto
   const [meta, setMeta] = useState(null);        // id da meta com a folha aberta
   const [metaAApagar, setMetaAApagar] = useState(null);
+  const [conta, setConta] = useState(null);      // id da conta fixa com a folha aberta
+  const [contaAApagar, setContaAApagar] = useState(null);
+  const [erroConta, setErroConta] = useState(null);
   // O que vai para uma meta ao fechar o mês. Em EUROS, e nunca uma fracção.
   const [fecho, setFecho] = useState({ meta: null, valor: null });
   const [mv, setMv] = useState({ from: 0, to: 3, amount: 0 });
@@ -98,6 +105,33 @@ export default function Dinheiro({ t, user, onEquip }) {
 
   const freeOf = (i) => Math.max(0, envelopes[i].limit - envelopes[i].used);
   const envPg = usePaged(envelopes, 5);
+
+  // ── As contas fixas deste mês ─────────────────────────────────────────────
+  //
+  // Por pagar primeiro, pelo dia; as pagas no fim. A «próxima» é a primeira
+  // por pagar — é a que o botão de baixo oferece marcar, como no desenho
+  // («Marcar a EDP como paga»). A folha de cada conta também o faz.
+  const contas = contasDoMes();
+  const proximaConta = contas.find(c => !c.paga) || null;
+  const contaAberta = contas.find(c => c.id === conta) || null;
+  const contaAApagarObj = contas.find(c => c.id === contaAApagar) || null;
+  // A pastilha do estado, por tom. `ok` sobre a tinta com alfa leva o
+  // `okTexto`; `warn` é o tijolo OPACO e só aceita o `warnDeep`; `err` é alfa e
+  // leva o `errTexto` — os três papéis de cada estado (CLAUDE.md).
+  const pastilhaDe = (c) => {
+    const e = estadoDaConta(c);
+    if (!e) return null;
+    const cores = {
+      ok:   { fg: t.state.okTexto,  bg: t.state.okBg,   border: t.state.okBorder },
+      warn: { fg: t.state.warnDeep, bg: t.state.warnBg, border: t.state.warn },
+      err:  { fg: t.state.errTexto, bg: t.state.errBg,  border: t.state.err },
+    }[e.tom];
+    return <Pill label={e.texto} {...cores} />;
+  };
+  const marcarPaga = (id) => {
+    const msg = pagarContaFixa(id, user);
+    setErroConta(msg || null);
+  };
 
   const handleSettle = () => {
     let amount = settleBase;
@@ -280,6 +314,72 @@ export default function Dinheiro({ t, user, onEquip }) {
           <AddButton t={t} label="mover dinheiro entre envelopes" onPress={() => setSheet('mover')} />
         </View>
         )}
+      </View>
+
+      {/* ── As contas fixas ─────────────────────────────────────────────────
+          A renda, a luz, a internet (12/09/2026, a quarta das dez
+          funcionalidades). Uma linha por conta, plana — desenho C —, com o
+          dia, o envelope e quem paga por baixo do nome, a pastilha do estado
+          e o valor à direita. A linha toda abre a folha da conta; o botão de
+          baixo marca a PRÓXIMA por pagar, como no desenho. Um alvo por linha.
+
+          ⚠ «Paga» não é um campo: é a despesa deste mês a apontar para a
+          conta (INVARIANTE #2). Marcar regista uma despesa normal no envelope
+          — o gasto, a barra e a conta entre os dois mexem como com qualquer
+          outra. O total à direita do título é a SOMA das linhas mostradas. */}
+      <View>
+        <SectionTitle t={t} right={contas.length ? (
+          <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
+            {`${EUR(totalDasContas(contas))} por mês`}
+          </Text>
+        ) : null}>Contas Fixas</SectionTitle>
+        {contas.length === 0 ? (
+          <Empty t={t} icon="wallet" title="Sem contas fixas."
+            hint="A renda, a luz, a internet: o que se paga todos os meses no mesmo dia, e entra no envelope com um toque." />
+        ) : (
+          <View>
+            {contas.map((c, i) => (
+              <Linha key={c.id} t={t} last={i === contas.length - 1}
+                tinta={c.paga ? t.state.okBg : undefined}>
+                <Pressable onPress={() => setConta(c.id)} accessibilityRole="button"
+                  accessibilityLabel={`${c.nome} · dia ${c.dia} · ${EUR(c.valor)}`}
+                  accessibilityHint="Marcar como paga, alterar ou apagar a conta"
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: S.md,
+                    minHeight: 44, opacity: pressed ? 0.7 : 1 })}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>
+                      {c.nome}
+                    </Text>
+                    <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
+                      {[`dia ${c.dia}`, c.envelope, c.quemPaga ? `${c.quemPaga} paga` : null].filter(Boolean).join(' · ')}
+                    </Text>
+                  </View>
+                  {pastilhaDe(c)}
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
+                    {EUR(c.valor)}
+                  </Text>
+                  <Icon name="caretRight" size={16} color={t.text3} />
+                </Pressable>
+              </Linha>
+            ))}
+            {proximaConta ? (
+              <View style={{ marginTop: S.md, gap: S.sm }}>
+                {/* Botão comum: acrescenta uma despesa, não fecha nem apaga. */}
+                <Primary t={t} comum label={`Marcar «${proximaConta.nome}» como paga`}
+                  sub={`${EUR(proximaConta.valor)} em ${proximaConta.envelope} · ${proximaConta.quemPaga || user} paga`}
+                  onPress={() => marcarPaga(proximaConta.id)} />
+                {erroConta ? (
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.state.errTexto }}>
+                    {erroConta}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+        )}
+        <View style={{ marginTop: S.md }}>
+          <AddButton t={t} label="acrescentar conta fixa" onPress={() => setSheet('novaConta')} />
+        </View>
       </View>
 
       <View>
@@ -788,6 +888,36 @@ export default function Dinheiro({ t, user, onEquip }) {
             onApagar={() => setMetaAApagar(metaAberta.id)}
             onClose={() => setMeta(null)} />
         </Sheet>
+      ) : null}
+
+      {/* ── As contas fixas: criar e gerir ─────────────────────────────────── */}
+      {sheet === 'novaConta' ? (
+        <Sheet t={t} title="Nova Conta Fixa" sub="O que se paga todos os meses no mesmo dia"
+          onClose={() => setSheet(null)}>
+          <NovaContaFixa t={t} onClose={() => setSheet(null)} />
+        </Sheet>
+      ) : null}
+
+      {contaAberta ? (
+        <Sheet t={t} title={contaAberta.nome}
+          sub={`${EUR(contaAberta.valor)} · dia ${contaAberta.dia} · ${contaAberta.envelope}`}
+          onClose={() => setConta(null)}>
+          <GerirContaFixa t={t} conta={contaAberta} user={user}
+            onApagar={() => setContaAApagar(contaAberta.id)}
+            onClose={() => setConta(null)} />
+        </Sheet>
+      ) : null}
+
+      {/* Apagar a conta não apaga o que já se pagou — e a pergunta di-lo, para
+          ninguém apagar a renda a pensar que corrige uma despesa. */}
+      {contaAApagarObj ? (
+        <Confirm t={t} destructive icon="trash"
+          title={`Apagar «${contaAApagarObj.nome}»?`}
+          message={`A conta sai da lista e deixa de aparecer na Agenda e no «Precisa de Si». `
+            + 'As despesas dos meses já pagos ficam no envelope — apagar a conta não as apaga. Não se desfaz.'}
+          confirmLabel="Apagar"
+          onConfirm={() => { apagarContaFixa(contaAApagar); setContaAApagar(null); setConta(null); }}
+          onCancel={() => setContaAApagar(null)} />
       ) : null}
 
       {/* ⚠ A pergunta diz quanto se está a deixar de contar. Apagar uma meta
