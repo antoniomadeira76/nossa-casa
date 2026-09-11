@@ -274,7 +274,7 @@ const DATA_KEYS = [
   'done', 'pending', 'status', 'registered', 'gastoLocal', 'acertoMovs', 'partilhasPagas', 'despesasMeias', 'gastoPorEnvelope', 'vaultMoves', 'paidPts',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
   'newItems', 'itemGone', 'itemEdits', 'itemOrder', 'feitas', 'listasIds', 'envelopesDaCasa', 'seccoesDaCasa', 'mes',
-  'metasDaCasa', 'metaMovs', 'metasProprias',
+  'metasDaCasa', 'metaMovs', 'metasProprias', 'objetivosCofre',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'pointValue', 'payDay', 'splitHalf',
@@ -632,6 +632,9 @@ export const DEMO = () => ({
   // bandeira diz se o servidor já respondeu, e é ela que distingue «esta casa
   // não tem metas» de «esta casa ainda corre com as sementes».
   metasDaCasa: [], metaMovs: [], metasProprias: false,
+  // O objetivo do cofre de cada criança, por nome: `{ Léo: { id, nome, alvo } }`.
+  // O juntado é o saldo do cofre, nunca um campo daqui.
+  objetivosCofre: {},
   schemeByUser: {}, themeByUser: {},
   notif: { digest: true, hour: '20:00', lead: 1 },
   rotate: {},
@@ -921,6 +924,9 @@ export function StoreProvider({ children }) {
         metasDaCasa: casa.metas || [],
         metaMovs: casa.metaMovs || [],
         metasProprias: true,
+        // O servidor devolve só os objetivos que quem pergunta pode ver: a
+        // criança o seu, os adultos todos. Substitui-se, não se funde.
+        objetivosCofre: casa.objetivosCofre || {},
       });
 
       // ⚠ O acerto de contas entre os adultos, pela mesma razão e com a mesma
@@ -1949,6 +1955,42 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
 
   const metaNoServidor = (id) =>
     ((s.metasDaCasa || []).find(m => m.id === id) || {}).idServidor || null;
+
+  // ── O objetivo do cofre de uma criança ──────────────────────────────────
+  //
+  // «Bicicleta, 120 €». Devolve `null` quando ficou, ou a frase do que falta.
+  // O juntado é o `vaultOf(kid)` — nunca se escreve aqui (INVARIANTE #2). A
+  // linha é da criança: ela define e muda a sua, e um adulto pode ajudá-la.
+  const definirObjetivo = (kid, { nome, alvo } = {}) => {
+    const n = String(nome || '').trim();
+    if (!n) return 'Dê um nome ao objetivo.';
+    const v = Math.round(Number(String(alvo).replace(',', '.')) * 100) / 100;
+    if (!(v >= 0.01)) return 'Escreva quanto quer juntar, em euros.';
+    if (v > 1000) return 'O máximo é 1 000 €.';
+    set(x => ({
+      objetivosCofre: { ...(x.objetivosCofre || {}), [kid]: { ...((x.objetivosCofre || {})[kid] || {}), nome: n, alvo: v } },
+      registo: maisRegisto(x, `Objetivo do cofre ${DE(kid)} ${kid}: ${n} · ${EUR(v)}`, 'Dinheiro'),
+    }));
+    if (sync) {
+      const ses = sync.sessao();
+      if (ses) sync.definirObjetivoDoCofre({ casa: ses.casa, membro: idDoMembro(kid), nome: n, alvo: v })
+        .then(r => { if (r && r.id) set(x => ({
+          objetivosCofre: { ...(x.objetivosCofre || {}), [kid]: { ...((x.objetivosCofre || {})[kid] || {}), id: r.id } },
+        })); })
+        .catch(() => {});
+    }
+    return null;
+  };
+
+  const apagarObjetivo = (kid) => {
+    const o = (s.objetivosCofre || {})[kid];
+    if (!o) return;
+    if (sync && o.id) sync.apagarObjetivoDoCofre(o.id).catch(() => {});
+    set(x => {
+      const { [kid]: fora, ...resto } = x.objetivosCofre || {};
+      return { objetivosCofre: resto, registo: maisRegisto(x, `Objetivo do cofre ${DE(kid)} ${kid} retirado: ${o.nome}`, 'Dinheiro') };
+    });
+  };
 
   const criarMeta = (nome, alvo, quando) => {
     const n = String(nome || '').trim();
@@ -4714,6 +4756,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope, registarDespesa,
     criarEvento, alterarEventoDaCasa, eventoNoServidor, escoarFilaGoogle,
     criarArtigo, alterarArtigo, reordenarArtigos,
+    definirObjetivo, apagarObjetivo,
     marcarArtigo, artigoNoServidor, mudarPlanoDeCompras, fecharIdaAsCompras,
     seccoes, criarSeccao, alterarSeccao, apagarSeccao, reordenarSeccoes,
     criarEquipamento, equipNoServidor, mudarPreferencia,

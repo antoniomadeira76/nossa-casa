@@ -593,7 +593,10 @@ const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
   // escreveu nem leu: a lista da app era a constante `GOALS` do `data.js`, igual
   // nos dois telemóveis por ser a mesma constante, e a meta que a Rita criasse
   // não existia em sítio nenhum. Era a lacuna maior que restava.
-  'metas', 'meta_movimentos'];
+  'metas', 'meta_movimentos',
+  // O objetivo do cofre de cada criança: uma linha por criança, com o nome e o
+  // alvo. O juntado é o saldo do cofre, e vem dos `cofre_movimentos`.
+  'objetivos_cofre'];
 
 // ── As coleções que CRESCEM sem fim, e o que delas se lê ─────────────────────
 //

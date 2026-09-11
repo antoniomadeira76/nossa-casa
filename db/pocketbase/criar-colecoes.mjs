@@ -993,6 +993,31 @@ for (const nome of ['categorias_equip', 'especialidades']) {
   });
 }
 
+// ── O objetivo do cofre de cada criança ──────────────────────────────────────
+//
+// «Bicicleta, 120 €». A criança define e muda o seu; os adultos leem-no. O que
+// está JUNTADO é o saldo do cofre — a soma dos `cofre_movimentos` — e nunca um
+// campo daqui (INVARIANTE #2): esta linha só tem o nome e o alvo. Uma por
+// criança, pelo índice único. (11/09/2026 — a segunda das dez funcionalidades.)
+await criar({
+  name: 'objetivos_cofre', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('membro', ids.membros, { required: true, cascadeDelete: true }),
+    txt('nome', { required: true, max: 60 }),
+    num('alvo', { required: true, min: 0.01, max: 1000 }),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_objetivo_por_membro ON objetivos_cofre (membro)'],
+  // Lê quem é da casa: a criança o seu, os adultos os de todas. Escreve a
+  // própria criança — ou um adulto, para a ajudar a começar. ⚠ `membro.casa`,
+  // e não só `casa`: o `casa` da linha é escolhido por quem escreve.
+  listRule: `${DA_CASA} && (membro = @request.auth.id || ${ADULTO})`,
+  viewRule: `${DA_CASA} && (membro = @request.auth.id || ${ADULTO})`,
+  createRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id || ${ADULTO})`,
+  updateRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id || ${ADULTO})`,
+  deleteRule: `${DA_CASA} && (membro = @request.auth.id || ${ADULTO})`,
+});
+
 await criar({
   name: 'manutencoes', type: 'base',
   fields: [

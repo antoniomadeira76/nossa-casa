@@ -431,11 +431,73 @@ function KidComprasView({ t, kid }) {
   );
 }
 
+// ── O objetivo do cofre ──────────────────────────────────────────────────────
+//
+// «Bicicleta, 120 €»: a criança escolhe para que junta, e vê a barra a
+// encher com a semanada e os bónus. (11/09/2026 — a segunda das dez
+// funcionalidades.) O juntado é o saldo do cofre; esta folha só guarda o nome
+// e o alvo, pela loja.
+function FolhaDoObjetivo({ t, kid, atual, onClose }) {
+  const { definirObjetivo, apagarObjetivo } = useStore();
+  const [nome, setNome] = useState(atual?.nome || '');
+  const [alvo, setAlvo] = useState(atual ? String(atual.alvo).replace('.', ',') : '');
+  const [erro, setErro] = useState(null);
+  const guardar = () => {
+    const e = definirObjetivo(kid, { nome, alvo });
+    if (e) { setErro(e); return; }
+    onClose();
+  };
+  const campo = {
+    minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body, fontSize: 16,
+    color: t.text1, borderRadius: R.row, borderWidth: 1, borderColor: t.border, backgroundColor: t.card,
+  };
+  return (
+    <Sheet t={t} title={atual ? 'Mudar o objetivo' : 'O meu objetivo'} sub="Para que está a juntar?" onClose={onClose}
+      action={<Primary t={t} comum label={atual ? 'Guardar' : 'Começar a juntar'} disabled={!nome.trim() || !alvo} onPress={guardar} />}>
+      <View style={{ gap: S.lg }}>
+        <View style={{ gap: S.sm }}>
+          <Label t={t}>O que quer</Label>
+          <TextInput value={nome} onChangeText={(v) => { setErro(null); setNome(v); }} maxLength={60}
+            placeholder="Ex: Bicicleta" placeholderTextColor={t.text3} accessibilityLabel="Nome do objetivo" style={campo} />
+        </View>
+        <View style={{ gap: S.sm }}>
+          <Label t={t}>Quanto custa (€)</Label>
+          <TextInput value={alvo} onChangeText={(v) => { setErro(null); setAlvo(v); }} keyboardType="decimal-pad" maxLength={8}
+            placeholder="120,00" placeholderTextColor={t.text3} accessibilityLabel="Valor do objetivo em euros" style={campo} />
+        </View>
+        {erro ? <Tile t={t} kind="warn">{erro}</Tile> : null}
+        {atual ? (
+          <Pressable onPress={() => { apagarObjetivo(kid); onClose(); }} accessibilityRole="button"
+            accessibilityLabel="Deixar de ter objetivo"
+            style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3 }}>Deixar de ter objetivo</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    </Sheet>
+  );
+}
+
+// A frase do ritmo: quanto falta, e quantas semanadas ao ritmo de agora.
+// ⚠ Até um ano, conta-se em semanadas; acima disso diz-se «mais de um ano».
+// Medido com a casa a sério: 118,80 € a 0,30 € por semana davam «396
+// semanadas», que é verdade e é a frase mais desanimadora que se pode dizer a
+// uma criança de sete anos. O número certo, dito de outra maneira.
+const fraseDoObjetivo = (falta, semanada) => {
+  if (falta <= 0) return 'Já tem o suficiente!';
+  if (!(semanada > 0)) return `Faltam ${EUR(falta)}.`;
+  const semanas = Math.ceil(falta / semanada);
+  if (semanas > 52) return `Faltam ${EUR(falta)} · mais de um ano ao ritmo de agora.`;
+  return `Faltam ${EUR(falta)} · ${plural(semanas, 'semanada', 'semanadas')} ao ritmo de agora.`;
+};
+
 // Vista do Cofre
 function KidVaultView({ t, kid }) {
   const st = useStore();
   const { s, set } = st;
   const [requested, setRequested] = useState(false);
+  const [aMudarObjetivo, setAMudarObjetivo] = useState(false);
+  const objetivo = (s.objetivosCofre || {})[kid] || null;
 
   // O saldo é a soma dos movimentos, e a lista mostra as mesmas parcelas —
   // não uma lista à parte, que dantes contradizia o total.
@@ -470,6 +532,57 @@ function KidVaultView({ t, kid }) {
           }}>Mais {EUR(pendingEur)} quando a semanada for paga.</Text>
         ) : null}
       </Card>
+
+      {/* O objetivo: para que está a juntar. A barra é o saldo contra o alvo,
+          e a frase diz quantas semanadas faltam ao ritmo de agora — uma
+          semanada é o que os pontos por pagar valem hoje. */}
+      <View style={{ gap: S.md }}>
+        <SectionTitle t={t}>O meu objetivo</SectionTitle>
+        {objetivo ? (
+          <Card t={t} style={{ gap: S.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: S.md }}>
+              <Text style={{ flex: 1, fontFamily: FONT.display, fontSize: 17, fontWeight: '500', color: t.text1 }}
+                numberOfLines={1}>{objetivo.nome}</Text>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: t.text3 }}>
+                {EUR(Math.max(0, balance))} de {EUR(objetivo.alvo)}
+              </Text>
+            </View>
+            {/* A barra são duas parcelas em `flex` — a cheia e a que falta —
+                e não uma largura em percentagem: dinheiro nesta app nunca se
+                diz em percentagem, nem numa largura. O valor lido em voz é o inteiro. */}
+            {(() => {
+              const cheio = Math.min(1, Math.max(0, balance) / objetivo.alvo);
+              const inteiro = Math.round(cheio * 100);
+              return (
+                <View style={{ height: 8, borderRadius: R.pill, backgroundColor: t.subtle, overflow: 'hidden', flexDirection: 'row' }}
+                  accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: inteiro }}>
+                  <View style={{ flex: inteiro, backgroundColor: t.state.ok }} />
+                  <View style={{ flex: 100 - inteiro }} />
+                </View>
+              );
+            })()}
+            <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
+              {fraseDoObjetivo(objetivo.alvo - balance, st.pontosNasTarefas ? pendingEur : 0)}
+            </Text>
+            <Pressable onPress={() => setAMudarObjetivo(true)} accessibilityRole="button" accessibilityLabel="Mudar o objetivo"
+              style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.actFg }}>Mudar o objetivo</Text>
+            </Pressable>
+          </Card>
+        ) : (
+          <Pressable onPress={() => setAMudarObjetivo(true)} accessibilityRole="button" accessibilityLabel="Escolher um objetivo"
+            style={({ pressed }) => ({
+              minHeight: 52, borderRadius: R.row, borderWidth: 1.5, borderColor: t.accent, borderStyle: 'dashed',
+              backgroundColor: pressed ? t.subtle : 'transparent',
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+            })}>
+            <Icon name="smile" size={20} color={t.titulo} />
+            <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700', color: t.actFg }}>Escolher um objetivo</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {aMudarObjetivo ? <FolhaDoObjetivo t={t} kid={kid} atual={objetivo} onClose={() => setAMudarObjetivo(false)} /> : null}
 
       {/* Secção de Movimentos */}
       <View>

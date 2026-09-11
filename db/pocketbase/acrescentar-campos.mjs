@@ -90,6 +90,25 @@ const COLECOES = [
       deleteRule: null,
     },
   },
+  // O objetivo do cofre de cada criança (11/09/2026). A mesma definição do
+  // `criar-colecoes.mjs`, letra a letra.
+  {
+    nome: 'objetivos_cofre',
+    campos: [
+      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'membro', type: 'relation', alvo: 'membros', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'nome', type: 'text', required: true, max: 60 },
+      { name: 'alvo', type: 'number', required: true, min: 0.01, max: 1000 },
+    ],
+    indexes: ['CREATE UNIQUE INDEX idx_objetivo_por_membro ON objetivos_cofre (membro)'],
+    regras: {
+      listRule: 'casa = @request.auth.casa && (membro = @request.auth.id || @request.auth.papel != "crianca")',
+      viewRule: 'casa = @request.auth.casa && (membro = @request.auth.id || @request.auth.papel != "crianca")',
+      createRule: 'casa = @request.auth.casa && membro.casa = @request.auth.casa && (membro = @request.auth.id || @request.auth.papel != "crianca")',
+      updateRule: 'casa = @request.auth.casa && membro.casa = @request.auth.casa && (membro = @request.auth.id || @request.auth.papel != "crianca")',
+      deleteRule: 'casa = @request.auth.casa && (membro = @request.auth.id || @request.auth.papel != "crianca")',
+    },
+  },
 ];
 
 // ⚠ O que uma coleção NÃO pode ter. `[coleção, campo, porquê]`.

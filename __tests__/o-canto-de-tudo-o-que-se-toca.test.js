@@ -81,7 +81,9 @@ const FICAM_REDONDOS = {
     'os quatro pontos do PIN',
   ],
   'src/screens/Gestao.jsx': ['barra do envelope', 'preenchimento da barra do envelope'],
-  'src/KidApp.jsx': ['forma do cabeçalho da app da criança', 'forma do cabeçalho da app da criança'],
+  'src/KidApp.jsx': ['forma do cabeçalho da app da criança', 'forma do cabeçalho da app da criança',
+    // A barra do objetivo do cofre — uma barra de progresso, não um alvo.
+    'barra do objetivo do cofre'],
   // A bola do esquema saiu do Perfil para um componente partilhado com a app
   // da criança (10/09/2026). É uma amostra de cor, como as do avatar.
   'src/EsquemaDeCor.jsx': ['bola do esquema de cor — é uma amostra de cor'],

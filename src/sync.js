@@ -244,6 +244,18 @@ export async function puxarCasa() {
       .replace(/^(\d{4})-(\d{2})-(\d{2})$/, 'd$1-$2-$3'),
   }));
 
+  // ── O objetivo do cofre de cada criança ───────────────────────────────────
+  //
+  // Por NOME da criança, que é como os ecrãs a tratam. O servidor só devolve o
+  // que quem pergunta pode ver: a criança o seu, os adultos os de todas. O
+  // juntado não vem daqui — é o saldo do cofre, a soma dos `cofre_movimentos`.
+  const objetivosCofre = {};
+  for (const o of casa.objetivos_cofre || []) {
+    const nome = nomeDoMembro[o.membro];
+    if (!nome) continue;
+    objetivosCofre[nome] = { id: o.id, nome: o.nome, alvo: Number(o.alvo) || 0 };
+  }
+
   // ── O mês aberto ──────────────────────────────────────────────────────────
   //
   // ⚠ É ele que define o INTERVALO por onde tudo o resto se filtra. Sem isto os
@@ -756,6 +768,7 @@ export async function puxarCasa() {
     envMove,
     metas,
     metaMovs,
+    objetivosCofre,
     newItems,
     itemOrder,
     status,
@@ -874,6 +887,25 @@ export async function alterarMeta(idNoServidor, campos = {}) {
 export async function apagarMeta(idNoServidor) {
   if (!ligado() || !idNoServidor) return { pendente: true };
   return servidor.pb.collection('metas').delete(idNoServidor);
+}
+
+// ── O objetivo do cofre ──────────────────────────────────────────────────────
+//
+// Uma linha por criança (índice único em `membro`): definir é criar a linha
+// ou alterar a que existe. ⚠ Só o nome e o alvo — o juntado é o saldo do
+// cofre, e nunca se escreve (INVARIANTE #2).
+export async function definirObjetivoDoCofre({ casa, membro, nome, alvo }) {
+  if (!ligado()) return { pendente: true };
+  const linha = { nome: String(nome || '').trim().slice(0, 60), alvo: Math.round(Number(alvo) * 100) / 100 };
+  const ja = await servidor.pb.collection('objetivos_cofre')
+    .getFirstListItem(`membro="${membro}"`).catch(() => null);
+  if (ja) return servidor.pb.collection('objetivos_cofre').update(ja.id, linha);
+  return servidor.pb.collection('objetivos_cofre').create({ casa, membro, ...linha });
+}
+
+export async function apagarObjetivoDoCofre(idNoServidor) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('objetivos_cofre').delete(idNoServidor);
 }
 
 // Reforçar uma meta. ⚠ Um MOVIMENTO, nunca um total: é o que faz dois telemóveis

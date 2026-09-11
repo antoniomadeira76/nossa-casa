@@ -263,7 +263,8 @@ Ver `TAREFAS.md` tarefas 4 a 6 e as capturas 11 a 17.
 PIN de 4 dígitos, sem valor de fábrica, com limite de tentativas e bloqueio. Três entradas:
 **Tarefas** (alvos maiores, marca como *a confirmar*), **Compras** (a lista da casa corredor a
 corredor, sem preços, e *Pedir um artigo* — 11/09/2026) e **O Meu Cofre** (saldo, movimentos,
-*Pedir para Usar o Dinheiro* sujeito a autorização). **Nada de orçamento.** Um artigo «só os
+o **objetivo** — «Bicicleta, 120 €», escolhido pela criança, com a barra a encher e as semanadas que
+faltam ao ritmo de agora (11/09/2026) — e *Pedir para Usar o Dinheiro* sujeito a autorização). **Nada de orçamento.** Um artigo «só os
 adultos» (a prenda) não chega ao telemóvel da criança: é a regra de leitura do servidor que o
 impõe, não o ecrã.
 

@@ -355,6 +355,13 @@ export default function Dinheiro({ t, user, onEquip }) {
                         ? `${plural(pend, 'ponto', 'pontos')}${s.pointValue > 0 ? ` · ${EUR(pend * s.pointValue)} por pagar` : ''}`
                         : 'Pontos desligados'}
                     </Text>
+                    {/* O objetivo que a criança escolheu no cofre dela — o
+                        adulto vê para que ela junta, e quanto falta. */}
+                    {(s.objetivosCofre || {})[k] ? (
+                      <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.actFg }}>
+                        {`A juntar para «${s.objetivosCofre[k].nome}» · ${EUR(s.objetivosCofre[k].alvo)}`}
+                      </Text>
+                    ) : null}
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 2 }}>
                     {/* Negativo a vermelho: o cofre pode ficar a dever por uma retirada. */}
