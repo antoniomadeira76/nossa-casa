@@ -152,13 +152,17 @@ describe('⚠ o retrato do mês: a soma das linhas', () => {
   it('o documento tem as quatro secções, sempre, e diz de que mês é', () => {
     const [set, ago] = retratosDe(CASA, NOMES);
     const html = documentoDoRetrato({ retrato: ago, casa: 'Bengui', hoje: 'd2026-08-20' });
-    for (const s of ['Dinheiro', 'Tarefas', 'Compras', 'Contas entre nós']) expect(html).toContain(`<h2>${s}</h2>`);
+    // O título da secção pode levar o total à direita (`<span>`), como no ecrã.
+    for (const s of ['Dinheiro', 'Tarefas', 'Compras', 'Contas entre nós']) {
+      expect(html).toMatch(new RegExp(`<h2>${s}(<span>[^<]*</span>)?</h2>`));
+    }
     expect(html).toContain('Retrato de Agosto de 2026');
     expect(html).toContain('mês fechado a 31/08');
     // Pelo `EUR`, e não por literais: o euro leva um espaço inquebrável antes
     // do símbolo (INVARIANTE #4), e um espaço normal escrito à mão não é igual.
-    expect(html).toContain(`<strong>Mercearia</strong> · ${EUR(100.5)} de ${EUR(450)}`);
-    expect(html).toContain('<strong>Léo</strong> · 2 tarefas feitas · 6 pontos');
+    // Os números à direita da linha, como no Dinheiro (molde da app, 12/09/2026).
+    expect(html).toContain(`<strong>Mercearia</strong><span class="dir">${EUR(100.5)} de ${EUR(450)}</span>`);
+    expect(html).toContain('<strong>Léo</strong><span class="dir">2 tarefas feitas · 6 pontos</span>');
     expect(html).toContain(`1 ida às compras · ${EUR(87.4)}`);
     expect(html).toContain(`1 despesa a meias · 1 acerto · ${EUR(40)}`);
     const vazio = documentoDoRetrato({ retrato: { ...set, envelopes: [], criancas: [], compras: { idas: 0, total: 0 } }, casa: 'B', hoje: 'd2026-08-20' });

@@ -17,7 +17,7 @@ import { guardarPDF } from '../guardar-ficheiro';
  * Só adultos chegam aqui — é orçamento (INVARIANTE #3) —, e a app da criança
  * não tem porta para esta folha.
  */
-export default function RetratoDoMes({ t, retrato, onClose }) {
+export default function RetratoDoMes({ t, retrato, user, onClose }) {
   const { nomeDaCasa } = useStore();
   const [aGuardar, setAGuardar] = useState(false);
   const [erro, setErro] = useState(null);
@@ -26,7 +26,7 @@ export default function RetratoDoMes({ t, retrato, onClose }) {
 
   const exportar = async () => {
     setAGuardar(true); setErro(null); setFeito(null);
-    const html = documentoDoRetrato({ retrato: r, casa: nomeDaCasa, hoje: TODAY_KEY });
+    const html = documentoDoRetrato({ retrato: r, casa: nomeDaCasa, hoje: TODAY_KEY, quemImprime: user, t });
     const res = await guardarPDF(nomeDoFicheiroDoRetrato(r), html);
     setAGuardar(false);
     if (!res.ok) { setErro(res.motivo); return; }

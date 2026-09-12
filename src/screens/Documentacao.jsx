@@ -167,7 +167,7 @@ const DESTINO = {
   // a Entrada já passou.
 };
 
-export default function Documentacao({ t, onIr, podeGerir }) {
+export default function Documentacao({ t, onIr, podeGerir, user }) {
   const { s, retratosDaCasa } = useStore();
   const [aba, setAba] = useState('novidades');
   // O retrato de um mês com a folha aberta (12/09/2026).
@@ -456,7 +456,7 @@ export default function Documentacao({ t, onIr, podeGerir }) {
         </>
       )}
 
-      {retrato ? <RetratoDoMes t={t} retrato={retrato} onClose={() => setRetrato(null)} /> : null}
+      {retrato ? <RetratoDoMes t={t} retrato={retrato} user={user} onClose={() => setRetrato(null)} /> : null}
     </>
   );
 }

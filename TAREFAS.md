@@ -340,6 +340,18 @@ uma consulta a sério, porque não há onde escrever o nome.
       tocou em «Ação» e não aconteceu nada.
 - [x] Sincronizar as consultas — sobem se o servidor viver na casa. Ver a
       última entrada desta secção.
+- [x] **Os documentos têm a cara da app** (12/09/2026). O dono da casa pediu «o logótipo em
+      marca de água e o nome de quem imprime e a data no canto inferior direito», e depois
+      «um design semelhante à app»; cinco páginas em `design/documentos-da-app.dc.html`,
+      escolheu a A. Um molde só, `paginaDaApp` em `src/documento.js`, para os três documentos
+      (`documentoDeSaude`, `documentoDeEmergencia`, `documentoDoRetrato`): faixa de cabeçalho
+      na cor do `chrome` de quem imprime com o logótipo a cores, títulos de secção a 13 px em
+      `actFg` com régua, linhas planas com os números tabulares à direita, letra da app (sem
+      serifa), o logótipo centrado a 7 % como marca de água e o carimbo «Impresso por X ·
+      dd/mm/aaaa · hh:mm» — os dois `position: fixed`, para se repetirem em cada página
+      impressa. Quem chama passa `quemImprime` e `t`; a Documentação ganhou o `user` para o
+      retrato. Guarda: `os-documentos-tem-a-cara-da-app` (exige `quemImprime` e `t` em toda a
+      chamada dos ecrãs, e que não haja um segundo `<!doctype>` fora do molde).
 - [x] ⚠ **Código partido a fingir-se de servidor em baixo** (12/09/2026, classe 39). A meio
       do retrato do mês editei o `sync.js` em dois lotes — a chamada `retratosDe(...)` no
       `puxarCasa` num, o `import` no seguinte — com o servidor de desenvolvimento a servir a

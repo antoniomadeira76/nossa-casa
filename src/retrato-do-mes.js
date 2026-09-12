@@ -16,6 +16,7 @@
 // e sem meses não há retratos. Este módulo não filtra nada — não é ele que
 // protege (INVARIANTE #3).
 import { MONTHS, EUR, dayLabel, dmyDeChave, plural } from './format';
+import { paginaDaApp, escapar } from './documento';
 
 const dia = (x) => {
   const d = String(x || '').slice(0, 10);
@@ -122,22 +123,20 @@ export function retratosDe(casa, nomeDoMembro = {}) {
 export const nomeDoFicheiroDoRetrato = ({ inicio }) =>
   `retrato-${String(inicio || '').replace(/^d/, '').slice(0, 7)}.pdf`;
 
-const escapar = (x) => String(x == null ? '' : x)
-  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;');
-
-// O documento: as quatro secções, sempre, preto sobre branco — sai da app e
-// vai para papel, como os da Saúde. Uma secção vazia diz que está vazia.
-export function documentoDoRetrato({ retrato, casa, hoje }) {
+// O documento: as quatro secções, sempre, no molde da app (`paginaDaApp`) —
+// a faixa do esquema, o desenho C, a marca de água e o carimbo. Uma secção
+// vazia diz que está vazia. Os números à direita, tabulares, como no Dinheiro.
+export function documentoDoRetrato({ retrato, casa, hoje, quemImprime = null, t = null }) {
   const r = retrato || { nome: '', envelopes: [], criancas: [], compras: { idas: 0, total: 0 }, acertos: { n: 0, total: 0 }, gasto: 0, orcamento: 0, meias: 0 };
   const lista = (itens, vazio) => (itens.length
     ? `<ul>${itens.map(i => `<li>${i}</li>`).join('')}</ul>`
     : `<p class="vazio">${escapar(vazio)}</p>`);
   const dinheiro = lista(r.envelopes.map(e =>
-    `<strong>${escapar(e.nome)}</strong> · ${escapar(EUR(e.gasto))} de ${escapar(EUR(e.limite))}${e.gasto > e.limite ? ' — acima do limite' : ''}`),
+    `<strong>${escapar(e.nome)}</strong>${e.gasto > e.limite ? '<span class="acima">acima do limite</span>' : ''}`
+    + `<span class="dir">${escapar(EUR(e.gasto))} de ${escapar(EUR(e.limite))}</span>`),
   'Sem despesas neste mês.');
   const tarefas = lista(r.criancas.map(c =>
-    `<strong>${escapar(c.nome)}</strong> · ${escapar(plural(c.feitas, 'tarefa feita', 'tarefas feitas'))} · ${escapar(plural(c.pontos, 'ponto', 'pontos'))}`),
+    `<strong>${escapar(c.nome)}</strong><span class="dir">${escapar(plural(c.feitas, 'tarefa feita', 'tarefas feitas'))} · ${escapar(plural(c.pontos, 'ponto', 'pontos'))}</span>`),
   'Sem crianças na casa.');
   const compras = r.compras.idas
     ? `<p>${escapar(plural(r.compras.idas, 'ida às compras', 'idas às compras'))} · ${escapar(EUR(r.compras.total))}</p>`
@@ -147,36 +146,15 @@ export function documentoDoRetrato({ retrato, casa, hoje }) {
   // A data do fecho em dd/mm/aaaa, sem o dia da semana: é um documento, não a agenda.
   const estado = r.aberto ? 'mês em curso' : `mês fechado${r.fechadoEm ? ` a ${escapar(dmyDeChave(r.fechadoEm))}` : ''}`;
 
-  return `<!doctype html>
-<html lang="pt-PT"><head><meta charset="utf-8">
-<title>${escapar(`Retrato de ${r.nome}`)}</title>
-<style>
-  @page { margin: 18mm; }
-  body { font-family: Georgia, 'Times New Roman', serif; color: #111; max-width: 44em;
-         margin: 2rem auto; padding: 0 1.5rem; line-height: 1.55; }
-  header { border-bottom: 2px solid #111; padding-bottom: .8rem; margin-bottom: 1.6rem; }
-  h1 { font-size: 1.5rem; margin: 0 0 .3rem; }
-  .origem { font-size: .84rem; color: #444; margin: 0; }
-  .total { font-size: 1.06rem; margin: .6rem 0 0; }
-  section { border-bottom: 1px solid #ddd; padding-bottom: 1rem; margin-bottom: 1.2rem; }
-  section:last-of-type { border-bottom: 0; }
-  h2 { font-size: 1.06rem; margin: 0 0 .4rem; }
-  ul { margin: 0; padding-left: 1.2rem; } li { margin: .2rem 0; }
-  .vazio { color: #444; font-style: italic; margin: 0; }
-  footer { border-top: 1px solid #ddd; margin-top: 2rem; padding-top: .7rem;
-           font-size: .78rem; color: #555; }
-  @media print { body { margin: 0; max-width: none; } }
-</style></head>
-<body>
-<header>
-  <h1>${escapar(`Retrato de ${r.nome}`)}</h1>
-  <p class="origem">Casa ${escapar(casa)} · ${estado} · exportado a ${escapar(dayLabel(hoje).replace('Hoje · ', ''))}</p>
-  <p class="total"><strong>${escapar(EUR(r.gasto))}</strong> gastos de ${escapar(EUR(r.orcamento))} de orçamento</p>
-</header>
-<section><h2>Dinheiro</h2>${dinheiro}</section>
-<section><h2>Tarefas</h2>${tarefas}</section>
-<section><h2>Compras</h2>${compras}</section>
-<section><h2>Contas entre nós</h2>${contas}</section>
-<footer>Documento gerado pela aplicação Nossa Casa. Contém o orçamento da casa — não é para as crianças.</footer>
-</body></html>`;
+  return paginaDaApp({
+    titulo: `Retrato de ${r.nome}`,
+    origem: `Casa ${escapar(casa)} · ${estado} · exportado a ${escapar(dayLabel(hoje).replace('Hoje · ', ''))}`,
+    corpo: `<p class="total"><span class="n">${escapar(EUR(r.gasto))}</span><span class="de">gastos de ${escapar(EUR(r.orcamento))} de orçamento</span></p>`
+      + `<section><h2>Dinheiro<span>${escapar(EUR(r.gasto))} de ${escapar(EUR(r.orcamento))}</span></h2>${dinheiro}</section>`
+      + `<section><h2>Tarefas</h2>${tarefas}</section>`
+      + `<section><h2>Compras</h2>${compras}</section>`
+      + `<section><h2>Contas entre nós</h2>${contas}</section>`,
+    aviso: 'Documento gerado pela aplicação Nossa Casa. Contém o orçamento da casa — não é para as crianças.',
+    quemImprime, hoje, t,
+  });
 }

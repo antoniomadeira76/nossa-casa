@@ -78,7 +78,9 @@ export default function ExportarSaude({
   const nada = resumo.consultas === 0;
 
   const documento = () => ({
-    html: documentoDeSaude({ membro, casa, consultas, docs, notas, ambito, alvo, hoje: TODAY_KEY }),
+    // Com quem imprime e o tema dele: a faixa do documento é o cabeçalho do
+    // esquema de quem o tira, e o carimbo do canto diz o nome (12/09/2026).
+    html: documentoDeSaude({ membro, casa, consultas, docs, notas, ambito, alvo, hoje: TODAY_KEY, quemImprime: user, t }),
     nome: nomeDoFicheiro({ membro, ambito, alvo, dia: TODAY_KEY }),
   });
 
