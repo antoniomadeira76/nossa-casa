@@ -45,3 +45,6 @@ pb_data*/
 db/pocketbase/pb_migrations/*_created_*.js
 db/pocketbase/pb_migrations/*_deleted_*.js
 db/pocketbase/pb_migrations/*_updated_*.js
+
+# A simulação da exportação da saúde (scripts/simular-exportacao-saude.mjs)
+.simulacao/

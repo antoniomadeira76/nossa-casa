@@ -353,6 +353,12 @@ uma consulta a sério, porque não há onde escrever o nome.
       - na casa real, os dois documentos da Mia (plano ortodôntico, radiografia) foram
         registados SEM fotografia — o campo `ficheiro` está vazio —, por isso o PDF dela
         diz que não puderam ser incluídos. Mal um anexo tenha fotografia, vai no papel.
+      - `npm run simular:saude` (`scripts/simular-exportacao-saude.mjs`): fabrica duas
+        imagens com o Chrome, marcadas como simulação, monta uma ficha da família de
+        demonstração com as duas em anexo e um documento sem fotografia, e imprime o PDF em
+        `.simulacao/` (ignorada pelo git). Sem tocar no servidor. Visto em 12/09/2026: as
+        duas figuras com legenda dentro da consulta certa, o terceiro nomeado, o aviso a
+        dizer os dois números.
 - [x] **A lista partilhada com quem não tem a app** (12/09/2026, a nona das dez; bloco 9 de
       `design/dez-funcionalidades.dc.html`). O dono da casa disse «avança» sem decidir o
       servidor fora de casa; a funcionalidade fica construída e o endereço serve onde o
