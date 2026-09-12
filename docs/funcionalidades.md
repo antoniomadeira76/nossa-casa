@@ -286,6 +286,17 @@ acaba antes da receita; o botão «Tomas» abre a folha: definir o plano, «Pôr
 (um evento «só adultos» por dia, de hoje em diante), «Tomado agora», e o que já se tomou hoje
 com hora e quem. Só quem marcou desmarca. As tomas sobem pelo travão de casa das consultas.
 
+**Retrato do mês** (12/09/2026, Dinheiro e Documentação) — uma página por mês: o gasto por
+envelope contra o limite do mês (pastilha «acima» quando passa), as tarefas confirmadas e os
+pontos por criança, as idas às compras fechadas e o que custaram, as despesas a meias e os
+acertos. «Exportar em PDF» pelo caminho da Saúde, quatro secções sempre. Nenhum campo novo:
+`retratosDe` (em `retrato-do-mes.js`) soma as linhas do intervalo de cada linha de `meses` — do
+dia em que abriu até ao dia em que o seguinte abriu, ou ao dia depois do fecho — e por isso um
+mês fechado não muda quando o seguinte abre. Portas: a secção «Retrato do Mês» no Dinheiro (para
+qualquer adulto), o fecho do mês (abre o retrato do que fechou) e «Retratos dos Meses» em
+Documentação › Nesta casa. A criança não recebe `meses` nem `despesas` do servidor, logo recebe
+zero retratos; sem servidor há um só, o do mês corrente, feito das somas do Dinheiro.
+
 **Ficha de emergência** (12/09/2026, Saúde) — na ficha de uma criança, a linha «Ficha de
 emergência» abre a folha: alergias (nome, gravidade, nota; acrescentar e tirar), medicação em
 curso (as receitas com plano a decorrer, ou válidas), médico (o campo «médico» das consultas) e

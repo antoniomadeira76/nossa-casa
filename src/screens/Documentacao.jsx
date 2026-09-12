@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, FONT } from '../theme';
-import { Card, SectionTitle, Pill, Segmented, Empty, Pager, usePaged, Choice, Label } from '../ui';
-import { plural, pad2 } from '../format';
+import { Card, SectionTitle, Pill, Segmented, Empty, Pager, usePaged, Choice, Label, Row, Linha as LinhaPlana } from '../ui';
+import RetratoDoMes from '../sheets/RetratoDoMes';
+import { plural, pad2, EUR } from '../format';
 import Icon from '../Icon';
 import { REGISTO_APP, TIPOS, AREAS, AMBITO } from '../registo-app';
 
@@ -167,8 +168,11 @@ const DESTINO = {
 };
 
 export default function Documentacao({ t, onIr, podeGerir }) {
-  const { s } = useStore();
+  const { s, retratosDaCasa } = useStore();
   const [aba, setAba] = useState('novidades');
+  // O retrato de um mês com a folha aberta (12/09/2026).
+  const [retrato, setRetrato] = useState(null);
+  const retratos = retratosDaCasa();
   const [filtroQuem, setFiltroQuem] = useState(null);
   const [filtroArea, setFiltroArea] = useState(null);
 
@@ -397,6 +401,27 @@ export default function Documentacao({ t, onIr, podeGerir }) {
                 ? 'Escolha «Todos» e «Tudo» para ver o histórico inteiro.'
                 : 'Tudo o que a família fizer na app fica aqui: tarefas, despesas, compras, agenda e equipamentos.'} />
           )}
+
+          {/* ── Os retratos dos meses ──────────────────────────────────────
+              Uma página por mês, do mais recente para o mais antigo: o gasto
+              por envelope, as tarefas e os pontos por criança, as compras, os
+              acertos — somados das linhas do mês, e exportáveis em PDF
+              (12/09/2026, a décima das dez). Só um adulto chega a este ecrã. */}
+          {retratos.length > 0 ? (
+            <View style={{ marginTop: S.xl }}>
+              <SectionTitle t={t} right={
+                <Pill label={plural(retratos.length, 'mês', 'meses')} fg={t.text3} bg={t.subtle} border={t.border} />
+              }>Retratos dos Meses</SectionTitle>
+              {retratos.map((r, i) => (
+                <LinhaPlana key={r.inicio} t={t} last={i === retratos.length - 1}>
+                  <Row t={t} icon="fileText" title={r.nome}
+                    sub={`${EUR(r.gasto)} gastos de ${EUR(r.orcamento)} · ${r.aberto ? 'em curso' : 'fechado'}`}
+                    right={<Icon name="caretRight" size={18} color={t.text3} />}
+                    onPress={() => setRetrato(r)} last />
+                </LinhaPlana>
+              ))}
+            </View>
+          ) : null}
         </View>
       ) : aba === 'novidades' ? porVersao.map(g => (
         <Card key={g.v} t={t} style={{ gap: S.sm }}>
@@ -430,6 +455,8 @@ export default function Documentacao({ t, onIr, podeGerir }) {
           ))}
         </>
       )}
+
+      {retrato ? <RetratoDoMes t={t} retrato={retrato} onClose={() => setRetrato(null)} /> : null}
     </>
   );
 }

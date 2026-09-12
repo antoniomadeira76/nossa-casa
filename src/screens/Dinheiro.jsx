@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, onChrome } from '../theme';
-import { EUR, warrantyDaysLeft, plural, mesSeguinte } from '../format';
+import { EUR, warrantyDaysLeft, plural, mesSeguinte, TODAY_KEY } from '../format';
 import { Card, SectionTitle, Linha, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Choice, Empty, usePaged, Pager, Opcao, NumField, BotaoCompacto, Avatar, avatarDe } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
@@ -12,6 +12,7 @@ import GerirMeta from '../sheets/GerirMeta';
 import Cofre from '../sheets/Cofre';
 import NovaContaFixa from '../sheets/NovaContaFixa';
 import GerirContaFixa from '../sheets/GerirContaFixa';
+import RetratoDoMes from '../sheets/RetratoDoMes';
 import { estadoDaConta, totalDasContas } from '../contas-fixas';
 
 // ⚠ O `NumField` mudou-se para o `ui.jsx`, e continua a ser importado daqui
@@ -52,8 +53,10 @@ export default function Dinheiro({ t, user, onEquip }) {
   const st = useStore();
   const { s, set, envelopes, budget, spent, remaining, mesAberto, allEquip, isAdmin, membros: MEMBERS, adultos, criancas, acerto, acertado, pagarAcerto, oNome, aoNome, moverEntreEnvelopes, registarDespesa,
           abrirMes, fecharMes, metas, reforcarMeta, apagarMeta, kidPts, pontosNasTarefas,
-          contasDoMes, pagarContaFixa, apagarContaFixa } = st;
+          contasDoMes, pagarContaFixa, apagarContaFixa, retratoDoMesAberto } = st;
   const [sheet, setSheet] = useState(null);
+  // O retrato com a folha aberta — o do mês em curso, ou o do que acabou de fechar.
+  const [retrato, setRetrato] = useState(null);
   const [cofre, setCofre] = useState(null);      // criança cujo cofre está aberto
   const [meta, setMeta] = useState(null);        // id da meta com a folha aberta
   const [metaAApagar, setMetaAApagar] = useState(null);
@@ -210,11 +213,16 @@ export default function Dinheiro({ t, user, onEquip }) {
   };
 
   const fecharMesLimpando = () => {
+    // O retrato do mês que se está a fechar, tirado ANTES do fecho: sem
+    // servidor o `fecharMes` zera as somas de que ele é feito. Abre-se a
+    // seguir, já como «mês fechado a hoje» (12/09/2026).
+    const doMesQueFecha = retratoDoMesAberto();
     // ⚠ Pelo `fecharMes` da loja. Isto escrevia `registered: 0` e `envMove: {}`
     // — zero por cima de duas SOMAS. Com as despesas e as transferências no
     // servidor, as linhas ficavam e a leitura seguinte trazia o total de
     // volta: o mês fechado reabria sozinho.
     fecharMes();
+    if (doMesQueFecha) setRetrato({ ...doMesQueFecha, aberto: false, fechadoEm: TODAY_KEY });
     // ⚠ E a escolha volta ao início. Sem isto, o valor escrito para o mês
     // passado ficava sugerido no fecho seguinte — um número de outro mês com
     // ar de sugestão desta.
@@ -567,6 +575,27 @@ export default function Dinheiro({ t, user, onEquip }) {
         ) : null}
       </View>
 
+      {/* ── O retrato do mês ──────────────────────────────────────────────
+          Uma página por mês — gasto por envelope contra o limite, tarefas e
+          pontos por criança, compras, acertos — somada das linhas do mês e
+          exportável em PDF (12/09/2026, a décima das dez). Para qualquer
+          adulto, não só quem administra: é ler, não decidir. Os meses
+          anteriores vivem em Documentação › Nesta casa. */}
+      {(() => {
+        const r = retratoDoMesAberto();
+        return r ? (
+          <View>
+            <SectionTitle t={t}>Retrato do Mês</SectionTitle>
+            <Linha t={t} last>
+              <Row t={t} icon="fileText" title={`Retrato de ${r.nome}`}
+                sub={`${EUR(r.gasto)} gastos de ${EUR(r.orcamento)} · exporta em PDF`}
+                right={<Icon name="caretRight" size={18} color={t.text3} />}
+                onPress={() => setRetrato(r)} last />
+            </Linha>
+          </View>
+        ) : null;
+      })()}
+
       {admin ? (
         <View>
           <SectionTitle t={t}>Administração</SectionTitle>
@@ -594,6 +623,8 @@ export default function Dinheiro({ t, user, onEquip }) {
           </Card>
         </View>
       ) : null}
+
+      {retrato ? <RetratoDoMes t={t} retrato={retrato} onClose={() => setRetrato(null)} /> : null}
 
       {/* Settle Accounts Sheet */}
       {cofre ? <Cofre t={t} kid={cofre} onClose={() => setCofre(null)} /> : null}
