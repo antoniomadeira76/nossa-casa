@@ -484,7 +484,7 @@ function Shell() {
       icon: 'fileText', titulo: 'Documentação', fechar: () => setDoc(false),
       sub: () => `Versão ${APP_VERSION}`,
       render: () => <Documentacao t={t} onClose={() => setDoc(false)}
-        onIr={irDoRegisto} podeGerir={isAdmin(user)} />,
+        onIr={irDoRegisto} podeGerir={isAdmin(user)} user={user} />,
     },
     ida: {
       icon: 'storefront', titulo: 'Como fazemos compras', fechar: () => setIda(false),

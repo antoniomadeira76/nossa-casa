@@ -47,7 +47,7 @@ export default function FichaEmergencia({ t, member, user, onClose }) {
 
   const exportar = async () => {
     setAGuardar(true); setErro(null); setFeito(null);
-    const html = documentoDeEmergencia({ membro: member, casa: nomeDaCasa, ficha, hoje: TODAY_KEY });
+    const html = documentoDeEmergencia({ membro: member, casa: nomeDaCasa, ficha, hoje: TODAY_KEY, quemImprime: user, t });
     const r = await guardarPDF(nomeDoFicheiroDeEmergencia({ membro: member, dia: TODAY_KEY }), html);
     setAGuardar(false);
     if (!r.ok) { setErro(r.motivo); return; }

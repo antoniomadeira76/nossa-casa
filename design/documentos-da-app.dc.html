@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Os documentos da app — cinco páginas</title>
+<style>
+  :root { --pagina: #F0F2F5; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --t1: #262626; --t2: #3B3F48; --t3: #656C7C;
+    --ac: #078286; --acfg: #076F73; --acbg: #E3F2F2; --chrome: #0A5B60; --ok: #1F9D55; --oktx: #146B3A; --errtx: #A8071A; --errbg: #FFECEC; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, Inter, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 84ch; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); gap: 20px; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; grid-template-columns: 300px 1fr; gap: 16px; }
+  section h2 { grid-column: 1 / -1; margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  section.rec { border-color: var(--ac); box-shadow: 0 0 0 2px rgba(7,130,134,.15); }
+  dl { margin: 0; display: grid; grid-template-columns: 86px 1fr; gap: 4px 10px; font-size: 12.5px; align-content: start; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  .nota { grid-column: 1 / -1; font-size: 12px; color: var(--t3); border-top: 1px dashed var(--borda); padding-top: 8px; margin: 0; }
+  code { background: var(--div); padding: 0 4px; border-radius: 3px; font-size: 11.5px; color: var(--t1); }
+
+  /* ── A página A4, à escala 300 px de largura (≈ 1:2,8) ─────────────────── */
+  .a4 { width: 300px; height: 424px; background: #fff; border: 1px solid var(--borda); position: relative; overflow: hidden; font-size: 6.6px; line-height: 1.45; color: #222; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .a4 .miolo { position: absolute; inset: 0; padding: 22px 24px 30px; display: flex; flex-direction: column; gap: 7px; }
+  .marca { position: absolute; left: 50%; top: 50%; width: 150px; height: 150px; transform: translate(-50%, -50%); opacity: .07; pointer-events: none; }
+  .marca.canto { left: auto; top: auto; right: 14px; bottom: 26px; width: 48px; height: 48px; transform: none; opacity: .12; }
+  .marca.diag { transform: translate(-50%, -50%) rotate(-24deg); width: 210px; height: 210px; opacity: .06; }
+  .carimbo { position: absolute; right: 24px; bottom: 12px; font-size: 5.6px; color: #667; text-align: right; }
+  .carimbo b { font-weight: 600; color: #445; }
+  .titulo { font-size: 11px; font-weight: 600; margin: 0; }
+  .origem { font-size: 6px; color: #667; margin: 0; }
+  .sec { color: var(--acfg); font-weight: 600; font-size: 6.6px; border-bottom: 1px solid #C9CDD6; padding-bottom: 2px; margin-top: 4px; display: flex; justify-content: space-between; letter-spacing: .1px; }
+  .sec span { color: #667; font-weight: 500; }
+  .lin { display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #ECEEF2; padding: 3.2px 0; }
+  .lin .dir { margin-left: auto; color: #556; font-variant-numeric: tabular-nums; }
+  .chip { font-size: 5px; font-weight: 600; padding: 1px 3px; border-radius: 999px; background: var(--errbg); color: var(--errtx); }
+  .barra { height: 3px; background: #E7E9EE; border-radius: 2px; overflow: hidden; margin-top: 1.5px; }
+  .barra i { display: block; height: 100%; background: var(--ac); }
+  .faixa { background: var(--chrome); color: #fff; margin: -22px -24px 6px; padding: 12px 24px 10px; display: flex; align-items: center; gap: 8px; }
+  .faixa .titulo { color: #fff; } .faixa .origem { color: rgba(255,255,255,.8); }
+  .logo { width: 16px; height: 16px; flex: none; }
+  .cartaoN { border: 1px solid #D9DCE3; border-radius: 6px; padding: 7px 9px; display: flex; align-items: flex-end; gap: 8px; background: #FAFBFC; }
+  .cartaoN .n { font-size: 15px; color: var(--oktx); line-height: 1; }
+  .cartaoN small { font-size: 5.6px; color: #667; display: block; margin-bottom: 2px; }
+  .cartaoN .dir { margin-left: auto; text-align: right; color: #667; }
+  .lateral .miolo { padding-left: 34px; }
+  .lateral::before { content: ""; position: absolute; left: 14px; top: 22px; bottom: 30px; width: 3px; background: var(--ac); border-radius: 2px; }
+  .zebra .lin:nth-child(even) { background: #F6F7F9; }
+  .zebra .lin { border-bottom: 0; padding: 3.2px 4px; }
+  .cabec2 { display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--ac); padding-bottom: 6px; }
+  .cabec2 .logo { width: 22px; height: 22px; }
+  .cartoes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .cartao { border: 1px solid #D9DCE3; border-radius: 6px; padding: 5px 7px; background: #fff; }
+  .cartao .sec { margin-top: 0; border-bottom-color: #E7E9EE; }
+  .rodape { position: absolute; left: 24px; bottom: 12px; font-size: 5.4px; color: #778; max-width: 150px; }
+</style>
+</head>
+<body>
+<h1>Os documentos da app — cinco páginas para o mesmo retrato</h1>
+<p class="sub">Hoje os três documentos (ficha de saúde, ficha de emergência, retrato do mês) saem a preto sobre branco, em serifa, sem nada da app. Pediu-se: <strong>a marca de água com o logótipo</strong> e, no <strong>canto inferior direito, quem imprime e a data</strong>. As cinco páginas abaixo têm as duas coisas e diferem no resto — o que vem do desenho da app e quanto. Todas são A4 à escala, com o retrato de Setembro da casa Madeira. O molde passa a ser UM (<code>src/documento.js</code>) para os três documentos, e a escolha vale para os três.</p>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="logo" viewBox="0 0 24 24">
+    <path d="M3.6 10.9L12 4.1l8.4 6.8" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="9.1" cy="14.9" r="1.62" fill="currentColor"/><circle cx="14.9" cy="14.9" r="1.62" fill="currentColor"/>
+    <circle cx="9.1" cy="19.4" r="1.62" fill="currentColor"/><circle cx="14.9" cy="19.4" r="1.62" fill="currentColor"/>
+  </symbol>
+  <symbol id="logoCor" viewBox="0 0 24 24">
+    <path d="M3.6 10.9L12 4.1l8.4 6.8" stroke="#FFFFFF" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="9.1" cy="14.9" r="1.62" fill="#8B4EE0"/><circle cx="14.9" cy="14.9" r="1.62" fill="#13ADB3"/>
+    <circle cx="9.1" cy="19.4" r="1.62" fill="#4A8FE0"/><circle cx="14.9" cy="19.4" r="1.62" fill="#E8EDF5"/>
+  </symbol>
+</svg>
+
+<div class="grelha">
+
+<section class="rec">
+  <h2>A. O papel da app <small>recomendada · cabeçalho no esquema, desenho C</small></h2>
+  <div class="a4">
+    <svg class="marca" style="color:#0A5B60"><use href="#logo"/></svg>
+    <div class="miolo">
+      <div class="faixa"><svg class="logo"><use href="#logoCor"/></svg><div><p class="titulo">Retrato de Setembro de 2026</p><p class="origem">Casa Madeira · mês em curso · exportado a 12/09/2026</p></div></div>
+      <div class="sec">Dinheiro <span>1 248,64 € de 2 020,00 €</span></div>
+      <div class="lin">Mercearia<span class="dir">546,60 € de 550,00 €</span></div>
+      <div class="lin">Casa &amp; contas<span class="dir">357,69 € de 780,00 €</span></div>
+      <div class="lin">Transportes<span class="dir">178,00 € de 240,00 €</span></div>
+      <div class="lin">Lazer<span class="dir">90,40 € de 180,00 €</span></div>
+      <div class="lin">Saúde<span class="dir">53,45 € de 150,00 €</span></div>
+      <div class="lin">Escola<span class="dir">22,50 € de 120,00 €</span></div>
+      <div class="sec">Tarefas</div>
+      <div class="lin">Léo · 3 tarefas feitas · 5 pontos</div>
+      <div class="lin">Mia · 3 tarefas feitas · 5 pontos</div>
+      <div class="sec">Compras</div>
+      <div class="lin">Sem idas às compras fechadas neste mês</div>
+      <div class="sec">Contas entre nós</div>
+      <div class="lin">19 despesas a meias · 0 acertos</div>
+    </div>
+    <div class="rodape">Documento gerado pela aplicação Nossa Casa. Contém o orçamento da casa — não é para as crianças.</div>
+    <div class="carimbo"><b>Impresso por António</b><br>12/09/2026 · 19:40</div>
+  </div>
+  <dl>
+    <dt>Cabeçalho</dt><dd>Uma faixa na cor do cabeçalho da app (o <code>chrome</code> do esquema de quem imprime), com o logótipo a cores e o título a branco — é o cabeçalho de qualquer ecrã.</dd>
+    <dt>Corpo</dt><dd>O desenho C tal e qual: títulos de secção a 13 px em <code>actFg</code> com régua, linhas planas com divisória, números tabulares à direita. Sem serifa: a letra da app (Inter/Roboto, com reserva do sistema).</dd>
+    <dt>Marca</dt><dd>O logótipo centrado, a 7 % de opacidade, na cor do cabeçalho; repete-se em cada página impressa (<code>position: fixed</code>).</dd>
+    <dt>Carimbo</dt><dd>Canto inferior direito, em cada página: «Impresso por António» e a data com a hora. O aviso do rodapé fica à esquerda.</dd>
+  </dl>
+  <p class="nota">É a que se reconhece à primeira vista como «isto saiu da Nossa Casa» — e a que menos inventa: cada peça já existe na app. O cabeçalho a cores gasta tinta se for impresso; quem imprimir a preto e branco fica com uma faixa cinzenta, que também se lê.</p>
+</section>
+
+<section>
+  <h2>B. Cabeçalho discreto <small>logótipo à esquerda, régua do acento</small></h2>
+  <div class="a4">
+    <svg class="marca diag" style="color:#0A5B60"><use href="#logo"/></svg>
+    <div class="miolo">
+      <div class="cabec2"><svg class="logo" style="color:var(--chrome)"><use href="#logo"/></svg><div><p class="titulo">Retrato de Setembro de 2026</p><p class="origem">Casa Madeira · mês em curso · exportado a 12/09/2026</p></div></div>
+      <div class="sec">Dinheiro <span>1 248,64 € de 2 020,00 €</span></div>
+      <div class="lin">Mercearia<span class="dir">546,60 € de 550,00 €</span></div>
+      <div class="lin">Casa &amp; contas<span class="dir">357,69 € de 780,00 €</span></div>
+      <div class="lin">Transportes<span class="dir">178,00 € de 240,00 €</span></div>
+      <div class="lin">Lazer<span class="dir">90,40 € de 180,00 €</span></div>
+      <div class="lin">Saúde<span class="dir">53,45 € de 150,00 €</span></div>
+      <div class="lin">Escola<span class="dir">22,50 € de 120,00 €</span></div>
+      <div class="sec">Tarefas</div>
+      <div class="lin">Léo · 3 tarefas feitas · 5 pontos</div>
+      <div class="lin">Mia · 3 tarefas feitas · 5 pontos</div>
+      <div class="sec">Compras</div>
+      <div class="lin">Sem idas às compras fechadas neste mês</div>
+      <div class="sec">Contas entre nós</div>
+      <div class="lin">19 despesas a meias · 0 acertos</div>
+    </div>
+    <div class="rodape">Documento gerado pela aplicação Nossa Casa.</div>
+    <div class="carimbo"><b>Impresso por António</b><br>12/09/2026 · 19:40</div>
+  </div>
+  <dl>
+    <dt>Cabeçalho</dt><dd>Sem faixa: o logótipo em traço na cor do cabeçalho, o título ao lado, e uma régua de 2 px no acento por baixo. Página branca de cima a baixo — imprime-se bem em qualquer impressora.</dd>
+    <dt>Corpo</dt><dd>O mesmo desenho C da A.</dd>
+    <dt>Marca</dt><dd>O logótipo grande, inclinado 24°, a 6 % — a marca de água «clássica».</dd>
+    <dt>Custo</dt><dd>Menos reconhecível de longe do que a A; a inclinação da marca pode parecer um carimbo de «rascunho» a quem receber o papel.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>C. Com barras <small>cada envelope com a sua barra, como no Dinheiro</small></h2>
+  <div class="a4">
+    <svg class="marca" style="color:#0A5B60"><use href="#logo"/></svg>
+    <div class="miolo">
+      <div class="faixa"><svg class="logo"><use href="#logoCor"/></svg><div><p class="titulo">Retrato de Setembro de 2026</p><p class="origem">Casa Madeira · mês em curso · exportado a 12/09/2026</p></div></div>
+      <div class="sec">Dinheiro <span>1 248,64 € de 2 020,00 €</span></div>
+      <div class="lin" style="display:block"><div style="display:flex">Mercearia<span class="dir">546,60 € de 550,00 €</span></div><div class="barra"><i style="width:99%"></i></div></div>
+      <div class="lin" style="display:block"><div style="display:flex">Casa &amp; contas<span class="dir">357,69 € de 780,00 €</span></div><div class="barra"><i style="width:46%"></i></div></div>
+      <div class="lin" style="display:block"><div style="display:flex">Transportes<span class="dir">178,00 € de 240,00 €</span></div><div class="barra"><i style="width:74%"></i></div></div>
+      <div class="lin" style="display:block"><div style="display:flex">Lazer<span class="dir">90,40 € de 180,00 €</span></div><div class="barra"><i style="width:50%"></i></div></div>
+      <div class="lin" style="display:block"><div style="display:flex">Saúde<span class="dir">53,45 € de 150,00 €</span></div><div class="barra"><i style="width:36%"></i></div></div>
+      <div class="lin" style="display:block"><div style="display:flex">Escola<span class="dir">22,50 € de 120,00 €</span></div><div class="barra"><i style="width:19%"></i></div></div>
+      <div class="sec">Tarefas</div>
+      <div class="lin">Léo · 3 tarefas feitas · 5 pontos</div>
+      <div class="lin">Mia · 3 tarefas feitas · 5 pontos</div>
+      <div class="sec">Compras · Contas entre nós</div>
+      <div class="lin">Sem idas às compras fechadas · 19 despesas a meias · 0 acertos</div>
+    </div>
+    <div class="rodape">Documento gerado pela aplicação Nossa Casa.</div>
+    <div class="carimbo"><b>Impresso por António</b><br>12/09/2026 · 19:40</div>
+  </div>
+  <dl>
+    <dt>Cabeçalho</dt><dd>O da A.</dd>
+    <dt>Corpo</dt><dd>Cada envelope leva a barra do gasto contra o limite, como o cartão «Disponível» do Dinheiro — vê-se de relance qual está a rebentar. As secções pequenas juntam-se numa linha.</dd>
+    <dt>Marca</dt><dd>A da A.</dd>
+    <dt>Custo</dt><dd>Só o retrato tem barras: a ficha de saúde e a de emergência não têm nada para medir, e ficariam com o molde sem esta peça. A regra «dinheiro só em euros» mantém-se: a barra não diz percentagem.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>D. Faixa lateral <small>a «faixa» da linha da app, na página inteira</small></h2>
+  <div class="a4 lateral">
+    <svg class="marca canto" style="color:#0A5B60"><use href="#logo"/></svg>
+    <div class="miolo">
+      <p class="titulo" style="margin-top:2px">Retrato de Setembro de 2026</p>
+      <p class="origem">Casa Madeira · mês em curso · exportado a 12/09/2026</p>
+      <div class="sec">Dinheiro <span>1 248,64 € de 2 020,00 €</span></div>
+      <div class="lin">Mercearia<span class="dir">546,60 € de 550,00 €</span></div>
+      <div class="lin">Casa &amp; contas<span class="dir">357,69 € de 780,00 €</span></div>
+      <div class="lin">Transportes<span class="dir">178,00 € de 240,00 €</span></div>
+      <div class="lin">Lazer<span class="dir">90,40 € de 180,00 €</span></div>
+      <div class="lin">Saúde<span class="dir">53,45 € de 150,00 €</span></div>
+      <div class="lin">Escola<span class="dir">22,50 € de 120,00 €</span></div>
+      <div class="sec">Tarefas</div>
+      <div class="lin">Léo · 3 tarefas feitas · 5 pontos</div>
+      <div class="lin">Mia · 3 tarefas feitas · 5 pontos</div>
+      <div class="sec">Compras</div>
+      <div class="lin">Sem idas às compras fechadas neste mês</div>
+      <div class="sec">Contas entre nós</div>
+      <div class="lin">19 despesas a meias · 0 acertos</div>
+    </div>
+    <div class="rodape" style="left:34px">Documento gerado pela aplicação Nossa Casa.</div>
+    <div class="carimbo"><b>Impresso por António</b><br>12/09/2026 · 19:40</div>
+  </div>
+  <dl>
+    <dt>Cabeçalho</dt><dd>Só o título; a identidade vem de uma faixa de 3 px no acento a correr pela margem esquerda de toda a página — a mesma <code>faixa</code> que a app põe numa linha de estado.</dd>
+    <dt>Marca</dt><dd>O logótipo pequeno, ao canto inferior direito, por cima do carimbo — discreto, não atravessa o texto.</dd>
+    <dt>Custo</dt><dd>A faixa fica fora da área imprimível de algumas impressoras (margem de 18 mm) e pode sair cortada; e um logótipo pequeno num canto é menos «marca de água» e mais «assinatura».</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>E. Cartões <small>o cartão «Disponível» a abrir, e as secções em cartões</small></h2>
+  <div class="a4">
+    <svg class="marca" style="color:#0A5B60"><use href="#logo"/></svg>
+    <div class="miolo">
+      <div class="faixa"><svg class="logo"><use href="#logoCor"/></svg><div><p class="titulo">Retrato de Setembro de 2026</p><p class="origem">Casa Madeira · mês em curso · exportado a 12/09/2026</p></div></div>
+      <div class="cartaoN"><div><small>Disponível</small><span class="n">771,36 €</span></div><div class="dir">1 248,64 € gastos<br>de 2 020,00 €</div></div>
+      <div class="cartoes">
+        <div class="cartao"><div class="sec">Dinheiro</div>
+          <div class="lin">Mercearia<span class="dir">546,60 €</span></div><div class="lin">Casa &amp; contas<span class="dir">357,69 €</span></div><div class="lin">Transportes<span class="dir">178,00 €</span></div><div class="lin">Lazer<span class="dir">90,40 €</span></div><div class="lin">Saúde<span class="dir">53,45 €</span></div><div class="lin" style="border:0">Escola<span class="dir">22,50 €</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="cartao"><div class="sec">Tarefas</div><div class="lin">Léo · 3 feitas · 5 pt</div><div class="lin" style="border:0">Mia · 3 feitas · 5 pt</div></div>
+          <div class="cartao"><div class="sec">Compras</div><div class="lin" style="border:0">Sem idas fechadas</div></div>
+          <div class="cartao"><div class="sec">Contas entre nós</div><div class="lin" style="border:0">19 a meias · 0 acertos</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="rodape">Documento gerado pela aplicação Nossa Casa.</div>
+    <div class="carimbo"><b>Impresso por António</b><br>12/09/2026 · 19:40</div>
+  </div>
+  <dl>
+    <dt>Cabeçalho</dt><dd>O da A, seguido do cartão de números do Dinheiro: o «Disponível» grande, o gasto e o orçamento ao lado.</dd>
+    <dt>Corpo</dt><dd>As secções em cartões, em duas colunas — é a organização que o dono da casa rejeitou nos ECRÃS em 09/09/2026 (escolheu as listas planas), mas num A4 há largura para duas colunas.</dd>
+    <dt>Custo</dt><dd>Numa ficha de saúde com dez consultas os cartões partem mal entre páginas; e os limites de cada envelope deixam de caber na coluna estreita.</dd>
+  </dl>
+</section>
+
+</div>
+</body>
+</html>

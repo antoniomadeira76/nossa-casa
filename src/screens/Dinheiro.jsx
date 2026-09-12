@@ -624,7 +624,7 @@ export default function Dinheiro({ t, user, onEquip }) {
         </View>
       ) : null}
 
-      {retrato ? <RetratoDoMes t={t} retrato={retrato} onClose={() => setRetrato(null)} /> : null}
+      {retrato ? <RetratoDoMes t={t} retrato={retrato} user={user} onClose={() => setRetrato(null)} /> : null}
 
       {/* Settle Accounts Sheet */}
       {cofre ? <Cofre t={t} kid={cofre} onClose={() => setCofre(null)} /> : null}
