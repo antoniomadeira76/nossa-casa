@@ -97,18 +97,27 @@ export function paginaDaApp({ titulo, origem, corpo, aviso, quemImprime, hoje, t
   .total { display: flex; align-items: baseline; gap: 10px; padding: 12px 4px 0; }
   .total .n { font-size: 20pt; font-weight: 500; color: #146B3A; }
   .total .de { color: #656C7C; font-size: 11pt; }
-  /* A marca de água e o carimbo repetem-se em CADA página impressa. */
+  /* A marca de água e o pé repetem-se em CADA página impressa.
+     ⚠ A marca é FUNDO: fica atrás do texto (z-index negativo) e à frente do
+     papel — e para isso a página tem de ser o seu próprio contexto
+     («isolation: isolate»), senão o fundo branco da folha tapa-a. */
+  html { isolation: isolate; background: #fff; }
   .marca { position: fixed; left: 50%; top: 50%; width: 110mm; height: 110mm; transform: translate(-50%, -50%);
            opacity: .07; z-index: -1; pointer-events: none; }
-  .carimbo { position: fixed; right: 0; bottom: 0; text-align: right; font-size: 9pt; color: #656C7C; line-height: 1.35; }
+  /* O pé é UMA linha em flex: o aviso à esquerda, o carimbo à direita, e um
+     intervalo entre os dois — assim nunca se sobrepõem, por muito comprido
+     que o aviso seja. */
+  .pe { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between;
+        align-items: flex-end; gap: 24px; }
+  .rodape { flex: 1 1 auto; min-width: 0; font-size: 8.5pt; color: #656C7C; line-height: 1.35; }
+  .carimbo { flex: none; text-align: right; font-size: 9pt; color: #656C7C; line-height: 1.35; white-space: nowrap; }
   .carimbo b { display: block; font-weight: 600; color: #3B3F48; }
-  .rodape { position: fixed; left: 0; bottom: 0; max-width: 58%; font-size: 8.5pt; color: #656C7C; line-height: 1.35; }
   @media screen {
     body { background: #F0F2F5; }
     .pagina { max-width: 190mm; margin: 24px auto; background: #fff; padding: 14mm 18mm 26mm; position: relative;
-              box-shadow: 0 1px 4px rgba(0,0,0,.12); min-height: 240mm; }
-    .marca, .carimbo, .rodape { position: absolute; }
-    .carimbo { right: 18mm; bottom: 10mm; } .rodape { left: 18mm; bottom: 10mm; }
+              isolation: isolate; box-shadow: 0 1px 4px rgba(0,0,0,.12); min-height: 240mm; }
+    .marca, .pe { position: absolute; }
+    .pe { left: 18mm; right: 18mm; bottom: 10mm; }
   }
 </style></head>
 <body>
@@ -122,8 +131,10 @@ ${logotipo({ classe: 'marca', cor: cores.chrome })}
   </div>
 </header>
 ${corpo}
+<div class="pe">
 <div class="rodape">${escapar(aviso || 'Documento gerado pela aplicação Nossa Casa.')}</div>
 <div class="carimbo"><b>${escapar(carimbo.quem)}</b>${escapar(carimbo.quando)}</div>
+</div>
 </div>
 </body></html>`;
 }

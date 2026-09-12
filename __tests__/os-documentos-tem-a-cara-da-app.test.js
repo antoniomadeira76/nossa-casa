@@ -58,9 +58,15 @@ describe('⚠ os três documentos saem do mesmo molde, com a cara da app', () =>
     // A marca de água: o logótipo, na cor do cabeçalho, fixo e a 7 %.
     expect(html).toMatch(new RegExp(`<svg class="marca"[^>]*>.*stroke="${t.chrome}"`));
     expect(html).toMatch(/\.marca \{ position: fixed;[^}]*opacity: \.07;/);
-    // O carimbo no canto inferior direito, fixo: quem, data e hora da app.
-    expect(html).toMatch(/\.carimbo \{ position: fixed; right: 0; bottom: 0; text-align: right;/);
-    expect(html).toContain('<div class="carimbo"><b>Impresso por Rita</b>20/08/2026 · 14:30</div>');
+    // ⚠ A marca é FUNDO: a página é o seu próprio contexto, senão o papel
+    // branco da pré-visualização tapava-a (o dono da casa viu-a desaparecer).
+    expect(html).toMatch(/html \{ isolation: isolate;/);
+    expect(html).toMatch(/\.pagina \{[^}]*isolation: isolate;/);
+    // O pé é UMA linha em flex — o aviso à esquerda, o carimbo à direita —
+    // para nunca se sobreporem (o dono da casa apanhou-os cruzados).
+    expect(html).toMatch(/\.pe \{ position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between;/);
+    expect(html).toMatch(/\.carimbo \{ flex: none; text-align: right;[^}]*white-space: nowrap;/);
+    expect(html).toMatch(/<div class="pe">\s*<div class="rodape">[^<]+<\/div>\s*<div class="carimbo"><b>Impresso por Rita<\/b>20\/08\/2026 · 14:30<\/div>\s*<\/div>/);
     // Sem serifa — é a letra da app.
     expect(html).not.toMatch(/Georgia|Times New Roman|[^-]serif;/);
     expect(html).toMatch(/font-family: Inter, Roboto/);
