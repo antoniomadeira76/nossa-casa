@@ -282,7 +282,7 @@ const DATA_KEYS = [
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'ementaDesligada', 'pointValue', 'payDay', 'splitHalf',
   'rendimento', 'stores', 'shopPlan', 'shopHistory', 'precos', 'precoPago', 'health', 'specialities', 'equipCats', 'registo',
   'recurringReset', 'healthNotes', 'healthRecipes', 'healthDecisions', 'healthDocs', 'healthGone',
-  'healthArchived', 'healthTomas',
+  'healthArchived', 'healthTomas', 'healthAlergias',
   'googleCalendarImported', // Google Calendar imports
   'filaGoogle',             // o que falta empurrar para a agenda da Google
   'membros', 'nomeDaCasa', 'deDemonstracao',
@@ -725,6 +725,8 @@ export const DEMO = () => ({
   // As tomas de cada receita, pela `chaveDaReceita` -> [{ id, idServidor, quando, por }].
   // Aditivas: marcar acrescenta, desmarcar tira — nunca um contador na receita.
   healthTomas: {},
+  // As alergias, por membro -> [{ id, idServidor, nome, gravidade, nota }].
+  healthAlergias: {},
   // ⚠ Estas duas eram gravadas e não nasciam.
   //
   // Estavam nas DATA_KEYS e não no DEMO(): numa casa nova valiam
@@ -780,7 +782,7 @@ export const SEM_DINHEIRO_SEMEADO = () => ({
 export const BLANK = () => ({
   ...DEMO(), done: {}, urg: {}, due: {}, vaultMoves: [],
   clearedSeeds: true, shopHistory: [], health: [],
-  healthNotes: {}, healthRecipes: {}, healthDecisions: {}, healthTomas: {}, googleCalendarImported: {},
+  healthNotes: {}, healthRecipes: {}, healthDecisions: {}, healthTomas: {}, healthAlergias: {}, googleCalendarImported: {},
   healthDocs: [], healthGone: {}, healthArchived: {}, filaGoogle: [],
   ...SEM_DINHEIRO_SEMEADO(),
 });
@@ -4703,8 +4705,8 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     const ids = (mapaServidor.current || {}).membros || {};
     if (!Object.keys(ids).length) return false;
 
-    const { episodios, anexos, notas, receitas, decisoes, tomas } = await sync.puxarSaude(ids)
-      .catch(() => ({ episodios: [], anexos: [], notas: [], receitas: [], decisoes: [], tomas: [] }));
+    const { episodios, anexos, notas, receitas, decisoes, tomas, alergias } = await sync.puxarSaude(ids)
+      .catch(() => ({ episodios: [], anexos: [], notas: [], receitas: [], decisoes: [], tomas: [], alergias: [] }));
 
     set(x => {
       // ⚠ Uma consulta que já existe cá GUARDA o seu id local.
@@ -4792,7 +4794,18 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         if (locais.length) healthTomas[k] = [...(healthTomas[k] || []), ...locais];
       }
 
-      return { health, healthDocs, healthNotes, healthRecipes, healthDecisions, healthTomas };
+      // As alergias, pelo nome do membro. O servidor manda; o que ainda não
+      // subiu (sem `idServidor`) fica, atrás do que veio.
+      const healthAlergias = {};
+      for (const a of alergias || []) {
+        (healthAlergias[a.member] ||= []).push({ ...a, id: `srv-${a.idServidor}` });
+      }
+      for (const [membro, lista] of Object.entries(x.healthAlergias || {})) {
+        const locais = (lista || []).filter(a => !a.idServidor);
+        if (locais.length) healthAlergias[membro] = [...(healthAlergias[membro] || []), ...locais];
+      }
+
+      return { health, healthDocs, healthNotes, healthRecipes, healthDecisions, healthTomas, healthAlergias };
     });
     return true;
   };
@@ -4801,6 +4814,83 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     set(x => ({
       healthArchived: { ...(x.healthArchived || {}), [healthId]: !!arquivar },
     }));
+  };
+
+  // ── A ficha de emergência ────────────────────────────────────────────────
+  //
+  // Alergias, medicação em curso, médico e contactos — o que a escola precisa
+  // de saber num dia mau. Só as ALERGIAS são dado novo (`alergias_saude`); o
+  // resto deriva do que a ficha já tem. Quem vê é quem vê a ficha
+  // (INVARIANTE #3): uma criança não vê a sua, e o PDF sai do telemóvel de um
+  // adulto. 12/09/2026 — a sétima das dez funcionalidades.
+  const alergiasDe = (member, viewer) => (canSeeHealth(member, viewer)
+    ? [...((s.healthAlergias || {})[member] || [])].sort((a, b) => {
+      const peso = { grave: 0, moderada: 1, leve: 2 };
+      return (peso[a.gravidade] ?? 1) - (peso[b.gravidade] ?? 1) || String(a.nome).localeCompare(String(b.nome));
+    })
+    : []);
+
+  // Devolve `{ id }` quando ficou, ou a frase do que falta.
+  const criarAlergia = (member, viewer, { nome, gravidade, nota } = {}) => {
+    if (!canSeeHealth(member, viewer)) return 'Não pode escrever nesta ficha.';
+    const n = String(nome || '').trim();
+    if (!n) return 'Diga a que é a alergia.';
+    const g = ['leve', 'moderada', 'grave'].includes(gravidade) ? gravidade : 'moderada';
+    if (((s.healthAlergias || {})[member] || []).some(a => normal(a.nome) === normal(n))) return 'Essa alergia já está na ficha.';
+    const id = 'alg-' + Date.now();
+    const linha = { id, idServidor: null, nome: n, gravidade: g, nota: String(nota || '').trim() };
+    set(x => ({
+      healthAlergias: { ...(x.healthAlergias || {}), [member]: [...((x.healthAlergias || {})[member] || []), linha] },
+      // ⚠ Sem o nome da alergia: o registo da casa é lido por todos os adultos,
+      // e a ficha existe para o guardar.
+      registo: maisRegisto(x, `Alergia acrescentada à ficha ${DE(member)} ${member}`, 'Saúde'),
+    }));
+    if (sync) {
+      const ses = sync.sessao();
+      const idMembro = idDoMembro(member);
+      if (ses && idMembro) sync.alergiaDeSaude({ casa: ses.casa, membro: idMembro, nome: n, gravidade: g, nota: linha.nota })
+        .then(r => { if (r && r.id) set(x => ({
+          healthAlergias: { ...(x.healthAlergias || {}), [member]: ((x.healthAlergias || {})[member] || []).map(a => (a.id === id ? { ...a, idServidor: r.id } : a)) },
+        })); })
+        .catch(() => {});
+    }
+    return { id };
+  };
+
+  const apagarAlergia = (member, viewer, id) => {
+    if (!canSeeHealth(member, viewer)) return 'Não pode escrever nesta ficha.';
+    const a = ((s.healthAlergias || {})[member] || []).find(k => k.id === id);
+    if (!a) return 'Essa alergia já não está na ficha.';
+    if (sync && a.idServidor) {
+      try { sync.apagarAlergiaDeSaude(a.idServidor).catch(() => {}); }
+      catch (e) { return e.message; }
+    }
+    set(x => ({
+      healthAlergias: { ...(x.healthAlergias || {}), [member]: ((x.healthAlergias || {})[member] || []).filter(k => k.id !== id) },
+    }));
+    return null;
+  };
+
+  // A ficha inteira, derivada: `null` para quem não a pode ver.
+  const fichaDeEmergencia = (member, viewer) => {
+    if (!canSeeHealth(member, viewer)) return null;
+    const consultas = healthOf(member, viewer);
+    // A medicação EM CURSO: a receita com plano cujo intervalo inclui hoje, ou
+    // a sem plano cuja validade ainda não passou.
+    const medicacao = [];
+    for (const h of consultas) {
+      for (const r of (s.healthRecipes[h.id] || [])) {
+        const plano = planoDaReceita(r, h.day);
+        const emCurso = plano
+          ? (TODAY_KEY >= plano.inicio && TODAY_KEY <= plano.fim)
+          : (r.expiresAt ? (daysUntil(r.expiresAt) ?? -1) >= 0 : false);
+        if (emCurso) medicacao.push({ id: r.id, nome: r.name, dose: r.dosage || '', plano: plano ? plano.descricao : null, ate: plano ? plano.fim : null });
+      }
+    }
+    const medicos = [...new Set(consultas.map(h => String(h.doctor || '').trim()).filter(Boolean))];
+    // Os adultos da casa, com o correio quando o há — é o que a escola liga.
+    const contactos = adultos.map(n => ({ nome: n, email: (quadro[n] || {}).email || null }));
+    return { membro: member, alergias: alergiasDe(member, viewer), medicacao, medicos, contactos };
   };
 
   // ── Apagar uma consulta ───────────────────────────────────────────────────
@@ -5357,6 +5447,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     addHealthRecord, addHealthNote, editarNotaSaude, apagarNotaSaude, notaDaConsulta,
     addRecipe, setRecipeDecision, setHealthDecision,
     definirTomas, tomasDaReceita, marcarToma, desmarcarToma, agendaTemTomas, porTomasNaAgenda,
+    alergiasDe, criarAlergia, apagarAlergia, fichaDeEmergencia,
     addHealthDoc, arquivarConsulta, docsDaConsulta, estaArquivada,
     apagarConsulta, porqueNaoApaga, oQueCaiCom, lerSaudeDoServidor,
     addSpecialty, removeSpecialty, renameSpecialty, consultasDaEspecialidade,

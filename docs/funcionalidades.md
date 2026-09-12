@@ -276,6 +276,13 @@ acaba antes da receita; o botão «Tomas» abre a folha: definir o plano, «Pôr
 (um evento «só adultos» por dia, de hoje em diante), «Tomado agora», e o que já se tomou hoje
 com hora e quem. Só quem marcou desmarca. As tomas sobem pelo travão de casa das consultas.
 
+**Ficha de emergência** (12/09/2026, Saúde) — na ficha de uma criança, a linha «Ficha de
+emergência» abre a folha: alergias (nome, gravidade, nota; acrescentar e tirar), medicação em
+curso (as receitas com plano a decorrer, ou válidas), médico (o campo «médico» das consultas) e
+contactos (os adultos da casa). «Exportar em PDF para a escola» sai pelo caminho da ficha de
+saúde, com as quatro secções sempre presentes — uma vazia diz «nenhuma conhecida». Só as alergias
+são dado novo (`alergias_saude`, do membro, regras da ficha, travão de casa).
+
 **Contratos** (12/09/2026) — segunda secção do ecrã dos Equipamentos: o seguro do carro, a
 internet, a inspeção. Uma linha por contrato com o fornecedor, quando renova, a fidelização
 («até 03/2027») e quem trata; a pastilha diz «renova em 23 dias» ou «passou há 4 dias». A linha

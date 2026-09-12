@@ -340,6 +340,23 @@ uma consulta a sério, porque não há onde escrever o nome.
       tocou em «Ação» e não aconteceu nada.
 - [x] Sincronizar as consultas — sobem se o servidor viver na casa. Ver a
       última entrada desta secção.
+- [x] **A ficha de emergência da criança** (12/09/2026, a sétima das dez funcionalidades).
+      `alergias_saude` (membro, nome, gravidade, nota), nos dois sítios, com as regras da
+      ficha e índice único (membro, nome). Na ficha da criança, a linha «Ficha de
+      emergência» abre a folha: alergias (acrescentar e tirar), medicação em curso (das
+      receitas com plano), médico (das consultas), contactos (os adultos), e «Exportar em
+      PDF para a escola» — `documentoDeEmergencia` em `exportar-saude.js`, quatro secções
+      sempre. Guarda: `a-ficha-de-emergencia`; prova: `provar-emergencia.mjs` (10).
+      - ⚠ **A prova da alergia apanhou um buraco nas consultas**: a regra de escrita dos
+        `episodios_saude` não tinha `membro.casa`, e uma adulta de outra casa criava uma
+        consulta a uma criança desta. E o guarda das relações ancoradas NUNCA o tinha visto,
+        porque o mapa de nomes só tinha coleções de base — `membros` é de autenticação — e
+        toda a relação para `membros` era saltada, com um `daCasa.add('membros')` a
+        prometer o contrário. Alargado: 41 relações, 45 provas, catorze ataques novos.
+        Sete relações estavam soltas; duas eram buracos a sério (`cofre_movimentos.membro`
+        e `acertos.de_membro/para_membro`). Ancoradas as quatro coleções nos dois sítios
+        (tabela `REGRAS`), e o `acrescentar-campos` passou a aplicar regras a coleções da
+        tabela `COLECOES` que já existam — «já existe» deixava a regra velha viva.
 - [x] **A faixa da consulta aberta não cresce** (12/09/2026). O dono da casa viu a
       consulta do Léo aberta com a faixa azul a acompanhar os ~700 px do acordeão e pediu
       cinco opções (`design/faixa-da-consulta.dc.html`); escolheu a A: a `Linha` ganhou

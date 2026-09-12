@@ -201,6 +201,26 @@ const COLECOES = [
       deleteRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
     },
   },
+  // As alergias, para a ficha de emergência (12/09/2026): do membro, com as
+  // regras da ficha de saúde. A mesma definição do `criar-colecoes.mjs`.
+  {
+    nome: 'alergias_saude',
+    campos: [
+      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'membro', type: 'relation', alvo: 'membros', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'nome', type: 'text', required: true, max: 60 },
+      { name: 'gravidade', type: 'select', values: ['leve', 'moderada', 'grave'], maxSelect: 1 },
+      { name: 'nota', type: 'text', max: 300 },
+    ],
+    indexes: ['CREATE UNIQUE INDEX idx_alergia_por_membro ON alergias_saude (membro, nome)'],
+    regras: {
+      listRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca" && (membro = @request.auth.id || membro.papel = "crianca")',
+      viewRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca" && (membro = @request.auth.id || membro.papel = "crianca")',
+      createRule: 'casa = @request.auth.casa && membro.casa = @request.auth.casa && (membro = @request.auth.id && @request.auth.papel != "crianca" || @request.auth.papel != "crianca" && membro.papel = "crianca")',
+      updateRule: 'casa = @request.auth.casa && membro.casa = @request.auth.casa && (membro = @request.auth.id && @request.auth.papel != "crianca" || @request.auth.papel != "crianca" && membro.papel = "crianca")',
+      deleteRule: 'casa = @request.auth.casa && membro.casa = @request.auth.casa && (membro = @request.auth.id && @request.auth.papel != "crianca" || @request.auth.papel != "crianca" && membro.papel = "crianca")',
+    },
+  },
   // As tomas de uma receita (12/09/2026): uma linha por toma, aditiva, com quem
   // marcou. A visibilidade herda-se da receita → episódio. A mesma definição
   // do `criar-colecoes.mjs`, letra a letra.
@@ -248,6 +268,26 @@ const REGRAS = [
   ['tarefas_feitas', {
     deleteRule: `${DA_CASA} && tarefa.casa = @request.auth.casa`
       + ` && (${ADULTO} || (marcada_por = @request.auth.id && confirmada_em = ""))`,
+    // E o `confirmada_por` e o `marcada_por` ancorados (12/09/2026) — o guarda
+    // das relações passou a ver as relações para `membros`.
+    createRule: `${DA_CASA} && tarefa.casa = @request.auth.casa`
+      + ' && marcada_por = @request.auth.id'
+      + ' && (confirmada_por = "" || confirmada_por.casa = @request.auth.casa)'
+      + ` && (tarefa.atribuido_a = @request.auth.id || ${ADULTO})`,
+    updateRule: `${DA_CASA} && tarefa.casa = @request.auth.casa && ${ADULTO}`
+      + ' && marcada_por.casa = @request.auth.casa'
+      + ' && (confirmada_por = "" || confirmada_por.casa = @request.auth.casa)',
+  }],
+  // Os dois buracos a sério que o guarda alargado apanhou (12/09/2026): uma
+  // adulta de outra casa escrevia no cofre de uma criança desta, e lançava um
+  // acerto entre os adultos desta. Ver o `criar-colecoes.mjs`.
+  ['cofre_movimentos', {
+    createRule: `${DA_CASA} && ${ADULTO} && membro.casa = @request.auth.casa && membro.papel = "crianca"`
+      + ' && (autorizado_por = "" || autorizado_por.casa = @request.auth.casa)',
+  }],
+  ['acertos', {
+    createRule: `${DA_CASA} && ${ADULTO} && de_membro.papel != "crianca" && para_membro.papel != "crianca"`
+      + ' && de_membro.casa = @request.auth.casa && para_membro.casa = @request.auth.casa',
   }],
   ['artigos', {
     listRule: `${DA_CASA} && (visibilidade != "adultos" || ${ADULTO})`,
@@ -261,6 +301,14 @@ const REGRAS = [
       + ' && envelope.casa = @request.auth.casa && pagador.casa = @request.auth.casa'
       + ' && (conta_fixa = "" || conta_fixa.casa = @request.auth.casa)',
   }],
+  // A quarta (12/09/2026): a consulta prende ao `membro.casa`. Uma adulta de
+  // outra casa criava uma consulta a uma criança desta — a etiqueta `casa` era
+  // a dela e o `membro.papel = "crianca"` era verdade. Ver o `criar-colecoes.mjs`.
+  ['episodios_saude', {
+    createRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
+    updateRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
+    deleteRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
+  }],
 ];
 
 const idDaColecao = async (nome) => (await pb.collections.getOne(nome)).id;
@@ -272,9 +320,24 @@ const plural = (n, um, muitos) => `${n} ${n === 1 ? um : muitos}`;
 
 // ── As coleções novas ────────────────────────────────────────────────────────
 let colecoesCriadas = 0;
+let regrasDasColecoes = 0;
 for (const c of COLECOES) {
   const existe = await pb.collections.getOne(c.nome).catch(() => null);
-  if (existe) { console.log(`${c.nome}: a coleção já existe.`); continue; }
+  if (existe) {
+    // ⚠ Existir não quer dizer estar IGUAL. A `alergias_saude` nasceu com uma
+    // regra sem âncora e foi corrigida no mesmo dia (12/09/2026); um «já
+    // existe» a secas deixava a regra velha viva no servidor, com a tabela a
+    // dizer outra coisa. As regras aplicam-se por diferença, como na `REGRAS`.
+    const diferentes = Object.entries(c.regras).filter(([r, texto]) => existe[r] !== texto);
+    if (diferentes.length) {
+      await pb.collections.update(existe.id, Object.fromEntries(diferentes));
+      regrasDasColecoes += diferentes.length;
+      console.log(`${c.nome}: a coleção já existe; ${diferentes.map(([r]) => r).join(', ')} — regra aplicada.`);
+    } else {
+      console.log(`${c.nome}: a coleção já existe.`);
+    }
+    continue;
+  }
   const campos = [];
   for (const { alvo, ...f } of c.campos) {
     campos.push({ ...f, ...(alvo ? { collectionId: await idDaColecao(alvo) } : {}) });
@@ -355,7 +418,7 @@ for (const [nome, regras] of REGRAS) {
 console.log(`\n${plural(colecoesCriadas, 'coleção criada', 'coleções criadas')}`
   + ` · ${plural(criados, 'campo acrescentado', 'campos acrescentados')}`
   + ` · ${jaLa} já existiam · ${plural(tirados, 'tirado', 'tirados')}`
-  + ` · ${plural(regrasMudadas, 'regra aplicada', 'regras aplicadas')}.`);
+  + ` · ${plural(regrasMudadas + regrasDasColecoes, 'regra aplicada', 'regras aplicadas')}.`);
 
 // ── E a prova de que ficaram lá ──────────────────────────────────────────────
 //
@@ -378,6 +441,10 @@ for (const c of COLECOES) {
     const f = viva.fields.find(x => x.name === campo.name);
     if (!f) faltam.push(`${c.nome}.${campo.name} não ficou lá`);
     else if (f.type !== campo.type) faltam.push(`${c.nome}.${campo.name} é ${f.type} e devia ser ${campo.type}`);
+  }
+  // E as regras da coleção leem-se de volta, letra a letra.
+  for (const [r, texto] of Object.entries(c.regras)) {
+    if (viva[r] !== texto) faltam.push(`${c.nome}.${r} não ficou como a tabela diz`);
   }
 }
 for (const [nome, campo] of CAMPOS_A_TIRAR) {

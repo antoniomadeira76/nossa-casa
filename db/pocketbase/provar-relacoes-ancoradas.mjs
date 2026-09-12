@@ -59,9 +59,16 @@ const { pb: admin } = await comecar();
 // ═════════════════════════════════════════════════════════════════════════════
 console.log('\n── toda a relação para dentro da casa está ancorada ──');
 
-const colecoes = (await admin.collections.getFullList())
-  .filter(c => !c.name.startsWith('_') && c.type === 'base');
-const porId = Object.fromEntries(colecoes.map(c => [c.id, c.name]));
+const todas = (await admin.collections.getFullList()).filter(c => !c.name.startsWith('_'));
+const colecoes = todas.filter(c => c.type === 'base');
+// ⚠ O mapa de nomes é de TODAS as coleções, e não só das de base. Os `membros`
+// são uma coleção de AUTENTICAÇÃO: com o mapa feito só das de base, toda a
+// relação para `membros` ficava sem nome de alvo e era saltada — nem a
+// estática a via, nem a dinâmica a exigia. Foi assim que a `episodios_saude.membro`
+// viveu oito dias sem âncora nem ataque, com a `daCasa.add('membros')` duas
+// linhas abaixo a prometer o contrário (12/09/2026, apanhado pela primeira
+// coleção nova com a mesma forma).
+const porId = Object.fromEntries(todas.map(c => [c.id, c.name]));
 
 // Uma coleção é «da casa» se tiver um campo `casa` — ou for a `casas` ou a
 // `membros`, que são a casa e quem lá vive.
@@ -214,6 +221,12 @@ deles.episodio = await admin.collection('episodios_saude').create({
   casa: outra.id, membro: nela.id, especialidade: 'Medicina geral', dia: '2026-09-20' });
 deles.receita = await admin.collection('receitas_saude').create({
   casa: outra.id, episodio: deles.episodio.id, nome: 'Vitaminas' });
+// E o que os catorze ataques às relações para `membros` precisam DELA: uma
+// criança, uma tarefa, um segundo envelope, uma meta (12/09/2026).
+deles.crianca = await mk(outra, 'Filho', 'crianca', { ...s('2468') });
+deles.tarefa = await admin.collection('tarefas').create({ casa: outra.id, titulo: 'Arrumar', atribuido_a: deles.crianca.id, pontos: 1 });
+deles.envelope2 = await admin.collection('envelopes').create({ casa: outra.id, nome: 'Lazer deles', limite_base: 50 });
+deles.meta = await admin.collection('metas').create({ casa: outra.id, nome: 'Bicicleta', alvo: 300 });
 
 // Uma tentativa por relação: os campos mínimos, com a relação a apontar para
 // DENTRO desta casa e o `casa` da linha na casa DELA.
@@ -240,6 +253,29 @@ const ATAQUES = [
   // As tomas (12/09/2026): a receita desta casa, e a assinatura de um adulto desta.
   ['tomas_saude', 'receita', { quando: '2026-09-20 08:00:00.000Z', por: '@eu', receita: () => nosso.receita.id }],
   ['tomas_saude', 'por', { quando: '2026-09-20 08:00:00.000Z', receita: () => deles.receita.id, por: () => rita.id }],
+  // As alergias (12/09/2026): a vizinha tenta escrever uma alergia ao nosso Léo.
+  ['alergias_saude', 'membro', { nome: 'Amendoim', gravidade: 'grave', membro: () => leo.id }],
+  // ⚠ E a CONSULTA ao nosso Léo — o ataque que nunca tinha sido escrito, porque
+  // o mapa de nomes saltava as relações para `membros`. Passava.
+  ['episodios_saude', 'membro', { especialidade: 'Pediatria', dia: '2026-09-20', membro: () => leo.id }],
+  // ⚠ As catorze relações para `membros` que o guarda nunca tinha exigido,
+  // porque o mapa de nomes saltava a coleção de autenticação (12/09/2026).
+  // Duas eram buracos a sério — o cofre e os acertos; as outras já prendiam
+  // pelo `= @request.auth.id` ou pelo `.casa`, e agora está provado.
+  ['registo', 'quem', { texto: 'X', quando: '2026-09-20 10:00:00.000Z', area: 'Casa', quem: () => rita.id }],
+  ['eventos', 'autor', { dia: '2026-09-20', titulo: 'X', visibilidade: 'familia', autor: () => rita.id }],
+  ['tarefas_feitas', 'marcada_por', { data: '2026-09-20', tarefa: () => deles.tarefa.id, marcada_por: () => rita.id }],
+  ['tarefas_feitas', 'confirmada_por', { data: '2026-09-21', tarefa: () => deles.tarefa.id, marcada_por: '@eu', confirmada_por: () => rita.id }],
+  ['despesas', 'pagador', { valor: 9, idem_key: 'anc-pg', envelope: () => deles.envelope.id, pagador: () => rita.id }],
+  ['cofre_movimentos', 'membro', { tipo: 'bonus', valor: 1, idem_key: 'anc-cf1', membro: () => leo.id }],
+  ['cofre_movimentos', 'autorizado_por', { tipo: 'bonus', valor: 1, idem_key: 'anc-cf2', membro: () => deles.crianca.id, autorizado_por: () => rita.id }],
+  ['listas_compras', 'comprador', { comprador: () => rita.id }],
+  ['artigos', 'pedido_por', { rotulo: 'X', lista: () => deles.lista.id, pedido_por: () => leo.id }],
+  ['transferencias', 'por', { valor: 9, idem_key: 'anc-tr', de_envelope: () => deles.envelope.id, para_envelope: () => deles.envelope2.id, por: () => rita.id }],
+  ['acertos', 'de_membro', { valor: 5, idem_key: 'anc-ac1', de_membro: () => rita.id, para_membro: '@eu' }],
+  ['acertos', 'para_membro', { valor: 5, idem_key: 'anc-ac2', de_membro: '@eu', para_membro: () => rita.id }],
+  ['notas_saude', 'autor', { texto: 'X', episodio: () => deles.episodio.id, autor: () => rita.id }],
+  ['meta_movimentos', 'por', { valor: 50, idem_key: 'anc-mm', meta: () => deles.meta.id, por: () => rita.id }],
   // ⚠ As DUAS pontas da transferência, uma de cada vez. A prova «há um ataque
   // por relação» apanhou-me a esquecer o `para_envelope` — que é exactamente
   // o género de omissão que ela existe para apanhar, e que me escapou cinco

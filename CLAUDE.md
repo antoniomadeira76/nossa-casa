@@ -93,6 +93,13 @@ metades. Corrigido em 03/09/2026:
   rebenta se alguém lhe acrescentar uma escrita de saúde
 - as **tomas** de uma receita (`tomas_saude`, 12/09/2026) estão dentro do mesmo travão,
   por decisão do dono da casa: «as tomas sobem pelo travão de casa»
+- as **alergias** da ficha de emergência (`alergias_saude`, 12/09/2026), idem
+
+⚠ **Toda a relação para `membros` conta.** O guarda `provar-relacoes-ancoradas` saltou as
+relações para `membros` durante oito dias — é uma coleção de AUTENTICAÇÃO e o mapa de nomes só
+tinha as de base —, e três coleções viveram sem âncora: uma adulta de outra casa criava uma
+consulta, um movimento de cofre ou um acerto a apontar para pessoas desta. Corrigido em
+12/09/2026: 41 relações vigiadas, um ataque por cada.
 
 O travão é a conformidade, não a construção: cinco pontos no `db/postgres/README.md`, e
 são dados clínicos de menores. **Enquanto o servidor da casa correr em `127.0.0.1`**,

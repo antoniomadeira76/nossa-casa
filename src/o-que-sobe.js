@@ -107,6 +107,7 @@ export const O_QUE_SOBE = {
   healthDocs: ['linhas', 'A coleção `anexos`, com o ficheiro, pelo mesmo travão.'],
   healthNotes: ['linhas', 'A coleção `notas_saude`. Só o autor altera ou apaga a sua, e a regra é do servidor.', 'notaDeSaude'],
   healthRecipes: ['linhas', 'A coleção `receitas_saude`, ligada ao episódio. A receita tem de chegar a quem for à farmácia, e não a quem a escreveu.', 'receitaDeSaude'],
+  healthAlergias: ['linhas', 'A coleção `alergias_saude`: uma linha por alergia do MEMBRO — nome, gravidade, nota —, com as regras da ficha de saúde e o travão de casa. É a primeira secção da ficha de emergência; as outras três derivam do que já sobe.', 'alergiaDeSaude'],
   healthTomas: ['linhas', 'A coleção `tomas_saude`: uma linha por toma marcada — a receita, quando, quem —, aditiva; desmarcar apaga-a. Sobe pelo mesmo travão de casa das consultas, por decisão do dono da casa em 12/09/2026.', 'tomaDeSaude'],
   healthDecisions: ['linhas', 'A coleção `decisoes_saude`, com índice único por episódio: uma decisão é um estado, não um movimento, e não se pode somar.', 'decisaoDeSaude'],
   healthArchived: ['local', 'Que consultas estão arquivadas. Ainda não tem campo no servidor — arquivar é uma vista deste dispositivo sobre a lista, não uma propriedade da consulta.'],

@@ -4,9 +4,10 @@ import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { dayLabel, plural, TODAY_KEY, parseKey } from '../format';
 
-import { Card, SectionTitle, Linha, Empty, Pill } from '../ui';
+import { Card, SectionTitle, Linha, Empty, Pill, Row } from '../ui';
 import Icon from '../Icon';
 import ExportarSaude from '../sheets/ExportarSaude';
+import FichaEmergencia from '../sheets/FichaEmergencia';
 
 // Dias que faltam até uma data, contra o TODAY da app.
 const daysUntil = (day) => {
@@ -23,12 +24,16 @@ const whenLabel = (h) => {
 // A ficha de um membro: a próxima consulta em destaque, as consultas todas,
 // e o arquivo clínico. Quem pode ver isto decide-se no store, não aqui.
 export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
-  const { s, healthOf, docsOf, nextHealth, membros: MEMBERS, nomeDaCasa } = useStore();
+  const { s, healthOf, docsOf, nextHealth, alergiasDe, membros: MEMBERS, nomeDaCasa } = useStore();
 
   const consultas = healthOf(member, user);
   const docs = docsOf(member, user);
   const proxima = nextHealth(member, user);
   const propria = member === user;
+  // A ficha de emergência é da CRIANÇA (12/09/2026): é o papel que se leva à
+  // escola. Um adulto tem a sua ficha completa para exportar.
+  const [emergencia, setEmergencia] = useState(false);
+  const alergias = alergiasDe(member, user);
 
   // A exportação: `null` fechada, ou `{ ambito, alvo }` aberta. Abre-se de dois
   // sítios — o ícone de uma consulta, que já traz o âmbito decidido, e o botão
@@ -62,6 +67,19 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
               </View>
             </View>
           </Card>
+        ) : null}
+
+        {/* A ficha de emergência: alergias, medicação em curso, médico,
+            contactos, e o PDF para a escola. Uma linha, um destino. */}
+        {MEMBERS[member]?.kid ? (
+          <Linha t={t} last>
+            <Row t={t} icon="fileText" title="Ficha de emergência"
+              sub={alergias.length
+                ? `${plural(alergias.length, 'alergia', 'alergias')} · exportar em PDF para a escola`
+                : 'Alergias, medicação, médico e contactos · PDF para a escola'}
+              onPress={() => setEmergencia(true)} last
+              right={<Icon name="caretRight" size={18} color={t.text3} />} />
+          </Linha>
         ) : null}
 
         {/* Consultas */}
@@ -178,6 +196,10 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
           )}
         </View>
       </View>
+
+      {emergencia ? (
+        <FichaEmergencia t={t} member={member} user={user} onClose={() => setEmergencia(false)} />
+      ) : null}
 
       {exportar ? (
         <ExportarSaude t={t} membro={member} casa={nomeDaCasa} user={user}

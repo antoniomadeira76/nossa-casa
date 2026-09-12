@@ -56,6 +56,8 @@ const NOSSAS = [
   // `credenciais_agenda` ensinou.
   // ⚠ E as `tomas_saude` ANTES das `receitas_saude`: a toma aponta à receita.
   'tomas_saude',
+  // As alergias apontam ao membro e a mais nada: antes dos `membros` chega.
+  'alergias_saude',
   'notas_saude', 'receitas_saude', 'decisoes_saude',
   // ⚠ `eventos` subiu para AQUI, antes dos `episodios_saude`. Ganhou uma
   // relação para eles («a agenda aprende a saúde»), e uma coleção não se apaga
@@ -589,11 +591,17 @@ await criar({
   //
   // A lição, escrita onde se lê: quando uma regra fala de uma RELAÇÃO, tem de
   // perguntar de que casa é a relação, não de que casa se diz a linha.
+  // ⚠ E o `confirmada_por` ancorado (12/09/2026): o guarda das relações
+  // passou a ver as relações para `membros` e apanhou-o solto, ao criar e ao
+  // alterar — e o `marcada_por` solto ao alterar. Nos dois sítios.
   createRule: `${DA_CASA} && tarefa.casa = @request.auth.casa`
     + ` && marcada_por = @request.auth.id`
+    + ` && (confirmada_por = "" || confirmada_por.casa = @request.auth.casa)`
     + ` && (tarefa.atribuido_a = @request.auth.id || ${ADULTO})`,
   // a confirmação que valida os pontos exige adulto
-  updateRule: `${DA_CASA} && tarefa.casa = @request.auth.casa && ${ADULTO}`,
+  updateRule: `${DA_CASA} && tarefa.casa = @request.auth.casa && ${ADULTO}`
+    + ` && marcada_por.casa = @request.auth.casa`
+    + ` && (confirmada_por = "" || confirmada_por.casa = @request.auth.casa)`,
   // Desmarcar APAGA a linha (INVARIANTE #2). Um adulto apaga qualquer uma; a
   // criança apaga só a que ELA marcou e ninguém confirmou ainda — foi ela que
   // a pôs, e enquanto está «a confirmar» é dela. Uma linha confirmada é
@@ -726,7 +734,13 @@ await criar({
   // Adultos inserem; a criança lê o SEU cofre e mais nada.
   listRule: `${DA_CASA} && (${ADULTO} || membro = @request.auth.id)`,
   viewRule: `${DA_CASA} && (${ADULTO} || membro = @request.auth.id)`,
-  createRule: `${DA_CASA} && ${ADULTO} && membro.papel = "crianca"`,
+  // ⚠ `membro.casa` e `autorizado_por.casa` (12/09/2026): sem eles, uma adulta
+  // de outra casa escrevia um movimento no cofre de uma criança desta — a
+  // etiqueta `casa` era a dela e o `membro.papel = "crianca"` era verdade. O
+  // guarda das relações ancoradas não o via porque saltava as relações para
+  // `membros`. Nos dois sítios.
+  createRule: `${DA_CASA} && ${ADULTO} && membro.casa = @request.auth.casa && membro.papel = "crianca"`
+    + ` && (autorizado_por = "" || autorizado_por.casa = @request.auth.casa)`,
   updateRule: null,
   deleteRule: null,
 });
@@ -1015,7 +1029,10 @@ await criar({
   ],
   indexes: ['CREATE UNIQUE INDEX idx_acerto_idem ON acertos (casa, idem_key)'],
   listRule: `${DA_CASA} && ${ADULTO}`, viewRule: `${DA_CASA} && ${ADULTO}`,
-  createRule: `${DA_CASA} && ${ADULTO} && de_membro.papel != "crianca" && para_membro.papel != "crianca"`,
+  // ⚠ As duas pontas ancoradas à casa (12/09/2026): uma adulta de outra casa
+  // lançava um acerto entre os adultos DESTA. Nos dois sítios.
+  createRule: `${DA_CASA} && ${ADULTO} && de_membro.papel != "crianca" && para_membro.papel != "crianca"`
+    + ` && de_membro.casa = @request.auth.casa && para_membro.casa = @request.auth.casa`,
   updateRule: null, deleteRule: null,
 });
 
@@ -1211,9 +1228,46 @@ await criar({
   viewRule: SAUDE_VISIVEL,
   // Escrever é a MESMA condição de ler, desde que a criança deixou de ler a
   // sua. Quem registra e quem vê são os adultos da casa.
-  createRule: `${DA_CASA} && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
-  updateRule: `${DA_CASA} && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
-  deleteRule: `${DA_CASA} && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
+  //
+  // ⚠ `membro.casa = @request.auth.casa` (12/09/2026): sem isto, uma adulta de
+  // OUTRA casa criava uma consulta a uma criança desta — a etiqueta `casa` era
+  // a dela, o `membro.papel = "crianca"` era verdade, e a regra passava. A
+  // consulta ficava na casa dela, a apontar para o nosso Léo. O guarda das
+  // relações ancoradas não a via porque ignorava as relações para `membros`
+  // (coleção de autenticação, fora do mapa de nomes). Corrigido nos dois, e a
+  // regra viva pela tabela `REGRAS` do `acrescentar-campos.mjs`.
+  createRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
+  updateRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
+  deleteRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
+});
+
+// ── As alergias, para a ficha de emergência ──────────────────────────────────
+//
+// «Amendoim · grave». Uma linha por alergia, do membro — não de uma consulta:
+// uma alergia não nasce numa consulta, acompanha a pessoa. A ficha de
+// emergência (alergias, medicação em curso, médico, contactos) é o que um
+// adulto exporta em PDF para a escola; o resto deriva do que já existe.
+// Mesmas regras da ficha (`SAUDE_VISIVEL`): a criança não lê a sua, e o PDF
+// sai do telemóvel de um adulto. Travão de casa, como tudo na saúde.
+// (12/09/2026 — a sétima das dez funcionalidades.)
+await criar({
+  name: 'alergias_saude', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('membro', ids.membros, { required: true, cascadeDelete: true }),
+    txt('nome', { required: true, max: 60 }),
+    sel('gravidade', ['leve', 'moderada', 'grave']),
+    txt('nota', { max: 300 }),
+  ],
+  // A mesma alergia não se escreve duas vezes na mesma pessoa.
+  indexes: ['CREATE UNIQUE INDEX idx_alergia_por_membro ON alergias_saude (membro, nome)'],
+  listRule: SAUDE_VISIVEL,
+  viewRule: SAUDE_VISIVEL,
+  // ⚠ Com o `membro.casa`, como os episódios — foi esta coleção, atacada pela
+  // prova no dia em que nasceu, que mostrou o buraco nos episódios.
+  createRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
+  updateRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
+  deleteRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
 });
 
 // ── A agenda aprende a saúde ─────────────────────────────────────────────────

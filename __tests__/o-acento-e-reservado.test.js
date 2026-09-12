@@ -65,6 +65,10 @@ const COM_ACENTO = {
     "{aGuardar ? 'A preparar…' : 'Guardar como PDF'}":
       'Tira dados clínicos de um menor de dentro da app e põe-nos num ficheiro que a app deixa de governar. Não se desfaz.',
   },
+  'src/sheets/FichaEmergencia.jsx': {
+    "{aGuardar ? 'A preparar…' : 'Exportar em PDF para a escola'}":
+      'A mesma porta: a ficha de emergência de uma criança sai da app num PDF para a escola. Não se desfaz.',
+  },
 };
 
 // ── A árvore, lida ───────────────────────────────────────────────────────────
