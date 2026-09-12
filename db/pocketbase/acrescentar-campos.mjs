@@ -67,6 +67,15 @@ const CAMPOS = [
   // uma coleção que nasce na tabela `COLECOES` abaixo — e o guião cria as
   // coleções ANTES de acrescentar os campos, senão isto não resolvia o id.
   ['despesas', 'conta_fixa', { type: 'relation', alvo: 'contas_fixas', maxSelect: 1, cascadeDelete: false }],
+  // A medicação a partir da receita (12/09/2026): tomas por dia, dias, e
+  // unidades na caixa. Zero é «não definido».
+  ['receitas_saude', 'frequencia', { type: 'number', min: 0, onlyInt: true }],
+  ['receitas_saude', 'duracao_dias', { type: 'number', min: 0, onlyInt: true }],
+  ['receitas_saude', 'caixa', { type: 'number', min: 0, onlyInt: true }],
+  // O interruptor da ementa da semana (12/09/2026): regra da casa. ⚠ Pela
+  // NEGATIVA: um `bool` novo nasce a `false` em todas as linhas que já existem,
+  // e `false` tem de ser «ligada». Ver o comentário no `criar-colecoes.mjs`.
+  ['casas', 'ementa_desligada', { type: 'bool' }],
 ];
 
 // As coleções que nasceram depois da base. A definição é a MESMA do
@@ -190,6 +199,26 @@ const COLECOES = [
       createRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca" && (responsavel = "" || responsavel.casa = @request.auth.casa)',
       updateRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca" && (responsavel = "" || responsavel.casa = @request.auth.casa)',
       deleteRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+    },
+  },
+  // As tomas de uma receita (12/09/2026): uma linha por toma, aditiva, com quem
+  // marcou. A visibilidade herda-se da receita → episódio. A mesma definição
+  // do `criar-colecoes.mjs`, letra a letra.
+  {
+    nome: 'tomas_saude',
+    campos: [
+      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'receita', type: 'relation', alvo: 'receitas_saude', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'quando', type: 'date', required: true },
+      { name: 'por', type: 'relation', alvo: 'membros', maxSelect: 1, required: true, cascadeDelete: false },
+    ],
+    indexes: ['CREATE UNIQUE INDEX idx_toma_por_instante ON tomas_saude (receita, quando)'],
+    regras: {
+      listRule: 'receita.episodio.casa = @request.auth.casa && @request.auth.papel != "crianca" && (receita.episodio.membro = @request.auth.id || receita.episodio.membro.papel = "crianca")',
+      viewRule: 'receita.episodio.casa = @request.auth.casa && @request.auth.papel != "crianca" && (receita.episodio.membro = @request.auth.id || receita.episodio.membro.papel = "crianca")',
+      createRule: 'receita.episodio.casa = @request.auth.casa && @request.auth.papel != "crianca" && (receita.episodio.membro = @request.auth.id || receita.episodio.membro.papel = "crianca") && por = @request.auth.id',
+      updateRule: null,
+      deleteRule: 'receita.episodio.casa = @request.auth.casa && @request.auth.papel != "crianca" && (receita.episodio.membro = @request.auth.id || receita.episodio.membro.papel = "crianca") && por = @request.auth.id',
     },
   },
 ];

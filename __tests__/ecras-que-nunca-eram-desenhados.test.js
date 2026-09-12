@@ -100,6 +100,8 @@ const ECRAS = [
   ['Gerir Conta Fixa',   '../src/sheets/GerirContaFixa', { conta: { id: 'cf-1', nome: 'Renda', valor: 850, dia: 1, envelope: 'Casa & contas', quemPaga: null, paga: false, vence: 'd2026-08-01', dias: -19 }, onApagar: () => {} }],
   ['Importar da Google', '../src/sheets/ImportarGoogle', {}],
   // Os contratos e as renovações (12/09/2026): a folha de criar, os campos e a ficha.
+  // A medicação a partir da receita (12/09/2026): a folha das tomas.
+  ['Tomas da Receita',   '../src/sheets/TomasDaReceita', { record: { id: 'h2', member: 'Léo', day: 'd2026-08-08' }, recipe: { id: 'rx-1', name: 'Ferro 30 mg', frequency: 1, durationDays: 14, boxSize: 20 } }],
   ['Novo Contrato',      '../src/sheets/NovoContrato', {}],
   ['Campos do Contrato', '../src/sheets/CamposContrato', { form: { nome: 'Seguro', fornecedor: 'Fidelidade', renovaEm: '', fidelizacaoAte: '', responsavel: null }, onChange: () => {} }],
   ['Ficha do Contrato',  '../src/sheets/FichaContrato', { contrato: { id: 'ct-1', nome: 'Seguro do carro', fornecedor: 'Fidelidade', renovaEm: '12/09/2026', fidelizacaoAte: '', responsavel: null, dias: 23 } }],

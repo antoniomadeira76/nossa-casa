@@ -677,9 +677,12 @@ export const ler = {
     if (!estaLigado()) return semLigacao();
     const filtro = pb.filter('membro = {:m}', { m: membroId });
     const episodios = await pb.collection('episodios_saude').getFullList({ filter: filtro, sort: '-dia' });
-    const vazio = { episodios: [], anexos: [], notas: [], receitas: [], decisoes: [] };
+    const vazio = { episodios: [], anexos: [], notas: [], receitas: [], decisoes: [], tomas: [] };
     if (!episodios.length) return vazio;
     const ids = episodios.map(e => `episodio = "${e.id}"`).join(' || ');
+    // As tomas apontam à RECEITA, e a receita ao episódio: o filtro atravessa
+    // a relação. É a mesma condição da regra `PELA_RECEITA`, do lado do pedido.
+    const pelaReceita = episodios.map(e => `receita.episodio = "${e.id}"`).join(' || ');
     // ⚠ E o que PENDE de cada consulta, que é metade do que uma ficha é.
     //
     // Isto trazia os episódios e os anexos e mais nada. As notas, as receitas
@@ -691,13 +694,15 @@ export const ler = {
     // app. As quatro coleções herdam a regra do episódio (`PELO_EPISODIO`),
     // portanto quem não pode ver a ficha não vê nada disto — e o `catch`
     // devolve vazio em vez de deixar a ficha inteira cair.
-    const [anexos, notas, receitas, decisoes] = await Promise.all([
+    const [anexos, notas, receitas, decisoes, tomas] = await Promise.all([
       pb.collection('anexos').getFullList({ filter: ids }).catch(() => []),
       pb.collection('notas_saude').getFullList({ filter: ids }).catch(() => []),
       pb.collection('receitas_saude').getFullList({ filter: ids }).catch(() => []),
       pb.collection('decisoes_saude').getFullList({ filter: ids }).catch(() => []),
+      // E as tomas de cada receita (12/09/2026) — pela mesma porta.
+      pb.collection('tomas_saude').getFullList({ filter: pelaReceita }).catch(() => []),
     ]);
-    return { episodios, anexos, notas, receitas, decisoes };
+    return { episodios, anexos, notas, receitas, decisoes, tomas };
   },
 
   // Ficheiros: o URL é assinado pelo servidor, não construído aqui.

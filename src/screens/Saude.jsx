@@ -9,7 +9,9 @@ import { Card, SectionTitle, Linha, Empty, AddButton, Label, Primary, Pill, Tile
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
-import { plural, dayLabel, daysUntil, chaveDeDMY, dmyDeChave, listaEmPortugues } from '../format';
+import { plural, dayLabel, daysUntil, chaveDeDMY, dmyDeChave, listaEmPortugues, TODAY_KEY } from '../format';
+import { planoDaReceita, tomasDoDia } from '../medicacao';
+import TomasDaReceita from '../sheets/TomasDaReceita';
 
 export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMarcado }) {
   const st = useStore();
@@ -56,7 +58,12 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   const [memberFilter, setMemberFilter] = useState(null);
   // Um rascunho de nota POR consulta, não um só para todas — ver `handleAddNote`.
   const [newNoteForm, setNewNoteForm] = useState({});
-  const [recipeForm, setRecipeForm] = useState({ name: '', dosage: '', quantity: '', unit: '', expiresAt: '' });
+  // A receita: o que sempre teve, e o plano de tomas (12/09/2026) — por dia,
+  // dias, caixa — que é opcional: uma receita sem plano continua a ser uma receita.
+  const RECEITA_VAZIA = { name: '', dosage: '', quantity: '', unit: '', expiresAt: '', frequency: '', durationDays: '', boxSize: '' };
+  const [recipeForm, setRecipeForm] = useState(RECEITA_VAZIA);
+  // A receita cuja folha das tomas está aberta: `{ healthId, recipeId }`.
+  const [tomasDe, setTomasDe] = useState(null);
   // A folha «Anexar»: de que consulta, e o que se está a escrever.
   const [anexoDe, setAnexoDe] = useState(null);
   // A consulta que está a ser apagada, e o não do servidor quando há um.
@@ -178,8 +185,9 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
 
   const handleAddRecipe = (healthId) => {
     if (!recipeForm.name.trim() || !recipeForm.expiresAt.trim()) return;
-    addRecipe(healthId, recipeForm.name, recipeForm.dosage, recipeForm.quantity, recipeForm.unit, recipeForm.expiresAt);
-    setRecipeForm({ name: '', dosage: '', quantity: '', unit: '', expiresAt: '' });
+    addRecipe(healthId, recipeForm.name, recipeForm.dosage, recipeForm.quantity, recipeForm.unit, recipeForm.expiresAt,
+      { frequency: recipeForm.frequency, durationDays: recipeForm.durationDays, boxSize: recipeForm.boxSize });
+    setRecipeForm(RECEITA_VAZIA);
   };
 
   // Era um cálculo próprio, com `new Date(2026, 7, 27)` escrito à mão: uma
@@ -342,6 +350,30 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                             <Pill label={recipe.decision} bg={STATE.okBg} fg={t.state.okTexto} border={STATE.ok} />
                           ) : null}
                         </View>
+                        {/* ── As tomas (12/09/2026) ─────────────────────────
+                            O plano numa linha, o aviso da caixa quando ela não
+                            chega ao fim, e o botão que abre a folha das tomas
+                            — marcar, pôr na Agenda, definir o plano. Um botão à
+                            parte, e não a linha da receita: a receita já tem a
+                            pastilha «Guardada» como alvo (erro #6). */}
+                        {(() => {
+                          const p = planoDaReceita(recipe, record.day);
+                          const hoje = tomasDoDia(st.tomasDaReceita(record.id, recipe.id), TODAY_KEY);
+                          return (
+                            <View style={{ gap: S.sm }}>
+                              {p ? (
+                                <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{p.descricao}</Text>
+                              ) : null}
+                              {p && p.aviso ? (
+                                <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, fontWeight: '600', color: t.state.warnTexto }}>{p.aviso}</Text>
+                              ) : null}
+                              <BotaoCompacto t={t} tom="contorno"
+                                label={p ? `Tomas · ${hoje.length} de ${p.frequencia} hoje` : 'Tomas'}
+                                etiqueta={`Tomas de ${recipe.name}`}
+                                onPress={() => setTomasDe({ healthId: record.id, recipeId: recipe.id })} />
+                            </View>
+                          );
+                        })()}
                       </View>
                     );
                   })}
@@ -408,6 +440,20 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                       <CampoData t={t} valor={chaveDeDMY(recipeForm.expiresAt)}
                         placeholder="Validade (dd/mm/aaaa)"
                         onChange={(k) => setRecipeForm(f => ({ ...f, expiresAt: dmyDeChave(k) }))} />
+                      {/* O plano de tomas, opcional: por dia, dias, caixa. */}
+                      <View style={{ flexDirection: 'row', gap: S.sm }}>
+                        {[['frequency', 'Tomas por dia', 'Por dia'], ['durationDays', 'Duração em dias', 'Dias'], ['boxSize', 'Unidades na caixa', 'Caixa']].map(([campo, rotulo, curto]) => (
+                          <TextInput key={campo} accessibilityLabel={rotulo}
+                            value={recipeForm[campo]} keyboardType="number-pad"
+                            onChangeText={(v) => setRecipeForm(f => ({ ...f, [campo]: v }))}
+                            placeholder={curto} placeholderTextColor={t.text3}
+                            style={{
+                              flex: 1, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
+                              fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
+                              borderColor: t.border, backgroundColor: t.surface, textAlign: 'center',
+                            }} />
+                        ))}
+                      </View>
                       {/* Confirmar um campo: peso COMUM. Guardar uma receita
                           acrescenta uma linha à ficha — não é dinheiro entre
                           pessoas, não apaga, não fecha um período. */}
@@ -1064,6 +1110,20 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
       {naoApagou ? (
         <Tile t={t} kind="err" icon="lock">{naoApagou}</Tile>
       ) : null}
+
+      {/* A folha das tomas de uma receita (12/09/2026). Irmã das outras
+          folhas, nunca dentro do acordeão — e lê a receita da loja a cada
+          desenho, para a contagem de hoje mexer ao marcar. */}
+      {tomasDe ? (() => {
+        const record = st.allHealth().find(h => h.id === tomasDe.healthId);
+        const recipe = (s.healthRecipes[tomasDe.healthId] || []).find(r => r.id === tomasDe.recipeId);
+        if (!record || !recipe) return null;
+        return (
+          <Sheet t={t} title={recipe.name} sub={`${record.member} · as tomas`} onClose={() => setTomasDe(null)}>
+            <TomasDaReceita t={t} user={user} record={record} recipe={recipe} onClose={() => setTomasDe(null)} />
+          </Sheet>
+        );
+      })() : null}
     </>
   );
 }

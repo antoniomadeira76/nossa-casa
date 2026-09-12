@@ -24,7 +24,7 @@ const diaDaSemana = (k) => {
 
 export default function Compras({ t, user, onModoCompras, onIda }) {
   const st = useStore();
-  const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas, removerArtigo, marcarArtigo, mudarPlanoDeCompras, seccoes } = st;
+  const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas, removerArtigo, marcarArtigo, mudarPlanoDeCompras, seccoes, ementaNaCasa } = st;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [aApagar, setAApagar] = useState(null);
   const [gerir, setGerir] = useState(null);   // id do artigo com a folha aberta
@@ -32,6 +32,8 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
   const [jantar, setJantar] = useState(null);
   const [novoPrato, setNovoPrato] = useState(false);
   const [aApagarPrato, setAApagarPrato] = useState(null);
+  // Se a semana está aberta aos sete dias, ou só aos jantares marcados.
+  const [semanaToda, setSemanaToda] = useState(false);
 
   // ── Dois adultos na mesma loja ────────────────────────────────────────────
   //
@@ -188,43 +190,76 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
 
       {/* A ementa da semana — sete jantares, um prato por dia. A linha do dia
           abre a folha onde se escolhe o prato e se põe na lista o que falta.
-          (11/09/2026 — a terceira das dez funcionalidades.) */}
-      {(() => {
+          (11/09/2026 — a terceira das dez funcionalidades.)
+
+          ⚠ E é OPCIONAL, desde 12/09/2026, de duas maneiras (A e C de
+          `design/ementa-opcional.dc.html`, escolhidas pelo dono da casa ao ver
+          sete linhas de «Sem jantar marcado»):
+            A — a casa desliga-a na Gestão (`ementaNaCasa`), e a secção sai.
+            C — ligada, mostra só os dias com jantar; sem nenhum, é UMA linha,
+                «Planear a semana», que abre os sete dias. Quem já os abriu
+                pode voltar a dobrá-los. */}
+      {ementaNaCasa ? (() => {
         const semana = semanaDeHoje();
         const dias = Array.from({ length: 7 }, (_, i) => {
-          const d = new Date(semana.seg); d.setDate(semana.seg.getDate() + i); return d;
+          const d = new Date(semana.seg); d.setDate(semana.seg.getDate() + i);
+          const k = dkey(d.getFullYear(), d.getMonth(), d.getDate());
+          return { d, i, k, prato: (s.pratos || []).find(p => p.id === (s.ementa || {})[k]) || null };
         });
+        const comJantar = dias.filter(x => x.prato);
+        const visiveis = semanaToda ? dias : comJantar;
         const intervalo = <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{semana.intervalo}</Text>;
-        // São sempre os sete dias: esta secção nunca fica vazia, e o guarda
-        // das secções vazias sabe-o pelo nome.
         return (
           <View>
             <SectionTitle t={t} right={intervalo}>Ementa da Semana</SectionTitle>
+            {comJantar.length === 0 && !semanaToda ? (
+              <Linha t={t} last>
+                <Pressable onPress={() => setSemanaToda(true)} accessibilityRole="button"
+                  accessibilityLabel="Planear a semana"
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12,
+                    minHeight: 44, opacity: pressed ? 0.7 : 1 })}>
+                  {/* Sem «esta semana»: com o «Planear» e a seta à direita, a
+                      frase inteira cortava em «esta sema…» nos 355 px — medido
+                      no navegador como António. A semana já está no título. */}
+                  <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15.5, color: t.text3 }}>
+                    Sem jantares marcados
+                  </Text>
+                  <Text style={{ fontFamily: FONT.display, fontSize: 13, fontWeight: '700', color: t.actFg }}>Planear</Text>
+                  <Icon name="caretRight" size={18} color={t.text3} />
+                </Pressable>
+              </Linha>
+            ) : (
             <View style={{ paddingHorizontal: S.xs }}>
-              {dias.map((d, i) => {
-                const k = dkey(d.getFullYear(), d.getMonth(), d.getDate());
-                const prato = (s.pratos || []).find(p => p.id === (s.ementa || {})[k]) || null;
-                return (
-                  <Linha key={k} t={t} last={i === 6}>
-                    <Pressable onPress={() => setJantar(k)} accessibilityRole="button"
-                      accessibilityLabel={`Jantar de ${WD[i]}`}
-                      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12,
-                        minHeight: 44, opacity: pressed ? 0.7 : 1 })}>
-                      <View style={{ width: 44, gap: 1 }}>
-                        <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text2 }}>{WD_SHORT[i]}</Text>
-                        <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>{`${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`}</Text>
-                      </View>
-                      <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15.5,
-                        color: prato ? t.text2 : t.text3 }}>{prato ? prato.nome : 'Sem jantar marcado'}</Text>
-                      <Icon name="caretRight" size={18} color={t.text3} />
-                    </Pressable>
-                  </Linha>
-                );
-              })}
+              {visiveis.map(({ d, i, k, prato }, n) => (
+                <Linha key={k} t={t} last={n === visiveis.length - 1}>
+                  <Pressable onPress={() => setJantar(k)} accessibilityRole="button"
+                    accessibilityLabel={`Jantar de ${WD[i]}`}
+                    style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12,
+                      minHeight: 44, opacity: pressed ? 0.7 : 1 })}>
+                    <View style={{ width: 44, gap: 1 }}>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text2 }}>{WD_SHORT[i]}</Text>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>{`${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`}</Text>
+                    </View>
+                    <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15.5,
+                      color: prato ? t.text2 : t.text3 }}>{prato ? prato.nome : 'Sem jantar marcado'}</Text>
+                    <Icon name="caretRight" size={18} color={t.text3} />
+                  </Pressable>
+                </Linha>
+              ))}
+              {/* Dobrar ou abrir a semana. Texto de 12,5 px em `actFg` — o
+                  único tom do esquema que se lê como texto pequeno. */}
+              <Pressable onPress={() => setSemanaToda(v => !v)} accessibilityRole="button"
+                accessibilityLabel={semanaToda ? 'Mostrar só os jantares marcados' : 'Mostrar a semana toda'}
+                style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: S.sm }}>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, fontWeight: '600', color: t.actFg }}>
+                  {semanaToda ? 'mostrar só os jantares marcados' : 'mostrar a semana toda'}
+                </Text>
+              </Pressable>
             </View>
+            )}
           </View>
         );
-      })()}
+      })() : null}
 
       {jantar ? (() => {
         const o = parseKey(jantar);

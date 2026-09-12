@@ -145,11 +145,16 @@ describe('⚠ a ementa: a loja', () => {
 });
 
 describe('⚠ a ementa: os ecrãs', () => {
-  it('as Compras têm a secção com os sete dias, e o dia com prato diz o nome', () => {
+  it('as Compras têm a secção: só os dias com jantar, e «mostrar a semana toda» abre os sete', () => {
+    // Desde 12/09/2026 (opção C de `design/ementa-opcional.dc.html`) a secção
+    // mostra só os dias marcados; a semana inteira abre-se a pedido.
     const { r, texto } = compras({ pratos: [FRANGO], ementa: { [TODAY_KEY]: 'prato-1' } });
-    const tx = texto();
+    let tx = texto();
     expect(tx).toContain('Ementa da Semana');
     expect(tx).toContain('Frango no forno');
+    expect(tx).not.toContain('Sem jantar marcado');
+    tocar(r, 'Mostrar a semana toda');
+    tx = texto();
     expect(tx).toContain('Sem jantar marcado');
     for (const dia of WD) expect(hospedeiro(r, `Jantar de ${dia}`)).toBeTruthy();
   });

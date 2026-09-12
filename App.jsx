@@ -9,7 +9,7 @@ import { buildTheme, onChrome, chromeLine, S, R, FONT, elev, LARGURA_APP } from 
 import Icon, { Marca } from './src/Icon';
 import { AvatarDeCabecalho, Tap } from './src/ui';
 import { FEM, DE } from './src/data';
-import { EUR, dayLabel, TODAY, TODAY_KEY, atualizarHoje, warrantyDaysLeft, semanaDeHoje, plural,
+import { EUR, dayLabel, TODAY, TODAY_KEY, atualizarHoje, semanaDeHoje, plural,
          chaveRelativa } from './src/format';
 import Login from './src/screens/Login';
 import Inicio from './src/screens/Inicio';
@@ -464,9 +464,12 @@ function Shell() {
       icon: 'houseGear', titulo: 'Equipamentos da Casa', fechar: () => setEquip(false),
       sub: () => {
         const eq = allEquip();
-        const emGarantia = eq.filter(e => warrantyDaysLeft(e) >= 0).length;
-        // E os contratos, que vivem no mesmo ecrã (12/09/2026).
-        return `${contas(eq.length, 'equipamento', 'equipamentos')} · ${emGarantia} em garantia`
+        // E os contratos, que vivem no mesmo ecrã (12/09/2026) — como o desenho
+        // diz: «3 equipamentos · 4 contratos». O «em garantia» saiu: com as três
+        // contagens o subtítulo cortava em «3 em garanti…» ao lado do avatar,
+        // medido no navegador como António, e as garantias estão no cartão do
+        // resumo logo abaixo.
+        return `${contas(eq.length, 'equipamento', 'equipamentos')}`
           + ` · ${contas(contratosDaCasa().length, 'contrato', 'contratos')}`;
       },
       render: () => <Equipamentos t={t} user={user} onClose={() => setEquip(false)}

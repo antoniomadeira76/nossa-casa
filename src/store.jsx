@@ -3,7 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, SECTIONS, MEMBERS, ROLES, HEALTH, HEALTH_DOCS,
   VAULT, GOALS, META_MOVS, DE } from './data';
 import { TODAY_KEY, TODAY, MONTHS, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY,
-         chaveRelativa, plural, EUR, parseKey, dkey, pad2 } from './format';
+         chaveRelativa, plural, EUR, parseKey, dkey, pad2, agoraNaApp } from './format';
+import { chaveDaReceita, planoDaReceita } from './medicacao';
 import { observacao, precosDe, estimativaDe, compararLojas } from './precos';
 // As decisões sobre o que vai para a agenda da Google — puras, e num ficheiro
 // à parte porque o `pocketbase.js` traz um SDK que o Jest não importa.
@@ -278,10 +279,10 @@ const DATA_KEYS = [
   'contasFixas', 'contasPagas', 'contratos',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
-  'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'pointValue', 'payDay', 'splitHalf',
+  'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'ementaDesligada', 'pointValue', 'payDay', 'splitHalf',
   'rendimento', 'stores', 'shopPlan', 'shopHistory', 'precos', 'precoPago', 'health', 'specialities', 'equipCats', 'registo',
   'recurringReset', 'healthNotes', 'healthRecipes', 'healthDecisions', 'healthDocs', 'healthGone',
-  'healthArchived',
+  'healthArchived', 'healthTomas',
   'googleCalendarImported', // Google Calendar imports
   'filaGoogle',             // o que falta empurrar para a agenda da Google
   'membros', 'nomeDaCasa', 'deDemonstracao',
@@ -673,6 +674,9 @@ export const DEMO = () => ({
   // chega aos dois — e pôr o valor só no BLANK é um defeito que já foi cometido
   // duas vezes neste ficheiro, com o `healthArchived`.
   pontosLigados: true,
+  // A ementa da semana, pela NEGATIVA (12/09/2026): `false` — o valor com que um
+  // `bool` nasce no servidor e com que uma chave ausente se lê cá — é «ligada».
+  ementaDesligada: false,
   // Mínimo 0, e não 0,01: uma casa pode querer os pontos como contagem e não
   // como dinheiro — «cinco pontos» sem euros por trás.
   pointValue: 0.10, payDay: 0, splitHalf: true,
@@ -716,8 +720,11 @@ export const DEMO = () => ({
   registo: [],
   recurringReset: {}, // taskId -> TODAY_KEY when reset
   healthNotes: {}, // healthId -> [{ author, date, text }]
-  healthRecipes: {}, // healthId -> [{ id, name, dosage, quantity, unit, expiresAt, decision }]
+  healthRecipes: {}, // healthId -> [{ id, name, dosage, quantity, unit, expiresAt, decision, frequency, durationDays, boxSize }]
   healthDecisions: {}, // healthId -> { type, status, note }
+  // As tomas de cada receita, pela `chaveDaReceita` -> [{ id, idServidor, quando, por }].
+  // Aditivas: marcar acrescenta, desmarcar tira — nunca um contador na receita.
+  healthTomas: {},
   // ⚠ Estas duas eram gravadas e não nasciam.
   //
   // Estavam nas DATA_KEYS e não no DEMO(): numa casa nova valiam
@@ -773,7 +780,7 @@ export const SEM_DINHEIRO_SEMEADO = () => ({
 export const BLANK = () => ({
   ...DEMO(), done: {}, urg: {}, due: {}, vaultMoves: [],
   clearedSeeds: true, shopHistory: [], health: [],
-  healthNotes: {}, healthRecipes: {}, healthDecisions: {}, googleCalendarImported: {},
+  healthNotes: {}, healthRecipes: {}, healthDecisions: {}, healthTomas: {}, googleCalendarImported: {},
   healthDocs: [], healthGone: {}, healthArchived: {}, filaGoogle: [],
   ...SEM_DINHEIRO_SEMEADO(),
 });
@@ -4696,8 +4703,8 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     const ids = (mapaServidor.current || {}).membros || {};
     if (!Object.keys(ids).length) return false;
 
-    const { episodios, anexos, notas, receitas, decisoes } = await sync.puxarSaude(ids)
-      .catch(() => ({ episodios: [], anexos: [], notas: [], receitas: [], decisoes: [] }));
+    const { episodios, anexos, notas, receitas, decisoes, tomas } = await sync.puxarSaude(ids)
+      .catch(() => ({ episodios: [], anexos: [], notas: [], receitas: [], decisoes: [], tomas: [] }));
 
     set(x => {
       // ⚠ Uma consulta que já existe cá GUARDA o seu id local.
@@ -4773,7 +4780,19 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         if (healthId) healthDecisions[healthId] = dec;
       }
 
-      return { health, healthDocs, healthNotes, healthRecipes, healthDecisions };
+      // As tomas, pela chave da receita — `srv-<id>`, que é o id com que a
+      // receita volta do servidor. O que ainda não subiu fica, debaixo da chave
+      // que tinha; uma toma do servidor SUBSTITUI a local com o mesmo id.
+      const healthTomas = {};
+      for (const tm of tomas || []) {
+        (healthTomas[`srv-${tm.receitaNoServidor}`] ||= []).push({ ...tm, id: `srv-${tm.idServidor}` });
+      }
+      for (const [k, lista] of Object.entries(x.healthTomas || {})) {
+        const locais = (lista || []).filter(tm => !tm.idServidor);
+        if (locais.length) healthTomas[k] = [...(healthTomas[k] || []), ...locais];
+      }
+
+      return { health, healthDocs, healthNotes, healthRecipes, healthDecisions, healthTomas };
     });
     return true;
   };
@@ -4848,6 +4867,10 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
 
     set(x => {
       const semChave = (mapa) => { const m = { ...(mapa || {}) }; delete m[healthId]; return m; };
+      // As tomas vão com as receitas da consulta — no servidor é a cascata.
+      const chavesDasReceitas = new Set((x.healthRecipes[healthId] || []).map(chaveDaReceita));
+      const healthTomas = Object.fromEntries(Object.entries(x.healthTomas || {})
+        .filter(([k]) => !chavesDasReceitas.has(k)));
       return {
         // A lápide, que é o que faz a consulta desaparecer das leituras — e a
         // razão de ela existir: uma consulta-SEMENTE não se pode tirar de lado
@@ -4855,6 +4878,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         healthGone: { ...(x.healthGone || {}), [healthId]: true },
         healthNotes: semChave(x.healthNotes),
         healthRecipes: semChave(x.healthRecipes),
+        healthTomas,
         healthDecisions: semChave(x.healthDecisions),
         healthArchived: semChave(x.healthArchived),
         healthDocs: (x.healthDocs || []).filter(d => d.healthId !== healthId),
@@ -4872,8 +4896,16 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // receita ficava no telefone de quem a escreveu, e o outro adulto que fosse
   // à farmácia não a via. Apanhado pelo guarda em
   // `__tests__/nenhuma-escrita-sem-quem-a-chame.test.js`.
-  const addRecipe = (healthId, name, dosage, quantity, unit, expiresAt) => {
+  // `plano` é o das tomas — `{ frequency, durationDays, boxSize }` — e é
+  // opcional: uma receita sem plano continua a ser uma receita.
+  const planoLimpo = (plano = {}) => ({
+    frequency: Math.max(0, Math.round(Number(plano.frequency) || 0)),
+    durationDays: Math.max(0, Math.round(Number(plano.durationDays) || 0)),
+    boxSize: Math.max(0, Math.round(Number(plano.boxSize) || 0)),
+  });
+  const addRecipe = (healthId, name, dosage, quantity, unit, expiresAt, plano = {}) => {
     const idLocal = 'rx-' + Date.now();
+    const p = planoLimpo(plano);
     set(x => ({
       healthRecipes: {
         ...x.healthRecipes,
@@ -4882,6 +4914,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
           name, dosage, quantity, unit,
           expiresAt,
           decision: null,
+          ...p,
         }],
       },
     }));
@@ -4892,6 +4925,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       if (ses && episodio) sync.receitaDeSaude({
         casa: ses.casa, episodio, nome: name, dose: dosage,
         quantidade: quantity, unidade: unit, expiraEm: expiresAt,
+        frequencia: p.frequency, duracaoDias: p.durationDays, caixa: p.boxSize,
       })
         .then((r) => { if (r && r.id) set(x => ({
           healthRecipes: {
@@ -4913,6 +4947,152 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         ),
       },
     }));
+  };
+
+  // ── A medicação a partir da receita ────────────────────────────────────────
+  //
+  // O plano (tomas por dia, dias, caixa) vive na receita; cada toma marcada é
+  // uma LINHA com quando e quem — aditiva, como o cofre: marcar acrescenta,
+  // desmarcar tira, e o «quantas» é a contagem (INVARIANTE #2). Tudo sobe pelo
+  // travão de casa das consultas, por decisão do dono da casa em 12/09/2026.
+  // Só um adulto chega aqui: a criança não vê a sua ficha (INVARIANTE #3).
+  const receitaDe = (healthId, recipeId) =>
+    (s.healthRecipes[healthId] || []).find(r => r.id === recipeId) || null;
+
+  // Define ou muda o plano de uma receita. Devolve `null` quando ficou, ou a
+  // frase do que falta.
+  const definirTomas = (healthId, recipeId, plano = {}) => {
+    const receita = receitaDe(healthId, recipeId);
+    if (!receita) return 'Essa receita não existe nesta ficha.';
+    const p = planoLimpo(plano);
+    if (!p.frequency) return 'Diga quantas tomas por dia.';
+    if (!p.durationDays) return 'Diga durante quantos dias.';
+    if (p.frequency > 12) return 'Mais de doze tomas por dia não é um plano — confirme a receita.';
+    set(x => ({
+      healthRecipes: {
+        ...x.healthRecipes,
+        [healthId]: (x.healthRecipes[healthId] || []).map(r => (r.id === recipeId ? { ...r, ...p } : r)),
+      },
+    }));
+    if (sync && receita.idServidor) {
+      sync.alterarReceitaDeSaude(receita.idServidor, {
+        frequencia: p.frequency, duracaoDias: p.durationDays, caixa: p.boxSize,
+      }).catch(() => {});
+    }
+    return null;
+  };
+
+  // As tomas de uma receita, das mais recentes para as mais antigas.
+  const tomasDaReceita = (healthId, recipeId) => {
+    const receita = receitaDe(healthId, recipeId);
+    if (!receita) return [];
+    return [...((s.healthTomas || {})[chaveDaReceita(receita)] || [])]
+      .sort((a, b) => String(b.quando).localeCompare(String(a.quando)));
+  };
+
+  // Marca uma toma: quem, e quando (ISO; agora, por omissão). Devolve `null`
+  // quando ficou, ou a frase do que impede. ⚠ Duas no mesmo minuto recusam-se
+  // cá, e no servidor colidem no índice — nunca contam duas vezes.
+  let contadorDeTomas = 0;
+  // ⚠ `agoraNaApp()`, e não `new Date()`: o «agora» é o do dia da app — com o
+  // dia fixado para as provas, uma toma marcada «agora» tem de cair em «hoje».
+  const marcarToma = (healthId, recipeId, por, quando = agoraNaApp().toISOString()) => {
+    const receita = receitaDe(healthId, recipeId);
+    if (!receita) return 'Essa receita não existe nesta ficha.';
+    if (!adultos.includes(por)) return 'Só um adulto da casa marca uma toma.';
+    const instante = new Date(quando);
+    if (Number.isNaN(instante.getTime())) return 'Esse instante não é uma data.';
+    const iso = instante.toISOString();
+    const chave = chaveDaReceita(receita);
+    const minuto = iso.slice(0, 16);
+    if (((s.healthTomas || {})[chave] || []).some(tm => String(tm.quando).slice(0, 16) === minuto)) {
+      return 'Essa toma já está marcada.';
+    }
+    const idLocal = `toma-${Date.now()}-${++contadorDeTomas}`;
+    set(x => ({
+      healthTomas: {
+        ...(x.healthTomas || {}),
+        [chave]: [...((x.healthTomas || {})[chave] || []), { id: idLocal, quando: iso, por }],
+      },
+    }));
+    // Sobe pelo travão da saúde — o `tomaDeSaude` chama o `recusaSaude`. Sem
+    // id do servidor na receita, a toma fica local até a receita subir.
+    if (sync) {
+      const ses = sync.sessao();
+      const idPor = idDoMembro(por);
+      if (ses && receita.idServidor && idPor) sync.tomaDeSaude({
+        casa: ses.casa, receita: receita.idServidor, quando: iso, por: idPor,
+      })
+        .then(r => { if (r && r.id) set(x => ({
+          healthTomas: {
+            ...(x.healthTomas || {}),
+            [chave]: ((x.healthTomas || {})[chave] || []).map(tm => (tm.id === idLocal ? { ...tm, idServidor: r.id } : tm)),
+          },
+        })); })
+        .catch(() => {});
+    }
+    return null;
+  };
+
+  // Desmarca uma toma — só quem a marcou, cá e no servidor.
+  const desmarcarToma = (healthId, recipeId, tomaId, quem) => {
+    const receita = receitaDe(healthId, recipeId);
+    if (!receita) return 'Essa receita não existe nesta ficha.';
+    const chave = chaveDaReceita(receita);
+    const toma = ((s.healthTomas || {})[chave] || []).find(tm => tm.id === tomaId);
+    if (!toma) return 'Essa toma já não está marcada.';
+    if (toma.por !== quem) return `Só ${toma.por} pode desmarcar esta toma.`;
+    if (sync && toma.idServidor) {
+      try { sync.apagarTomaDeSaude(toma.idServidor).catch(() => {}); }
+      catch (e) { return e.message; }
+    }
+    set(x => ({
+      healthTomas: {
+        ...(x.healthTomas || {}),
+        [chave]: ((x.healthTomas || {})[chave] || []).filter(tm => tm.id !== tomaId),
+      },
+    }));
+    return null;
+  };
+
+  // O título dos eventos das tomas — é por ele que se sabe se já estão na agenda.
+  const tituloDasTomas = (receita, plano) => `${receita.name} · ${plural(plano.frequencia, 'toma', 'tomas')}`;
+  const agendaTemTomas = (healthId, recipeId) => {
+    const record = allHealth().find(h => h.id === healthId);
+    const receita = receitaDe(healthId, recipeId);
+    const plano = record && receita ? planoDaReceita(receita, record.day) : null;
+    if (!plano) return false;
+    const titulo = tituloDasTomas(receita, plano);
+    return allEvents().some(e => e.healthId === healthId && e.tag === 'Medicação' && e.title === titulo);
+  };
+
+  // Põe as tomas na Agenda: um evento por dia do plano, de hoje em diante,
+  // «só adultos» — a criança não vê a sua medicação na agenda dela. Não
+  // duplica os dias que já lá estão. Devolve quantos entraram, ou a frase do
+  // que impede.
+  const porTomasNaAgenda = (healthId, recipeId, owner) => {
+    const record = allHealth().find(h => h.id === healthId);
+    const receita = receitaDe(healthId, recipeId);
+    if (!record || !receita) return 'Essa receita não existe nesta ficha.';
+    const plano = planoDaReceita(receita, record.day);
+    if (!plano) return 'Defina primeiro as tomas por dia e a duração.';
+    const titulo = tituloDasTomas(receita, plano);
+    const ja = new Set(allEvents()
+      .filter(e => e.healthId === healthId && e.tag === 'Medicação' && e.title === titulo)
+      .map(e => e.day));
+    let n = 0;
+    for (const dia of plano.dias) {
+      if (dia < TODAY_KEY || ja.has(dia)) continue;
+      criarEvento({
+        day: dia, time: '', title: titulo, who: `${record.member} · Medicação`,
+        owner, visibilidade: 'adultos', tag: 'Medicação', healthId, semRegisto: true,
+      });
+      n++;
+    }
+    // Uma linha no registo, e não catorze. Sem o nome do medicamento: o
+    // registo é lido por todos os adultos, e a ficha existe para o guardar.
+    if (n) set(x => ({ registo: maisRegisto(x, `Tomas de uma receita ${DE(record.member)} ${record.member} na agenda: ${plural(n, 'dia', 'dias')}`, 'Saúde') }));
+    return n;
   };
 
   // ⚠ Idem. E aqui a coleção tem um ÍNDICE ÚNICO por episódio, de propósito:
@@ -5176,6 +5356,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // Health feature methods
     addHealthRecord, addHealthNote, editarNotaSaude, apagarNotaSaude, notaDaConsulta,
     addRecipe, setRecipeDecision, setHealthDecision,
+    definirTomas, tomasDaReceita, marcarToma, desmarcarToma, agendaTemTomas, porTomasNaAgenda,
     addHealthDoc, arquivarConsulta, docsDaConsulta, estaArquivada,
     apagarConsulta, porqueNaoApaga, oQueCaiCom, lerSaudeDoServidor,
     addSpecialty, removeSpecialty, renameSpecialty, consultasDaEspecialidade,
@@ -5186,6 +5367,10 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // fazia. Um `!!s.pontosLigados` desligava os pontos a quem já os usava, em
     // silêncio, ao actualizar.
     pontosNasTarefas: s.pontosLigados !== false,
+    // A ementa da semana é opcional (12/09/2026). A chave é pela NEGATIVA, e por
+    // isso ausente ou `false` é ligada sem truque nenhum — uma casa gravada
+    // antes do campo, cá ou no servidor, não perde a secção em silêncio.
+    ementaNaCasa: s.ementaDesligada !== true,
     // Google Calendar import
     importGoogleEvents,
   };

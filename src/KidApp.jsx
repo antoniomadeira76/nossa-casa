@@ -383,7 +383,11 @@ function KidComprasView({ t, kid }) {
   const visiveis = allItems().filter(i => i.vis !== 'adultos');
   const stateOf = (i) => s.status[i.id] || (i.real ? 'done' : 'open');
   // O jantar de hoje, da ementa da casa — é o jantar da criança também.
-  const jantarDeHoje = (s.pratos || []).find(p => p.id === (s.ementa || {})[TODAY_KEY]) || null;
+  // ⚠ Só se a casa tiver a ementa ligada (regra da casa, 12/09/2026): desligada,
+  // o cartão sai daqui como a secção sai das Compras.
+  const jantarDeHoje = useStore().ementaNaCasa
+    ? (s.pratos || []).find(p => p.id === (s.ementa || {})[TODAY_KEY]) || null
+    : null;
 
   return (
     <ScrollView style={{ flex: 1, minHeight: 0 }} contentContainerStyle={{ paddingBottom: S.xl }}>
