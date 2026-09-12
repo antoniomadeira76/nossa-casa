@@ -56,9 +56,24 @@ describe('Os ecrãs dizem os nomes da casa, não nomes escritos à mão', () => 
   });
 
   test('as Tarefas filtram por todos os membros da casa, e só por eles', () => {
-    const texto = textoDe(Tarefas);
-    for (const n of ['Todos', 'Rita', 'Tomás', 'Léo', 'Mia']) expect(texto).toContain(n);
-    expect(texto).not.toContain('undefined');
+    // O filtro passou a avatares (12/09/2026, `design/filtro-de-membros.dc.html`):
+    // o nome já não está escrito na fila, está no rótulo em voz de cada bola —
+    // «Mostrar só as tarefas do Léo». Lê-se a árvore, não o texto.
+    let arvore = null;
+    const t = buildTheme('violet', false);
+    const Envolve = () => { useStore(); return React.createElement(Tarefas, { t, user: 'Rita' }); };
+    TestRenderer.act(() => {
+      arvore = TestRenderer.create(React.createElement(StoreProvider, null, React.createElement(Envolve)));
+    });
+    const rotulos = arvore.root.findAll(n => typeof n.type === 'string' && n.props
+      && typeof n.props.accessibilityLabel === 'string').map(n => n.props.accessibilityLabel);
+    expect(rotulos).toContain('Todos');
+    for (const n of ['Rita', 'Tomás', 'Léo', 'Mia']) {
+      expect(rotulos.some(l => new RegExp(`^Mostrar só as tarefas d[oa] ${n}$`).test(l))).toBe(true);
+    }
+    // E só por eles: quatro bolas, nem uma a mais.
+    expect(rotulos.filter(l => /^Mostrar só as tarefas /.test(l))).toHaveLength(4);
+    expect(textoDe(Tarefas)).not.toContain('undefined');
   });
 
   test('o Dinheiro mostra o acerto entre os adultos da casa', () => {

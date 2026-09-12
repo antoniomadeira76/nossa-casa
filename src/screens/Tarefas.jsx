@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT, corDoMembro } from '../theme';
+import { S, R, FONT } from '../theme';
 import { subtituloDaTarefa } from '../format';
 
 import { SectionTitle, Linha, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe, BotaoCompacto } from '../ui';
@@ -27,7 +27,7 @@ const URG = [
 export default function Tarefas({ t, user, abrir }) {
   const st = useStore();
   const { s, set, allTasks, dueOf, isRecurring, removerTarefa, membros: MEMBERS,
-          membrosDaCasa, criancas, pontosNasTarefas, editarTarefa, trocasDeHoje, desfazerTroca } = st;
+          membrosDaCasa, criancas, pontosNasTarefas, editarTarefa, trocasDeHoje, desfazerTroca, deNome } = st;
   // As trocas de tarefas entre as crianças, de hoje — um adulto vê e anula.
   const trocas = trocasDeHoje();
   const [filter, setFilter] = useState('Todos');
@@ -51,21 +51,43 @@ export default function Tarefas({ t, user, abrir }) {
 
   return (
     <>
-      <View style={{ flexDirection: 'row', gap: S.md, flexWrap: 'wrap' }}>
-        {['Todos', ...membrosDaCasa].map(n => {
-          const on = filter === n;
+      {/* ── O filtro por membro: «Todos» e um AVATAR por pessoa ──────────────
+          Eram seis pastilhas com o nome, e embrulhavam: 355 px dão para
+          quatro, e as outras duas caíam para uma segunda linha que parecia um
+          acidente — 96 px antes da primeira tarefa, a crescer com a família.
+          O dono da casa pediu alternativas (design/filtro-de-membros.dc.html)
+          e ficou a A: cada membro é a sua bola, a mesma que cada linha de
+          tarefa já mostra, num alvo de 44; o escolhido ganha um anel do acento
+          e o NOME passa para o título da secção, que é onde faz falta. Uma
+          linha até cinco membros. (12/09/2026) */}
+      <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'center', flexWrap: 'wrap' }}>
+        {(() => {
+          const on = filter === 'Todos';
           return (
-            <Pressable key={n} onPress={() => setFilter(n)} accessibilityRole="button"
-              accessibilityLabel={n} accessibilityState={{ selected: on }}
-              // ⚠ Tinha 40. Medido no navegador, eram os dois únicos alvos
-              // deste ecrã abaixo dos 44 do INVARIANTE #5 — e são o primeiro
-              // que a mão encontra ao abrir as Tarefas.
+            <Pressable onPress={() => setFilter('Todos')} accessibilityRole="button"
+              accessibilityLabel="Todos" accessibilityState={{ selected: on }}
+              // ⚠ Tinha 40. Medido no navegador, era o único alvo deste ecrã
+              // abaixo dos 44 do INVARIANTE #5 — e é o primeiro que a mão
+              // encontra ao abrir as Tarefas.
               style={{ minHeight: 44, paddingHorizontal: 14, borderRadius: R.row, borderWidth: 1,
                 borderColor: on ? t.accent : t.border, backgroundColor: on ? t.accent : 'transparent',
-                flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-              {n !== 'Todos' ? <View style={{ width: 8, height: 8, borderRadius: R.pill,
-                backgroundColor: on ? '#FFFFFF' : corDoMembro(n, MEMBERS[n]?.cor) }} /> : null}
-              <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: on ? '#FFFFFF' : t.text2 }}>{n}</Text>
+                alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: on ? '#FFFFFF' : t.text2 }}>Todos</Text>
+            </Pressable>
+          );
+        })()}
+        {membrosDaCasa.map(n => {
+          const on = filter === n;
+          return (
+            <Pressable key={n} onPress={() => setFilter(on ? 'Todos' : n)} accessibilityRole="button"
+              accessibilityLabel={`Mostrar só as tarefas ${deNome(n)} ${n}`} accessibilityState={{ selected: on }}
+              style={{ width: 44, height: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+              {/* O anel é um círculo à volta de um círculo — redondo por forma,
+                  como o próprio avatar; o alvo é o Pressable de 44, sem raio. */}
+              <View style={{ width: 40, height: 40, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center',
+                borderWidth: 2, borderColor: on ? t.accent : 'transparent' }}>
+                <Avatar {...avatarDe(n, MEMBERS[n], t.text3)} size={32} />
+              </View>
             </Pressable>
           );
         })}
@@ -80,8 +102,9 @@ export default function Tarefas({ t, user, abrir }) {
           uma leem-se na pastilha da linha e no filtro por membro. */}
 
       <View>
+        {/* O nome de quem se filtra vem para aqui — a bola do filtro não o diz. */}
         <SectionTitle t={t} right={<Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>por urgência</Text>}>
-          Rotinas e Tarefas
+          {filter === 'Todos' ? 'Rotinas e Tarefas' : `Rotinas e Tarefas · ${filter}`}
         </SectionTitle>
         {shown.length === 0 ? (
           <Empty t={t} icon="checkSquare" title="Sem tarefas nesta vista."

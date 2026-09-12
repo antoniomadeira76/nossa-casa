@@ -66,7 +66,10 @@ const FICAM_REDONDOS = {
   'src/screens/Tarefas.jsx': [
     // O «disco de cor da criança no cofre» saiu daqui com a semanada, que
     // passou ao Dinheiro em 10/09/2026 — e lá a linha usa o `Avatar`.
-    'disco de cor do membro na pastilha de filtro, 8 px',
+    // O filtro por membro passou a avatares (12/09/2026, opção A de
+    // `design/filtro-de-membros.dc.html`): o anel do escolhido é um círculo à
+    // volta de um círculo; o alvo é o `Pressable` de 44 por fora, sem raio.
+    'anel do avatar escolhido no filtro — é um círculo',
   ],
   'src/sheets/EscolherAvatar.jsx': [
     'bola do avatar de uma figura',

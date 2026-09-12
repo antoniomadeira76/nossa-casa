@@ -340,6 +340,15 @@ uma consulta a sério, porque não há onde escrever o nome.
       tocou em «Ação» e não aconteceu nada.
 - [x] Sincronizar as consultas — sobem se o servidor viver na casa. Ver a
       última entrada desta secção.
+- [x] **O filtro por membro das Tarefas passou a avatares** (12/09/2026). Seis pastilhas
+      com o nome embrulhavam em duas linhas (355 px dão para quatro): 96 px antes da
+      primeira tarefa, a crescer com a família. O dono da casa pediu cinco alternativas
+      (`design/filtro-de-membros.dc.html`) e ficou a A: «Todos» continua pastilha; cada
+      membro é a sua bola (`Avatar`/`avatarDe`, a mesma da linha da tarefa) num alvo de 44,
+      com anel do acento no escolhido e o NOME no título («Rotinas e Tarefas · Léo»). Tocar
+      outra vez volta a «Todos». Uma linha até cinco membros; medido no navegador: cinco
+      alvos de 44 × 44 ao mesmo topo. Guarda: `o-filtro-de-membros-e-de-avatares`; o motivo
+      da pílula em `o-canto-de-tudo-o-que-se-toca` passou do ponto de 8 px ao anel.
 - [x] **A troca de tarefas entre irmãos** (12/09/2026, a oitava das dez funcionalidades;
       desenho em `design/troca-de-tarefas.dc.html`). `trocas_tarefas` (casa, dia, tarefa_de,
       tarefa_para, proposta_por, aceite_em, aceite_por) nos dois sítios, com índices únicos
