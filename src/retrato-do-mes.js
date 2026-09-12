@@ -70,14 +70,27 @@ export function retratosDe(casa, nomeDoMembro = {}) {
       if (!nome) continue;
       gastoPor[nome] = (gastoPor[nome] || 0) + (Number(d.valor) || 0);
     }
-    // O limite é o do MÊS (`limites`, escrito ao abrir), senão o de base do envelope.
+    // O limite é o do MÊS (`limites`, escrito ao abrir), senão o de base do
+    // envelope — MAIS o que se moveu entre envelopes nesse mês. As
+    // `transferencias` são as mesmas que o Dinheiro soma no `envMove`; sem elas
+    // o retrato dizia «acima do limite» onde o Dinheiro não dizia (revisão de
+    // 13/09/2026). O total do orçamento não muda: uma transferência soma zero.
     const limites = (m.limites && typeof m.limites === 'object') ? m.limites : {};
+    const movido = {};
+    for (const t of casa.transferencias || []) {
+      if (!noMes(t.mes)) continue;
+      const de = envelopePorId[t.de_envelope];
+      const para = envelopePorId[t.para_envelope];
+      const valor = Number(t.valor) || 0;
+      if (de) movido[de] = (movido[de] || 0) - valor;
+      if (para) movido[para] = (movido[para] || 0) + valor;
+    }
     const nomes = [...new Set([...Object.values(envelopePorId), ...Object.keys(gastoPor)])];
     const envelopes = nomes
       .map(nome => ({
         nome,
         gasto: arredonda(gastoPor[nome] || 0),
-        limite: arredonda(limites[nome] !== undefined ? limites[nome] : (limiteBase[nome] || 0)),
+        limite: arredonda((limites[nome] !== undefined ? limites[nome] : (limiteBase[nome] || 0)) + (movido[nome] || 0)),
       }))
       .sort((a, b) => b.gasto - a.gasto || a.nome.localeCompare(b.nome));
     const gasto = arredonda(envelopes.reduce((n, e) => n + e.gasto, 0));

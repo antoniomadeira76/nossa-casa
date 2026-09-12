@@ -26,7 +26,9 @@ function FolhaDoPerfil({ t, kid, onClose }) {
   const { s, membros: MEMBROS, mudarPreferencia } = useStore();
   const [aEscolherAvatar, setAEscolherAvatar] = useState(false);
   const [aMudarPin, setAMudarPin] = useState(false);
-  const scheme = s.schemeByUser[kid] ?? 0;
+  // O esquema vem do servidor como número; um que não exista na lista lê-se
+  // como o primeiro, em vez de `SCHEMES[7].name` rebentar a folha.
+  const scheme = SCHEMES[s.schemeByUser[kid]] ? s.schemeByUser[kid] : 0;
 
   return (
     <Sheet t={t} title="O meu perfil" sub={`Como ${kid} aparece, e o PIN com que entra`} onClose={onClose}>
@@ -387,7 +389,7 @@ function KidTasksView({ t, kid, tasks }) {
             ))}
           </View>
         ) : (
-          <Empty t={t} icon="checkSquare" title="Sem tarefas agora" sub="Bom trabalho!" />
+          <Empty t={t} icon="checkSquare" title="Sem tarefas agora" hint="Bom trabalho!" />
         )}
         {/* Propor uma troca: um botão por baixo da lista, e não na linha da
             tarefa — uma linha, um destino (erro #6 do CLAUDE.md). Só quando
@@ -589,6 +591,15 @@ function KidVaultView({ t, kid }) {
   const [requested, setRequested] = useState(false);
   const [aMudarObjetivo, setAMudarObjetivo] = useState(false);
   const objetivo = (s.objetivosCofre || {})[kid] || null;
+  // Quem autoriza são os adultos DESTA casa — estava «A Rita ou o Tomás» à
+  // mão, e a criança de outra casa lia nomes de quem não vive lá. O pedido
+  // não sai deste telemóvel (não há linha no servidor), e o texto diz isso.
+  const artigo = (nome, maiuscula) => {
+    const a = (st.membros[nome] || {}).fem ? 'a' : 'o';
+    return maiuscula ? a.toUpperCase() : a;
+  };
+  const quemAutoriza = st.adultos.length === 0 ? 'Um adulto tem'
+    : `${st.adultos.map((a, i) => `${artigo(a, i === 0)} ${a}`).join(' ou ')} ${st.adultos.length === 1 ? 'tem' : 'têm'}`;
 
   // O saldo é a soma dos movimentos, e a lista mostra as mesmas parcelas —
   // não uma lista à parte, que dantes contradizia o total.
@@ -725,7 +736,7 @@ function KidVaultView({ t, kid }) {
             <Card t={t} style={{ backgroundColor: t.tileInfo, borderLeftWidth: 4, borderLeftColor: t.state.info }}>
               <Text style={{
                 fontFamily: FONT.body, fontSize: 14, lineHeight: 21, color: t.text2,
-              }}>Pedido enviado. A Rita ou o Tomás têm de autorizar antes de poder usar o dinheiro.</Text>
+              }}>{`Pedido registado neste telemóvel. ${quemAutoriza} de autorizar antes de poder usar o dinheiro — diga-lho.`}</Text>
             </Card>
           </>
         )}

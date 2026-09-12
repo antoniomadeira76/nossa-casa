@@ -22,7 +22,13 @@ export async function lerComoDataURI(uri) {
   if (!uri) return null;
   if (/^data:/.test(uri)) return uri;
   try {
-    if (Platform.OS === 'web') {
+    // Na web tudo se lê por `fetch`. No telemóvel também o que vem por `http`
+    // — a fotografia guardada no servidor, cujo endereço o `sync` devolve —,
+    // porque o `File` do `expo-file-system` só abre `file://`: com um endereço
+    // `http` lançava, o `catch` devolvia `null`, e o documento dizia que a
+    // imagem «não pôde ser incluída» (revisão de 13/09/2026). Só o ficheiro da
+    // câmara, que já está no aparelho, passa pelo `File`.
+    if (Platform.OS === 'web' || /^https?:\/\//.test(uri)) {
       const r = await fetch(uri);
       if (!r.ok) return null;
       const blob = await r.blob();

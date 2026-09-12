@@ -93,10 +93,69 @@ await prova('⚠ e NÃO vê a prenda «só adultos», nem preços, nem quem pedi
   igual(r.texto.includes('<script'), false);
 });
 
-await prova('⚠ um sinal que não existe, ou mal formado, dá 404', async () => {
+await prova('⚠ o que a casa escreveu sai ESCAPADO — um rótulo com «<script>» é texto, não código', async () => {
+  const marota = await admin.collection('seccoes').create({ casa: casa.id, nome: '"><img src=x onerror=alert(1)>', posto: 3 });
+  const a = await artigo('<script>alert("x")</script> pão', marota);
+  const r = await abrir(partilha.sinal);
+  igual(r.status, 200);
+  igual(r.texto.includes('<script'), false);
+  igual(r.texto.includes('<img'), false);
+  igual(r.texto.includes('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; pão'), true);
+  igual(r.texto.includes('<h2>&quot;&gt;&lt;img src=x onerror=alert(1)&gt;</h2>'), true);
+  await admin.collection('artigos').delete(a.id);
+  await admin.collection('seccoes').delete(marota.id);
+});
+
+await prova('⚠ um corredor chamado «constructor» ou «__proto__» não deita a página abaixo', async () => {
+  const c1 = await admin.collection('seccoes').create({ casa: casa.id, nome: 'constructor', posto: 4 });
+  const c2 = await admin.collection('seccoes').create({ casa: casa.id, nome: '__proto__', posto: 5 });
+  const a1 = await artigo('Detergente', c1);
+  const a2 = await artigo('Esfregões', c2);
+  const semCorredor = await admin.collection('artigos').create({
+    casa: casa.id, lista: lista.id, rotulo: 'Pilhas', estado: 'por_comprar', pedido_por: rita.id });
+  const outros = await admin.collection('seccoes').create({ casa: casa.id, nome: 'Outros', posto: 6 });
+  const a3 = await artigo('Velas', outros);
+  // A limpeza corre MESMO que a prova falhe: com estes corredores na lista, um
+  // servidor com o hook antigo dava 500 a todas as provas seguintes.
+  try {
+    const r = await abrir(partilha.sinal);
+    igual(r.status, 200);
+    igual(r.texto.includes('<h2>constructor</h2>'), true);
+    igual(r.texto.includes('Detergente'), true);
+    igual(r.texto.includes('Esfregões'), true);
+    // Os dois «Outros»: o corredor da casa e o dos artigos sem corredor, separados.
+    igual((r.texto.match(/<h2>Outros<\/h2>/g) || []).length, 2);
+    igual(r.texto.indexOf('Velas') < r.texto.indexOf('Pilhas'), true);
+  } finally {
+    for (const x of [a1, a2, a3, semCorredor]) await admin.collection('artigos').delete(x.id);
+    for (const x of [c1, c2, outros]) await admin.collection('seccoes').delete(x.id);
+  }
+});
+
+await prova('⚠ a resposta não se guarda em cache nem se indexa', async () => {
+  const r = await fetch(`${URL}/lista/${partilha.sinal}`);
+  igual(r.headers.get('cache-control'), 'no-store');
+  igual(r.headers.get('x-robots-tag'), 'noindex');
+  igual((await r.text()).includes('<meta name="robots" content="noindex">'), true);
+});
+
+await prova('⚠ um sinal que não existe, ou mal formado, dá 404 — e a caixa conta', async () => {
   igual((await abrir('a'.repeat(24))).status, 404);
   igual((await abrir('nao-e-um-sinal')).status, 404);
   igual((await abrir(partilha.id)).status, 404);
+  const trocado = partilha.sinal.split('').map(ch => ch === ch.toUpperCase() ? ch.toLowerCase() : ch.toUpperCase()).join('');
+  if (trocado !== partilha.sinal) igual((await abrir(trocado)).status, 404);
+});
+
+await prova('⚠ a criança não lê as partilhas da casa', async () => {
+  igual((await doLeo.collection('partilhas_lista').getFullList()).length, 0);
+});
+
+await prova('⚠ sem prazo escrito, o endereço recusa — a data vazia não é «para sempre»', async () => {
+  await admin.collection('partilhas_lista').update(partilha.id, { expira_em: null });
+  igual((await abrir(partilha.sinal)).status, 410);
+  await admin.collection('partilhas_lista').update(partilha.id, { expira_em: '2099-01-01 00:00:00.000Z' });
+  igual((await abrir(partilha.sinal)).status, 200);
 });
 
 await prova('⚠ não há escrita por este caminho', async () => {

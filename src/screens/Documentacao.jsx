@@ -413,7 +413,7 @@ export default function Documentacao({ t, onIr, podeGerir, user }) {
                 <Pill label={plural(retratos.length, 'mês', 'meses')} fg={t.text3} bg={t.subtle} border={t.border} />
               }>Retratos dos Meses</SectionTitle>
               {retratos.map((r, i) => (
-                <LinhaPlana key={r.inicio} t={t} last={i === retratos.length - 1}>
+                <LinhaPlana key={r.idServidor || `${r.inicio}-${i}`} t={t} last={i === retratos.length - 1}>
                   <Row t={t} icon="fileText" title={r.nome}
                     sub={`${EUR(r.gasto)} gastos de ${EUR(r.orcamento)} · ${r.aberto ? 'em curso' : 'fechado'}`}
                     right={<Icon name="caretRight" size={18} color={t.text3} />}

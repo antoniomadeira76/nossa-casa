@@ -1313,11 +1313,17 @@ await criar({
     + ' && @request.auth.papel = "crianca" && tarefa_para.atribuido_a.papel = "crianca"'
     + ' && tarefa_para.atribuido_a != @request.auth.id'
     + ' && aceite_em = "" && (aceite_por = "" || aceite_por.casa = @request.auth.casa)',
+  // A aceitação é a ÚNICA alteração: assina-se (`aceite_por`) e data-se
+  // (`aceite_em`) ao mesmo tempo — sem a data o cliente lia «por aceitar» e a
+  // Mia podia assinar as vezes que quisesse. E a `casa` fica trancada como o
+  // resto: a regra `casa = @request.auth.casa` avalia a linha EXISTENTE, e sem
+  // o `:isset` a Mia mudava a troca de casa ao aceitá-la (revisão de 13/09/2026).
   updateRule: `${DA_CASA} && ${TROCA_DA_CASA} && proposta_por.casa = @request.auth.casa`
     + ' && tarefa_para.atribuido_a = @request.auth.id && aceite_em = ""'
-    + ' && @request.body.aceite_por = @request.auth.id'
+    + ' && @request.body.aceite_por = @request.auth.id && @request.body.aceite_em != ""'
     + ' && @request.body.tarefa_de:isset = false && @request.body.tarefa_para:isset = false'
-    + ' && @request.body.dia:isset = false && @request.body.proposta_por:isset = false',
+    + ' && @request.body.dia:isset = false && @request.body.proposta_por:isset = false'
+    + ' && @request.body.casa:isset = false',
   deleteRule: `${DA_CASA} && ${TROCA_DA_CASA}`
     + ` && (${ADULTO} || aceite_em = "" && (proposta_por = @request.auth.id || tarefa_para.atribuido_a = @request.auth.id))`,
 });

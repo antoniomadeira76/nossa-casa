@@ -81,6 +81,15 @@ await prova('⚠ e um adulto não propõe por ela — a troca é das crianças',
   recusado(() => doTomas.collection('trocas_tarefas').create({
     casa: casa.id, dia: hoje, tarefa_de: mochila.id, tarefa_para: mesa.id, proposta_por: tomas.id })));
 
+await prova('⚠ o Léo não troca uma tarefa sua por outra sua, nem por uma tarefa de ninguém', async () => {
+  await recusado(() => doLeo.collection('trocas_tarefas').create({
+    casa: casa.id, dia: hoje, tarefa_de: mochila.id, tarefa_para: lixo.id, proposta_por: leo.id }));
+  const solta = await admin.collection('tarefas').create({ casa: casa.id, titulo: 'Sem dono', pontos: 1, recorrencia: 'diaria' });
+  await recusado(() => doLeo.collection('trocas_tarefas').create({
+    casa: casa.id, dia: hoje, tarefa_de: mochila.id, tarefa_para: solta.id, proposta_por: leo.id }));
+  await admin.collection('tarefas').delete(solta.id);
+});
+
 await prova('⚠ a mesma tarefa não entra em duas trocas no mesmo dia', () =>
   recusado(() => doLeo.collection('trocas_tarefas').create({
     casa: casa.id, dia: hoje, tarefa_de: mochila.id, tarefa_para: plantas.id, proposta_por: leo.id })));
@@ -107,6 +116,20 @@ await prova('⚠ a Mia não aceita assinando como o Léo, nem a mexer na troca',
   await recusado(() => doMia.collection('trocas_tarefas').update(troca, { aceite_em: agora, aceite_por: leo.id }));
   await recusado(() => doMia.collection('trocas_tarefas').update(troca, { aceite_em: agora, aceite_por: mia.id, tarefa_de: mochila.id }));
   await recusado(() => doMia.collection('trocas_tarefas').update(troca, { aceite_em: agora, aceite_por: mia.id, dia: diaHa(1) }));
+});
+
+await prova('⚠ a Mia não muda a troca de casa ao aceitá-la', async () => {
+  const outra = await admin.collection('casas').create({ nome: PREFIXO + 'Vizinhos', valor_ponto: 0.1 });
+  await recusado(() => doMia.collection('trocas_tarefas').update(troca, { aceite_em: agora, aceite_por: mia.id, casa: outra.id }));
+  igual((await admin.collection('trocas_tarefas').getOne(troca)).casa, casa.id);
+});
+
+await prova('⚠ nem assina sem datar — a assinatura sem `aceite_em` lia-se «por aceitar» e repetia-se', async () => {
+  await recusado(() => doMia.collection('trocas_tarefas').update(troca, { aceite_por: mia.id }));
+  await recusado(() => doMia.collection('trocas_tarefas').update(troca, { aceite_por: mia.id, aceite_em: '' }));
+  const t = await admin.collection('trocas_tarefas').getOne(troca);
+  igual(t.aceite_por, '');
+  igual(t.aceite_em, '');
 });
 
 await prova('a Mia aceita — e assina', async () => {

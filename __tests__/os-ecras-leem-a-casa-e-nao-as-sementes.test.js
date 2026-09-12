@@ -107,12 +107,18 @@ describe('e o Dinheiro em particular, que era onde doía', () => {
   const ecra = semComentarios(conteudo('src/screens/Dinheiro.jsx'));
 
   it('⚠ a lista que se ESCOLHE e a que se APLICA são a mesma', () => {
-    // O que se aplica: `envelopes[exp.env].name` e `envelopes[mv.from].name`.
+    // O que se aplica: `envelopes[exp.env].name` e, na folha de mover, a
+    // `origem`/`destino` lidos de `envelopes[de]`/`envelopes[para]` — os índices
+    // do `mv` presos à lista da casa (13/09/2026: `mv.to` nascia 3 e uma casa
+    // com dois envelopes rebentava).
     expect(ecra).toMatch(/envelopes\[exp\.env\]\.name/);
-    expect(ecra).toMatch(/envelopes\[mv\.from\]\.name/);
-    // E o que se escolhe tem de vir do mesmo sítio.
+    expect(ecra).toMatch(/const origem = envelopes\[de\]/);
+    expect(ecra).toMatch(/const destino = envelopes\[para\]/);
+    expect(ecra).toMatch(/moverEntreEnvelopes\(origem\.name, destino\.name, mv\.amount\)/);
+    // E o que se escolhe tem de vir do mesmo sítio, com o MESMO índice.
     expect(ecra).toMatch(/\{envelopes\.map\(\(e, i\) =>/);
-    expect(ecra).toMatch(/<GrelhaEnvelopes t=\{t\} envelopes=\{envelopes\}/);
+    expect(ecra).toMatch(/<GrelhaEnvelopes t=\{t\} envelopes=\{envelopes\} livre=\{freeOf\} escolhido=\{de\}/);
+    expect(ecra).toMatch(/<GrelhaEnvelopes t=\{t\} envelopes=\{envelopes\} livre=\{freeOf\} escolhido=\{para\}/);
   });
 
   it('e abrir o mês distribui pelos envelopes da casa', () => {

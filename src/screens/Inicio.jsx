@@ -141,7 +141,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
     go: () => (onFicha ? onFicha(d.member) : onSaude()) }));
   consultasProximas(user).forEach(c => needs.push({ icon: 'heartPulse', color: t.state.infoTexto, line: t.state.info,
     title: `Consulta · ${c.member}`,
-    sub: `${c.specialty} · ${dayLabel(c.day)} às ${c.time}`,
+    sub: `${c.specialty} · ${dayLabel(c.day)}${c.time ? ` às ${c.time}` : ''}`,
     go: () => (onFicha ? onFicha(c.member) : onSaude()) }));
   if (overdue.length) needs.push({ icon: 'checkSquare', color: t.text3, line: t.faixa,
     title: plural(overdue.length, 'tarefa por fazer hoje', 'tarefas por fazer hoje'),

@@ -128,14 +128,16 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
       ) : (
       <Card t={t} style={{ gap: S.lg }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+          {/* O envelope da Mercearia só quando a casa o TEM: sem ele, lia-se
+              «0,00 €» a verde — um número inventado com ar de dado. */}
           {[['Artigos na lista', String(items.length)],
             ['Por comprar', String(items.filter(i => stateOf(i) === 'open').length)],
             ['Estimativa', EUR(estimate)],
-            ['Envelope Mercearia', EUR(merc)]].map(([k, v], i) => (
+            ...(mercearia ? [['Envelope Mercearia', EUR(merc)]] : [])].map(([k, v]) => (
             <View key={k} style={{ width: '50%', gap: 2, paddingBottom: S.lg }}>
               <Label t={t}>{k}</Label>
               <Text style={{ fontFamily: FONT.display, fontSize: 20,
-                color: i === 3 ? t.state.okTexto : t.text2 }}>{v}</Text>
+                color: k === 'Envelope Mercearia' ? t.state.okTexto : t.text2 }}>{v}</Text>
             </View>
           ))}
         </View>
@@ -143,8 +145,7 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
             conhece pouco lê-se como uma lista barata, e não é. */}
         {conhecidos > 0 ? (
           <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3, marginTop: -S.md }}>
-            {plural(conhecidos, 'artigo com preço', 'artigos com preço')} de {items.length},
-            {' '}do que já se comprou {loja ? `no ${loja}` : ''}.
+            {`${plural(conhecidos, 'artigo com preço', 'artigos com preço')} de ${items.length}, do que já se comprou${loja ? ` no ${loja}` : ''}.`}
           </Text>
         ) : null}
 
@@ -327,7 +328,9 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
               </Text>
             </View>
           </View>
-          {comparacao.loja !== loja ? (
+          {/* Só se a loja mais barata ainda existir na casa: o `indexOf` de uma
+              loja que saiu dava −1, e o plano ficava a apontar para nada. */}
+          {comparacao.loja !== loja && s.stores.includes(comparacao.loja) ? (
             <Pressable
               onPress={() => mudarPlanoDeCompras({ store: s.stores.indexOf(comparacao.loja) })}
               accessibilityRole="button"
@@ -460,25 +463,24 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
           <SectionTitle t={t}>Histórico de Compras</SectionTitle>
           {/* Linhas planas, sem cartão — desenho C (09/09/2026). */}
           <View style={{ paddingHorizontal: S.xs }}>
+            {/* ⚠ Cada linha era um botão «Repetir compra» com o `onPress`
+                VAZIO — um botão que prometia e não fazia, com seta e tudo.
+                O histórico não guarda os artigos de cada ida, logo não há o
+                que repetir: a linha é só de leitura, sem seta, e diz o que
+                sabe (a loja e quem foi podem vir vazios do servidor).
+                Revisão de 13/09/2026. */}
             {s.shopHistory.slice(0, 10).map((h, i, arr) => (
-              <Pressable key={h.at} onPress={() => {
-                // Repetir esta lista: readd items from the purchase
-                // This would require storing items per purchase in shopHistory
-                // For now, showing the feature intent
-              }} accessibilityRole="button" accessibilityLabel={`Repetir compra em ${h.store}`}
+              <View key={h.at}
                 style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12,
                   borderBottomWidth: i === Math.min(9, arr.length - 1) ? 0 : 1, borderBottomColor: t.divider }}>
                 <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{h.store}</Text>
+                  <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{h.store || 'Ida às compras'}</Text>
                   <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
-                    {h.who} · {h.items} artigos · {new Date(h.at).toLocaleDateString('pt-PT')}
+                    {`${h.who ? `${h.who} · ` : ''}${plural(h.items || 0, 'artigo', 'artigos')} · ${new Date(h.at).toLocaleDateString('pt-PT')}`}
                   </Text>
                 </View>
-                <View style={{ gap: 8, alignItems: 'flex-end' }}>
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>{EUR(h.total)}</Text>
-                  <Icon name="caretRight" size={16} color={t.text3} />
-                </View>
-              </Pressable>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>{EUR(h.total)}</Text>
+              </View>
             ))}
           </View>
         </View>

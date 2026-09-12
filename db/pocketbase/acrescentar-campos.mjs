@@ -289,9 +289,10 @@ const COLECOES = [
         + ' && aceite_em = "" && (aceite_por = "" || aceite_por.casa = @request.auth.casa)',
       updateRule: 'casa = @request.auth.casa && tarefa_de.casa = @request.auth.casa && tarefa_para.casa = @request.auth.casa && proposta_por.casa = @request.auth.casa'
         + ' && tarefa_para.atribuido_a = @request.auth.id && aceite_em = ""'
-        + ' && @request.body.aceite_por = @request.auth.id'
+        + ' && @request.body.aceite_por = @request.auth.id && @request.body.aceite_em != ""'
         + ' && @request.body.tarefa_de:isset = false && @request.body.tarefa_para:isset = false'
-        + ' && @request.body.dia:isset = false && @request.body.proposta_por:isset = false',
+        + ' && @request.body.dia:isset = false && @request.body.proposta_por:isset = false'
+        + ' && @request.body.casa:isset = false',
       deleteRule: 'casa = @request.auth.casa && tarefa_de.casa = @request.auth.casa && tarefa_para.casa = @request.auth.casa'
         + ' && (@request.auth.papel != "crianca" || aceite_em = "" && (proposta_por = @request.auth.id || tarefa_para.atribuido_a = @request.auth.id))',
     },

@@ -2600,8 +2600,15 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // Assim as duas metades da subtração falam da mesma coisa: pontos ganhos de
   // sempre, menos pontos pagos de sempre.
   const pontosGanhos = (k) => {
-    const minhas = allTasks().filter(t => t.who === k);
-    const porId = Object.fromEntries(minhas.map(t => [t.id, t]));
+    const todas = allTasks();
+    const porId = Object.fromEntries(todas.map(t => [t.id, t]));
+    // ⚠ A troca de hoje vale para HOJE. A tarefa trocada aparece com o `who` de
+    // hoje e guarda em `trocadaCom` quem a tem nos outros dias — e o histórico
+    // é desses dias. Contava-se tudo a quem tem a tarefa hoje: aceite a troca,
+    // o Léo herdava os dez lixos do mês da Mia até à meia-noite, e o «por pagar»
+    // dela ficava negativo (revisão de 13/09/2026).
+    const donoNoDia = (t, diaChave) => (diaChave === TODAY_KEY || !t.trocadaCom ? t.who : t.trocadaCom);
+    const minhas = todas.filter(t => t.who === k);
     const contadas = new Set();
     let n = 0;
 
@@ -2609,8 +2616,9 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // traz o histórico inteiro, com o `confirmada` de cada linha.
     for (const [chave, linha] of Object.entries(s.feitas || {})) {
       if (!linha || !linha.confirmada) continue;
-      const t = porId[chave.split('|')[0]];
-      if (!t) continue;
+      const [idTarefa, diaISO] = chave.split('|');
+      const t = porId[idTarefa];
+      if (!t || donoNoDia(t, diaISO ? `d${diaISO}` : TODAY_KEY) !== k) continue;
       contadas.add(chave);
       n += t.pts || 0;
     }
@@ -3059,7 +3067,11 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   const desfazerPartilha = async (id) => {
     if (!sync || !id) return null;
     try {
-      await sync.apagarPartilhaDaLista(id);
+      const r = await sync.apagarPartilhaDaLista(id);
+      // ⚠ Sem servidor o `sync` devolve `{ pendente: true }` e não apaga nada —
+      // e a folha dizia «o endereço já não abre nada» com o endereço a valer
+      // mais uma hora (revisão de 13/09/2026). Diz-se a verdade.
+      if (r && r.pendente) return 'Só com o servidor ligado se desfaz a partilha. O endereço expira sozinho ao fim de uma hora.';
       set(x => ({ registo: maisRegisto(x, 'A partilha da lista de compras foi desfeita', 'Compras') }));
       return null;
     } catch (e) {
@@ -3876,6 +3888,29 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     }).catch(() => {});
   };
 
+  // A urgência e o prazo vivem em MAPAS (`urg`, `due`), não na tarefa — e por
+  // isso não passam pelo `editarTarefa`. Passavam por um `set` direto do ecrã
+  // das Tarefas, e ficavam só neste telemóvel: o outro adulto via a ordem
+  // antiga. É a classe «ecrã a escrever no estado por fora da loja»
+  // (revisão de 13/09/2026). O servidor tem `urgencia` e `prazo` desde o início.
+  const mudarUrgencia = (id, urgencia) => {
+    const n = Number.isFinite(Number(urgencia)) ? Number(urgencia) : 1;
+    set(x => ({ urg: { ...x.urg, [id]: n } }));
+    const noServidor = tarefaNoServidor(id);
+    if (sync && noServidor) sync.alterarTarefa(noServidor, { urgencia: n }).catch(() => {});
+  };
+  // `prazo` é `{ key, time }` ou `null` para tirar o prazo.
+  const mudarPrazo = (id, prazo) => {
+    set(x => {
+      const due = { ...x.due };
+      if (prazo && prazo.key) due[id] = { key: prazo.key, time: prazo.time || '18:00' };
+      else delete due[id];
+      return { due };
+    });
+    const noServidor = tarefaNoServidor(id);
+    if (sync && noServidor) sync.alterarTarefa(noServidor, { prazo: prazo && prazo.key ? prazo.key : null }).catch(() => {});
+  };
+
   // O `id` de uma tarefa no servidor. Nulo enquanto ela for só local.
   const tarefaNoServidor = (id) =>
     (allTasks().find(t => t.id === id) || {}).idServidor || null;
@@ -4018,7 +4053,12 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
 
   // Uma tarefa feita, «a confirmar», ou já numa troca de hoje não se troca.
   const numaTroca = (id) => trocasDeHojeEm(s).some(tr => tr.de === id || tr.para === id);
-  const podeTrocar = (t) => !!t && !s.done[t.id] && !(s.pending || {})[t.id] && !numaTroca(t.id);
+  // ⚠ Uma tarefa que ALTERNA entre as crianças não entra numa troca: a app
+  // mostra-a com a criança da vez, mas no servidor o `atribuido_a` é o dono
+  // de base, e a regra (`tarefa_de.atribuido_a = @request.auth.id`) recusava a
+  // proposta — que ficava na fila a tentar para sempre e desaparecia da app
+  // na leitura seguinte, sem uma palavra (revisão de 13/09/2026).
+  const podeTrocar = (t) => !!t && !s.done[t.id] && !(s.pending || {})[t.id] && !numaTroca(t.id) && !s.rotate[t.id];
 
   // O que uma criança pode oferecer, e o que pode pedir aos irmãos.
   const tarefasParaTrocar = (kid) => {
@@ -4038,7 +4078,17 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     if (minha.who !== kid) return 'A tarefa a dar tem de ser sua.';
     if (dele.who === kid || !criancas.includes(dele.who)) return 'A troca é com um irmão.';
     if (!podeTrocar(minha) || !podeTrocar(dele)) {
-      return 'Uma tarefa feita, à espera de confirmação ou já numa troca não se troca.';
+      return 'Uma tarefa feita, à espera de confirmação, que alterna ou já numa troca não se troca.';
+    }
+    // Sobe com os ids do servidor das duas tarefas. Com o servidor LIGADO, uma
+    // tarefa ainda só local não tem troca que suba — e a linha local morria na
+    // leitura seguinte (`trocas: casa.trocas`), depois de a criança a ter visto
+    // «proposta». Diz-se antes, em vez de prometer. Sem servidor fica local,
+    // como tudo o resto.
+    const noServidorDe = tarefaNoServidor(minha.id);
+    const noServidorPara = tarefaNoServidor(dele.id);
+    if (sync && sync.ligado() && (!noServidorDe || !noServidorPara)) {
+      return 'Uma destas tarefas ainda não chegou ao servidor. Tente daqui a um momento.';
     }
     const id = `troca-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
     const nova = { id, idServidor: null, dia: TODAY_KEY, de: minha.id, para: dele.id,
@@ -4048,10 +4098,6 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       trocas: [...trocasDeHojeEm(x), nova],
       registo: maisRegisto(x, `Troca proposta ${deNome(kid)} ${kid} ${aoNome(dele.who)}: «${minha.title}» por «${dele.title}»`, 'Tarefas'),
     }));
-    // Sobe com os ids do servidor das duas tarefas; uma ainda só local não
-    // tem troca que suba — e fica a valer neste telemóvel, como a tarefa.
-    const noServidorDe = tarefaNoServidor(minha.id);
-    const noServidorPara = tarefaNoServidor(dele.id);
     if (sync && noServidorDe && noServidorPara) {
       const ses = sync.sessao();
       if (ses) {
@@ -5662,7 +5708,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     canSeeHealth, allHealth, healthOf, allHealthDocs, docsOf, nextHealth,
     garantiasAExpirar, receitasAExpirar, consultasProximas,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring, definirAvatar, trazerFotografia,
-    removerTarefa, criarTarefa, editarTarefa, tarefaNoServidor, mudarRegraDaCasa, mudarListaDaCasa,
+    removerTarefa, criarTarefa, editarTarefa, mudarUrgencia, mudarPrazo, tarefaNoServidor, mudarRegraDaCasa, mudarListaDaCasa,
     trocasDeHoje, trocasDe, tarefasParaTrocar, proporTroca, aceitarTroca, desfazerTroca,
     retratosDaCasa, retratoDoMesAberto,
     partilharLista, desfazerPartilha,

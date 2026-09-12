@@ -6,7 +6,7 @@
 // Não confundir com `s.registo`, que é o histórico de alterações que a
 // FAMÍLIA faz à casa. São duas coisas diferentes, e o ecrã mostrava a segunda
 // onde a referência 17 mostra a primeira.
-export const APP_VERSION = '1.12.0';
+export const APP_VERSION = '1.12.1';
 
 // ── O que a app é, e o que cada área faz ─────────────────────────────────────
 //
@@ -151,6 +151,20 @@ export const AREAS = [
 ];
 
 export const REGISTO_APP = [
+  // ── 1.12.1 ────────────────────────────────────────────────────────────────
+  // A revisão de 13/09/2026: «testa o código, procura por bugs». Três leituras
+  // (lógica, servidor, ecrãs) sobre o que se escreveu de 11 a 13/09.
+  { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'Tarefas', t: 'Uma troca de tarefas aceite deixou de mudar o histórico de pontos: contava a quem tem a tarefa HOJE todas as vezes que ela foi feita no mês — o Léo herdava os lixos da Mia até à meia-noite e o «por pagar» dela ficava negativo. Cada dia é de quem tinha a tarefa nesse dia' },
+  { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'Tarefas', t: 'A urgência e o prazo de uma tarefa passaram a chegar ao servidor: mudavam só no telemóvel onde se mexeu, e o outro adulto continuava a ver a ordem antiga. E o botão «Sem prazo» passou a LIGAR o prazo — hoje às 18:00 — em vez de só o tirar' },
+  { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'Tarefas', t: 'Uma tarefa que alterna entre as crianças não entra numa troca, e uma proposta com uma tarefa que ainda não chegou ao servidor é recusada com uma frase. Antes a proposta aparecia como feita, o servidor recusava-a em silêncio, e ela desaparecia na leitura seguinte' },
+  { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'A App', t: 'No servidor, aceitar uma troca passou a exigir a data e a trancar a casa: quem aceitava podia assinar sem datar — e voltar a assinar — ou, sabendo o id de outra casa, mudar a troca para lá. Três provas novas' },
+  { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'Dinheiro', t: 'O retrato do mês passou a contar o dinheiro movido entre envelopes: dizia «acima do limite» num envelope que o Dinheiro mostrava dentro dele, porque só lia o limite de base. Os dois ecrãs somam agora as mesmas linhas' },
+  { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'Dinheiro', t: '«Mover Dinheiro» rebentava numa casa com menos de quatro envelopes: a folha nascia a apontar para o quarto, que não existia. Os envelopes escolhidos prendem-se à lista da casa' },
+  { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'Compras', t: 'A página da lista partilhada deixou de se guardar em cache e de se indexar, e um corredor chamado «constructor» ou «__proto__» já não a deita abaixo. Um rótulo com código HTML sai como texto — agora provado, antes só assumido. «Desfazer a partilha» sem servidor diz que não pôde, em vez de afirmar que o endereço morreu' },
+  { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'Compras', t: 'O histórico de compras tinha em cada linha um botão «Repetir compra» que não fazia nada, com seta e tudo; as linhas passaram a ser só de leitura, e dizem «1 artigo» em vez de «1 artigos». O cartão de cima só mostra o envelope Mercearia quando a casa o tem — mostrava «0,00 €» a verde quando não' },
+  { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'Saúde', t: 'No telemóvel, as imagens guardadas no servidor entram no PDF da ficha: só as acabadas de tirar entravam, e as outras saíam como «não pôde ser incluída». Se a preparação do documento falhar, o botão volta a si em vez de ficar em «A preparar…». A frase da folha já não diz que os ficheiros ficam na aplicação' },
+  { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'Início', t: 'Uma consulta sem hora lia-se «Amanhã às » no «Precisa de Si». Sem hora, fica só o dia' },
+  { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'Dinheiro', t: 'No cofre da criança, «Pedir para usar o dinheiro» dizia «A Rita ou o Tomás têm de autorizar» fosse qual fosse a casa; passou a nomear os adultos desta, e a dizer que o pedido fica neste telemóvel — não há linha no servidor para ele' },
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
   // ── 1.12.0 ────────────────────────────────────────────────────────────────
   { v: '1.12.0', d: '12/09/2026', k: 'alterado', a: 'Saúde', t: 'O PDF da ficha de saúde passou a incluir as imagens dos documentos de cada consulta — a radiografia, o relatório, a receita fotografada —, cada uma com a sua legenda. Antes só os nomeava e avisava que os ficheiros ficavam na aplicação; agora só o diz do que não puder incluir' },

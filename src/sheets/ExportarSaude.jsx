@@ -96,17 +96,32 @@ export default function ExportarSaude({
     return r;
   };
 
+  // O documento lê as imagens dos anexos; se uma leitura rebentar, o botão não
+  // pode ficar em «A preparar…» para sempre (revisão de 13/09/2026).
+  const preparar = async () => {
+    setAGuardar(true); setErro(null); setFeito(null);
+    try {
+      return await documento();
+    } catch (e) {
+      setAGuardar(false);
+      setErro('Não foi possível preparar o documento. Tente outra vez.');
+      return null;
+    }
+  };
+
   const guardar = async () => {
-    setAGuardar(true);
-    const { html, nome } = await documento();
+    const doc = await preparar();
+    if (!doc) return;
+    const { html, nome } = doc;
     const r = await correr(() => guardarPDF(nome, html));
     if (r && !r.cancelado) setFeito(r.onde ? `PDF pronto — ${r.onde}` : 'PDF pronto.');
   };
 
   const enviar = async () => {
     if (!para) return;
-    setAGuardar(true);
-    const { html, nome } = await documento();
+    const doc = await preparar();
+    if (!doc) return;
+    const { html, nome } = doc;
     const r = await correr(() => enviarPorCorreio({
       nome, html, para: [para.email],
       assunto: `Ficha de saúde ${deNome(membro)} ${membro}`,
@@ -210,7 +225,7 @@ export default function ExportarSaude({
             {faltaEscolher ? 'A lista está aqui em cima.'
               : nada ? 'Esta ficha não tem consultas.'
               : resumo.anexos
-                ? `${plural(resumo.anexos, 'documento do arquivo é nomeado', 'documentos do arquivo são nomeados')}, mas ${resumo.anexos === 1 ? 'o ficheiro fica' : 'os ficheiros ficam'} na aplicação.`
+                ? `${plural(resumo.anexos, 'documento do arquivo vai', 'documentos do arquivo vão')} no PDF, com a imagem de cada um quando a há.`
                 : 'Sem documentos de arquivo neste âmbito.'}
           </Text>
         </View>

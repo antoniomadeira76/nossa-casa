@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { subtituloDaTarefa } from '../format';
+import { subtituloDaTarefa, TODAY_KEY } from '../format';
 
 import { SectionTitle, Linha, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe, BotaoCompacto } from '../ui';
 import Icon from '../Icon';
@@ -27,7 +27,8 @@ const URG = [
 export default function Tarefas({ t, user, abrir }) {
   const st = useStore();
   const { s, set, allTasks, dueOf, isRecurring, removerTarefa, membros: MEMBERS,
-          membrosDaCasa, criancas, pontosNasTarefas, editarTarefa, trocasDeHoje, desfazerTroca, deNome } = st;
+          membrosDaCasa, criancas, pontosNasTarefas, editarTarefa, mudarUrgencia, mudarPrazo,
+          trocasDeHoje, desfazerTroca, deNome } = st;
   // As trocas de tarefas entre as crianças, de hoje — um adulto vê e anula.
   const trocas = trocasDeHoje();
   const [filter, setFilter] = useState('Todos');
@@ -243,7 +244,7 @@ export default function Tarefas({ t, user, abrir }) {
             <Label t={t}>Urgência</Label>
             <Segmented t={t} small value={task.urgency}
               options={URG.map(u => ({ value: u.key, label: u.label }))}
-              onChange={(v) => set(x => ({ urg: { ...x.urg, [task.id]: v } }))} />
+              onChange={(v) => mudarUrgencia(task.id, v)} />
             <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
               {task.urgency === 0 ? 'Sobe ao topo da lista, com a caixa cheia a vermelho e borda vermelha.'
                 : task.urgency === 1 ? 'Fica no meio da lista, com a caixa tracejada a âmbar e borda tracejada.'
@@ -254,16 +255,13 @@ export default function Tarefas({ t, user, abrir }) {
           <View style={{ gap: S.md }}>
             <Label t={t}>Prazo (opcional)</Label>
             <View style={{ flexDirection: 'row', gap: S.sm, alignItems: 'center' }}>
+              {/* ⚠ «Sem prazo» nunca LIGAVA: o ramo que punha prazo gravava
+                  `key: task.dueKey`, que era o `undefined` que acabava de
+                  testar. Ligar é «hoje às 18:00»; a hora muda-se ao lado, e
+                  a data pela folha da tarefa (revisão de 13/09/2026). */}
               <Pressable accessibilityRole="button"
-                onPress={() => set(x => {
-                  const newDue = { ...x.due };
-                  if (task.dueKey) {
-                    delete newDue[task.id];
-                  } else {
-                    newDue[task.id] = { key: task.dueKey || s.due[task.id]?.key, time: s.due[task.id]?.time || '18:00' };
-                  }
-                  return { due: newDue };
-                })}
+                accessibilityLabel={task.dueKey ? 'Tirar o prazo' : 'Pôr prazo para hoje'}
+                onPress={() => mudarPrazo(task.id, task.dueKey ? null : { key: TODAY_KEY, time: task.dueTime || '18:00' })}
                 style={{
                   flex: 1, minHeight: 44, paddingHorizontal: S.md, borderRadius: R.row, borderWidth: 1,
                   borderColor: task.dueKey ? t.accent : t.border, backgroundColor: task.dueKey ? t.accent : t.card,
@@ -278,7 +276,7 @@ export default function Tarefas({ t, user, abrir }) {
               {task.dueKey ? (
                 <TextInput accessibilityLabel="Hora do prazo"
                   value={task.dueTime || '18:00'}
-                  onChangeText={(v) => set(x => ({ due: { ...x.due, [task.id]: { key: task.dueKey, time: v } } }))}
+                  onChangeText={(v) => mudarPrazo(task.id, { key: task.dueKey, time: v })}
                   placeholder="18:00"
                   placeholderTextColor={t.text3}
                   maxLength={5}

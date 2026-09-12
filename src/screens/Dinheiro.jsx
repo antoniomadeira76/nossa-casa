@@ -682,8 +682,17 @@ export default function Dinheiro({ t, user, onEquip }) {
 
       {/* Move Money Sheet */}
       {sheet === 'mover' ? (() => {
-        const free = freeOf(mv.from);
+        // ⚠ `mv` nasce `{ from: 0, to: 3 }` — quatro envelopes, os da
+        // demonstração. Uma casa com dois ou três não tem `envelopes[3]`, e a
+        // frase de baixo lia `.name` de `undefined` (revisão de 13/09/2026).
+        // Os índices prendem-se à lista da CASA antes de se usarem.
+        const ultimo = Math.max(0, envelopes.length - 1);
+        const de = Math.min(mv.from, ultimo);
+        const para = mv.to <= ultimo && mv.to !== de ? mv.to : (de === 0 ? Math.min(1, ultimo) : 0);
+        const free = freeOf(de);
         const over = mv.amount > free;
+        const origem = envelopes[de] || { name: '', limit: 0 };
+        const destino = envelopes[para] || { name: '', limit: 0 };
         // ⚠ O botão é COMUM, e é a decisão que mais custa a tomar aqui: isto
         // mexe em dinheiro, mas não entre PESSOAS — muda o limite de dois
         // envelopes da mesma casa, e desfaz-se movendo ao contrário. A própria
@@ -699,7 +708,7 @@ export default function Dinheiro({ t, user, onEquip }) {
                 // telemóveis a mover dinheiro no mesmo mês anulavam-se, que é
                 // o INVARIANTE #2 ao contrário e o que ele existe para
                 // impedir.
-                moverEntreEnvelopes(envelopes[mv.from].name, envelopes[mv.to].name, mv.amount);
+                moverEntreEnvelopes(origem.name, destino.name, mv.amount);
                 setSheet(null); setMv(m => ({ ...m, amount: 0 }));
               }} />}>
             <View style={{ gap: S.md }}>
@@ -712,13 +721,13 @@ export default function Dinheiro({ t, user, onEquip }) {
                   tocar no primeiro da grelha («Mercearia») movia dinheiro de
                   «Transportes». */}
               <Label t={t}>Retirar de</Label>
-              <GrelhaEnvelopes t={t} envelopes={envelopes} livre={freeOf} escolhido={mv.from}
-                onEscolher={(i) => setMv(m => ({ ...m, from: i, to: m.to === i ? m.from : m.to }))} />
+              <GrelhaEnvelopes t={t} envelopes={envelopes} livre={freeOf} escolhido={de}
+                onEscolher={(i) => setMv(m => ({ ...m, from: i, to: para === i ? de : para }))} />
             </View>
             <View style={{ gap: S.md }}>
               <Label t={t}>Reforçar</Label>
-              <GrelhaEnvelopes t={t} envelopes={envelopes} livre={freeOf} escolhido={mv.to}
-                onEscolher={(i) => setMv(m => ({ ...m, to: i, from: m.from === i ? m.to : m.from }))} />
+              <GrelhaEnvelopes t={t} envelopes={envelopes} livre={freeOf} escolhido={para}
+                onEscolher={(i) => setMv(m => ({ ...m, to: i, from: de === i ? para : de }))} />
             </View>
             <View style={{ gap: S.md }}>
               <Label t={t}>Valor a mover</Label>
@@ -731,8 +740,8 @@ export default function Dinheiro({ t, user, onEquip }) {
                 </Text>
               </Pressable>
               <Text style={{ fontFamily: FONT.body, fontSize: 14.5, lineHeight: 21, color: over ? t.state.errTexto : t.text2 }}>
-                {over ? `Só há ${EUR(free)} livres em ${envelopes[mv.from].name}.`
-                  : `O limite de ${envelopes[mv.from].name} passa a ${EUR(envelopes[mv.from].limit - mv.amount)} e o de ${envelopes[mv.to].name} a ${EUR(envelopes[mv.to].limit + mv.amount)}. Não sai dinheiro da conta.`}
+                {over ? `Só há ${EUR(free)} livres em ${origem.name}.`
+                  : `O limite de ${origem.name} passa a ${EUR(origem.limit - mv.amount)} e o de ${destino.name} a ${EUR(destino.limit + mv.amount)}. Não sai dinheiro da conta.`}
               </Text>
             </View>
           </Sheet>
