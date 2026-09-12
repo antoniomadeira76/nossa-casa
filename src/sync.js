@@ -49,6 +49,7 @@ import { eEnderecoDeCasa, PORQUE_NAO_SOBE } from './endereco';
 // isso as provas em Node conseguem carregar este ficheiro. Uma importação que
 // arraste o RN parte todas elas — já aconteceu com o `Platform`.
 import { chaveDeDMY, dmyDeChave } from './format';
+import { retratosDe } from './retrato-do-mes';
 import { paraOServidor, paraALoja } from './compras-estado';
 
 export { eEnderecoDeCasa, PORQUE_NAO_SOBE };
@@ -564,6 +565,15 @@ export async function puxarCasa() {
     aceitePor: nomeDoMembro[tr.aceite_por] || null,
   })).filter(tr => tr.dia && tr.de && tr.para);
 
+  // ── O retrato de cada mês ─────────────────────────────────────────────────
+  //
+  // Uma SOMA por mês — despesas por envelope, tarefas confirmadas por criança,
+  // idas às compras, acertos — feita aqui, sobre as linhas cruas, por
+  // `retratosDe`. Nenhum campo novo: um retrato de um mês fechado não muda
+  // quando o seguinte abre, porque as linhas dele ficam onde estão. A criança
+  // não recebe `meses` nem `despesas`, e por isso recebe isto vazio.
+  const retratos = retratosDe(casa, nomeDoMembro);
+
   // ── As regras da casa ─────────────────────────────────────────────────────
   //
   // Viviam só no telefone de quem as mudou: a Rita desligava os pontos e o
@@ -879,6 +889,7 @@ export async function puxarCasa() {
     pending,
     feitas,
     trocas,
+    retratos,
     // O servidor manda: se responder, é esta a casa e são estes os membros.
     // Sem servidor, a app fica com a família de demonstração — e diz-o.
     membros: membrosDoServidor(casa.membros),

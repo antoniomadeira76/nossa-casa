@@ -51,6 +51,7 @@ export const AREAS = [
       'As metas da família, em euros: um objetivo, quanto já está junto, e de onde veio',
       'Os cofres das crianças, com a semanada e os bónus',
       'As contas fixas — a renda, a luz, a internet — com o dia em que vencem; marcar como paga regista a despesa no envelope, e a conta aparece na Agenda no dia e no Início dois dias antes',
+      'O retrato de cada mês — gasto por envelope, tarefas e pontos por criança, compras, acertos — somado das linhas do mês e exportável em PDF; os meses anteriores ficam em Documentação › Nesta casa',
     ] },
 
   { area: 'Tarefas', icon: 'checkSquare',
@@ -151,6 +152,7 @@ export const AREAS = [
 export const REGISTO_APP = [
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
   // ── 1.12.0 ────────────────────────────────────────────────────────────────
+  { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Dinheiro', t: 'O retrato do mês: uma página por mês com o gasto por envelope contra o limite, as tarefas feitas e os pontos por criança, as idas às compras e os acertos entre os adultos — e «Exportar em PDF». Abre-se pela linha «Retrato de Setembro» no Dinheiro, abre-se sozinho ao fechar o mês, e os meses anteriores ficam em Documentação › Nesta casa. Nenhum número é escrito: é a soma das linhas do mês, e um mês fechado não muda quando o seguinte abre' },
   { v: '1.12.0', d: '12/09/2026', k: 'alterado', a: 'Tarefas', t: 'O filtro por membro passou a avatares: «Todos» e a bola de cada pessoa numa linha só, em vez de seis pastilhas com o nome que caíam para uma segunda linha. O escolhido ganha um anel e o nome passa para o título da secção; tocar outra vez volta a «Todos»' },
   { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Tarefas', t: 'A troca de tarefas entre irmãos: na app da criança, «Propor uma troca» escolhe uma tarefa sua e uma do irmão, só para hoje; o irmão vê a proposta em «Trocas» e aceita ou recusa. Aceite, a tarefa passa para quem a troca diz — com «Troca com o Léo · só hoje» na linha — e os pontos são de quem a faz. À meia-noite cada tarefa volta a quem era, sem ninguém desfazer nada' },
   { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Início', t: 'Uma troca de tarefas de hoje entra no «Precisa de Si» dos adultos, a cinzento — informação, não risco —, e a linha leva às Tarefas, onde «Trocas de Hoje» mostra o estado e «Anular a troca» a desfaz' },

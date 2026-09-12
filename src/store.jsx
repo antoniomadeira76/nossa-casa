@@ -18,7 +18,15 @@ import { paraGoogle, enfileirar, naoVaiPassar } from './agenda-google';
 let sync = null;
 const carregarSync = async () => {
   if (sync) return sync;
-  try { sync = await import('./sync'); } catch { sync = null; }
+  try { sync = await import('./sync'); } catch (e) {
+    // ⚠ O mesmo silêncio do `catch` do `lerDoServidor` (classe 39): um `sync`
+    // que não carrega faz a app correr local como se não houvesse servidor, e
+    // sem uma linha na consola é indistinguível de não haver. Diz-se.
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('[carregarSync] o módulo de sincronização não carregou:', e && e.message ? e.message : e);
+    }
+    sync = null;
+  }
   return sync;
 };
 
@@ -276,7 +284,7 @@ const DATA_KEYS = [
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
   'newItems', 'itemGone', 'itemEdits', 'itemOrder', 'feitas', 'listasIds', 'envelopesDaCasa', 'seccoesDaCasa', 'mes',
   'metasDaCasa', 'metaMovs', 'metasProprias', 'objetivosCofre', 'pratos', 'ementa',
-  'contasFixas', 'contasPagas', 'contratos', 'trocas',
+  'contasFixas', 'contasPagas', 'contratos', 'trocas', 'retratos',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'ementaDesligada', 'pointValue', 'payDay', 'splitHalf',
@@ -651,6 +659,9 @@ export const DEMO = () => ({
   // propostaPor, aceiteEm, aceitePor }`): uma linha por troca, do DIA. A
   // atribuição deriva-se no `allTasks` — nada se escreve na tarefa.
   trocas: [],
+  // Os retratos dos meses que o servidor somou (`retratosDe`): o mais recente
+  // primeiro. Vazio sem servidor — aí a loja calcula o do mês corrente.
+  retratos: [],
   schemeByUser: {}, themeByUser: {},
   notif: { digest: true, hour: '20:00', lead: 1 },
   rotate: {},
@@ -970,6 +981,9 @@ export function StoreProvider({ children }) {
         // O que fica de fora é uma proposta deste telemóvel ainda por subir,
         // e essa sobe pela fila e volta na leitura seguinte.
         trocas: casa.trocas || [],
+        // Os retratos dos meses: somas que o servidor fez sobre as linhas
+        // dele. Substituem-se — uma soma não se funde com outra.
+        retratos: casa.retratos || [],
       }));
 
       // ⚠ O acerto de contas entre os adultos, pela mesma razão e com a mesma
@@ -1153,6 +1167,15 @@ export function StoreProvider({ children }) {
       }
       return true;
     } catch (e) {
+      // ⚠ Um erro AQUI não é o servidor em baixo — é código partido a fazer de
+      // conta que é. Em 12/09/2026 uma leitura com as 30 coleções a responder
+      // 200 acabou neste `catch` em silêncio, a app ficou com a família de
+      // demonstração e o ecrã disse ao dono da casa que ele «não faz parte
+      // desta casa». Diz-se na consola o que rebentou; o comportamento para a
+      // app não muda — fica local, como antes.
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('[lerDoServidor] a leitura da casa falhou:', e && e.message ? e.message : e);
+      }
       return false;     // servidor indisponível — a app fica local
     }
   };
@@ -2642,6 +2665,41 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     a[k] = base + guardados + pontosGanhos(k);
     return a;
   }, {});
+
+  // ── O retrato do mês ────────────────────────────────────────────────────
+  //
+  // Uma página por mês: o gasto por envelope contra o limite, as tarefas e os
+  // pontos por criança, as compras, os acertos. Com servidor vem SOMADO das
+  // linhas de cada mês (`retratosDe`, no `puxarCasa`) — um retrato de um mês
+  // fechado não muda quando o seguinte abre. Sem servidor há um só, o do mês
+  // corrente, feito das mesmas somas que o ecrã do Dinheiro já mostra.
+  // (12/09/2026 — a décima das dez funcionalidades.) Só adultos o pedem: é
+  // orçamento, e a app da criança não tem porta para ele.
+  const retratoLocal = () => {
+    const inicio = `${TODAY_KEY.slice(0, 8)}-01`;
+    const idas = (s.shopHistory || []).filter(h => {
+      const d = new Date(h.at || 0);
+      return !Number.isNaN(d.getTime()) && `d${d.toISOString().slice(0, 7)}` === TODAY_KEY.slice(0, 8);
+    });
+    const acertos = s.acertoMovs || [];
+    return {
+      idServidor: null, inicio, fechadoEm: null, aberto: mesAberto,
+      nome: `${s.monthName} de ${TODAY_KEY.slice(1, 5)}`,
+      rendimento: s.rendimento || 0,
+      envelopes: envelopes.map(e => ({ nome: e.name, gasto: e.used, limite: e.limit }))
+        .sort((a, b) => b.gasto - a.gasto || a.nome.localeCompare(b.nome)),
+      gasto: spent, orcamento: budget, despesas: null, meias: s.despesasMeias || 0,
+      criancas: criancas.map(k => ({
+        nome: k,
+        feitas: allTasks().filter(t => t.who === k && s.done[t.id] && !(s.pending || {})[t.id]).length,
+        pontos: kidPts[k] || 0,
+      })),
+      compras: { idas: idas.length, total: idas.reduce((n, h) => n + (h.total || 0), 0) },
+      acertos: { n: acertos.length, total: acertos.reduce((n, a) => n + (a.valor || 0), 0) },
+    };
+  };
+  const retratosDaCasa = () => ((s.retratos || []).length ? s.retratos : [retratoLocal()]);
+  const retratoDoMesAberto = () => retratosDaCasa().find(r => r.aberto) || retratosDaCasa()[0] || null;
 
   // Apagar uma tarefa.
   //
@@ -5572,6 +5630,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring, definirAvatar, trazerFotografia,
     removerTarefa, criarTarefa, editarTarefa, tarefaNoServidor, mudarRegraDaCasa, mudarListaDaCasa,
     trocasDeHoje, trocasDe, tarefasParaTrocar, proporTroca, aceitarTroca, desfazerTroca,
+    retratosDaCasa, retratoDoMesAberto,
     moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope, registarDespesa,
     criarEvento, alterarEventoDaCasa, eventoNoServidor, escoarFilaGoogle,
     criarArtigo, alterarArtigo, reordenarArtigos,

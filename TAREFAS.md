@@ -340,6 +340,35 @@ uma consulta a sério, porque não há onde escrever o nome.
       tocou em «Ação» e não aconteceu nada.
 - [x] Sincronizar as consultas — sobem se o servidor viver na casa. Ver a
       última entrada desta secção.
+- [x] ⚠ **Código partido a fingir-se de servidor em baixo** (12/09/2026, classe 39). A meio
+      do retrato do mês editei o `sync.js` em dois lotes — a chamada `retratosDe(...)` no
+      `puxarCasa` num, o `import` no seguinte — com o servidor de desenvolvimento a servir a
+      árvore ao vivo e o dono da casa a entrar nesse minuto. As trinta leituras deram 200, o
+      `ReferenceError` caiu no `catch` do `lerDoServidor` (que devolve «sem servidor»), a app
+      ficou com a família de demonstração e o ecrã disse-lhe «António não faz parte desta
+      casa». Nada vermelho em lado nenhum. Saídas: o `catch` do `lerDoServidor` e o do
+      `carregarSync` passaram a dizer na consola o que apanharam; o guarda
+      `a-leitura-da-casa-corre` corre o `puxarCasa` E o `lerDoServidor` com a ligação
+      simulada a devolver TODAS as coleções da lista `COLECOES` (exige que a casa de prova
+      as tenha); e o `babel.config.js` ganhou, só em testes, um plugin local que traduz
+      `import()` para `require` — sem ele nenhum guarda conseguia chegar ao `lerDoServidor`.
+      Regra: o `import` vai no MESMO lote que a primeira chamada, porque a árvore está a ser
+      servida; e avisa-se o dono da casa quando uma edição possa partir a app que ele tem
+      aberta.
+- [x] **O retrato do mês** (12/09/2026, a décima das dez funcionalidades; desenho em
+      `design/retrato-do-mes.dc.html`). Nenhum campo novo: `retratosDe` em
+      `src/retrato-do-mes.js` soma, no `puxarCasa`, as `despesas` (não anuladas), as
+      `tarefas_feitas` confirmadas (por criança, com os pontos da tarefa), as `listas_compras`
+      fechadas e os `acertos` do intervalo de cada linha de `meses` — do `mes` até ao `mes` do
+      seguinte, ou ao dia depois do `fechado_em`. Desce como `retratos` (chave `local` no
+      `o-que-sobe`: é uma soma, não dado). Folha `RetratoDoMes` (quatro secções, «Exportar em
+      PDF» comum pelo `guardarPDF`); portas: secção «Retrato do Mês» no Dinheiro (qualquer
+      adulto), o fecho do mês (abre o retrato do que fechou, tirado ANTES do `fecharMes` zerar
+      as somas locais) e «Retratos dos Meses» em Documentação › Nesta casa. Sem servidor,
+      `retratoLocal()` faz o do mês corrente das somas do Dinheiro.
+      - guarda: `o-retrato-do-mes` (10); prova: `provar-retrato.mjs` (7) — a soma é a das
+        linhas do mês, Agosto não muda quando Setembro cresce nem quando Outubro abre, a
+        criança recebe zero retratos.
 - [x] **O filtro por membro das Tarefas passou a avatares** (12/09/2026). Seis pastilhas
       com o nome embrulhavam em duas linhas (355 px dão para quatro): 96 px antes da
       primeira tarefa, a crescer com a família. O dono da casa pediu cinco alternativas

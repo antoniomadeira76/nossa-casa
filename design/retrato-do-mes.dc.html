@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O retrato do mês</title>
+<style>
+  :root { --pagina: #F0F2F5; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --t1: #262626; --t2: #3B3F48; --t3: #656C7C;
+    --ac: #078286; --acfg: #076F73; --chrome: #0A5B60; --errbg: #FFECEC; --errtx: #A8071A; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 80ch; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 20px; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; grid-template-columns: 240px 1fr; gap: 16px; }
+  section h2 { grid-column: 1 / -1; margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  .tel { border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; background: var(--pagina); font-size: 10.5px; }
+  .cab { background: var(--chrome); color: #fff; padding: 8px 10px; font-weight: 600; font-size: 11px; }
+  .cab span { display: block; font-weight: 400; color: rgba(255,255,255,.82); font-size: 9.5px; }
+  .corpo { padding: 8px; display: grid; gap: 6px; }
+  .tit { color: var(--acfg); font-weight: 600; font-size: 10px; border-bottom: 1px solid var(--borda); padding-bottom: 3px; display: flex; justify-content: space-between; }
+  .tit span { color: var(--t3); font-weight: 500; }
+  .linha { background: var(--cartao); border-bottom: 1px solid var(--div); padding: 6px 8px; display: flex; align-items: center; gap: 8px; min-height: 30px; }
+  .linha b { font-weight: 500; } .linha .dir { margin-left: auto; color: var(--t3); }
+  .linha .meta { flex-basis: 100%; color: var(--t3); font-size: 9.5px; }
+  .chip { display: inline-block; font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 999px; background: var(--errbg); color: var(--errtx); }
+  .botao { border: 1.5px solid var(--ac); color: var(--acfg); border-radius: 8px; padding: 6px; text-align: center; font-weight: 600; font-size: 10px; background: #E3F2F2; }
+  .rod { background: var(--chrome); display: flex; } .rod div { flex: 1; text-align: center; color: rgba(255,255,255,.82); font-size: 8px; padding: 6px 0; } .rod .on { color: #fff; font-weight: 600; }
+  dl { margin: 0; display: grid; grid-template-columns: 86px 1fr; gap: 4px 10px; font-size: 12.5px; align-content: start; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  code { background: var(--div); padding: 0 4px; border-radius: 3px; font-size: 11.5px; color: var(--t1); }
+  .nota { grid-column: 1 / -1; font-size: 12px; color: var(--t3); border-top: 1px dashed var(--borda); padding-top: 8px; margin: 0; }
+</style>
+</head>
+<body>
+<h1>O retrato do mês — a folha e as duas portas</h1>
+<p class="sub">A décima das dez funcionalidades (bloco 10 de <code>dez-funcionalidades.dc.html</code>). Uma página por mês, somada das linhas que já existem — despesas, tarefas feitas, idas às compras, acertos — e exportável em PDF. Nenhum campo novo no servidor; um mês fechado não muda quando o seguinte abre. Só adultos: é orçamento.</p>
+
+<div class="grelha">
+
+<section>
+  <h2>1. A folha <small>Dinheiro · Documentação</small></h2>
+  <div class="tel">
+    <div class="cab">Retrato de Setembro de 2026<span>Mês em curso · até hoje</span></div>
+    <div class="corpo">
+      <div class="tit">Dinheiro <span>412,30 € de 570,00 €</span></div>
+      <div class="linha"><b>Mercearia</b><span class="dir">392,30 € de 450,00 €</span></div>
+      <div class="linha"><b>Lazer</b><span class="dir">130,00 € de 120,00 €</span> <span class="chip">acima</span></div>
+      <div class="tit">Tarefas</div>
+      <div class="linha">Léo · 22 tarefas feitas · 41 pontos</div>
+      <div class="linha">Mia · 19 tarefas feitas · 35 pontos</div>
+      <div class="tit">Compras</div>
+      <div class="linha">4 idas às compras · 287,40 €</div>
+      <div class="tit">Contas entre Nós</div>
+      <div class="linha">6 despesas a meias · 1 acerto · 40,00 €</div>
+      <div class="botao">Exportar em PDF · 412,30 € gastos de 570,00 €</div>
+    </div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Quatro secções, sempre as quatro: uma vazia diz que está vazia. As linhas são planas (desenho C); um envelope acima do limite leva a pastilha «acima». O botão é comum, em tinta: exportar um retrato não é uma decisão que não se desfaça.</dd>
+    <dt>Dados</dt><dd>Nenhum campo novo. <code>retratosDe</code> soma as linhas do intervalo de cada linha de <code>meses</code>: do dia em que abriu até ao dia em que o seguinte abriu (ou ao dia depois do fecho). Uma despesa anulada não conta; uma marcação por confirmar não conta.</dd>
+    <dt>Servidor</dt><dd>Nada muda. A criança não recebe <code>meses</code> nem <code>despesas</code> — recebe zero retratos.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>2. As duas portas <small>Dinheiro · Documentação › Nesta casa</small></h2>
+  <div class="tel">
+    <div class="cab">Dinheiro<span>Conta conjunta · Setembro de 2026</span></div>
+    <div class="corpo">
+      <div class="tit">Retrato do Mês</div>
+      <div class="linha"><b>Retrato de Setembro de 2026</b><span class="dir">›</span><span class="meta">412,30 € gastos de 570,00 € · exporta em PDF</span></div>
+      <div class="tit">Administração</div>
+      <div class="linha"><span class="botao" style="flex:1">Abrir Outubro</span><span class="botao" style="flex:1;background:transparent">Fechar Setembro</span></div>
+      <div class="tit" style="margin-top:8px">Documentação · Nesta casa</div>
+      <div class="linha"><b>Setembro de 2026</b><span class="dir">›</span><span class="meta">412,30 € gastos de 570,00 € · em curso</span></div>
+      <div class="linha"><b>Agosto de 2026</b><span class="dir">›</span><span class="meta">1 387,00 € gastos de 1 770,00 € · fechado</span></div>
+    </div>
+    <div class="rod"><div>Início</div><div class="on">Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Dinheiro</dt><dd>Uma secção «Retrato do Mês» com uma linha, para qualquer adulto — ler não é administrar. E ao confirmar «Fechar Setembro», o retrato do mês que fechou abre-se sozinho, já como «mês fechado a hoje».</dd>
+    <dt>Documentação</dt><dd>Por baixo do Histórico da Casa, «Retratos dos Meses»: uma linha por mês, do mais recente para o mais antigo, com o gasto e o estado. Cada uma abre a mesma folha.</dd>
+    <dt>Provas</dt><dd>A soma do retrato é a das linhas do mês (o dia do fecho conta, o da abertura seguinte já não); um mês fechado não muda quando Setembro cresce nem quando Outubro abre; a criança recebe zero retratos.</dd>
+  </dl>
+  <p class="nota">Sem servidor há um retrato só — o do mês corrente, feito das mesmas somas que o Dinheiro já mostra. Ao fechar, é esse que se abre, antes de as somas se zerarem.</p>
+</section>
+
+</div>
+</body>
+</html>
