@@ -292,11 +292,18 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                             <Text style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>
                               {recipe.name}
                             </Text>
-                            {recipe.dosage && (
+                            {/* ⚠ Ternário, e não `&&`. A receita do servidor
+                                chega com `dosage: ''` quando não tem dose
+                                (`puxarSaude`), e `'' && Elemento` é `''` — uma
+                                string vazia como filho deste View. O React
+                                não a desenha; o react-native-web avisava, uma
+                                vez por receita e por render. Guarda:
+                                `__tests__/nenhum-texto-solto-num-view.test.js`. */}
+                            {recipe.dosage ? (
                               <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
                                 Dose: {recipe.dosage} · {recipe.quantity} {recipe.unit}
                               </Text>
-                            )}
+                            ) : null}
                             <Text style={{
                               fontFamily: FONT.ui, fontSize: 11, color: isExpired ? t.state.errTexto : isWarning ? t.state.warnTexto : t.text3,
                               fontWeight: isWarning || isExpired ? '600' : '400',
@@ -329,9 +336,11 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                               fg={STATE.okDeep} bg={STATE.okBg} border={STATE.okBorder}
                               onPress={() => setRecipeDecision(record.id, recipe.id, 'guardada')} />
                           )}
-                          {recipe.decision && (
+                          {/* A mesma razão da dose: `decision: ''` vem do
+                              servidor para a receita por decidir. */}
+                          {recipe.decision ? (
                             <Pill label={recipe.decision} bg={STATE.okBg} fg={t.state.okTexto} border={STATE.ok} />
-                          )}
+                          ) : null}
                         </View>
                       </View>
                     );
