@@ -42,6 +42,7 @@ export const O_QUE_SOBE = {
   rotate: ['local', 'Alternar uma tarefa entre as crianças. Sem campo no servidor — a rotação é semanal e derivável, e ainda não se decidiu se vale uma coluna.'],
   recurringReset: ['local', 'Em que DIA uma tarefa recorrente foi reposta neste dispositivo. O que a casa partilha é a linha de `tarefas_feitas` do dia; isto é o relógio local a saber que a de ontem já não conta para hoje.'],
   pontosDeTarefasApagadas: ['local', 'Pontos ganhos numa tarefa que foi apagada. O histórico verdadeiro são as linhas de `tarefas_feitas`, que ficam.'],
+  trocas: ['linhas', 'A coleção `trocas_tarefas`: uma linha por troca entre irmãos, do DIA — as duas tarefas, quem propôs, quem aceitou. A atribuição do dia deriva-se dela no `allTasks`; nada se escreve na tarefa, e à meia-noite acabou.', 'trocaDeTarefas'],
 
   // ── Agenda ────────────────────────────────────────────────────────────────
   added: ['linhas', 'A coleção `eventos`, com os três níveis de visibilidade impostos pelo servidor (INVARIANTE #3).'],

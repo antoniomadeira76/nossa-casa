@@ -547,6 +547,23 @@ export async function puxarCasa() {
     if (dia === hoje) { if (f.confirmada_em) done[f.tarefa] = true; else pending[f.tarefa] = true; }
   }
 
+  // ── As trocas de tarefas entre irmãos ─────────────────────────────────────
+  //
+  // Uma linha por troca, do dia: as duas tarefas (pelo id do servidor, que é
+  // o id da tarefa na loja), quem propôs e quem aceitou — pelo NOME, como
+  // tudo o que a loja lê. A atribuição do dia deriva-se na loja, e é ela que
+  // fica só com as de hoje (12/09/2026).
+  const trocas = (casa.trocas_tarefas || []).map(tr => ({
+    id: tr.id,
+    idServidor: tr.id,
+    dia: chaveDeISO(tr.dia),
+    de: tr.tarefa_de,
+    para: tr.tarefa_para,
+    propostaPor: nomeDoMembro[tr.proposta_por] || '',
+    aceiteEm: tr.aceite_em || null,
+    aceitePor: nomeDoMembro[tr.aceite_por] || null,
+  })).filter(tr => tr.dia && tr.de && tr.para);
+
   // ── As regras da casa ─────────────────────────────────────────────────────
   //
   // Viviam só no telefone de quem as mudou: a Rita desligava os pontos e o
@@ -861,6 +878,7 @@ export async function puxarCasa() {
     done,
     pending,
     feitas,
+    trocas,
     // O servidor manda: se responder, é esta a casa e são estes os membros.
     // Sem servidor, a app fica com a família de demonstração — e diz-o.
     membros: membrosDoServidor(casa.membros),
@@ -1226,6 +1244,36 @@ export async function confirmarTarefaFeita(idDaLinha, porQuem) {
   return servidor.pb.collection('tarefas_feitas').update(idDaLinha, {
     confirmada_por: porQuem, confirmada_em: new Date().toISOString(),
   });
+}
+
+// ── A troca de tarefas entre irmãos ──────────────────────────────────────────
+//
+// Uma linha por troca, do DIA: as duas tarefas, quem propôs, quem aceitou. A
+// atribuição do dia deriva dela na loja — nada se escreve na tarefa, e à
+// meia-noite acabou. Propor cria pela fila, como o resto da casa; aceitar e
+// apagar são diretos, porque a fila só sabe criar. O servidor é que decide
+// quem pode o quê: só quem tem a `tarefa_de` propõe, só quem tem a
+// `tarefa_para` aceita (e assina), e só um adulto desfaz uma troca aceite.
+// (12/09/2026 — a oitava das dez funcionalidades.)
+export async function trocaDeTarefas({ casa, dia, tarefaDe, tarefaPara, propostaPor }) {
+  if (!tarefaDe || !tarefaPara || !propostaPor) {
+    throw new Error('Uma troca precisa das duas tarefas e de quem a propõe.');
+  }
+  return criarOuEnfileirarCasa('trocas_tarefas', {
+    casa, dia: isoDeChave(dia), tarefa_de: tarefaDe, tarefa_para: tarefaPara, proposta_por: propostaPor,
+  });
+}
+
+export async function aceitarTrocaDeTarefas(idNoServidor, porQuem) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('trocas_tarefas').update(idNoServidor, {
+    aceite_em: new Date().toISOString(), aceite_por: porQuem,
+  });
+}
+
+export async function apagarTrocaDeTarefas(idNoServidor) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('trocas_tarefas').delete(idNoServidor);
 }
 
 // ─── A casa e quem lá vive ───────────────────────────────────────────────────

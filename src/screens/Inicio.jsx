@@ -13,7 +13,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
   const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring,
           garantiasAExpirar, receitasAExpirar, consultasProximas, membros: MEMBERS,
           acerto, acertado, artigo, oNome, aoNome, podeVerEvento,
-          pontosNasTarefas, contasAVencer, contasNaAgenda, contratosARenovar } = st;
+          pontosNasTarefas, contasAVencer, contasNaAgenda, contratosARenovar, trocasDeHoje } = st;
 
   // Era `const hour = 9`, e a app dizia «Bom dia» às onze da noite.
   const hora = agoraNaApp().getHours();
@@ -77,6 +77,13 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
   if (toConfirm.length) needs.push({ icon: 'clock', color: t.text3, line: t.faixa,
     title: plural(toConfirm.length, 'tarefa a confirmar', 'tarefas a confirmar'),
     sub: [...new Set(toConfirm.map(x => x.who))].join(', '), go: () => go('tarefas') });
+  // As trocas de tarefas entre as crianças, de hoje: informação, não risco —
+  // cinzento, ao lado da outra linha cinzenta das tarefas. Leva às Tarefas,
+  // onde um adulto pode anulá-la (12/09/2026).
+  trocasDeHoje().forEach(tr => needs.push({ icon: 'swap', color: t.text3, line: t.faixa,
+    title: `Troca de tarefas · ${tr.quemDe} e ${tr.quemPara}`,
+    sub: `«${tr.tarefaDe}» por «${tr.tarefaPara}» · ${tr.aceiteEm ? 'aceite' : 'por aceitar'}`,
+    go: () => go('tarefas') }));
   if (!acertado) needs.push({ icon: 'wallet', color: t.text3, line: t.faixa,
     title: 'Contas por acertar', sub: `${oNome(acerto.devedor)} deve ${EUR(settleBase)}`, go: () => go('dinheiro') });
   tight.forEach(e => needs.push({ icon: 'warning', color: t.state.errTexto, line: t.state.err,

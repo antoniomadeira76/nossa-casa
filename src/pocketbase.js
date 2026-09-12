@@ -603,6 +603,9 @@ const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
   // Os contratos e as renovações, ao lado dos equipamentos: nome, fornecedor,
   // quando renova, fidelização, quem trata, e o documento na própria linha.
   'contratos',
+  // As trocas de tarefas entre irmãos: valem só para o dia, e só as de hoje se
+  // pedem (ver `OPCOES_POR_COLECAO`).
+  'trocas_tarefas',
   // A ementa da semana: os pratos da casa (com os ingredientes dentro) e o
   // jantar de cada dia.
   'pratos', 'ementa'];
@@ -648,6 +651,15 @@ const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
 // o registo aparecia sempre em branco. Foram as provas do servidor a apanhá-lo.
 const OPCOES_POR_COLECAO = {
   registo: { sort: '-quando', perPage: 100 },
+  // ⚠ Uma troca de tarefas vale SÓ para o dia (12/09/2026): à meia-noite
+  // acabou, e a de ontem não serve para nada a ninguém. Pede-se de ontem em
+  // diante — um dia a mais, e não «só hoje», porque o dia do servidor é UTC e
+  // o da app é o de Lisboa; entre a meia-noite e a uma hora não coincidem. A
+  // loja fica com as de HOJE e mais nenhuma; isto só evita descarregar um ano.
+  trocas_tarefas: { filtro: () => {
+    const ontem = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    return `dia >= "${ontem} 00:00:00"`;
+  } },
 };
 
 export const ler = {
@@ -655,6 +667,10 @@ export const ler = {
     if (!estaLigado()) return semLigacao();
     const res = await Promise.all(COLECOES.map((c) => {
       const opts = OPCOES_POR_COLECAO[c];
+      // Um filtro por data: a lista inteira, mas só do que ainda interessa.
+      if (opts && opts.filtro) {
+        return pb.collection(c).getFullList({ batch: 500, filter: opts.filtro() }).catch(() => []);
+      }
       // Com `perPage` é uma página só — é isso que evita descarregar tudo.
       if (opts) {
         return pb.collection(c).getList(1, opts.perPage, { sort: opts.sort })

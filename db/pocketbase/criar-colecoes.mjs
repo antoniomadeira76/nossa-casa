@@ -81,6 +81,8 @@ const NOSSAS = [
   'contas_fixas',
   // Os contratos apontam a quem trata deles (`responsavel`): antes dos `membros`.
   'contratos',
+  // As trocas apontam a DUAS tarefas e a duas pessoas: antes das `tarefas`.
+  'trocas_tarefas',
   'envelopes', 'tarefas_feitas', 'tarefas', 'membros', 'casas'];
 
 // ── Uma casa habitada não se apaga ───────────────────────────────────────────
@@ -1268,6 +1270,54 @@ await criar({
   createRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
   updateRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
   deleteRule: `${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")`,
+});
+
+// ── A troca de tarefas entre irmãos ──────────────────────────────────────────
+//
+// «O lixo pelas plantas, só hoje.» O Léo propõe uma tarefa sua por uma da
+// Mia; ela aceita ou recusa; um adulto anula. A atribuição do dia é DERIVADA
+// da troca aceite — nada se escreve na tarefa, e à meia-noite acabou: amanhã
+// não há nada para desfazer. É uma linha à parte, como a rotação.
+// (12/09/2026 — a oitava das dez funcionalidades.)
+//
+// Quem cria é quem tem a `tarefa_de`, e é criança para criança: uma criança
+// não troca com um adulto, e um adulto não propõe por ela. A linha nasce POR
+// ACEITAR — `aceite_em` vazio à nascença — e só quem tem a `tarefa_para` a
+// aceita, assinando (`@request.body.aceite_por = @request.auth.id`); a
+// alteração não pode tocar em mais nada (`:isset = false`). Recusar é apagar
+// por aceitar; um adulto apaga sempre. As duas tarefas e as duas pessoas
+// ancoradas à casa — quatro relações, quatro ataques no guarda.
+const TROCA_DA_CASA = 'tarefa_de.casa = @request.auth.casa && tarefa_para.casa = @request.auth.casa';
+await criar({
+  name: 'trocas_tarefas', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    data('dia', { required: true }),
+    rel('tarefa_de', ids.tarefas, { required: true, cascadeDelete: true }),
+    rel('tarefa_para', ids.tarefas, { required: true, cascadeDelete: true }),
+    rel('proposta_por', ids.membros, { required: true }),
+    data('aceite_em'),
+    rel('aceite_por', ids.membros),
+  ],
+  // Uma tarefa entra numa troca por dia — de um lado ou do outro.
+  indexes: [
+    'CREATE UNIQUE INDEX idx_troca_de_por_dia ON trocas_tarefas (tarefa_de, dia)',
+    'CREATE UNIQUE INDEX idx_troca_para_por_dia ON trocas_tarefas (tarefa_para, dia)',
+  ],
+  // Toda a casa lê: a irmã tem de ver a proposta, e os adultos a troca.
+  listRule: DA_CASA, viewRule: DA_CASA,
+  createRule: `${DA_CASA} && ${TROCA_DA_CASA}`
+    + ' && proposta_por = @request.auth.id && tarefa_de.atribuido_a = @request.auth.id'
+    + ' && @request.auth.papel = "crianca" && tarefa_para.atribuido_a.papel = "crianca"'
+    + ' && tarefa_para.atribuido_a != @request.auth.id'
+    + ' && aceite_em = "" && (aceite_por = "" || aceite_por.casa = @request.auth.casa)',
+  updateRule: `${DA_CASA} && ${TROCA_DA_CASA} && proposta_por.casa = @request.auth.casa`
+    + ' && tarefa_para.atribuido_a = @request.auth.id && aceite_em = ""'
+    + ' && @request.body.aceite_por = @request.auth.id'
+    + ' && @request.body.tarefa_de:isset = false && @request.body.tarefa_para:isset = false'
+    + ' && @request.body.dia:isset = false && @request.body.proposta_por:isset = false',
+  deleteRule: `${DA_CASA} && ${TROCA_DA_CASA}`
+    + ` && (${ADULTO} || aceite_em = "" && (proposta_por = @request.auth.id || tarefa_para.atribuido_a = @request.auth.id))`,
 });
 
 // ── A agenda aprende a saúde ─────────────────────────────────────────────────

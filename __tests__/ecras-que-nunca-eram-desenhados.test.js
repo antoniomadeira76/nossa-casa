@@ -102,6 +102,8 @@ const ECRAS = [
   // Os contratos e as renovações (12/09/2026): a folha de criar, os campos e a ficha.
   // A ficha de emergência da criança (12/09/2026).
   ['Ficha de Emergência', '../src/sheets/FichaEmergencia', { member: 'Léo' }],
+  // A troca de tarefas entre irmãos (12/09/2026): a folha de propor.
+  ['Propor Troca',        '../src/sheets/ProporTroca', { kid: 'Léo' }],
   // A medicação a partir da receita (12/09/2026): a folha das tomas.
   ['Tomas da Receita',   '../src/sheets/TomasDaReceita', { record: { id: 'h2', member: 'Léo', day: 'd2026-08-08' }, recipe: { id: 'rx-1', name: 'Ferro 30 mg', frequency: 1, durationDays: 14, boxSize: 20 } }],
   ['Novo Contrato',      '../src/sheets/NovoContrato', {}],

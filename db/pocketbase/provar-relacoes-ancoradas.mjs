@@ -255,6 +255,12 @@ const ATAQUES = [
   ['tomas_saude', 'por', { quando: '2026-09-20 08:00:00.000Z', receita: () => deles.receita.id, por: () => rita.id }],
   // As alergias (12/09/2026): a vizinha tenta escrever uma alergia ao nosso Léo.
   ['alergias_saude', 'membro', { nome: 'Amendoim', gravidade: 'grave', membro: () => leo.id }],
+  // A troca de tarefas entre irmãos (12/09/2026): QUATRO relações para dentro
+  // da casa — as duas tarefas e as duas pessoas —, um ataque por cada.
+  ['trocas_tarefas', 'tarefa_de', { dia: '2026-09-20', proposta_por: '@eu', tarefa_de: () => nosso.tarefa.id, tarefa_para: () => deles.tarefa.id }],
+  ['trocas_tarefas', 'tarefa_para', { dia: '2026-09-20', proposta_por: '@eu', tarefa_de: () => deles.tarefa.id, tarefa_para: () => nosso.tarefa.id }],
+  ['trocas_tarefas', 'proposta_por', { dia: '2026-09-20', tarefa_de: () => deles.tarefa.id, tarefa_para: () => deles.tarefa.id, proposta_por: () => leo.id }],
+  ['trocas_tarefas', 'aceite_por', { dia: '2026-09-20', proposta_por: '@eu', tarefa_de: () => deles.tarefa.id, tarefa_para: () => deles.tarefa.id, aceite_por: () => rita.id }],
   // ⚠ E a CONSULTA ao nosso Léo — o ataque que nunca tinha sido escrito, porque
   // o mapa de nomes saltava as relações para `membros`. Passava.
   ['episodios_saude', 'membro', { especialidade: 'Pediatria', dia: '2026-09-20', membro: () => leo.id }],

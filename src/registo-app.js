@@ -59,6 +59,7 @@ export const AREAS = [
       'Tarefas com responsável, prazo, recorrência e pontos',
       'A urgência manda na ordem; dentro de cada grupo, arrastar muda o lugar',
       'Uma criança marca a tarefa como feita e um adulto confirma — os pontos só contam depois disso',
+      'Os irmãos trocam tarefas entre si, só para o dia: um propõe, o outro aceita ou recusa, um adulto pode anular',
       'Os pontos viram semanada no Dinheiro, ao valor que a casa definir, e podem ser desligados',
     ] },
 
@@ -150,6 +151,8 @@ export const AREAS = [
 export const REGISTO_APP = [
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
   // ── 1.12.0 ────────────────────────────────────────────────────────────────
+  { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Tarefas', t: 'A troca de tarefas entre irmãos: na app da criança, «Propor uma troca» escolhe uma tarefa sua e uma do irmão, só para hoje; o irmão vê a proposta em «Trocas» e aceita ou recusa. Aceite, a tarefa passa para quem a troca diz — com «Troca com o Léo · só hoje» na linha — e os pontos são de quem a faz. À meia-noite cada tarefa volta a quem era, sem ninguém desfazer nada' },
+  { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Início', t: 'Uma troca de tarefas de hoje entra no «Precisa de Si» dos adultos, a cinzento — informação, não risco —, e a linha leva às Tarefas, onde «Trocas de Hoje» mostra o estado e «Anular a troca» a desfaz' },
   { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Saúde', t: 'A ficha de emergência da criança: alergias com gravidade e nota, a medicação em curso (das receitas com plano), o médico das consultas e os contactos dos adultos — e «Exportar em PDF para a escola», uma página, pelo mesmo caminho da ficha de saúde. Só as alergias são dado novo; a criança não vê a sua ficha, e o PDF sai do telemóvel de um adulto' },
   { v: '1.12.0', d: '12/09/2026', k: 'corrigido', a: 'A App', t: 'Uma adulta de outra casa conseguia escrever uma consulta, um movimento de cofre ou um acerto de contas a apontar para pessoas desta casa — sem os ver, mas a escrever. O guarda das relações não via as relações para os membros; passou a ver, e as quatro coleções ficaram presas à casa da pessoa' },
   { v: '1.12.0', d: '12/09/2026', k: 'corrigido', a: 'Saúde', t: 'A faixa de cor de uma consulta aberta deixou de crescer com o acordeão: media a primeira linha e passou a acompanhar receitas, notas e anexos — uma régua azul de 700 px pela página abaixo. Fica nos 52 px do título' },

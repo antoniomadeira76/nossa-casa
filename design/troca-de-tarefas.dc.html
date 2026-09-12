@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troca de tarefas entre irmãos</title>
+<style>
+  :root { --pagina: #F0F2F5; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --t1: #262626; --t2: #3B3F48; --t3: #656C7C;
+    --ac: #078286; --acfg: #076F73; --chrome: #0A5B60; --ok: #1F9D55; --okbg: #E6F6EC; --oktx: #146B3A; --warnbg: #FEFFD0; --warntx: #7A5110; --infobg: #E8F4FF; --infotx: #0B4F8A; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 78ch; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 20px; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; grid-template-columns: 220px 1fr; gap: 16px; }
+  section h2 { grid-column: 1 / -1; margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  .tel { border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; background: var(--pagina); font-size: 10.5px; }
+  .cab { background: var(--chrome); color: #fff; padding: 8px 10px; font-weight: 600; font-size: 11px; }
+  .cab span { display: block; font-weight: 400; color: rgba(255,255,255,.82); font-size: 9.5px; }
+  .corpo { padding: 8px; display: grid; gap: 6px; }
+  .tit { color: var(--acfg); font-weight: 600; font-size: 10px; border-bottom: 1px solid var(--borda); padding-bottom: 3px; display: flex; justify-content: space-between; }
+  .linha { background: var(--cartao); border-bottom: 1px solid var(--div); padding: 6px 8px; display: flex; align-items: center; gap: 8px; min-height: 30px; flex-wrap: wrap; }
+  .linha b { font-weight: 500; }
+  .linha .dir { margin-left: auto; color: var(--t3); }
+  .linha.cinza { color: var(--t3); }
+  .linha .meta { flex-basis: 100%; color: var(--t3); font-size: 9.5px; }
+  .chip { display: inline-block; font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 999px; }
+  .ok { background: var(--okbg); color: var(--oktx); } .warn { background: var(--warnbg); color: var(--warntx); } .info { background: var(--infobg); color: var(--infotx); }
+  .botao { border: 1.5px solid var(--ac); color: var(--acfg); border-radius: 8px; padding: 6px; text-align: center; font-weight: 600; font-size: 10px; }
+  .botao.tinta { background: #E3F2F2; border-color: #8FC9CB; }
+  .par { display: flex; gap: 6px; } .par .botao { flex: 1; }
+  .escolha { display: flex; gap: 4px; flex-wrap: wrap; } .escolha div { border: 1px solid var(--borda); border-radius: 6px; padding: 3px 7px; font-size: 9.5px; color: var(--t2); } .escolha .on { background: var(--ac); color: #fff; border-color: var(--ac); }
+  .rod { background: var(--chrome); display: flex; } .rod div { flex: 1; text-align: center; color: rgba(255,255,255,.82); font-size: 8px; padding: 6px 0; } .rod .on { color: #fff; font-weight: 600; }
+  dl { margin: 0; display: grid; grid-template-columns: 86px 1fr; gap: 4px 10px; font-size: 12.5px; align-content: start; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  code { background: var(--div); padding: 0 4px; border-radius: 3px; font-size: 11.5px; color: var(--t1); }
+  .nota { grid-column: 1 / -1; font-size: 12px; color: var(--t3); border-top: 1px dashed var(--borda); padding-top: 8px; margin: 0; }
+</style>
+</head>
+<body>
+<h1>A troca de tarefas entre irmãos — os três ecrãs</h1>
+<p class="sub">A oitava das dez funcionalidades (bloco 8 de <code>dez-funcionalidades.dc.html</code>). O Léo propõe uma tarefa sua por uma da Mia; ela aceita ou recusa; os adultos veem a troca no Início e podem anulá-la. A troca vale só para hoje: à meia-noite cada tarefa volta a quem era. A atribuição do dia é DERIVADA da troca aceite — nada se escreve na tarefa. Medidas do desenho C: linhas planas de 52 px, botões compactos de 44.</p>
+
+<div class="grelha">
+
+<section>
+  <h2>1. O Léo propõe <small>modo criança · Tarefas</small></h2>
+  <div class="tel">
+    <div class="cab">Olá, Léo<span>5 pontos por pagar · 1,20 € no cofre</span></div>
+    <div class="corpo">
+      <div class="tit">As Minhas Tarefas</div>
+      <div class="linha">Pôr o lixo na rua<span class="dir">3 pt</span></div>
+      <div class="linha">Arrumar a mochila da escola<span class="dir">2 pt</span></div>
+      <div class="botao">Propor uma troca</div>
+      <div class="tit" style="margin-top:6px">Folha · Propor uma troca</div>
+      <div class="linha cinza">A minha tarefa</div>
+      <div class="escolha"><div class="on">Pôr o lixo na rua</div><div>Arrumar a mochila</div></div>
+      <div class="linha cinza">Pela tarefa da Mia</div>
+      <div class="escolha"><div class="on">Regar as plantas</div></div>
+      <div class="botao tinta">Propor à Mia</div>
+    </div>
+    <div class="rod"><div class="on">Tarefas</div><div>Compras</div><div>O Meu Cofre</div></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Um botão por baixo da lista, «Propor uma troca», só quando há um irmão com tarefas por fazer. A folha escolhe a tarefa dele e a do irmão (as feitas e as «a confirmar» não entram). Uma linha, um destino: a linha da tarefa continua a marcar; a troca tem o seu botão.</dd>
+    <dt>Depois</dt><dd>A secção «Trocas» aparece por cima da lista com «Propôs à Mia: «o lixo» pelas «plantas» · à espera» e «Retirar a proposta».</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>2. A Mia aceita ou recusa <small>modo criança · Tarefas</small></h2>
+  <div class="tel">
+    <div class="cab">Olá, Mia<span>2 pontos por pagar · 0,80 € no cofre</span></div>
+    <div class="corpo">
+      <div class="tit">Trocas</div>
+      <div class="linha"><b>Léo propõe:</b> «Pôr o lixo na rua» pela sua «Regar as plantas»<span class="dir"><span class="chip info">a aceitar</span></span></div>
+      <div class="par"><div class="botao tinta">Aceitar a troca</div><div class="botao">Recusar</div></div>
+      <div class="tit" style="margin-top:6px">As Minhas Tarefas · depois de aceitar</div>
+      <div class="linha">Pôr o lixo na rua<span class="dir">3 pt</span><span class="meta">Troca com o Léo · só hoje</span></div>
+      <div class="linha">Levantar a mesa do jantar<span class="dir">2 pt</span></div>
+    </div>
+    <div class="rod"><div class="on">Tarefas</div><div>Compras</div><div>O Meu Cofre</div></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>A secção «Trocas» só existe quando há trocas de hoje que lhe digam respeito. Aceite, a linha passa a «Trocou com o Léo … · aceite», sem botões — desfazer é dos adultos. A tarefa trocada entra na lista dela com a segunda linha «Troca com o Léo · só hoje», e os pontos dela são os de quem a faz.</dd>
+    <dt>Servidor</dt><dd>Só quem tem a <code>tarefa_para</code> aceita, e assina (<code>aceite_por = @request.auth.id</code>). Recusar é apagar a linha por aceitar.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>3. Os adultos veem, e anulam <small>Início · Tarefas</small></h2>
+  <div class="tel">
+    <div class="cab">Casa Bengui<span>Rita · Boa tarde</span></div>
+    <div class="corpo">
+      <div class="tit">Precisa de Si</div>
+      <div class="linha"><b>Troca de tarefas · Léo e Mia</b><span class="meta">«Pôr o lixo na rua» por «Regar as plantas» · aceite</span></div>
+      <div class="tit" style="margin-top:6px">Tarefas · Trocas de Hoje</div>
+      <div class="linha">Léo e Mia: «Pôr o lixo na rua» por «Regar as plantas»<span class="dir"><span class="chip ok">aceite</span></span></div>
+      <div class="botao">Anular a troca</div>
+      <div class="tit" style="margin-top:6px">Rotinas e Tarefas</div>
+      <div class="linha">1 · Pôr o lixo na rua<span class="dir">Mia · hoje</span></div>
+    </div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Uma linha cinzenta no «Precisa de Si» (nada em risco: é informação) que leva às Tarefas. Lá, a secção «Trocas de Hoje» com a pastilha do estado e «Anular a troca». A lista das tarefas já mostra o avatar de quem a faz hoje.</dd>
+    <dt>Dados</dt><dd><code>trocas_tarefas</code>: casa, dia, tarefa_de, tarefa_para, proposta_por, aceite_em, aceite_por. Índices únicos (tarefa_de, dia) e (tarefa_para, dia): uma tarefa entra numa troca por dia. Nos DOIS sítios.</dd>
+    <dt>Servidor</dt><dd>Cria quem tem a <code>tarefa_de</code> e é criança-para-criança; as duas tarefas e as duas pessoas ancoradas à casa; a linha nasce por aceitar. Apaga quem propôs ou quem recebeu enquanto estiver por aceitar; um adulto sempre.</dd>
+    <dt>Provas</dt><dd>O Léo não aceita a sua; a Mia não propõe com a tarefa dele; ninguém assina por outro; a mesma tarefa não entra em duas trocas no dia; a de ontem não desce; a vizinha não escreve para cá (quatro ataques no guarda das relações).</dd>
+  </dl>
+  <p class="nota">Sem campos novos nas tarefas: a troca é uma linha à parte e a atribuição do dia calcula-se a partir dela, como a rotação. Amanhã não há nada para desfazer.</p>
+</section>
+
+</div>
+</body>
+</html>

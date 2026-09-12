@@ -241,6 +241,41 @@ const COLECOES = [
       deleteRule: 'receita.episodio.casa = @request.auth.casa && @request.auth.papel != "crianca" && (receita.episodio.membro = @request.auth.id || receita.episodio.membro.papel = "crianca") && por = @request.auth.id',
     },
   },
+  // A troca de tarefas entre irmãos (12/09/2026): uma linha por troca, do dia,
+  // com as duas tarefas, quem propôs e quem aceitou. A mesma definição do
+  // `criar-colecoes.mjs`, letra a letra.
+  {
+    nome: 'trocas_tarefas',
+    campos: [
+      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'dia', type: 'date', required: true },
+      { name: 'tarefa_de', type: 'relation', alvo: 'tarefas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'tarefa_para', type: 'relation', alvo: 'tarefas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'proposta_por', type: 'relation', alvo: 'membros', maxSelect: 1, required: true, cascadeDelete: false },
+      { name: 'aceite_em', type: 'date' },
+      { name: 'aceite_por', type: 'relation', alvo: 'membros', maxSelect: 1, cascadeDelete: false },
+    ],
+    indexes: [
+      'CREATE UNIQUE INDEX idx_troca_de_por_dia ON trocas_tarefas (tarefa_de, dia)',
+      'CREATE UNIQUE INDEX idx_troca_para_por_dia ON trocas_tarefas (tarefa_para, dia)',
+    ],
+    regras: {
+      listRule: 'casa = @request.auth.casa',
+      viewRule: 'casa = @request.auth.casa',
+      createRule: 'casa = @request.auth.casa && tarefa_de.casa = @request.auth.casa && tarefa_para.casa = @request.auth.casa'
+        + ' && proposta_por = @request.auth.id && tarefa_de.atribuido_a = @request.auth.id'
+        + ' && @request.auth.papel = "crianca" && tarefa_para.atribuido_a.papel = "crianca"'
+        + ' && tarefa_para.atribuido_a != @request.auth.id'
+        + ' && aceite_em = "" && (aceite_por = "" || aceite_por.casa = @request.auth.casa)',
+      updateRule: 'casa = @request.auth.casa && tarefa_de.casa = @request.auth.casa && tarefa_para.casa = @request.auth.casa && proposta_por.casa = @request.auth.casa'
+        + ' && tarefa_para.atribuido_a = @request.auth.id && aceite_em = ""'
+        + ' && @request.body.aceite_por = @request.auth.id'
+        + ' && @request.body.tarefa_de:isset = false && @request.body.tarefa_para:isset = false'
+        + ' && @request.body.dia:isset = false && @request.body.proposta_por:isset = false',
+      deleteRule: 'casa = @request.auth.casa && tarefa_de.casa = @request.auth.casa && tarefa_para.casa = @request.auth.casa'
+        + ' && (@request.auth.papel != "crianca" || aceite_em = "" && (proposta_por = @request.auth.id || tarefa_para.atribuido_a = @request.auth.id))',
+    },
+  },
 ];
 
 // ⚠ O que uma coleção NÃO pode ter. `[coleção, campo, porquê]`.
