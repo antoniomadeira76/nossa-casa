@@ -120,7 +120,9 @@ export default function NovaTarefa({ t, user, onClose }) {
               {form.dueKey ? '✓ Com prazo' : 'Sem prazo'}
             </Text>
           </Pressable>
-          {form.dueKey && (
+          {/* Ternário, e não `&&`: um campo de texto que venha vazio fica
+              como filho string do View (ver a dose da receita, na Saúde). */}
+          {form.dueKey ? (
             <TextInput accessibilityLabel="Hora do prazo"
               value={form.dueTime}
               onChangeText={(v) => setForm(f => ({ ...f, dueTime: v }))}
@@ -133,7 +135,7 @@ export default function NovaTarefa({ t, user, onClose }) {
                 borderColor: t.border, backgroundColor: t.card, textAlign: 'center',
               }}
             />
-          )}
+          ) : null}
         </View>
       </View>
 
