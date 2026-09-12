@@ -93,14 +93,27 @@ export const SectionTitle = ({ t, children, right }) => (
 // há) por dentro da linha, à esquerda. `tinta` pinta a linha inteira — o
 // verde de uma tarefa feita, por exemplo. Substitui o «um cartão por item»,
 // que pagava a moldura de um cartão inteiro por cada linha.
-export const Linha = ({ t, children, faixa, tinta, last, style }) => (
+// ⚠ `faixaCurta` é a faixa que NÃO cresce com o conteúdo: mede os 52 px da
+// primeira linha e para aí. Nasceu para a consulta aberta da Saúde (12/09/2026):
+// com o acordeão aberto, a `faixa` acompanhava receitas, notas, ação e anexos
+// — cerca de 700 px de linha azul contínua, que se lia como uma régua da página
+// e não como a marca de uma consulta. O dono da casa escolheu a opção A de
+// `design/faixa-da-consulta.dc.html`. Fechada, as duas são iguais.
+export const Linha = ({ t, children, faixa, faixaCurta, tinta, last, style }) => (
   <View style={[{
     minHeight: 52, justifyContent: 'center',
     paddingVertical: S.sm, paddingHorizontal: S.xs,
     borderBottomWidth: last ? 0 : 1, borderBottomColor: t.divider,
     ...(faixa ? { borderLeftWidth: 3, borderLeftColor: faixa, paddingLeft: S.md + S.xs } : {}),
+    ...(faixaCurta ? { paddingLeft: S.md + S.xs } : {}),
     ...(tinta ? { backgroundColor: tinta } : {}),
-  }, style]}>{children}</View>
+  }, style]}>
+    {faixaCurta ? (
+      <View pointerEvents="none" testID="faixa-curta"
+        style={{ position: 'absolute', left: 0, top: 0, width: 3, height: 52, backgroundColor: faixaCurta }} />
+    ) : null}
+    {children}
+  </View>
 );
 
 export const Label = ({ t, children }) => (
