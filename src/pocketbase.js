@@ -676,8 +676,13 @@ export const ler = {
   async saude(membroId) {
     if (!estaLigado()) return semLigacao();
     const filtro = pb.filter('membro = {:m}', { m: membroId });
-    const episodios = await pb.collection('episodios_saude').getFullList({ filter: filtro, sort: '-dia' });
-    const vazio = { episodios: [], anexos: [], notas: [], receitas: [], decisoes: [], tomas: [] };
+    // As alergias são do MEMBRO, não de uma consulta: leem-se ao lado dos
+    // episódios, e uma ficha sem consultas pode ter alergias (12/09/2026).
+    const [episodios, alergias] = await Promise.all([
+      pb.collection('episodios_saude').getFullList({ filter: filtro, sort: '-dia' }),
+      pb.collection('alergias_saude').getFullList({ filter: filtro }).catch(() => []),
+    ]);
+    const vazio = { episodios: [], anexos: [], notas: [], receitas: [], decisoes: [], tomas: [], alergias };
     if (!episodios.length) return vazio;
     const ids = episodios.map(e => `episodio = "${e.id}"`).join(' || ');
     // As tomas apontam à RECEITA, e a receita ao episódio: o filtro atravessa
@@ -702,7 +707,7 @@ export const ler = {
       // E as tomas de cada receita (12/09/2026) — pela mesma porta.
       pb.collection('tomas_saude').getFullList({ filter: pelaReceita }).catch(() => []),
     ]);
-    return { episodios, anexos, notas, receitas, decisoes, tomas };
+    return { episodios, anexos, notas, receitas, decisoes, tomas, alergias };
   },
 
   // Ficheiros: o URL é assinado pelo servidor, não construído aqui.

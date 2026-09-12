@@ -998,8 +998,11 @@ describe('Camada de ligação ao servidor — PocketBase', () => {
     // Sem a leitura da criança, quem pode ver é exactamente quem pode
     // escrever — uma regra a menos para manter em dois sítios.
     const i = colecoes.indexOf("name: 'episodios_saude'");
-    const bloco = colecoes.slice(i, i + 1400);
-    const condicao = '${DA_CASA} && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")';
+    // A janela cresceu com o comentário que explica o `membro.casa` (12/09/2026).
+    const bloco = colecoes.slice(i, i + 2600);
+    // ⚠ Com `membro.casa = @request.auth.casa` desde 12/09/2026: sem ele, uma
+    // adulta de outra casa criava uma consulta a uma criança desta.
+    const condicao = '${DA_CASA} && membro.casa = @request.auth.casa && (membro = @request.auth.id && ${ADULTO} || ${ADULTO} && membro.papel = "crianca")';
     for (const regra of ['createRule', 'updateRule', 'deleteRule']) {
       expect(bloco).toContain(`${regra}: \`${condicao}\``);
     }

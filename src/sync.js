@@ -1707,7 +1707,9 @@ export const saudeSincroniza = () => ligado() && eEnderecoDeCasa(servidor.endere
 // `anexos`, que não tem «saude» no nome.
 // As `tomas_saude` entraram em 12/09/2026, por decisão do dono da casa: «as
 // tomas sobem pelo travão de casa» — o mesmo das consultas.
-const SAUDE = ['episodios_saude', 'anexos', 'notas_saude', 'receitas_saude', 'decisoes_saude', 'tomas_saude'];
+const SAUDE = ['episodios_saude', 'anexos', 'notas_saude', 'receitas_saude', 'decisoes_saude', 'tomas_saude',
+  // E as alergias da ficha de emergência (12/09/2026), pelo mesmo travão.
+  'alergias_saude'];
 
 export function recusaSaude(colecao) {
   if (SAUDE.includes(colecao)) {
@@ -1877,7 +1879,7 @@ export async function apagarEpisodioDeSaude(idNoServidor) {
 // escrevemos nada, e portanto não há nada para ler. É a mesma condição do
 // `recusaSaude`, do lado da leitura.
 export async function puxarSaude(idsDosMembros) {
-  const vazio = { episodios: [], anexos: [], notas: [], receitas: [], decisoes: [], tomas: [] };
+  const vazio = { episodios: [], anexos: [], notas: [], receitas: [], decisoes: [], tomas: [], alergias: [] };
   if (!ligado() || !saudeSincroniza()) return vazio;
 
   const episodios = [];
@@ -1886,6 +1888,7 @@ export async function puxarSaude(idsDosMembros) {
   const receitas = [];
   const decisoes = [];
   const tomas = [];
+  const alergias = [];
   // Quem escreveu uma nota vem como id; a app mostra o NOME.
   const nomeDoMembro = Object.fromEntries(
     Object.entries(idsDosMembros || {}).map(([nome, id]) => [id, nome]));
@@ -1895,6 +1898,16 @@ export async function puxarSaude(idsDosMembros) {
     // servidor recuse não pode apagar as que ele deixou passar.
     const ficha = await servidor.ler.saude(id).catch(() => null);
     if (!ficha) continue;
+    // As alergias são do membro, pelo NOME dele — é como a loja o trata.
+    for (const a of ficha.alergias || []) {
+      alergias.push({
+        idServidor: a.id,
+        member: nome,
+        nome: a.nome || '',
+        gravidade: a.gravidade || 'moderada',
+        nota: a.nota || '',
+      });
+    }
     for (const e of ficha.episodios || []) {
       episodios.push({
         idServidor: e.id,
@@ -2002,7 +2015,28 @@ export async function puxarSaude(idsDosMembros) {
       });
     }
   }
-  return { episodios, anexos, notas, receitas, decisoes, tomas };
+  return { episodios, anexos, notas, receitas, decisoes, tomas, alergias };
+}
+
+// ── As alergias da ficha de emergência ───────────────────────────────────────
+//
+// Do membro, e não de uma consulta. Pelo travão de casa, como tudo na saúde
+// (o `criarOuEnfileirar` chama o `recusaSaude`). ⚠ Os nomes são os da
+// COLEÇÃO: `gravidade`, `nota`.
+export async function alergiaDeSaude({ casa, membro, nome, gravidade, nota }) {
+  if (!membro) throw new Error('Uma alergia sem pessoa não se grava.');
+  return criarOuEnfileirar('alergias_saude', {
+    casa, membro,
+    nome: String(nome || '').trim().slice(0, 60),
+    gravidade: ['leve', 'moderada', 'grave'].includes(gravidade) ? gravidade : 'moderada',
+    nota: String(nota || '').trim().slice(0, 300),
+  });
+}
+
+export async function apagarAlergiaDeSaude(idNoServidor) {
+  recusaSaude('alergias_saude');
+  if (!idNoServidor) return { pendente: true };
+  return servidor.pb.collection('alergias_saude').delete(idNoServidor);
 }
 
 // ⚠ Os nomes são os da COLEÇÃO: `frequencia`, `duracao_dias`, `caixa`.

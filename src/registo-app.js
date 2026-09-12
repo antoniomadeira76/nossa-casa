@@ -90,6 +90,7 @@ export const AREAS = [
       'A medicação a partir da receita: tomas por dia, dias e caixa; as tomas põem-se na Agenda só para os adultos, e cada uma marca-se com quem e quando',
       'Documentos e exames anexam-se à consulta que os originou',
       'A ficha de um adulto é dele: nem o outro adulto a vê. Uma criança não vê a sua própria ficha',
+      'A ficha de emergência da criança — alergias, medicação em curso, médico, contactos — exporta-se em PDF para a escola',
       'Só sincroniza para um servidor dentro de casa — são dados de saúde de menores',
     ] },
 
@@ -149,6 +150,8 @@ export const AREAS = [
 export const REGISTO_APP = [
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
   // ── 1.12.0 ────────────────────────────────────────────────────────────────
+  { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Saúde', t: 'A ficha de emergência da criança: alergias com gravidade e nota, a medicação em curso (das receitas com plano), o médico das consultas e os contactos dos adultos — e «Exportar em PDF para a escola», uma página, pelo mesmo caminho da ficha de saúde. Só as alergias são dado novo; a criança não vê a sua ficha, e o PDF sai do telemóvel de um adulto' },
+  { v: '1.12.0', d: '12/09/2026', k: 'corrigido', a: 'A App', t: 'Uma adulta de outra casa conseguia escrever uma consulta, um movimento de cofre ou um acerto de contas a apontar para pessoas desta casa — sem os ver, mas a escrever. O guarda das relações não via as relações para os membros; passou a ver, e as quatro coleções ficaram presas à casa da pessoa' },
   { v: '1.12.0', d: '12/09/2026', k: 'corrigido', a: 'Saúde', t: 'A faixa de cor de uma consulta aberta deixou de crescer com o acordeão: media a primeira linha e passou a acompanhar receitas, notas e anexos — uma régua azul de 700 px pela página abaixo. Fica nos 52 px do título' },
   { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Saúde', t: 'A medicação a partir da receita: a receita ganha o plano de tomas — quantas por dia, durante quantos dias, e quantas unidades traz a caixa — e avisa quando a caixa acaba antes da receita. «Pôr as tomas na Agenda» cria um dia por toma, só para os adultos. Cada toma marca-se com um toque e fica com quem e quando; só quem marcou desmarca. A criança não vê nada disto, e as tomas só sobem para um servidor que viva na casa, como as consultas' },
   { v: '1.12.0', d: '12/09/2026', k: 'alterado', a: 'Compras', t: 'A ementa da semana passou a ser opcional: um interruptor na Gestão da Casa desliga-a para toda a casa — a secção sai das Compras e o «Jantar de hoje» sai da app das crianças; os pratos ficam guardados. Ligada, mostra só os dias com jantar, e sem nenhum é uma linha só, «Planear a semana», que abre os sete dias' },

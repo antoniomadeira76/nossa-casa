@@ -79,6 +79,25 @@ export const nomeDoFicheiro = ({ membro, ambito, alvo, dia }) => {
   return `saude-${limpo(membro)}-${meio}-${String(dia).replace(/^d/, '')}.pdf`;
 };
 
+// ── A ficha de emergência ────────────────────────────────────────────────────
+//
+// O que a escola precisa de saber num dia mau, numa página: alergias,
+// medicação em curso, médico, contactos. A `ficha` vem da loja
+// (`fichaDeEmergencia`), já filtrada por quem a pode ver — este ficheiro não
+// decide visibilidade, monta o papel. (12/09/2026)
+export const GRAVIDADES = [
+  { chave: 'grave', rotulo: 'Grave' },
+  { chave: 'moderada', rotulo: 'Moderada' },
+  { chave: 'leve', rotulo: 'Leve' },
+];
+
+export const nomeDoFicheiroDeEmergencia = ({ membro, dia }) => {
+  const limpo = (x) => String(x || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+  return `emergencia-${limpo(membro)}-${String(dia).replace(/^d/, '')}.pdf`;
+};
+
 const escapar = (x) => String(x == null ? '' : x)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;');
@@ -161,5 +180,56 @@ export function documentoDeSaude({
 ${escolhidas.length ? linhas : '<p class="vazio">Sem consultas neste âmbito.</p>'}
 ${avisoAnexos}
 <footer>Documento gerado pela aplicação Nossa Casa. Contém dados de saúde — guarde-o com o mesmo cuidado que teria com o papel.</footer>
+</body></html>`;
+}
+
+// O documento da ficha de emergência: as quatro secções, sempre as quatro —
+// uma secção vazia diz «nenhuma conhecida», porque na escola «não diz» e
+// «não tem» são coisas diferentes. Preto sobre branco, como o outro.
+export function documentoDeEmergencia({ membro, casa, ficha, hoje }) {
+  const f = ficha || { alergias: [], medicacao: [], medicos: [], contactos: [] };
+  const rotuloDaGravidade = (g) => (GRAVIDADES.find(x => x.chave === g) || GRAVIDADES[1]).rotulo.toLowerCase();
+  const lista = (itens, vazio) => (itens.length
+    ? `<ul>${itens.map(i => `<li>${i}</li>`).join('')}</ul>`
+    : `<p class="vazio">${escapar(vazio)}</p>`);
+  const alergias = lista(f.alergias.map(a =>
+    `<strong>${escapar(a.nome)}</strong> · ${escapar(rotuloDaGravidade(a.gravidade))}${a.nota ? ` — ${escapar(a.nota)}` : ''}`),
+  'Nenhuma alergia conhecida.');
+  const medicacao = lista(f.medicacao.map(m =>
+    `<strong>${escapar(m.nome)}</strong>${m.dose ? ` · ${escapar(m.dose)}` : ''}${m.plano ? ` · ${escapar(m.plano)}` : ''}${m.ate ? ` · até ${escapar(dayLabel(m.ate).replace(/^(Hoje|Amanhã) · /, ''))}` : ''}`),
+  'Sem medicação em curso.');
+  const medicos = lista(f.medicos.map(m => escapar(m)), 'Sem médico registado nas consultas.');
+  const contactos = lista(f.contactos.map(c => `<strong>${escapar(c.nome)}</strong>${c.email ? ` · ${escapar(c.email)}` : ''}`),
+    'Sem contactos.');
+
+  return `<!doctype html>
+<html lang="pt-PT"><head><meta charset="utf-8">
+<title>${escapar(`Ficha de emergência · ${membro}`)}</title>
+<style>
+  @page { margin: 18mm; }
+  body { font-family: Georgia, 'Times New Roman', serif; color: #111; max-width: 44em;
+         margin: 2rem auto; padding: 0 1.5rem; line-height: 1.55; }
+  header { border-bottom: 2px solid #111; padding-bottom: .8rem; margin-bottom: 1.6rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 .3rem; }
+  .origem { font-size: .84rem; color: #444; margin: 0; }
+  section { border-bottom: 1px solid #ddd; padding-bottom: 1rem; margin-bottom: 1.2rem; }
+  section:last-of-type { border-bottom: 0; }
+  h2 { font-size: 1.06rem; margin: 0 0 .4rem; }
+  ul { margin: 0; padding-left: 1.2rem; } li { margin: .2rem 0; }
+  .vazio { color: #444; font-style: italic; margin: 0; }
+  footer { border-top: 1px solid #ddd; margin-top: 2rem; padding-top: .7rem;
+           font-size: .78rem; color: #555; }
+  @media print { body { margin: 0; max-width: none; } }
+</style></head>
+<body>
+<header>
+  <h1>${escapar(`Ficha de emergência · ${membro}`)}</h1>
+  <p class="origem">Casa ${escapar(casa)} · exportado a ${escapar(dayLabel(hoje).replace('Hoje · ', ''))}</p>
+</header>
+<section><h2>Alergias</h2>${alergias}</section>
+<section><h2>Medicação atual</h2>${medicacao}</section>
+<section><h2>Médico</h2>${medicos}</section>
+<section><h2>Contactos</h2>${contactos}</section>
+<footer>Documento gerado pela aplicação Nossa Casa. Contém dados de saúde de um menor — entregue-o em mão, e peça que o guardem com o mesmo cuidado que teriam com o papel.</footer>
 </body></html>`;
 }
