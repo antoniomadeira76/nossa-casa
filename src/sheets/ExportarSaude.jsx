@@ -7,9 +7,10 @@ import { Label, Primary, Choice, Opcao, EscolherMembro, Tile } from '../ui';
 import Sheet from '../Sheet';
 import Icon from '../Icon';
 import {
-  AMBITOS, resumoDoAmbito, documentoDeSaude, nomeDoFicheiro,
+  AMBITOS, resumoDoAmbito, documentoDeSaude, nomeDoFicheiro, anexosComImagens,
 } from '../exportar-saude';
 import { guardarPDF, enviarPorCorreio } from '../guardar-ficheiro';
+import { lerComoDataURI } from '../ler-imagem';
 
 // A folha do âmbito.
 //
@@ -77,10 +78,13 @@ export default function ExportarSaude({
   const faltaEscolher = ambito !== 'tudo' && !alvo && consultas.length > 0;
   const nada = resumo.consultas === 0;
 
-  const documento = () => ({
-    // Com quem imprime e o tema dele: a faixa do documento é o cabeçalho do
-    // esquema de quem o tira, e o carimbo do canto diz o nome (12/09/2026).
-    html: documentoDeSaude({ membro, casa, consultas, docs, notas, ambito, alvo, hoje: TODAY_KEY, quemImprime: user, t }),
+  // ⚠ Assíncrono: as IMAGENS dos documentos vão dentro do PDF (12/09/2026),
+  // e ler cada ficheiro para `data:` URI leva o seu tempo. Com quem imprime e
+  // o tema dele: a faixa do documento é o cabeçalho do esquema de quem o
+  // tira, e o carimbo do canto diz o nome.
+  const documento = async () => ({
+    html: documentoDeSaude({ membro, casa, consultas, docs: await anexosComImagens(docs, lerComoDataURI),
+      notas, ambito, alvo, hoje: TODAY_KEY, quemImprime: user, t }),
     nome: nomeDoFicheiro({ membro, ambito, alvo, dia: TODAY_KEY }),
   });
 
@@ -93,14 +97,16 @@ export default function ExportarSaude({
   };
 
   const guardar = async () => {
-    const { html, nome } = documento();
+    setAGuardar(true);
+    const { html, nome } = await documento();
     const r = await correr(() => guardarPDF(nome, html));
     if (r && !r.cancelado) setFeito(r.onde ? `PDF pronto — ${r.onde}` : 'PDF pronto.');
   };
 
   const enviar = async () => {
     if (!para) return;
-    const { html, nome } = documento();
+    setAGuardar(true);
+    const { html, nome } = await documento();
     const r = await correr(() => enviarPorCorreio({
       nome, html, para: [para.email],
       assunto: `Ficha de saúde ${deNome(membro)} ${membro}`,

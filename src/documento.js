@@ -92,6 +92,11 @@ export function paginaDaApp({ titulo, origem, corpo, aviso, quemImprime, hoje, t
   .notas p { margin: 4px 0; font-size: 11pt; }
   .autor { font-weight: 600; }
   .anexos { font-size: 10pt; color: #656C7C; margin: 6px 0 0; font-style: italic; }
+  /* As imagens dos documentos de uma consulta: uma por figura, com a legenda,
+     nunca partidas entre páginas. */
+  .anexo { margin: 10px 0 0; break-inside: avoid; }
+  .anexo img { display: block; max-width: 100%; max-height: 120mm; border: 1px solid #E7E9EE; border-radius: 6px; }
+  .anexo figcaption { font-size: 10pt; color: #656C7C; margin-top: 4px; }
   .aviso { font-size: 10pt; color: #656C7C; border-left: 3px solid #D9D9D9; padding-left: 12px; margin: 18px 0; }
   .vazio { color: #656C7C; font-style: italic; padding: 7px 4px; }
   .total { display: flex; align-items: baseline; gap: 10px; padding: 12px 4px 0; }

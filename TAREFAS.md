@@ -340,6 +340,19 @@ uma consulta a sério, porque não há onde escrever o nome.
       tocou em «Ação» e não aconteceu nada.
 - [x] Sincronizar as consultas — sobem se o servidor viver na casa. Ver a
       última entrada desta secção.
+- [x] **O PDF da ficha de saúde inclui as imagens dos documentos** (12/09/2026). O dono da
+      casa, ao ver «Documentos em arquivo: …» no PDF da Mia: «tem de os incluir». Cada anexo
+      com `foto` passa a trazer `dados` — a imagem em `data:` URI, lida pelo `lerComoDataURI`
+      de `src/ler-imagem.js` (`fetch` na web, `File.base64()` no telemóvel; num módulo
+      próprio porque o guarda «a app não envia» proíbe `fetch(` no `guardar-ficheiro.js`)
+      através do `anexosComImagens` puro — e
+      sai no documento como `<figure>` com legenda, dentro da consulta dele, nunca partida
+      entre páginas. O que não trouxer imagem fica nomeado, e o aviso diz o que vai e o que
+      ficou. A folha «Exportar» passou a montar o documento de forma assíncrona. Guarda:
+      `exportar-saude` (as três provas dos anexos reescritas, mais a do leitor).
+      - na casa real, os dois documentos da Mia (plano ortodôntico, radiografia) foram
+        registados SEM fotografia — o campo `ficheiro` está vazio —, por isso o PDF dela
+        diz que não puderam ser incluídos. Mal um anexo tenha fotografia, vai no papel.
 - [x] **A lista partilhada com quem não tem a app** (12/09/2026, a nona das dez; bloco 9 de
       `design/dez-funcionalidades.dc.html`). O dono da casa disse «avança» sem decidir o
       servidor fora de casa; a funcionalidade fica construída e o endereço serve onde o

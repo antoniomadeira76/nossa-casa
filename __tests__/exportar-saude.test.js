@@ -100,26 +100,59 @@ describe('O documento leva o que deve, e mais nada', () => {
   });
 });
 
-describe('O que fica para trás é dito, não omitido', () => {
-  // Os anexos são ficheiros e não vão no documento. Quem leva isto ao médico
-  // tem de saber que ficaram no telefone ANTES de chegar lá.
-  test('os anexos são nomeados e o documento avisa que não os inclui', () => {
-    const html = documentoDeSaude(base);
-    expect(html).toContain('Plano ortodôntico');
-    expect(html).toMatch(/não os inclui/);
-    expect(html).toMatch(/continuam na aplicação/);
+describe('⚠ As imagens dos documentos vão dentro do PDF; o que fica para trás é dito', () => {
+  // 12/09/2026 — o dono da casa: «o PDF deve incluir as imagens dos docs».
+  // Um anexo com `dados` (a imagem em `data:` URI) sai como figura com legenda;
+  // um sem imagem fica nomeado, e o aviso diz que ficou na aplicação.
+  const PNG = 'data:image/png;base64,iVBORw0KGgo=';
+
+  test('um anexo com imagem sai como figura, com a legenda, dentro da consulta dele', () => {
+    const html = documentoDeSaude({ ...base, docs: [{ ...DOCS[0], dados: PNG }, DOCS[1]] });
+    expect(html).toContain(`<figure class="anexo"><img src="${PNG}" alt="Plano ortodôntico"><figcaption>Plano ortodôntico (Relatório)</figcaption></figure>`);
+    // A figura está dentro da consulta certa — a h1, que na ordem por data é a
+    // ÚLTIMA (h3, h2, h1): depois da «Pediatria» e do último «Dentista».
+    const figura = html.indexOf('<figure class="anexo">');
+    expect(figura).toBeGreaterThan(html.indexOf('<h3>Pediatria</h3>'));
+    expect(figura).toBeGreaterThan(html.lastIndexOf('<h3>Dentista</h3>'));
+    expect(html.slice(html.lastIndexOf('<h3>Dentista</h3>'), figura)).toContain('Dr. Cardoso');
+    // O que não trouxe imagem é nomeado, e o aviso diz as duas coisas.
+    expect(html).toContain('Documento em arquivo, sem imagem neste PDF: Receita de ferro (Receita)');
+    expect(html).toMatch(/inclui a imagem de um documento do arquivo clínico\. Um documento não pôde ser incluído e continua na aplicação\./);
   });
 
-  test('a concordância acompanha o número — um anexo, não «1 documentos»', () => {
-    const html = documentoDeSaude({ ...base, ambito: 'consulta', alvo: 'h1' });
-    expect(html).toMatch(/um documento/);
-    expect(html).toMatch(/não o inclui/);
-    expect(html).not.toMatch(/1 documentos/);
+  test('sem nenhuma imagem, os anexos são nomeados e o documento diz que ficaram na aplicação', () => {
+    const html = documentoDeSaude(base);
+    expect(html).toContain('Plano ortodôntico');
+    expect(html).not.toContain('<figure');
+    expect(html).toMatch(/2 documentos não puderam ser incluídos e continuam na aplicação/);
+  });
+
+  test('com todas as imagens, o aviso só diz o que vai — e a concordância acompanha o número', () => {
+    const html = documentoDeSaude({ ...base, ambito: 'consulta', alvo: 'h1', docs: [{ ...DOCS[0], dados: PNG }] });
+    expect(html).toMatch(/inclui a imagem de um documento do arquivo clínico\./);
+    expect(html).not.toMatch(/continua/);
+    const dois = documentoDeSaude({ ...base, docs: DOCS.map(d => ({ ...d, dados: PNG })) });
+    expect(dois).toMatch(/inclui as imagens de 2 documentos/);
+    expect((dois.match(/<figure class="anexo">/g) || []).length).toBe(2);
   });
 
   test('sem anexos, não há aviso nenhum a fazer ruído', () => {
     const html = documentoDeSaude({ ...base, ambito: 'consulta', alvo: 'h3' });
-    expect(html).not.toMatch(/não .* inclui/);
+    expect(html).not.toMatch(/class="aviso"/);
+  });
+
+  test('`anexosComImagens` lê cada `foto` com o leitor que lhe derem, e deixa em paz o que falha', async () => {
+    const { anexosComImagens } = require('../src/exportar-saude');
+    const docs = [{ id: 'a', foto: 'file:///a.jpg' }, { id: 'b', foto: 'file:///b.jpg' }, { id: 'c' }];
+    const ler = async (uri) => (uri.endsWith('a.jpg') ? PNG : null);
+    const r = await anexosComImagens(docs, ler);
+    expect(r[0].dados).toBe(PNG);
+    expect(r[1].dados).toBeUndefined();
+    expect(r[2]).toEqual({ id: 'c' });
+    // Sem leitor, devolve os documentos como estão — o documento diz que ficaram na app.
+    expect(await anexosComImagens(docs)).toEqual(docs);
+    // Um leitor que rebenta não rebenta a exportação.
+    expect((await anexosComImagens([docs[0]], async () => { throw new Error('x'); }))[0].dados).toBeUndefined();
   });
 
   test('um âmbito vazio diz que está vazio, em vez de sair em branco', () => {

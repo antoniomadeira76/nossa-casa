@@ -104,6 +104,23 @@ const quando = (h) => {
   return h.time ? `${d} às ${h.time}` : d;
 };
 
+// ── As imagens dos anexos, para irem dentro do documento ─────────────────────
+//
+// Cada anexo com `foto` (um `file://` da câmara ou o endereço assinado do
+// servidor) passa a trazer `dados`: a imagem em `data:` URI, lida por quem
+// chamar — o `lerComoDataURI` do `guardar-ficheiro.js` na app; nas provas, o
+// que se quiser. Sem leitor, ou quando a leitura falha, o anexo fica como está,
+// e o documento diz que ele ficou na aplicação. Puro de propósito: não importa
+// a plataforma, para se provar sem ela.
+export async function anexosComImagens(docs, ler) {
+  if (typeof ler !== 'function') return docs || [];
+  return Promise.all((docs || []).map(async (d) => {
+    if (!d || !d.foto) return d;
+    const dados = await ler(d.foto).catch(() => null);
+    return dados ? { ...d, dados } : d;
+  }));
+}
+
 // ── O documento ──────────────────────────────────────────────────────────────
 //
 // ⚠ Dizia aqui «preto sobre branco, sem cor de esquema: o sistema visual da
@@ -123,8 +140,17 @@ export function documentoDeSaude({
     : ambito === 'especialidade' ? `${alvo} · ${membro}`
     : `Consulta · ${membro}`;
 
+  // ⚠ As IMAGENS dos documentos vão dentro do PDF (12/09/2026 — o dono da
+  // casa: «o PDF deve incluir as imagens dos docs»). Um anexo chega aqui com
+  // `dados` — a imagem já em `data:` URI, lida pelo `anexosComImagens` — e sai
+  // como figura, com a legenda. O que não trouxer imagem (sem ficheiro, ou um
+  // ficheiro que não se leu) fica NOMEADO, e o aviso diz que ficou na app: o
+  // que fica para trás diz-se, não se omite.
+  const rotuloDoAnexo = (d) => escapar(d.title) + (d.kind ? ` (${escapar(d.kind)})` : '');
   const linhas = escolhidas.map(h => {
     const desteAnexos = anexos.filter(d => d.healthId === h.id);
+    const comImagem = desteAnexos.filter(d => d.dados);
+    const semImagem = desteAnexos.filter(d => !d.dados);
     const desteNotas = (notas[h.id] || []);
     return `
     <div class="consulta">
@@ -132,20 +158,22 @@ export function documentoDeSaude({
       <p class="meta">${escapar(quando(h))}${h.doctor ? ' · ' + escapar(h.doctor) : ''}</p>
       ${desteNotas.length ? `<div class="notas">${desteNotas.map(n =>
         `<p><span class="autor">${escapar(n.author)}:</span> ${escapar(n.text)}</p>`).join('')}</div>` : ''}
-      ${desteAnexos.length ? `<p class="anexos">Documentos em arquivo: ${
-        desteAnexos.map(d => escapar(d.title) + (d.kind ? ` (${escapar(d.kind)})` : '')).join(', ')
-      }</p>` : ''}
+      ${comImagem.map(d => `<figure class="anexo"><img src="${escapar(d.dados)}" alt="${escapar(d.title)}">`
+        + `<figcaption>${rotuloDoAnexo(d)}</figcaption></figure>`).join('')}
+      ${semImagem.length ? `<p class="anexos">${semImagem.length === 1 ? 'Documento em arquivo, sem imagem neste PDF'
+        : 'Documentos em arquivo, sem imagem neste PDF'}: ${semImagem.map(rotuloDoAnexo).join(', ')}</p>` : ''}
     </div>`;
   }).join('');
 
-  // O aviso dos anexos aparece SEMPRE que houver algum, e não como nota de
-  // rodapé: quem leva isto ao médico tem de saber que os ficheiros ficaram no
-  // telefone antes de chegar lá, não depois.
+  // O aviso diz o que vai e o que ficou: quem leva isto ao médico tem de saber
+  // ANTES de chegar lá se as imagens estão no papel ou ficaram no telemóvel.
+  const incluidos = anexos.filter(d => d.dados).length;
+  const emFalta = anexos.length - incluidos;
   const avisoAnexos = anexos.length
-    ? `<p class="aviso">Este documento lista ${anexos.length === 1 ? 'um documento'
-        : anexos.length + ' documentos'} do arquivo clínico, mas não ${
-        anexos.length === 1 ? 'o inclui' : 'os inclui'}. ${
-        anexos.length === 1 ? 'O ficheiro continua' : 'Os ficheiros continuam'} na aplicação.</p>`
+    ? `<p class="aviso">${incluidos ? `Este documento inclui ${incluidos === 1 ? 'a imagem de um documento'
+        : `as imagens de ${incluidos} documentos`} do arquivo clínico.` : ''}${emFalta ? `${incluidos ? ' ' : ''}${
+        emFalta === 1 ? 'Um documento não pôde ser incluído e continua' : `${emFalta} documentos não puderam ser incluídos e continuam`
+      } na aplicação.` : ''}</p>`
     : '';
 
   const seccao = ambito === 'tudo' ? 'Consultas' : ambito === 'especialidade' ? 'Consultas da especialidade' : 'Consulta';
