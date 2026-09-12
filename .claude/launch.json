@@ -14,6 +14,18 @@
       "port": 8082
     },
     {
+      "name": "Expo Web (worktree)",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "expo",
+        "start",
+        "--web",
+        "--port",
+        "8083"
+      ],
+      "port": 8083
+    },
+    {
       "name": "Protótipo",
       "runtimeExecutable": "npx",
       "runtimeArgs": [
