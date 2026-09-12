@@ -96,7 +96,7 @@ const TABS = [
 
 function Shell() {
   const { s, set, importGoogleEvents, idsGoogleDaCasa, remaining, allEvents, allTasks,
-          canSeeHealth, healthOf, docsOf, allEquip, membros: MEMBERS, nomeDaCasa,
+          canSeeHealth, healthOf, docsOf, allEquip, contratosDaCasa, membros: MEMBERS, nomeDaCasa,
           lerDoServidor, removerEvento, eventosQueSairamDaGoogle, isAdmin } = useStore();
   const sysDark = useColorScheme() === 'dark';
   const [user, setUser] = useState(null);      // nome do membro ligado
@@ -465,7 +465,9 @@ function Shell() {
       sub: () => {
         const eq = allEquip();
         const emGarantia = eq.filter(e => warrantyDaysLeft(e) >= 0).length;
-        return `${contas(eq.length, 'equipamento', 'equipamentos')} · ${emGarantia} em garantia`;
+        // E os contratos, que vivem no mesmo ecrã (12/09/2026).
+        return `${contas(eq.length, 'equipamento', 'equipamentos')} · ${emGarantia} em garantia`
+          + ` · ${contas(contratosDaCasa().length, 'contrato', 'contratos')}`;
       },
       render: () => <Equipamentos t={t} user={user} onClose={() => setEquip(false)}
         abrir={typeof equip === 'string' ? equip : null} />,

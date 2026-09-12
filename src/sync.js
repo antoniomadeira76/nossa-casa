@@ -775,6 +775,22 @@ export async function puxarCasa() {
     maintDate: dmyDeISO(e.manutencao_ate),
   }));
 
+  // ── Os contratos e as renovações ──────────────────────────────────────────
+  //
+  // Na forma da loja: as datas em `dd/mm/aaaa`, quem trata pelo NOME, e o
+  // documento como o URL assinado pelo servidor — não se constrói aqui. O
+  // servidor só devolve a lista a um adulto.
+  const contratos = (casa.contratos || []).map(c => ({
+    id: c.id,
+    idServidor: c.id,
+    nome: c.nome,
+    fornecedor: c.fornecedor || '',
+    renovaEm: dmyDeISO(c.renova_em),
+    fidelizacaoAte: dmyDeISO(c.fidelizacao_ate),
+    responsavel: nomeDoMembro[c.responsavel] || null,
+    ficheiro: servidor.ler.ficheiro(c, 'ficheiro'),
+  }));
+
   // ── As preferências de quem está ligado ───────────────────────────────────
   //
   // ⚠ Vem UMA linha, ou nenhuma: a regra devolve só a de quem pergunta. Por
@@ -827,6 +843,7 @@ export async function puxarCasa() {
     ementa,
     contasFixas,
     contasPagas,
+    contratos,
     newItems,
     itemOrder,
     status,
@@ -1416,6 +1433,52 @@ export async function alterarEquipamento(idNoServidor, campos) {
 export async function apagarEquipamento(idNoServidor) {
   if (!ligado() || !idNoServidor) return { pendente: true };
   return servidor.pb.collection('equipamentos').delete(idNoServidor);
+}
+
+// ── Os contratos e as renovações ─────────────────────────────────────────────
+//
+// A definição vai pela fila, como o equipamento. O DOCUMENTO não pode: a fila
+// serializa em JSON e um ficheiro não é JSON — por isso vai à parte, num
+// `update` só com o ficheiro, quando o contrato já tem id no servidor. Quem
+// chama guarda a imagem no dispositivo primeiro e marca-a «por subir» se isto
+// falhar, como o anexo de saúde.
+//
+// ⚠ Os nomes são os da COLEÇÃO: `renova_em`, `fidelizacao_ate`, `responsavel`.
+export async function contratoDaCasa({ casa, nome, fornecedor, renovaEm, fidelizacaoAte, responsavel }) {
+  return criarOuEnfileirarCasa('contratos', {
+    casa,
+    nome: String(nome || '').trim().slice(0, 60),
+    fornecedor: String(fornecedor || '').trim().slice(0, 60),
+    renova_em: isoDeDMY(renovaEm),
+    fidelizacao_ate: isoDeDMY(fidelizacaoAte),
+    responsavel: responsavel || null,
+  });
+}
+
+export async function alterarContrato(idNoServidor, campos = {}) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  const linha = {
+    ...(campos.nome !== undefined ? { nome: String(campos.nome || '').trim().slice(0, 60) } : {}),
+    ...(campos.fornecedor !== undefined ? { fornecedor: String(campos.fornecedor || '').trim().slice(0, 60) } : {}),
+    ...(campos.renovaEm !== undefined ? { renova_em: isoDeDMY(campos.renovaEm) } : {}),
+    ...(campos.fidelizacaoAte !== undefined ? { fidelizacao_ate: isoDeDMY(campos.fidelizacaoAte) } : {}),
+    ...(campos.responsavel !== undefined ? { responsavel: campos.responsavel || null } : {}),
+  };
+  if (!Object.keys(linha).length) return { pendente: true };
+  return servidor.pb.collection('contratos').update(idNoServidor, linha);
+}
+
+export async function apagarContrato(idNoServidor) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('contratos').delete(idNoServidor);
+}
+
+// O documento do contrato — a apólice, o contrato assinado. Ou sobe ou rebenta;
+// quem chama decide o que fazer com a falha.
+export async function documentoDoContrato(idNoServidor, { uri, blob, nome, mime }) {
+  if (!idNoServidor) throw new Error('Um documento sem contrato não se grava.');
+  return servidor.escrever.atualizarComFicheiro('contratos', idNoServidor,
+    { campo: 'ficheiro', uri, blob, nome, tipo: mime });
 }
 
 // ── As compras ───────────────────────────────────────────────────────────────

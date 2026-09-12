@@ -275,7 +275,7 @@ const DATA_KEYS = [
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
   'newItems', 'itemGone', 'itemEdits', 'itemOrder', 'feitas', 'listasIds', 'envelopesDaCasa', 'seccoesDaCasa', 'mes',
   'metasDaCasa', 'metaMovs', 'metasProprias', 'objetivosCofre', 'pratos', 'ementa',
-  'contasFixas', 'contasPagas',
+  'contasFixas', 'contasPagas', 'contratos',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'pointValue', 'payDay', 'splitHalf',
@@ -643,6 +643,9 @@ export const DEMO = () => ({
   // quemPaga }`) e os pagamentos (`{ conta, mes, dia, valor, por }`). «Paga
   // este mês» é haver um pagamento da conta no mês — nunca um campo da conta.
   contasFixas: [], contasPagas: [],
+  // Os contratos (`{ id, idServidor, nome, fornecedor, renovaEm, fidelizacaoAte,
+  // responsavel, ficheiro, ficheiroLocal, porSubir }`), ao lado dos equipamentos.
+  contratos: [],
   schemeByUser: {}, themeByUser: {},
   notif: { digest: true, hour: '20:00', lead: 1 },
   rotate: {},
@@ -928,7 +931,7 @@ export function StoreProvider({ children }) {
       // A bandeira `metasProprias` é o que distingue «a casa não tem metas»
       // de «esta casa ainda corre com as sementes»: sem ela, uma casa ligada e
       // sem metas voltava a mostrar as férias no Algarve a cada leitura.
-      set({
+      set(x => ({
         metasDaCasa: casa.metas || [],
         metaMovs: casa.metaMovs || [],
         metasProprias: true,
@@ -943,7 +946,14 @@ export function StoreProvider({ children }) {
         // fundem: fundir duas versões da mesma lista é pagar duas vezes.
         contasFixas: casa.contasFixas || [],
         contasPagas: casa.contasPagas || [],
-      });
+        // ⚠ Os contratos substituem-se — mas um documento que ainda só está
+        // NESTE telemóvel («por subir») não se perde na leitura: cola-se à
+        // linha que veio do servidor, até subir.
+        contratos: (casa.contratos || []).map(c => {
+          const local = (x.contratos || []).find(k => k.idServidor === c.id && k.porSubir);
+          return local ? { ...c, ficheiroLocal: local.ficheiroLocal, porSubir: true } : c;
+        }),
+      }));
 
       // ⚠ O acerto de contas entre os adultos, pela mesma razão e com a mesma
       // regra: SUBSTITUI, nunca funde. Era uma escrita de sentido único — subia
@@ -2260,6 +2270,120 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         contaFixa: c.id,
         paga,
       };
+    }));
+  };
+
+  // ── Os contratos e as renovações ────────────────────────────────────────
+  //
+  // O seguro do carro, a internet, a inspeção: o que renova ou acaba num dia,
+  // com fidelização e com quem trata. Vivem ao lado dos equipamentos e avisam
+  // como as garantias — a 30 dias. O documento (a apólice, o contrato
+  // assinado) fica no dispositivo PRIMEIRO e sobe à parte, porque a fila
+  // serializa em JSON; `porSubir` diz a verdade sobre onde ele está, como o
+  // anexo de saúde. 12/09/2026 — a quinta das dez funcionalidades.
+  const contratoPorId = (id) => (s.contratos || []).find(c => c.id === id) || null;
+
+  // Os contratos como o ecrã os lê: com os dias até renovar (nulo sem data).
+  // Os que têm data primeiro, do mais próximo para o mais longe.
+  const contratosDaCasa = () => (s.contratos || [])
+    .map(c => ({
+      ...c,
+      dias: c.renovaEm ? daysUntil(c.renovaEm) : null,
+      diasFidelizacao: c.fidelizacaoAte ? daysUntil(c.fidelizacaoAte) : null,
+    }))
+    .sort((a, b) => ((a.dias === null) - (b.dias === null))
+      || ((a.dias ?? 0) - (b.dias ?? 0))
+      || String(a.nome).localeCompare(String(b.nome)));
+
+  // O que renova dentro de `dias` — ou já passou. É a linha do «Precisa de Si».
+  const contratosARenovar = (dias = 30) => contratosDaCasa()
+    .filter(c => c.dias !== null && c.dias <= dias);
+
+  const validarContrato = ({ nome, fornecedor, renovaEm, fidelizacaoAte, responsavel }) => {
+    const n = String(nome || '').trim();
+    if (!n) return 'Dê um nome ao contrato.';
+    const r = String(renovaEm || '').trim();
+    const f = String(fidelizacaoAte || '').trim();
+    if (r && !chaveDeDMY(r)) return 'A data de renovação não é uma data (dd/mm/aaaa).';
+    if (f && !chaveDeDMY(f)) return 'A data de fidelização não é uma data (dd/mm/aaaa).';
+    if (responsavel && !adultos.includes(responsavel)) return 'Quem trata do contrato tem de ser um adulto da casa.';
+    return { nome: n, fornecedor: String(fornecedor || '').trim(), renovaEm: r, fidelizacaoAte: f, responsavel: responsavel || null };
+  };
+
+  // O documento sobe à parte, quando o contrato já tem id no servidor. Ou
+  // sobe e a marca «por subir» cai, ou falha e fica — o ecrã di-lo.
+  const subirDocumentoDoContrato = (id, idServidor, uri) => {
+    if (!sync || !idServidor || !uri) return;
+    const ses = sync.sessao();
+    if (!ses) return;
+    sync.documentoDoContrato(idServidor, { uri, nome: 'contrato.jpg', mime: 'image/jpeg' })
+      .then(() => set(x => ({
+        contratos: (x.contratos || []).map(c => (c.id === id ? { ...c, porSubir: false } : c)),
+      })))
+      .catch(() => {});
+  };
+
+  // Devolve `{ id }` quando ficou, ou a frase do que falta. `ficheiro` é a URI
+  // da imagem escolhida, se houver.
+  const criarContrato = (campos = {}) => {
+    const ok = validarContrato(campos);
+    if (typeof ok === 'string') return ok;
+    const id = 'ct-' + Date.now();
+    const uri = campos.ficheiro || null;
+    set(x => ({
+      contratos: [...(x.contratos || []), {
+        id, idServidor: null, ...ok, ficheiro: null,
+        ...(uri ? { ficheiroLocal: uri, porSubir: true } : {}),
+      }],
+      registo: maisRegisto(x, `Contrato acrescentado: ${ok.nome}${ok.fornecedor ? ` · ${ok.fornecedor}` : ''}`, 'Equipamentos'),
+    }));
+    if (sync) {
+      const ses = sync.sessao();
+      if (ses) sync.contratoDaCasa({
+        casa: ses.casa, nome: ok.nome, fornecedor: ok.fornecedor,
+        renovaEm: ok.renovaEm, fidelizacaoAte: ok.fidelizacaoAte,
+        responsavel: ok.responsavel ? idDoMembro(ok.responsavel) : null,
+      })
+        .then(r => {
+          if (!r || !r.id) return;
+          set(x => ({ contratos: (x.contratos || []).map(c => (c.id === id ? { ...c, idServidor: r.id } : c)) }));
+          subirDocumentoDoContrato(id, r.id, uri);
+        })
+        .catch(() => {});
+    }
+    return { id };
+  };
+
+  // ⚠ Os campos e o documento são DUAS escritas à mesma linha: quem chama
+  // manda ou um ou outro de cada vez — a ficha guarda os campos num botão e
+  // escolhe o documento noutro. Duas no mesmo tique é a classe 27.
+  const alterarContrato = (id, campos = {}) => {
+    const c = contratoPorId(id);
+    if (!c) return 'Esse contrato não existe nesta casa.';
+    const { ficheiro: uri, ...resto } = campos;
+    const ok = validarContrato({ ...c, ...resto });
+    if (typeof ok === 'string') return ok;
+    set(x => ({
+      contratos: (x.contratos || []).map(k => (k.id === id
+        ? { ...k, ...ok, ...(uri ? { ficheiroLocal: uri, porSubir: true } : {}) } : k)),
+    }));
+    if (sync && c.idServidor) {
+      if (Object.keys(resto).length) sync.alterarContrato(c.idServidor, {
+        nome: ok.nome, fornecedor: ok.fornecedor, renovaEm: ok.renovaEm, fidelizacaoAte: ok.fidelizacaoAte,
+        responsavel: ok.responsavel ? idDoMembro(ok.responsavel) : null,
+      }).catch(() => {});
+      if (uri) subirDocumentoDoContrato(id, c.idServidor, uri);
+    }
+    return null;
+  };
+
+  const apagarContrato = (id) => {
+    const c = contratoPorId(id);
+    if (!c) return;
+    if (sync && c.idServidor) sync.apagarContrato(c.idServidor).catch(() => {});
+    set(x => ({
+      contratos: (x.contratos || []).filter(k => k.id !== id),
+      registo: maisRegisto(x, `Contrato apagado: ${c.nome}`, 'Equipamentos'),
     }));
   };
 
@@ -5039,6 +5163,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     definirObjetivo, apagarObjetivo,
     criarPrato, alterarPrato, apagarPrato, marcarJantar, oQueFalta, porOQueFaltaNaLista,
     contasDoMes, contasAVencer, contasNaAgenda, criarContaFixa, alterarContaFixa, apagarContaFixa, pagarContaFixa,
+    contratosDaCasa, contratosARenovar, criarContrato, alterarContrato, apagarContrato,
     marcarArtigo, artigoNoServidor, mudarPlanoDeCompras, fecharIdaAsCompras,
     seccoes, criarSeccao, alterarSeccao, apagarSeccao, reordenarSeccoes,
     criarEquipamento, equipNoServidor, mudarPreferencia,

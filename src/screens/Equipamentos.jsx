@@ -8,6 +8,9 @@ import { Card, SectionTitle, Linha, Empty, AddButton, Label, Choice, Primary, Pi
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import FichaEquipamento from '../sheets/FichaEquipamento';
+import FichaContrato from '../sheets/FichaContrato';
+import NovoContrato from '../sheets/NovoContrato';
+import { estadoDoContrato, linhaDoContrato } from '../contratos';
 
 // dd/mm/aaaa → milissegundos UTC. É o formato em que as datas são guardadas.
 const parseDMY = (s) => {
@@ -30,13 +33,29 @@ const warrantyLabel = (days) => {
 // `abrir` é o id de um equipamento cuja ficha deve estar aberta à chegada. É o
 // que faz «Garantia a expirar · Frigorífico» levar ao frigorífico, e não a uma
 // lista onde é preciso voltar a procurá-lo.
+// E `contrato:<id>` abre a ficha de um contrato — é o que o aviso «Seguro do
+// carro · renova em 23 dias» do Início faz.
 export default function Equipamentos({ t, abrir }) {
-  const { allEquip, criarEquipamento } = useStore();
+  const { allEquip, criarEquipamento, contratosDaCasa } = useStore();
   const [sheet, setSheet] = useState(null);
-  const [ficha, setFicha] = useState(abrir || null);   // equipamento cuja ficha está aberta
+  const abreContrato = typeof abrir === 'string' && abrir.startsWith('contrato:');
+  const [ficha, setFicha] = useState(abrir && !abreContrato ? abrir : null);   // equipamento cuja ficha está aberta
+  const [fichaContrato, setFichaContrato] = useState(abreContrato ? abrir.slice('contrato:'.length) : null);
   const [form, setForm] = useState({ name: '', bought: '', warranty: 365, cat: CATS[0] });
 
   const eq = allEquip();
+  // Os contratos: com data de renovação primeiro, do mais próximo para o mais
+  // longe. A pastilha do estado leva os tons dos três papéis de cada estado.
+  const contratos = contratosDaCasa();
+  const aRenovar = contratos.filter(c => c.dias !== null && c.dias <= 30).length;
+  const pastilhaDoContrato = (c) => {
+    const e = estadoDoContrato(c);
+    if (!e) return null;
+    const cores = e.tom === 'err'
+      ? { fg: t.state.errTexto, bg: t.state.errBg, border: t.state.err }
+      : { fg: t.state.warnDeep, bg: t.state.warnBg, border: t.state.warn };
+    return <Pill label={e.texto} {...cores} />;
+  };
 
   const byWarranty = warrantyDaysLeft;
 
@@ -92,7 +111,9 @@ export default function Equipamentos({ t, abrir }) {
           {[['Equipamentos', String(eq.length), t.text2],
             ['Valor registado', EUR(valor), t.text2],
             ['Garantias a expirar', String(aExpirar), aExpirar ? t.state.warnTexto : t.text2],
-            ['Garantias expiradas', String(expiradas), expiradas ? t.state.errTexto : t.text2]].map(([rot, val, cor]) => (
+            ['Garantias expiradas', String(expiradas), expiradas ? t.state.errTexto : t.text2],
+            // Os contratos que renovam dentro de trinta dias, ou cuja data já passou.
+            ['Contratos a renovar', String(aRenovar), aRenovar ? t.state.warnTexto : t.text2]].map(([rot, val, cor]) => (
             <View key={rot} style={{ width: '50%', gap: 2 }}>
               <Label t={t}>{rot}</Label>
               <Text style={{ fontFamily: FONT.display, fontSize: 21, color: cor }}>{val}</Text>
@@ -158,6 +179,62 @@ export default function Equipamentos({ t, abrir }) {
       )}
 
       <AddButton t={t} label="registar equipamento" onPress={() => setSheet('novo')} />
+
+      {/* ── Os contratos e as renovações ─────────────────────────────────────
+          O seguro do carro, a internet, a inspeção (12/09/2026, a quinta das
+          dez funcionalidades). A mesma linha plana dos equipamentos: nome e
+          fornecedor, por baixo quando renova, a fidelização e quem trata, e a
+          pastilha do estado à direita — «renova em 23 dias», «passou há 4
+          dias». A linha toda abre a ficha; um alvo por linha. */}
+      <View>
+        <SectionTitle t={t}>Contratos</SectionTitle>
+        {contratos.length === 0 ? (
+          <Empty t={t} icon="fileText" title="Sem contratos registados."
+            hint="O seguro, a internet, a inspeção: registe a data em que renovam e a app avisa 30 dias antes." />
+        ) : (
+          <View>
+            {contratos.map((c, k) => {
+              const e = estadoDoContrato(c);
+              return (
+                <Linha key={c.id} t={t} last={k === contratos.length - 1}
+                  faixa={e ? (e.tom === 'err' ? t.state.err : t.state.warn) : undefined}>
+                  <Pressable onPress={() => setFichaContrato(c.id)} accessibilityRole="button"
+                    accessibilityLabel={`${c.nome}${c.fornecedor ? ` · ${c.fornecedor}` : ''}`}
+                    accessibilityHint="Abrir a ficha do contrato"
+                    style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: S.md,
+                      minHeight: 44, opacity: pressed ? 0.7 : 1 })}>
+                    <View style={{ flex: 1, gap: 3 }}>
+                      <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 15, fontWeight: '600', color: t.text2 }}>
+                        {`${c.nome}${c.fornecedor ? ` · ${c.fornecedor}` : ''}`}
+                      </Text>
+                      <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
+                        {linhaDoContrato(c) || 'Sem datas'}
+                      </Text>
+                    </View>
+                    {pastilhaDoContrato(c)}
+                    <Icon name="caretRight" size={16} color={t.text3} />
+                  </Pressable>
+                </Linha>
+              );
+            })}
+          </View>
+        )}
+        <View style={{ marginTop: S.md }}>
+          <AddButton t={t} label="acrescentar contrato" onPress={() => setSheet('novoContrato')} />
+        </View>
+      </View>
+
+      {sheet === 'novoContrato' ? (
+        <Sheet t={t} title="Novo Contrato" sub="O que renova ou acaba num dia certo"
+          onClose={() => setSheet(null)}>
+          <NovoContrato t={t} onClose={() => setSheet(null)} />
+        </Sheet>
+      ) : null}
+
+      {fichaContrato && contratos.some(c => c.id === fichaContrato) ? (
+        <FichaContrato t={t} contrato={contratos.find(c => c.id === fichaContrato)}
+          onClose={() => setFichaContrato(null)} />
+      ) : null}
 
       {sheet === 'novo' ? (
         <Sheet t={t} title="Novo Equipamento" sub="Registar com data e garantia"
