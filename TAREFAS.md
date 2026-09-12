@@ -340,6 +340,11 @@ uma consulta a sério, porque não há onde escrever o nome.
       tocou em «Ação» e não aconteceu nada.
 - [x] Sincronizar as consultas — sobem se o servidor viver na casa. Ver a
       última entrada desta secção.
+- [x] **A faixa da consulta aberta não cresce** (12/09/2026). O dono da casa viu a
+      consulta do Léo aberta com a faixa azul a acompanhar os ~700 px do acordeão e pediu
+      cinco opções (`design/faixa-da-consulta.dc.html`); escolheu a A: a `Linha` ganhou
+      `faixaCurta` — 3 × 52 px, absoluta — e a consulta usa-a em vez de `faixa`. As
+      linhas fechadas não mudam. Guarda: `a-faixa-da-consulta-nao-cresce`.
 - [x] **A medicação a partir da receita** (12/09/2026, a sexta das dez funcionalidades).
       A receita ganha `frequencia`, `duracao_dias` e `caixa` (nos dois sítios; zero é «sem
       plano»); `tomas_saude` (receita, quando, por) nasce nos dois, aditiva, com índice

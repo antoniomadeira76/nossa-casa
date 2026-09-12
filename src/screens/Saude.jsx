@@ -237,9 +237,13 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
 
     return (
       /* Linha plana, sem cartão — desenho C (09/09/2026). A cor do membro,
-         que era a borda esquerda do cartão, é a faixa da linha. */
+         que era a borda esquerda do cartão, é a faixa da linha.
+         ⚠ `faixaCurta`, e não `faixa` (12/09/2026): aberta, a consulta cresce
+         até 700 px e a faixa crescia com ela — uma régua azul pela página
+         abaixo. A faixa mede a primeira linha e para aí (opção A de
+         `design/faixa-da-consulta.dc.html`). */
       <Linha t={t} style={{ paddingVertical: S.md }}
-        faixa={corDoMembro(record.member, MEMBERS[record.member]?.cor) || t.accent}>
+        faixaCurta={corDoMembro(record.member, MEMBERS[record.member]?.cor) || t.accent}>
         <View style={{ gap: S.md }}>
           {/* ⚠ O `Pressable` está DENTRO do cartão, e é o único sítio onde
               pode estar. O `Card` não aceita `onPress` — nem nunca aceitou —

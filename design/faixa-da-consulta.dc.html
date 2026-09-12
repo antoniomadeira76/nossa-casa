@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faixa da consulta</title>
+<style>
+  :root { --pagina: #F0F2F5; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --t1: #262626; --t2: #3B3F48; --t3: #656C7C;
+    --ac: #078286; --acfg: #076F73; --chrome: #0A5B60; --leo: #2F6FED; --leo-tinta: rgba(47,111,237,.08); --warn: #FAAD14; --warnbg: #FEFFD0; --warntx: #7A5110; --okbg: #E6F6EC; --oktx: #146B3A; --okbrd: #BAE7A3; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 80ch; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; grid-template-columns: 200px 1fr; gap: 16px; }
+  section h2 { grid-column: 1 / -1; margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  section.rec { border-color: var(--ac); box-shadow: 0 0 0 2px rgba(7,130,134,.15); }
+  .tel { border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; background: var(--pagina); font-size: 9.5px; }
+  .cab { background: var(--chrome); color: #fff; padding: 7px 10px; font-weight: 600; font-size: 11px; }
+  .cab span { display: block; font-weight: 400; color: rgba(255,255,255,.82); font-size: 9px; }
+  .corpo { padding: 8px 6px; }
+  /* A consulta, como uma Linha plana com faixa de 3 px à esquerda. */
+  .consulta { background: var(--cartao); border-bottom: 1px solid var(--div); padding: 6px 8px; position: relative; }
+  .topo { display: flex; align-items: center; gap: 6px; min-height: 26px; }
+  .topo b { font-weight: 500; flex: 1; }
+  .topo .quem { display: block; color: var(--t3); font-size: 8.5px; font-weight: 400; }
+  .chip { font-size: 8px; font-weight: 600; padding: 1px 5px; border-radius: 999px; background: var(--warnbg); color: var(--warntx); }
+  .bola { width: 12px; height: 12px; border-radius: 6px; background: var(--leo); color: #fff; font-size: 7px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+  .aberto { border-top: 1px solid var(--div); margin-top: 5px; padding-top: 5px; display: grid; gap: 4px; }
+  .bloco { background: #F6F7F9; border-radius: 4px; padding: 4px 6px; }
+  .bloco .r { color: var(--acfg); font-weight: 600; font-size: 8.5px; }
+  .bloco small { display: block; color: var(--t3); font-size: 8px; }
+  .nota { display: flex; justify-content: space-between; }
+  .acao { border-left: 3px solid var(--warn); padding-left: 6px; }
+  .acao .r { color: var(--warntx); }
+  .btn { border: 1px solid var(--borda); border-radius: 4px; padding: 3px; text-align: center; font-size: 8.5px; }
+  .btn.trac { border-style: dashed; border-color: var(--ac); color: var(--acfg); }
+  .apagar { color: #CE0002; text-align: center; font-size: 8.5px; padding: 2px; }
+  /* As cinco variantes da faixa. */
+  .f-hoje { border-left: 3px solid var(--leo); }
+  .f-topo .topo { border-left: 3px solid var(--leo); margin-left: -8px; padding-left: 5px; }
+  .f-topo { border-left: 0; }
+  .f-curta::before { content: ""; position: absolute; left: 0; top: 6px; height: 26px; width: 3px; background: var(--leo); border-radius: 0 2px 2px 0; }
+  .f-desvanece::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(var(--leo) 0 32px, var(--div) 60px); }
+  .f-cartao { border: 1px solid var(--borda); border-radius: 6px; margin: 4px 0; }
+  .f-cartao .topo { background: var(--leo-tinta); margin: -6px -8px 0; padding: 6px 8px; border-radius: 6px 6px 0 0; }
+  .f-tinta .topo { background: var(--leo-tinta); margin: -6px -8px 0; padding: 6px 8px; }
+  .f-tinta .topo .bola { display: none; }
+  .rod { background: var(--chrome); display: flex; } .rod div { flex: 1; text-align: center; color: rgba(255,255,255,.82); font-size: 8px; padding: 6px 0; }
+  dl { margin: 0; display: grid; grid-template-columns: 78px 1fr; gap: 4px 10px; font-size: 12.5px; align-content: start; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  code { background: var(--div); padding: 0 4px; border-radius: 3px; font-size: 11.5px; }
+  .nota-final { grid-column: 1 / -1; font-size: 12px; color: var(--t3); border-top: 1px dashed var(--borda); padding-top: 8px; margin: 0; }
+</style>
+</head>
+<body>
+<h1>A faixa da consulta aberta — cinco maneiras</h1>
+<p class="sub">Hoje a consulta é uma linha plana com a faixa de 3 px na cor do membro (o azul do Léo). Fechada tem 52 px; aberta, a faixa acompanha o acordeão inteiro — receitas, notas, ação, anexos, botões — e na sua captura são cerca de 700 px de linha azul contínua, que se lê como uma régua da página e não como a marca de uma consulta. Em baixo, cinco formas de a mudar. O medido é o mesmo acordeão em todas.</p>
+
+<div class="grelha">
+
+<section class="rec">
+  <h2>A. A faixa fica só no topo <small>recomendada</small></h2>
+  <div class="tel">
+    <div class="cab">Saúde da Família<span>3 consultas · 4 documentos</span></div>
+    <div class="corpo">
+      <div class="consulta f-curta">
+        <div class="topo"><span class="bola">L</span><b>Pediatria<span class="quem">Léo · Quarta, 26/08 às 10:00</span></b><span class="chip">Ação</span> ⌃</div>
+        <div class="aberto">
+          <div class="bloco"><span class="r">Receitas (2)</span><small>Xarope para a tosse · Tomas</small><small>Paracetamol infantil · Tomas</small></div>
+          <div class="bloco"><span class="r">Notas do episódio (3)</span><small class="nota"><span>Nota de Rita</span></small><small>Tolerou bem o xarope.</small></div>
+          <div class="bloco acao"><span class="r">Precisa de ação</span><small>Resolvida · Pendente</small></div>
+          <div class="bloco"><span class="r">Anexos desta consulta (2)</span><small>Boletim de vacinas · Relatório</small></div>
+          <div class="btn trac">+ Anexar Exame ou Receita</div>
+          <div class="btn">Arquivar Consulta</div>
+          <div class="apagar">Apagar Consulta</div>
+        </div>
+      </div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>O que muda</dt><dd>A faixa mede a altura da PRIMEIRA linha (52 px) e para aí. O corpo aberto fica sem faixa — é conteúdo da consulta, e o que o prende a ela é o recuo e a régua de cima.</dd>
+    <dt>Código</dt><dd>A <code>Linha</code> ganha <code>faixaCurta</code>: em vez de <code>borderLeft</code>, um <code>View</code> absoluto de 3 × 52 px. Um prop, nenhum ecrã novo.</dd>
+    <dt>Fechada</dt><dd>Igual a hoje — nas fechadas a faixa já tem 52 px.</dd>
+  </dl>
+  <p class="nota-final">É a mudança mais pequena que resolve a queixa: a linha deixa de crescer com o acordeão e volta a ser a marca de uma consulta, como nas fechadas ao lado.</p>
+</section>
+
+<section>
+  <h2>B. Sem faixa: a cor fica na bola <small>como a Agenda</small></h2>
+  <div class="tel">
+    <div class="cab">Saúde da Família<span>3 consultas · 4 documentos</span></div>
+    <div class="corpo">
+      <div class="consulta">
+        <div class="topo"><span class="bola">L</span><b>Pediatria<span class="quem">Léo · Quarta, 26/08 às 10:00</span></b><span class="chip">Ação</span> ⌃</div>
+        <div class="aberto">
+          <div class="bloco"><span class="r">Receitas (2)</span><small>Xarope para a tosse · Tomas</small><small>Paracetamol infantil · Tomas</small></div>
+          <div class="bloco"><span class="r">Notas do episódio (3)</span><small>Tolerou bem o xarope.</small></div>
+          <div class="bloco acao"><span class="r">Precisa de ação</span><small>Resolvida · Pendente</small></div>
+          <div class="bloco"><span class="r">Anexos desta consulta (2)</span><small>Boletim de vacinas · Relatório</small></div>
+          <div class="btn trac">+ Anexar Exame ou Receita</div>
+          <div class="btn">Arquivar Consulta</div>
+          <div class="apagar">Apagar Consulta</div>
+        </div>
+      </div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>O que muda</dt><dd>A faixa sai. A cor do membro passa para a bola do avatar à esquerda do título — que é onde a Agenda e o Início já a põem —, e o ícone <code>heartPulse</code> deixa de estar pintado com ela.</dd>
+    <dt>Código</dt><dd>Trocar o ícone pelo <code>Avatar</code> de 24 px e tirar o <code>faixa</code> da <code>Linha</code>. As fichas dos membros já usam a bola.</dd>
+    <dt>Cuidado</dt><dd>Perde-se o sinal de cor nas linhas FECHADAS quando se percorre a lista depressa; a bola é mais pequena do que 52 px de faixa.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>C. Aberta vira cartão <small>fechada continua linha</small></h2>
+  <div class="tel">
+    <div class="cab">Saúde da Família<span>3 consultas · 4 documentos</span></div>
+    <div class="corpo">
+      <div class="consulta f-cartao">
+        <div class="topo"><span class="bola">L</span><b>Pediatria<span class="quem">Léo · Quarta, 26/08 às 10:00</span></b><span class="chip">Ação</span> ⌃</div>
+        <div class="aberto">
+          <div class="bloco"><span class="r">Receitas (2)</span><small>Xarope para a tosse · Tomas</small></div>
+          <div class="bloco"><span class="r">Notas do episódio (3)</span><small>Tolerou bem o xarope.</small></div>
+          <div class="bloco acao"><span class="r">Precisa de ação</span><small>Resolvida · Pendente</small></div>
+          <div class="bloco"><span class="r">Anexos desta consulta (2)</span><small>Boletim de vacinas · Relatório</small></div>
+          <div class="btn trac">+ Anexar Exame ou Receita</div>
+          <div class="btn">Arquivar Consulta</div>
+          <div class="apagar">Apagar Consulta</div>
+        </div>
+      </div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>O que muda</dt><dd>Enquanto aberta, a consulta ganha borda de 1 px a toda a volta e o topo tinge-se com a cor do membro a 8 %; a faixa sai. Fechada, é a linha plana de hoje.</dd>
+    <dt>Código</dt><dd>Um <code>Card</code> condicional em <code>expanded</code>, com <code>tinta</code> no cabeçalho. Duas formas para a mesma consulta.</dd>
+    <dt>Cuidado</dt><dd>Afasta-se do desenho C (09/09/2026), que tirou os cartões por item; é o único sítio onde um voltaria — e só aberto.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>D. A faixa desvanece <small>cor no topo, cinzento no corpo</small></h2>
+  <div class="tel">
+    <div class="cab">Saúde da Família<span>3 consultas · 4 documentos</span></div>
+    <div class="corpo">
+      <div class="consulta f-desvanece">
+        <div class="topo"><span class="bola">L</span><b>Pediatria<span class="quem">Léo · Quarta, 26/08 às 10:00</span></b><span class="chip">Ação</span> ⌃</div>
+        <div class="aberto">
+          <div class="bloco"><span class="r">Receitas (2)</span><small>Xarope para a tosse · Tomas</small></div>
+          <div class="bloco"><span class="r">Notas do episódio (3)</span><small>Tolerou bem o xarope.</small></div>
+          <div class="bloco acao"><span class="r">Precisa de ação</span><small>Resolvida · Pendente</small></div>
+          <div class="bloco"><span class="r">Anexos desta consulta (2)</span><small>Boletim de vacinas · Relatório</small></div>
+          <div class="btn trac">+ Anexar Exame ou Receita</div>
+          <div class="btn">Arquivar Consulta</div>
+          <div class="apagar">Apagar Consulta</div>
+        </div>
+      </div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>O que muda</dt><dd>A faixa continua até ao fim, mas só os primeiros 52 px levam a cor do membro; o resto passa ao cinzento das divisórias (<code>divider</code>). Diz «isto ainda é a mesma consulta» sem gritar.</dd>
+    <dt>Código</dt><dd>Dois <code>View</code> absolutos na <code>Linha</code>: 3 × 52 na cor, e 1 px de <code>divider</code> daí para baixo.</dd>
+    <dt>Cuidado</dt><dd>Uma linha cinzenta de 700 px continua a ser uma linha de 700 px; é a mais próxima de hoje.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>E. Sem faixa: o topo tinge-se <small>cor como fundo, não como linha</small></h2>
+  <div class="tel">
+    <div class="cab">Saúde da Família<span>3 consultas · 4 documentos</span></div>
+    <div class="corpo">
+      <div class="consulta f-tinta">
+        <div class="topo"><span class="bola">L</span><b>Pediatria<span class="quem">Léo · Quarta, 26/08 às 10:00</span></b><span class="chip">Ação</span> ⌃</div>
+        <div class="aberto">
+          <div class="bloco"><span class="r">Receitas (2)</span><small>Xarope para a tosse · Tomas</small></div>
+          <div class="bloco"><span class="r">Notas do episódio (3)</span><small>Tolerou bem o xarope.</small></div>
+          <div class="bloco acao"><span class="r">Precisa de ação</span><small>Resolvida · Pendente</small></div>
+          <div class="bloco"><span class="r">Anexos desta consulta (2)</span><small>Boletim de vacinas · Relatório</small></div>
+          <div class="btn trac">+ Anexar Exame ou Receita</div>
+          <div class="btn">Arquivar Consulta</div>
+          <div class="apagar">Apagar Consulta</div>
+        </div>
+      </div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>O que muda</dt><dd>Nem faixa nem bola: a linha do título leva a cor do membro como tinta a 8 % de alfa (<code>tileDe(cor)</code>, a escurecer no escuro), aberta ou fechada. O corpo fica em branco.</dd>
+    <dt>Código</dt><dd>Um <code>tinta</code> só no cabeçalho da consulta. Precisa de uma tinta por membro medida nos doze temas — hoje só existem as dos quatro estados.</dd>
+    <dt>Cuidado</dt><dd>A tinta a alfa da cor de um membro ainda não está no tema; é a única das cinco que pede um token novo.</dd>
+  </dl>
+</section>
+
+</div>
+</body>
+</html>
