@@ -235,10 +235,13 @@ remover.
 ## 3.7 Compras
 
 Resumo (artigos, por comprar, estimativa, envelope). **Quem vai às compras** — toque em *Alterar*
-abre quem, quando, onde. **Ementa da Semana** (11/09/2026): sete linhas, segunda a domingo, um
-prato por jantar; a linha abre *Jantar de…*, onde se escolhe o prato (ou nenhum), se cria um novo
-(nome e ingredientes, um por linha) e se põe na lista o que falta — só o que a lista aberta ainda
-não tem, com o nome de quem pôs. Secções com os artigos; o lápis abre *Gerir Artigo* (adiar,
+abre quem, quando, onde. **Ementa da Semana** (11/09/2026): um prato por jantar; a linha do dia
+abre *Jantar de…*, onde se escolhe o prato (ou nenhum), se cria um novo (nome e ingredientes, um
+por linha) e se põe na lista o que falta — só o que a lista aberta ainda não tem, com o nome de
+quem pôs. **É opcional** (12/09/2026, `design/ementa-opcional.dc.html`, A e C): um interruptor na
+Gestão da Casa desliga-a para toda a casa — a secção sai daqui e o «Jantar de hoje» sai da app da
+criança, os pratos ficam. Ligada, mostra só os dias com jantar; sem nenhum é uma linha só,
+«Planear a semana», que abre os sete dias. Secções com os artigos; o lápis abre *Gerir Artigo* (adiar,
 remover, ordem). **Artigos Habituais**. **Últimas 10 compras** com média. **Acrescentar artigo** e
 **Iniciar Compras**, ambos a rolar com a lista.
 
@@ -266,6 +269,12 @@ cabeçalho, com confirmação.
 ## 3.11 Equipamentos, Saúde, Gestão, Documentação
 
 Ver `TAREFAS.md` tarefas 4 a 6 e as capturas 11 a 17.
+
+**Medicação a partir da receita** (12/09/2026, Saúde) — a receita ganha o plano de tomas:
+por dia, dias, caixa. Na consulta, a receita mostra o plano numa linha e avisa quando a caixa
+acaba antes da receita; o botão «Tomas» abre a folha: definir o plano, «Pôr as tomas na Agenda»
+(um evento «só adultos» por dia, de hoje em diante), «Tomado agora», e o que já se tomou hoje
+com hora e quem. Só quem marcou desmarca. As tomas sobem pelo travão de casa das consultas.
 
 **Contratos** (12/09/2026) — segunda secção do ecrã dos Equipamentos: o seguro do carro, a
 internet, a inspeção. Uma linha por contrato com o fornecedor, quando renova, a fidelização

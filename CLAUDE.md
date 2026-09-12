@@ -91,6 +91,8 @@ metades. Corrigido em 03/09/2026:
 - o cliente **tem** `ler.saude()` em `src/pocketbase.js`
 - o que não existe é a **escrita**, e é travada à mão: `recusaSaude()` em `src/sync.js`
   rebenta se alguém lhe acrescentar uma escrita de saúde
+- as **tomas** de uma receita (`tomas_saude`, 12/09/2026) estão dentro do mesmo travão,
+  por decisão do dono da casa: «as tomas sobem pelo travão de casa»
 
 O travão é a conformidade, não a construção: cinco pontos no `db/postgres/README.md`, e
 são dados clínicos de menores. **Enquanto o servidor da casa correr em `127.0.0.1`**,

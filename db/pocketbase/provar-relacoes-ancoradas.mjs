@@ -198,6 +198,9 @@ nosso.prato = await admin.collection('pratos').create({
 // pagá-la com uma despesa da casa dela.
 nosso.contaFixa = await admin.collection('contas_fixas').create({
   casa: casa.id, nome: 'Renda', valor: 850, dia: 1, envelope: nosso.envelope.id });
+// A medicação (12/09/2026): uma receita do Léo, para a vizinha lhe tentar marcar tomas.
+nosso.receita = await admin.collection('receitas_saude').create({
+  casa: casa.id, episodio: nosso.episodio.id, nome: 'Ferro' });
 
 // E uma linha DELA, para os ataques que precisam de uma ponta legítima — sem
 // isso, a transferência era recusada por ter as duas pontas de fora e a prova
@@ -206,6 +209,11 @@ const deles = {};
 deles.envelope = await admin.collection('envelopes').create({
   casa: outra.id, nome: 'Mercearia deles', limite_base: 100 });
 deles.lista = await admin.collection('listas_compras').create({ casa: outra.id });
+// E uma receita DELA, para o ataque ao `por` das tomas ter a receita legítima.
+deles.episodio = await admin.collection('episodios_saude').create({
+  casa: outra.id, membro: nela.id, especialidade: 'Medicina geral', dia: '2026-09-20' });
+deles.receita = await admin.collection('receitas_saude').create({
+  casa: outra.id, episodio: deles.episodio.id, nome: 'Vitaminas' });
 
 // Uma tentativa por relação: os campos mínimos, com a relação a apontar para
 // DENTRO desta casa e o `casa` da linha na casa DELA.
@@ -229,6 +237,9 @@ const ATAQUES = [
   ['despesas', 'conta_fixa', { valor: 9, pagador: '@eu', idem_key: 'anc-cf', envelope: () => deles.envelope.id, conta_fixa: () => nosso.contaFixa.id }],
   // Os contratos (12/09/2026): quem trata é um adulto DESTA casa.
   ['contratos', 'responsavel', { nome: 'Seguro deles', responsavel: () => rita.id }],
+  // As tomas (12/09/2026): a receita desta casa, e a assinatura de um adulto desta.
+  ['tomas_saude', 'receita', { quando: '2026-09-20 08:00:00.000Z', por: '@eu', receita: () => nosso.receita.id }],
+  ['tomas_saude', 'por', { quando: '2026-09-20 08:00:00.000Z', receita: () => deles.receita.id, por: () => rita.id }],
   // ⚠ As DUAS pontas da transferência, uma de cada vez. A prova «há um ataque
   // por relação» apanhou-me a esquecer o `para_envelope` — que é exactamente
   // o género de omissão que ela existe para apanhar, e que me escapou cinco

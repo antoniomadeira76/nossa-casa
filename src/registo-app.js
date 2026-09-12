@@ -87,6 +87,7 @@ export const AREAS = [
     faz: [
       'Uma consulta por membro, com especialidade, médico e notas',
       'Notas, receitas e decisões acrescentam-se à consulta ao longo do tempo',
+      'A medicação a partir da receita: tomas por dia, dias e caixa; as tomas põem-se na Agenda só para os adultos, e cada uma marca-se com quem e quando',
       'Documentos e exames anexam-se à consulta que os originou',
       'A ficha de um adulto é dele: nem o outro adulto a vê. Uma criança não vê a sua própria ficha',
       'Só sincroniza para um servidor dentro de casa — são dados de saúde de menores',
@@ -108,6 +109,7 @@ export const AREAS = [
       'O PIN de entrada das crianças',
       'O rendimento mensal, os envelopes e os limites de cada um',
       'O valor do ponto, o dia de pagamento da semanada e se as despesas se dividem a meias',
+      'Se a casa planeia os jantares da semana — a ementa é opcional, e desligá-la não apaga nada',
       'As listas da casa: especialidades médicas, categorias de equipamento e lojas',
     ] },
 
@@ -147,6 +149,8 @@ export const AREAS = [
 export const REGISTO_APP = [
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
   // ── 1.12.0 ────────────────────────────────────────────────────────────────
+  { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Saúde', t: 'A medicação a partir da receita: a receita ganha o plano de tomas — quantas por dia, durante quantos dias, e quantas unidades traz a caixa — e avisa quando a caixa acaba antes da receita. «Pôr as tomas na Agenda» cria um dia por toma, só para os adultos. Cada toma marca-se com um toque e fica com quem e quando; só quem marcou desmarca. A criança não vê nada disto, e as tomas só sobem para um servidor que viva na casa, como as consultas' },
+  { v: '1.12.0', d: '12/09/2026', k: 'alterado', a: 'Compras', t: 'A ementa da semana passou a ser opcional: um interruptor na Gestão da Casa desliga-a para toda a casa — a secção sai das Compras e o «Jantar de hoje» sai da app das crianças; os pratos ficam guardados. Ligada, mostra só os dias com jantar, e sem nenhum é uma linha só, «Planear a semana», que abre os sete dias' },
   { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Equipamentos', t: 'Os contratos e as renovações, ao lado dos equipamentos: o seguro do carro, a internet, a inspeção, cada um com o fornecedor, a data em que renova, a fidelização e quem trata. A ficha guarda o documento — a apólice, o contrato assinado — e diz «só aqui» enquanto ele não chegar ao servidor' },
   { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Início', t: 'Um contrato que renova dentro de 30 dias entra no «Precisa de Si», como as garantias; a linha abre a ficha desse contrato. Depois da data passar, fica a vermelho' },
   { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Dinheiro', t: 'As contas fixas: a renda, a luz, a internet, cada uma com o valor, o dia do mês em que vence, o envelope e quem paga. «Marcar como paga» regista a despesa do mês no envelope com um toque, e a segunda do mesmo mês não entra. «Paga» é a despesa existir, nunca um número escrito' },

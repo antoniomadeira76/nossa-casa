@@ -61,7 +61,7 @@ function CartaoDoMes({ t, nome, aberto, desde, gasto, orcamento, onAbrir, onFech
 
 export default function Gestao({ t, user, onClose }) {
   const { s, set, isAdmin, budget, spent, mesAberto, mesAbertoDesde, envelopes, pinError, setPin, temPin, canChangeRole, setRole,
-          kidPts, pontosNasTarefas, mudarRegraDaCasa, mudarListaDaCasa,
+          kidPts, pontosNasTarefas, ementaNaCasa, mudarRegraDaCasa, mudarListaDaCasa,
           criarEnvelope, alterarEnvelope, apagarEnvelope, membros: MEMBERS, nomeDaCasa, podeGerirCasa,
           renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
           abrirMes, fecharMes } = useStore();
@@ -241,6 +241,30 @@ export default function Gestao({ t, user, onClose }) {
           </View>
           <Toggle t={t} on={s.splitHalf} label="Dividir a meias"
             onPress={() => mudarRegraDaCasa({ splitHalf: !s.splitHalf })} />
+        </View>
+      </View>
+
+      {/* ── A ementa da semana é opcional ─────────────────────────────────
+          Pedido do dono da casa em 12/09/2026, ao ver sete linhas de «Sem
+          jantar marcado» numa casa que não planeia jantares. A opção A de
+          `design/ementa-opcional.dc.html`: uma regra da CASA, como os pontos
+          e a divisão a meias — e vive ao lado deles, no separador que abre.
+          Desligar não apaga pratos nem jantares — esconde a secção nas
+          Compras e o «Jantar de hoje» na app da criança. */}
+      <View style={{ gap: S.md }}>
+        <SectionTitle t={t}>Compras</SectionTitle>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: t.subtle,
+          borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14 }}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>Ementa da semana</Text>
+            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+              {ementaNaCasa
+                ? 'Um prato por jantar, nas Compras, e o que falta entra na lista. Desligar esconde a secção — os pratos ficam guardados.'
+                : 'A casa não planeia os jantares na app. Os pratos que já havia ficam guardados e voltam se ligar outra vez.'}
+            </Text>
+          </View>
+          <Toggle t={t} on={ementaNaCasa} label="Ementa da semana"
+            onPress={() => mudarRegraDaCasa({ ementaDesligada: ementaNaCasa })} />
         </View>
       </View>
 

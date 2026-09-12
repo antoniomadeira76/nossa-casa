@@ -54,6 +54,8 @@ const NOSSAS = [
   // das relações, e as três apontam para ele. Fora de ordem, a limpeza para com
   // «existing reference» e deixa a base a meio — foi o que a
   // `credenciais_agenda` ensinou.
+  // ⚠ E as `tomas_saude` ANTES das `receitas_saude`: a toma aponta à receita.
+  'tomas_saude',
   'notas_saude', 'receitas_saude', 'decisoes_saude',
   // ⚠ `eventos` subiu para AQUI, antes dos `episodios_saude`. Ganhou uma
   // relação para eles («a agenda aprende a saúde»), e uma coleção não se apaga
@@ -261,6 +263,16 @@ const CAMPOS_DA_CASA = [
     // O interruptor dos pontos. Ausente lê-se como LIGADO, do lado do cliente,
     // porque é o que a app fazia antes de ele existir.
     bool('pontos_ligados'),
+    // O interruptor da ementa da semana (12/09/2026, a pedido do dono da casa:
+    // «esta função deverá ser opcional»). ⚠ Pela NEGATIVA, e não por acaso: um
+    // `bool` acrescentado a uma coleção COM LINHAS nasce a `false` em todas —
+    // um `ementa_ligada` desligava a ementa à casa a sério no instante em que
+    // o campo lá chegou (aconteceu, e a prova apanhou-o). O `pontos_ligados`
+    // escapou por ter sido semeado a `true`. Com `ementa_desligada`, o `false`
+    // de nascença É o estado que se quer, no servidor e na loja, sem ninguém
+    // ter de «ler ausente como ligado». Desligar não apaga pratos nem jantares.
+    // Nasce também na tabela `CAMPOS` do `acrescentar-campos.mjs`.
+    bool('ementa_desligada'),
 ];
 
 if (casaHabitada) await aplicarCampos('casas', CAMPOS_DA_CASA);
@@ -1327,12 +1339,53 @@ await criar({
     txt('unidade'),
     data('expira_em'),
     txt('decisao'),
+    // A medicação a partir da receita (12/09/2026, a sexta das dez
+    // funcionalidades): quantas tomas por dia, durante quantos dias, e quantas
+    // unidades traz a caixa — é o que permite dizer «a caixa acaba a 28/09,
+    // antes da receita». ⚠ Zero é «não definido» (classe 13: um `number` não
+    // é anulável); os três nascem também na tabela `CAMPOS` do
+    // `acrescentar-campos.mjs`.
+    num('frequencia', { min: 0, onlyInt: true }),
+    num('duracao_dias', { min: 0, onlyInt: true }),
+    num('caixa', { min: 0, onlyInt: true }),
   ],
   listRule: PELO_EPISODIO,
   viewRule: PELO_EPISODIO,
   createRule: PELO_EPISODIO,
   updateRule: PELO_EPISODIO,
   deleteRule: PELO_EPISODIO,
+});
+
+// ── As tomas de uma receita ──────────────────────────────────────────────────
+//
+// Cada toma marcada é UMA LINHA: a receita, quando, e quem marcou. É aditiva
+// como o cofre — nunca um contador na receita (INVARIANTE #2) — e duas tomas
+// da mesma receita no mesmo instante colidem no índice em vez de se contarem
+// duas vezes. Desmarcar apaga a linha, e só quem a marcou o faz.
+//
+// A visibilidade herda-se da receita → episódio (`PELA_RECEITA`): a criança
+// não vê as suas tomas, como não vê a sua ficha. E sobe pelo MESMO travão da
+// saúde (`recusaSaude`): só para um servidor que viva na casa.
+const PELA_RECEITA =
+  `receita.episodio.casa = @request.auth.casa && ${ADULTO}`
+  + ` && (receita.episodio.membro = @request.auth.id || receita.episodio.membro.papel = "crianca")`;
+
+await criar({
+  name: 'tomas_saude', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('receita', ids.receitas_saude, { required: true, cascadeDelete: true }),
+    data('quando', { required: true }),
+    rel('por', ids.membros, { required: true }),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_toma_por_instante ON tomas_saude (receita, quando)'],
+  listRule: PELA_RECEITA,
+  viewRule: PELA_RECEITA,
+  // ⚠ `por = @request.auth.id`: uma toma fica assinada por quem a marcou, e a
+  // assinatura não se escolhe — é a mesma regra do `autor` das notas.
+  createRule: `${PELA_RECEITA} && por = @request.auth.id`,
+  updateRule: null,     // não se edita uma toma; desmarca-se
+  deleteRule: `${PELA_RECEITA} && por = @request.auth.id`,
 });
 
 // A decisão sobre a consulta: resolvida, ou por resolver.

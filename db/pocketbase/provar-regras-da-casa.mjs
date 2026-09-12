@@ -109,6 +109,19 @@ await prova('⚠ e `false` não vira o valor por omissão ao voltar', async () =
   await sync.regrasDaCasa(daRita.casa, { splitHalf: true, pointValue: 0.1, pontosLigados: true });
 });
 
+await prova('⚠ a ementa da semana desliga-se para os DOIS — e uma casa que nunca mexeu no campo tem-na LIGADA', async () => {
+  // A regra nova de 12/09/2026. ⚠ A casa desta prova nasceu sem escrever o
+  // campo, e o PocketBase dá-lhe `false`: foi isto que apanhou a primeira
+  // versão, `ementa_ligada`, que desligava a ementa a toda a casa que já
+  // existia. Pela negativa, o `false` de nascença é «ligada».
+  igual((await sync.puxarCasa()).regras.ementaDesligada, false);
+  await sync.regrasDaCasa(daRita.casa, { ementaDesligada: true });
+  igual((await doTomas.collection('casas').getFullList())[0].ementa_desligada, true);
+  igual((await sync.puxarCasa()).regras.ementaDesligada, true);
+  await sync.regrasDaCasa(daRita.casa, { ementaDesligada: false });
+  igual((await sync.puxarCasa()).regras.ementaDesligada, false);
+});
+
 console.log('\n── e quem as pode mudar ──');
 
 await prova('⚠ o Tomás, que é adulto e não administra, NÃO muda as regras', () =>

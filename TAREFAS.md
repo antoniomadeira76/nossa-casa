@@ -54,7 +54,10 @@
         criança não recebe a lista — é orçamento — nem do servidor nem da loja.
       - guarda: `__tests__/as-contas-fixas.test.js`; provas: `provar-contas-fixas.mjs`
         (11) e três ataques novos em `provar-relacoes-ancoradas.mjs`.
-      - **falta**: ver no navegador como António (só ele entra pela Google).
+      - visto no navegador como António (12/09/2026): a secção com o aviso de vazio e
+        «acrescentar conta fixa», rodapé no sítio. ⚠ Só à segunda: o painel esteve a
+        servir o bundle do checkout PRINCIPAL por causa de uma junção do `node_modules`
+        no worktree — ver a classe 38 e seguintes na memória.
 - [ ] **PENDENTE:** Abrir o mês — distribuir rendimento e reiniciar
 - [ ] **PENDENTE:** Fecho do mês — arquivar e 30% para metas
 
@@ -232,6 +235,19 @@
 - [ ] **PENDENTE:** Quem vai às compras — Alterar dia, hora, loja (modo compras mostra dados)
 - [ ] **PENDENTE:** Lojas — Outra loja… também na folha das compras
 
+- [x] **A ementa da semana é opcional** (12/09/2026). O dono da casa viu sete linhas de «Sem
+      jantar marcado» e pediu opções (`design/ementa-opcional.dc.html`); escolheu A e C.
+      - A: `casas.ementa_desligada`, regra da casa como o `pontos_ligados` (nos dois
+        sítios, na tradução `REGRA_NO_SERVIDOR`, interruptor na Gestão). ⚠ **Pela
+        NEGATIVA**: a primeira versão era `ementa_ligada`, e um `bool` acrescentado a uma
+        coleção com linhas nasce a `false` — a casa a sério ficou com a ementa desligada
+        no instante em que o campo chegou ao servidor. «Ausente lê-se como ligado» só vale
+        enquanto o campo NÃO existe; um interruptor novo com predefinição ligada guarda-se
+        pela negativa. Desligar não apaga pratos nem jantares; a secção sai das Compras e
+        o «Jantar de hoje» da criança.
+      - C: ligada, só os dias com jantar; sem nenhum, uma linha «Planear a semana» que
+        abre os sete. Guarda: `__tests__/a-ementa-e-opcional.test.js`.
+
 ## 7. AGENDA & EVENTOS
 - [x] Agendar — campo de texto + popup (calendário em cima, roller hora/minuto em baixo)
 - [ ] **PENDENTE:** Calendário — Ver mês expande grelha, toque num dia para agendar
@@ -324,6 +340,24 @@ uma consulta a sério, porque não há onde escrever o nome.
       tocou em «Ação» e não aconteceu nada.
 - [x] Sincronizar as consultas — sobem se o servidor viver na casa. Ver a
       última entrada desta secção.
+- [x] **A medicação a partir da receita** (12/09/2026, a sexta das dez funcionalidades).
+      A receita ganha `frequencia`, `duracao_dias` e `caixa` (nos dois sítios; zero é «sem
+      plano»); `tomas_saude` (receita, quando, por) nasce nos dois, aditiva, com índice
+      único (receita, quando), regra `PELA_RECEITA` e `por = @request.auth.id`.
+      - **as tomas sobem pelo travão de casa** — decisão do dono da casa. `tomas_saude`
+        entrou na lista `SAUDE` do `recusaSaude`; a leitura da ficha traz as tomas.
+      - a folha `TomasDaReceita` (aberta pelo botão «Tomas» da receita): o plano, o
+        aviso da caixa, «Pôr as tomas na Agenda» (um evento «adultos» por dia, de hoje em
+        diante, sem duplicar), «Tomado agora», e desmarcar só por quem marcou.
+      - ⚠ as tomas guardam-se pela `chaveDaReceita` (`srv-<id>` mal exista): uma receita
+        troca de id na leitura seguinte, e as tomas ficavam órfãs debaixo do antigo.
+      - ⚠ «agora» é o `agoraNaApp()`, não `new Date()`: com o dia fixado nas provas, a
+        toma marcada «agora» tem de cair em «hoje».
+      - guarda: `__tests__/a-medicacao-a-partir-da-receita.test.js`; provas:
+        `provar-medicacao.mjs` (14) e dois ataques em `provar-relacoes-ancoradas.mjs`.
+      - visto no navegador como António (12/09/2026): as duas receitas da Pediatria do
+        Léo com o botão «Tomas», e a folha com o plano por definir, «Pôr as tomas na
+        Agenda» à espera do plano, «Hoje · 0 tomas» e «Tomado agora». Nada foi marcado.
 
 ### «Marcar Consulta», contra o protótipo
 
@@ -498,7 +532,10 @@ uma consulta a sério, porque não há onde escrever o nome.
       - guarda: `__tests__/os-contratos-e-renovacoes.test.js`; provas:
         `provar-contratos.mjs` (10, com um PNG a atravessar e a voltar byte a byte) e
         um ataque novo em `provar-relacoes-ancoradas.mjs`.
-      - **falta**: ver no navegador como António.
+      - visto no navegador como António (12/09/2026): «Contratos a renovar» no resumo, a
+        secção com o aviso de vazio e «acrescentar contrato». O subtítulo do cabeçalho
+        cortava em «3 em garanti…» com as três contagens — ficou «4 equipamentos · 0
+        contratos», como o desenho diz.
 - [ ] **PENDENTE:** Agendar Manutenção — entra na Agenda
 
 ## 10. COFRE (Crianças)

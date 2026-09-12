@@ -565,6 +565,9 @@ export async function puxarCasa() {
     // Ausente lê-se como ligado: é o que a app fazia antes de o campo existir,
     // e um `!!` desligava os pontos a quem já os usava, em silêncio.
     pontosLigados: aCasa.pontos_ligados !== false,
+    // E a ementa da semana — pela NEGATIVA: um `bool` novo nasce a `false` em
+    // todas as linhas, e `false` tem de ser «ligada». `=== true`, sem margem.
+    ementaDesligada: aCasa.ementa_desligada === true,
   } : null;
 
   // ── As três listas da casa ────────────────────────────────────────────────
@@ -1624,6 +1627,7 @@ const REGRA_NO_SERVIDOR = {
   payDay: 'dia_pagamento',
   splitHalf: 'divide_meias',
   pontosLigados: 'pontos_ligados',
+  ementaDesligada: 'ementa_desligada',
 };
 
 export async function regrasDaCasa(casaId, campos) {
@@ -1701,7 +1705,9 @@ export const saudeSincroniza = () => ligado() && eEnderecoDeCasa(servidor.endere
 // saúde tem de ser acrescentada aqui à mão, e é isso que se quer: o travão que
 // se aplica sozinho a nomes que combinam é o travão que um dia deixa passar
 // `anexos`, que não tem «saude» no nome.
-const SAUDE = ['episodios_saude', 'anexos', 'notas_saude', 'receitas_saude', 'decisoes_saude'];
+// As `tomas_saude` entraram em 12/09/2026, por decisão do dono da casa: «as
+// tomas sobem pelo travão de casa» — o mesmo das consultas.
+const SAUDE = ['episodios_saude', 'anexos', 'notas_saude', 'receitas_saude', 'decisoes_saude', 'tomas_saude'];
 
 export function recusaSaude(colecao) {
   if (SAUDE.includes(colecao)) {
@@ -1871,7 +1877,7 @@ export async function apagarEpisodioDeSaude(idNoServidor) {
 // escrevemos nada, e portanto não há nada para ler. É a mesma condição do
 // `recusaSaude`, do lado da leitura.
 export async function puxarSaude(idsDosMembros) {
-  const vazio = { episodios: [], anexos: [], notas: [], receitas: [], decisoes: [] };
+  const vazio = { episodios: [], anexos: [], notas: [], receitas: [], decisoes: [], tomas: [] };
   if (!ligado() || !saudeSincroniza()) return vazio;
 
   const episodios = [];
@@ -1879,6 +1885,7 @@ export async function puxarSaude(idsDosMembros) {
   const notas = [];
   const receitas = [];
   const decisoes = [];
+  const tomas = [];
   // Quem escreveu uma nota vem como id; a app mostra o NOME.
   const nomeDoMembro = Object.fromEntries(
     Object.entries(idsDosMembros || {}).map(([nome, id]) => [id, nome]));
@@ -1968,6 +1975,20 @@ export async function puxarSaude(idsDosMembros) {
         // a classe de defeito do `sem-stock`, do `plano.time` e do `section`.
         ...(r.expira_em ? { expiresAt: dmyDeChave(`d${String(r.expira_em).slice(0, 10)}`) } : {}),
         decision: r.decisao || '',
+        // O plano de tomas (12/09/2026). Zero no servidor é «não definido», e
+        // a loja lê-o como zero também — o `planoDaReceita` devolve nulo.
+        frequency: Number(r.frequencia) || 0,
+        durationDays: Number(r.duracao_dias) || 0,
+        boxSize: Number(r.caixa) || 0,
+      });
+    }
+    // E as tomas de cada receita: quando, e quem marcou — pelo NOME.
+    for (const tm of ficha.tomas || []) {
+      tomas.push({
+        idServidor: tm.id,
+        receitaNoServidor: tm.receita,
+        quando: tm.quando || '',
+        por: nomeDoMembro[tm.por] || tm.por || '',
       });
     }
     for (const dec of ficha.decisoes || []) {
@@ -1981,15 +2002,50 @@ export async function puxarSaude(idsDosMembros) {
       });
     }
   }
-  return { episodios, anexos, notas, receitas, decisoes };
+  return { episodios, anexos, notas, receitas, decisoes, tomas };
 }
 
-export async function receitaDeSaude({ casa, episodio, nome, dose, quantidade, unidade, expiraEm, decisao }) {
+// ⚠ Os nomes são os da COLEÇÃO: `frequencia`, `duracao_dias`, `caixa`.
+const planoNoServidor = ({ frequencia, duracaoDias, caixa } = {}) => ({
+  frequencia: Math.max(0, Math.round(Number(frequencia) || 0)),
+  duracao_dias: Math.max(0, Math.round(Number(duracaoDias) || 0)),
+  caixa: Math.max(0, Math.round(Number(caixa) || 0)),
+});
+
+export async function receitaDeSaude({ casa, episodio, nome, dose, quantidade, unidade, expiraEm, decisao, frequencia, duracaoDias, caixa }) {
   if (!episodio) throw new Error('Uma receita sem consulta não se grava.');
   return criarOuEnfileirar('receitas_saude', {
     casa, episodio, nome, dose: dose || '', quantidade: quantidade || '',
     unidade: unidade || '', expira_em: expiraEm || null, decisao: decisao || '',
+    ...planoNoServidor({ frequencia, duracaoDias, caixa }),
   });
+}
+
+// O plano de tomas de uma receita que já existe — para as receitas escritas
+// antes de 12/09/2026, que não o têm.
+export async function alterarReceitaDeSaude(idNoServidor, campos = {}) {
+  recusaSaude('receitas_saude');
+  if (!idNoServidor) return { pendente: true };
+  return servidor.pb.collection('receitas_saude').update(idNoServidor, planoNoServidor(campos));
+}
+
+// ── As tomas ─────────────────────────────────────────────────────────────────
+//
+// Uma toma é uma LINHA: a receita, quando, quem marcou. Aditiva como o cofre;
+// desmarcar apaga-a, e só quem a marcou o faz (regra do servidor). Duas no
+// mesmo instante colidem no índice em vez de contarem duas vezes.
+export async function tomaDeSaude({ casa, receita, quando, por }) {
+  if (!receita) throw new Error('Uma toma sem receita não se grava.');
+  if (!por) throw new Error('Uma toma sem quem a marcou não se grava.');
+  return criarOuEnfileirar('tomas_saude', {
+    casa, receita, quando: new Date(quando || Date.now()).toISOString(), por,
+  });
+}
+
+export async function apagarTomaDeSaude(idNoServidor) {
+  recusaSaude('tomas_saude');
+  if (!idNoServidor) return { pendente: true };
+  return servidor.pb.collection('tomas_saude').delete(idNoServidor);
 }
 
 // A decisão de uma consulta é UMA. O servidor tem um índice único no
