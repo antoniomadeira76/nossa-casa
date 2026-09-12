@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O filtro de membros das Tarefas</title>
+<style>
+  :root { --pagina: #F0F2F5; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --t1: #262626; --t2: #3B3F48; --t3: #656C7C;
+    --ac: #078286; --acfg: #076F73; --acbg: #E3F2F2; --chrome: #0A5B60; --leo: #1890FF; --ant: #7C3AED; --rita: #7C3AED; --tomas: #0A8F93; --mia: #0B1F5C; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 80ch; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 20px; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; grid-template-columns: 355px 1fr; gap: 16px; }
+  section h2 { grid-column: 1 / -1; margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  section.rec { border-color: var(--ac); box-shadow: 0 0 0 2px rgba(7,130,134,.15); }
+  /* A largura útil é 355 px, à escala real: o que aqui parte, parte no telemóvel. */
+  .tel { width: 355px; border: 1px solid var(--borda); border-radius: 10px; background: var(--pagina); padding: 12px 0; font-size: 13px; overflow: hidden; }
+  .fila { display: flex; gap: 8px; padding: 0 0 0 0; align-items: center; }
+  .fila.embrulha { flex-wrap: wrap; }
+  .past { min-height: 44px; padding: 0 14px; border: 1px solid var(--borda); border-radius: 8px; display: inline-flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13px; color: var(--t2); background: transparent; white-space: nowrap; box-sizing: border-box; }
+  .past.on { background: var(--ac); border-color: var(--ac); color: #fff; }
+  .past .pt { width: 8px; height: 8px; border-radius: 4px; display: inline-block; }
+  .past.on .pt { background: #fff !important; }
+  .past.mini { min-height: 44px; padding: 0 10px; font-size: 12px; gap: 6px; }
+  .desliza { overflow: hidden; position: relative; }
+  .desliza .fila { width: max-content; }
+  .desliza::after { content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 36px; background: linear-gradient(90deg, rgba(240,242,245,0), var(--pagina)); }
+  .bola { width: 44px; height: 44px; border-radius: 22px; display: inline-flex; align-items: center; justify-content: center; position: relative; }
+  .bola .av { width: 32px; height: 32px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 14px; }
+  .bola.on .av { box-shadow: 0 0 0 2px var(--pagina), 0 0 0 4px var(--ac); }
+  .tit { color: var(--acfg); font-weight: 600; font-size: 13px; border-bottom: 1px solid var(--borda); padding: 12px 0 4px; display: flex; justify-content: space-between; }
+  .tit span { color: var(--t3); font-weight: 500; font-size: 11.5px; }
+  .linha { border-bottom: 1px solid var(--div); min-height: 52px; display: flex; align-items: center; gap: 10px; padding: 8px 4px; }
+  .linha .n { width: 20px; height: 20px; border-radius: 4px; border: 1.5px dashed #FAAD14; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  .linha .av { width: 24px; height: 24px; border-radius: 12px; color: #fff; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; }
+  .linha .txt { flex: 1; } .linha .txt small { display: block; color: var(--t3); font-size: 11.5px; }
+  .seg { display: flex; border: 1px solid var(--borda); border-radius: 8px; overflow: hidden; }
+  .seg div { flex: 1; min-height: 44px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; color: var(--t2); border-right: 1px solid var(--borda); }
+  .seg div:last-child { border-right: 0; } .seg .on { background: var(--ac); color: #fff; }
+  .row { min-height: 52px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--borda); border-radius: 8px; padding: 0 14px; background: var(--cartao); }
+  .row .txt { flex: 1; } .row .txt small { display: block; color: var(--t3); font-size: 11.5px; }
+  .row .seta { color: var(--t3); }
+  .folha { margin-top: 10px; border: 1px dashed var(--borda); border-radius: 8px; padding: 6px 10px; background: var(--cartao); }
+  .folha .linha { min-height: 44px; }
+  .gr3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .gr3 .past { justify-content: center; padding: 0 8px; }
+  dl { margin: 0; display: grid; grid-template-columns: 86px 1fr; gap: 4px 10px; font-size: 12.5px; align-content: start; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  code { background: var(--div); padding: 0 4px; border-radius: 3px; font-size: 11.5px; color: var(--t1); }
+  .nota { grid-column: 1 / -1; font-size: 12px; color: var(--t3); border-top: 1px dashed var(--borda); padding-top: 8px; margin: 0; }
+  .medida { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<h1>O filtro de membros das Tarefas — cinco alternativas</h1>
+<p class="sub">Hoje são seis pastilhas de 44 px («Todos» e cinco nomes) numa fila que embrulha: 355 px de largura útil dão para quatro, e as outras duas caem para uma segunda linha de 44 px mais 8 de intervalo — <span class="medida">96 px</span> antes da primeira tarefa, e a segunda linha começa onde calha. Os telemóveis abaixo estão à escala real (355 px): o que aqui parte, parte lá. Tarefas ordenadas por urgência como no ecrã; a linha já traz o avatar de quem faz.</p>
+
+<div class="grelha">
+
+<section>
+  <h2>0. Como está <small>referência</small></h2>
+  <div class="tel">
+    <div class="fila embrulha">
+      <span class="past on">Todos</span>
+      <span class="past"><span class="pt" style="background:var(--leo)"></span>Léo</span>
+      <span class="past"><span class="pt" style="background:var(--ant)"></span>António</span>
+      <span class="past"><span class="pt" style="background:var(--rita)"></span>Rita</span>
+      <span class="past"><span class="pt" style="background:var(--tomas)"></span>Tomás</span>
+      <span class="past"><span class="pt" style="background:var(--mia)"></span>Mia</span>
+    </div>
+    <div class="tit">Rotinas e Tarefas <span>por urgência</span></div>
+    <div class="linha"><span class="n">1</span><span class="av" style="background:var(--ant)">A</span><span class="txt">Pagar o condomínio<small>António · atrasada 2 dias</small></span></div>
+  </div>
+  <dl>
+    <dt>Medida</dt><dd class="medida">Duas linhas: 96 px. Com um sétimo membro, três.</dd>
+    <dt>Problema</dt><dd>A segunda linha parece acidental, e o «Todos» selecionado fica longe do nome que se procura. O ecrã cresce com a família.</dd>
+  </dl>
+</section>
+
+<section class="rec">
+  <h2>A. Avatares numa fila <small>recomendada · escolhida em 12/09/2026</small></h2>
+  <div class="tel">
+    <div class="fila">
+      <span class="past on">Todos</span>
+      <span class="bola"><span class="av" style="background:var(--leo)">L</span></span>
+      <span class="bola"><span class="av" style="background:var(--ant)">A</span></span>
+      <span class="bola"><span class="av" style="background:var(--rita)">R</span></span>
+      <span class="bola"><span class="av" style="background:var(--tomas)">T</span></span>
+      <span class="bola"><span class="av" style="background:var(--mia)">M</span></span>
+    </div>
+    <div class="tit">Rotinas e Tarefas <span>por urgência</span></div>
+    <div class="linha"><span class="n">1</span><span class="av" style="background:var(--ant)">A</span><span class="txt">Pagar o condomínio<small>António · atrasada 2 dias</small></span></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>«Todos» fica pastilha; cada membro é o SEU avatar (a figura ou a inicial, na cor dele) num alvo de 44. O escolhido ganha um anel do acento e o título passa a dizer «Rotinas e Tarefas · Léo», que é onde o nome faz falta.</dd>
+    <dt>Medida</dt><dd class="medida">Uma linha de 44 px: 82 + 5 × 52 = 342 ≤ 355. Cabe até cinco membros; ao sexto passa a deslizar (B).</dd>
+    <dt>Reutiliza</dt><dd>O `Avatar`/`avatarDe` que a própria linha da tarefa já usa — a pessoa reconhece a bola porque a vê em cada tarefa. Nada novo no tema.</dd>
+  </dl>
+  <p class="nota">É a que mais encurta e a que menos inventa: a app já identifica as pessoas pela bola. Perde o nome escrito na pastilha, e por isso o título da secção passa a dizê-lo. Em voz, a bola lê «Mostrar só as tarefas do Léo».</p>
+</section>
+
+<section>
+  <h2>B. Uma fila que desliza <small>como está, sem embrulhar</small></h2>
+  <div class="tel">
+    <div class="desliza"><div class="fila">
+      <span class="past on">Todos</span>
+      <span class="past"><span class="pt" style="background:var(--leo)"></span>Léo</span>
+      <span class="past"><span class="pt" style="background:var(--ant)"></span>António</span>
+      <span class="past"><span class="pt" style="background:var(--rita)"></span>Rita</span>
+      <span class="past"><span class="pt" style="background:var(--tomas)"></span>Tomás</span>
+      <span class="past"><span class="pt" style="background:var(--mia)"></span>Mia</span>
+    </div></div>
+    <div class="tit">Rotinas e Tarefas <span>por urgência</span></div>
+    <div class="linha"><span class="n">1</span><span class="av" style="background:var(--ant)">A</span><span class="txt">Pagar o condomínio<small>António · atrasada 2 dias</small></span></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>As mesmas pastilhas, num <code>ScrollView horizontal</code>; a última fica cortada de propósito e um esbatimento à direita diz «há mais». O escolhido desliza para ficar visível.</dd>
+    <dt>Medida</dt><dd class="medida">Uma linha de 44 px, para qualquer número de membros.</dd>
+    <dt>Custo</dt><dd>Um nome fica sempre escondido; deslizar com o dedo numa fila pequena é um gesto que as pessoas nem sempre descobrem. A app já o faz nas cores do perfil.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>C. Adultos, crianças, e a pessoa pela lista <small>três pastilhas fixas</small></h2>
+  <div class="tel">
+    <div class="seg"><div class="on">Todos</div><div>Adultos</div><div>Crianças</div></div>
+    <div class="tit">Rotinas e Tarefas <span>por urgência</span></div>
+    <div class="linha"><span class="n">1</span><span class="av" style="background:var(--ant)">A</span><span class="txt">Pagar o condomínio<small>António · atrasada 2 dias</small></span></div>
+    <div class="linha"><span class="n">2</span><span class="av" style="background:var(--leo)">L</span><span class="txt">Levar o lixo<small>Léo · atrasada 5 dias</small></span></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Um <code>Segmented</code> com três valores que nunca mudam. Para ver as de UMA pessoa, toca-se no avatar dela numa linha — que passa a filtrar por ela, com «× Léo» a aparecer no título para desfazer.</dd>
+    <dt>Medida</dt><dd class="medida">Uma linha de 44 px, sempre igual, seja qual for a família.</dd>
+    <dt>Custo</dt><dd>O avatar da linha passa a ser um toque, numa linha que já tem três alvos (erro #6 do CLAUDE.md). A pergunta mais comum — «o que tem o Léo para fazer?» — fica a dois toques.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>D. Uma linha «Mostrar», que abre a lista <small>seletor</small></h2>
+  <div class="tel">
+    <div class="row"><span class="av" style="background:var(--leo); width:24px;height:24px;border-radius:12px;color:#fff;font-size:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:600">L</span><span class="txt">Mostrar: Léo<small>3 tarefas · toque para mudar</small></span><span class="seta">›</span></div>
+    <div class="folha">
+      <div class="linha"><span class="av" style="background:#999">✓</span><span class="txt">Todos</span></div>
+      <div class="linha"><span class="av" style="background:var(--leo)">L</span><span class="txt">Léo<small>3 por fazer</small></span></div>
+      <div class="linha"><span class="av" style="background:var(--ant)">A</span><span class="txt">António<small>1 por fazer</small></span></div>
+    </div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>Uma <code>Row</code> de 52 px que diz o que está a mostrar e abre uma folha com «Todos» e um membro por linha — com a contagem de cada um, que hoje não se vê em lado nenhum.</dd>
+    <dt>Medida</dt><dd class="medida">52 px fixos; a folha cresce com a família sem tocar no ecrã.</dd>
+    <dt>Custo</dt><dd>Mudar de pessoa passa a ser dois toques e uma folha. Bom para famílias grandes; pesado para a de quatro.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>E. Grelha de três por linha <small>duas linhas, de propósito</small></h2>
+  <div class="tel">
+    <div class="gr3">
+      <span class="past on">Todos</span>
+      <span class="past"><span class="pt" style="background:var(--leo)"></span>Léo</span>
+      <span class="past"><span class="pt" style="background:var(--ant)"></span>António</span>
+      <span class="past"><span class="pt" style="background:var(--rita)"></span>Rita</span>
+      <span class="past"><span class="pt" style="background:var(--tomas)"></span>Tomás</span>
+      <span class="past"><span class="pt" style="background:var(--mia)"></span>Mia</span>
+    </div>
+    <div class="tit">Rotinas e Tarefas <span>por urgência</span></div>
+    <div class="linha"><span class="n">1</span><span class="av" style="background:var(--ant)">A</span><span class="txt">Pagar o condomínio<small>António · atrasada 2 dias</small></span></div>
+  </div>
+  <dl>
+    <dt>Ecrã</dt><dd>As mesmas pastilhas, mas com a largura toda repartida em três colunas iguais. As duas linhas deixam de parecer um acidente: é uma grelha, e o «Mia» alinha com o «Todos».</dd>
+    <dt>Medida</dt><dd class="medida">Duas linhas de 44 + 8: os mesmos 96 px de hoje, arrumados. Sete membros dão três linhas.</dd>
+    <dt>Custo</dt><dd>Não encurta nada; só arruma. Um nome longo («Francisca») cabe nos 113 px de cada coluna a 13 px, à justa.</dd>
+  </dl>
+</section>
+
+</div>
+</body>
+</html>
