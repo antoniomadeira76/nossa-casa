@@ -340,6 +340,19 @@ uma consulta a sério, porque não há onde escrever o nome.
       tocou em «Ação» e não aconteceu nada.
 - [x] Sincronizar as consultas — sobem se o servidor viver na casa. Ver a
       última entrada desta secção.
+- [x] **As histórias de aceitação** (13/09/2026) — `npm run aceitacao`, em
+      `db/pocketbase/aceitacao/`. O dono da casa pediu «testes de aceitação» e não havia
+      nenhum com esse nome: as provas do servidor provam REGRAS, coleção a coleção; os guardas
+      Jest provam ECRÃS. Faltava a pergunta «a história que prometemos acontece de ponta a
+      ponta?». Uma história por funcionalidade (dez), cada uma com a sua casa e a mesma
+      família (Rita administra, Tomás adulto, Léo e Mia com PIN), escrita em «Dado / Quando /
+      Então», a trocar de pessoa pela sessão da app (`como.rita()`, `como.leo()`…) e a ler
+      pelo `puxarCasa`/`puxarSaude`, como a app lê. `historia.mjs` é o andaime;
+      `correr.mjs` corre-as pela ordem e soma. 70 passos, verdes contra o servidor da casa.
+      - lições da primeira corrida: o que vai pela FILA (`despesa`, `movimentoDeCofre`)
+        confere-se com `semRecusa`, não com `comId`; os contratos falam datas dd/mm/aaaa; o
+        `dia` de uma consulta vai sem o «d»; e o `puxarSaude` leva o quadro `nome → id`
+        inteiro, senão «quem marcou» vem como id.
 - [x] **O PDF da ficha de saúde inclui as imagens dos documentos** (12/09/2026). O dono da
       casa, ao ver «Documentos em arquivo: …» no PDF da Mia: «tem de os incluir». Cada anexo
       com `foto` passa a trazer `dados` — a imagem em `data:` URI, lida pelo `lerComoDataURI`
