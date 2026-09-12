@@ -340,6 +340,27 @@ uma consulta a sério, porque não há onde escrever o nome.
       tocou em «Ação» e não aconteceu nada.
 - [x] Sincronizar as consultas — sobem se o servidor viver na casa. Ver a
       última entrada desta secção.
+- [x] **A troca de tarefas entre irmãos** (12/09/2026, a oitava das dez funcionalidades;
+      desenho em `design/troca-de-tarefas.dc.html`). `trocas_tarefas` (casa, dia, tarefa_de,
+      tarefa_para, proposta_por, aceite_em, aceite_por) nos dois sítios, com índices únicos
+      (tarefa_de, dia) e (tarefa_para, dia). A atribuição do dia é DERIVADA no `allTasks`
+      (`trocadaCom` guarda o dono original), como a rotação — nada se escreve na tarefa, e
+      à meia-noite acabou. Só as de hoje descem (filtro por data no `ler.casa`, com um dia
+      de folga pelo fuso). Na app da criança: secção «Trocas» (aceitar, recusar, retirar) e
+      «Propor uma troca» → folha `ProporTroca`; nos adultos: linha no «Precisa de Si» e
+      «Trocas de Hoje» nas Tarefas com «Anular a troca». Ícone novo `swap`, só para isto.
+      - servidor: só quem tem a `tarefa_de` propõe, criança para criança, e a linha nasce por
+        aceitar; só quem tem a `tarefa_para` aceita e assina (`@request.body.aceite_por`,
+        `:isset = false` no resto); apaga quem propôs/recebeu enquanto por aceitar, um adulto
+        sempre. Quatro relações, quatro ataques novos no guarda (49 provas).
+      - ⚠ limite conhecido, herdado da rotação e do reatribuir: com servidor, o histórico de
+        `tarefas_feitas` de uma tarefa conta para quem a TEM hoje — no dia da troca, os
+        pontos antigos do lixo contam para a Mia, e amanhã voltam ao Léo. Uma atribuição por
+        linha resolvia-o; fica para quando doer.
+      - guarda: `a-troca-de-tarefas` (12); provas: `provar-trocas.mjs` (18).
+      - visto no navegador como António (12/09/2026): as Tarefas e o Início desenham-se sem
+        a secção, porque a casa real não tem trocas hoje; nada foi escrito na casa. Como Léo
+        não se viu — a entrada da criança pede o PIN dele, que não tenho.
 - [x] **A ficha de emergência da criança** (12/09/2026, a sétima das dez funcionalidades).
       `alergias_saude` (membro, nome, gravidade, nota), nos dois sítios, com as regras da
       ficha e índice único (membro, nome). Na ficha da criança, a linha «Ficha de

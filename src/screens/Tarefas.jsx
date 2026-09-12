@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT, corDoMembro } from '../theme';
 import { subtituloDaTarefa } from '../format';
 
-import { SectionTitle, Linha, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe } from '../ui';
+import { SectionTitle, Linha, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe, BotaoCompacto } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -27,7 +27,9 @@ const URG = [
 export default function Tarefas({ t, user, abrir }) {
   const st = useStore();
   const { s, set, allTasks, dueOf, isRecurring, removerTarefa, membros: MEMBERS,
-          membrosDaCasa, criancas, pontosNasTarefas, editarTarefa } = st;
+          membrosDaCasa, criancas, pontosNasTarefas, editarTarefa, trocasDeHoje, desfazerTroca } = st;
+  // As trocas de tarefas entre as crianças, de hoje — um adulto vê e anula.
+  const trocas = trocasDeHoje();
   const [filter, setFilter] = useState('Todos');
   const [manage, setManage] = useState(abrir || null);
   React.useEffect(() => { if (abrir) setManage(abrir); }, [abrir]);
@@ -174,6 +176,33 @@ export default function Tarefas({ t, user, abrir }) {
           </View>
         )}
       </View>
+
+      {/* ── As trocas de hoje ──────────────────────────────────────────────
+          «O lixo pelas plantas, só hoje»: o Léo propôs, a Mia aceitou, e a
+          lista de cima já mostra o avatar de quem faz cada uma hoje. Um adulto
+          anula — apaga a linha, e cada tarefa volta a quem era. Só aparece
+          quando há trocas (12/09/2026). */}
+      {trocas.length > 0 ? (
+        <View>
+          <SectionTitle t={t}>Trocas de Hoje</SectionTitle>
+          {trocas.map(tr => (
+            <Linha key={tr.id} t={t}>
+              <View style={{ gap: S.sm }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 }}>
+                  <Icon name="swap" size={20} color={tr.aceiteEm ? t.state.ok : t.state.info} />
+                  <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, lineHeight: 21, color: t.text2 }}>
+                    {`${tr.quemDe} e ${tr.quemPara}: «${tr.tarefaDe}» por «${tr.tarefaPara}»`}
+                  </Text>
+                  {tr.aceiteEm
+                    ? <Pill label="aceite" fg={t.state.okTexto} bg={t.state.okBg} border={t.state.okBorder} />
+                    : <Pill label="por aceitar" fg={t.state.infoDeep} bg={t.state.infoBg} border={t.state.info} />}
+                </View>
+                <BotaoCompacto t={t} label="Anular a troca" onPress={() => desfazerTroca(user, tr.id)} />
+              </View>
+            </Linha>
+          ))}
+        </View>
+      ) : null}
 
       <AddButton t={t} label="acrescentar tarefa" onPress={() => setSheetOpen(true)} />
 

@@ -276,7 +276,7 @@ const DATA_KEYS = [
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
   'newItems', 'itemGone', 'itemEdits', 'itemOrder', 'feitas', 'listasIds', 'envelopesDaCasa', 'seccoesDaCasa', 'mes',
   'metasDaCasa', 'metaMovs', 'metasProprias', 'objetivosCofre', 'pratos', 'ementa',
-  'contasFixas', 'contasPagas', 'contratos',
+  'contasFixas', 'contasPagas', 'contratos', 'trocas',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'ementaDesligada', 'pointValue', 'payDay', 'splitHalf',
@@ -647,6 +647,10 @@ export const DEMO = () => ({
   // Os contratos (`{ id, idServidor, nome, fornecedor, renovaEm, fidelizacaoAte,
   // responsavel, ficheiro, ficheiroLocal, porSubir }`), ao lado dos equipamentos.
   contratos: [],
+  // As trocas de tarefas entre irmãos (`{ id, idServidor, dia, de, para,
+  // propostaPor, aceiteEm, aceitePor }`): uma linha por troca, do DIA. A
+  // atribuição deriva-se no `allTasks` — nada se escreve na tarefa.
+  trocas: [],
   schemeByUser: {}, themeByUser: {},
   notif: { digest: true, hour: '20:00', lead: 1 },
   rotate: {},
@@ -962,6 +966,10 @@ export function StoreProvider({ children }) {
           const local = (x.contratos || []).find(k => k.idServidor === c.id && k.porSubir);
           return local ? { ...c, ficheiroLocal: local.ficheiroLocal, porSubir: true } : c;
         }),
+        // As trocas de tarefas são do dia e o servidor manda: substituem-se.
+        // O que fica de fora é uma proposta deste telemóvel ainda por subir,
+        // e essa sobe pela fila e volta na leitura seguinte.
+        trocas: casa.trocas || [],
       }));
 
       // ⚠ O acerto de contas entre os adultos, pela mesma razão e com a mesma
@@ -1458,6 +1466,11 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   const idDoEnvelope = (nome) => mapaServidor.current.envelopes[nome] || null;
   const isRecurring = (t) => t.recur === 'Todos os dias' || t.recur === 'Dias de semana';
 
+  // As trocas de tarefas de HOJE, e só essas: uma troca vale para o dia, e à
+  // meia-noite acabou — a de ontem não desfaz nada porque nunca escreveu nada.
+  const trocasDeHojeEm = (x) => (x.trocas || []).filter(tr => tr.dia === TODAY_KEY);
+  const trocasAceitesDeHoje = (x) => trocasDeHojeEm(x).filter(tr => !!tr.aceiteEm);
+
   const allTasks = () => {
     const base = [...(s.clearedSeeds ? [] : TASKS), ...s.newTasks]
       .filter(t => !s.taskGone[t.id])
@@ -1472,6 +1485,24 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         dueKey: (s.due[t.id] || {}).key,
         dueTime: (s.due[t.id] || {}).time,
       }));
+
+    // ── A troca de hoje, aceite: a tarefa fica com quem a troca diz ─────────
+    //
+    // «O lixo pelas plantas, só hoje» (12/09/2026). É DERIVADO, como a
+    // rotação: a linha da troca existe, a tarefa não muda, e amanhã cada uma
+    // volta a quem era sem ninguém desfazer nada. `trocadaCom` guarda o dono
+    // de hoje-não-fosse-a-troca, para a linha dizer «Troca com o Léo · só hoje».
+    const donoDe = Object.fromEntries(base.map(t => [t.id, t.who]));
+    const trocadas = {};
+    for (const tr of trocasAceitesDeHoje(s)) {
+      if (!(tr.de in donoDe) || !(tr.para in donoDe)) continue;
+      trocadas[tr.de] = donoDe[tr.para];
+      trocadas[tr.para] = donoDe[tr.de];
+    }
+    const comTroca = Object.keys(trocadas).length
+      ? base.map(t => (trocadas[t.id] !== undefined && trocadas[t.id] !== t.who
+        ? { ...t, trocadaCom: t.who, who: trocadas[t.id] } : t))
+      : base;
     // Ordem: a urgência manda nos grupos (INVARIANTE #6) e, DENTRO de cada
     // grupo, manda o PRAZO — quem acaba primeiro aparece primeiro.
     //
@@ -1508,7 +1539,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       return x === y ? 0 : x - y;
     };
 
-    return base
+    return comTroca
       .map((t, i) => ({ ...t, _criacao: i }))
       .sort((a, b) => a.urgency - b.urgency
         || porPosto(a, b)
@@ -3865,6 +3896,119 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     }
   };
 
+  // ── A troca de tarefas entre irmãos ─────────────────────────────────────
+  //
+  // «O lixo pelas plantas, só hoje.» Uma linha por troca, do dia (`trocas`);
+  // a atribuição deriva-se no `allTasks` — a tarefa fica com quem a troca diz
+  // — e à meia-noite acabou, sem nada para desfazer. O servidor é que manda
+  // em quem pode o quê (só quem tem a tarefa propõe, só quem recebe aceita e
+  // assina, só um adulto desfaz uma aceite); aqui repete-se o mínimo para a
+  // app sem servidor dizer o mesmo que ele diria.
+  // (12/09/2026 — a oitava das dez funcionalidades.)
+
+  // As trocas de hoje, com os nomes e os títulos que os ecrãs mostram. Quem
+  // propôs é o dono ORIGINAL da `de`; quem recebe, o dono original da `para`
+  // — aceite, o `who` já veio trocado, e o original está em `trocadaCom`.
+  const trocasDeHoje = () => {
+    const tarefas = allTasks();
+    return trocasDeHojeEm(s).map(tr => {
+      const de = tarefas.find(t => t.id === tr.de);
+      const para = tarefas.find(t => t.id === tr.para);
+      if (!de || !para) return null;
+      return {
+        ...tr,
+        tarefaDe: de.title, tarefaPara: para.title,
+        quemDe: de.trocadaCom || de.who, quemPara: para.trocadaCom || para.who,
+      };
+    }).filter(Boolean);
+  };
+  const trocasDe = (kid) => trocasDeHoje().filter(tr => tr.quemDe === kid || tr.quemPara === kid);
+
+  // Uma tarefa feita, «a confirmar», ou já numa troca de hoje não se troca.
+  const numaTroca = (id) => trocasDeHojeEm(s).some(tr => tr.de === id || tr.para === id);
+  const podeTrocar = (t) => !!t && !s.done[t.id] && !(s.pending || {})[t.id] && !numaTroca(t.id);
+
+  // O que uma criança pode oferecer, e o que pode pedir aos irmãos.
+  const tarefasParaTrocar = (kid) => {
+    const tarefas = allTasks().filter(podeTrocar);
+    return {
+      minhas: tarefas.filter(t => t.who === kid),
+      deles: tarefas.filter(t => t.who !== kid && criancas.includes(t.who)),
+    };
+  };
+
+  const proporTroca = (kid, minhaId, deleId) => {
+    if (!criancas.includes(kid)) return 'Só uma criança propõe uma troca.';
+    const tarefas = allTasks();
+    const minha = tarefas.find(t => t.id === minhaId);
+    const dele = tarefas.find(t => t.id === deleId);
+    if (!minha || !dele) return 'Escolha as duas tarefas.';
+    if (minha.who !== kid) return 'A tarefa a dar tem de ser sua.';
+    if (dele.who === kid || !criancas.includes(dele.who)) return 'A troca é com um irmão.';
+    if (!podeTrocar(minha) || !podeTrocar(dele)) {
+      return 'Uma tarefa feita, à espera de confirmação ou já numa troca não se troca.';
+    }
+    const id = `troca-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    const nova = { id, idServidor: null, dia: TODAY_KEY, de: minha.id, para: dele.id,
+      propostaPor: kid, aceiteEm: null, aceitePor: null };
+    set(x => ({
+      // As de outros dias saem: nunca desfazem nada, e não vale a pena guardá-las.
+      trocas: [...trocasDeHojeEm(x), nova],
+      registo: maisRegisto(x, `Troca proposta ${deNome(kid)} ${kid} ${aoNome(dele.who)}: «${minha.title}» por «${dele.title}»`, 'Tarefas'),
+    }));
+    // Sobe com os ids do servidor das duas tarefas; uma ainda só local não
+    // tem troca que suba — e fica a valer neste telemóvel, como a tarefa.
+    const noServidorDe = tarefaNoServidor(minha.id);
+    const noServidorPara = tarefaNoServidor(dele.id);
+    if (sync && noServidorDe && noServidorPara) {
+      const ses = sync.sessao();
+      if (ses) {
+        sync.trocaDeTarefas({ casa: ses.casa, dia: TODAY_KEY, tarefaDe: noServidorDe,
+          tarefaPara: noServidorPara, propostaPor: ses.membro })
+          .then((r) => { if (r && r.id) set(x => ({
+            trocas: (x.trocas || []).map(tr => (tr.id === id ? { ...tr, idServidor: r.id } : tr)),
+          })); })
+          .catch(() => {});
+      }
+    }
+    return null;
+  };
+
+  const aceitarTroca = (kid, id) => {
+    const tr = trocasDeHoje().find(x => x.id === id);
+    if (!tr) return 'Essa troca já não existe.';
+    if (tr.aceiteEm) return 'Essa troca já foi aceite.';
+    if (tr.quemPara !== kid) return 'Só quem recebe a proposta a aceita.';
+    const agora = agoraNaApp().toISOString();
+    set(x => ({
+      trocas: (x.trocas || []).map(t => (t.id === id ? { ...t, aceiteEm: agora, aceitePor: kid } : t)),
+      registo: maisRegisto(x, `Troca aceite: «${tr.tarefaDe}» por «${tr.tarefaPara}» · ${tr.quemDe} e ${kid}, só hoje`, 'Tarefas'),
+    }));
+    if (sync && tr.idServidor) {
+      const ses = sync.sessao();
+      if (ses) sync.aceitarTrocaDeTarefas(tr.idServidor, ses.membro).catch(() => {});
+    }
+    return null;
+  };
+
+  // Recusar, retirar ou anular: é a mesma coisa — a linha sai. Quem recebeu
+  // recusa e quem propôs retira, enquanto estiver por aceitar; um adulto
+  // anula sempre.
+  const desfazerTroca = (quem, id) => {
+    const tr = trocasDeHoje().find(x => x.id === id);
+    if (!tr) return 'Essa troca já não existe.';
+    const adulto = adultos.includes(quem);
+    if (!adulto && tr.aceiteEm) return 'Uma troca aceite só um adulto desfaz.';
+    if (!adulto && tr.quemDe !== quem && tr.quemPara !== quem) return 'Essa troca não é sua.';
+    const frase = adulto ? 'Troca anulada' : tr.quemDe === quem ? 'Proposta de troca retirada' : 'Troca recusada';
+    set(x => ({
+      trocas: (x.trocas || []).filter(t => t.id !== id),
+      registo: maisRegisto(x, `${frase}: «${tr.tarefaDe}» por «${tr.tarefaPara}» · ${tr.quemDe} e ${tr.quemPara}`, 'Tarefas'),
+    }));
+    if (sync && tr.idServidor) sync.apagarTrocaDeTarefas(tr.idServidor).catch(() => {});
+    return null;
+  };
+
   // Editar e apagar um evento.
   //
   // `eventGone` e `eventEdits` já eram aplicados na leitura desde sempre — e
@@ -5427,6 +5571,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     garantiasAExpirar, receitasAExpirar, consultasProximas,
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring, definirAvatar, trazerFotografia,
     removerTarefa, criarTarefa, editarTarefa, tarefaNoServidor, mudarRegraDaCasa, mudarListaDaCasa,
+    trocasDeHoje, trocasDe, tarefasParaTrocar, proporTroca, aceitarTroca, desfazerTroca,
     moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope, registarDespesa,
     criarEvento, alterarEventoDaCasa, eventoNoServidor, escoarFilaGoogle,
     criarArtigo, alterarArtigo, reordenarArtigos,

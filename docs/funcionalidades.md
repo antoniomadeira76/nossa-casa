@@ -126,6 +126,16 @@ por fazer no dia seguinte (compara `doneAt` com o dia atual). As pontuais ficam 
 
 **Rotação:** com `rotate` ligado, alterna entre Léo e Mia conforme a paridade da semana do ano.
 
+**Troca entre irmãos** (12/09/2026): na app da criança, «Propor uma troca» escolhe uma tarefa sua e
+uma do irmão (as feitas, as «a confirmar» e as já numa troca não entram); o irmão vê a proposta
+em «Trocas» e aceita ou recusa; quem propôs pode retirar. Aceite, a tarefa fica com quem a troca
+diz — a atribuição é DERIVADA no `allTasks`, como a rotação, e a linha diz «Troca com o Léo · só
+hoje»; os pontos são de quem a faz. Vale só para o dia: à meia-noite cada tarefa volta a quem era,
+sem nada para desfazer. Os adultos veem a troca no «Precisa de Si» e anulam em «Trocas de Hoje».
+Servidor: `trocas_tarefas` (casa, dia, tarefa_de, tarefa_para, proposta_por, aceite_em,
+aceite_por), índices únicos por (tarefa, dia) dos dois lados; só quem tem a `tarefa_de` propõe,
+criança para criança; só quem tem a `tarefa_para` aceita e assina; só um adulto apaga uma aceite.
+
 **Prazo:** a segunda linha mostra o prazo em vez da recorrência, com cor — *atrasada 1 dia*
 (vermelho), *hoje às 18:00 · falta 2h20* (âmbar), *quinta, 22/08* (cinza).
 

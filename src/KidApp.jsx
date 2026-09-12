@@ -5,9 +5,10 @@ import { useStore } from './store';
 import { buildTheme, onChrome, S, R, FONT, SCHEMES, corDoMembro, chromeDaCrianca, elev, LARGURA_APP } from './theme';
 import { EUR, parseKey, pad2, plural, TODAY_KEY } from './format';
 import Icon from './Icon';
-import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe, Linha, Choice } from './ui';
+import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe, Linha, Choice, BotaoCompacto } from './ui';
 import Sheet from './Sheet';
 import EscolherAvatar from './sheets/EscolherAvatar';
+import ProporTroca from './sheets/ProporTroca';
 import EscolhaDeEsquema from './EsquemaDeCor';
 import Figura from './Avatares';
 
@@ -237,9 +238,60 @@ function VaultTransaction({ t, entry }) {
   );
 }
 
+// ── Uma troca de tarefas, vista pela criança ─────────────────────────────────
+//
+// «Léo propõe: «Pôr o lixo na rua» pela sua «Regar as plantas»» com «Aceitar a
+// troca» e «Recusar»; a própria proposta com «Retirar a proposta»; a aceite
+// sem botões — desfazer é dos adultos. (12/09/2026 — a oitava das dez.)
+function LinhaDeTroca({ t, tr, kid }) {
+  const { aceitarTroca, desfazerTroca, aoNome } = useStore();
+  const [erro, setErro] = useState(null);
+  const aceite = !!tr.aceiteEm;
+  const paraMim = !aceite && tr.quemPara === kid;
+  const minha = !aceite && tr.quemDe === kid;
+  const outro = tr.quemDe === kid ? tr.quemPara : tr.quemDe;
+  // Frases únicas num só nó de texto: com dois nós, o leitor de ecrã e o
+  // guarda leem um espaço a mais no meio.
+  const frase = aceite
+    ? (tr.quemDe === kid
+      ? `Trocou com ${outro}: hoje faz «${tr.tarefaPara}» em vez de «${tr.tarefaDe}»`
+      : `Trocou com ${outro}: hoje faz «${tr.tarefaDe}» em vez de «${tr.tarefaPara}»`)
+    : paraMim
+      ? `${tr.quemDe} propõe: «${tr.tarefaDe}» pela sua «${tr.tarefaPara}»`
+      : `Propôs ${aoNome(tr.quemPara)}: «${tr.tarefaDe}» pela «${tr.tarefaPara}»`;
+  const estado = aceite ? 'aceite' : paraMim ? 'a aceitar' : 'à espera';
+  return (
+    <Linha t={t}>
+      <View style={{ gap: S.sm }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
+          <Icon name="swap" size={24} color={aceite ? t.state.ok : t.state.info} />
+          <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, lineHeight: 21, color: t.text2 }}>{frase}</Text>
+          {aceite
+            ? <Pill label={estado} fg={t.state.okTexto} bg={t.state.okBg} border={t.state.okBorder} />
+            : <Pill label={estado} fg={t.state.infoDeep} bg={t.state.infoBg} border={t.state.info} />}
+        </View>
+        {paraMim ? (
+          <View style={{ flexDirection: 'row', gap: S.sm }}>
+            <BotaoCompacto t={t} tom="comum" label="Aceitar a troca" onPress={() => setErro(aceitarTroca(kid, tr.id))} />
+            <BotaoCompacto t={t} label="Recusar" etiqueta="Recusar a troca" onPress={() => setErro(desfazerTroca(kid, tr.id))} />
+          </View>
+        ) : minha ? (
+          <BotaoCompacto t={t} label="Retirar a proposta" onPress={() => setErro(desfazerTroca(kid, tr.id))} />
+        ) : null}
+        {erro ? <Tile t={t} kind="warn">{erro}</Tile> : null}
+      </View>
+    </Linha>
+  );
+}
+
 // Vista de Tarefas
 function KidTasksView({ t, kid, tasks }) {
   const st = useStore();
+  const [aTrocar, setATrocar] = useState(false);
+  // As trocas de hoje que lhe dizem respeito, e se há com quem trocar.
+  const trocas = st.trocasDe(kid);
+  const paraTrocar = st.tarefasParaTrocar(kid);
+  const podePropor = paraTrocar.minhas.length > 0 && paraTrocar.deles.length > 0;
   // `done` vive dentro de `s`, não à cabeça da loja. Desestruturado assim
   // ficava undefined e `done[x.id]` rebentava no primeiro id — «Cannot read
   // properties of undefined (reading 'lixo')». O modo criança inteiro era um
@@ -297,6 +349,18 @@ function KidTasksView({ t, kid, tasks }) {
         </View>
       </View>
 
+      {/* As trocas de hoje — só quando há alguma que lhe diga respeito. */}
+      {trocas.length > 0 ? (
+        <View style={{ marginTop: S.xl, gap: S.md }}>
+          <View style={{ paddingHorizontal: 16 }}>
+            <SectionTitle t={t}>Trocas</SectionTitle>
+          </View>
+          <View style={{ marginHorizontal: 16 }}>
+            {trocas.map(tr => <LinhaDeTroca key={tr.id} t={t} tr={tr} kid={kid} />)}
+          </View>
+        </View>
+      ) : null}
+
       {/* Lista de tarefas */}
       <View style={{ marginTop: S.xl, gap: S.md }}>
         <View style={{ paddingHorizontal: 16 }}>
@@ -310,7 +374,8 @@ function KidTasksView({ t, kid, tasks }) {
               <KidTaskRow
                 key={task.id}
                 t={t}
-                task={task}
+                // A tarefa trocada diz de quem era: «Troca com o Léo · só hoje».
+                task={task.trocadaCom ? { ...task, meta: `Troca com ${task.trocadaCom} · só hoje` } : task}
                 kid={kid}
                 // ⚠ Pela loja, como CRIANÇA: a tarefa fica «a confirmar», não
                 // feita — é um adulto que a dá por feita, e são os pontos dele
@@ -324,7 +389,18 @@ function KidTasksView({ t, kid, tasks }) {
         ) : (
           <Empty t={t} icon="checkSquare" title="Sem tarefas agora" sub="Bom trabalho!" />
         )}
+        {/* Propor uma troca: um botão por baixo da lista, e não na linha da
+            tarefa — uma linha, um destino (erro #6 do CLAUDE.md). Só quando
+            há uma tarefa sua e uma de um irmão que se possam trocar. */}
+        {podePropor ? (
+          <View style={{ marginHorizontal: 16 }}>
+            <Primary t={t} comum icon="swap" label="Propor uma troca" sub="Uma tarefa sua por uma do irmão, só hoje"
+              onPress={() => setATrocar(true)} />
+          </View>
+        ) : null}
       </View>
+
+      {aTrocar ? <ProporTroca t={t} kid={kid} onClose={() => setATrocar(false)} /> : null}
     </ScrollView>
   );
 }
