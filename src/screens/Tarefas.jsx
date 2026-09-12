@@ -221,7 +221,9 @@ export default function Tarefas({ t, user, abrir }) {
                   {task.dueKey ? '✓ Com prazo' : 'Sem prazo'}
                 </Text>
               </Pressable>
-              {task.dueKey && (
+              {/* Ternário, e não `&&`: um campo de texto que venha vazio fica
+                  como filho string do View (ver a dose da receita, na Saúde). */}
+              {task.dueKey ? (
                 <TextInput accessibilityLabel="Hora do prazo"
                   value={task.dueTime || '18:00'}
                   onChangeText={(v) => set(x => ({ due: { ...x.due, [task.id]: { key: task.dueKey, time: v } } }))}
@@ -234,7 +236,7 @@ export default function Tarefas({ t, user, abrir }) {
                     borderColor: t.border, backgroundColor: t.card, textAlign: 'center',
                   }}
                 />
-              )}
+              ) : null}
             </View>
             {dueOf(task) && (
               <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: dueOf(task).late ? t.state.errTexto : dueOf(task).soon ? t.state.warnTexto : t.text3 }}>
