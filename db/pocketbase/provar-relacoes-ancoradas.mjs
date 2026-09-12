@@ -227,6 +227,8 @@ const ATAQUES = [
   ['contas_fixas', 'envelope', { nome: 'Renda deles', valor: 10, dia: 1, envelope: () => nosso.envelope.id }],
   ['contas_fixas', 'quem_paga', { nome: 'Luz deles', valor: 10, dia: 1, envelope: () => deles.envelope.id, quem_paga: () => rita.id }],
   ['despesas', 'conta_fixa', { valor: 9, pagador: '@eu', idem_key: 'anc-cf', envelope: () => deles.envelope.id, conta_fixa: () => nosso.contaFixa.id }],
+  // Os contratos (12/09/2026): quem trata é um adulto DESTA casa.
+  ['contratos', 'responsavel', { nome: 'Seguro deles', responsavel: () => rita.id }],
   // ⚠ As DUAS pontas da transferência, uma de cada vez. A prova «há um ataque
   // por relação» apanhou-me a esquecer o `para_envelope` — que é exactamente
   // o género de omissão que ela existe para apanhar, e que me escapou cinco

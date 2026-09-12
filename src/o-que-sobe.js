@@ -111,6 +111,7 @@ export const O_QUE_SOBE = {
   healthGone: ['local', 'Lápides de consultas-semente apagadas neste dispositivo.'],
 
   // ── Equipamentos ──────────────────────────────────────────────────────────
+  contratos: ['linhas', 'A coleção `contratos`: nome, fornecedor, quando renova, fidelização, quem trata e o documento na própria linha. O documento sobe à parte, num `update` com ficheiro, porque a fila serializa em JSON; até subir fica «só aqui».', 'contratoDaCasa'],
   newEquip: ['linhas', 'A coleção `equipamentos`. Existia desde o início e ninguém escrevia nela: a garantia da máquina de lavar era conhecida de um telefone só.', 'equipamentoDaCasa'],
   equipEdits: ['campo', 'As alterações de um equipamento vão para a própria linha. O mapa existe porque uma SEMENTE não se pode editar no sítio.', 'alterarEquipamento'],
   equipGone: ['local', 'Lápides de equipamentos-semente. Um equipamento do servidor apaga-se LÁ, pelo `apagarEquipamento`; isto marca só os que vêm do `data.js`.'],

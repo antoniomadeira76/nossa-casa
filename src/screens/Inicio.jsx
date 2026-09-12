@@ -13,7 +13,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
   const { s, allTasks, allEvents, envelopes, budget, spent, remaining, dueOf, isRecurring,
           garantiasAExpirar, receitasAExpirar, consultasProximas, membros: MEMBERS,
           acerto, acertado, artigo, oNome, aoNome, podeVerEvento,
-          pontosNasTarefas, contasAVencer, contasNaAgenda } = st;
+          pontosNasTarefas, contasAVencer, contasNaAgenda, contratosARenovar } = st;
 
   // Era `const hour = 9`, e a app dizia «Bom dia» às onze da noite.
   const hora = agoraNaApp().getHours();
@@ -109,6 +109,23 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
     // procurá-lo. Uma linha que diz «Frigorífico» e abre uma lista de doze
     // obriga a fazer a busca outra vez, depois de a app já a ter feito.
     go: () => onEquip(e.id) }));
+  // Os contratos que renovam dentro de trinta dias, ou cuja data já passou —
+  // como as garantias. `fileDone` é o ícone dos Equipamentos, que é para onde
+  // a linha leva, com a ficha DESTE contrato aberta. Dois `push` pela mesma
+  // razão das contas fixas: o guarda lê as cores por texto.
+  contratosARenovar(30).forEach(c => {
+    const titulo = `${c.nome}${c.fornecedor ? ` · ${c.fornecedor}` : ''}`;
+    if (c.dias < 0) {
+      needs.push({ icon: 'fileDone', color: t.state.errTexto, line: t.state.err,
+        title: titulo, sub: `A renovação passou há ${plural(-c.dias, 'dia', 'dias')} · ${c.renovaEm}`,
+        go: () => onEquip(`contrato:${c.id}`) });
+    } else {
+      needs.push({ icon: 'fileDone', color: t.state.warnTexto, line: t.state.warn,
+        title: titulo,
+        sub: c.dias === 0 ? 'Renova hoje' : `Renova em ${plural(c.dias, 'dia', 'dias')} · ${c.renovaEm}`,
+        go: () => onEquip(`contrato:${c.id}`) });
+    }
+  });
   receitasAExpirar(user).forEach(d => needs.push({ icon: 'idcard', color: t.state.warnTexto, line: t.state.warn,
     title: `Receita a expirar · ${d.member}`,
     sub: `${d.title} · ${d.dias < 0 ? `Expirou há ${plural(-d.dias, 'dia', 'dias')}`

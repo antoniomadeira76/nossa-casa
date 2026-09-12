@@ -75,6 +75,8 @@ const NOSSAS = [
   // ⚠ `contas_fixas` DEPOIS das `despesas` e ANTES dos `envelopes`: a despesa
   // aponta para a conta (`conta_fixa`), e a conta aponta para o envelope.
   'contas_fixas',
+  // Os contratos apontam a quem trata deles (`responsavel`): antes dos `membros`.
+  'contratos',
   'envelopes', 'tarefas_feitas', 'tarefas', 'membros', 'casas'];
 
 // ── Uma casa habitada não se apaga ───────────────────────────────────────────
@@ -737,6 +739,35 @@ await criar({
   viewRule: `${DA_CASA} && ${ADULTO}`,
   createRule: `${DA_CASA} && ${ADULTO}`,
   updateRule: `${DA_CASA} && ${ADULTO}`,
+  deleteRule: `${DA_CASA} && ${ADULTO}`,
+});
+
+// ── Os contratos e as renovações ─────────────────────────────────────────────
+//
+// O seguro do carro, a internet, a inspeção: o que tem um dia em que renova
+// ou acaba, e um período de fidelização. Vivem ao lado dos equipamentos, com
+// as mesmas regras (adultos; a criança não os recebe) e o documento pelo mesmo
+// caminho da fatura — um ficheiro na própria linha, carregado à parte porque a
+// fila serializa em JSON. (12/09/2026 — a quinta das dez funcionalidades.)
+//
+// ⚠ `responsavel.casa`: quem trata do contrato é um adulto DESTA casa. É a
+// mesma forma de defeito de sempre — o `casa` da linha é escolhido por quem
+// escreve.
+await criar({
+  name: 'contratos', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    txt('nome', { required: true, max: 60 }),
+    txt('fornecedor', { max: 60 }),
+    data('renova_em'),
+    data('fidelizacao_ate'),
+    rel('responsavel', ids.membros),
+    fich('ficheiro'),
+  ],
+  listRule: `${DA_CASA} && ${ADULTO}`,
+  viewRule: `${DA_CASA} && ${ADULTO}`,
+  createRule: `${DA_CASA} && ${ADULTO} && (responsavel = "" || responsavel.casa = @request.auth.casa)`,
+  updateRule: `${DA_CASA} && ${ADULTO} && (responsavel = "" || responsavel.casa = @request.auth.casa)`,
   deleteRule: `${DA_CASA} && ${ADULTO}`,
 });
 

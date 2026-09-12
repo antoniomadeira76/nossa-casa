@@ -484,6 +484,21 @@ uma consulta a sério, porque não há onde escrever o nome.
 
 ## 9. EQUIPAMENTOS
 - [x] Equipamentos da Casa — garantias, fotos da fatura
+- [x] **Contratos e renovações** (12/09/2026, a quinta das dez funcionalidades). Coleção
+      `contratos` (nome, fornecedor, renova_em, fidelizacao_ate, responsavel, ficheiro),
+      nos dois sítios, com as regras dos equipamentos e `responsavel.casa` ancorado.
+      - segunda secção no ecrã dos Equipamentos, mesma linha e ficha própria
+        (`FichaContrato`): renovação, documento, campos, remover. Aviso a 30 dias no
+        «Precisa de Si», e a linha abre a ficha DESTE contrato (`abrir: 'contrato:<id>'`).
+      - ⚠ o documento vai à parte da definição: a fila serializa em JSON, por isso nasceu
+        o `atualizarComFicheiro` — um `update` só com o ficheiro, na linha que já tem id.
+        Fica «por subir» (e «só aqui» no ecrã) até subir; a leitura seguinte não o perde.
+      - ⚠ os campos e o documento são DUAS escritas à mesma linha (classe 27): a ficha
+        guarda uns num botão e escolhe o outro noutro; nunca no mesmo tique.
+      - guarda: `__tests__/os-contratos-e-renovacoes.test.js`; provas:
+        `provar-contratos.mjs` (10, com um PNG a atravessar e a voltar byte a byte) e
+        um ataque novo em `provar-relacoes-ancoradas.mjs`.
+      - **falta**: ver no navegador como António.
 - [ ] **PENDENTE:** Agendar Manutenção — entra na Agenda
 
 ## 10. COFRE (Crianças)

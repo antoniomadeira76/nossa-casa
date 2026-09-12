@@ -267,6 +267,13 @@ cabeçalho, com confirmação.
 
 Ver `TAREFAS.md` tarefas 4 a 6 e as capturas 11 a 17.
 
+**Contratos** (12/09/2026) — segunda secção do ecrã dos Equipamentos: o seguro do carro, a
+internet, a inspeção. Uma linha por contrato com o fornecedor, quando renova, a fidelização
+(«até 03/2027») e quem trata; a pastilha diz «renova em 23 dias» ou «passou há 4 dias». A linha
+abre a ficha — a renovação, o documento (a apólice, escolhido pelo mesmo caminho da fatura; «só
+aqui» enquanto não subir), os campos, remover. Aviso no «Precisa de Si» a 30 dias, como as
+garantias, com a linha a abrir a ficha desse contrato. O cabeçalho conta os contratos.
+
 ## 3.12 Modo criança
 
 PIN de 4 dígitos, sem valor de fábrica, com limite de tentativas e bloqueio. Três entradas:

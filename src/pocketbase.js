@@ -600,6 +600,9 @@ const COLECOES = ['casas', 'membros', 'eventos', 'tarefas', 'tarefas_feitas',
   // As contas fixas: a definição de cada uma. «Paga este mês» lê-se das
   // `despesas`, que já vêm acima — não há segunda leitura.
   'contas_fixas',
+  // Os contratos e as renovações, ao lado dos equipamentos: nome, fornecedor,
+  // quando renova, fidelização, quem trata, e o documento na própria linha.
+  'contratos',
   // A ementa da semana: os pratos da casa (com os ingredientes dentro) e o
   // jantar de cada dia.
   'pratos', 'ementa'];
@@ -1069,25 +1072,44 @@ export const escrever = {
   // que a prova de aceitação em Node manda um ficheiro a sério.
   async criarComFicheiro(colecao, dados, ficheiro) {
     if (!estaLigado()) throw new Error('Sem ligação ao servidor.');
-    const fd = new FormData();
-    for (const [k, v] of Object.entries(dados || {})) {
-      if (v !== undefined && v !== null) fd.append(k, String(v));
-    }
-    if (ficheiro) {
-      const campo = ficheiro.campo || 'ficheiro';
-      const nome = ficheiro.nome || 'anexo.jpg';
-      const tipo = ficheiro.tipo || 'image/jpeg';
-      if (ficheiro.blob) {
-        fd.append(campo, ficheiro.blob, nome);
-      } else if (ficheiro.uri && /^(blob:|data:|https?:)/i.test(ficheiro.uri)) {
-        fd.append(campo, await (await fetch(ficheiro.uri)).blob(), nome);
-      } else if (ficheiro.uri) {
-        fd.append(campo, { uri: ficheiro.uri, name: nome, type: tipo });
-      }
-    }
-    return pb.collection(colecao).create(fd);
+    return pb.collection(colecao).create(await formDataDe(dados, ficheiro));
+  },
+
+  // ── Pôr um ficheiro numa linha que JÁ existe ─────────────────────────────
+  //
+  // O documento de um contrato vive na própria linha do contrato, e o contrato
+  // nasce pela fila (JSON) — o ficheiro só pode ir depois, quando a linha tem
+  // id. É o mesmo `FormData` da criação, sem os outros campos: um `update` com
+  // só o ficheiro deixa o resto da linha como está.
+  async atualizarComFicheiro(colecao, id, ficheiro) {
+    if (!estaLigado()) throw new Error('Sem ligação ao servidor.');
+    if (!id || !ficheiro) throw new Error('Sem linha ou sem ficheiro para pôr nela.');
+    return pb.collection(colecao).update(id, await formDataDe({}, ficheiro));
   },
 };
+
+// O `FormData` de uma escrita com ficheiro, partilhado pelo criar e pelo
+// atualizar. As três portas do ficheiro — `blob`, URI que se traz com `fetch`,
+// URI de ficheiro nativo — estão explicadas acima do `criarComFicheiro`.
+async function formDataDe(dados, ficheiro) {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(dados || {})) {
+    if (v !== undefined && v !== null) fd.append(k, String(v));
+  }
+  if (ficheiro) {
+    const campo = ficheiro.campo || 'ficheiro';
+    const nome = ficheiro.nome || 'anexo.jpg';
+    const tipo = ficheiro.tipo || 'image/jpeg';
+    if (ficheiro.blob) {
+      fd.append(campo, ficheiro.blob, nome);
+    } else if (ficheiro.uri && /^(blob:|data:|https?:)/i.test(ficheiro.uri)) {
+      fd.append(campo, await (await fetch(ficheiro.uri)).blob(), nome);
+    } else if (ficheiro.uri) {
+      fd.append(campo, { uri: ficheiro.uri, name: nome, type: tipo });
+    }
+  }
+  return fd;
+}
 
 // ─── Tempo real ──────────────────────────────────────────────────────────────
 // Só a lista de compras. É a única área onde dois telefones estão na mesma

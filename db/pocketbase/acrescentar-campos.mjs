@@ -169,6 +169,29 @@ const COLECOES = [
       deleteRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
     },
   },
+  // Os contratos e as renovações (12/09/2026): nome, fornecedor, quando renova,
+  // fidelização, quem trata, e o documento na própria linha. A mesma definição
+  // do `criar-colecoes.mjs`, letra a letra.
+  {
+    nome: 'contratos',
+    campos: [
+      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'nome', type: 'text', required: true, max: 60 },
+      { name: 'fornecedor', type: 'text', max: 60 },
+      { name: 'renova_em', type: 'date' },
+      { name: 'fidelizacao_ate', type: 'date' },
+      { name: 'responsavel', type: 'relation', alvo: 'membros', maxSelect: 1, cascadeDelete: false },
+      { name: 'ficheiro', type: 'file', maxSelect: 1, maxSize: 8388608 },
+    ],
+    indexes: [],
+    regras: {
+      listRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+      viewRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+      createRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca" && (responsavel = "" || responsavel.casa = @request.auth.casa)',
+      updateRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca" && (responsavel = "" || responsavel.casa = @request.auth.casa)',
+      deleteRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+    },
+  },
 ];
 
 // ⚠ O que uma coleção NÃO pode ter. `[coleção, campo, porquê]`.

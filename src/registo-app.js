@@ -98,6 +98,7 @@ export const AREAS = [
       'Data de compra, loja, preço e fim da garantia',
       'Avisa quando uma garantia está a acabar',
       'Guarda a próxima manutenção de cada equipamento',
+      'Os contratos — o seguro, a internet, a inspeção — com a data em que renovam, a fidelização, quem trata e o documento; avisa 30 dias antes',
     ] },
 
   { area: 'Gestão da Casa', icon: 'houseGear',
@@ -146,6 +147,8 @@ export const AREAS = [
 export const REGISTO_APP = [
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
   // ── 1.12.0 ────────────────────────────────────────────────────────────────
+  { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Equipamentos', t: 'Os contratos e as renovações, ao lado dos equipamentos: o seguro do carro, a internet, a inspeção, cada um com o fornecedor, a data em que renova, a fidelização e quem trata. A ficha guarda o documento — a apólice, o contrato assinado — e diz «só aqui» enquanto ele não chegar ao servidor' },
+  { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Início', t: 'Um contrato que renova dentro de 30 dias entra no «Precisa de Si», como as garantias; a linha abre a ficha desse contrato. Depois da data passar, fica a vermelho' },
   { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Dinheiro', t: 'As contas fixas: a renda, a luz, a internet, cada uma com o valor, o dia do mês em que vence, o envelope e quem paga. «Marcar como paga» regista a despesa do mês no envelope com um toque, e a segunda do mesmo mês não entra. «Paga» é a despesa existir, nunca um número escrito' },
   { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Início', t: 'Uma conta fixa por pagar entra no «Precisa de Si» dois dias antes de vencer — e fica lá, a vermelho, depois de vencer' },
   { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Agenda', t: 'As contas fixas aparecem na Agenda no dia em que vencem, este mês e o seguinte, só para os adultos. Não são eventos: gerem-se no Dinheiro' },
