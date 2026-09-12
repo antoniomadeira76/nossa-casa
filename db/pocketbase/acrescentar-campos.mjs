@@ -241,6 +241,26 @@ const COLECOES = [
       deleteRule: 'receita.episodio.casa = @request.auth.casa && @request.auth.papel != "crianca" && (receita.episodio.membro = @request.auth.id || receita.episodio.membro.papel = "crianca") && por = @request.auth.id',
     },
   },
+  // A lista partilhada com quem não tem a app (12/09/2026): o sinal e o prazo
+  // de um endereço só de leitura. A mesma definição do `criar-colecoes.mjs`.
+  {
+    nome: 'partilhas_lista',
+    campos: [
+      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'lista', type: 'relation', alvo: 'listas_compras', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'criada_por', type: 'relation', alvo: 'membros', maxSelect: 1, required: true, cascadeDelete: false },
+      { name: 'sinal', type: 'text', max: 64 },
+      { name: 'expira_em', type: 'date' },
+    ],
+    indexes: ['CREATE UNIQUE INDEX idx_partilha_sinal ON partilhas_lista (sinal)'],
+    regras: {
+      listRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+      viewRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+      createRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca" && lista.casa = @request.auth.casa && criada_por = @request.auth.id',
+      updateRule: null,
+      deleteRule: 'casa = @request.auth.casa && @request.auth.papel != "crianca"',
+    },
+  },
   // A troca de tarefas entre irmãos (12/09/2026): uma linha por troca, do dia,
   // com as duas tarefas, quem propôs e quem aceitou. A mesma definição do
   // `criar-colecoes.mjs`, letra a letra.

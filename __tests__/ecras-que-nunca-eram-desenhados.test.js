@@ -104,6 +104,8 @@ const ECRAS = [
   ['Ficha de Emergência', '../src/sheets/FichaEmergencia', { member: 'Léo' }],
   // A troca de tarefas entre irmãos (12/09/2026): a folha de propor.
   ['Propor Troca',        '../src/sheets/ProporTroca', { kid: 'Léo' }],
+  // A lista partilhada com quem não tem a app (12/09/2026): a folha do endereço.
+  ['Partilhar Lista',     '../src/sheets/PartilharLista', { user: 'Rita' }],
   // O retrato do mês (12/09/2026): a folha com as quatro secções e o PDF.
   ['Retrato do Mês',      '../src/sheets/RetratoDoMes', { retrato: { idServidor: null, inicio: 'd2026-08-01', fechadoEm: null, aberto: true, nome: 'Agosto de 2026', rendimento: 0, envelopes: [{ nome: 'Mercearia', gasto: 12, limite: 100 }], gasto: 12, orcamento: 100, despesas: 1, meias: 0, criancas: [{ nome: 'Léo', feitas: 1, pontos: 2 }], compras: { idas: 0, total: 0 }, acertos: { n: 0, total: 0 } } }],
   // A medicação a partir da receita (12/09/2026): a folha das tomas.

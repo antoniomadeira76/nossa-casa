@@ -4,7 +4,8 @@ import { View, Text, Pressable, Modal } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, dayLabel, parseKey, WD, WD_SHORT, plural, dkey, semanaDeHoje, pad2 } from '../format';
-import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Tile, Avatar, avatarDe, Pill } from '../ui';
+import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Tile, Avatar, avatarDe, Pill, Row } from '../ui';
+import PartilharLista from '../sheets/PartilharLista';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -89,6 +90,8 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
   // uma ida às compras marcada.
   const plano = s.shopPlan || {};
   const planoDe = MEMBERS[plano.who] ? plano.who : null;
+  // A folha de partilhar a lista com quem não tem a app (12/09/2026).
+  const [aPartilhar, setAPartilhar] = useState(false);
 
   // Quem fica com as compras se alguém tocar em «Alterar»: o adulto seguinte,
   // à roda. ⚠ Os adultos vêm do QUADRO da casa, e não de uma lista escrita
@@ -185,8 +188,20 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
               color: t.actFg }}>Alterar</Text>
           </Pressable>
         </View>
+        {/* ── Partilhar com quem não tem a app ──────────────────────────────
+            «Manda-me a lista»: um endereço só de leitura, válido uma hora,
+            com os rótulos e os corredores e mais nada — sem prendas «só
+            adultos», sem preços, sem nomes (12/09/2026, a nona das dez). Uma
+            linha, um destino: abre a folha, que pede o endereço ao servidor. */}
+        <View style={{ height: 1, backgroundColor: t.divider }} />
+        <Row t={t} icon="share" title="Partilhar a lista"
+          sub="Um endereço só de leitura, válido uma hora, para quem não tem a app"
+          right={<Icon name="caretRight" size={18} color={t.text3} />}
+          onPress={() => setAPartilhar(true)} last />
       </Card>
       )}
+
+      {aPartilhar ? <PartilharLista t={t} user={user} onClose={() => setAPartilhar(false)} /> : null}
 
       {/* A ementa da semana — sete jantares, um prato por dia. A linha do dia
           abre a folha onde se escolhe o prato e se põe na lista o que falta.

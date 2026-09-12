@@ -340,6 +340,29 @@ uma consulta a sério, porque não há onde escrever o nome.
       tocou em «Ação» e não aconteceu nada.
 - [x] Sincronizar as consultas — sobem se o servidor viver na casa. Ver a
       última entrada desta secção.
+- [x] **A lista partilhada com quem não tem a app** (12/09/2026, a nona das dez; bloco 9 de
+      `design/dez-funcionalidades.dc.html`). O dono da casa disse «avança» sem decidir o
+      servidor fora de casa; a funcionalidade fica construída e o endereço serve onde o
+      servidor for alcançável — a folha avisa quando é `127.0.0.1`. `partilhas_lista` (casa,
+      lista, criada_por, sinal único, expira_em) nos dois sítios, sem `updateRule`; o hook
+      `pb_hooks/partilha-lista.pb.js` escreve o sinal (`$security.randomString(24)`) e o prazo
+      de uma hora ao criar, e serve `GET /lista/{sinal}` sem sessão: HTML com rótulos por
+      corredor, riscados os comprados, sem `visibilidade = "adultos"`, sem estimativa, sem
+      `pedido_por`; 404 sem sinal, 410 expirada ou lista fechada; só GET. `sync.partilharLista`
+      é direta (a resposta traz o sinal); `desfazerPartilha` apaga. Folha `PartilharLista`
+      (pede ao abrir; «Copiar o endereço»; «Desfazer a partilha»); linha nas Compras, no cartão
+      da ida. Ícone novo `share`. Guarda: `a-lista-partilhada` (6); prova: `provar-partilha.mjs`
+      (12) e dois ataques no guarda das relações.
+      - ⚠ o PocketBase da casa corria com `--hooksDir` de OUTRA árvore (a de outra conversa)
+        e no Windows os hooks não recarregam: a rota dava 404 sem erro nenhum. A prova
+        correu primeiro num PocketBase temporário em 8096 (base vazia, hooks desta árvore);
+        depois o dono da casa autorizou o reinício e o de 8095 passou a correr com os hooks
+        e as migrações desta árvore. Duas armadilhas no reinício: `Start-Process` partiu os
+        caminhos com espaços (o PocketBase tratou «Casa\pb_data» como domínio e arrancou em
+        HTTPS sobre uma base vazia), e o temporário tinha deixado 79 migrações automáticas
+        na pasta desta árvore, que fizeram o arranque seguinte recusar «created_casas».
+      - no navegador com a casa real viu-se a linha nas Compras (52 px); a folha não se
+        abriu porque abrir CRIA uma partilha e duas linhas de registo na casa.
 - [x] **Os documentos têm a cara da app** (12/09/2026). O dono da casa pediu «o logótipo em
       marca de água e o nome de quem imprime e a data no canto inferior direito», e depois
       «um design semelhante à app»; cinco páginas em `design/documentos-da-app.dc.html`,

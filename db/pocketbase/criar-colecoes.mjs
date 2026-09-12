@@ -74,6 +74,8 @@ const NOSSAS = [
   // referir. Fora de ordem, a limpeza para com «existing reference in
   // meta_movimentos».
   'meta_movimentos', 'metas',
+  // As partilhas apontam à lista de compras e a quem partilhou: antes das duas.
+  'partilhas_lista',
   'acertos', 'transferencias', 'artigos', 'listas_compras', 'lojas', 'seccoes',
   'registo', 'meses', 'preferencias', 'equipamentos', 'cofre_movimentos', 'despesas',
   // ⚠ `contas_fixas` DEPOIS das `despesas` e ANTES dos `envelopes`: a despesa
@@ -1318,6 +1320,42 @@ await criar({
     + ' && @request.body.dia:isset = false && @request.body.proposta_por:isset = false',
   deleteRule: `${DA_CASA} && ${TROCA_DA_CASA}`
     + ` && (${ADULTO} || aceite_em = "" && (proposta_por = @request.auth.id || tarefa_para.atribuido_a = @request.auth.id))`,
+});
+
+// ── A lista partilhada com quem não tem a app ────────────────────────────────
+//
+// «Manda-me a lista» — a avó que vai ao supermercado e não tem a app. Um
+// adulto pede um endereço só de leitura, com prazo de uma hora, e quem o abre
+// vê os rótulos e os corredores da lista ABERTA, sem entrar: sem prendas «só
+// adultos», sem preços, sem o nome de quem pediu cada artigo. Nada se escreve
+// por lá. (12/09/2026 — a nona das dez funcionalidades.)
+//
+// A linha guarda o SINAL (24 letras ao acaso, escritas pelo hook
+// `partilha-lista.pb.js`, nunca pelo cliente) e quando expira. A rota pública
+// `GET /lista/{sinal}` vive no mesmo hook, e é a única porta sem sessão da
+// casa além do retorno da Google. Apagar a linha mata o endereço na hora.
+//
+// ⚠ O endereço só serve onde o servidor for alcançável: hoje em `127.0.0.1`,
+// só neste computador; na rede de casa, se o `EXPO_PUBLIC_PB_URL` for o
+// endereço da rede. Expor o servidor à internet é decisão do dono da casa, e
+// é a Saúde que decide esse calendário (db/postgres/README.md).
+await criar({
+  name: 'partilhas_lista', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('lista', ids.listas_compras, { required: true, cascadeDelete: true }),
+    rel('criada_por', ids.membros, { required: true }),
+    txt('sinal', { max: 64 }),
+    data('expira_em'),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_partilha_sinal ON partilhas_lista (sinal)'],
+  // Só os adultos veem que partilhas há; a criança não partilha a lista da casa.
+  listRule: `${DA_CASA} && ${ADULTO}`,
+  viewRule: `${DA_CASA} && ${ADULTO}`,
+  createRule: `${DA_CASA} && ${ADULTO} && lista.casa = @request.auth.casa && criada_por = @request.auth.id`,
+  // Não se altera: uma partilha desfaz-se apagando-a, e o hook é que escreve o sinal.
+  updateRule: null,
+  deleteRule: `${DA_CASA} && ${ADULTO}`,
 });
 
 // ── A agenda aprende a saúde ─────────────────────────────────────────────────

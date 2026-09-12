@@ -68,6 +68,7 @@ export const AREAS = [
     o: 'A lista de compras da casa, e a ida à loja.',
     faz: [
       'A lista é de todos: as crianças também pedem artigos',
+      'Partilha-se com quem não tem a app por um endereço só de leitura, válido uma hora — rótulos e corredores, sem prendas, sem preços, sem nomes',
       'Os corredores da loja são da casa — renomeiam-se, ordenam-se e apagam-se —, e o modo de loja anda por eles nessa ordem',
       'Cada artigo altera-se e arrasta-se para o lugar certo dentro do corredor',
       'Cada artigo marca-se como apanhado ou sem stock, e os dois telemóveis veem o mesmo',
@@ -152,6 +153,7 @@ export const AREAS = [
 export const REGISTO_APP = [
   // ── 1.11.1 ────────────────────────────────────────────────────────────────
   // ── 1.12.0 ────────────────────────────────────────────────────────────────
+  { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Compras', t: 'A lista partilhada com quem não tem a app: «Partilhar a lista» pede ao servidor um endereço só de leitura, válido uma hora; quem o abre vê os rótulos por corredor, riscados os já comprados — sem prendas «só adultos», sem preços, sem nomes, e sem poder escrever. «Desfazer a partilha» mata o endereço na hora. O endereço só serve onde o servidor da casa for alcançável, e a folha di-lo' },
   { v: '1.12.0', d: '12/09/2026', k: 'alterado', a: 'A App', t: 'Os documentos que a app gera — a ficha de saúde, a ficha de emergência, o retrato do mês — passaram a ter a cara da app: a faixa de cabeçalho na cor do esquema de quem imprime, com o logótipo, os títulos de secção e as linhas como nos ecrãs, o logótipo em marca de água em cada página, e no canto inferior direito «Impresso por António · 12/09/2026 · 19:40». Saíam a preto e branco, em serifa, sem nada que dissesse de onde vinham' },
   { v: '1.12.0', d: '12/09/2026', k: 'novo', a: 'Dinheiro', t: 'O retrato do mês: uma página por mês com o gasto por envelope contra o limite, as tarefas feitas e os pontos por criança, as idas às compras e os acertos entre os adultos — e «Exportar em PDF». Abre-se pela linha «Retrato de Setembro» no Dinheiro, abre-se sozinho ao fechar o mês, e os meses anteriores ficam em Documentação › Nesta casa. Nenhum número é escrito: é a soma das linhas do mês, e um mês fechado não muda quando o seguinte abre' },
   { v: '1.12.0', d: '12/09/2026', k: 'alterado', a: 'Tarefas', t: 'O filtro por membro passou a avatares: «Todos» e a bola de cada pessoa numa linha só, em vez de seis pastilhas com o nome que caíam para uma segunda linha. O escolhido ganha um anel e o nome passa para o título da secção; tocar outra vez volta a «Todos»' },

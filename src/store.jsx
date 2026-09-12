@@ -3033,6 +3033,40 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // idas — e isso é um estado válido, não um erro.
   const listaAberta = () => (s.shopPlan || {}).idServidor || null;
 
+  // ── A lista partilhada com quem não tem a app ───────────────────────────
+  //
+  // Um endereço só de leitura da lista aberta, válido uma hora, para a avó
+  // que vai ao supermercado sem a app. Não é dado da loja — é uma resposta do
+  // servidor que a folha mostra e mais nada —, por isso não há chave em
+  // `DATA_KEYS`. Sem servidor, ou sem ida às compras aberta, devolve a razão.
+  // (12/09/2026 — a nona das dez funcionalidades.)
+  const partilharLista = async (quem) => {
+    // ⚠ `sync` carregado não quer dizer servidor ligado: sem `EXPO_PUBLIC_PB_URL`
+    // o módulo existe e a ligação não. A pergunta certa é a do `ligado()`.
+    if (!sync || !sync.ligado()) return { erro: 'Só com o servidor ligado se partilha a lista.' };
+    const ses = sync.sessao();
+    if (!ses) return { erro: 'Entre outra vez para partilhar a lista.' };
+    const lista = listaAberta();
+    if (!lista) return { erro: 'Não há uma ida às compras aberta para partilhar.' };
+    try {
+      const r = await sync.partilharLista({ casa: ses.casa, lista, criadaPor: ses.membro });
+      set(x => ({ registo: maisRegisto(x, 'A lista de compras foi partilhada por um endereço só de leitura, válido uma hora', 'Compras') }));
+      return { ...r, quem };
+    } catch (e) {
+      return { erro: (e && e.message) || 'Não foi possível partilhar a lista.' };
+    }
+  };
+  const desfazerPartilha = async (id) => {
+    if (!sync || !id) return null;
+    try {
+      await sync.apagarPartilhaDaLista(id);
+      set(x => ({ registo: maisRegisto(x, 'A partilha da lista de compras foi desfeita', 'Compras') }));
+      return null;
+    } catch (e) {
+      return (e && e.message) || 'Não foi possível desfazer a partilha.';
+    }
+  };
+
   // `vis`: quem vê o artigo — `familia` (todos) ou `adultos` (a prenda que a
   // criança não pode ver). É o servidor que não a devolve à criança; aqui
   // guarda-se para a pastilha e para a leitura sem servidor.
@@ -5631,6 +5665,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     removerTarefa, criarTarefa, editarTarefa, tarefaNoServidor, mudarRegraDaCasa, mudarListaDaCasa,
     trocasDeHoje, trocasDe, tarefasParaTrocar, proporTroca, aceitarTroca, desfazerTroca,
     retratosDaCasa, retratoDoMesAberto,
+    partilharLista, desfazerPartilha,
     moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope, registarDespesa,
     criarEvento, alterarEventoDaCasa, eventoNoServidor, escoarFilaGoogle,
     criarArtigo, alterarArtigo, reordenarArtigos,
