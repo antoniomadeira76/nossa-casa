@@ -1257,6 +1257,30 @@ export async function confirmarTarefaFeita(idDaLinha, porQuem) {
   });
 }
 
+// ── A lista partilhada com quem não tem a app ────────────────────────────────
+//
+// Um adulto pede um endereço só de leitura da lista ABERTA, válido uma hora.
+// É uma escrita DIRETA, sem fila: a resposta traz o sinal que o servidor
+// escreveu, e sem ele não há endereço para mostrar — enfileirar não faria
+// sentido. Desfazer é apagar a linha; o endereço morre na hora.
+// (12/09/2026 — a nona das dez funcionalidades.)
+export async function partilharLista({ casa, lista, criadaPor }) {
+  if (!ligado()) throw new Error('Só com o servidor ligado se partilha a lista.');
+  if (!lista) throw new Error('Não há uma ida às compras aberta para partilhar.');
+  const r = await servidor.pb.collection('partilhas_lista').create({ casa, lista, criada_por: criadaPor });
+  return {
+    id: r.id,
+    sinal: r.sinal,
+    expiraEm: r.expira_em || null,
+    url: `${String(servidor.enderecoDoServidor() || '').replace(/\/$/, '')}/lista/${r.sinal}`,
+  };
+}
+
+export async function apagarPartilhaDaLista(idNoServidor) {
+  if (!ligado() || !idNoServidor) return { pendente: true };
+  return servidor.pb.collection('partilhas_lista').delete(idNoServidor);
+}
+
 // ── A troca de tarefas entre irmãos ──────────────────────────────────────────
 //
 // Uma linha por troca, do DIA: as duas tarefas, quem propôs, quem aceitou. A

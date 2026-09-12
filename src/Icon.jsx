@@ -22,6 +22,9 @@ const P = {
   // `swap` quer dizer «troca de tarefas entre irmãos», e só isso (12/09/2026):
   // duas setas em sentidos contrários. O `refresh` é «alternar» e «repor».
   swap: 'M4 8h14M14.5 4.5L18 8l-3.5 3.5|M20 16H6M9.5 12.5L6 16l3.5 3.5',
+  // `share` quer dizer «partilhar com quem não tem a app», e só isso
+  // (12/09/2026): uma seta a sair de uma caixa aberta.
+  share: 'M5 12v8h14v-8|M12 15V4M8 8l4-4 4 4',
   search: 'M15.5 15.5L21 21|',
   arrowLeft: 'M11 5l-7 7 7 7M4 12h16',
   lock: 'M6 11h12v9H6z|M9 11V8a3 3 0 0 1 6 0v3',

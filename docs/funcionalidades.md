@@ -286,6 +286,18 @@ acaba antes da receita; o botão «Tomas» abre a folha: definir o plano, «Pôr
 (um evento «só adultos» por dia, de hoje em diante), «Tomado agora», e o que já se tomou hoje
 com hora e quem. Só quem marcou desmarca. As tomas sobem pelo travão de casa das consultas.
 
+**Lista partilhada com quem não tem a app** (12/09/2026, Compras) — a linha «Partilhar a lista»
+no cartão da ida às compras pede ao servidor um endereço só de leitura da lista aberta, válido uma
+hora (`partilhas_lista`: o hook `partilha-lista.pb.js` escreve o sinal de 24 caracteres e o prazo;
+o cliente não escolhe nenhum). A folha mostra o endereço, «Copiar o endereço» (área de
+transferência na web, folha de partilha no telemóvel) e «Desfazer a partilha», que apaga a linha e
+mata o endereço na hora. Quem abre `GET /lista/{sinal}` vê, sem entrar, os rótulos por corredor,
+riscados os já comprados — sem prendas «só adultos», sem preços, sem o nome de quem pediu; nada se
+escreve por lá (404 sem sinal, 410 expirada ou lista fechada). Só adultos partilham. ⚠ O endereço
+só serve onde o servidor for alcançável: hoje em `127.0.0.1`, só nesse computador; na rede de casa
+se o `EXPO_PUBLIC_PB_URL` for o endereço da rede. A folha avisa-o. Expor o servidor é decisão do
+dono da casa, e é a Saúde que decide esse calendário.
+
 **Retrato do mês** (12/09/2026, Dinheiro e Documentação) — uma página por mês: o gasto por
 envelope contra o limite do mês (pastilha «acima» quando passa), as tarefas confirmadas e os
 pontos por criança, as idas às compras fechadas e o que custaram, as despesas a meias e os

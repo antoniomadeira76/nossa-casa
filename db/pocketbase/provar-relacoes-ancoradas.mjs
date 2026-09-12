@@ -255,6 +255,9 @@ const ATAQUES = [
   ['tomas_saude', 'por', { quando: '2026-09-20 08:00:00.000Z', receita: () => deles.receita.id, por: () => rita.id }],
   // As alergias (12/09/2026): a vizinha tenta escrever uma alergia ao nosso Léo.
   ['alergias_saude', 'membro', { nome: 'Amendoim', gravidade: 'grave', membro: () => leo.id }],
+  // A lista partilhada (12/09/2026): a lista e quem partilha, as duas ancoradas.
+  ['partilhas_lista', 'lista', { criada_por: '@eu', lista: () => nosso.lista.id }],
+  ['partilhas_lista', 'criada_por', { lista: () => deles.lista.id, criada_por: () => rita.id }],
   // A troca de tarefas entre irmãos (12/09/2026): QUATRO relações para dentro
   // da casa — as duas tarefas e as duas pessoas —, um ataque por cada.
   ['trocas_tarefas', 'tarefa_de', { dia: '2026-09-20', proposta_por: '@eu', tarefa_de: () => nosso.tarefa.id, tarefa_para: () => deles.tarefa.id }],
