@@ -35,7 +35,7 @@ const warrantyLabel = (days) => {
 // lista onde é preciso voltar a procurá-lo.
 // E `contrato:<id>` abre a ficha de um contrato — é o que o aviso «Seguro do
 // carro · renova em 23 dias» do Início faz.
-export default function Equipamentos({ t, abrir }) {
+export default function Equipamentos({ t, user = null, abrir }) {
   const { allEquip, criarEquipamento, contratosDaCasa } = useStore();
   const [sheet, setSheet] = useState(null);
   const abreContrato = typeof abrir === 'string' && abrir.startsWith('contrato:');
@@ -292,7 +292,7 @@ export default function Equipamentos({ t, abrir }) {
       ) : null}
 
       {ficha ? (
-        <FichaEquipamento t={t} equip={eq.find(x => x.id === ficha)} onClose={() => setFicha(null)} />
+        <FichaEquipamento t={t} equip={eq.find(x => x.id === ficha)} user={user} onClose={() => setFicha(null)} />
       ) : null}
     </>
   );

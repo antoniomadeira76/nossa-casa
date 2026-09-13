@@ -916,7 +916,8 @@ export async function puxarCasa() {
 export async function movimentoDeCofre({ casa, membro, tipo, valor, motivo, data, autorizadoPor, pontos }) {
   if (!ligado()) return { enviadas: 0, pendentes: 0 };
   return servidor.escrever.criar('cofre_movimentos', {
-    casa, membro, tipo, valor, motivo, data, autorizado_por: autorizadoPor,
+    // Aos cêntimos: 19 pontos × 0,10 dava 1.9000000000000001 na fila.
+    casa, membro, tipo, valor: Math.round(Number(valor) * 100) / 100, motivo, data, autorizado_por: autorizadoPor,
     // Quantos pontos esta semanada pagou. Zero num bónus ou numa retirada,
     // que não pagam pontos nenhuns.
     pontos: Number(pontos) || 0,

@@ -70,10 +70,30 @@ await prova('escrever.criar põe chave de idempotência sozinha', async () => {
   if (!movs.every(m => m.idem_key)) throw new Error('há movimentos sem chave');
 });
 
+// ⚠ Duas escritas AO MESMO TEMPO — é o que a loja faz sempre: o movimento de
+// dinheiro e, um instante depois, a linha do registo. A fila lia-se e
+// regravava-se com `await` pelo meio, e a segunda escrita gravava por cima da
+// primeira: o bónus morria sem ser enviado e o registo ia duas vezes. Apanhado
+// em 13/09/2026 na casa simulada. Aqui não se espera pela primeira antes de
+// pedir a segunda — é essa a prova.
+await prova('⚠ duas escritas em simultâneo chegam AMBAS, e nenhuma vai duas vezes', async () => {
+  const antes = (await ler.colecao('cofre_movimentos')).length;
+  const texto = `Bónus em simultâneo ${Date.now()}`;
+  const [a, b] = await Promise.all([
+    escrever.criar('cofre_movimentos', { casa: casa.id, membro: leo.id, tipo: 'bonus', valor: 0.5, motivo: 'simultâneo' }),
+    escrever.criar('registo', { casa: casa.id, texto, quem: rita.id, quando: new Date().toISOString(), area: 'Dinheiro' }),
+  ]);
+  igual(a.recusadas.length + b.recusadas.length, 0, 'uma das duas foi recusada');
+  igual((await ler.colecao('cofre_movimentos')).length, antes + 1, 'o movimento perdeu-se na fila');
+  const linhas = (await ler.colecao('registo')).filter(r => r.texto === texto);
+  igual(linhas.length, 1, `o registo foi ${linhas.length} vezes`);
+  igual(await escrever.pendentes(), 0);
+});
+
 await prova('o saldo é a soma das vistas, não um campo', async () => {
   const v = await ler.colecao('v_cofre_saldo');
   const doLeo = v.find(x => x.membro === leo.id);
-  igual(doLeo.saldo, 3, 'os dois bónus não somaram');
+  igual(doLeo.saldo, 3.5, 'os três bónus não somaram');
 });
 
 console.log('\n── a criança, pelo mesmo cliente ──');
@@ -88,7 +108,7 @@ await prova('e o orçamento vem VAZIO — a regra é do servidor', async () => {
   igual(d.despesas.length, 0);
 });
 await prova('mas o cofre dela vem', async () => {
-  igual((await ler.colecao('cofre_movimentos')).length, 2);
+  igual((await ler.colecao('cofre_movimentos')).length, 3);
 });
 
 console.log('\n── a saúde, pelo cliente ──');

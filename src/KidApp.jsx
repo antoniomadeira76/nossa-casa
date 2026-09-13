@@ -11,6 +11,8 @@ import EscolherAvatar from './sheets/EscolherAvatar';
 import ProporTroca from './sheets/ProporTroca';
 import EscolhaDeEsquema from './EsquemaDeCor';
 import Figura from './Avatares';
+import Resultados from './screens/Resultados';
+import { indexar } from './pesquisa';
 
 // A folha «O meu perfil» — o que é da criança e só dela: o avatar (figura e
 // cor), o esquema de cor, e o PIN com que entra.
@@ -779,6 +781,25 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
   const onC = onChrome(t.chrome);
   const tasks = allTasks();
   const [perfil, setPerfil] = useState(false);
+  // A pesquisa global da criança (13/09/2026): a mesma lupa dos adultos, sobre
+  // o que ELA vê — as tarefas dela, a lista sem preços, o cofre dela, o jantar.
+  // Nada do dinheiro da casa: o índice constrói-se do que a app da criança já
+  // mostra, e o servidor não lhe manda o resto (INVARIANTE #3).
+  const [pesquisa, setPesquisa] = useState(null);
+  const pratos = s.ementaDesligada ? [] : (s.pratos || []);
+  const indice = pesquisa === null ? [] : indexar({
+    tarefas: tasks.filter(x => x.who === kid),
+    artigos: st.allItems().filter(i => (i.vis || 'familia') !== 'adultos').map(i => ({ ...i, est: undefined })),
+    pratos,
+    membros: st.membrosDaCasa.map(n => ({ nome: n, kid: !!(st.membros[n] || {}).kid })),
+  });
+  const irParaResultado = (destino) => {
+    setPesquisa(null);
+    if (!destino) return;
+    if (destino.tab === 'compras') setKidTab('compras');
+    else if (destino.tab === 'dinheiro' || destino.tab === 'cofre') setKidTab('cofre');
+    else setKidTab('tarefas');
+  };
 
   // ⚠ A coluna vive na PRÓPRIA raiz, como no App.jsx — um <View> a mais em
   // volta dela é o erro #1 do CLAUDE.md. Sem isto a app da criança ia de ponta
@@ -827,6 +848,24 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
           </View>
         </Pressable>
 
+        {pesquisa !== null ? (
+          <>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: S.sm, minHeight: 44,
+              paddingHorizontal: S.md, borderRadius: R.row, backgroundColor: 'rgba(255,255,255,0.16)' }}>
+              <Icon name="search" size={18} color="#FFFFFF" />
+              <TextInput autoFocus value={pesquisa} onChangeText={setPesquisa}
+                placeholder="Procurar" placeholderTextColor={onC}
+                accessibilityLabel="Procurar na casa" returnKeyType="search" autoCorrect={false}
+                style={{ flex: 1, minHeight: 44, fontFamily: FONT.body, fontSize: 16, color: '#FFFFFF' }} />
+            </View>
+            <Pressable onPress={() => setPesquisa(null)} accessibilityRole="button"
+              accessibilityLabel="Fechar a pesquisa"
+              style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="close" size={22} color="#FFFFFF" />
+            </Pressable>
+          </>
+        ) : (
+          <>
         <View style={{ flex: 1, gap: 1 }}>
           <Text style={{
             fontFamily: FONT.display, fontSize: 18, fontWeight: '500',
@@ -844,16 +883,28 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
           </Text>
         </View>
 
+        <Pressable onPress={() => setPesquisa('')} accessibilityRole="button"
+          accessibilityLabel="Procurar na casa"
+          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="search" size={22} color="#FFFFFF" />
+        </Pressable>
         <Pressable onPress={onLogout} accessibilityRole="button"
           accessibilityLabel="Terminar sessão"
           style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="logout" size={20} color="#FFFFFF" />
         </Pressable>
+          </>
+        )}
       </View>
 
       {/* Conteúdo */}
       <View style={{ flex: 1, minHeight: 0 }}>
-        {kidTab === 'tarefas' ? (
+        {pesquisa !== null ? (
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: S.xl }}>
+            <Resultados t={t} termo={pesquisa} itens={indice}
+              onAbrir={irParaResultado} onSugerir={(p) => setPesquisa(p)} />
+          </ScrollView>
+        ) : kidTab === 'tarefas' ? (
           <KidTasksView t={t} kid={kid} tasks={tasks} />
         ) : kidTab === 'compras' ? (
           <KidComprasView t={t} kid={kid} />
@@ -875,7 +926,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
         ].map(x => {
           const on = kidTab === x.key;
           return (
-            <Pressable key={x.key} onPress={() => setKidTab(x.key)}
+            <Pressable key={x.key} onPress={() => { setPesquisa(null); setKidTab(x.key); }}
               accessibilityRole="tab" accessibilityLabel={x.label}
               accessibilityState={{ selected: on }}
               style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 4 }}>

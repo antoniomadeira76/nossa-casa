@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, useColorScheme, StatusBar, Modal, Image } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, useColorScheme, StatusBar, Modal, Image } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Font from 'expo-font';
 import { Roboto_500Medium, Roboto_400Regular } from '@expo-google-fonts/roboto';
@@ -28,8 +28,11 @@ import Perfil from './src/screens/Perfil';
 import KidApp from './src/KidApp';
 import GoogleCalendarImportModal from './src/modals/GoogleCalendarImportModal';
 import Confirm from './src/Confirm';
-import { APP_VERSION } from './src/registo-app';
+import { APP_VERSION, AREAS, REGISTO_APP } from './src/registo-app';
 import * as servidor from './src/pocketbase';
+import Resultados from './src/screens/Resultados';
+import { indexar } from './src/pesquisa';
+import { podeVerEvento } from './src/store';
 
 // A imagem do ecrã de entrada, reaproveitada como fundo à volta da coluna no
 // monitor. É a mesma que o `Login.jsx` usa — uma só imagem, um só sítio de onde
@@ -97,12 +100,17 @@ const TABS = [
 ];
 
 function Shell() {
-  const { s, set, importGoogleEvents, idsGoogleDaCasa, remaining, allEvents, allTasks,
-          canSeeHealth, healthOf, docsOf, allEquip, contratosDaCasa, membros: MEMBERS, nomeDaCasa,
+  const { s, set, importGoogleEvents, idsGoogleDaCasa, remaining, allEvents, allTasks, allItems,
+          canSeeHealth, healthOf, docsOf, allEquip, contratosDaCasa, contasDoMes, membros: MEMBERS, nomeDaCasa,
           lerDoServidor, removerEvento, eventosQueSairamDaGoogle, isAdmin } = useStore();
   const sysDark = useColorScheme() === 'dark';
   const [user, setUser] = useState(null);      // nome do membro ligado
   const [tab, setTab] = useState('inicio');
+  // A pesquisa global (13/09/2026, opção A de design/pesquisa-global.dc.html):
+  // `null` é «fechada»; uma string é o que está escrito no campo do cabeçalho
+  // do Início, mesmo vazia. Enquanto estiver aberta, o conteúdo do Início são os
+  // resultados; um separador do rodapé fecha-a.
+  const [pesquisa, setPesquisa] = useState(null);
   // O que abrir ao chegar a um separador, vindo do Início. Limpa-se ao chegar,
   // senão voltar ao separador reabria a mesma folha para sempre.
   const [abrirNoTab, setAbrirNoTab] = useState(null);
@@ -532,6 +540,57 @@ function Shell() {
     setGestao(false); setDoc(false); setLoja(false); setIda(false);
   };
 
+  // ── A pesquisa global: o índice e para onde cada resultado leva ───────────
+  //
+  // O índice é o que a loja já tem neste telemóvel — nada é pedido ao servidor,
+  // e nada aparece que o servidor não tenha deixado chegar a quem está a olhar
+  // (INVARIANTE #3 continua onde estava). Refaz-se a cada desenho enquanto a
+  // pesquisa está aberta: são centenas de linhas, não milhares.
+  //
+  // ⚠ Sem `useMemo`: isto vive DEPOIS dos `return` antecipados do Shell (a
+  // entrada, a app da criança), e um hook aqui muda a ordem dos hooks entre
+  // desenhos — «Rendered more hooks than during the previous render», a app
+  // em branco. Apanhado no navegador em 13/09/2026, cinco minutos depois de
+  // o escrever. Um cálculo é só um cálculo.
+  const indice = (() => {
+    if (pesquisa === null || !user) return [];
+    const nomes = Object.keys(MEMBERS);
+    const comSaude = nomes.filter(m => canSeeHealth(m, user));
+    // Leituras da loja, e só leituras — os guardas «nenhum ecrã escreve
+    // contratos/pratos por fora da loja» procuram `contratos:` e `pratos:`.
+    const pratos = s.pratos || [];
+    const contratos = contratosDaCasa();
+    return indexar({
+      tarefas: allTasks(),
+      eventos: allEvents().filter(e => podeVerEvento(e, user, MEMBERS)),
+      artigos: allItems(),
+      pratos,
+      contas: contasDoMes(),
+      metas: s.metasDaCasa || [],
+      equipamentos: allEquip(),
+      contratos,
+      consultas: comSaude.flatMap(m => healthOf(m, user)),
+      documentos: comSaude.flatMap(m => docsOf(m, user)),
+      membros: nomes.map(n => ({ nome: n, kid: !!MEMBERS[n].kid })),
+      areas: AREAS,
+      novidades: REGISTO_APP.slice(0, 40),
+    });
+  })();
+
+  // Um resultado leva ao sítio dele — o separador com a coisa em mão
+  // (`abrirNoTab`, como o Início já faz), ou uma vista de ecrã inteiro.
+  const irParaResultado = (destino) => {
+    setPesquisa(null);
+    if (!destino) return;
+    if (destino.vista === 'equip') { fecharVistas(); setEquip(destino.id || true); return; }
+    if (destino.vista === 'ficha') { fecharVistas(); setFicha(destino.membro); return; }
+    if (destino.vista === 'saude') { fecharVistas(); setSaude(true); return; }
+    if (destino.vista === 'doc') { fecharVistas(); setDoc(true); return; }
+    fecharVistas();
+    setAbrirNoTab(destino.id ? { tab: destino.tab, id: destino.id } : null);
+    setTab(destino.tab || 'inicio');
+  };
+
   // Onde uma linha do registo da casa leva. O destino vem da ÁREA dela — ver o
   // `DESTINO` em `Documentacao.jsx` —, e é sempre um ECRÃ: metade das entradas
   // fala de coisas que já não existem, e nenhuma tem um registo para onde
@@ -652,6 +711,25 @@ function Shell() {
           // como em docs/referencia/04-inicio.png. Estavam no conteúdo, numa
           // linha de texto, e a saudação aparecia duas vezes.
           <View style={{ flex: 1, gap: 14 }}>
+            {pesquisa !== null ? (
+              // A pesquisa aberta: o campo toma o lugar da saudação, no próprio
+              // cabeçalho (opção A de design/pesquisa-global.dc.html), e os três
+              // números saem enquanto se procura. «×» devolve o Início.
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: S.sm, minHeight: 44,
+                  paddingHorizontal: S.md, borderRadius: R.row, backgroundColor: 'rgba(255,255,255,0.16)' }}>
+                  <Icon name="search" size={18} color="#FFFFFF" />
+                  <TextInput autoFocus value={pesquisa} onChangeText={setPesquisa}
+                    placeholder="Procurar na casa" placeholderTextColor={onC}
+                    accessibilityLabel="Procurar na casa" returnKeyType="search"
+                    autoCorrect={false}
+                    style={{ flex: 1, minHeight: 44, fontFamily: FONT.body, fontSize: 16, color: '#FFFFFF' }} />
+                </View>
+                <Tap onPress={() => setPesquisa(null)} label="Fechar a pesquisa">
+                  <Icon name="close" size={24} color="#FFFFFF" />
+                </Tap>
+              </View>
+            ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               {/* O avatar junto ao nome, e é ELE que abre o Perfil.
 
@@ -699,18 +777,15 @@ function Shell() {
                     isto é desenho e não toque: o INVARIANTE #5 não se mexe. */}
                 <Icon name="logout" size={30} color="#FFFFFF" />
               </Tap>
-              {/* A referência tem aqui uma lupa, e em todos os cabeçalhos.
-                  Não a ponho enquanto não houver pesquisa: eu próprio a tinha
-                  posto neste ecrã sem `onPress`, e um controlo que parece
-                  tocável e não faz nada é o defeito que passei o dia a tirar
-                  do Perfil e do Dinheiro. Fica por fazer, não por esquecer. */}
             </View>
+            )}
 
             {/* Os três números abrem o ecrã de onde vêm. Estavam a ser texto:
                 o número das tarefas de hoje é a resposta curta, e o sítio onde
                 se faz alguma coisa com ela é o ecrã das Tarefas. Tocar num
                 número e não acontecer nada é o mesmo defeito da lupa aqui ao
                 lado — a diferença é que este tem destino óbvio. */}
+            {pesquisa !== null ? null : (
             <View style={{ flexDirection: 'row', alignItems: 'stretch' }}>
               {[['Disponível', EUR(remaining), 'dinheiro'],
                 ['Tarefas hoje', String(tarefasHoje), 'tarefas'],
@@ -742,7 +817,18 @@ function Shell() {
                   </Pressable>
                 </View>
               ))}
+              {/* A lupa da referência, finalmente com destino (13/09/2026): a
+                  pesquisa global. Esteve por fazer enquanto não havia pesquisa —
+                  um controlo que parece tocável e não faz nada era o defeito que
+                  se tirou do Perfil e do Dinheiro. Vive no fim desta linha, por
+                  baixo do «terminar sessão», por decisão do dono da casa: os
+                  dois ícones do cabeçalho alinham à direita, um em cada linha. */}
+              <Tap onPress={() => setPesquisa('')} label="Procurar na casa"
+                style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                <Icon name="search" size={26} color="#FFFFFF" />
+              </Tap>
             </View>
+            )}
           </View>
         ) : (
           // Header fixo para outros ecrãs
@@ -790,6 +876,9 @@ function Shell() {
         <ScrollView style={{ flex: 1, minHeight: 0 }}
           contentContainerStyle={{ padding: 16, gap: S.xl, paddingBottom: S.xl }}>
           {V ? V.render()
+            : tab === 'inicio' && pesquisa !== null
+              ? <Resultados t={t} termo={pesquisa} itens={indice}
+                  onAbrir={irParaResultado} onSugerir={(p) => setPesquisa(p)} />
             : tab === 'inicio'
               ? <Inicio t={t} user={user} go={setTab}
                   onSaude={() => setSaude(true)}
@@ -821,7 +910,7 @@ function Shell() {
         {TABS.map(x => {
           const on = tab === x.key;
           return (
-            <Pressable key={x.key} onPress={() => { setAbrirNoTab(null); fecharVistas(); setTab(x.key); }}
+            <Pressable key={x.key} onPress={() => { setAbrirNoTab(null); setPesquisa(null); fecharVistas(); setTab(x.key); }}
               accessibilityRole="tab" accessibilityLabel={x.label}
               accessibilityState={{ selected: on }}
               style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 4 }}>

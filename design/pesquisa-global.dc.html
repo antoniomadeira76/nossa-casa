@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pesquisa Global</title>
+<style>
+  :root { --pagina: #F0F2F5; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --sub: #F3F4F6; --t1: #262626; --t2: #3B3F48; --t3: #656C7C;
+    --ac: #078286; --acfg: #076F73; --chrome: #0A5B60; --warnbg: #FEFFD0; --warntx: #7A5110; --okbg: #E6F6EC; --oktx: #146B3A; --infobg: #E8F4FF; --infotx: #0B4F8A; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 84ch; }
+  h2.parte { font-size: 16px; margin: 28px 0 10px; color: var(--acfg); border-bottom: 1px solid var(--borda); padding-bottom: 6px; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 20px; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; gap: 12px; }
+  section h2 { margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  .tel { border: 1px solid var(--borda); border-radius: 12px; background: var(--pagina); width: 355px; box-sizing: border-box; overflow: hidden; display: grid; }
+  .cab { background: var(--chrome); color: #fff; padding: 12px 14px; display: flex; align-items: center; gap: 10px; min-height: 64px; }
+  .cab .nome { font-weight: 700; font-size: 17px; line-height: 1.1; } .cab .data { font-size: 11.5px; color: rgba(255,255,255,.82); }
+  .cab .bola { width: 40px; height: 40px; border-radius: 999px; background: #fff; color: var(--chrome); display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .cab .lupa, .cab .sair { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 999px; font-size: 18px; }
+  .cab .lupa { background: rgba(255,255,255,.16); margin-left: auto; }
+  .cab .campo { flex: 1; min-height: 44px; border-radius: 10px; background: rgba(255,255,255,.14); color: #fff; display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 14px; }
+  .cab .campo .cursor { display: inline-block; width: 1px; height: 18px; background: #fff; }
+  .cab .campo .completar { color: rgba(255,255,255,.5); }
+  .cab .campo .x { margin-left: auto; opacity: .8; }
+  .numeros { display: flex; gap: 12px; padding: 8px 14px 12px; background: var(--chrome); color: #fff; } .numeros div { flex: 1; } .numeros small { display: block; font-size: 9.5px; color: rgba(255,255,255,.75); } .numeros b { font-size: 13px; }
+  .corpo { padding: 10px 12px 12px; display: grid; gap: 8px; }
+  .tit { color: var(--acfg); font-weight: 600; font-size: 12.5px; border-bottom: 1px solid var(--borda); padding: 6px 0 4px; display: flex; justify-content: space-between; }
+  .linha { display: flex; align-items: center; gap: 10px; min-height: 48px; border-bottom: 1px solid var(--div); font-size: 12.5px; padding: 0 2px; }
+  .linha .ico { width: 30px; height: 30px; border-radius: 8px; background: var(--sub); display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--t3); flex: none; }
+  .linha b { font-weight: 600; } .linha small { display: block; color: var(--t3); font-size: 11px; }
+  .linha mark { background: transparent; color: var(--acfg); font-weight: 700; }
+  .linha .dir { margin-left: auto; color: var(--t3); font-size: 11px; white-space: nowrap; }
+  .campo-corpo { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 10px; background: var(--cartao); border: 1px solid var(--borda); color: var(--t3); font-size: 13px; }
+  .campo-corpo.on { border-color: var(--ac); color: var(--t2); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; } .chip { min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--borda); background: var(--cartao); font-size: 12px; color: var(--t2); display: flex; align-items: center; } .chip.on { background: var(--ac); border-color: var(--ac); color: #fff; }
+  .rod { background: var(--chrome); display: flex; } .rod div { flex: 1; text-align: center; color: rgba(255,255,255,.82); font-size: 9px; padding: 8px 0; } .rod .on { color: #fff; font-weight: 600; }
+  .lista-flutuante { margin: -4px 12px 0; border: 1px solid var(--borda); border-radius: 10px; background: var(--cartao); box-shadow: 0 6px 18px rgba(0,0,0,.12); overflow: hidden; }
+  .lista-flutuante .linha { padding: 0 10px; min-height: 44px; }
+  .vazio { color: var(--t3); font-size: 12px; font-style: italic; padding: 8px 2px; }
+  dl { margin: 0; display: grid; grid-template-columns: 96px 1fr; gap: 4px 10px; font-size: 12.5px; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  code { background: var(--div); padding: 0 4px; border-radius: 3px; font-size: 11.5px; }
+  table.comum { width: 100%; border-collapse: collapse; background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; font-size: 12.5px; }
+  table.comum th, table.comum td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--div); vertical-align: top; }
+  table.comum th { color: var(--t3); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; background: var(--pagina); }
+</style>
+</head>
+<body>
+<h1>Pesquisa global no Início — cinco desenhos</h1>
+<p class="sub">O pedido: uma pesquisa no cabeçalho do primeiro ecrã, com autocompletar e com os resultados a aparecerem à medida que se escreve. Tudo o que a app sabe já está no telemóvel (a loja) — a pesquisa é LOCAL, instantânea, sem pedido ao servidor, e só encontra o que o servidor deixou chegar a quem está a olhar (INVARIANTE #3 continua no servidor). O que muda entre os cinco é ONDE vive o campo e ONDE aparecem os resultados. Em todos: alvos de 44, cabeçalho e rodapé sempre visíveis (INVARIANTE #1), resultados agrupados por área com a palavra encontrada a negrito, e um toque leva ao sítio (a folha da tarefa, o dia da agenda, o artigo, a despesa, a ficha).</p>
+
+<h2 class="parte">O que é comum aos cinco</h2>
+<table class="comum">
+  <tr><th style="width:26%">Onde se procura</th><th>O que devolve</th><th style="width:30%">Para onde leva</th></tr>
+  <tr><td>Tarefas</td><td>título, quem faz</td><td>Tarefas, com a folha «Gerir» aberta</td></tr>
+  <tr><td>Agenda</td><td>título do evento, local, dia</td><td>Agenda, no dia do evento</td></tr>
+  <tr><td>Compras</td><td>rótulo do artigo, corredor, prato da ementa</td><td>Compras, com «Gerir artigo» aberto</td></tr>
+  <tr><td>Dinheiro</td><td>descrição da despesa, envelope, conta fixa, meta</td><td>Dinheiro, na secção</td></tr>
+  <tr><td>Equipamentos</td><td>nome, marca, contrato, fornecedor</td><td>a ficha do equipamento ou do contrato</td></tr>
+  <tr><td>Saúde</td><td>especialidade, médico, nota, receita, alergia — só o que já chegou a este telemóvel</td><td>a ficha do membro</td></tr>
+  <tr><td>Pessoas</td><td>nome do membro</td><td>a ficha de saúde ou as tarefas dessa pessoa</td></tr>
+  <tr><td>Documentação</td><td>«como funciona» e novidades</td><td>Documentação, na entrada</td></tr>
+</table>
+<p class="sub" style="margin-top:8px">Autocompletar: a partir da segunda letra, as três palavras mais prováveis do que a casa tem (títulos, rótulos, nomes) — sem acentos e sem maiúsculas a contar. «lix» sugere «lixo»; escolher a sugestão preenche e mostra os resultados dela. Ordem dos resultados: começa-pela-palavra antes de contém-a-palavra; dentro de cada área, o mais recente primeiro. Na app da criança a pesquisa procura só o que ela vê (tarefas, a lista sem preços, o cofre dela).</p>
+
+<h2 class="parte">Os cinco desenhos</h2>
+<div class="grelha">
+
+<section>
+  <h2>A. A lupa no cabeçalho, o campo toma o lugar do título <small>resultados no lugar do conteúdo</small></h2>
+  <div class="tel">
+    <div class="cab"><div class="campo">&#9906;&nbsp; lix<span class="cursor"></span><span class="completar">o</span><span class="x">×</span></div><div class="bola">A</div></div>
+    <div class="corpo">
+      <div class="chips"><span class="chip on">lixo</span><span class="chip">Lixívia</span><span class="chip">Livros escolares</span></div>
+      <div class="tit">Tarefas <span>2</span></div>
+      <div class="linha"><span class="ico">&#10003;</span><span><b>Levar o <mark>lix</mark>o</b><small>Léo · todos os dias · atrasada 6 dias</small></span><span class="dir">Tarefas ›</span></div>
+      <div class="linha"><span class="ico">&#10003;</span><span><b>Pôr o <mark>lix</mark>o na rua</b><small>Mia · dias de semana</small></span><span class="dir">Tarefas ›</span></div>
+      <div class="tit">Compras <span>1</span></div>
+      <div class="linha"><span class="ico">&#9776;</span><span><b><mark>Lix</mark>ívia</b><small>Higiene e limpeza · por comprar</small></span><span class="dir">Compras ›</span></div>
+      <div class="tit">Dinheiro <span>1</span></div>
+      <div class="linha"><span class="ico">&#8364;</span><span><b>Sacos do <mark>lix</mark>o</b><small>Casa &amp; contas · 04/09 · 3,20 €</small></span><span class="dir">Dinheiro ›</span></div>
+    </div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>No Início, uma lupa de 44 no cabeçalho ao lado da bola. Tocar troca a saudação por um campo no próprio cabeçalho (branco a 14 % sobre o `chrome`, texto branco), o teclado abre, e o CONTEÚDO do Início é substituído pelos resultados, agrupados por área, com as sugestões em pastilhas por cima. «×» ou voltar devolve o Início.</dd>
+    <dt>A favor</dt><dd>O pedido à letra — está no cabeçalho do primeiro ecrã. Não há nada a mais no ecrã enquanto não se procura. Os resultados têm a largura toda e o rodapé continua lá.</dd>
+    <dt>Contra</dt><dd>Enquanto se procura, os três números do cabeçalho (Disponível, Tarefas, Eventos) desaparecem — o cabeçalho encolhe de 118 para 64 px. Só existe no Início; nos outros separadores é preciso voltar.</dd>
+    <dt>Custo</dt><dd>Médio: um módulo puro <code>pesquisa.js</code> (índice + ordenação, com provas), um ecrã <code>Resultados.jsx</code>, e o cabeçalho do Início a saber estar em dois estados.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>B. Uma barra no topo do Início, sempre visível <small>como o «Procurar» do telemóvel</small></h2>
+  <div class="tel">
+    <div class="cab"><div class="bola">A</div><div><div class="nome">Bom dia, António</div><div class="data">Domingo, 13/09</div></div><div class="sair" style="margin-left:auto">&#8594;</div></div>
+    <div class="numeros"><div><small>Disponível</small><b>771,36 €</b></div><div><small>Tarefas hoje</small><b>3</b></div><div><small>Eventos</small><b>0</b></div></div>
+    <div class="corpo">
+      <div class="campo-corpo on">&#9906;&nbsp; frig<span class="cursor" style="display:inline-block;width:1px;height:16px;background:var(--t2)"></span><span style="color:var(--t3)">orífico</span><span style="margin-left:auto">×</span></div>
+      <div class="tit">Equipamentos <span>1</span></div>
+      <div class="linha"><span class="ico">&#9881;</span><span><b><mark>Frig</mark>orífico</b><small>Bosch · garantia a expirar · faltam 19 dias</small></span><span class="dir">Ficha ›</span></div>
+      <div class="tit">Dinheiro <span>2</span></div>
+      <div class="linha"><span class="ico">&#8364;</span><span><b>Reparação do <mark>frig</mark>orífico</b><small>Casa &amp; contas · 22/08 · 85,00 €</small></span><span class="dir">Dinheiro ›</span></div>
+      <div class="linha"><span class="ico">&#8364;</span><span><b>Lâmpada do <mark>frig</mark>orífico</b><small>Casa &amp; contas · 03/07 · 6,40 €</small></span><span class="dir">Dinheiro ›</span></div>
+      <div class="vazio">Sem resultados na Agenda, nas Compras, nas Tarefas nem na Saúde.</div>
+    </div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>O cabeçalho fica como está. A primeira coisa no conteúdo do Início é uma caixa «Procurar na casa» de 44 px, sempre visível; ao escrever, o que está por baixo («Precisa de Si», agenda, tarefas) é substituído pelos resultados; ao limpar, volta.</dd>
+    <dt>A favor</dt><dd>Descobre-se sozinha — está à vista. Os números do cabeçalho ficam. É o padrão que o telemóvel já ensinou (a barra de procurar no topo da lista).</dd>
+    <dt>Contra</dt><dd>Não é «no cabeçalho» à letra, e é um controlo permanente que rouba 52 px ao «Precisa de Si» — o oposto da decisão de hoje na Saúde, onde a caixa permanente saiu.</dd>
+    <dt>Custo</dt><dd>Baixo-médio: o mesmo módulo puro; o Início ganha um estado.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>C. A lupa abre um ecrã de pesquisa próprio <small>recentes, sugestões, resultados</small></h2>
+  <div class="tel">
+    <div class="cab"><div class="sair">&#8592;</div><div class="campo">&#9906;&nbsp; pediat<span class="cursor"></span><span class="completar">ria</span><span class="x">×</span></div></div>
+    <div class="corpo">
+      <div class="tit">Sugestões</div>
+      <div class="linha"><span class="ico">&#9906;</span><span>pediat<b>ria</b></span></div>
+      <div class="linha"><span class="ico">&#9906;</span><span>pediat<b>ra · Dr.ª Neves</b></span></div>
+      <div class="tit">Saúde <span>2</span></div>
+      <div class="linha"><span class="ico">&#9829;</span><span><b><mark>Pediat</mark>ria · Léo</b><small>Terça, 04/08 · Dr.ª Neves · 3 anexos</small></span><span class="dir">Ficha ›</span></div>
+      <div class="linha"><span class="ico">&#9829;</span><span><b><mark>Pediat</mark>ria · Mia</b><small>Quarta, 26/08 · Dr.ª Neves</small></span><span class="dir">Ficha ›</span></div>
+      <div class="tit">Procurou há pouco</div>
+      <div class="linha"><span class="ico">&#8635;</span><span>frigorífico</span></div>
+      <div class="linha"><span class="ico">&#8635;</span><span>renda</span></div>
+    </div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>A lupa no cabeçalho do Início abre um ECRÃ de pesquisa (como Saúde ou Equipamentos: seta para voltar, cabeçalho com o campo, rodapé no sítio). Antes de escrever mostra «Procurou há pouco»; ao escrever, sugestões em linhas e os resultados por área.</dd>
+    <dt>A favor</dt><dd>Espaço todo para sugestões e resultados; as pesquisas recentes poupam escrever; o mesmo ecrã pode abrir-se de qualquer separador amanhã sem mudar de desenho.</dd>
+    <dt>Contra</dt><dd>Mais um ecrã na app (a regra «não acrescentar ecrãs sem perguntar» — este é o pedido, portanto conta). O Início desaparece enquanto se procura; a sensação é «fui a outro sítio».</dd>
+    <dt>Custo</dt><dd>Médio: ecrã novo registado em <code>ECRAS</code> e nos guardas que enumeram ecrãs; guardar as recentes (local, por aparelho).</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>D. Só autocompletar: a lista flutuante e um toque leva lá <small>sem página de resultados</small></h2>
+  <div class="tel">
+    <div class="cab"><div class="campo">&#9906;&nbsp; ren<span class="cursor"></span><span class="x">×</span></div><div class="bola">A</div></div>
+    <div class="lista-flutuante">
+      <div class="linha"><span class="ico">&#8364;</span><span><b><mark>Ren</mark>da</b><small>Conta fixa · dia 1 · 850,00 €</small></span><span class="dir">Dinheiro</span></div>
+      <div class="linha"><span class="ico">&#9881;</span><span><b><mark>Ren</mark>ovação do seguro do carro</b><small>Contrato · renova em 8 dias</small></span><span class="dir">Ficha</span></div>
+      <div class="linha"><span class="ico">&#10003;</span><span><b>Regar as plantas</b><small>Mia · dias de semana</small></span><span class="dir">Tarefas</span></div>
+      <div class="linha" style="border-bottom:0"><span class="ico">&#9906;</span><span>Ver todos os 7 resultados</span></div>
+    </div>
+    <div class="corpo" style="opacity:.45">
+      <div class="tit">Precisa de Si</div>
+      <div class="linha"><span class="ico">&#8364;</span><span><b>Contas por acertar</b><small>A Rita deve 83,67 €</small></span></div>
+      <div class="linha"><span class="ico">&#9881;</span><span><b>Garantia a expirar · Frigorífico</b><small>Faltam 19 dias</small></span></div>
+    </div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>Como a A no cabeçalho, mas sem página: por baixo do campo cai uma lista flutuante com os 5 melhores, misturados e com a área à direita; o Início fica por trás, esbatido. Tocar leva direto ao sítio; «Ver todos» abre a lista completa (a página da A).</dd>
+    <dt>A favor</dt><dd>O mais rápido para quem sabe o que procura — três letras, um toque. É o autocompletar do pedido, feito de resultados e não de palavras.</dd>
+    <dt>Contra</dt><dd>Uma lista flutuante sobre o conteúdo é um elemento novo (a app tem folhas de baixo e diálogos, não menus suspensos). Cinco resultados não chegam para «sacos do lixo» em cinco meses de despesas — daí o «Ver todos», que é a A outra vez.</dd>
+    <dt>Custo</dt><dd>Médio-alto: dois desenhos (a lista e a página) em vez de um.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>E. Pesquisa que também percebe ações <small>«despesa 12 farmácia» cria a despesa</small></h2>
+  <div class="tel">
+    <div class="cab"><div class="campo">&#9906;&nbsp; despesa 12 farm<span class="cursor"></span><span class="x">×</span></div><div class="bola">A</div></div>
+    <div class="corpo">
+      <div class="tit">Fazer</div>
+      <div class="linha"><span class="ico" style="background:var(--okbg);color:var(--oktx)">+</span><span><b>Registar despesa de 12,00 € · «farm…»</b><small>Em Saúde, pago por si — confirma na folha</small></span><span class="dir">Abrir ›</span></div>
+      <div class="tit">Encontrado <span>3</span></div>
+      <div class="linha"><span class="ico">&#8364;</span><span><b><mark>Farm</mark>ácia Central</b><small>Saúde · 02/09 · 12,40 €</small></span><span class="dir">Dinheiro ›</span></div>
+      <div class="linha"><span class="ico">&#8364;</span><span><b><mark>Farm</mark>ácia · xarope do Léo</b><small>Saúde · 11/08 · 8,90 €</small></span><span class="dir">Dinheiro ›</span></div>
+      <div class="linha"><span class="ico">&#9776;</span><span><b>Pasta de dentes (<mark>farm</mark>ácia)</b><small>Higiene · por comprar</small></span><span class="dir">Compras ›</span></div>
+    </div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>A A, mais uma secção «Fazer» no topo: se o que se escreve começa por um verbo ou nome de coisa da casa («despesa 12 farmácia», «tarefa lixo Léo», «evento dentista sexta 16h», «comprar leite»), a pesquisa oferece a ação com a folha já preenchida — confirma-se sempre na folha, nunca se grava do campo.</dd>
+    <dt>A favor</dt><dd>Um campo para procurar E para registar, à velocidade de escrever. É o que as apps de 2026 têm de melhor (Maple, Skylight) sem sair da casa: é uma gramática de dez palavras, não um modelo.</dd>
+    <dt>Contra</dt><dd>Duas coisas num campo pedem clareza no que acontece — a secção «Fazer» tem de ser inconfundível. Cada área é uma regra a escrever e a provar; o âmbito cresce.</dd>
+    <dt>Custo</dt><dd>Alto: a A inteira mais um interpretador <code>comandos.js</code> com provas por frase.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>A minha recomendação <small>A, com as pastilhas de autocompletar</small></h2>
+  <dl>
+    <dt>Porquê</dt><dd>É o pedido à letra — no cabeçalho do Início — e é o desenho que menos acrescenta à app enquanto não se procura: nada de permanente (a lição da caixa da Saúde de hoje), nenhum ecrã novo, nenhum menu flutuante. Os resultados aparecem à medida que se escreve, no lugar do conteúdo do Início, agrupados por área; as três sugestões em pastilhas por cima são o autocompletar. O rodapé e o cabeçalho ficam no sítio.</dd>
+    <dt>Depois</dt><dd>Se a pesquisa pegar, a E é o passo seguinte natural (a secção «Fazer» em cima dos mesmos resultados), e a C serve se a quiser em todos os separadores.</dd>
+    <dt>O que faço</dt><dd>Um módulo puro <code>src/pesquisa.js</code> (normalizar sem acentos, indexar a loja, ordenar, sugerir) com guarda Jest por área; <code>src/screens/Resultados.jsx</code> com linhas planas (desenho C); o cabeçalho do Início com a lupa e o campo; a criança com o mesmo campo sobre o que ela vê. Medido no navegador antes de gravar, como sempre.</dd>
+  </dl>
+</section>
+
+</div>
+</body>
+</html>

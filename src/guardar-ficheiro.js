@@ -31,18 +31,53 @@ export async function guardarPDF(nome, html) {
   return Platform.OS === 'web' ? pdfNaWeb(nome, html) : pdfNoTelemovel(nome, html);
 }
 
+// ⚠ Sem janela nova. Abria-se um `window.open` com o documento e chamava-se a
+// impressão dela — e o bloqueador de janelas do navegador travava-a: «O
+// navegador bloqueou a janela de impressão» era o que o dono da casa via ao
+// exportar (13/09/2026). Um `iframe` escondido na PRÓPRIA página não é uma
+// janela nova: recebe o documento por `srcdoc`, imprime-se a si próprio, e o
+// diálogo do navegador é o mesmo — «Guardar como PDF». O `window.open` fica só
+// como recurso, para um navegador sem `srcdoc`.
 function pdfNaWeb(nome, html) {
+  const titulo = nome.replace(/\.[^.]+$/, '');   // o nome sugerido no diálogo
   try {
+    if (typeof document !== 'undefined' && 'srcdoc' in document.createElement('iframe')) {
+      const moldura = document.createElement('iframe');
+      moldura.setAttribute('aria-hidden', 'true');
+      moldura.setAttribute('title', titulo);
+      moldura.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+      let impresso = false;
+      const imprimir = () => {
+        if (impresso) return;
+        impresso = true;
+        try {
+          const j = moldura.contentWindow;
+          if (j && j.document) j.document.title = titulo;
+          j.focus();
+          j.print();
+        } catch (e) { /* o diálogo não abriu; a moldura sai na mesma */ }
+        // Sai depois do diálogo fechar. `afterprint` não chega em todos os
+        // navegadores; o tempo é a rede de segurança.
+        const sair = () => { try { moldura.remove(); } catch (e) {} };
+        try { moldura.contentWindow.addEventListener('afterprint', sair); } catch (e) {}
+        setTimeout(sair, 120000);
+      };
+      moldura.addEventListener('load', () => setTimeout(imprimir, 150));
+      document.body.appendChild(moldura);
+      moldura.srcdoc = html;
+      // Sem a espera, o diálogo abre antes de os estilos aplicarem e sai um
+      // documento sem formatação nenhuma.
+      setTimeout(imprimir, 1200);
+      return { ok: true, onde: 'no diálogo de impressão, escolha «Guardar como PDF».' };
+    }
     const janela = window.open('', '_blank');
     if (!janela) {
       return { ok: false, motivo: 'O navegador bloqueou a janela de impressão. '
         + 'Permita janelas para este endereço e tente outra vez.' };
     }
     janela.document.write(html);
-    janela.document.title = nome.replace(/\.[^.]+$/, '');   // o nome sugerido no diálogo
+    janela.document.title = titulo;
     janela.document.close();
-    // Sem a espera, o diálogo abre antes de os estilos aplicarem e sai um
-    // documento sem formatação nenhuma.
     janela.onload = () => { janela.focus(); janela.print(); };
     setTimeout(() => { try { janela.focus(); janela.print(); } catch (e) {} }, 400);
     return { ok: true, onde: 'no diálogo de impressão, escolha «Guardar como PDF».' };

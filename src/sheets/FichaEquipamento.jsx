@@ -9,6 +9,9 @@ import { Label, Primary } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
+import { documentoDaFatura, nomeDoFicheiroDaFatura } from '../exportar-equipamento';
+import { lerComoDataURI } from '../ler-imagem';
+import { guardarPDF } from '../guardar-ficheiro';
 
 // Estado da garantia: a mesma regra de três estados da lista, para a ficha e a
 // lista nunca discordarem.
@@ -30,13 +33,33 @@ const ANEXOS = [
   { campo: 'foto',   icone: 'camera',   titulo: 'Equipamento e n.º de série' },
 ];
 
-export default function FichaEquipamento({ t, equip, onClose }) {
-  const { editEquip, removeEquip } = useStore();
+export default function FichaEquipamento({ t, equip, user = null, onClose }) {
+  const { editEquip, removeEquip, nomeDaCasa } = useStore();
   const [remover, setRemover] = useState(false);
   const [manut, setManut] = useState(null);   // rascunho da manutenção
+  // A exportação da fatura: `null` parada, `'a preparar'`, ou a frase do fim.
+  const [exportacao, setExportacao] = useState(null);
 
   const dias = warrantyDaysLeft(equip);
   const e = estado(t, dias, equip.warrantyEnd);
+
+  // ⚠ Era `onPress={() => {}}`: um botão que prometia e não fazia, com a
+  // fatura fotografada mesmo ao lado (13/09/2026). Sai um PDF pelo molde da app,
+  // com a imagem dentro — o mesmo caminho da ficha de saúde.
+  const exportarFatura = async () => {
+    if (!equip.fatura || exportacao === 'a preparar') return;
+    setExportacao('a preparar');
+    try {
+      const imagem = await lerComoDataURI(equip.fatura);
+      const html = documentoDaFatura({ equip, estado: e, imagem, casa: nomeDaCasa, hoje: TODAY_KEY, quemImprime: user, t });
+      const r = await guardarPDF(nomeDoFicheiroDaFatura(equip, TODAY_KEY), html);
+      if (!r.ok) setExportacao(r.motivo || 'Não foi possível exportar a fatura.');
+      else if (r.cancelado) setExportacao(null);
+      else setExportacao(r.onde ? `PDF pronto — ${r.onde}` : 'PDF pronto.');
+    } catch (err) {
+      setExportacao('Não foi possível exportar a fatura. Tente outra vez.');
+    }
+  };
 
   const escolherImagem = async (campo) => {
     const r = await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
@@ -44,7 +67,7 @@ export default function FichaEquipamento({ t, equip, onClose }) {
   };
 
   // Botão de ação: preenchido para a ação principal, contorno para as outras.
-  const Acao = ({ label, icone, onPress, preenchido, perigo, desativado, porque }) => {
+  const Acao = ({ label, icone, onPress, preenchido, perigo, desativado, porque, meio }) => {
     // ⚠ Dois tons, não um. O contorno e o ícone são objetos gráficos (3:1) e
     // levam a cor-base do estado ou o `titulo`; o RÓTULO é texto de 15 px e
     // leva o `xTexto` ou o `actFg` — «Remover Equipamento» a #FF4D4F sobre a
@@ -52,12 +75,12 @@ export default function FichaEquipamento({ t, equip, onClose }) {
     const tomGrafico = perigo ? t.state.err : t.titulo;
     const tomTexto = perigo ? t.state.errTexto : t.actFg;
     return (
-      <View style={{ gap: 4 }}>
+      <View style={{ gap: 4, ...(meio ? { flex: 1 } : {}) }}>
         <Pressable onPress={desativado ? undefined : onPress} accessibilityRole="button"
           accessibilityLabel={label} accessibilityState={{ disabled: !!desativado }}
           style={({ pressed }) => ({
-            minHeight: 48, borderRadius: R.row, borderWidth: 1,
-            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.md,
+            minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: S.sm,
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.sm,
             // ⚠ `actBg`/`actBrd`, os tokens do botão comum — e não o `infoBg`,
             // que é um tijolo OPACO e claro nos dois aspetos: no escuro o
             // `actFg` (clareado) por cima dele dava 2,23 (09/09/2026). O
@@ -67,8 +90,10 @@ export default function FichaEquipamento({ t, equip, onClose }) {
             opacity: pressed ? 0.85 : 1,
           })}>
           <Icon name={icone} size={20} color={desativado ? t.text3 : tomGrafico} />
-          <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700',
-            color: desativado ? t.text3 : tomTexto }}>{label}</Text>
+          {/* Duas linhas no máximo: lado a lado, «Agendar Manutenção» a 15 px
+              não cabe em 170 e partia para fora do botão. */}
+          <Text numberOfLines={2} style={{ fontFamily: FONT.display, fontSize: meio ? 14 : 15, fontWeight: '700',
+            textAlign: 'center', flexShrink: 1, color: desativado ? t.text3 : tomTexto }}>{label}</Text>
         </Pressable>
         {desativado && porque ? (
           <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3, textAlign: 'center' }}>
@@ -84,12 +109,21 @@ export default function FichaEquipamento({ t, equip, onClose }) {
       <Sheet t={t} title={equip.name} sub={equip.cat} onClose={onClose}
         action={
           <View style={{ gap: S.md }}>
-            <Acao preenchido label="Agendar Manutenção" icone="calendar"
-              onPress={() => setManut({ maint: equip.maint || '', maintDate: equip.maintDate || '' })} />
-            <Acao label="Exportar Fatura" icone="printer"
-              desativado={!equip.fatura}
-              porque={!equip.fatura ? 'Ainda não há fatura para exportar.' : null}
-              onPress={() => {}} />
+            {/* Lado a lado, como «Exportar» e «Marcar» na ficha de saúde — o
+                dono da casa (13/09/2026): «botões lado a lado (agendar e
+                exportar) em todos os ecrãs que tiverem estes dois». */}
+            <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'flex-start' }}>
+              <Acao meio preenchido label="Agendar Manutenção" icone="calendar"
+                onPress={() => setManut({ maint: equip.maint || '', maintDate: equip.maintDate || '' })} />
+              <Acao meio label={exportacao === 'a preparar' ? 'A preparar…' : 'Exportar Fatura'} icone="printer"
+                desativado={!equip.fatura || exportacao === 'a preparar'}
+                porque={!equip.fatura ? 'Ainda não há fatura para exportar.' : null}
+                onPress={exportarFatura} />
+            </View>
+            {exportacao && exportacao !== 'a preparar' ? (
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 18, textAlign: 'center',
+                color: /^PDF pronto/.test(exportacao) ? t.state.okTexto : t.state.errTexto }}>{exportacao}</Text>
+            ) : null}
             <Acao perigo label="Remover Equipamento" icone="trash" onPress={() => setRemover(true)} />
           </View>
         }>

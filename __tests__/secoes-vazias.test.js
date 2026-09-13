@@ -38,6 +38,11 @@ const NUNCA_VAZIAS = {
   // artigos.
   'src/screens/ComoFazemosCompras.jsx :: Corredores da loja':
     'a loja devolve as sementes quando a casa não tem lista, e o `apagarSeccao` recusa apagar a última',
+  // A pesquisa global (13/09/2026): `pesquisar` agrupa por área e só devolve
+  // as áreas COM resultados — um grupo vazio não existe para ter título. O
+  // «nada encontrado» é um `<Empty>` à parte, acima dos grupos.
+  'src/screens/Resultados.jsx :: {g.area}':
+    'o `pesquisar` de `src/pesquisa.js` não devolve áreas sem resultados',
 };
 
 // `].map(` é um array escrito na própria linha — as opções de um Segmented, os

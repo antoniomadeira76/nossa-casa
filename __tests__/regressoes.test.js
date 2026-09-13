@@ -838,7 +838,8 @@ describe('Ficha do equipamento — alinhada com 12-ficha-equipamento.png', () =>
     expect(ficha).toMatch(/editEquip\(equip\.id, manut\)/);   // manutenção liga
     expect(ficha).toMatch(/launchImageLibraryAsync/);         // fotografias ligam
     // exportar não é possível sem fatura, e diz porquê em vez de não fazer nada
-    expect(ficha).toMatch(/desativado=\{!equip\.fatura\}/);
+    // (e também enquanto o PDF se prepara — 13/09/2026, o botão passou a exportar)
+    expect(ficha).toMatch(/desativado=\{!equip\.fatura/);
     expect(ficha).toMatch(/Ainda não há fatura para exportar/);
   });
 

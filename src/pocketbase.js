@@ -991,22 +991,57 @@ const lerFila = async () => {
 const gravarFila = (f) => guarda.setItem(FILA, JSON.stringify(f)).catch(() => {});
 const novaChave = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
+// ── ⚠ UMA fila, UM de cada vez ───────────────────────────────────────────────
+//
+// A fila vive no disco e cada operação a lê, mexe e regrava — com `await` pelo
+// meio. Duas escritas ao mesmo tempo liam a MESMA fila antiga e a segunda
+// gravava por cima da primeira: o movimento do cofre entrava, a linha do
+// registo («Semanada de Léo: 1,90 €») era pedida um instante depois pelo
+// efeito da loja, lia a fila sem o movimento, gravava só a sua — e o movimento
+// morria sem nunca ser enviado. A linha do registo, essa, ia duas vezes,
+// porque dois `esvaziar` a apanhavam em simultâneo.
+//
+// E era SEMPRE assim: toda a escrita de dinheiro da loja escreve uma linha de
+// registo logo a seguir. Semanadas, bónus e despesas registadas pela app ficavam
+// no ecrã e perdiam-se na leitura seguinte; o acerto sobrevivia só por sorte
+// de tempos. Apanhado em 13/09/2026 na casa simulada, a comparar o que a app
+// mostrava com o que o servidor tinha depois de recarregar.
+//
+// A cura é uma cadeia: cada operação sobre a fila espera pela anterior. É o
+// que um `Mutex` faria, escrito com uma promessa.
+let vez = Promise.resolve();
+const umDeCadaVez = (fn) => {
+  const minha = vez.then(fn, fn);
+  // A cadeia nunca fica rejeitada: a falha volta a quem chamou, e a seguinte
+  // corre na mesma.
+  vez = minha.catch(() => {});
+  return minha;
+};
+
 export const escrever = {
-  async criar(colecao, dados) {
+  criar(colecao, dados) {
     const linha = COM_IDEM.has(colecao) && !dados.idem_key
       ? { ...dados, idem_key: novaChave() } : dados;
-    const fila = await lerFila();
-    fila.push({ op: 'criar', colecao, dados: linha });
-    await gravarFila(fila);
-    return this.esvaziar();
+    return umDeCadaVez(async () => {
+      const fila = await lerFila();
+      fila.push({ op: 'criar', colecao, dados: linha });
+      await gravarFila(fila);
+      return escrever.despachar();
+    });
   },
 
-  async atualizar(colecao, id, campos) {
-    const fila = await lerFila();
-    fila.push({ op: 'atualizar', colecao, id, dados: campos });
-    await gravarFila(fila);
-    return this.esvaziar();
+  atualizar(colecao, id, campos) {
+    return umDeCadaVez(async () => {
+      const fila = await lerFila();
+      fila.push({ op: 'atualizar', colecao, id, dados: campos });
+      await gravarFila(fila);
+      return escrever.despachar();
+    });
   },
+
+  // O público: entra na cadeia. O `despachar` de baixo é o de quem JÁ está
+  // dentro dela — chamar este ali esperava por si próprio para sempre.
+  esvaziar() { return umDeCadaVez(() => escrever.despachar()); },
 
   // Por ordem, parando na primeira falha para não trocar a sequência. O que
   // falhou fica na fila para a próxima tentativa.
@@ -1027,7 +1062,7 @@ export const escrever = {
   //
   // E a que sai leva o motivo com ela: `presa` e `recusadas` existem para que
   // quem chamar possa dizer o que aconteceu em vez de contar pendentes.
-  async esvaziar() {
+  async despachar() {
     if (!estaLigado()) return { enviadas: 0, pendentes: (await lerFila()).length, recusadas: [] };
     let fila = await lerFila();
     let enviadas = 0;

@@ -110,6 +110,8 @@ const ECRAS = [
   ['Retrato do Mês',      '../src/sheets/RetratoDoMes', { retrato: { idServidor: null, inicio: 'd2026-08-01', fechadoEm: null, aberto: true, nome: 'Agosto de 2026', rendimento: 0, envelopes: [{ nome: 'Mercearia', gasto: 12, limite: 100 }], gasto: 12, orcamento: 100, despesas: 1, meias: 0, criancas: [{ nome: 'Léo', feitas: 1, pontos: 2 }], compras: { idas: 0, total: 0 }, acertos: { n: 0, total: 0 } } }],
   // A medicação a partir da receita (12/09/2026): a folha das tomas.
   ['Tomas da Receita',   '../src/sheets/TomasDaReceita', { record: { id: 'h2', member: 'Léo', day: 'd2026-08-08' }, recipe: { id: 'rx-1', name: 'Ferro 30 mg', frequency: 1, durationDays: 14, boxSize: 20 } }],
+  // A pesquisa global (13/09/2026): os resultados no lugar do conteúdo do Início.
+  ['Resultados da Pesquisa', '../src/screens/Resultados', { termo: 'li', itens: [{ area: 'Tarefas', titulo: 'Levar o lixo', sub: 'Léo', texto: 'levar o lixo · leo', ordem: '', destino: { tab: 'tarefas', id: 'lixo' } }], onAbrir: () => {}, onSugerir: () => {} }],
   ['Novo Contrato',      '../src/sheets/NovoContrato', {}],
   ['Campos do Contrato', '../src/sheets/CamposContrato', { form: { nome: 'Seguro', fornecedor: 'Fidelidade', renovaEm: '', fidelizacaoAte: '', responsavel: null }, onChange: () => {} }],
   ['Ficha do Contrato',  '../src/sheets/FichaContrato', { contrato: { id: 'ct-1', nome: 'Seguro do carro', fornecedor: 'Fidelidade', renovaEm: '12/09/2026', fidelizacaoAte: '', responsavel: null, dias: 23 } }],
