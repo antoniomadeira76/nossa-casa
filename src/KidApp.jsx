@@ -774,6 +774,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
   // Nada do dinheiro da casa: o índice constrói-se do que a app da criança já
   // mostra, e o servidor não lhe manda o resto (INVARIANTE #3).
   const [pesquisa, setPesquisa] = useState(null);
+  const [pesquisaFocada, setPesquisaFocada] = useState(false);
   const indice = pesquisa === null ? [] : indexar({
     tarefas: tasks.filter(x => x.who === kid),
     artigos: st.allItems().filter(i => (i.vis || 'familia') !== 'adultos').map(i => ({ ...i, est: undefined })),
@@ -836,13 +837,17 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
 
         {pesquisa !== null ? (
           <>
+            {/* Sem caixa, com a linha por baixo — o mesmo campo dos adultos
+                (opção C de design/campo-de-pesquisa.dc.html). */}
             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: S.sm, minHeight: 44,
-              paddingHorizontal: S.md, borderRadius: R.row, backgroundColor: 'rgba(255,255,255,0.16)' }}>
+              paddingHorizontal: 2, borderBottomWidth: 2,
+              borderBottomColor: pesquisaFocada ? '#FFFFFF' : 'rgba(255,255,255,0.6)' }}>
               <Icon name="search" size={18} color="#FFFFFF" />
               <TextInput autoFocus value={pesquisa} onChangeText={setPesquisa}
+                onFocus={() => setPesquisaFocada(true)} onBlur={() => setPesquisaFocada(false)}
                 placeholder="Procurar" placeholderTextColor={onC}
                 accessibilityLabel="Procurar na casa" returnKeyType="search" autoCorrect={false}
-                style={{ flex: 1, minHeight: 44, fontFamily: FONT.body, fontSize: 16, color: '#FFFFFF' }} />
+                style={{ flex: 1, minHeight: 44, fontFamily: FONT.body, fontSize: 16, color: '#FFFFFF', outlineStyle: 'none' }} />
             </View>
             <Pressable onPress={() => setPesquisa(null)} accessibilityRole="button"
               accessibilityLabel="Fechar a pesquisa"
@@ -889,7 +894,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
         <MarcaDeAgua t={t} />
         {pesquisa !== null ? (
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: S.xl }}>
-            <Resultados t={t} termo={pesquisa} itens={indice}
+            <Resultados t={t} termo={pesquisa} itens={indice} areas={['Tarefas', 'Compras', 'Pessoas']}
               onAbrir={irParaResultado} onSugerir={(p) => setPesquisa(p)} />
           </ScrollView>
         ) : kidTab === 'tarefas' ? (

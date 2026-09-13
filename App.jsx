@@ -111,6 +111,10 @@ function Shell() {
   // do Início, mesmo vazia. Enquanto estiver aberta, o conteúdo do Início são os
   // resultados; um separador do rodapé fecha-a.
   const [pesquisa, setPesquisa] = useState(null);
+  // Se o campo da pesquisa tem o foco — a linha por baixo dele passa de 60 % a
+  // 100 % (opção C de design/campo-de-pesquisa.dc.html). É a app que desenha o
+  // foco: o anel do navegador saía laranja no Windows e não seguia o esquema.
+  const [pesquisaFocada, setPesquisaFocada] = useState(false);
   // O que abrir ao chegar a um separador, vindo do Início. Limpa-se ao chegar,
   // senão voltar ao separador reabria a mesma folha para sempre.
   const [abrirNoTab, setAbrirNoTab] = useState(null);
@@ -715,14 +719,21 @@ function Shell() {
               // cabeçalho (opção A de design/pesquisa-global.dc.html), e os três
               // números saem enquanto se procura. «×» devolve o Início.
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+                {/* Sem caixa (opção C, 13/09/2026): o texto escreve-se a branco
+                    no próprio cabeçalho, com uma linha de 2 px por baixo que
+                    acende com o foco. `outlineStyle: 'none'` tira o anel do
+                    navegador — saía laranja no Chrome do Windows, a cor do
+                    acento do sistema, e não do esquema da casa. */}
                 <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: S.sm, minHeight: 44,
-                  paddingHorizontal: S.md, borderRadius: R.row, backgroundColor: 'rgba(255,255,255,0.16)' }}>
+                  paddingHorizontal: 2, borderBottomWidth: 2,
+                  borderBottomColor: pesquisaFocada ? '#FFFFFF' : 'rgba(255,255,255,0.6)' }}>
                   <Icon name="search" size={18} color="#FFFFFF" />
                   <TextInput autoFocus value={pesquisa} onChangeText={setPesquisa}
+                    onFocus={() => setPesquisaFocada(true)} onBlur={() => setPesquisaFocada(false)}
                     placeholder="Procurar na casa" placeholderTextColor={onC}
                     accessibilityLabel="Procurar na casa" returnKeyType="search"
                     autoCorrect={false}
-                    style={{ flex: 1, minHeight: 44, fontFamily: FONT.body, fontSize: 16, color: '#FFFFFF' }} />
+                    style={{ flex: 1, minHeight: 44, fontFamily: FONT.body, fontSize: 16, color: '#FFFFFF', outlineStyle: 'none' }} />
                 </View>
                 <Tap onPress={() => setPesquisa(null)} label="Fechar a pesquisa">
                   <Icon name="close" size={24} color="#FFFFFF" />

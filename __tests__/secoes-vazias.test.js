@@ -43,6 +43,11 @@ const NUNCA_VAZIAS = {
   // «nada encontrado» é um `<Empty>` à parte, acima dos grupos.
   'src/screens/Resultados.jsx :: {g.area}':
     'o `pesquisar` de `src/pesquisa.js` não devolve áreas sem resultados',
+  // «Onde se procura» (opção C, 13/09/2026): as áreas vêm de
+  // `AREAS_DA_PESQUISA` (oito constantes) ou da lista da criança (três) —
+  // nunca de dados da casa, nunca vazia.
+  'src/screens/Resultados.jsx :: Onde se procura':
+    'as áreas são constantes de `src/pesquisa.js` ou a lista fixa da criança, não uma lista de dados',
 };
 
 // `].map(` é um array escrito na própria linha — as opções de um Segmented, os

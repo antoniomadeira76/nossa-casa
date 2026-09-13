@@ -132,9 +132,24 @@ describe('⚠ 1. o módulo puro', () => {
 });
 
 describe('⚠ 2. o ecrã dos resultados', () => {
-  it('sem termo diz o que se pode procurar; com termo desenha os grupos com alvos de 44', () => {
-    const { texto } = montar({ termo: '', itens: CASA, onAbrir: () => {}, onSugerir: () => {} });
+  it('sem termo mostra «Onde se procura» — uma linha por área, que leva lá; com termo desenha os grupos com alvos de 44', () => {
+    // Opção C de design/campo-de-pesquisa.dc.html (13/09/2026): em vez de um
+    // cartão a repetir «Procurar na casa», as áreas em linhas tocáveis.
+    const abertos = [];
+    const { r: r0, texto } = montar({ termo: '', itens: CASA, onAbrir: (d) => abertos.push(d), onSugerir: () => {} });
+    expect(texto()).toMatch(/Onde se procura/);
     expect(texto()).toMatch(/Escreva pelo menos duas letras/);
+    expect(texto()).not.toMatch(/Procurar na casa/);
+    const linhas = botoes(r0).filter(b => /^Ir a /.test(b.props.accessibilityLabel));
+    expect(linhas.map(b => b.props.accessibilityLabel)).toEqual(
+      ['Tarefas', 'Agenda', 'Compras', 'Dinheiro', 'Equipamentos', 'Saúde', 'Pessoas', 'Documentação'].map(a => `Ir a ${a}`));
+    for (const b of linhas) expect(estiloDe(b).minHeight).toBeGreaterThanOrEqual(44);
+    TestRenderer.act(() => { (linhas[5].props.onPress || linhas[5].props.onClick)(); });
+    expect(abertos).toEqual([{ vista: 'saude' }]);
+    // A criança só vê as áreas dela.
+    const { r: rk, texto: tk } = montar({ termo: '', itens: CASA, onAbrir: () => {}, onSugerir: () => {}, areas: ['Tarefas', 'Compras', 'Pessoas'] });
+    expect(botoes(rk).filter(b => /^Ir a /.test(b.props.accessibilityLabel)).length).toBe(3);
+    expect(tk()).not.toMatch(/Dinheiro/);
     const { r, texto: tx } = montar({ termo: 'li', itens: CASA, onAbrir: () => {}, onSugerir: () => {} });
     expect(tx()).toMatch(/Tarefas/);
     expect(tx()).toMatch(/Compras/);
@@ -171,6 +186,23 @@ describe('⚠ 3. a lupa no cabeçalho — adultos e criança', () => {
     expect(app).toMatch(/setPesquisa\(null\); fecharVistas\(\); setTab\(x\.key\)/);
     // O índice filtra os eventos pela regra da loja, não à mão.
     expect(app).toMatch(/allEvents\(\)\.filter\(e => podeVerEvento\(e, user, MEMBERS\)\)/);
+  });
+
+  // 13/09/2026, no Chrome do Windows: o campo saía com um anel LARANJA — o
+  // foco do navegador, na cor do acento do sistema. A app desenha o seu
+  // (opção C): sem caixa, linha de 2 px por baixo, a 60 % e a 100 % com o
+  // foco; e o `outlineStyle: 'none'` tira o do navegador. Nos dois cabeçalhos.
+  it('⚠ o campo é a app que o desenha: sem anel do navegador, uma linha por baixo que acende com o foco', () => {
+    for (const f of ['App.jsx', 'src/KidApp.jsx']) {
+      const txt = semComentarios(ler(f));
+      const i = txt.indexOf('accessibilityLabel="Procurar na casa" returnKeyType');
+      const campo = txt.slice(txt.lastIndexOf('<View', i), txt.indexOf('/>', i));
+      expect(campo).toMatch(/outlineStyle: 'none'/);
+      expect(campo).toMatch(/borderBottomWidth: 2/);
+      expect(campo).toMatch(/borderBottomColor: pesquisaFocada \? '#FFFFFF' : 'rgba\(255,255,255,0\.6\)'/);
+      expect(campo).toMatch(/onFocus=\{\(\) => setPesquisaFocada\(true\)\} onBlur=\{\(\) => setPesquisaFocada\(false\)\}/);
+      expect(campo).not.toMatch(/backgroundColor: 'rgba\(255,255,255,0\.16\)'/);
+    }
   });
 
   it('⚠ a criança tem a mesma lupa, e o índice dela não leva dinheiro da casa', () => {

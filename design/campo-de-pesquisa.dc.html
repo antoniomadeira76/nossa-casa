@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O campo de pesquisa e o vazio</title>
+<style>
+  :root { --pagina: #F0F2F5; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --sub: #F3F4F6; --t1: #262626; --t2: #3B3F48; --t3: #656C7C;
+    --ac: #078286; --acfg: #076F73; --acbrd: #0A8F94; --acbg: #E3F3F3; --chrome: #0A5B60; --infobg: #E3F1F1; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 84ch; }
+  h2.parte { font-size: 16px; margin: 28px 0 10px; color: var(--acfg); border-bottom: 1px solid var(--borda); padding-bottom: 6px; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 20px; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; gap: 12px; align-content: start; }
+  section h2 { margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  section.rec { border-color: var(--ac); box-shadow: 0 0 0 3px var(--acbg); }
+  .tel { border: 1px solid var(--borda); border-radius: 12px; background: var(--pagina); width: 355px; box-sizing: border-box; overflow: hidden; display: grid; position: relative; }
+  .cab { background: var(--chrome); color: #fff; padding: 12px 14px 16px; display: flex; align-items: center; gap: 10px; min-height: 64px; box-sizing: border-box; }
+  .cab .bola { width: 40px; height: 40px; border-radius: 999px; background: #fff; color: var(--chrome); display: flex; align-items: center; justify-content: center; font-weight: 700; flex: none; }
+  .cab .x { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex: none; }
+  .campo { flex: 1; min-height: 44px; border-radius: 10px; display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 15px; box-sizing: border-box; }
+  .campo .cursor { display: inline-block; width: 1.5px; height: 18px; background: currentColor; }
+  .campo .ph { opacity: .72; }
+  /* A — a caixa translúcida de hoje, com o anel do ESQUEMA no foco (não o do navegador) */
+  .a .campo { background: rgba(255,255,255,.16); color: #fff; border: 2px solid rgba(255,255,255,.75); }
+  /* B — caixa branca opaca */
+  .b .campo { background: #fff; color: var(--t1); border: 2px solid var(--acbrd); }
+  .b .campo .ph { color: var(--t3); opacity: 1; } .b .campo .lupa { color: var(--acfg); } .b .campo .xdentro { margin-left: auto; color: var(--t3); }
+  /* C — só uma linha por baixo */
+  .c .campo { background: transparent; border-radius: 0; padding: 0 2px; border-bottom: 2px solid #fff; color: #fff; }
+  /* D — como A, o vazio é que muda */
+  .d .campo { background: rgba(255,255,255,.16); color: #fff; border: 2px solid rgba(255,255,255,.75); }
+  /* E — barra a toda a largura, 52 px */
+  .e .cab { padding: 10px 10px 14px; } .e .campo { min-height: 52px; background: #fff; color: var(--t1); border: 2px solid var(--acbrd); font-size: 16px; border-radius: 12px; }
+  .e .campo .ph { color: var(--t3); opacity: 1; } .e .campo .xdentro { margin-left: auto; color: var(--t3); } .e .seta { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex: none; }
+  .corpo { padding: 12px; display: grid; gap: 10px; min-height: 150px; position: relative; }
+  .marca { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 120px; height: 120px; opacity: .06; pointer-events: none; }
+  .vazio-cartao { display: flex; gap: 10px; padding: 12px; border-radius: 10px; border: 1px solid var(--ac); background: var(--infobg); font-size: 12.5px; color: var(--t2); }
+  .vazio-cartao small { display: block; font-size: 11px; color: var(--t2); }
+  .dica { font-size: 12px; color: var(--t3); text-align: center; padding: 6px 0; }
+  .dica-cab { color: rgba(255,255,255,.8); font-size: 11.5px; padding: 0 14px 10px; background: var(--chrome); margin-top: -8px; }
+  .tit { color: var(--acfg); font-weight: 600; font-size: 12.5px; border-bottom: 1px solid var(--borda); padding: 6px 0 4px; display: flex; justify-content: space-between; }
+  .linha { display: flex; align-items: center; gap: 10px; min-height: 44px; border-bottom: 1px solid var(--div); font-size: 12.5px; }
+  .linha .ico { width: 28px; height: 28px; border-radius: 8px; background: var(--sub); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--t3); flex: none; }
+  .linha small { display: block; color: var(--t3); font-size: 11px; }
+  .linha .dir { margin-left: auto; color: var(--t3); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; } .chip { min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--acbrd); background: var(--acbg); font-size: 13px; font-weight: 600; color: var(--acfg); display: flex; align-items: center; }
+  .chip.cinza { border-color: var(--borda); background: var(--cartao); color: var(--t2); font-weight: 500; }
+  .rod { background: var(--chrome); display: flex; } .rod div { flex: 1; text-align: center; color: rgba(255,255,255,.82); font-size: 9px; padding: 8px 0; } .rod .on { color: #fff; font-weight: 600; }
+  dl { margin: 0; display: grid; grid-template-columns: 96px 1fr; gap: 4px 10px; font-size: 12.5px; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  code { background: var(--div); padding: 0 4px; border-radius: 3px; font-size: 11.5px; }
+  .medida { font-size: 11.5px; color: var(--t3); }
+  .hoje { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .hoje .campo { border: 2px solid #E8A33D; background: rgba(255,255,255,.16); color: #fff; }
+</style>
+</head>
+<body>
+<h1>O campo de pesquisa e o vazio por baixo — cinco desenhos</h1>
+<p class="sub">O que se vê hoje no Chrome: o campo com um anel <b>laranja</b> — é o anel de foco do próprio navegador (a cor do acento do Windows), não é da app; e por baixo um cartão que repete «Procurar na casa» e explica onde se procura. Duas coisas a decidir: <b>como é o campo</b> quando tem o foco (a app tem de o desenhar ela, e tirar o do navegador), e <b>o que aparece</b> antes de se escreverem duas letras. Em todos os cinco: alvo de 44, cabeçalho e rodapé sempre lá, e o «×» fecha e devolve o Início.</p>
+
+<h2 class="parte">Hoje</h2>
+<div class="hoje">
+  <div class="tel a">
+    <div class="cab"><div class="campo" style="border-color:#E8A33D">&#9906;&nbsp;<span class="ph">Procurar na casa</span><span class="cursor"></span></div><div class="x">×</div></div>
+    <div class="corpo"><svg class="marca" viewBox="0 0 24 24"><path d="M3.6 10.9L12 4.1l8.4 6.8" stroke="#262626" stroke-width="1.9" fill="none" stroke-linecap="round"/><circle cx="9.1" cy="14.9" r="1.62" fill="#262626"/><circle cx="14.9" cy="14.9" r="1.62" fill="#262626"/><circle cx="9.1" cy="19.4" r="1.62" fill="#262626"/><circle cx="14.9" cy="19.4" r="1.62" fill="#262626"/></svg>
+      <div class="vazio-cartao">&#9906;<span>Procurar na casa<small>Escreva pelo menos duas letras: tarefas, eventos, artigos, despesas, equipamentos, consultas, pessoas.</small></span></div>
+    </div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl style="max-width:420px">
+    <dt>O anel</dt><dd>Laranja porque é o <code>outline</code> do Chrome no Windows, na cor do acento do sistema. A app não o define — por isso muda de máquina para máquina, e não segue o esquema da casa. Nos cinco desenhos abaixo o campo tira o anel do navegador e desenha o seu.</dd>
+    <dt>O vazio</dt><dd>Repete o «Procurar na casa» do campo, e a lista de áreas é longa para se ler a cada vez. Serve para explicar uma vez; não serve para usar todos os dias.</dd>
+  </dl>
+</div>
+
+<h2 class="parte">Os cinco desenhos</h2>
+<div class="grelha">
+
+<section class="rec">
+  <h2>A. O anel do esquema, e o resto como está <small>a alteração mínima</small></h2>
+  <div class="tel a">
+    <div class="cab"><div class="campo">&#9906;&nbsp;<span class="ph">Procurar na casa</span><span class="cursor"></span></div><div class="x">×</div></div>
+    <div class="corpo"><svg class="marca" viewBox="0 0 24 24"><path d="M3.6 10.9L12 4.1l8.4 6.8" stroke="#262626" stroke-width="1.9" fill="none" stroke-linecap="round"/><circle cx="9.1" cy="14.9" r="1.62" fill="#262626"/><circle cx="14.9" cy="14.9" r="1.62" fill="#262626"/><circle cx="9.1" cy="19.4" r="1.62" fill="#262626"/><circle cx="14.9" cy="19.4" r="1.62" fill="#262626"/></svg>
+      <div class="vazio-cartao">&#9906;<span>Procurar na casa<small>Escreva pelo menos duas letras: tarefas, eventos, artigos, despesas, equipamentos, consultas, pessoas.</small></span></div>
+    </div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>O campo fica a caixa translúcida de hoje (branco a 16 % sobre o <code>chrome</code>), e com o foco ganha uma borda de 2 px em branco a 75 % — a mesma tinta do texto do cabeçalho, em qualquer esquema. O anel do navegador sai (<code>outlineStyle: 'none'</code>). O vazio fica o cartão de hoje.</dd>
+    <dt>A favor</dt><dd>Coerente com o cabeçalho que já aprovou; o foco lê-se em todos os seis esquemas porque é branco sobre o <code>chrome</code>. Uma linha de código.</dd>
+    <dt>Contra</dt><dd>Não resolve a repetição «Procurar na casa» duas vezes nem a lista de áreas.</dd>
+    <dt>Custo</dt><dd>Muito baixo.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>B. Caixa branca opaca <small>como o «Procurar» do iOS</small></h2>
+  <div class="tel b">
+    <div class="cab"><div class="campo"><span class="lupa">&#9906;</span>&nbsp;<span class="ph">Procurar na casa</span><span class="cursor" style="background:#262626"></span><span class="xdentro">×</span></div></div>
+    <div class="dica-cab">Escreva pelo menos duas letras.</div>
+    <div class="corpo"><svg class="marca" viewBox="0 0 24 24"><path d="M3.6 10.9L12 4.1l8.4 6.8" stroke="#262626" stroke-width="1.9" fill="none" stroke-linecap="round"/><circle cx="9.1" cy="14.9" r="1.62" fill="#262626"/><circle cx="14.9" cy="14.9" r="1.62" fill="#262626"/><circle cx="9.1" cy="19.4" r="1.62" fill="#262626"/><circle cx="14.9" cy="19.4" r="1.62" fill="#262626"/></svg></div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>O campo é uma caixa branca (<code>surface</code>) sobre o cabeçalho, texto em <code>text1</code>, lupa em <code>titulo</code>, e o «×» DENTRO do campo, à direita. Com o foco, borda de 2 px em <code>actBrd</code>. Por baixo do campo, ainda no cabeçalho, uma linha pequena: «Escreva pelo menos duas letras.» O conteúdo fica vazio, só com a marca de água.</dd>
+    <dt>A favor</dt><dd>O campo é o que mais se destaca no ecrã, e é o desenho que toda a gente conhece dos telemóveis. Sem cartão a repetir o que o campo já diz.</dd>
+    <dt>Contra</dt><dd>Uma caixa branca sobre o <code>chrome</code> é o único elemento assim na app — o cabeçalho é sempre tinta sobre cor. O «×» dentro do campo tem 44 mas fica colado ao texto longo.</dd>
+    <dt>Custo</dt><dd>Baixo.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>C. Só uma linha por baixo <small>o campo é o texto</small></h2>
+  <div class="tel c">
+    <div class="cab"><div class="campo">&#9906;&nbsp;<span class="ph">Procurar na casa</span><span class="cursor"></span></div><div class="x">×</div></div>
+    <div class="corpo">
+      <div class="tit">Onde se procura</div>
+      <div class="linha"><span class="ico">&#10003;</span><span>Tarefas<small>título e quem faz</small></span><span class="dir">›</span></div>
+      <div class="linha"><span class="ico">&#9783;</span><span>Agenda<small>evento, local e dia</small></span><span class="dir">›</span></div>
+      <div class="linha"><span class="ico">&#9776;</span><span>Compras<small>artigo e corredor</small></span><span class="dir">›</span></div>
+      <div class="linha"><span class="ico">&#8364;</span><span>Dinheiro<small>despesa, conta fixa, meta</small></span><span class="dir">›</span></div>
+      <div class="dica">… e Equipamentos, Saúde, Pessoas, Documentação</div>
+    </div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>Sem caixa: o texto escreve-se a branco directamente no cabeçalho, com uma linha de 2 px por baixo que passa de 60 % a 100 % com o foco. O vazio é a lista das oito áreas, uma linha cada, com o ícone do rodapé — e tocar numa leva lá.</dd>
+    <dt>A favor</dt><dd>O mais leve dos cinco: o cabeçalho quase não muda de aspecto ao abrir a pesquisa. O vazio ensina onde se procura sem texto corrido, e as linhas são úteis por si.</dd>
+    <dt>Contra</dt><dd>Um campo sem caixa é menos óbvio como campo, sobretudo para quem usa a app pela primeira vez. As oito linhas ocupam o ecrã todo antes de se escrever uma letra.</dd>
+    <dt>Custo</dt><dd>Médio — a lista de áreas com destinos.</dd>
+  </dl>
+</section>
+
+<section class="rec">
+  <h2>D. O anel do esquema, e o vazio são as últimas pesquisas <small>útil antes de escrever</small></h2>
+  <div class="tel d">
+    <div class="cab"><div class="campo">&#9906;&nbsp;<span class="ph">Procurar na casa</span><span class="cursor"></span></div><div class="x">×</div></div>
+    <div class="corpo">
+      <div class="tit">Últimas pesquisas</div>
+      <div class="chips"><span class="chip">frigorífico</span><span class="chip">lixo</span><span class="chip">alergologia</span></div>
+      <div class="tit">Experimente</div>
+      <div class="chips"><span class="chip cinza">o nome de uma pessoa</span><span class="chip cinza">um artigo</span><span class="chip cinza">uma despesa</span></div>
+      <div class="dica">Duas letras chegam. Sem acentos nem maiúsculas a contar.</div>
+    </div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>O campo é o da A. Por baixo, em vez do cartão: as últimas cinco pesquisas em pastilhas de 44 (guardadas SÓ neste aparelho, nunca no servidor — é uma conveniência, não um dado da casa), uma linha «Experimente» com três exemplos, e uma dica de uma linha. Sem pesquisas anteriores, aparece só o «Experimente».</dd>
+    <dt>A favor</dt><dd>O vazio passa a servir: um toque repete a pesquisa de ontem. Não repete o que o campo diz. As pastilhas são as mesmas do autocompletar, que já existem.</dd>
+    <dt>Contra</dt><dd>Mais um estado guardado no aparelho (uma lista de cinco palavras). Na app da criança as últimas pesquisas são as dela — e só as dela.</dd>
+    <dt>Custo</dt><dd>Baixo–médio: uma lista de cinco palavras no armazenamento local e o ecrã de vazio.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>E. Uma barra a toda a largura <small>o cabeçalho vira barra de pesquisa</small></h2>
+  <div class="tel e">
+    <div class="cab"><div class="seta">&#8592;</div><div class="campo"><span style="color:var(--acfg)">&#9906;</span>&nbsp;<span class="ph">Procurar na casa</span><span class="cursor" style="background:#262626"></span><span class="xdentro">×</span></div></div>
+    <div class="corpo">
+      <div class="tit">Últimas pesquisas</div>
+      <div class="linha"><span class="ico">&#9906;</span><span>frigorífico</span><span class="dir">›</span></div>
+      <div class="linha"><span class="ico">&#9906;</span><span>lixo</span><span class="dir">›</span></div>
+      <div class="linha"><span class="ico">&#9906;</span><span>alergologia</span><span class="dir">›</span></div>
+    </div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>O cabeçalho inteiro passa a barra: uma seta «voltar» à esquerda e um campo branco de 52 px com o «×» dentro. As últimas pesquisas em linhas planas (desenho C dos títulos), uma por linha.</dd>
+    <dt>A favor</dt><dd>O campo é enorme e inequívoco; as linhas de 44 são fáceis de tocar.</dd>
+    <dt>Contra</dt><dd>É um ecrã diferente dos outros — seta em vez do avatar, caixa branca no <code>chrome</code>. Sai do desenho do cabeçalho da app só para a pesquisa. As linhas gastam mais altura do que as pastilhas.</dd>
+    <dt>Custo</dt><dd>Médio.</dd>
+  </dl>
+</section>
+
+</div>
+
+<h2 class="parte">Recomendação</h2>
+<p class="sub"><b>A para o campo, D para o vazio</b> — e são compatíveis, porque a D usa o campo da A. O anel passa a ser da app e do esquema (branco a 75 % sobre o <code>chrome</code>, 2 px), igual em todas as máquinas e em todos os navegadores; o cartão que repetia «Procurar na casa» dá lugar às últimas pesquisas em pastilhas de 44, que é o que se toca todos os dias. A B e a E trazem uma caixa branca ao cabeçalho, que nesta app é sempre tinta sobre cor; a C esconde o campo. <span class="medida">Medidas: campo 44 de altura, borda 2 px; pastilhas 44; a lista das últimas pesquisas guarda no máximo 5 termos, só no aparelho.</span></p>
+</body>
+</html>
