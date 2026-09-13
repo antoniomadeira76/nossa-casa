@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O Que o Mercado Faz</title>
+<style>
+  :root { --pagina: #F0F2F5; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --t1: #262626; --t2: #3B3F48; --t3: #656C7C;
+    --ac: #078286; --acfg: #076F73; --chrome: #0A5B60; --ok: #1F9D55; --okbg: #E6F6EC; --oktx: #146B3A; --warnbg: #FEFFD0; --warntx: #7A5110; --infobg: #E8F4FF; --infotx: #0B4F8A; --errbg: #FDECEC; --errtx: #8E1C23; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 86ch; }
+  h2.parte { font-size: 16px; margin: 28px 0 10px; color: var(--acfg); border-bottom: 1px solid var(--borda); padding-bottom: 6px; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 20px; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; grid-template-columns: 220px 1fr; gap: 16px; }
+  section h2 { grid-column: 1 / -1; margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  .tel { border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; background: var(--pagina); font-size: 10.5px; align-self: start; }
+  .cab { background: var(--chrome); color: #fff; padding: 8px 10px; font-weight: 600; font-size: 11px; }
+  .cab span { display: block; font-weight: 400; color: rgba(255,255,255,.82); font-size: 9.5px; }
+  .corpo { padding: 8px; display: grid; gap: 6px; }
+  .tit { color: var(--acfg); font-weight: 600; font-size: 10px; border-bottom: 1px solid var(--borda); padding-bottom: 3px; }
+  .linha { background: var(--cartao); border-bottom: 1px solid var(--div); padding: 6px 8px; display: flex; align-items: center; gap: 8px; min-height: 30px; }
+  .linha b { font-weight: 500; }
+  .linha .dir { margin-left: auto; color: var(--t3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .chip { display: inline-block; font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 999px; }
+  .ok { background: var(--okbg); color: var(--oktx); } .warn { background: var(--warnbg); color: var(--warntx); } .info { background: var(--infobg); color: var(--infotx); } .err { background: var(--errbg); color: var(--errtx); } .neutro { background: var(--div); color: var(--t3); }
+  .barra { height: 6px; background: var(--div); border-radius: 3px; overflow: hidden; position: relative; } .barra i { display: block; height: 100%; background: var(--ok); }
+  .barra .ritmo { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--t1); }
+  .botao { border: 1.5px solid var(--ac); color: var(--acfg); border-radius: 8px; padding: 6px; text-align: center; font-weight: 600; font-size: 10px; }
+  .botao.cheio { background: var(--chrome); color: #fff; border-color: var(--chrome); }
+  .rod { background: var(--chrome); display: flex; } .rod div { flex: 1; text-align: center; color: rgba(255,255,255,.82); font-size: 8px; padding: 6px 0; } .rod .on { color: #fff; font-weight: 600; }
+  .numeros { display: flex; gap: 10px; padding: 8px 10px; background: var(--chrome); color: #fff; } .numeros div { flex: 1; } .numeros small { display: block; font-size: 8px; color: rgba(255,255,255,.75); } .numeros b { font-size: 12px; }
+  .passos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; } .passos div { background: var(--cartao); border: 1px solid var(--div); border-radius: 6px; padding: 8px 4px; text-align: center; font-size: 9px; min-height: 40px; } .passos .feito { background: var(--okbg); color: var(--oktx); }
+  dl { margin: 0; display: grid; grid-template-columns: 86px 1fr; gap: 4px 10px; font-size: 12.5px; align-content: start; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  code { background: var(--div); padding: 0 4px; border-radius: 3px; font-size: 11.5px; color: var(--t1); }
+  .nota { grid-column: 1 / -1; font-size: 12px; color: var(--t3); border-top: 1px dashed var(--borda); padding-top: 8px; margin: 0; }
+  table.mercado { width: 100%; border-collapse: collapse; background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; font-size: 12.5px; }
+  table.mercado th, table.mercado td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--div); vertical-align: top; }
+  table.mercado th { color: var(--t3); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; font-weight: 600; background: var(--pagina); }
+  .decisao { border-color: var(--warntx); }
+  .decisao h2::after { content: "espera uma decisão sua"; font-size: 10px; font-weight: 600; color: var(--warntx); background: var(--warnbg); padding: 2px 8px; border-radius: 999px; }
+  ul.lista { margin: 0; padding-left: 18px; color: var(--t2); } ul.lista li { margin: 2px 0; }
+  a { color: var(--acfg); }
+</style>
+</head>
+<body>
+<h1>O que o mercado faz — e o que daí serve à Nossa Casa</h1>
+<p class="sub">Pesquisa de 13/09/2026 sobre trinta e poucas apps em três áreas: organização familiar (Cozi, FamilyWall, TimeTree, Maple, Skylight, Hearth, Tody, Sweepy, Homey, Nipto, Bring!, AnyList), dinheiro para famílias (Greenlight, GoHenry/Acorns Early, Rooster Money, BusyKid, Revolut &lt;18, Monzo, YNAB, Goodbudget, Splitwise, Honeydue, Zeta) e gestão da casa e saúde (HomeZada, Centriq, Itemtopia, Sortly, Warranty Keeper, Dwellin, Medisafe, MyTherapy, SNS 24, Kidfile). Cada bloco tem o ecrã como ficaria, à esquerda, e o que muda na loja, no servidor e nos invariantes, à direita — como na página das dez funcionalidades. A ordem é a que proponho, por valor e por reutilização do que já existe. Três blocos esperam uma decisão sua antes de se desenharem a sério.</p>
+
+<h2 class="parte">Primeiro, o que o mercado repete — e onde a Nossa Casa já está</h2>
+<table class="mercado">
+  <tr><th style="width:34%">Padrão recorrente</th><th style="width:33%">Quem o faz</th><th>Na Nossa Casa</th></tr>
+  <tr><td>Cor por membro em tudo; o ecrã de entrada é «Hoje», não o mês</td><td>Cozi, FamilyWall, TimeTree, Skylight, Maple</td><td><span class="chip ok">já está</span> esquema por perfil, Início com «Precisa de Si»</td></tr>
+  <tr><td>Tarefa → marcar → um adulto aprova → só então conta</td><td>Rooster, Greenlight, BusyKid, Homey</td><td><span class="chip ok">já está</span> «a confirmar» e os pontos só confirmados</td></tr>
+  <tr><td>Receita → ementa → lista, sem duplicar</td><td>Cozi, AnyList, Maple</td><td><span class="chip ok">já está</span> pratos e «pôr o que falta»</td></tr>
+  <tr><td>Envelopes; dinheiro movido sem sair da conta; acerto entre dois adultos</td><td>YNAB, Goodbudget, Splitwise, Honeydue</td><td><span class="chip ok">já está</span></td></tr>
+  <tr><td>Contas recorrentes com «próxima ocorrência» e lembrete a ambos</td><td>Monzo, Zeta, Splitwise</td><td><span class="chip ok">já está</span> contas fixas, Agenda, «Precisa de Si»</td></tr>
+  <tr><td>Objetivo de poupança da criança com barra</td><td>Greenlight, Acorns Early, Rooster, Revolut &lt;18</td><td><span class="chip ok">já está</span> objetivo do cofre</td></tr>
+  <tr><td>Pedido de dinheiro da criança → o adulto aprova ou recusa</td><td>GoHenry, Greenlight, Revolut &lt;18</td><td><span class="chip warn">a meio</span> o botão existe, o pedido não sai do telemóvel (bloco 1)</td></tr>
+  <tr><td>Potes Poupar / Gastar / Dar, com reparto automático da mesada</td><td>BusyKid, Greenlight, Rooster</td><td><span class="chip err">não há</span> (bloco 3)</td></tr>
+  <tr><td>«Sobra para gastar» = disponível − contas por pagar; ritmo do mês</td><td>Monzo, YNAB (amarelo = subfinanciado), Zeta</td><td><span class="chip err">não há</span> (bloco 2)</td></tr>
+  <tr><td>Boletim de vacinas com três estados: dada, futura, em atraso</td><td>SNS 24</td><td><span class="chip err">não há</span> (bloco 5)</td></tr>
+  <tr><td>Relatório PDF é o produto: para a seguradora, para o médico, para a escola</td><td>HomeZada, Encircle, MyTherapy, Kidfile</td><td><span class="chip warn">a meio</span> saúde, emergência e retrato sim; inventário da casa não (bloco 7)</td></tr>
+  <tr><td>Exportação completa dos dados — a queixa mais amarga quando falta</td><td>Centriq (fechou com um CSV), Sortly (paywall)</td><td><span class="chip err">não há</span> (bloco 11)</td></tr>
+  <tr><td>Partilha por ligação, sem instalar nada, revogável, por secção</td><td>Kidfile, MyTherapy (código temporário)</td><td><span class="chip warn">a meio</span> a lista de compras já; a ficha de emergência não (bloco 12)</td></tr>
+  <tr><td>Fiabilidade vence funcionalidades: as piores críticas são notificações e sincronização que falham</td><td>FamilyWall, Nipto, Homey, Out of Milk</td><td><span class="chip ok">já está</span> três camadas de provas; manter</td></tr>
+  <tr><td>Vermelho e «em atraso» na app da criança geram vergonha e abandono</td><td>críticas ao Sweepy; o Tody e o Hearth evitam-no</td><td><span class="chip warn">rever</span> «atrasada 6 dias» a vermelho na app do Léo (bloco 10)</td></tr>
+</table>
+
+<h2 class="parte">O que proponho, por ordem</h2>
+<div class="grelha">
+
+<section>
+  <h2>1. O pedido de dinheiro a sério <small>Modo criança · Início · Dinheiro</small></h2>
+  <div class="tel">
+    <div class="cab">Bom dia, António<span>Domingo, 13/09</span></div>
+    <div class="corpo">
+      <div class="tit">Precisa de Si</div>
+      <div class="linha"><b>Pedido do Léo · 8,00 €</b><span class="dir"><span class="chip info">por decidir</span></span></div>
+      <div class="linha" style="display:block;color:var(--t3)">«Para o livro da escola» · o cofre tem 12,40 €</div>
+      <div style="display:flex;gap:6px"><div class="botao" style="flex:1">Recusar</div><div class="botao cheio" style="flex:1">Autorizar 8,00 €</div></div>
+      <div class="tit">No cofre do Léo, depois</div>
+      <div class="linha">Livro da escola · autorizado pelo António<span class="dir">−8,00 €</span></div>
+    </div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Porquê</dt><dd>É o padrão de todas as apps de mesada (GoHenry, Greenlight, Revolut &lt;18), e o botão «Pedir para usar o dinheiro» já existe — mas o pedido fica no telemóvel da criança, e desde hoje o texto di-lo. Completar uma promessa vale mais do que uma funcionalidade nova.</dd>
+    <dt>Ecrã</dt><dd>A criança escreve o valor e o motivo. O adulto vê o pedido no «Precisa de Si» (a azul: informação) e decide na própria linha; a criança vê «autorizado» ou «recusado» com a razão, no cofre.</dd>
+    <dt>Dados</dt><dd>Coleção <code>pedidos_cofre</code>: <code>membro</code>, <code>valor</code>, <code>motivo</code>, <code>decidido_por</code>, <code>decidido_em</code>, <code>decisao</code>. Autorizar escreve um <code>cofre_movimento</code> negativo com <code>autorizado_por</code> — o saldo continua a ser a soma (INVARIANTE #2). Nos dois sítios.</dd>
+    <dt>Servidor</dt><dd>A criança cria o seu (<code>membro = @request.auth.id</code>, sem <code>decisao</code>); só um adulto da casa decide, e só uma vez (<code>:isset</code> em tudo o resto, a <code>casa</code> incluída — classe 42).</dd>
+    <dt>Provas</dt><dd>Léo pede; Mia não decide; Tomás decide uma vez; o movimento existe e bate com o pedido; um pedido acima do saldo é recusado pela regra.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>2. «Sobra para gastar» e o ritmo do mês <small>Dinheiro · Início</small></h2>
+  <div class="tel">
+    <div class="numeros"><div><small>Disponível</small><b>771,36 €</b></div><div><small>Contas por pagar</small><b>97,39 €</b></div><div><small>Sobra para gastar</small><b>673,97 €</b></div></div>
+    <div class="corpo">
+      <div class="tit">Envelopes · dia 13 de 30</div>
+      <div class="linha" style="display:block"><b>Mercearia</b><span class="dir" style="float:right">312,10 € de 500,00 €</span><div class="barra" style="margin-top:6px"><i style="width:62%"></i><span class="ritmo" style="left:43%"></span></div><span style="color:var(--warntx)">À frente do ritmo · a este passo acaba a 21/09</span></div>
+      <div class="linha" style="display:block"><b>Lazer</b><span class="dir" style="float:right">40,00 € de 120,00 €</span><div class="barra" style="margin-top:6px"><i style="width:33%"></i><span class="ritmo" style="left:43%"></span></div><span style="color:var(--t3)">Dentro do ritmo</span></div>
+    </div>
+    <div class="rod"><div>Início</div><div class="on">Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Porquê</dt><dd>O Monzo chama-lhe «Left to Spend»: saldo menos o que já está comprometido. O nosso «Disponível» ignora a EDP que vence dia 15. E o YNAB pinta a amarelo o que está «subfinanciado», antes de estar a vermelho — o aviso aos 94 % chega tarde.</dd>
+    <dt>Ecrã</dt><dd>Um terceiro número no cabeçalho do Dinheiro e do Início. Em cada envelope, uma marca do dia do mês na barra e uma frase: «à frente do ritmo», «dentro do ritmo». Cores do tema: <code>warnTexto</code> à frente, <code>text3</code> dentro — nunca vermelho antes de passar o limite.</dd>
+    <dt>Dados</dt><dd>Nenhum campo novo: contas fixas sem despesa do mês, o dia do mês e os limites já estão na loja. Tudo derivado.</dd>
+    <dt>Provas</dt><dd>Guarda Jest: a sobra é a soma que o ecrã mostra (memória «totais são somas»); dia 1 e dia 30; um envelope sem limite não divide por zero; a criança não vê nenhum dos três números.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>3. Três potes no cofre: Poupar, Gastar, Dar <small>Modo criança · Dinheiro</small></h2>
+  <div class="tel">
+    <div class="cab">Olá, Léo<span>12,40 € no cofre</span></div>
+    <div class="corpo">
+      <div class="tit">Os meus potes</div>
+      <div class="linha"><b>Poupar</b> · Bicicleta<span class="dir">7,40 €</span></div>
+      <div class="linha"><b>Gastar</b><span class="dir">4,00 €</span></div>
+      <div class="linha"><b>Dar</b><span class="dir">1,00 €</span></div>
+      <div class="tit">Como se reparte a semanada</div>
+      <div class="linha">Poupar 60 % · Gastar 30 % · Dar 10 %<span class="dir"><span class="chip neutro">a Rita decide</span></span></div>
+      <div class="linha">Semanada de sexta · 2,00 €<span class="dir">1,20 + 0,60 + 0,20</span></div>
+    </div>
+    <div class="rod"><div>Tarefas</div><div>Compras</div><div class="on">O Meu Cofre</div></div>
+  </div>
+  <dl>
+    <dt>Porquê</dt><dd>BusyKid, Greenlight e Rooster Money repartem cada pagamento por percentagens fixadas pelos pais. Ensina a poupar antes de gastar sem o adulto ter de mover nada à mão. O objetivo do cofre passa a viver no pote Poupar.</dd>
+    <dt>Ecrã</dt><dd>Três linhas no cofre da criança, com o objetivo colado ao Poupar; na Gestão da Casa, as percentagens por criança (só administração), somam 100.</dd>
+    <dt>Dados</dt><dd><code>cofre_movimentos.pote</code> (<code>poupar</code>, <code>gastar</code>, <code>dar</code>; vazio = gastar, para as linhas antigas) e <code>membros.reparto</code> em JSON. Pagar a semanada escreve três movimentos com a mesma <code>idem_key</code> mais o pote. O saldo de cada pote é a soma. Nos dois sítios; um campo <code>select</code> novo nasce vazio, não a <code>false</code> (lição da ementa).</dd>
+    <dt>Provas</dt><dd>Três movimentos por semanada e a soma bate com o total; a criança não muda o reparto; o retrato do mês soma por pote.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>4. O juro dos pais <small>Dinheiro</small></h2>
+  <div class="tel">
+    <div class="cab">Dinheiro<span>Cofres das Crianças</span></div>
+    <div class="corpo">
+      <div class="tit">Cofre do Léo · movimentos</div>
+      <div class="linha">Juro de setembro · 5 % ao ano sobre 7,40 €<span class="dir">+0,03 €</span></div>
+      <div class="linha">Semanada<span class="dir">+1,20 €</span></div>
+      <div class="tit">Gestão da Casa</div>
+      <div class="linha"><b>Juro do pote Poupar</b><span class="dir">5 % ao ano · dia 1</span></div>
+    </div>
+    <div class="rod"><div>Início</div><div class="on">Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Porquê</dt><dd>O «Parent-Paid Interest» do Greenlight (1 % a 1 000 % ao ano, pago no dia 1) e o «Boost» do Rooster: a forma mais barata de a criança perceber o que é poupar. Cabe em cima do bloco 3.</dd>
+    <dt>Ecrã</dt><dd>Uma taxa por casa na Gestão; um movimento «Juro de setembro» no cofre no dia 1, com a conta à vista.</dd>
+    <dt>Dados</dt><dd>Nenhuma coleção: um <code>cofre_movimento</code> com <code>idem_key</code> <code>juro:&lt;membro&gt;:&lt;AAAA-MM&gt;</code> — a segunda tentativa colide, como a conta fixa. <code>casas.juro_anual</code> nos dois sítios.</dd>
+    <dt>Provas</dt><dd>Dois telemóveis no dia 1 escrevem um só juro; a taxa a zero não escreve nada; a criança não escreve juros.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>5. O boletim de vacinas <small>Saúde</small></h2>
+  <div class="tel">
+    <div class="cab">Saúde da Mia<span>Visível aos adultos da casa</span></div>
+    <div class="corpo">
+      <div class="tit">Vacinas</div>
+      <div class="linha"><b>Tétano · reforço</b><span class="dir"><span class="chip err">em atraso · 07/2026</span></span></div>
+      <div class="linha"><b>HPV · 2.ª dose</b><span class="dir"><span class="chip info">prevista · 03/2027</span></span></div>
+      <div class="linha"><b>Sarampo · 2.ª dose</b><span class="dir"><span class="chip ok">dada · 12/05/2021</span></span></div>
+      <div class="botao">Registar uma vacina</div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Porquê</dt><dd>O SNS 24 mostra três estados — administrada, futura, em atraso — e é o «em atraso» que faz de um boletim um aviso. A ficha de emergência para a escola pede o boletim e não o tem.</dd>
+    <dt>Ecrã</dt><dd>Secção «Vacinas» na ficha de cada membro, três pastilhas; «em atraso» entra no «Precisa de Si» dos adultos; a ficha de emergência ganha a secção. Sem ligação ao SNS: regista-se à mão a partir do boletim.</dd>
+    <dt>Dados</dt><dd><code>vacinas_saude</code>: <code>membro</code>, <code>nome</code>, <code>dose</code>, <code>prevista_em</code>, <code>dada_em</code>. O estado é derivado das duas datas, nunca escrito. Regras da ficha (<code>membro.casa</code>, a criança não lê a sua), dentro do travão de casa como as alergias.</dd>
+    <dt>Provas</dt><dd>Léo não lê as suas; Tomás lê as da Mia e não as da Rita; outra casa não escreve; relação ancorada no guarda das 41.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>6. A toma falhada avisa o outro adulto <small>Saúde · Início</small></h2>
+  <div class="tel">
+    <div class="cab">Bom dia, António<span>Domingo, 13/09</span></div>
+    <div class="corpo">
+      <div class="tit">Precisa de Si</div>
+      <div class="linha"><b>Toma em atraso · Léo</b><span class="dir"><span class="chip warn">era às 08:00</span></span></div>
+      <div class="linha" style="display:block;color:var(--t3)">Amoxicilina · a Rita ainda não marcou</div>
+      <div class="botao">Tomado agora</div>
+    </div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Porquê</dt><dd>O «Medfriend» do Medisafe: o alerta da dose falhada vai para outra pessoa, não para quem falhou. As tomas já existem com plano e hora; falta a linha no «Precisa de Si» quando passa da hora sem registo.</dd>
+    <dt>Dados</dt><dd>Nenhum: o plano da receita e as <code>tomas_saude</code> de hoje já descem. Derivado com a mesma tolerância que o «Precisa de Si» usa para os prazos.</dd>
+    <dt>Provas</dt><dd>Guarda Jest: toma às 08:00 sem registo às 09:00 aparece; com registo não; a criança não vê a linha (não recebe saúde).</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>7. O inventário da casa em PDF, para a seguradora <small>Equipamentos · Documentação</small></h2>
+  <div class="tel">
+    <div class="cab">Equipamentos da Casa<span>7 equipamentos · 3 divisões</span></div>
+    <div class="corpo">
+      <div class="tit">Cozinha · 1 840,00 €</div>
+      <div class="linha"><b>Frigorífico</b> · Bosch<span class="dir">899,00 €</span></div>
+      <div class="linha"><b>Máquina da loiça</b><span class="dir">641,00 €</span></div>
+      <div class="tit">Sala · 1 299,00 €</div>
+      <div class="linha"><b>Televisão</b> · LG<span class="dir">1 299,00 €</span></div>
+      <div class="botao">Exportar o inventário em PDF</div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Porquê</dt><dd>HomeZada, Encircle e Itemtopia organizam por divisão e o produto final é o relatório para a seguradora com fotos e valores. Temos os equipamentos, as faturas fotografadas e o molde dos documentos com imagens — falta a divisão e o botão.</dd>
+    <dt>Ecrã</dt><dd>Os equipamentos agrupados por divisão, com o total de cada uma; «Exportar o inventário» pelo <code>paginaDaApp</code>, com a fotografia da fatura de cada um, como a ficha de saúde faz.</dd>
+    <dt>Dados</dt><dd><code>equipamentos.divisao</code> (texto livre com sugestões: Cozinha, Sala, Quartos, Casa de banho, Garagem, Exterior) e <code>valor</code>, nos dois sítios. O documento reutiliza <code>anexosComImagens</code>.</dd>
+    <dt>Provas</dt><dd>Documento tem uma secção por divisão e o total é a soma das linhas; um equipamento sem divisão vai para «Sem divisão»; a criança não tem porta.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>8. Avisos escalonados e manutenções sugeridas <small>Equipamentos · Início</small></h2>
+  <div class="tel">
+    <div class="cab">Frigorífico<span>Bosch · comprado a 02/10/2024</span></div>
+    <div class="corpo">
+      <div class="tit">Garantia</div>
+      <div class="linha">Termina a 02/10/2026<span class="dir"><span class="chip warn">faltam 19 dias</span></span></div>
+      <div class="linha" style="color:var(--t3)">Avisa a 90, 30 e 7 dias, e no dia</div>
+      <div class="tit">Manutenções sugeridas para um frigorífico</div>
+      <div class="linha">Limpar as grelhas de trás<span class="dir">de 6 em 6 meses</span></div>
+      <div class="linha">Verificar as borrachas da porta<span class="dir">todos os anos</span></div>
+      <div class="botao">Agendar estas duas</div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Porquê</dt><dd>Warranty Keeper avisa a 90/60/30/14/7/1; Dwellin e HomeZada derivam o calendário de manutenção do tipo de equipamento em vez de uma lista em branco — e a lista em branco é a crítica ao Cozi. As manutenções já existem; a sugestão por categoria é uma tabela.</dd>
+    <dt>Ecrã</dt><dd>Na ficha do equipamento, as manutenções típicas da categoria com «Agendar»; o «Precisa de Si» avisa a 90, 30 e 7 dias em vez de uma vez aos 90. Para o carro: a inspeção pela data da matrícula.</dd>
+    <dt>Dados</dt><dd>Tabela de sugestões no código (<code>src/manutencoes-sugeridas.js</code>), por categoria; agendar cria <code>manutencoes</code> normais. Nenhum campo novo.</dd>
+    <dt>Provas</dt><dd>Guarda: cada categoria da casa tem sugestões; agendar não duplica uma manutenção já agendada; os três avisos não repetem a mesma linha.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>9. A semana mapeada, ao domingo <small>Início · Agenda · Avisos</small></h2>
+  <div class="tel">
+    <div class="cab">A semana que vem<span>14 a 20 de setembro</span></div>
+    <div class="corpo">
+      <div class="linha"><b>Ter 15</b> · EDP vence · 62,40 €<span class="dir"><span class="chip warn">conta</span></span></div>
+      <div class="linha"><b>Ter 15</b> · Dentista da Mia · 10:00<span class="dir"><span class="chip info">saúde</span></span></div>
+      <div class="linha"><b>Qua 16</b> · Frango no forno<span class="dir">jantar</span></div>
+      <div class="linha"><b>Sáb 19</b> · Compras · Continente · Rita<span class="dir">compras</span></div>
+      <div class="linha"><b>Sáb 19</b> · Semanada · 2 × 2,00 €<span class="dir">cofres</span></div>
+      <div class="botao">Ver a Agenda</div>
+    </div>
+    <div class="rod"><div class="on">Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Porquê</dt><dd>O Maple vendia «a semana da família mapeada antes de segunda-feira» e o Cozi manda o dia por e-mail: o resumo GERADO, não editado, é o que as análises de 2026 mais elogiam. Já temos tudo o que entra nele — eventos, contas, jantares, quem vai às compras, dia da semanada — e um resumo diário às 20:00.</dd>
+    <dt>Ecrã</dt><dd>Um cartão «A semana que vem» no Início ao domingo (e na Agenda sempre), uma linha por coisa, com a pastilha da área. O aviso das 20:00 de domingo passa a ser este resumo.</dd>
+    <dt>Dados</dt><dd>Nenhum. Derivado; a criança vê a sua versão (sem contas nem saúde), porque não recebe essas linhas.</dd>
+    <dt>Provas</dt><dd>Guarda: as cinco fontes entram; ordenado por dia; a versão da criança não tem euros; uma semana vazia diz «Nada marcado» e não desaparece em silêncio.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>10. Rotinas por passos, sem vermelho, na app da criança <small>Modo criança · Tarefas</small></h2>
+  <div class="tel">
+    <div class="cab">Olá, Mia<span>Rotina da manhã · 2 de 5</span></div>
+    <div class="corpo">
+      <div class="passos"><div class="feito">Fazer a cama</div><div class="feito">Vestir</div><div>Pequeno-almoço</div><div>Lavar os dentes</div><div>Mochila</div><div style="border-style:dashed;color:var(--t3)">+</div></div>
+      <div class="tit">As minhas tarefas</div>
+      <div class="linha"><b>Levar o lixo</b><span class="dir"><span class="chip neutro">de ontem</span> 2 pt</span></div>
+    </div>
+    <div class="rod"><div class="on">Tarefas</div><div>Compras</div><div>O Meu Cofre</div></div>
+  </div>
+  <dl>
+    <dt>Porquê</dt><dd>O Hearth (4,7 em 786) desenha a criança como utilizador primário com rotinas de passos tocáveis, e é elogiado por «acabar com o nag»; as barras vermelhas do Sweepy são criticadas por gerarem vergonha em crianças com TDAH. Na app do Léo, «atrasada 6 dias» está a vermelho.</dd>
+    <dt>Ecrã</dt><dd>Um grupo «rotina» com passos ordenados, em mosaicos grandes (alvos de 64, como a loja), sem pontos por passo e sem vermelho; a rotina inteira vale pontos quando completa. Na lista normal da criança, «atrasada» passa a «de ontem» em <code>text3</code>; o vermelho fica nos adultos.</dd>
+    <dt>Dados</dt><dd><code>tarefas.rotina</code> (texto: «manhã», «noite») e <code>posto</code> já existe. Uma <code>tarefa_feita</code> por passo, como hoje. Nos dois sítios.</dd>
+    <dt>Provas</dt><dd>Guarda: a app da criança não tem <code>errTexto</code> em texto de tarefa; a rotina só pontua completa; a ordem é a do <code>posto</code>.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>11. «Levar a casa comigo» — exportar tudo <small>Perfil · Dados</small></h2>
+  <div class="tel">
+    <div class="cab">António Madeira<span>Dados</span></div>
+    <div class="corpo">
+      <div class="tit">Dados</div>
+      <div class="linha"><b>Levar a casa comigo</b><span class="dir">ZIP · dados e documentos</span></div>
+      <div class="linha" style="display:block;color:var(--t3)">Tudo o que a casa tem, em ficheiros que se abrem sem a app: uma folha por coleção e os PDFs e fotografias. Só administração.</div>
+      <div class="botao">Preparar o ficheiro</div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div class="on">Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Porquê</dt><dd>A Centriq fechou em 2025 e deixou os utilizadores com um CSV sem os manuais; a Sortly pôs a exportação atrás de um paywall e as críticas são as mais amargas da categoria; a Maple encerra em dezembro de 2026 e apaga os dados. Uma app de casa que guarda anos de dados tem de os devolver por inteiro.</dd>
+    <dt>Ecrã</dt><dd>Uma linha em Perfil › Dados, só para administração, com confirmação. Sai um ZIP: uma folha CSV por coleção (em português, datas dd/mm/aaaa) mais os ficheiros dos anexos, das faturas e dos contratos, e os retratos de todos os meses em PDF.</dd>
+    <dt>Dados</dt><dd>Nenhum campo. Uma rota no servidor (<code>/api/casa/exportar</code>, só administração da casa) que junta as coleções da casa — o servidor é o único que vê tudo; o cliente só pede e guarda.</dd>
+    <dt>Provas</dt><dd>Um adulto não administrador é recusado; outra casa não recebe nada desta; o ZIP tem uma folha por coleção e todos os ficheiros que a base referencia.</dd>
+  </dl>
+</section>
+
+<section class="decisao">
+  <h2>12. A ficha de emergência por ligação, para a escola <small>Saúde</small></h2>
+  <div class="tel">
+    <div class="cab">Ficha de emergência do Léo<span>Partilhar com a escola</span></div>
+    <div class="corpo">
+      <div class="tit">O que a escola vê</div>
+      <div class="linha">Alergias e medicação<span class="dir"><span class="chip ok">sim</span></span></div>
+      <div class="linha">Contactos dos adultos<span class="dir"><span class="chip ok">sim</span></span></div>
+      <div class="linha">Consultas e documentos<span class="dir"><span class="chip neutro">não</span></span></div>
+      <div class="linha">Válido até<span class="dir">fim do ano letivo</span></div>
+      <div class="botao">Copiar o endereço</div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div>Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Porquê</dt><dd>O Kidfile partilha por ligação segura, sem o destinatário instalar nada, com permissões por secção e revogável — a escola vê alergias e contactos, não vê o resto. É a lista partilhada de hoje aplicada à ficha: o mesmo hook, o mesmo sinal, o mesmo «desfazer».</dd>
+    <dt>A decisão</dt><dd>São dados de saúde de um menor a sair por um endereço público. Enquanto o servidor correr em <code>127.0.0.1</code> a ligação não abre em lado nenhum; no dia em que o expuser, isto passa a ser o primeiro dado clínico fora de casa. A conformidade está em <code>db/postgres/README.md</code> e a decisão é sua — a Saúde é quem manda no calendário. Até lá, o PDF para a escola já faz o serviço.</dd>
+    <dt>Se sim</dt><dd><code>partilhas_ficha</code> (membro, seccoes, sinal, expira_em), hook irmão do da lista, prazo longo com revogação; provas de que só saem as secções escolhidas e nunca as consultas.</dd>
+  </dl>
+</section>
+
+<section class="decisao">
+  <h2>13. Fotografar e não escrever: a circular e a fatura <small>Agenda · Equipamentos</small></h2>
+  <div class="tel">
+    <div class="cab">Agendar Evento<span>A partir de uma fotografia</span></div>
+    <div class="corpo">
+      <div class="linha" style="display:block;color:var(--t3)">Fotografia da circular da escola</div>
+      <div class="tit">O que se leu — confira</div>
+      <div class="linha"><b>Visita de estudo · Léo</b><span class="dir">Sex, 25/09 · 08:30</span></div>
+      <div class="linha">Levar lanche e 5,00 €<span class="dir">nota</span></div>
+      <div class="botao cheio">Confirmar e Partilhar</div>
+    </div>
+    <div class="rod"><div>Início</div><div>Dinheiro</div><div>Tarefas</div><div>Compras</div><div class="on">Agenda</div></div>
+  </div>
+  <dl>
+    <dt>Porquê</dt><dd>Em 2026 é o traço mais apontado como «em falta» (Maple, Skylight Sidekick, Cozi Max: e-mail ou foto → evento; Warranty Keeper e Homer: foto da fatura → preço, loja e data). Tira a introdução manual, que é a queixa número um de quem regista garantias.</dd>
+    <dt>A decisão</dt><dd>Ler uma fotografia exige um modelo. Ou corre no telemóvel (OCR do sistema: funciona para a fatura, mal para a circular) ou a imagem sai da casa para um serviço — e a regra desta app é «a app não envia». A opção honesta é OCR no aparelho para a fatura (três campos, o utilizador confirma) e nada para a circular; a outra é uma decisão sobre que dados podem sair, e é sua.</dd>
+    <dt>Se sim</dt><dd>Só o rascunho é lido: a pessoa confirma sempre antes de gravar (a confirmação já existe, em quatro linhas). Nenhum campo novo.</dd>
+  </dl>
+</section>
+
+</div>
+
+<h2 class="parte">O que NÃO proponho copiar</h2>
+<ul class="lista">
+  <li><b>Competição entre irmãos</b> (Nipto, Sweepy, leaderboards): divide famílias e é a queixa recorrente de quem tem crianças com TDAH. A troca de tarefas já dá a cooperação sem a tabela de classificação.</li>
+  <li><b>Casas virtuais, mascotes, moedas</b> (Sweepy, Tody, Greenlight «Level Up»): gamificação que a app não precisa — trata de dinheiro, sem emoji.</li>
+  <li><b>Dinheiro real no cartão da criança</b> (Greenlight, Acorns Early, Revolut &lt;18): é um banco, com as taxas e as queixas de um banco. O cofre com registo de movimentos e pagamento em espécie é o modelo «Tracker» do Rooster Money, e é o certo para esta casa.</li>
+  <li><b>Localização dos membros</b> (FamilyWall, Family Link): fora do âmbito e do RGPD desta app.</li>
+  <li><b>Publicidade e folhetos na lista</b> (Bring!, Out of Milk): a segunda queixa mais repetida do mercado.</li>
+  <li><b>Tudo-em-um sem foco</b> (FamilyWall «faz muita coisa adequadamente»; OurHome, Picniic e Maple morreram): cada bloco acima reutiliza o que existe em vez de abrir uma área nova.</li>
+</ul>
+
+<p class="sub" style="margin-top:20px">Fontes principais: cozi.com, usecalendara.com (análises 2026), timetreeapp.com/newsroom, hearthdisplay.com, myskylight.com, todyapp.com, greenlight.com e help.greenlight.com, roostermoney.com/feature/chores-guide, busykid.com/busykid-features, monzo.com/help (Left to Spend), support.ynab.com (barras de progresso), goodbudget.com/help, kb.splitwise.com, homezada.com, dib.io (encerramento da Centriq), sortly.com e clubofthings.app, warrantykeeper (App Store), medisafeapp.com, mytherapyapp.com, SNS 24 (contasconnosco.cofidis.pt, usfcoimbracelas.com), kidfileapp.com, iol.pt (Revolut &lt;18 em Portugal, 11/2025).</p>
+</body>
+</html>
