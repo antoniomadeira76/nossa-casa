@@ -127,6 +127,7 @@ export const O_QUE_SOBE = {
   notif: ['campo', 'Os avisos, na mesma linha: `resumo_ativo`, `resumo_hora` e `aviso_prazo_dias`. Cada um escolhe os seus, e ninguém escolhe pelos outros.', 'preferenciasDoMembro'],
   clearedSeeds: ['local', 'Se as sementes de demonstração já saíram deste dispositivo. É um facto sobre este telefone, não sobre a casa.'],
   deDemonstracao: ['local', 'Se a app está a correr com a família de demonstração. É o oposto de ter servidor — por definição não sobe.'],
+  casaDoServidor: ['local', 'O `id` da casa do servidor que a cópia local deste aparelho reflete. Serve para quem entrar de OUTRA casa no mesmo telemóvel não ver a anterior: se o id mudar, o estado volta a vazio antes da leitura. É o aparelho a saber de quem é a cópia, não dado da casa.'],
   registo: ['linhas', 'A coleção `registo`, que só se apende. Não há repetidas para juntar: a linha nasce no momento da acção, escrita por quem a fez. E traz o `quem`, que é a única coisa que um registo local nunca podia ter.', 'registoDaCasa'],
 };
 

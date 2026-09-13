@@ -10,6 +10,7 @@ import Sheet from '../Sheet';
 import Confirm from '../Confirm';
 import ListaArrastavel, { ATRASO_PARA_PEGAR } from '../ListaArrastavel';
 import NovaTarefa from '../sheets/NovaTarefa';
+import FiltroDeMembros from '../FiltroDeMembros';
 
 // Urgência: a caixa do número leva a cor, e a lista ordena-se por ela.
 // A forma acompanha a cor — cheia, tracejada, contorno — para não depender do matiz.
@@ -53,46 +54,11 @@ export default function Tarefas({ t, user, abrir }) {
   return (
     <>
       {/* ── O filtro por membro: «Todos» e um AVATAR por pessoa ──────────────
-          Eram seis pastilhas com o nome, e embrulhavam: 355 px dão para
-          quatro, e as outras duas caíam para uma segunda linha que parecia um
-          acidente — 96 px antes da primeira tarefa, a crescer com a família.
-          O dono da casa pediu alternativas (design/filtro-de-membros.dc.html)
-          e ficou a A: cada membro é a sua bola, a mesma que cada linha de
-          tarefa já mostra, num alvo de 44; o escolhido ganha um anel do acento
-          e o NOME passa para o título da secção, que é onde faz falta. Uma
-          linha até cinco membros. (12/09/2026) */}
-      <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'center', flexWrap: 'wrap' }}>
-        {(() => {
-          const on = filter === 'Todos';
-          return (
-            <Pressable onPress={() => setFilter('Todos')} accessibilityRole="button"
-              accessibilityLabel="Todos" accessibilityState={{ selected: on }}
-              // ⚠ Tinha 40. Medido no navegador, era o único alvo deste ecrã
-              // abaixo dos 44 do INVARIANTE #5 — e é o primeiro que a mão
-              // encontra ao abrir as Tarefas.
-              style={{ minHeight: 44, paddingHorizontal: 14, borderRadius: R.row, borderWidth: 1,
-                borderColor: on ? t.accent : t.border, backgroundColor: on ? t.accent : 'transparent',
-                alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: on ? '#FFFFFF' : t.text2 }}>Todos</Text>
-            </Pressable>
-          );
-        })()}
-        {membrosDaCasa.map(n => {
-          const on = filter === n;
-          return (
-            <Pressable key={n} onPress={() => setFilter(on ? 'Todos' : n)} accessibilityRole="button"
-              accessibilityLabel={`Mostrar só as tarefas ${deNome(n)} ${n}`} accessibilityState={{ selected: on }}
-              style={{ width: 44, height: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
-              {/* O anel é um círculo à volta de um círculo — redondo por forma,
-                  como o próprio avatar; o alvo é o Pressable de 44, sem raio. */}
-              <View style={{ width: 40, height: 40, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center',
-                borderWidth: 2, borderColor: on ? t.accent : 'transparent' }}>
-                <Avatar {...avatarDe(n, MEMBERS[n], t.text3)} size={32} />
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
+          Opção A de design/filtro-de-membros.dc.html (12/09/2026). Vive em
+          `FiltroDeMembros.jsx` desde 13/09/2026, porque a Saúde passou a usar o
+          mesmo — um desenho, um sítio. */}
+      <FiltroDeMembros t={t} membros={membrosDaCasa} escolhido={filter} onEscolher={setFilter}
+        MEMBERS={MEMBERS} rotuloDe={(n) => `Mostrar só as tarefas ${deNome(n)} ${n}`} />
 
       {/* ⚠ A «Semanada das Crianças» SAIU daqui (10/09/2026). O dono da casa
           achou que não fazia sentido junto das tarefas, e tinha razão: o que

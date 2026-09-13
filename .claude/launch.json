@@ -26,6 +26,21 @@
       "port": 8083
     },
     {
+      "name": "Simulação (8083 → PocketBase 8096)",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "expo",
+        "start",
+        "--web",
+        "--port",
+        "8083"
+      ],
+      "env": {
+        "EXPO_PUBLIC_PB_URL": "http://127.0.0.1:8096"
+      },
+      "port": 8083
+    },
+    {
       "name": "Protótipo",
       "runtimeExecutable": "npx",
       "runtimeArgs": [

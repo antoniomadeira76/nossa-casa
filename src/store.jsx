@@ -294,6 +294,7 @@ const DATA_KEYS = [
   'googleCalendarImported', // Google Calendar imports
   'filaGoogle',             // o que falta empurrar para a agenda da Google
   'membros', 'nomeDaCasa', 'deDemonstracao',
+  'casaDoServidor',         // a casa cuja leitura está guardada neste aparelho
 ];
 
 // Versão do formato gravado. Sobe sempre que a forma de um campo persistido
@@ -769,6 +770,9 @@ export const DEMO = () => ({
   membros: { ...MEMBERS },
   nomeDaCasa: 'Bengui',
   deDemonstracao: true,
+  // O `id` da casa do servidor que esta cópia local reflete. `null` até à
+  // primeira leitura; muda de valor só quando OUTRA casa entra neste aparelho.
+  casaDoServidor: null,
 });
 
 // O dinheiro que uma casa sem sementes tem: nenhum.
@@ -887,6 +891,21 @@ export function StoreProvider({ children }) {
       const s = await carregarSync();
       const casa = s && await s.puxarCasa();
       if (!casa) return false;
+      // ── ⚠ OUTRA casa neste aparelho ──────────────────────────────────────
+      //
+      // A cópia local é de UMA casa, e não sabia de qual. A leitura que se
+      // segue substitui o que o servidor manda cheio e deixa ficar o que manda
+      // vazio (é a regra certa para uma casa sem servidor e para a demonstração)
+      // — mas se quem entra é de OUTRA casa, «vazio» é a verdade dela, e o que
+      // ficava era a casa anterior: a administradora de uma casa nova, num
+      // telemóvel onde antes entrara outra família, via o jantar, as tarefas e a
+      // garantia do frigorífico dessa família (casa simulada, 13/09/2026).
+      // Mudou a casa: o estado volta a `BLANK()` ANTES de ler, e só ficam as
+      // preferências de aspeto, que são de quem olha e não da casa.
+      set(x => (x.casaDoServidor && casa.casaId && x.casaDoServidor !== casa.casaId
+        ? { ...BLANK(), schemeByUser: x.schemeByUser, themeByUser: x.themeByUser, notif: x.notif,
+            casaDoServidor: casa.casaId }
+        : { casaDoServidor: casa.casaId || x.casaDoServidor }));
       mapaServidor.current = {
         casa: casa.casaId,
         membros: Object.fromEntries((casa._servidor.membros || []).map(m => [m.nome, m.id])),

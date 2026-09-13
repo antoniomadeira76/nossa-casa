@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nome no Filtro</title>
+<style>
+  :root { --pagina: #F0F2F5; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --t1: #262626; --t2: #3B3F48; --t3: #656C7C;
+    --ac: #078286; --acfg: #076F73; --chrome: #0A5B60; --okbg: #E6F6EC; --oktx: #146B3A; --warnbg: #FEFFD0; --warntx: #7A5110; --infobg: #E8F4FF; --infotx: #0B4F8A; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 80ch; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 20px; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; gap: 12px; }
+  section h2 { margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  .tel { border: 1px solid var(--borda); border-radius: 10px; background: var(--pagina); padding: 10px; width: 355px; box-sizing: border-box; }
+  .tit { color: var(--acfg); font-weight: 600; font-size: 13px; border-bottom: 1px solid var(--borda); padding: 8px 0 4px; margin-top: 8px; }
+  .fila { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .fila.rola { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .todos { min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--ac); background: var(--ac); color: #fff; font-weight: 600; font-size: 13px; display: flex; align-items: center; }
+  .todos.off { background: transparent; color: var(--t2); border-color: var(--borda); }
+  .alvo { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex: none; }
+  .anel { width: 40px; height: 40px; border-radius: 999px; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; }
+  .anel.on { border-color: var(--ac); }
+  .bola { width: 32px; height: 32px; border-radius: 999px; color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .coluna { display: flex; flex-direction: column; align-items: center; width: 52px; flex: none; }
+  .nome { font-size: 9.5px; color: var(--t3); max-width: 52px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: -2px; }
+  .nome.on { color: var(--acfg); font-weight: 600; }
+  .past { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px 0 6px; border-radius: 10px; border: 1px solid var(--borda); background: var(--cartao); font-size: 13px; color: var(--t2); flex: none; }
+  .past.on { border-color: var(--ac); color: var(--acfg); font-weight: 600; }
+  .past .bola { width: 28px; height: 28px; font-size: 12px; }
+  .balao { position: relative; }
+  .balao .dica { position: absolute; top: -34px; left: 50%; transform: translateX(-50%); background: var(--t1); color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 6px; white-space: nowrap; }
+  .balao .dica::after { content: ""; position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--t1); border-bottom: 0; }
+  .g { background: #1F9D55; } .b { background: #1890FF; } .c { background: #13ADB3; } .r { background: #D63384; } .v { background: #8B4EE0; }
+  dl { margin: 0; display: grid; grid-template-columns: 90px 1fr; gap: 4px 10px; font-size: 12.5px; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  .chip { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px; }
+  .ok { background: var(--okbg); color: var(--oktx); } .warn { background: var(--warnbg); color: var(--warntx); } .info { background: var(--infobg); color: var(--infotx); }
+  .linha { display: flex; justify-content: space-between; align-items: center; min-height: 40px; border-bottom: 1px solid var(--div); font-size: 12px; padding: 0 4px; }
+</style>
+</head>
+<body>
+<h1>Saber quem é cada bola — cinco hipóteses</h1>
+<p class="sub">O filtro por membro passou a bolas nas Tarefas e na Saúde (13/09/2026). A bola é a mesma que cada linha da casa mostra, mas quem não decorou as figuras não sabe quem é quem — e numa casa com três crianças as figuras parecem-se. Cinco formas de pôr o nome ao pé da bola, todas a 355 px de largura útil e com o alvo de 44 do INVARIANTE #5. Os cinco membros são os da casa simulada, com um nome longo de propósito.</p>
+
+<div class="grelha">
+
+<section>
+  <h2>A. O nome vai para o título da secção <small>o que as Tarefas já fazem</small></h2>
+  <div class="tel">
+    <div class="fila">
+      <div class="todos off">Todos</div>
+      <div class="alvo"><div class="anel"><div class="bola g">M</div></div></div>
+      <div class="alvo"><div class="anel on"><div class="bola b">L</div></div></div>
+      <div class="alvo"><div class="anel"><div class="bola c">T</div></div></div>
+      <div class="alvo"><div class="anel"><div class="bola r">M</div></div></div>
+      <div class="alvo"><div class="anel"><div class="bola v">R</div></div></div>
+    </div>
+    <div class="tit">Precisa de ação · Léo (2)</div>
+    <div class="linha"><span>Oftalmologia · Sexta, 25/09</span><span class="chip warn">Ação</span></div>
+    <div class="linha"><span>Pediatria · Terça, 04/08</span><span class="chip warn">Ação</span></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>Nada muda na fila. Ao escolher uma bola, o título da secção ganha o nome: «Precisa de ação · Léo». É o que as Tarefas fazem desde 12/09 («Rotinas e Tarefas · Léo»); a Saúde ainda não o faz.</dd>
+    <dt>A favor</dt><dd>Zero altura a mais; o nome aparece onde faz falta, ao pé do que se está a ler. Coerente com o que existe.</dd>
+    <dt>Contra</dt><dd>Só se sabe o nome DEPOIS de tocar. Quem procura «a bola do Tomás» continua a adivinhar.</dd>
+    <dt>Custo</dt><dd>Uma linha na Saúde.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>B. O nome por baixo de cada bola, sempre <small>uma palavra, 9,5 px</small></h2>
+  <div class="tel">
+    <div class="fila">
+      <div class="todos off">Todos</div>
+      <div class="coluna"><div class="alvo"><div class="anel"><div class="bola g">M</div></div></div><div class="nome">Maximiliano-Afonso</div></div>
+      <div class="coluna"><div class="alvo"><div class="anel on"><div class="bola b">L</div></div></div><div class="nome on">Léo</div></div>
+      <div class="coluna"><div class="alvo"><div class="anel"><div class="bola c">T</div></div></div><div class="nome">Tomás</div></div>
+      <div class="coluna"><div class="alvo"><div class="anel"><div class="bola r">M</div></div></div><div class="nome">Mia</div></div>
+      <div class="coluna"><div class="alvo"><div class="anel"><div class="bola v">R</div></div></div><div class="nome">Rita</div></div>
+    </div>
+    <div class="tit">Precisa de ação (2)</div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>Cada bola leva o nome por baixo, em 9,5 px `text3`, numa coluna de 52 px; o escolhido fica em `actFg`. Nomes longos cortam com «…» («Maximilia…»).</dd>
+    <dt>A favor</dt><dd>Sabe-se quem é cada bola ANTES de tocar. Cabem seis colunas em 355 px com o «Todos».</dd>
+    <dt>Contra</dt><dd>A fila cresce de 44 para 58 px. 9,5 px está abaixo do que a app usa para texto (11 px é o mínimo em uso) — é rótulo de ícone, não texto para ler; um nome composto fica cortado.</dd>
+    <dt>Custo</dt><dd>Pequeno, no `FiltroDeMembros`. Guarda novo: o nome nunca passa de uma linha.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>C. Só a bola escolhida ganha o nome <small>estica-se ao lado</small></h2>
+  <div class="tel">
+    <div class="fila">
+      <div class="todos off">Todos</div>
+      <div class="alvo"><div class="anel"><div class="bola g">M</div></div></div>
+      <div class="past on"><div class="bola b">L</div>Léo</div>
+      <div class="alvo"><div class="anel"><div class="bola c">T</div></div></div>
+      <div class="alvo"><div class="anel"><div class="bola r">M</div></div></div>
+      <div class="alvo"><div class="anel"><div class="bola v">R</div></div></div>
+    </div>
+    <div class="tit">Precisa de ação (2)</div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>As bolas ficam bolas; a escolhida transforma-se numa pastilha «bola + nome» com a borda do acento. Com nenhuma escolhida, a fila é a de hoje.</dd>
+    <dt>A favor</dt><dd>Altura de 44 sempre; o nome aparece exatamente no sítio da bola que se tocou, e o anel deixa de ser preciso.</dd>
+    <dt>Contra</dt><dd>Continua a não dizer o nome das outras. Com «Maximiliano-Afonso» escolhido a pastilha tem 190 px e empurra as bolas para uma segunda linha — cortar o nome («Maximilia…») ou aceitar o embrulho.</dd>
+    <dt>Custo</dt><dd>Médio: a pastilha muda de largura ao tocar, e a fila reorganiza-se.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>D. Pastilhas com bola e nome, a rolar de lado <small>como os corredores do Modo Compras</small></h2>
+  <div class="tel">
+    <div class="fila rola">
+      <div class="todos">Todos</div>
+      <div class="past"><div class="bola g">M</div>Maximiliano-Afonso</div>
+      <div class="past"><div class="bola b">L</div>Léo</div>
+      <div class="past"><div class="bola c">T</div>Tomás</div>
+      <div class="past"><div class="bola r">M</div>Mia</div>
+      <div class="past"><div class="bola v">R</div>Rita</div>
+    </div>
+    <div class="tit">Precisa de ação (7)</div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>Cada membro é uma pastilha de 44 com a bola e o nome inteiro; a fila nunca embrulha — rola de lado quando não cabe (o que os corredores do Modo Compras passaram a fazer em 13/09).</dd>
+    <dt>A favor</dt><dd>Nome inteiro, sempre, sem cortar. Altura 44. Escala para qualquer família.</dd>
+    <dt>Contra</dt><dd>Numa casa de cinco a Rita fica fora do ecrã e é preciso rolar para a ver; o que está fora não se sabe que existe. Volta a parecer-se com as pastilhas de nome que saíram em 12/09 — a razão de terem saído foi embrulharem, não terem nome.</dd>
+    <dt>Custo</dt><dd>Pequeno; reutiliza a fila que rola do Modo Compras.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>E. Tocar e segurar mostra o nome <small>um balão de 1,5 s</small></h2>
+  <div class="tel">
+    <div class="fila">
+      <div class="todos off">Todos</div>
+      <div class="alvo"><div class="anel"><div class="bola g">M</div></div></div>
+      <div class="alvo balao"><div class="dica">Léo</div><div class="anel on"><div class="bola b">L</div></div></div>
+      <div class="alvo"><div class="anel"><div class="bola c">T</div></div></div>
+      <div class="alvo"><div class="anel"><div class="bola r">M</div></div></div>
+      <div class="alvo"><div class="anel"><div class="bola v">R</div></div></div>
+    </div>
+    <div class="tit">Precisa de ação (2)</div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>Toque normal filtra, como hoje; toque longo abre um balão com o nome por cima da bola, que desaparece sozinho. O leitor de ecrã já diz o nome («Mostrar só a saúde do Léo»).</dd>
+    <dt>A favor</dt><dd>Nada muda no desenho da fila.</dd>
+    <dt>Contra</dt><dd>Ninguém descobre um toque longo sem lhe dizerem; é a solução que esconde a informação. E o balão é um elemento novo que a app não tem em mais lado nenhum.</dd>
+    <dt>Custo</dt><dd>Pequeno, mas é o único que introduz um gesto escondido.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>A minha recomendação <small>A + B</small></h2>
+  <div class="tel">
+    <div class="fila">
+      <div class="todos off">Todos</div>
+      <div class="coluna"><div class="alvo"><div class="anel"><div class="bola g">M</div></div></div><div class="nome">Maximiliano-Afonso</div></div>
+      <div class="coluna"><div class="alvo"><div class="anel on"><div class="bola b">L</div></div></div><div class="nome on">Léo</div></div>
+      <div class="coluna"><div class="alvo"><div class="anel"><div class="bola c">T</div></div></div><div class="nome">Tomás</div></div>
+      <div class="coluna"><div class="alvo"><div class="anel"><div class="bola r">M</div></div></div><div class="nome">Mia</div></div>
+      <div class="coluna"><div class="alvo"><div class="anel"><div class="bola v">R</div></div></div><div class="nome">Rita</div></div>
+    </div>
+    <div class="tit">Precisa de ação · Léo (2)</div>
+    <div class="linha"><span>Oftalmologia · Sexta, 25/09</span><span class="chip warn">Ação</span></div>
+  </div>
+  <dl>
+    <dt>Porquê</dt><dd>B responde à pergunta antes de tocar («qual é o Tomás?») e A responde depois, onde se lê. Juntas custam 14 px de altura e uma linha de código na Saúde. O nome cortado do Maximiliano-Afonso é o preço de um nome composto — e o título inteiro compensa-o assim que se toca.</dd>
+    <dt>Se preferir</dt><dd>Só A mantém tudo como está e resolve a Saúde em cinco minutos; D é a escolha se quiser os nomes inteiros a qualquer custo.</dd>
+  </dl>
+</section>
+
+</div>
+</body>
+</html>

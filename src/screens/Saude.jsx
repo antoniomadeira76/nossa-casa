@@ -12,10 +12,11 @@ import Confirm from '../Confirm';
 import { plural, dayLabel, daysUntil, chaveDeDMY, dmyDeChave, listaEmPortugues, TODAY_KEY } from '../format';
 import { planoDaReceita, tomasDoDia } from '../medicacao';
 import TomasDaReceita from '../sheets/TomasDaReceita';
+import FiltroDeMembros from '../FiltroDeMembros';
 
 export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMarcado }) {
   const st = useStore();
-  const { s, set, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, addHealthDoc, arquivarConsulta, apagarConsulta, oQueCaiCom, membros: MEMBERS, membrosDaCasa } = st;
+  const { s, set, addHealthNote, addRecipe, setRecipeDecision, setHealthDecision, addSpecialty, removeSpecialty, addHealthDoc, arquivarConsulta, apagarConsulta, oQueCaiCom, membros: MEMBERS, membrosDaCasa, deNome } = st;
   const [membroDaFolha, setMembroDaFolha] = useState(null);  // pré-selecção ao marcar
 
   const [sheet, setSheet] = useState(null);
@@ -54,7 +55,6 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   }, [marcarPara]);
   const [expandedRecord, setExpandedRecord] = useState(null);
   const [expandedNote, setExpandedNote] = useState(null);
-  const [searchText, setSearchText] = useState('');
   const [memberFilter, setMemberFilter] = useState(null);
   // Um rascunho de nota POR consulta, não um só para todas — ver `handleAddNote`.
   const [newNoteForm, setNewNoteForm] = useState({});
@@ -120,22 +120,14 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
     ...activas.filter(h => !needsDecision.includes(h)).sort(porData),
   ];
 
-  // Filtrar com base em search e member
-  const filtered = decisionsSorted.filter(h => {
-    if (memberFilter && h.member !== memberFilter) return false;
-    if (searchText) {
-      const search = searchText.toLowerCase();
-      return (
-        h.specialty?.toLowerCase().includes(search) ||
-        h.member?.toLowerCase().includes(search) ||
-        (s.healthNotes[h.id] || []).some(n => n.text.toLowerCase().includes(search)) ||
-        (s.healthRecipes[h.id] || []).some(r => r.name.toLowerCase().includes(search))
-      );
-    }
-    return true;
-  });
+  // Filtrar por membro. A pesquisa por texto saiu em 13/09/2026 (opção E de
+  // `design/pesquisa-da-saude.dc.html`): o protótipo nunca a teve, e com o
+  // filtro por pessoa cada ficha mostra duas ou três consultas — pesquisar era
+  // mais lento do que olhar. Se um dia o arquivo crescer, a lupa volta no título
+  // das «Arquivadas» (opção A), não em cima da lista do dia.
+  const filtered = decisionsSorted.filter(h => !(memberFilter && h.member !== memberFilter));
 
-  // Mostrar archive quando > 5 registos
+  // O filtro por membro só quando há por onde filtrar: mais de 5 registos.
   const showArchive = visibleRecords.length > 5;
 
   // ── As notas: sempre à mão, e alteráveis ──────────────────────────────────
@@ -385,7 +377,10 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                   {/* Botão para adicionar receita */}
                   <Pressable accessibilityRole="button"
                     onPress={() => setExpandedNote(expandedNote === `rx-${record.id}` ? null : `rx-${record.id}`)}
-                    style={{ paddingVertical: S.sm, paddingHorizontal: S.md, gap: S.sm, flexDirection: 'row', alignItems: 'center' }}
+                    accessibilityLabel="Adicionar receita"
+                    // ⚠ Media 24 px de altura — o único alvo abaixo dos 44 na
+                    // consulta aberta (casa simulada, 13/09/2026).
+                    style={{ minHeight: 44, paddingHorizontal: S.md, gap: S.sm, flexDirection: 'row', alignItems: 'center' }}
                   >
                     <Icon name="plus" size={16} color={t.titulo} />
                     <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.actFg }}>
@@ -837,54 +832,17 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
         {/* Botão Marcar Consulta */}
         <AddButton t={t} label="marcar consulta" onPress={() => abrirMarcacao(null)} />
 
-        {/* Searchbar */}
+        {/* O filtro por membro.
+            ⚠ 13/09/2026, o dono da casa: «a pesquisa por especialidade é muito
+            grande e os filtros devem ser como o segundo print». As pastilhas
+            com o nome saíram (com cinco membros tinham 39 px): o filtro é o
+            mesmo componente das Tarefas — «Todos» e uma bola por membro, com o
+            nome por baixo (`FiltroDeMembros`). A caixa de pesquisa saiu de vez
+            (opção E de design/pesquisa-da-saude.dc.html). */}
         {showArchive && (
-          <View style={{ gap: S.sm }}>
-            <TextInput accessibilityLabel="Procurar por especialidade"
-              value={searchText}
-              onChangeText={setSearchText}
-              placeholder="Procurar por especialidade..."
-              placeholderTextColor={t.text3}
-              style={{
-                minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
-                fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
-                borderColor: t.border, backgroundColor: t.card,
-              }}
-            />
-
-            {/* Member filter pills */}
-            <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-              <Pressable accessibilityRole="button"
-                onPress={() => setMemberFilter(null)}
-                style={{
-                  paddingHorizontal: S.md, minHeight: 44, borderRadius: R.row,
-                  borderWidth: 1, borderColor: !memberFilter ? t.accent : t.border,
-                  backgroundColor: !memberFilter ? 'rgba(0,0,0,0.02)' : 'transparent',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: !memberFilter ? t.actFg : t.text3 }}>
-                  Todos
-                </Text>
-              </Pressable>
-              {membrosDaCasa.map(member => (
-                <Pressable accessibilityRole="button"
-                  key={member}
-                  onPress={() => setMemberFilter(memberFilter === member ? null : member)}
-                  style={{
-                    paddingHorizontal: S.md, minHeight: 44, borderRadius: R.row,
-                    borderWidth: 1, borderColor: memberFilter === member ? corDoMembro(member, MEMBERS[member]?.cor) : t.border,
-                    backgroundColor: memberFilter === member ? 'rgba(0,0,0,0.02)' : 'transparent',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: memberFilter === member ? corDoMembro(member, MEMBERS[member]?.cor) : t.text3 }}>
-                    {member}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
+          <FiltroDeMembros t={t} membros={membrosDaCasa} escolhido={memberFilter || 'Todos'}
+            onEscolher={(v) => setMemberFilter(v === 'Todos' ? null : v)}
+            MEMBERS={MEMBERS} rotuloDe={(n) => `Mostrar só a saúde ${deNome(n)} ${n}`} />
         )}
 
         {/* Registos acrescentados aqui. As consultas vivem nas fichas acima —
@@ -892,16 +850,24 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
             era o ecrã a contradizer-se. */}
         {filtered.length === 0 ? null : (
           <View style={{ gap: S.md }}>
-            {needsDecision.length > 0 && (
-              <View>
-                <SectionTitle t={t}>Precisa de ação ({needsDecision.length})</SectionTitle>
+            {/* ⚠ O número do título é o da LISTA MOSTRADA: com o filtro no Léo
+                dizia «(7)» por cima de duas linhas (casa simulada, 13/09/2026).
+                Um total é a soma do que o ecrã mostra, nunca uma contagem ao lado. */}
+            {(() => {
+              const aDecidir = filtered.filter(h => needsDecision.includes(h));
+              return aDecidir.length > 0 ? (
                 <View>
-                  {filtered.filter(h => needsDecision.includes(h)).map(record => (
-                    <RecordCard key={record.id} record={record} />
-                  ))}
+                  {/* O nome de quem se filtra vem para o título, como nas Tarefas
+                      (opção A de design/nome-no-filtro.dc.html). */}
+                  <SectionTitle t={t}>{memberFilter ? `Precisa de ação · ${memberFilter} (${aDecidir.length})` : `Precisa de ação (${aDecidir.length})`}</SectionTitle>
+                  <View>
+                    {aDecidir.map(record => (
+                      <RecordCard key={record.id} record={record} />
+                    ))}
+                  </View>
                 </View>
-              </View>
-            )}
+              ) : null;
+            })()}
 
             {filtered.filter(h => !needsDecision.includes(h)).length > 0 && (
               <View>

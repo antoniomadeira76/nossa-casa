@@ -63,12 +63,13 @@ const FICAM_REDONDOS = {
   ],
   'src/CampoData.jsx': ['disco do dia escolhido no calendário'],
   'src/screens/ModoCompras.jsx': ['barra de progresso do corredor'],
-  'src/screens/Tarefas.jsx': [
-    // O «disco de cor da criança no cofre» saiu daqui com a semanada, que
-    // passou ao Dinheiro em 10/09/2026 — e lá a linha usa o `Avatar`.
-    // O filtro por membro passou a avatares (12/09/2026, opção A de
-    // `design/filtro-de-membros.dc.html`): o anel do escolhido é um círculo à
-    // volta de um círculo; o alvo é o `Pressable` de 44 por fora, sem raio.
+  // O «disco de cor da criança no cofre» saiu das Tarefas com a semanada, que
+  // passou ao Dinheiro em 10/09/2026 — e lá a linha usa o `Avatar`. O filtro
+  // por membro passou a avatares (12/09/2026, opção A de
+  // `design/filtro-de-membros.dc.html`) e em 13/09/2026 saiu das Tarefas para um
+  // componente próprio, que a Saúde também usa: o anel do escolhido é um
+  // círculo à volta de um círculo; o alvo é o `Pressable` de 44 por fora, sem raio.
+  'src/FiltroDeMembros.jsx': [
     'anel do avatar escolhido no filtro — é um círculo',
   ],
   'src/sheets/EscolherAvatar.jsx': [

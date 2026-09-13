@@ -76,6 +76,13 @@ const NOSSAS = [
   'meta_movimentos', 'metas',
   // As partilhas apontam à lista de compras e a quem partilhou: antes das duas.
   'partilhas_lista',
+  // ⚠ Três coleções criadas em 11/09/2026 e nunca postas AQUI: a `ementa`
+  // (aponta ao prato), os `pratos` e os `objetivos_cofre` (aponta ao membro).
+  // Sem estarem na lista não eram apagadas nem preservadas, e a segunda corrida
+  // deste ficheiro parava em «Collection name must be unique» (13/09/2026, ao
+  // recriar a base do servidor temporário). O guarda `a-casa-simulada-apanhou`
+  // confere que toda a coleção criada está nesta lista.
+  'ementa', 'pratos',
   'acertos', 'transferencias', 'artigos', 'listas_compras', 'lojas', 'seccoes',
   'registo', 'meses', 'preferencias', 'equipamentos', 'cofre_movimentos', 'despesas',
   // ⚠ `contas_fixas` DEPOIS das `despesas` e ANTES dos `envelopes`: a despesa
@@ -85,6 +92,8 @@ const NOSSAS = [
   'contratos',
   // As trocas apontam a DUAS tarefas e a duas pessoas: antes das `tarefas`.
   'trocas_tarefas',
+  // O objetivo do cofre aponta à criança: antes dos `membros`.
+  'objetivos_cofre',
   'envelopes', 'tarefas_feitas', 'tarefas', 'membros', 'casas'];
 
 // ── Uma casa habitada não se apaga ───────────────────────────────────────────
@@ -330,6 +339,13 @@ if (casaHabitada) {
     rel('casa', ids.casas, { required: true, cascadeDelete: true }),
     sel('papel', ['admin', 'adulto', 'crianca'], { required: true }),
     txt('cor'),
+    // ⚠ O avatar (a fotografia da Google, em texto) e a figura escolhida
+    // («cachos», «gato»…) só existiam na tabela do `acrescentar-campos.mjs`:
+    // uma base criada DO ZERO nascia sem eles, a app escrevia-os e o PocketBase
+    // ignorava-os em silêncio. Apanhado em 13/09/2026 ao levantar um servidor
+    // temporário para a casa simulada — a regra dos DOIS sítios, outra vez.
+    txt('avatar', { max: 500 }),
+    txt('figura', { max: 24 }),
     // O género gramatical é uma propriedade da pessoa, não coisa que se
     // adivinhe do nome — a app tinha três sítios a fazer `nome === 'Rita'` e
     // um deles escrevia «Saúde do Mia». Fica ao lado do nome, no servidor,
@@ -1092,7 +1108,10 @@ await criar({
   // ⚠ `meta.casa` e `por.casa`, e não só o `casa` da linha: o `casa` é escolhido
   // por quem escreve e não prova nada. É a sexta vez que esta forma aparece —
   // ver `provar-relacoes-ancoradas.mjs`.
-  createRule: `${DA_CASA} && ${ADMIN} && ${daCasaTambem('meta', 'por')}`,
+  // Letra a letra como na tabela `COLECOES` do `acrescentar-campos.mjs`: a
+  // `meta` é obrigatória, por isso não leva o «ou vazia» (13/09/2026 — uma
+  // base criada do zero recebia a regra «diferente» na primeira passagem).
+  createRule: `${DA_CASA} && ${ADMIN} && meta.casa = @request.auth.casa && ${daCasaTambem('por')}`,
   updateRule: null, deleteRule: null,
 });
 

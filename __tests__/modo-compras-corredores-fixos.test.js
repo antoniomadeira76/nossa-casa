@@ -59,14 +59,19 @@ const descendeDe = (no, antepassado) => {
 };
 
 describe('⚠ os separadores por corredor não rolam com a lista', () => {
-  it('o Modo Compras tem um ScrollView próprio', () => {
+  // O que rola VERTICALMENTE. Com mais de cinco corredores a fila dos
+  // separadores passa a rolar de lado (13/09/2026) — é outro ScrollView, e
+  // não é o que este guarda vigia.
+  const oQueRola = (arvore) => arvore.root.findAllByType(ScrollView).filter(n => !n.props.horizontal);
+
+  it('o Modo Compras tem um ScrollView vertical próprio', () => {
     const arvore = montar();
-    expect(arvore.root.findAllByType(ScrollView).length).toBe(1);
+    expect(oQueRola(arvore).length).toBe(1);
   });
 
   it('⚠ e os separadores (role tab) ficam FORA dele', () => {
     const arvore = montar();
-    const [rola] = arvore.root.findAllByType(ScrollView);
+    const [rola] = oQueRola(arvore);
     const separadores = arvore.root.findAll(n => n.props && n.props.accessibilityRole === 'tab');
     // Há separadores para conferir — senão isto não prova nada.
     expect(separadores.length).toBeGreaterThan(2);
@@ -75,7 +80,7 @@ describe('⚠ os separadores por corredor não rolam com a lista', () => {
 
   it('e o carrinho e os artigos ficam DENTRO dele — é o que rola', () => {
     const arvore = montar();
-    const [rola] = arvore.root.findAllByType(ScrollView);
+    const [rola] = oQueRola(arvore);
     const artigos = arvore.root.findAll(n => n.props
       && typeof n.props.accessibilityLabel === 'string'
       && /^(Confirmar|Desfazer|Marcar|Sem stock)/.test(n.props.accessibilityLabel));

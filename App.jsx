@@ -89,7 +89,9 @@ const TABS = [
   { key: 'tarefas',  label: 'Tarefas',  icon: 'checkSquare', title: 'Tarefas',
     sub: (ctx) => `${ctx.semana.curta} · rotinas e tarefas` },
   { key: 'compras',  label: 'Compras',  icon: 'fileDone',    title: 'Lista de Compras',
-    sub: (ctx) => `${ctx.semana.curta} · partilhada com 2 adultos` },
+    // ⚠ Dizia «partilhada com 2 adultos» escrito à mão — numa casa com uma
+    // adulta, ou com três, mentia (casa vazia, 13/09/2026).
+    sub: (ctx) => `${ctx.semana.curta} · ${ctx.nAdultos === 1 ? 'só um adulto na casa' : `partilhada com ${plural(ctx.nAdultos, 'adulto', 'adultos')}`}` },
   { key: 'agenda',   label: 'Agenda',   icon: 'calendar',    title: 'Agenda',
     sub: (ctx) => ctx.semana.intervalo },
 ];
@@ -411,7 +413,8 @@ function Shell() {
 
   const meta = TABS.find(x => x.key === tab);
   const ctxSub = { semana: semanaDeHoje(), mes: s.monthName,
-    casa: nomeDaCasa, nMembros: Object.keys(MEMBERS).length };
+    casa: nomeDaCasa, nMembros: Object.keys(MEMBERS).length,
+    nAdultos: Object.values(MEMBERS).filter(m => !m.kid).length };
   const Screen = { dinheiro: Dinheiro, tarefas: Tarefas, compras: Compras, agenda: Agenda }[tab];
 
   // Header dinâmico para Início; fixo para outros ecrãs.

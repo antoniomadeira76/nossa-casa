@@ -100,8 +100,20 @@ export default function ModoCompras({ t, user, onClose }) {
         </Text>
       </View>
 
-      {/* separadores por corredor */}
-      <View style={{ flexDirection: 'row', gap: S.md }}>
+      {/* separadores por corredor
+          ⚠ Eram `flex: 1` num `View`: com quatro corredores davam 80 px cada,
+          com oito da casa simulada davam 40 — abaixo dos 44 do INVARIANTE #5 e
+          com os nomes cortados a «Fresc…». Até cinco separadores repartem a
+          largura; a partir daí a fila ROLA, cada um com 72 de mínimo
+          (13/09/2026). */}
+      {(() => {
+        const rolam = tabs.length > 5;
+        const Fila = rolam ? ScrollView : View;
+        const propsDaFila = rolam
+          ? { horizontal: true, showsHorizontalScrollIndicator: false, contentContainerStyle: { flexDirection: 'row', gap: S.md } }
+          : { style: { flexDirection: 'row', gap: S.md } };
+        return (
+      <Fila {...propsDaFila}>
         {tabs.map(x => {
           const on = step === x.i;
           // ⚠ Uma secção VAZIA não está «despachada».
@@ -117,7 +129,9 @@ export default function ModoCompras({ t, user, onClose }) {
           return (
             <Pressable key={x.i} onPress={() => setStep(x.i)} accessibilityRole="tab"
               accessibilityLabel={x.label} accessibilityState={{ selected: on }}
-              style={{ flex: 1, minHeight: 44, gap: 6, justifyContent: 'center' }}>
+              style={rolam
+                ? { minWidth: 72, paddingHorizontal: S.xs, minHeight: 44, gap: 6, justifyContent: 'center' }
+                : { flex: 1, minHeight: 44, gap: 6, justifyContent: 'center' }}>
               <View style={{ height: 4, borderRadius: R.pill,
                 backgroundColor: on ? t.accent : limpo ? t.state.ok : t.border }} />
               <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11, textAlign: 'center',
@@ -126,7 +140,9 @@ export default function ModoCompras({ t, user, onClose }) {
             </Pressable>
           );
         })}
-      </View>
+      </Fila>
+        );
+      })()}
       </View>
 
       {/* ── O que rola: o carrinho, os artigos, o paginador e o botão ───────

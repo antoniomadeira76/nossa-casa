@@ -70,6 +70,14 @@ depois da base precisa do mesmo par**: a declaração no `criar-colecoes.mjs` e 
 `REGRAS` do `acrescentar-campos.mjs`, que a aplica ao servidor a andar — aconteceu ao
 `tarefas_feitas` (apagar), aos `artigos` (ler) e às `despesas` (criar, com a âncora da conta fixa).
 
+⚠ **O sétimo caso apanhou-se ao contrário (13/09/2026):** o `membros.avatar` e o `figura`
+estavam SÓ na tabela do `acrescentar-campos.mjs` — uma base criada do zero nascia sem eles. E
+**toda a coleção que o `criar-colecoes.mjs` cria tem de estar na lista `NOSSAS`** (a ordem de
+apagamento): `objetivos_cofre`, `pratos` e `ementa` não estavam, e a segunda corrida do ficheiro
+parava em «Collection name must be unique». O guarda é `__tests__/a-casa-simulada-apanhou.test.js`.
+A forma de o provar sem tocar na casa real é um PocketBase temporário noutra porta com
+`npm run simular:casa` (uma casa cheia e difícil: cinco membros, oito corredores, três meses).
+
 **O PIN vive no servidor.** A criança entra com `authWithPassword` (o `login`
 `casa_nome` e o PIN como palavra-passe), o «tem PIN» é o `pin_definido` do membro
 (escrito pelo hook e pela rota, nunca pelo cliente), quem administra repõe pela rota

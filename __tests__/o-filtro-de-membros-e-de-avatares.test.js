@@ -59,7 +59,11 @@ const tocar = (r, label) => {
 };
 
 describe('⚠ o filtro por membro é de avatares', () => {
-  it('há «Todos» e um alvo de 44 por membro, com o que faz dito em voz — e sem o nome escrito na fila', () => {
+  it('há «Todos» e um alvo de 52 × 44 por membro, com o que faz dito em voz — e o nome numa linha por baixo da bola', () => {
+    // 13/09/2026: ele perguntou «há alguma hipótese de saber o nome da pessoa?»
+    // e escolheu a B de design/nome-no-filtro.dc.html — o nome a 10 px por
+    // baixo, uma linha, cortado num nome composto. O alvo cresceu para 52 de
+    // largo; os 44 de altura ficam.
     const { r, loja, texto } = montar();
     const membros = loja().membrosDaCasa;
     expect(membros.length).toBeGreaterThanOrEqual(4);
@@ -68,11 +72,14 @@ describe('⚠ o filtro por membro é de avatares', () => {
       .toEqual([...membros].sort());
     for (const f of filtros) {
       const st = Array.isArray(f.props.style) ? Object.assign({}, ...f.props.style) : f.props.style;
-      expect(st.width).toBe(44);
-      expect(st.height).toBe(44);
-      // Cada alvo tem uma bola lá dentro — o `Avatar` —, e nenhum texto.
-      expect(f.findAll(n => n.type === 'Text' || (typeof n.type === 'string' && /Text/.test(n.type))).length)
-        .toBeLessThanOrEqual(1);   // a inicial da bola, no máximo
+      expect(st.width).toBe(52);
+      expect(st.minHeight).toBe(44);
+      // Cada alvo tem uma bola lá dentro — o `Avatar` — e o nome numa linha só.
+      const textos = f.findAll(n => typeof n.type === 'string' && /Text/.test(n.type));
+      expect(textos.length).toBeLessThanOrEqual(2);   // a inicial da bola e o nome
+      const nome = textos.find(n => n.props.numberOfLines === 1);
+      expect(nome).toBeTruthy();
+      expect(membros).toContain(junta(nome.props.children));
     }
     expect(botoes(r).some(n => n.props.accessibilityLabel === 'Todos')).toBe(true);
     // O título diz «Rotinas e Tarefas» e mais nada enquanto é «Todos».

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pesquisa da Saúde</title>
+<style>
+  :root { --pagina: #F0F2F5; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --sub: #F3F4F6; --t1: #262626; --t2: #3B3F48; --t3: #656C7C;
+    --ac: #078286; --acfg: #076F73; --chrome: #0A5B60; --warnbg: #FEFFD0; --warntx: #7A5110; --okbg: #E6F6EC; --oktx: #146B3A; --infobg: #E8F4FF; --infotx: #0B4F8A; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 80ch; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 20px; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; gap: 12px; }
+  section h2 { margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  .tel { border: 1px solid var(--borda); border-radius: 10px; background: var(--pagina); padding: 10px; width: 355px; box-sizing: border-box; display: grid; gap: 8px; }
+  .cab { background: var(--chrome); color: #fff; padding: 10px 12px; border-radius: 8px; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 13px; }
+  .cab .lupa { margin-left: auto; width: 32px; height: 32px; border-radius: 999px; background: rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center; font-size: 15px; }
+  .tit { color: var(--acfg); font-weight: 600; font-size: 13px; border-bottom: 1px solid var(--borda); padding: 6px 0 4px; display: flex; align-items: center; justify-content: space-between; }
+  .tit .ico { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; margin: -12px -12px -12px 0; color: var(--acfg); font-size: 15px; }
+  .fila { display: flex; gap: 8px; align-items: center; }
+  .fila.rola { overflow-x: auto; scrollbar-width: none; }
+  .todos { min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--borda); color: var(--t2); font-weight: 600; font-size: 13px; display: flex; align-items: center; flex: none; }
+  .todos.on { background: var(--ac); border-color: var(--ac); color: #fff; }
+  .alvo { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex: none; }
+  .anel { width: 40px; height: 40px; border-radius: 999px; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; }
+  .bola { width: 32px; height: 32px; border-radius: 999px; color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .lupa44 { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--borda); display: flex; align-items: center; justify-content: center; color: var(--t3); font-size: 16px; flex: none; margin-left: auto; }
+  .campo { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 10px; background: var(--sub); color: var(--t3); font-size: 13px; }
+  .campo.borda { background: var(--cartao); border: 1px solid var(--ac); color: var(--t2); }
+  .past { min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--borda); background: var(--cartao); font-size: 12.5px; color: var(--t2); display: flex; align-items: center; flex: none; }
+  .past.on { background: var(--ac); border-color: var(--ac); color: #fff; }
+  .linha { display: flex; justify-content: space-between; align-items: center; min-height: 44px; border-bottom: 1px solid var(--div); font-size: 12.5px; padding: 0 4px; }
+  .linha small { display: block; color: var(--t3); font-size: 11px; }
+  .chip { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: var(--warnbg); color: var(--warntx); }
+  .g { background: #1F9D55; } .b { background: #1890FF; } .c { background: #13ADB3; } .r { background: #D63384; } .v { background: #8B4EE0; }
+  dl { margin: 0; display: grid; grid-template-columns: 90px 1fr; gap: 4px 10px; font-size: 12.5px; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  .nota { font-size: 12px; color: var(--t3); border-top: 1px dashed var(--borda); padding-top: 8px; margin: 0; }
+</style>
+</head>
+<body>
+<h1>A pesquisa por especialidade — cinco alternativas</h1>
+<p class="sub">Hoje a Saúde tem uma caixa «Procurar por especialidade» permanente entre o botão «marcar consulta» e o filtro por membro. O protótipo (<code>design/Nossa Casa App.dc.html</code>) não tem pesquisa nenhuma neste ecrã — a caixa foi acrescentada na app, e ocupa 44 px em cima da lista sempre, mesmo numa casa com sete consultas. Cinco formas de a tirar do caminho sem perder a função. Todas a 355 px, alvos de 44.</p>
+
+<div class="grelha">
+
+<section>
+  <h2>A. Sem caixa: a lupa vive no título da secção <small>abre só quando se toca</small></h2>
+  <div class="tel">
+    <div class="fila"><div class="todos on">Todos</div><div class="alvo"><div class="anel"><div class="bola g">M</div></div></div><div class="alvo"><div class="anel"><div class="bola b">L</div></div></div><div class="alvo"><div class="anel"><div class="bola c">T</div></div></div><div class="alvo"><div class="anel"><div class="bola r">M</div></div></div><div class="alvo"><div class="anel"><div class="bola v">R</div></div></div></div>
+    <div class="tit">Precisa de ação (7)<span class="ico">&#9906;</span></div>
+    <div class="linha"><span>Alergologia<small>Maximiliano-Afonso · Terça, 13/10</small></span><span class="chip">Ação</span></div>
+    <div class="linha"><span>Oftalmologia<small>Léo · Sexta, 25/09</small></span><span class="chip">Ação</span></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>A caixa desaparece. O título «Precisa de ação» ganha uma lupa à direita (alvo de 44, como a seta das secções); tocar abre o campo por baixo do título, com o teclado, e um «×» fecha-o e limpa.</dd>
+    <dt>A favor</dt><dd>A lista sobe 52 px. A pesquisa continua a um toque, e é onde se lê a lista que se pesquisa.</dd>
+    <dt>Contra</dt><dd>Menos visível para quem não sabe que existe. Uma lupa num título de secção é um padrão novo na app (os títulos hoje levam pastilhas e setas).</dd>
+    <dt>Custo</dt><dd>Pequeno.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>B. A lupa é o último alvo da fila do filtro <small>«Todos», as bolas, a lupa</small></h2>
+  <div class="tel">
+    <div class="fila"><div class="todos on">Todos</div><div class="alvo"><div class="anel"><div class="bola g">M</div></div></div><div class="alvo"><div class="anel"><div class="bola b">L</div></div></div><div class="alvo"><div class="anel"><div class="bola c">T</div></div></div><div class="alvo"><div class="anel"><div class="bola r">M</div></div></div><div class="alvo"><div class="anel"><div class="bola v">R</div></div></div><div class="lupa44">&#9906;</div></div>
+    <div class="tit">Precisa de ação (7)</div>
+    <div class="linha"><span>Alergologia<small>Maximiliano-Afonso · Terça, 13/10</small></span><span class="chip">Ação</span></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>A fila do filtro é a fila de filtrar: quem (as bolas) e o quê (a lupa). Tocar na lupa troca a fila pelo campo, com «×» para voltar às bolas.</dd>
+    <dt>A favor</dt><dd>Uma linha só para filtrar; a lista sobe 52 px; a lupa está ao lado do que ela completa.</dd>
+    <dt>Contra</dt><dd>Com cinco membros a fila fica cheia (Todos 68 + 5×44 + 44 = 332 de 355); com seis, embrulha. Uma quadrado com lupa ao lado de bolas redondas pede desenho cuidado.</dd>
+    <dt>Custo</dt><dd>Pequeno, no `FiltroDeMembros` (uma ranhura para um alvo extra).</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>C. Pastilhas de especialidade em vez de teclado <small>as da casa, a rolar de lado</small></h2>
+  <div class="tel">
+    <div class="fila"><div class="todos on">Todos</div><div class="alvo"><div class="anel"><div class="bola g">M</div></div></div><div class="alvo"><div class="anel"><div class="bola b">L</div></div></div><div class="alvo"><div class="anel"><div class="bola c">T</div></div></div><div class="alvo"><div class="anel"><div class="bola r">M</div></div></div><div class="alvo"><div class="anel"><div class="bola v">R</div></div></div></div>
+    <div class="fila rola"><div class="past on">Todas</div><div class="past">Pediatria</div><div class="past">Dentista</div><div class="past">Oftalmologia</div><div class="past">Alergologia</div><div class="past">Medicina geral</div></div>
+    <div class="tit">Precisa de ação (7)</div>
+    <div class="linha"><span>Alergologia<small>Maximiliano-Afonso · Terça, 13/10</small></span><span class="chip">Ação</span></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>Uma casa tem cinco ou seis especialidades, não cinquenta: em vez de as escrever, escolhem-se. Segunda fila de pastilhas de 36 px (alvo 44 com o enchimento) a rolar de lado, só as especialidades que a casa tem.</dd>
+    <dt>A favor</dt><dd>Sem teclado, sem erros de escrita, e mostra o que há. Filtrar por quem E por quê com dois toques.</dd>
+    <dt>Contra</dt><dd>Duas filas de filtro em cima da lista — 44 + 36 + folgas — é mais alto do que a caixa que se quer tirar. As notas e as receitas deixam de se pesquisar por texto.</dd>
+    <dt>Custo</dt><dd>Médio: as especialidades já existem na loja (`specialities`).</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>D. A pesquisa no cabeçalho do ecrã <small>a lupa ao lado do avatar</small></h2>
+  <div class="tel">
+    <div class="cab">&#8592;&nbsp; Saúde da Família<span class="lupa">&#9906;</span></div>
+    <div class="fila"><div class="todos on">Todos</div><div class="alvo"><div class="anel"><div class="bola g">M</div></div></div><div class="alvo"><div class="anel"><div class="bola b">L</div></div></div><div class="alvo"><div class="anel"><div class="bola c">T</div></div></div><div class="alvo"><div class="anel"><div class="bola r">M</div></div></div><div class="alvo"><div class="anel"><div class="bola v">R</div></div></div></div>
+    <div class="tit">Precisa de ação (7)</div>
+    <div class="linha"><span>Alergologia<small>Maximiliano-Afonso · Terça, 13/10</small></span><span class="chip">Ação</span></div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>A lupa vai para o cabeçalho, à esquerda da bola do perfil, como nas apps de correio. Tocar troca o título por um campo sobre o cabeçalho; «×» devolve o título.</dd>
+    <dt>A favor</dt><dd>Zero altura no conteúdo. Padrão que toda a gente conhece.</dd>
+    <dt>Contra</dt><dd>O cabeçalho é comum a todos os ecrãs (INVARIANTE #1) e hoje só tem a bola e o «terminar sessão»; abrir-lhe uma exceção para a Saúde é uma decisão de arquitetura, não de um ecrã. E fica longe da lista que filtra.</dd>
+    <dt>Custo</dt><dd>Médio-alto: mexe no `App.jsx`, não na Saúde.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>E. Tirar a pesquisa <small>o protótipo nunca a teve</small></h2>
+  <div class="tel">
+    <div class="fila"><div class="todos on">Todos</div><div class="alvo"><div class="anel"><div class="bola g">M</div></div></div><div class="alvo"><div class="anel"><div class="bola b">L</div></div></div><div class="alvo"><div class="anel"><div class="bola c">T</div></div></div><div class="alvo"><div class="anel"><div class="bola r">M</div></div></div><div class="alvo"><div class="anel"><div class="bola v">R</div></div></div></div>
+    <div class="tit">Precisa de ação (7)</div>
+    <div class="linha"><span>Alergologia<small>Maximiliano-Afonso · Terça, 13/10</small></span><span class="chip">Ação</span></div>
+    <div class="linha"><span>Oftalmologia<small>Léo · Sexta, 25/09</small></span><span class="chip">Ação</span></div>
+    <div class="tit" style="margin-top:6px">Arquivo clínico (2)</div>
+  </div>
+  <dl>
+    <dt>Como</dt><dd>A caixa sai. Ficam o filtro por membro e as três secções (Precisa de ação, Arquivo clínico, Arquivadas). Numa casa com dez consultas por ano, a lista filtrada por pessoa tem duas ou três linhas — pesquisar é mais lento do que olhar.</dd>
+    <dt>A favor</dt><dd>É o desenho do protótipo, que é a fonte de verdade quando os dois discordam. A lista sobe 52 px; menos um controlo para manter.</dd>
+    <dt>Contra</dt><dd>Perde-se a pesquisa por texto nas notas e nas receitas — que hoje quase ninguém sabe que existe, porque a caixa diz «por especialidade».</dd>
+    <dt>Custo</dt><dd>Negativo: tira código.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>A minha recomendação <small>E agora, A se um dia fizer falta</small></h2>
+  <dl>
+    <dt>Porquê</dt><dd>A caixa está a resolver um problema que a casa não tem: com o filtro por membro, cada ficha mostra duas ou três consultas. O protótipo não a tem, e a regra é que ele ganha. Se com o arquivo a crescer (dezenas de consultas arquivadas) a pesquisa fizer falta, a lupa no título da secção «Arquivadas» (A) é onde ela pertence — no arquivo, não em cima da lista do dia.</dd>
+    <dt>Se preferir manter</dt><dd>B é a mais compacta das que a mantêm sempre à vista; C é a que mais ajuda quem não sabe o nome da especialidade.</dd>
+  </dl>
+  <p class="nota">Nota: a caixa de hoje já ficou mais leve (uma linha com lupa, sem borda, 13 px), mas continua a ocupar 44 px permanentes — é isso que nenhuma destas cinco faz.</p>
+</section>
+
+</div>
+</body>
+</html>

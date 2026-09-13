@@ -306,7 +306,18 @@ export default function Dinheiro({ t, user, onEquip }) {
                     </Text>
                     {/* «Reforçar» leva à folha de mover dinheiro — o passo
                         seguinte óbvio quando um envelope está no limite. */}
-                    <Pressable onPress={() => setSheet('mover')} accessibilityRole="button"
+                    {/* ⚠ Abria a folha sem escolher nada: «Reforçar o
+                        Transportes» aparecia com Imprevistos → Saúde. Agora o
+                        envelope apertado é o destino e a origem é o que tem
+                        mais livre (13/09/2026). `i` é o índice NA PÁGINA — o
+                        índice da lista inteira procura-se pelo nome. */}
+                    <Pressable onPress={() => {
+                        const para = envelopes.findIndex(x => x.name === e.name);
+                        let de = -1;
+                        envelopes.forEach((x, j) => { if (j !== para && (de < 0 || freeOf(j) > freeOf(de))) de = j; });
+                        setMv(m => ({ ...m, to: para, from: de < 0 ? para : de }));
+                        setSheet('mover');
+                      }} accessibilityRole="button"
                       accessibilityLabel={`Reforçar o envelope ${e.name}`}
                       style={{ minHeight: 44, justifyContent: 'center' }}>
                       <Text style={{ fontFamily: FONT.display, fontSize: 13, fontWeight: '700', color: t.actFg }}>
@@ -831,13 +842,19 @@ export default function Dinheiro({ t, user, onEquip }) {
               {envelopes.map((e) => (
                 <View key={e.name} style={{ gap: S.md }}>
                   <Label t={t}>{e.name}</Label>
+                  {/* ⚠ O campo mostrava o AJUSTE (0,00 € em todos) com o rótulo
+                      «Limites dos Envelopes», e o botão dizia «2 420,00 €
+                      distribuídos»: dois números que não batiam. O que se
+                      guarda continua a ser o ajuste ao limite; o que se VÊ é o
+                      limite que vai ficar (13/09/2026). E o máximo deixa de ser
+                      2 000 fixos — uma renda de 2 400 € não cabia. */}
                   <NumField t={t}
-                    value={openMonth.envelopes[e.name] || 0}
+                    value={e.limit + (openMonth.envelopes[e.name] || 0)}
                     step={10}
                     min={0}
-                    max={2000}
+                    max={Math.max(2000, Math.ceil(budget / 10) * 10 * 2)}
                     onChange={(v) => setOpenMonth(x => ({
-                      envelopes: { ...x.envelopes, [e.name]: v }
+                      envelopes: { ...x.envelopes, [e.name]: v - e.limit }
                     }))} />
                 </View>
               ))}

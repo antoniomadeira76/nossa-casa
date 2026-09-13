@@ -142,6 +142,43 @@ describe('⚠ a leitura da casa corre de ponta a ponta', () => {
     expect(api.retratosDaCasa()[0].nome).toMatch(/de 20\d\d$/);
   });
 
+  it('⚠ OUTRA casa no mesmo aparelho começa do zero — a cópia local da anterior não fica a mostrar-se', async () => {
+    // 13/09/2026: a administradora de uma casa vazia entrou num telemóvel onde
+    // antes entrara outra família, e viu o jantar, as tarefas e a garantia do
+    // frigorífico dessa família. A leitura só substituía o que vinha cheio.
+    const React = require('react');
+    const TestRenderer = require('react-test-renderer');
+    const { StoreProvider, useStore } = require('../src/store');
+    let api = null;
+    const Sonda = () => { api = useStore(); return null; };
+    await TestRenderer.act(async () => {
+      TestRenderer.create(React.createElement(StoreProvider, null, React.createElement(Sonda)));
+    });
+    await TestRenderer.act(async () => { await api.lerDoServidor(); });
+    expect(api.s.casaDoServidor).toBe('c1');
+    expect(api.allTasks().length).toBeGreaterThan(0);
+    expect(api.s.contratos.length).toBeGreaterThan(0);
+
+    // A Ana, de outra casa, sem nada: só a casa e ela própria.
+    const guardado = { ...mockCasa };
+    for (const k of Object.keys(mockCasa)) mockCasa[k] = [];
+    mockCasa.casas = [{ id: 'c2', nome: 'Vazia', valor_ponto: 0.1 }];
+    mockCasa.membros = [{ id: 'm9', nome: 'Ana', papel: 'admin', email: 'ana@x.pt', fem: true }];
+    try {
+      await TestRenderer.act(async () => { await api.lerDoServidor(); });
+      expect(api.s.casaDoServidor).toBe('c2');
+      expect(api.nomeDaCasa).toBe('Vazia');
+      expect(Object.keys(api.membros)).toEqual(['Ana']);
+      expect(api.allTasks()).toEqual([]);
+      expect(api.s.contratos).toEqual([]);
+      expect(api.s.added).toEqual([]);
+      expect(api.s.newEquip).toEqual([]);
+      expect(api.s.shopHistory).toEqual([]);
+    } finally {
+      for (const k of Object.keys(guardado)) mockCasa[k] = guardado[k];
+    }
+  });
+
   it('o `catch` do `lerDoServidor` já não engole o erro em silêncio', () => {
     const loja = ler('src/store.jsx');
     const i = loja.indexOf('const lerDoServidor = async');
