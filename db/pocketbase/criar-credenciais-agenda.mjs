@@ -32,12 +32,16 @@
 // `criar-colecoes.mjs` porque esse APAGA e recria a base toda, e isto tem de
 // poder ser acrescentado a um servidor que já está a andar.
 import PocketBase from 'pocketbase';
+import { SUPERUTILIZADOR, SUPER_PALAVRA, URL_DO_SERVIDOR } from './ambiente.mjs';
 
-const pb = new PocketBase(process.env.PB_URL || 'http://127.0.0.1:8095');
+// ⚠ As credenciais e o endereço vêm do `ambiente.mjs`, como no
+// `criar-colecoes.mjs` — do ambiente OU do `.env.local`. Este ficheiro lia só
+// o `process.env`, com uma palavra-passe de testes por omissão, e numa
+// consola sem as variáveis exportadas falhava com «Failed to authenticate»
+// (13/09/2026, ao criar a coleção num servidor de simulação).
+const pb = new PocketBase(URL_DO_SERVIDOR);
 pb.autoCancellation(false);
-await pb.collection('_superusers').authWithPassword(
-  process.env.PB_ADMIN || 'admin@nossacasa.local',
-  process.env.PB_ADMIN_PASS || 'casa-de-testes-123');
+await pb.collection('_superusers').authWithPassword(SUPERUTILIZADOR, SUPER_PALAVRA);
 
 const membros = await pb.collections.getOne('membros');
 

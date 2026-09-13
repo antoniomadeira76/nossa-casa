@@ -72,7 +72,6 @@ export const AREAS = [
       'Os corredores da loja são da casa — renomeiam-se, ordenam-se e apagam-se —, e o modo de loja anda por eles nessa ordem',
       'Cada artigo altera-se e arrasta-se para o lugar certo dentro do corredor',
       'Cada artigo marca-se como apanhado ou sem stock, e os dois telemóveis veem o mesmo',
-      'A ementa da semana: um prato por jantar, e os ingredientes que faltam entram na lista com um toque',
       'Fechar a conta regista a despesa e guarda a ida no histórico',
       'Os preços pagos ficam por artigo e por loja, para se saber onde é mais barato',
     ] },
@@ -113,7 +112,6 @@ export const AREAS = [
       'O PIN de entrada das crianças',
       'O rendimento mensal, os envelopes e os limites de cada um',
       'O valor do ponto, o dia de pagamento da semanada e se as despesas se dividem a meias',
-      'Se a casa planeia os jantares da semana — a ementa é opcional, e desligá-la não apaga nada',
       'As listas da casa: especialidades médicas, categorias de equipamento e lojas',
     ] },
 
@@ -157,6 +155,11 @@ export const REGISTO_APP = [
   { v: '1.12.1', d: '13/09/2026', k: 'novo', a: 'Início', t: 'A pesquisa da casa: a lupa no cabeçalho do Início abre um campo no próprio cabeçalho, e o que se encontra aparece à medida que se escreve, por área — tarefas, agenda, compras, dinheiro, equipamentos, saúde, pessoas, documentação — com a palavra a negrito e três sugestões para completar. Um toque leva ao sítio. Procura só no que já está neste telemóvel, sem acentos nem maiúsculas a contar. A criança tem a mesma lupa sobre o que ela vê' },
   { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'Dinheiro', t: 'Semanadas, bónus e despesas registadas pela app ficavam no ecrã e desapareciam na leitura seguinte: a fila de escritas era lida e regravada por duas escritas ao mesmo tempo — o movimento entrava, a linha do registo lia a fila antiga e gravava por cima. O movimento morria sem ser enviado e o registo ia duas vezes. A fila passou a atender uma escrita de cada vez, e há uma prova contra o servidor que faz as duas em simultâneo' },
   { v: '1.12.1', d: '13/09/2026', k: 'alterado', a: 'Equipamentos', t: 'Na ficha do equipamento, «Agendar Manutenção» e «Exportar Fatura» ficam lado a lado, como «Exportar» e «Marcar» na ficha de saúde. E «Exportar Fatura» passou a fazer o que diz: sai um PDF com a cara da app — o equipamento, a garantia, a compra e a fotografia da fatura. Era um botão sem ação' },
+  { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'Saúde', t: 'Um exame anexado no navegador subia ao servidor, mas ao recarregar a página o PDF da consulta dizia «um documento não pôde ser incluído»: a app continuava a usar a cópia local da fotografia, que o navegador já tinha deitado fora, em vez do ficheiro no servidor. Depois de subir, o documento passa a apontar para o servidor' },
+  { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'A App', t: 'Uma base de dados criada do zero nascia sem a coleção que guarda a autorização da agenda da Google: o ficheiro que a cria estava fora da cadeia de criação, e ligar a agenda num servidor novo falhava. Passou a fazer parte de «npm run db:colecoes», e lê as credenciais do mesmo sítio que os outros' },
+  { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'Equipamentos', t: 'A fotografia da fatura e a do equipamento passaram a subir ao servidor: escolhiam-se, a ficha dizia «Guardada», e ficavam só naquele telemóvel — e no navegador desapareciam ao recarregar a página. Agora ficam no aparelho primeiro, com «Só neste aparelho · por subir» à vista, sobem à parte como o documento do contrato, e chegam ao outro adulto' },
+  { v: '1.12.1', d: '13/09/2026', k: 'novo', a: 'A App', t: 'O logótipo da app em marca de água em todos os ecrãs — a mesma marca dos documentos em papel, centrada entre o cabeçalho e o rodapé, numa tinta só e quase transparente, atrás do conteúdo. Nos adultos e na app da criança' },
+  { v: '1.12.1', d: '13/09/2026', k: 'alterado', a: 'Compras', t: 'A ementa da semana saiu da app, por decisão do dono da casa: a secção das Compras, o interruptor na Gestão e o «Jantar de hoje» da criança. Poderá voltar numa versão futura — os pratos e os jantares que já estavam no servidor ficam guardados, e a pesquisa deixou de os mostrar' },
   { v: '1.12.1', d: '13/09/2026', k: 'corrigido', a: 'Saúde', t: 'No navegador, «Guardar como PDF» deixou de depender de uma janela nova: o bloqueador de janelas travava-a e a app dizia «O navegador bloqueou a janela de impressão». O documento imprime-se agora dentro da própria página, e o diálogo do navegador abre com o nome do ficheiro. Vale para a ficha de saúde, o retrato do mês e a fatura do equipamento' },
   // A casa SIMULADA de 13/09/2026 («testa a app toda, simula o que tiveres de
   // simular»): um servidor temporário, uma casa cheia e difícil, todos os ecrãs.

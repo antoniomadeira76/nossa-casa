@@ -49,6 +49,71 @@ describe('⚠ o documento da fatura', () => {
   });
 });
 
+// ⚠ 13/09/2026, os testes de importação e exportação na casa simulada: a
+// fotografia escolhia-se, a ficha dizia «Guardada», o servidor ficava com a
+// `fatura` vazia — e ao recarregar a página o `blob:` estava morto. As
+// fotografias nunca subiam; ficavam num telemóvel só.
+describe('⚠ a fotografia do equipamento sobe ao servidor, e diz onde está', () => {
+  const { useStore } = require('../src/store');
+  const montarLoja = () => {
+    let api = null;
+    const Sonda = () => { api = useStore(); return null; };
+    TestRenderer.act(() => { TestRenderer.create(React.createElement(StoreProvider, null, React.createElement(Sonda))); });
+    return () => api;
+  };
+
+  it('a leitura traz o URL assinado da fatura e da foto, e a escrita vai à parte, com ficheiro', () => {
+    const sync = semComentarios(ler('src/sync.js'));
+    expect(sync).toMatch(/fatura: servidor\.ler\.ficheiro\(e, 'fatura'\)/);
+    expect(sync).toMatch(/foto: servidor\.ler\.ficheiro\(e, 'foto'\)/);
+    expect(sync).toMatch(/export async function fotografiaDoEquipamento\(idNoServidor, campo/);
+    expect(sync).toMatch(/atualizarComFicheiro\('equipamentos', idNoServidor/);
+    // A nota que dizia «a app ainda não tem onde escolher a fotografia» saiu:
+    // era falsa desde a ficha do equipamento.
+    expect(ler('src/sync.js')).not.toMatch(/ficam por usar/);
+    expect(ler('src/store.jsx')).not.toMatch(/ficam por usar/);
+  });
+
+  it('a loja guarda a fotografia no aparelho PRIMEIRO, marcada «por subir», e a ficha di-lo', () => {
+    const loja = montarLoja();
+    const equip = loja().allEquip()[0];
+    expect(equip).toBeTruthy();
+    TestRenderer.act(() => { loja().editEquip(equip.id, { fatura: 'blob:fatura-local' }); });
+    const depois = loja().allEquip().find(e => e.id === equip.id);
+    expect(depois.fatura).toBe('blob:fatura-local');
+    expect(depois.faturaPorSubir).toBe(true);   // sem servidor nas provas, fica por subir
+    expect(depois.fotoPorSubir).toBeUndefined();
+
+    let r = null;
+    TestRenderer.act(() => {
+      r = TestRenderer.create(React.createElement(SafeAreaProvider,
+        { initialMetrics: { frame: { x: 0, y: 0, width: 412, height: 915 }, insets: { top: 47, left: 0, right: 0, bottom: 34 } } },
+        React.createElement(StoreProvider, null,
+          React.createElement(FichaEquipamento, { t: T, equip: { ...EQUIP, faturaPorSubir: true }, user: 'Rita', onClose: () => {} }))));
+    });
+    const textos = r.root.findAll(n => n.type === 'Text').map(n => [].concat(n.props.children).join(''));
+    expect(textos).toContain('Só neste aparelho · por subir');
+    // E a escrita das fotografias passa pelo `fotografiaDoEquipamento`, não
+    // pelo `alterarEquipamento` dos campos de texto.
+    const store = semComentarios(ler('src/store.jsx'));
+    expect(store).toMatch(/sync\.fotografiaDoEquipamento\(noServidor, c, \{ uri: campos\[c\]/);
+    expect(store).toMatch(/\[`\$\{c\}PorSubir`\]: false/);
+  });
+
+  // O mesmo defeito, no anexo de saúde: subia, mas o documento local ficava
+  // sem `idServidor` e com o `blob:` como fotografia — e o PDF, depois de
+  // recarregar, dizia «não pôde ser incluído» com a imagem intacta no servidor.
+  it('o anexo de saúde, depois de subir, aponta para o servidor: `idServidor` e o URL do ficheiro', () => {
+    const store = semComentarios(ler('src/store.jsx'));
+    const i = store.indexOf('sync.anexoDeSaude({');
+    const bloco = store.slice(i, store.indexOf('.catch(() => {});', i));
+    expect(bloco).toMatch(/\.then\(\(r\) => set\(/);
+    expect(bloco).toMatch(/idServidor: r\.id/);
+    expect(bloco).toMatch(/foto: sync\.urlDoFicheiro\(r, 'ficheiro'\)/);
+    expect(semComentarios(ler('src/sync.js'))).toMatch(/export const urlDoFicheiro = \(registo, campo\) => servidor\.ler\.ficheiro\(registo, campo\);/);
+  });
+});
+
 describe('⚠ a ficha: os dois botões lado a lado, e nenhum morto', () => {
   it('«Agendar Manutenção» e «Exportar Fatura» vivem na mesma fila; «Remover» fica sozinho por baixo', () => {
     let r = null;

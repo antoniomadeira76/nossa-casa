@@ -3,7 +3,7 @@ import { View, Text, Pressable, Modal } from 'react-native';
 
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { EUR, dayLabel, parseKey, WD, WD_SHORT, plural, dkey, semanaDeHoje, pad2 } from '../format';
+import { EUR, dayLabel, parseKey, WD, plural } from '../format';
 import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Tile, Avatar, avatarDe, Pill, Row } from '../ui';
 import PartilharLista from '../sheets/PartilharLista';
 import Icon, { Marca } from '../Icon';
@@ -12,8 +12,6 @@ import Confirm from '../Confirm';
 import ListaArrastavel, { ATRASO_PARA_PEGAR } from '../ListaArrastavel';
 import NovoArtigo from '../sheets/NovoArtigo';
 import GerirArtigo from '../sheets/GerirArtigo';
-import JantarDoDia from '../sheets/JantarDoDia';
-import NovoPrato from '../sheets/NovoPrato';
 
 // A lista partilhada. O modo de loja saiu daqui para ModoCompras.jsx: era um
 // <Modal>, que no react-native-web escapa à raiz da app e tapava o rodapé.
@@ -25,16 +23,10 @@ const diaDaSemana = (k) => {
 
 export default function Compras({ t, user, onModoCompras, onIda }) {
   const st = useStore();
-  const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas, removerArtigo, marcarArtigo, mudarPlanoDeCompras, seccoes, ementaNaCasa } = st;
+  const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas, removerArtigo, marcarArtigo, mudarPlanoDeCompras, seccoes } = st;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [aApagar, setAApagar] = useState(null);
   const [gerir, setGerir] = useState(null);   // id do artigo com a folha aberta
-  // A ementa: o dia cuja folha está aberta, e se a folha do prato novo está por cima.
-  const [jantar, setJantar] = useState(null);
-  const [novoPrato, setNovoPrato] = useState(false);
-  const [aApagarPrato, setAApagarPrato] = useState(null);
-  // Se a semana está aberta aos sete dias, ou só aos jantares marcados.
-  const [semanaToda, setSemanaToda] = useState(false);
 
   // ── Dois adultos na mesma loja ────────────────────────────────────────────
   //
@@ -204,106 +196,13 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
 
       {aPartilhar ? <PartilharLista t={t} user={user} onClose={() => setAPartilhar(false)} /> : null}
 
-      {/* A ementa da semana — sete jantares, um prato por dia. A linha do dia
-          abre a folha onde se escolhe o prato e se põe na lista o que falta.
-          (11/09/2026 — a terceira das dez funcionalidades.)
-
-          ⚠ E é OPCIONAL, desde 12/09/2026, de duas maneiras (A e C de
-          `design/ementa-opcional.dc.html`, escolhidas pelo dono da casa ao ver
-          sete linhas de «Sem jantar marcado»):
-            A — a casa desliga-a na Gestão (`ementaNaCasa`), e a secção sai.
-            C — ligada, mostra só os dias com jantar; sem nenhum, é UMA linha,
-                «Planear a semana», que abre os sete dias. Quem já os abriu
-                pode voltar a dobrá-los. */}
-      {ementaNaCasa ? (() => {
-        const semana = semanaDeHoje();
-        const dias = Array.from({ length: 7 }, (_, i) => {
-          const d = new Date(semana.seg); d.setDate(semana.seg.getDate() + i);
-          const k = dkey(d.getFullYear(), d.getMonth(), d.getDate());
-          return { d, i, k, prato: (s.pratos || []).find(p => p.id === (s.ementa || {})[k]) || null };
-        });
-        const comJantar = dias.filter(x => x.prato);
-        const visiveis = semanaToda ? dias : comJantar;
-        const intervalo = <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{semana.intervalo}</Text>;
-        return (
-          <View>
-            <SectionTitle t={t} right={intervalo}>Ementa da Semana</SectionTitle>
-            {comJantar.length === 0 && !semanaToda ? (
-              <Linha t={t} last>
-                <Pressable onPress={() => setSemanaToda(true)} accessibilityRole="button"
-                  accessibilityLabel="Planear a semana"
-                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12,
-                    minHeight: 44, opacity: pressed ? 0.7 : 1 })}>
-                  {/* Sem «esta semana»: com o «Planear» e a seta à direita, a
-                      frase inteira cortava em «esta sema…» nos 355 px — medido
-                      no navegador como António. A semana já está no título. */}
-                  <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15.5, color: t.text3 }}>
-                    Sem jantares marcados
-                  </Text>
-                  <Text style={{ fontFamily: FONT.display, fontSize: 13, fontWeight: '700', color: t.actFg }}>Planear</Text>
-                  <Icon name="caretRight" size={18} color={t.text3} />
-                </Pressable>
-              </Linha>
-            ) : (
-            <View style={{ paddingHorizontal: S.xs }}>
-              {visiveis.map(({ d, i, k, prato }, n) => (
-                <Linha key={k} t={t} last={n === visiveis.length - 1}>
-                  <Pressable onPress={() => setJantar(k)} accessibilityRole="button"
-                    accessibilityLabel={`Jantar de ${WD[i]}`}
-                    style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12,
-                      minHeight: 44, opacity: pressed ? 0.7 : 1 })}>
-                    <View style={{ width: 44, gap: 1 }}>
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text2 }}>{WD_SHORT[i]}</Text>
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>{`${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`}</Text>
-                    </View>
-                    <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15.5,
-                      color: prato ? t.text2 : t.text3 }}>{prato ? prato.nome : 'Sem jantar marcado'}</Text>
-                    <Icon name="caretRight" size={18} color={t.text3} />
-                  </Pressable>
-                </Linha>
-              ))}
-              {/* Dobrar ou abrir a semana. Texto de 12,5 px em `actFg` — o
-                  único tom do esquema que se lê como texto pequeno. */}
-              <Pressable onPress={() => setSemanaToda(v => !v)} accessibilityRole="button"
-                accessibilityLabel={semanaToda ? 'Mostrar só os jantares marcados' : 'Mostrar a semana toda'}
-                style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: S.sm }}>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, fontWeight: '600', color: t.actFg }}>
-                  {semanaToda ? 'mostrar só os jantares marcados' : 'mostrar a semana toda'}
-                </Text>
-              </Pressable>
-            </View>
-            )}
-          </View>
-        );
-      })() : null}
-
-      {jantar ? (() => {
-        const o = parseKey(jantar);
-        const titulo = o ? `${WD[(new Date(o.y, o.m, o.d).getDay() + 6) % 7]}, ${pad2(o.d)}/${pad2(o.m + 1)}` : '';
-        return (
-          <Sheet t={t} title={`Jantar de ${titulo}`} sub="Escolha o prato e ponha na lista o que falta"
-            onClose={() => setJantar(null)}>
-            <JantarDoDia t={t} user={user} dia={jantar} titulo="Prato"
-              onNovoPrato={() => setNovoPrato(true)}
-              onApagarPrato={(p) => setAApagarPrato(p)}
-              onClose={() => setJantar(null)} />
-            {novoPrato ? (
-              <Sheet t={t} title="Novo Prato" sub="O nome e os ingredientes" onClose={() => setNovoPrato(false)}>
-                <NovoPrato t={t} onClose={() => setNovoPrato(false)}
-                  onCriado={(id) => { st.marcarJantar(jantar, id); setNovoPrato(false); }} />
-              </Sheet>
-            ) : null}
-            {aApagarPrato ? (
-              <Confirm t={t} destructive icon="trash"
-                title={`Apagar «${aApagarPrato.nome}»?`}
-                message="O prato sai da casa e os dias que o tinham ficam sem jantar. Os artigos que já entraram na lista ficam."
-                confirmLabel="Apagar"
-                onConfirm={() => { st.apagarPrato(aApagarPrato.id); setAApagarPrato(null); }}
-                onCancel={() => setAApagarPrato(null)} />
-            ) : null}
-          </Sheet>
-        );
-      })() : null}
+      {/* ⚠ A ementa da semana VIVEU aqui (11–12/09/2026, a terceira das dez
+          funcionalidades: sete jantares, um prato por dia, «Pôr o que falta na
+          lista»). Em 13/09/2026 o dono da casa mandou tirá-la: «remove esta
+          funcionalidade, poderá ser implementada em futuras versões, mas não
+          agora». Saiu da INTERFACE — as coleções `pratos` e `ementa`, a loja e
+          o `sync` ficam, dormentes, para o dia em que voltar. O guarda é
+          `a-ementa-da-semana` («a ementa está fora da interface»). */}
 
       {/* Onde a lista sai mais barata.
           Só aparece quando há o que dizer: a comparação faz-se sobre os

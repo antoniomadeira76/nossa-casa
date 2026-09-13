@@ -1737,9 +1737,10 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // `equipamentos` existia no servidor desde o início e ninguém escrevia nela:
   // a garantia da máquina de lavar era conhecida de um telefone só.
   //
-  // ⚠ Os campos `fatura` e `foto` da coleção ficam por usar — a app ainda não
-  // tem onde escolher a fotografia de uma fatura. Quando tiver, tem de ir pelo
-  // `criarComFicheiro`, como o anexo de saúde: a fila serializa em JSON.
+  // As fotografias (`fatura`, `foto`) vão à parte, no `editEquip`, pelo
+  // `fotografiaDoEquipamento` — um `update` com ficheiro, como o documento do
+  // contrato: a fila serializa em JSON, e um ficheiro não é JSON.
+  const FOTOS_DO_EQUIPAMENTO = ['fatura', 'foto'];
   const criarEquipamento = ({ name, cat, bought, warrantyEnd, shop, price, maint, maintDate }) => {
     const nome = String(name || '').trim();
     if (!nome) return null;
@@ -1768,11 +1769,32 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     return id;
   };
 
+  // Um remendo local a UM campo do equipamento (as fotografias e o «por subir»).
+  const remendarEquip = (id, campos) => set(x => ({
+    equipEdits: { ...(x.equipEdits || {}), [id]: { ...((x.equipEdits || {})[id] || {}), ...campos } },
+  }));
+
   const editEquip = (id, campos) => {
-    set(x => ({
-      equipEdits: { ...(x.equipEdits || {}), [id]: { ...((x.equipEdits || {})[id] || {}), ...campos } },
-    }));
+    // ⚠ As fotografias (13/09/2026): ficam no aparelho PRIMEIRO, marcadas «por
+    // subir», e sobem à parte — a fila serializa em JSON e um ficheiro não é
+    // JSON. Quando o servidor responde, o `blob:`/`file://` local dá lugar ao
+    // URL dele, que é o único que serve ao outro telemóvel e sobrevive a
+    // recarregar a página. Escolhiam-se e nunca subiam: a fatura fotografada
+    // ficava num telemóvel só, e na web morria ao recarregar.
+    const fotos = FOTOS_DO_EQUIPAMENTO.filter(c => campos[c] !== undefined);
+    const porSubir = Object.fromEntries(fotos.map(c => [`${c}PorSubir`, !!campos[c]]));
+    remendarEquip(id, { ...campos, ...porSubir });
     const noServidor = equipNoServidor(id);
+    if (sync && noServidor) {
+      for (const c of fotos) {
+        if (!campos[c]) continue;
+        sync.fotografiaDoEquipamento(noServidor, c, { uri: campos[c], nome: `${c}.jpg`, mime: 'image/jpeg' })
+          .then((r) => { if (r && r.url) remendarEquip(id, { [c]: r.url, [`${c}PorSubir`]: false }); })
+          .catch(() => {});   // fica «por subir», e a ficha di-lo
+      }
+    }
+    const texto = Object.fromEntries(Object.entries(campos).filter(([k]) => !FOTOS_DO_EQUIPAMENTO.includes(k)));
+    if (!Object.keys(texto).length) return;
     if (sync && noServidor) sync.alterarEquipamento(noServidor, {
       ...(campos.name !== undefined ? { nome: campos.name } : {}),
       ...(campos.cat !== undefined ? { categoria: campos.cat } : {}),
@@ -4969,8 +4991,18 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
           nome: `${title.replace(/[^\w.-]+/g, '-').slice(0, 40)}.jpg`,
           mime: 'image/jpeg',
         })
-          .then(() => set(x => ({
-            healthDocs: (x.healthDocs || []).map(d => (d.id === id ? { ...d, porSubir: false } : d)),
+          // ⚠ Com o `id` do servidor E o URL dele (13/09/2026). Só se marcava
+          // `porSubir: false`: o documento local ficava sem `idServidor`, a
+          // leitura seguinte não o ligava ao anexo do servidor, e o `blob:` da
+          // fotografia — morto ao recarregar a página — continuava a ser a
+          // imagem dele. O PDF dizia «um documento não pôde ser incluído» com
+          // a fotografia no servidor, intacta.
+          .then((r) => set(x => ({
+            healthDocs: (x.healthDocs || []).map(d => (d.id === id ? {
+              ...d, porSubir: false,
+              ...(r && r.id ? { idServidor: r.id } : {}),
+              ...(r && sync.urlDoFicheiro && sync.urlDoFicheiro(r, 'ficheiro') ? { foto: sync.urlDoFicheiro(r, 'ficheiro') } : {}),
+            } : d)),
           })))
           .catch(() => {});   // fica `porSubir: true`, e o ecrã di-lo
       }

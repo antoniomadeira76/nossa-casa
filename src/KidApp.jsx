@@ -5,6 +5,7 @@ import { useStore } from './store';
 import { buildTheme, onChrome, S, R, FONT, SCHEMES, corDoMembro, chromeDaCrianca, elev, LARGURA_APP } from './theme';
 import { EUR, parseKey, pad2, plural, TODAY_KEY } from './format';
 import Icon from './Icon';
+import { MarcaDeAgua } from './ui';
 import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe, Linha, Choice, BotaoCompacto } from './ui';
 import Sheet from './Sheet';
 import EscolherAvatar from './sheets/EscolherAvatar';
@@ -462,25 +463,12 @@ function KidComprasView({ t, kid }) {
   const [aPedir, setAPedir] = useState(false);
   const visiveis = allItems().filter(i => i.vis !== 'adultos');
   const stateOf = (i) => s.status[i.id] || (i.real ? 'done' : 'open');
-  // O jantar de hoje, da ementa da casa — é o jantar da criança também.
-  // ⚠ Só se a casa tiver a ementa ligada (regra da casa, 12/09/2026): desligada,
-  // o cartão sai daqui como a secção sai das Compras.
-  const jantarDeHoje = useStore().ementaNaCasa
-    ? (s.pratos || []).find(p => p.id === (s.ementa || {})[TODAY_KEY]) || null
-    : null;
+  // (O cartão «Jantar de hoje», da ementa da casa, viveu aqui de 11 a 13/09/2026.
+  // A ementa saiu da interface por decisão do dono da casa — ver Compras.jsx.)
 
   return (
     <ScrollView style={{ flex: 1, minHeight: 0 }} contentContainerStyle={{ paddingBottom: S.xl }}>
       <View style={{ paddingHorizontal: 16, paddingTop: 16, gap: S.md }}>
-        {jantarDeHoje ? (
-          <Card t={t} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Icon name="storefront" size={22} color={t.titulo} />
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text3 }}>Jantar de hoje</Text>
-              <Text style={{ fontFamily: FONT.body, fontSize: 16, color: t.text1 }}>{jantarDeHoje.nome}</Text>
-            </View>
-          </Card>
-        ) : null}
         <Primary t={t} comum label="Pedir um artigo" onPress={() => setAPedir(true)} />
       </View>
 
@@ -782,15 +770,13 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
   const tasks = allTasks();
   const [perfil, setPerfil] = useState(false);
   // A pesquisa global da criança (13/09/2026): a mesma lupa dos adultos, sobre
-  // o que ELA vê — as tarefas dela, a lista sem preços, o cofre dela, o jantar.
+  // o que ELA vê — as tarefas dela, a lista sem preços, as pessoas.
   // Nada do dinheiro da casa: o índice constrói-se do que a app da criança já
   // mostra, e o servidor não lhe manda o resto (INVARIANTE #3).
   const [pesquisa, setPesquisa] = useState(null);
-  const pratos = s.ementaDesligada ? [] : (s.pratos || []);
   const indice = pesquisa === null ? [] : indexar({
     tarefas: tasks.filter(x => x.who === kid),
     artigos: st.allItems().filter(i => (i.vis || 'familia') !== 'adultos').map(i => ({ ...i, est: undefined })),
-    pratos,
     membros: st.membrosDaCasa.map(n => ({ nome: n, kid: !!(st.membros[n] || {}).kid })),
   });
   const irParaResultado = (destino) => {
@@ -899,6 +885,8 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
 
       {/* Conteúdo */}
       <View style={{ flex: 1, minHeight: 0 }}>
+        {/* A marca de água, como nos adultos: primeiro filho, absoluta, atrás. */}
+        <MarcaDeAgua t={t} />
         {pesquisa !== null ? (
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: S.xl }}>
             <Resultados t={t} termo={pesquisa} itens={indice}

@@ -13,6 +13,11 @@
  *      criança.
  *   C. Ligada, a secção mostra só os dias com jantar. Sem nenhum é UMA linha,
  *      «Planear a semana», que abre os sete dias; abertos, dobram-se.
+ *
+ * ⚠ 13/09/2026: a ementa SAIU da interface («remove esta funcionalidade, poderá
+ * ser implementada em futuras versões, mas não agora»). A regra A fica na loja
+ * e no servidor, dormente — é o que este ficheiro ainda prova. A parte C e os
+ * ecrãs estão, ao contrário, em `a-ementa-da-semana` («está FORA da interface»).
  */
 const fs = require('fs');
 const path = require('path');
@@ -92,53 +97,24 @@ describe('⚠ A. o interruptor é uma regra da casa', () => {
     expect(loja().ementaNaCasa).toBe(false);
   });
 
-  it('⚠ desligar não apaga nada: os pratos e os jantares ficam, e voltam ao ligar', () => {
-    const { loja, texto } = compras({ pratos: [FRANGO], ementa: { [TODAY_KEY]: 'prato-1' } });
-    expect(texto()).toContain('Ementa da Semana');
+  it('⚠ desligar não apaga nada: os pratos e os jantares ficam na loja', () => {
+    const { loja } = compras({ pratos: [FRANGO], ementa: { [TODAY_KEY]: 'prato-1' } });
     TestRenderer.act(() => { loja().mudarRegraDaCasa({ ementaDesligada: true }); });
-    expect(texto()).not.toContain('Ementa da Semana');
-    expect(texto()).not.toContain('Frango no forno');
+    expect(loja().s.ementaDesligada).toBe(true);
     expect(loja().s.pratos).toEqual([FRANGO]);
     expect(loja().s.ementa).toEqual({ [TODAY_KEY]: 'prato-1' });
     TestRenderer.act(() => { loja().mudarRegraDaCasa({ ementaDesligada: false }); });
-    expect(texto()).toContain('Frango no forno');
+    expect(loja().ementaNaCasa).toBe(true);
   });
 
-  it('a Gestão tem o interruptor, e a mudança passa pela loja', () => {
-    const { r, texto, loja } = montar(Gestao, { t: T, user: 'Rita', onClose: () => {} }, null);
-    expect(texto()).toContain('Ementa da semana');
-    expect(ler('src/screens/Gestao.jsx')).toMatch(/mudarRegraDaCasa\(\{ ementaDesligada/);
-    tocar(r, 'Ementa da semana');
-    expect(loja().s.ementaDesligada).toBe(true);
-    expect(texto()).toContain('A casa não planeia os jantares na app');
-  });
-
-  it('⚠ desligada, a criança deixa de ver o «Jantar de hoje»', () => {
-    const props = { kid: 'Léo', kidTab: 'compras', setKidTab: () => {}, onLogout: () => {} };
-    const com = montar(KidApp, props, { pratos: [FRANGO], ementa: { [TODAY_KEY]: 'prato-1' } });
-    expect(com.texto()).toContain('Jantar de hoje');
-    const sem = montar(KidApp, props, { pratos: [FRANGO], ementa: { [TODAY_KEY]: 'prato-1' }, ementaDesligada: true });
-    expect(sem.texto()).not.toContain('Jantar de hoje');
-  });
-});
-
-describe('⚠ C. ligada, a secção é leve', () => {
-  it('sem jantares é UMA linha — «Planear» abre os sete dias, e dobram-se outra vez', () => {
-    const { r, texto } = compras({ pratos: [FRANGO], ementa: {} });
-    expect(texto()).toContain('Sem jantares marcados');
-    expect(texto()).not.toContain('Sem jantar marcado');
-    for (const dia of WD) expect(hospedeiro(r, `Jantar de ${dia}`)).toBeFalsy();
-    tocar(r, 'Planear a semana');
-    for (const dia of WD) expect(hospedeiro(r, `Jantar de ${dia}`)).toBeTruthy();
-    tocar(r, 'Mostrar só os jantares marcados');
-    expect(texto()).toContain('Sem jantares marcados');
-  });
-
-  it('com jantares mostra só esses dias; os outros abrem-se a pedido', () => {
-    const { r, texto } = compras({ pratos: [FRANGO], ementa: { [TODAY_KEY]: 'prato-1' } });
-    expect(texto()).toContain('Frango no forno');
-    expect(r.root.findAll(n => typeof n.type === 'string' && /^Jantar de /.test(n.props.accessibilityLabel || '')).length).toBe(1);
-    tocar(r, 'Mostrar a semana toda');
-    expect(r.root.findAll(n => typeof n.type === 'string' && /^Jantar de /.test(n.props.accessibilityLabel || '')).length).toBe(7);
+  // ⚠ 13/09/2026: a ementa saiu da INTERFACE por decisão do dono da casa
+  // («poderá ser implementada em futuras versões, mas não agora»). O
+  // interruptor da Gestão saiu com ela — a regra fica na loja e no servidor,
+  // dormente. As provas dos ECRÃS (secção das Compras, «Planear a semana»,
+  // «Jantar de hoje») vivem agora, ao contrário, em `a-ementa-da-semana`.
+  it('a Gestão já não tem o interruptor, e a regra fica só na loja', () => {
+    const { texto } = montar(Gestao, { t: T, user: 'Rita', onClose: () => {} }, null);
+    expect(texto()).not.toContain('Ementa da semana');
+    expect(ler('src/screens/Gestao.jsx')).not.toMatch(/mudarRegraDaCasa\(\{ ementaDesligada/);
   });
 });

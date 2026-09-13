@@ -137,48 +137,51 @@ describe('⚠ a ementa: a loja', () => {
   });
 
   it('nenhum ecrã escreve pratos, ementa ou newItems por fora da loja', () => {
-    for (const f of ['src/screens/Compras.jsx', 'src/sheets/JantarDoDia.jsx', 'src/sheets/NovoPrato.jsx', 'src/KidApp.jsx']) {
+    for (const f of ['src/screens/Compras.jsx', 'src/KidApp.jsx']) {
       const txt = semComentarios(ler(f));
       expect(txt).not.toMatch(/\b(pratos|ementa|newItems):\s/);
     }
   });
 });
 
-describe('⚠ a ementa: os ecrãs', () => {
-  it('as Compras têm a secção: só os dias com jantar, e «mostrar a semana toda» abre os sete', () => {
-    // Desde 12/09/2026 (opção C de `design/ementa-opcional.dc.html`) a secção
-    // mostra só os dias marcados; a semana inteira abre-se a pedido.
-    const { r, texto } = compras({ pratos: [FRANGO], ementa: { [TODAY_KEY]: 'prato-1' } });
-    let tx = texto();
-    expect(tx).toContain('Ementa da Semana');
-    expect(tx).toContain('Frango no forno');
-    expect(tx).not.toContain('Sem jantar marcado');
-    tocar(r, 'Mostrar a semana toda');
-    tx = texto();
-    expect(tx).toContain('Sem jantar marcado');
-    for (const dia of WD) expect(hospedeiro(r, `Jantar de ${dia}`)).toBeTruthy();
-  });
+// ⚠ 13/09/2026, o dono da casa, ao ver «Sem jantares marcados · Planear» nas
+// Compras: «remove esta funcionalidade, poderá ser implementada em futuras
+// versões, mas não agora». A ementa saiu da INTERFACE — a secção das Compras,
+// as duas folhas, o interruptor da Gestão, o «Jantar de hoje» da criança e os
+// pratos na pesquisa. A loja, o `sync` e as coleções ficam, dormentes (as
+// provas de cima continuam a valer). Este bloco garante que ela não volta a
+// aparecer por descuido antes de ele a pedir de volta.
+describe('⚠ a ementa: está FORA da interface (13/09/2026)', () => {
+  const props = { kid: 'Léo', kidTab: 'compras', setKidTab: () => {}, onLogout: () => {} };
+  const comEmenta = { pratos: [FRANGO], ementa: { [TODAY_KEY]: 'prato-1' }, ementaDesligada: false };
 
-  it('a linha do dia abre a folha com os pratos, o que falta, e «Pôr o que falta na lista»', () => {
-    const { r, texto, loja } = compras({ pratos: [FRANGO], ementa: { [TODAY_KEY]: 'prato-1' } });
-    // O «hoje» dos testes é o do `format` (pode estar fixado), não o relógio.
-    const idx = (new Date(TODAY.y, TODAY.m, TODAY.d).getDay() + 6) % 7;
-    tocar(r, `Jantar de ${WD[idx]}`);
+  it('as Compras não têm a secção, mesmo com pratos e jantares na loja', () => {
+    const { r, texto } = compras(comEmenta);
     const tx = texto();
-    expect(tx).toContain('Sem jantar');
-    expect(tx).toContain('já na lista');
-    expect(tx).toContain('entra na lista');
-    expect(tx).toContain('Pôr o que falta na lista (1)');
-    tocar(r, 'Pôr o que falta na lista (1)');
-    expect(loja().allItems().some(i => i.label === 'Frango inteiro')).toBe(true);
-    expect(texto()).toContain('Já está tudo na lista');
+    expect(tx).not.toContain('Ementa da Semana');
+    expect(tx).not.toContain('Sem jantares marcados');
+    expect(tx).not.toContain('Frango no forno');
+    for (const dia of WD) expect(hospedeiro(r, `Jantar de ${dia}`)).toBeFalsy();
+    expect(hospedeiro(r, 'Planear a semana')).toBeFalsy();
   });
 
-  it('a criança vê o jantar de hoje na lista dela — e só se houver', () => {
-    const sem = montar(KidApp, { kid: 'Léo', kidTab: 'compras', setKidTab: () => {}, onLogout: () => {} }, { pratos: [FRANGO], ementa: {} });
-    expect(sem.texto()).not.toContain('Jantar de hoje');
-    const com = montar(KidApp, { kid: 'Léo', kidTab: 'compras', setKidTab: () => {}, onLogout: () => {} }, { pratos: [FRANGO], ementa: { [TODAY_KEY]: 'prato-1' } });
-    expect(com.texto()).toContain('Jantar de hoje');
-    expect(com.texto()).toContain('Frango no forno');
+  it('a criança não vê o «Jantar de hoje», mesmo com jantar marcado', () => {
+    const { texto } = montar(KidApp, props, comEmenta);
+    expect(texto()).not.toContain('Jantar de hoje');
+    expect(texto()).not.toContain('Frango no forno');
+  });
+
+  it('as folhas saíram, nenhum ecrã as importa, e a pesquisa não indexa pratos', () => {
+    expect(fs.existsSync(path.join(RAIZ, 'src/sheets/JantarDoDia.jsx'))).toBe(false);
+    expect(fs.existsSync(path.join(RAIZ, 'src/sheets/NovoPrato.jsx'))).toBe(false);
+    for (const f of ['src/screens/Compras.jsx', 'src/screens/Gestao.jsx', 'src/KidApp.jsx', 'App.jsx']) {
+      const txt = semComentarios(ler(f));
+      expect(txt).not.toMatch(/JantarDoDia|NovoPrato/);
+      expect(txt).not.toMatch(/\bpratos\b/);
+      expect(txt).not.toMatch(/ementaNaCasa|ementaDesligada/);
+    }
+    // A Documentação também não a promete: nenhuma linha «faz» das áreas fala
+    // dela (as entradas do registo, com `t: '…'`, contam a história e ficam).
+    expect(ler('src/registo-app.js')).not.toMatch(/^\s+'[^'\n]*ementa[^'\n]*',\s*$/im);
   });
 });

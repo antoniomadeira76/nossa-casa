@@ -167,8 +167,12 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
                     <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>{a.titulo}</Text>
-                    <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-                      {uri ? 'Guardada' : 'Por adicionar'}
+                    {/* «Só neste aparelho» enquanto não subiu ao servidor — a
+                        verdade sobre onde a fotografia está, como o «só aqui»
+                        do documento do contrato. */}
+                    <Text style={{ fontFamily: FONT.ui, fontSize: 12,
+                      color: uri && equip[`${a.campo}PorSubir`] ? t.state.warnTexto : t.text3 }}>
+                      {uri ? (equip[`${a.campo}PorSubir`] ? 'Só neste aparelho · por subir' : 'Guardada') : 'Por adicionar'}
                     </Text>
                   </View>
                   <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.actFg }}>

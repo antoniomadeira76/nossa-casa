@@ -803,6 +803,12 @@ export async function puxarCasa() {
     warrantyEnd: dmyDeISO(e.garantia_ate),
     maint: e.manutencao || '',
     maintDate: dmyDeISO(e.manutencao_ate),
+    // As fotografias, como o documento do contrato: o URL assinado pelo
+    // servidor, não construído aqui. Não vinham (13/09/2026): a fatura
+    // fotografada num telemóvel ficava só nele — e na web morria ao recarregar,
+    // porque um `blob:` não sobrevive à página.
+    fatura: servidor.ler.ficheiro(e, 'fatura'),
+    foto: servidor.ler.ficheiro(e, 'foto'),
   }));
 
   // ── Os contratos e as renovações ──────────────────────────────────────────
@@ -1477,10 +1483,12 @@ export async function preferenciasDoMembro({ membro, esquemaCor, aspeto, resumoA
 // O `daysLeft` das sementes NÃO sobe: é derivado da garantia e da data de hoje,
 // e guardá-lo era gravar um número que fica errado ao dia seguinte.
 //
-// ⚠ E os campos `fatura` e `foto` da coleção ficam por usar: a app ainda não
-// tem onde escolher a fotografia de uma fatura. Quando tiver, tem de ir pelo
-// `criarComFicheiro` como o anexo de saúde — a fila serializa em JSON, e um
-// ficheiro não é JSON.
+// ⚠ Os campos `fatura` e `foto` da coleção vão À PARTE, pelo
+// `fotografiaDoEquipamento` (um `update` com ficheiro, como o documento do
+// contrato): a fila serializa em JSON, e um ficheiro não é JSON. Esta nota
+// dizia que «a app ainda não tem onde escolher a fotografia» — e tinha, desde
+// a ficha do equipamento; as fotografias escolhiam-se e nunca subiam
+// (13/09/2026, os testes de importação e exportação).
 const isoDeDMY = (dmy) => {
   const k = chaveDeDMY(dmy);
   return k ? isoDeChave(k) : null;
@@ -1520,6 +1528,22 @@ export async function alterarEquipamento(idNoServidor, campos) {
 export async function apagarEquipamento(idNoServidor) {
   if (!ligado() || !idNoServidor) return { pendente: true };
   return servidor.pb.collection('equipamentos').delete(idNoServidor);
+}
+
+// O URL assinado de um ficheiro que o servidor acabou de guardar — para a loja
+// pôr no lugar do `blob:`/`file://` local depois de uma escrita com ficheiro.
+export const urlDoFicheiro = (registo, campo) => servidor.ler.ficheiro(registo, campo);
+
+// A fotografia de um equipamento — a fatura ou a chapa com o n.º de série. Ou
+// sobe ou rebenta; quem chama guarda a imagem no aparelho primeiro e marca-a
+// «por subir». Devolve o URL assinado do ficheiro no servidor, para a loja o
+// pôr no lugar do `blob:`/`file://` local, que não serve a mais ninguém.
+export async function fotografiaDoEquipamento(idNoServidor, campo, { uri, blob, nome, mime }) {
+  if (!idNoServidor) throw new Error('Uma fotografia sem equipamento não se grava.');
+  if (campo !== 'fatura' && campo !== 'foto') throw new Error(`O equipamento não tem a fotografia «${campo}».`);
+  const r = await servidor.escrever.atualizarComFicheiro('equipamentos', idNoServidor,
+    { campo, uri, blob, nome, tipo: mime });
+  return { id: r.id, url: servidor.ler.ficheiro(r, campo) };
 }
 
 // ── Os contratos e as renovações ─────────────────────────────────────────────

@@ -7,7 +7,7 @@ import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { StoreProvider, useStore } from './src/store';
 import { buildTheme, onChrome, chromeLine, S, R, FONT, elev, LARGURA_APP } from './src/theme';
 import Icon, { Marca } from './src/Icon';
-import { AvatarDeCabecalho, Tap } from './src/ui';
+import { AvatarDeCabecalho, Tap, MarcaDeAgua } from './src/ui';
 import { FEM, DE } from './src/data';
 import { EUR, dayLabel, TODAY, TODAY_KEY, atualizarHoje, semanaDeHoje, plural,
          chaveRelativa } from './src/format';
@@ -556,15 +556,14 @@ function Shell() {
     if (pesquisa === null || !user) return [];
     const nomes = Object.keys(MEMBERS);
     const comSaude = nomes.filter(m => canSeeHealth(m, user));
-    // Leituras da loja, e só leituras — os guardas «nenhum ecrã escreve
-    // contratos/pratos por fora da loja» procuram `contratos:` e `pratos:`.
-    const pratos = s.pratos || [];
+    // Leitura da loja, e só leitura — o guarda «nenhum ecrã escreve contratos
+    // por fora da loja» procura `contratos:`. (Os pratos da ementa não entram:
+    // a ementa saiu da interface em 13/09/2026.)
     const contratos = contratosDaCasa();
     return indexar({
       tarefas: allTasks(),
       eventos: allEvents().filter(e => podeVerEvento(e, user, MEMBERS)),
       artigos: allItems(),
-      pratos,
       contas: contasDoMes(),
       metas: s.metasDaCasa || [],
       equipamentos: allEquip(),
@@ -868,6 +867,9 @@ function Shell() {
           de ecrã inteiro. Antes as vistas eram um cartão centrado com véu por
           cima disto, e o cabeçalho ficava cortado a meio por trás. */}
       <View style={{ flex: 1, minHeight: 0 }}>
+        {/* A marca de água — PRIMEIRO filho, absoluta, atrás do scroll e das
+            vistas de ecrã inteiro; não conta para a coluna flex. */}
+        <MarcaDeAgua t={t} />
         {/* ⚠ Uma vista com `coluna` é dona do seu scroll: desenha-se AQUI, em
             vez do ScrollView, e é ela que decide o que fica fixo e o que rola.
             É o Modo Compras, com os corredores parados por cima da lista. As

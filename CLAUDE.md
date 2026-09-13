@@ -46,7 +46,7 @@ não estão escritas e esperadas — estão **provadas a correr**:
 npm run db:servir     # o servidor. Sem ele a app corre local, e o ecrã de
                       # entrada diz que o servidor não responde — não que a
                       # Google esteja mal configurada. Já enganou duas vezes.
-npm run db:provar     # as regras, coleção a coleção — 32 ficheiros, 564 provas (13/09/2026)
+npm run db:provar     # as regras, coleção a coleção — 32 ficheiros, 565 provas (13/09/2026)
 npm run aceitacao     # as HISTÓRIAS, de ponta a ponta pela camada da app — 10 histórias,
                       # 70 passos «Dado / Quando / Então», em db/pocketbase/aceitacao/
 ```

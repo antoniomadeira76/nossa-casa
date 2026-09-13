@@ -2,8 +2,29 @@ import React from 'react';
 import { View, Text, TextInput, Pressable, Image, Platform } from 'react-native';
 import { S, R, elev, FONT, corDoMembro, comAlfa, corSobre } from './theme';
 import { EUR } from './format';
-import Icon from './Icon';
+import Icon, { Marca } from './Icon';
 import Figura from './Avatares';
+
+// ── A marca de água ──────────────────────────────────────────────────────────
+//
+// 13/09/2026, o dono da casa: «põe o logo da app como marca de água em todos
+// os ecrãs». A mesma marca dos documentos em papel (`documento.js`, 7 %),
+// centrada na ÁREA DE CONTEÚDO — entre o cabeçalho e o rodapé —, numa tinta só
+// (`t.text1`, que muda com o aspeto), e a uma opacidade que não disputa com o
+// texto. É fundo: `pointerEvents="none"` para não apanhar toque nenhum, e
+// posição absoluta para não mexer na coluna flex do INVARIANTE #1 — vive como
+// PRIMEIRO filho da área de conteúdo, atrás do scroll, e o rodapé continua o
+// último filho da raiz. Os cartões (superfície opaca) tapam-na; a página não.
+export const OPACIDADE_DA_MARCA = 0.06;
+export function MarcaDeAgua({ t, tamanho = 260 }) {
+  return (
+    <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+      style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
+        alignItems: 'center', justifyContent: 'center' }}>
+      <Marca size={tamanho} cor={t.text1} opacity={OPACIDADE_DA_MARCA} />
+    </View>
+  );
+}
 import { visibilidadeDe } from './store';
 
 // ── Campo de valor: escreve-se, e os −/+ ajustam ─────────────────────────────

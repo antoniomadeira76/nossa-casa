@@ -104,6 +104,24 @@ describe('⚠ 1. e 2. a base do zero e a lista de apagamento', () => {
     expect(criadas.filter(c => !nossas.includes(c))).toEqual([]);
   });
 
+  // ⚠ 13/09/2026, os testes de importação e exportação: as provas da agenda da
+  // Google rebentavam num servidor de simulação com «Missing or invalid
+  // collection context» — a `credenciais_agenda` nasce num ficheiro PRÓPRIO
+  // (o `criar-colecoes` só a preserva), e esse ficheiro não estava em cadeia
+  // nenhuma: uma base do zero ficava sem ela, e ligar a agenda falhava. E lia
+  // as credenciais só do `process.env`, ao contrário dos irmãos.
+  it('⚠ a `credenciais_agenda` nasce com a base do zero — o `db:colecoes` corre o ficheiro dela, e ele lê o ambiente como os outros', () => {
+    const scripts = JSON.parse(ler('package.json')).scripts;
+    expect(scripts['db:colecoes']).toMatch(/criar-colecoes\.mjs && node db\/pocketbase\/criar-credenciais-agenda\.mjs/);
+    const cred = ler('db/pocketbase/criar-credenciais-agenda.mjs');
+    expect(cred).toMatch(/import \{ SUPERUTILIZADOR, SUPER_PALAVRA, URL_DO_SERVIDOR \} from '\.\/ambiente\.mjs'/);
+    expect(cred).not.toMatch(/process\.env\.PB_ADMIN/);
+    expect(cred).toMatch(/authWithPassword\(SUPERUTILIZADOR, SUPER_PALAVRA\)/);
+    // E o criar-colecoes continua a PRESERVÁ-LA em vez de a apagar — é a
+    // autorização de longa duração de uma conta Google, não se recria.
+    expect(cria).toMatch(/\['membros', 'casas', 'credenciais_agenda', \.\.\.comDados\]/);
+  });
+
   it('a regra de criar `meta_movimentos` é a mesma nos dois sítios', () => {
     expect(cria).toMatch(/createRule: `\$\{DA_CASA\} && \$\{ADMIN\} && meta\.casa = @request\.auth\.casa && \$\{daCasaTambem\('por'\)\}`/);
     const campos = ler('db/pocketbase/acrescentar-campos.mjs');

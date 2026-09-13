@@ -123,13 +123,16 @@ export function GoogleG({ size = 22, style }) {
 
 // A marca: telhado branco e quatro pontos, um por membro.
 // Sem acento de palete — o esquema é por membro e o ícone é um só.
-export function Marca({ size = 46, mono = false, opacity = 1, style }) {
-  const dots = mono
+// `cor`: a marca numa tinta só — telhado e bolas — para a marca de água sobre a
+// página, onde o branco do telhado não se via (13/09/2026). O mesmo que o
+// `logotipo({ cor })` do documento.js faz no papel.
+export function Marca({ size = 46, mono = false, cor = null, opacity = 1, style }) {
+  const dots = cor ? [cor, cor, cor, cor] : mono
     ? ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF']
     : ['#8B4EE0', '#13ADB3', '#4A8FE0', '#E8EDF5'];
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" opacity={opacity} style={style}>
-      <Path d="M3.6 10.9L12 4.1l8.4 6.8" stroke="#FFFFFF" strokeWidth={1.9}
+      <Path d="M3.6 10.9L12 4.1l8.4 6.8" stroke={cor || '#FFFFFF'} strokeWidth={1.9}
         strokeLinecap="round" strokeLinejoin="round" fill="none" />
       <Circle cx="9.1" cy="14.9" r="1.62" fill={dots[0]} />
       <Circle cx="14.9" cy="14.9" r="1.62" fill={dots[1]} />

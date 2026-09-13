@@ -161,8 +161,6 @@ const ECRAS = [
   ['Novo Artigo',        '../src/sheets/NovoArtigo', {}],
   ['Novo Evento',        '../src/sheets/NovoEvento', {}],
   ['Nova Meta',          '../src/sheets/NovaMeta', {}],
-  ['Jantar do Dia',      '../src/sheets/JantarDoDia', { dia: 'd2026-08-20', titulo: 'Prato', onNovoPrato: () => {}, onApagarPrato: () => {} }],
-  ['Novo Prato',         '../src/sheets/NovoPrato', { onCriado: () => {} }],
   ['Importar da Google', '../src/sheets/ImportarGoogle', {}],
   ['Modo criança',       '../src/KidApp', { kid: 'Léo', kidTab: 'tarefas' }],
 ];

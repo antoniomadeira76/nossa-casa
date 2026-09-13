@@ -247,6 +247,14 @@
         o «Jantar de hoje» da criança.
       - C: ligada, só os dias com jantar; sem nenhum, uma linha «Planear a semana» que
         abre os sete. Guarda: `__tests__/a-ementa-e-opcional.test.js`.
+      - ⚠ **13/09/2026 — a ementa saiu da interface.** O dono da casa, ao ver «Sem jantares
+        marcados · Planear»: «remove esta funcionalidade, poderá ser implementada em futuras
+        versões, mas não agora». Saíram a secção das Compras, as folhas `JantarDoDia` e
+        `NovoPrato`, o interruptor da Gestão, o «Jantar de hoje» da criança e os pratos na
+        pesquisa. Ficam, dormentes: as coleções `pratos`/`ementa`, `casas.ementa_desligada`,
+        a loja (`criarPrato`, `marcarJantar`, `oQueFalta`…) e o `sync`. Para voltar: repor os
+        ecrãs a partir do commit anterior a esta data. Guarda: `a-ementa-da-semana` («está
+        FORA da interface»).
 
 ## 7. AGENDA & EVENTOS
 - [x] Agendar — campo de texto + popup (calendário em cima, roller hora/minuto em baixo)

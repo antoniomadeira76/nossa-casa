@@ -96,6 +96,27 @@ await prova('o saldo é a soma das vistas, não um campo', async () => {
   igual(doLeo.saldo, 3.5, 'os três bónus não somaram');
 });
 
+// A fotografia de um equipamento sobe pelo `update` com ficheiro, e a leitura
+// devolve um URL que se abre. Até 13/09/2026 a app escolhia a fotografia e
+// nunca a subia — a `fatura` no servidor ficava vazia, e o `blob:` local
+// morria ao recarregar a página.
+await prova('⚠ a fatura de um equipamento sobe como ficheiro, e lê-se de volta por URL', async () => {
+  const eq = await admin.collection('equipamentos').create({ casa: casa.id, nome: 'Frigorífico da prova', preco: 899 });
+  igual(eq.fatura, '', 'nasce sem fatura');
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+  const r = await escrever.atualizarComFicheiro('equipamentos', eq.id,
+    { campo: 'fatura', blob: new Blob([png], { type: 'image/png' }), nome: 'fatura.png', tipo: 'image/png' });
+  igual(!!r.fatura, true, 'o servidor não guardou o ficheiro');
+  const url = ler.ficheiro(r, 'fatura');
+  igual(/\/api\/files\//.test(String(url)), true, `o URL não é do servidor: ${url}`);
+  const resposta = await fetch(url);
+  igual(resposta.status, 200, `o ficheiro não se abre: ${resposta.status}`);
+  igual((await resposta.arrayBuffer()).byteLength, png.length, 'os bytes não são os mesmos');
+  // E a lista traz a fatura preenchida — é daí que a app lê o URL.
+  const lido = (await ler.colecao('equipamentos')).find(x => x.id === eq.id);
+  igual(!!(lido && lido.fatura), true, 'a leitura não traz a fatura');
+});
+
 console.log('\n── a criança, pelo mesmo cliente ──');
 await prova('entra pelo login com o PIN', async () => {
   auth.sair();
