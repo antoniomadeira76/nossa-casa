@@ -70,7 +70,7 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
   const Acao = ({ label, icone, onPress, preenchido, perigo, desativado, porque, meio }) => {
     // ⚠ Dois tons, não um. O contorno e o ícone são objetos gráficos (3:1) e
     // levam a cor-base do estado ou o `titulo`; o RÓTULO é texto de 15 px e
-    // leva o `xTexto` ou o `actFg` — «Remover Equipamento» a #FF4D4F sobre a
+    // leva o `xTexto` ou o `actFg` — «Remover equipamento» a #FF4D4F sobre a
     // folha dava 3,27, e o acento como texto dava 2,50 no escuro.
     const tomGrafico = perigo ? t.state.err : t.titulo;
     const tomTexto = perigo ? t.state.errTexto : t.actFg;
@@ -90,7 +90,7 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
             opacity: pressed ? 0.85 : 1,
           })}>
           <Icon name={icone} size={20} color={desativado ? t.text3 : tomGrafico} />
-          {/* Duas linhas no máximo: lado a lado, «Agendar Manutenção» a 15 px
+          {/* Duas linhas no máximo: lado a lado, «Agendar manutenção» a 15 px
               não cabe em 170 e partia para fora do botão. */}
           <Text numberOfLines={2} style={{ fontFamily: FONT.display, fontSize: meio ? 14 : 15, fontWeight: '700',
             textAlign: 'center', flexShrink: 1, color: desativado ? t.text3 : tomTexto }}>{label}</Text>
@@ -113,9 +113,9 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
                 dono da casa (13/09/2026): «botões lado a lado (agendar e
                 exportar) em todos os ecrãs que tiverem estes dois». */}
             <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'flex-start' }}>
-              <Acao meio preenchido label="Agendar Manutenção" icone="calendar"
+              <Acao meio preenchido label="Agendar manutenção" icone="calendar"
                 onPress={() => setManut({ maint: equip.maint || '', maintDate: equip.maintDate || '' })} />
-              <Acao meio label={exportacao === 'a preparar' ? 'A preparar…' : 'Exportar Fatura'} icone="printer"
+              <Acao meio label={exportacao === 'a preparar' ? 'A preparar…' : 'Exportar fatura'} icone="printer"
                 desativado={!equip.fatura || exportacao === 'a preparar'}
                 porque={!equip.fatura ? 'Ainda não há fatura para exportar.' : null}
                 onPress={exportarFatura} />
@@ -124,7 +124,7 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
               <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 18, textAlign: 'center',
                 color: /^PDF pronto/.test(exportacao) ? t.state.okTexto : t.state.errTexto }}>{exportacao}</Text>
             ) : null}
-            <Acao perigo label="Remover Equipamento" icone="trash" onPress={() => setRemover(true)} />
+            <Acao perigo label="Remover equipamento" icone="trash" onPress={() => setRemover(true)} />
           </View>
         }>
 
@@ -192,7 +192,7 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
             <View key={k} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48,
               borderBottomWidth: i === arr.length - 1 ? 0 : 1, borderBottomColor: t.divider }}>
               <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13, color: t.text3 }}>{k}</Text>
-              <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 13.5, fontWeight: '600', color: t.text2 }}>{v}</Text>
+              <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>{v}</Text>
             </View>
           ))}
         </View>
@@ -215,7 +215,7 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
 
       {/* Agendar manutenção */}
       {manut ? (
-        <Sheet t={t} title="Agendar Manutenção" sub={equip.name} onClose={() => setManut(null)}
+        <Sheet t={t} title="Agendar manutenção" sub={equip.name} onClose={() => setManut(null)}
           action={<Primary t={t} comum label="Guardar" disabled={!manut.maint.trim()}
             onPress={() => { editEquip(equip.id, manut); setManut(null); }} />}>
           <View style={{ gap: S.sm }}>

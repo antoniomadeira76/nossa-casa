@@ -195,7 +195,7 @@ await tocar(page, 'Terminar sessão');
 await espera(400);
 await tocar(page, 'Terminar sessão');          // confirmar, se houver diálogo
 await espera(700);
-await passo(page, '26-entrar-crianca', ['Entrar como Criança']);
+await passo(page, '26-entrar-crianca', ['Entrar como criança']);
 await passo(page, '27-pin-crianca',    ['Léo']);
 for (const d of ['1', '3', '5', '7']) await tocar(page, d, true);
 await espera(900);

@@ -823,9 +823,9 @@ describe('Ficha do equipamento — alinhada com 12-ficha-equipamento.png', () =>
   });
 
   test('tem as três ações, com os ícones que a referência usa', () => {
-    for (const [rotulo, icone] of [['Agendar Manutenção', 'calendar'],
-                                   ['Exportar Fatura', 'printer'],
-                                   ['Remover Equipamento', 'trash']]) {
+    for (const [rotulo, icone] of [['Agendar manutenção', 'calendar'],
+                                   ['Exportar fatura', 'printer'],
+                                   ['Remover equipamento', 'trash']]) {
       expect(ficha).toContain(rotulo);
       expect(ficha).toContain(`"${icone}"`);
     }

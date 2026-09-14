@@ -353,6 +353,14 @@ export const LARGURA_APP = 460;
 // Escala de espaçamento: cinco valores, mais nada
 export const S = { xs: 2, sm: 4, md: 8, lg: 16, xl: 24, empty: 48 };
 
+// A escala de letra — os tamanhos que a app usa, e mais nenhum (revisão de
+// coerência de 14/09/2026). Havia 24 tamanhos distintos, com meios pontos
+// usados uma ou duas vezes (10,5, 13,5, 15,5) e vizinhos a competir (19 e 20,
+// 21 e 22, 32 e 38). Os meios pontos que FICAM (11,5 · 12,5 · 14,5) são do
+// protótipo e aparecem dezenas de vezes. O guarda `a-coerencia-do-desenho`
+// recusa um `fontSize` fora desta lista.
+export const LETRA = [11, 11.5, 12, 12.5, 13, 14, 14.5, 15, 16, 17, 18, 20, 22, 24, 26, 28, 32];
+
 // Cantos.
 //
 // ⚠ `row` é o canto de TUDO O QUE SE TOCA — botões, pastilhas de escolha,

@@ -239,7 +239,7 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
         <View>
           <SectionTitle t={t}>Apagar Dados</SectionTitle>
           <Card t={t} style={{ gap: S.lg }}>
-            <Text style={{ fontFamily: FONT.body, fontSize: 13.5, lineHeight: 21, color: t.text2 }}>
+            <Text style={{ fontFamily: FONT.body, fontSize: 13, lineHeight: 21, color: t.text2 }}>
               As duas acções não se desfazem, e nenhuma acontece ao toque:{' '}
               {nAdmins > 1
                 ? `pedem a confirmação dos ${nAdmins} administradores desta casa.`
@@ -266,7 +266,7 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
                 style={{ flex: 1, minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.state.err,
                   flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 <Icon name="refresh" size={18} color={t.state.errTexto} />
-                <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 13.5, fontWeight: '500', color: t.state.errTexto }}>
+                <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 13, fontWeight: '500', color: t.state.errTexto }}>
                   Repor Demonstração
                 </Text>
               </Pressable>
@@ -275,7 +275,7 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
                 style={{ flex: 1, minHeight: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.state.err,
                   flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 <Icon name="trash" size={18} color={t.state.errTexto} />
-                <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 13.5, fontWeight: '500', color: t.state.errTexto }}>
+                <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 13, fontWeight: '500', color: t.state.errTexto }}>
                   Começar de Zero
                 </Text>
               </Pressable>

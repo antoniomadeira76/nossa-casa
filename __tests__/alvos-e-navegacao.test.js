@@ -187,7 +187,9 @@ describe('o cabeçalho é o mesmo em todos os ecrãs', () => {
     // vertical onde acaba o botão «Tarefas» do Início.
     const i = app.search(/<Marca [^/]*opacity=/);
     const bloco = app.slice(i, i + 220);
-    expect(bloco).toMatch(/right: 16/);
+    // À esquerda do avatar (40 a `right: 16`, mais 12), e não por trás dele
+    // (revisão de coerência de 14/09/2026).
+    expect(bloco).toMatch(/right: 68/);
     expect(bloco).not.toMatch(/right: -/);
   });
 

@@ -218,7 +218,7 @@ describe('a interface', () => {
 // `allItems` desde sempre, e nada o escrevia. Um artigo posto por engano ficava
 // na lista até alguém fechar a conta com ele dentro.
 //
-// (Os EQUIPAMENTOS já tinham — «Remover Equipamento» na ficha, com confirmação
+// (Os EQUIPAMENTOS já tinham — «Remover equipamento» na ficha, com confirmação
 // e ligado ao `removeEquip`. Não precisaram de nada.)
 
 describe('apagar um artigo de compras', () => {
@@ -324,8 +324,8 @@ describe('os equipamentos já tinham — e continuam a ter', () => {
   const ficha = fs.readFileSync(
     path.join(__dirname, '..', 'src', 'sheets', 'FichaEquipamento.jsx'), 'utf8');
 
-  it('há um «Remover Equipamento», com confirmação', () => {
-    expect(ficha).toMatch(/label="Remover Equipamento"/);
+  it('há um «Remover equipamento», com confirmação', () => {
+    expect(ficha).toMatch(/label="Remover equipamento"/);
     expect(ficha).toMatch(/<Confirm/);
     expect(ficha).toMatch(/removeEquip\(equip\.id\)/);
   });

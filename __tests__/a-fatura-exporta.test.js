@@ -3,7 +3,7 @@
  *
  * 13/09/2026, o dono da casa: «botões lado a lado (agendar e exportar) em
  * todos os ecrãs que tiverem estes dois». Era a única ficha com os dois em
- * coluna — e o «Exportar Fatura» tinha `onPress={() => {}}`: prometia e não
+ * coluna — e o «Exportar fatura» tinha `onPress={() => {}}`: prometia e não
  * fazia. Agora sai um PDF pelo molde da app, com a fotografia da fatura.
  */
 const fs = require('fs');
@@ -115,7 +115,7 @@ describe('⚠ a fotografia do equipamento sobe ao servidor, e diz onde está', (
 });
 
 describe('⚠ a ficha: os dois botões lado a lado, e nenhum morto', () => {
-  it('«Agendar Manutenção» e «Exportar Fatura» vivem na mesma fila; «Remover» fica sozinho por baixo', () => {
+  it('«Agendar manutenção» e «Exportar fatura» vivem na mesma fila; «Remover» fica sozinho por baixo', () => {
     let r = null;
     TestRenderer.act(() => {
       r = TestRenderer.create(React.createElement(SafeAreaProvider,
@@ -124,8 +124,8 @@ describe('⚠ a ficha: os dois botões lado a lado, e nenhum morto', () => {
           React.createElement(FichaEquipamento, { t: T, equip: EQUIP, user: 'Rita', onClose: () => {} }))));
     });
     const botao = (label) => r.root.findAll(n => typeof n.type === 'string' && n.props && n.props.accessibilityLabel === label)[0];
-    const agendar = botao('Agendar Manutenção');
-    const exportar = botao('Exportar Fatura');
+    const agendar = botao('Agendar manutenção');
+    const exportar = botao('Exportar fatura');
     expect(agendar).toBeTruthy();
     expect(exportar).toBeTruthy();
     // Há um View em linha (`flexDirection: 'row'`) que contém os DOIS e não
@@ -134,10 +134,10 @@ describe('⚠ a ficha: os dois botões lado a lado, e nenhum morto', () => {
       .map(n => n.props.accessibilityLabel);
     const filas = r.root.findAll(n => n.type === 'View' && n.props && n.props.style
       && [].concat(n.props.style).filter(s => s && typeof s === 'object').some(s => s.flexDirection === 'row'));
-    const fila = filas.find(f => { const d = rotulosDentro(f); return d.includes('Agendar Manutenção') && d.includes('Exportar Fatura'); });
+    const fila = filas.find(f => { const d = rotulosDentro(f); return d.includes('Agendar manutenção') && d.includes('Exportar fatura'); });
     expect(fila).toBeTruthy();
-    expect(rotulosDentro(fila)).not.toContain('Remover Equipamento');
-    // Com fatura, «Exportar Fatura» está ativo.
+    expect(rotulosDentro(fila)).not.toContain('Remover equipamento');
+    // Com fatura, «Exportar fatura» está ativo.
     expect(exportar.props.accessibilityState.disabled).toBe(false);
   });
   // 13/09/2026: ao exportar, o dono da casa viu «O navegador bloqueou a janela

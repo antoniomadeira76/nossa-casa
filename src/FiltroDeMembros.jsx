@@ -52,7 +52,7 @@ export default function FiltroDeMembros({ t, membros, escolhido, onEscolher, rot
                 <Avatar {...avatarDe(n, MEMBERS[n], t.text3)} size={32} />
               </View>
             </View>
-            <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 10, lineHeight: 12, marginTop: -2,
+            <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11, lineHeight: 12, marginTop: -2,
               maxWidth: 52, color: on ? t.actFg : t.text3, fontWeight: on ? '600' : '400' }}>{n}</Text>
           </Pressable>
         );

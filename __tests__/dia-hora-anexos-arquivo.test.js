@@ -72,7 +72,7 @@ const consultaAberta = (membro) => {
   tocar(r, 'Escolher a especialidade');
   tocar(r, 'Dentista');
   TestRenderer.act(() => { campoData(r).props.onChange('d2026-09-20'); });
-  tocar(r, 'Marcar e Pôr na Agenda');
+  tocar(r, 'Marcar e pôr na agenda');
   const linha = r.root.findAll(x => x.props && typeof x.props.onPress === 'function'
     && new RegExp('^Dentista, ' + quem).test(x.props.accessibilityLabel || ''))[0];
   expect(linha).toBeTruthy();
@@ -175,7 +175,7 @@ describe('⚠ 5. dia e hora são UM controlo', () => {
 describe('⚠ 7. anexar um documento a uma consulta', () => {
   const abrirAnexo = () => {
     const { r, loja } = consultaAberta();
-    tocar(r, 'Anexar Exame ou Receita');
+    tocar(r, 'anexar exame ou receita');
     return { r, loja };
   };
 

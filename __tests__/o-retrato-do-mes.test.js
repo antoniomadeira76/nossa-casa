@@ -226,7 +226,7 @@ describe('⚠ o retrato do mês: os ecrãs', () => {
   it('fechar o mês abre o retrato do mês que fechou', () => {
     const { r, texto, loja } = montar(Dinheiro, { t: T, user: 'Rita', onEquip: nada }, null);
     tocar(r, `Fechar ${loja().s.monthName}`);
-    tocar(r, 'Confirmar Encerramento');
+    tocar(r, 'Confirmar encerramento');
     expect(texto()).toContain('Retrato de Agosto de 2026');
     expect(texto()).toContain('Mês fechado a 20/08/2026');
   });

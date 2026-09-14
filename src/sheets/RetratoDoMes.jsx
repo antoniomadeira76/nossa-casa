@@ -41,7 +41,7 @@ export default function RetratoDoMes({ t, retrato, user, onClose }) {
 
   if (!r) {
     return (
-      <Sheet t={t} title="Retrato do mês" onClose={onClose}>
+      <Sheet t={t} title="Retrato do mês" sub="Como correu o mês, em euros" onClose={onClose}>
         <Empty t={t} icon="fileText" title="Ainda não há um mês para retratar" hint="Abra um mês no Dinheiro." />
       </Sheet>
     );

@@ -222,7 +222,7 @@ describe('⚠ e nenhum ecrã volta a pintar texto pequeno com o acento ou com um
     // O varrimento no escuro de 09/09/2026 apanhou a mesma forma quatro vezes:
     // um botão ou uma linha pintados com `state.infoBg`/`warnBg` — tijolos
     // opacos e CLAROS nos dois aspetos — com `actFg`, `text1` ou `text3` por
-    // cima, que no escuro são claros: «Agendar Manutenção» a 2,23, «Pagar
+    // cima, que no escuro são claros: «Agendar manutenção» a 2,23, «Pagar
     // Semanada» a 2,23, «Papel de cozinha» a 1,26. Um tijolo `xBg` aceita
     // `xDeep` e mais nada; para tingir uma linha ou um cartão com texto normal
     // há o `tileInfo`/`tileWarn` (alfa, escurece no escuro) ou o `actBg`.
@@ -255,6 +255,10 @@ describe('⚠ e nenhum ecrã volta a pintar texto pequeno com o acento ou com um
       'src/screens/Perfil.jsx': /warnBg/,
       'src/screens/Inicio.jsx': /warnBg/,
       'src/screens/ModoCompras.jsx': /sem \? t\.state\.warnDeep/,
+      // A caixa CHEIA do número da tarefa urgente: o `errDeep` é o
+      // preenchimento e o número vai a branco (5,79 a 11 px) — era `#CE0002`
+      // escrito à mão, passou a ler o tema (revisão de 14/09/2026).
+      'src/screens/Tarefas.jsx': /cor: \(t\) => t\.state\.errDeep/,
     };
     const maus = [];
     for (const rel of jsx) {

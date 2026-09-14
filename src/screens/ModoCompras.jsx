@@ -279,7 +279,7 @@ export default function ModoCompras({ t, user, onClose }) {
           intermédio pintado como decisão final ensina a família a carregar sem
           ler. A linha por baixo diz o que vai encontrar lá dentro. */}
       {step === null || seccoes.indexOf(step) >= seccoes.length - 1 ? (
-        <Primary t={t} comum label="Fechar Conta e Registar Despesa"
+        <Primary t={t} comum label="Fechar conta e registar despesa"
           sub={cart > 0 ? `${EUR(cart)} · ${plural(doneItems.length, 'artigo', 'artigos')}` : null}
           onPress={() => setCartOpen(true)} />
       ) : (

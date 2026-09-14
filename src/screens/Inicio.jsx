@@ -234,7 +234,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
                   </Text>
                   <Avatar {...avatarDe(e.owner, MEMBERS[e.owner], t.text3)} />
                   <View style={{ flex: 1, gap: 2 }}>
-                    <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{e.title}</Text>
+                    <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{e.title}</Text>
                     <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{e.who}</Text>
                   </View>
                   <PastilhaVisibilidade t={t} evento={e} />

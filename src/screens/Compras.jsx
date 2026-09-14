@@ -300,7 +300,7 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
                         style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
                         <Icon name={done ? 'checkCircle' : 'infoCircle'} size={24} color={done ? t.state.ok : t.text3} />
                         <View style={{ flex: 1, gap: 2 }}>
-                          <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{i.label}</Text>
+                          <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{i.label}</Text>
                           {/* Uma prenda: a criança não recebe esta linha do
                               servidor. A pastilha diz-o a quem a vê, para
                               ninguém a ler em voz alta à mesa. */}

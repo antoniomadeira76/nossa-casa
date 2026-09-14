@@ -152,7 +152,9 @@ const dayShort = (k) => {
 };
 
 // Ícone de tarefa: traço aberto, 1,75 de espessura, grelha de 24
-const TaskIcon = ({ size = 32, color = '#67769B' }) => (
+// Sem cor por omissão: era o slate antigo (`#67769B`) escrito à mão, fora do
+// tema. Quem chama passa a cor do estado (revisão de 14/09/2026).
+const TaskIcon = ({ size = 32, color }) => (
   <Icon name="checkSquare" size={size} color={color} />
 );
 
@@ -612,7 +614,7 @@ function KidVaultView({ t, kid }) {
           fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3,
         }}>O meu cofre</Text>
         <Text style={{
-          fontFamily: FONT.display, fontSize: 38, fontWeight: '400',
+          fontFamily: FONT.display, fontSize: 32, fontWeight: '400',
           color: t.text1, lineHeight: 46,
         }}>{EUR(balance)}</Text>
         {/* ⚠ E só se os pontos valerem euros. A 0 € isto prometia «Mais

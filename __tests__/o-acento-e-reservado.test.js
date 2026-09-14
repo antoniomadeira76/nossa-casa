@@ -40,11 +40,11 @@ const COM_ACENTO = {
   'src/screens/Dinheiro.jsx': {
     "{acertado ? 'Contas Acertadas' : 'Acertar Contas'}":
       'Dinheiro entre pessoas: passa o saldo de um adulto para o outro.',
-    '"Confirmar Pagamento"':
+    '"Confirmar pagamento"':
       'Dinheiro entre pessoas: é o toque que move o valor.',
-    '"Confirmar Abertura"':
+    '"Confirmar abertura"':
       'Fecha um período: o mês anterior deixa de ser o aberto e os totais passam a contar noutra soma.',
-    '"Confirmar Encerramento"':
+    '"Confirmar encerramento"':
       'Fecha um período: arquiva as despesas do mês e reinicia a contagem.',
   },
   'src/sheets/GerirMeta.jsx': {
@@ -54,7 +54,7 @@ const COM_ACENTO = {
       + '«retirar», leva contorno de propósito: é a acção de desistir.',
   },
   'src/sheets/Carrinho.jsx': {
-    '"Fechar Conta e Registar"':
+    '"Fechar conta e registar"':
       'Dinheiro entre pessoas: escreve uma despesa na conta conjunta, paga por quem foi às compras, e entra no acerto entre os dois adultos.',
   },
   'src/sheets/ConfirmarAdministradores.jsx': {
@@ -315,7 +315,7 @@ describe('a linha de consequência só aparece onde diz algo novo', () => {
   // acima gasta o único sítio onde caberia uma coisa que ela não diz.
   it('⚠ todos os botões que mexem em dinheiro entre pessoas dizem quanto e a quem', () => {
     const dinheiro = TODOS.filter(b =>
-      !b.comum && /Acertar Contas|Confirmar Pagamento|Fechar Conta e Registar/.test(b.rotulo));
+      !b.comum && /Acertar Contas|Confirmar pagamento|Fechar conta e registar/.test(b.rotulo));
     expect(dinheiro.length).toBeGreaterThan(0);
     for (const b of dinheiro) {
       expect(b.temSub).toBe(true);
@@ -323,7 +323,7 @@ describe('a linha de consequência só aparece onde diz algo novo', () => {
   });
 
   it('e os que fecham um período dizem o que fica fechado', () => {
-    const periodo = TODOS.filter(b => !b.comum && /Confirmar (Abertura|Encerramento)/.test(b.rotulo));
+    const periodo = TODOS.filter(b => !b.comum && /Confirmar (abertura|encerramento)/.test(b.rotulo));
     expect(periodo.length).toBe(2);
     for (const b of periodo) expect(b.temSub).toBe(true);
   });

@@ -18,9 +18,13 @@ const URG = [
   // ⚠ `#CE0002` (o `errDeep`) e não `#FF4D4F`: a caixa é CHEIA e leva o número
   // a branco, e branco sobre #FF4D4F dá 3,27 — a 11 px pede 4,5. Sobre #CE0002
   // dá 5,79, e é o mesmo par do botão destrutivo do `Confirm`.
-  { key: 0, label: 'Urgente',    fill: true,  color: '#CE0002', dash: false },
-  { key: 1, label: 'Normal',     fill: false, color: '#FAAD14', dash: true },
-  { key: 2, label: 'Sem pressa', fill: false, color: '#D9D9D9', dash: false },
+  // ⚠ Tokens do tema, não cores escritas (revisão de 14/09/2026): eram
+  // `#CE0002`, `#FAAD14` e `#D9D9D9` à mão, e no modo escuro a borda cinzenta
+  // do «Sem pressa» ficava a mesma sobre a página escura. `errDeep` é o par
+  // do botão destrutivo do `Confirm` (branco por cima dá 5,79 a 11 px).
+  { key: 0, label: 'Urgente',    fill: true,  cor: (t) => t.state.errDeep, dash: false },
+  { key: 1, label: 'Normal',     fill: false, cor: (t) => t.state.warn, dash: true },
+  { key: 2, label: 'Sem pressa', fill: false, cor: (t) => t.border, dash: false },
 ];
 
 // `abrir` é o id de uma tarefa cuja folha de gestão deve estar aberta à
@@ -127,9 +131,9 @@ export default function Tarefas({ t, user, abrir }) {
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minHeight: 44 }}>
                       {/* caixa do número: cor E forma dizem a urgência */}
                       <View style={{ width: 20, height: 20, borderRadius: R.sm,
-                        backgroundColor: u.fill ? u.color : 'transparent',
+                        backgroundColor: u.fill ? u.cor(t) : 'transparent',
                         borderWidth: u.fill ? 0 : 1.5, borderStyle: u.dash ? 'dashed' : 'solid',
-                        borderColor: u.color, alignItems: 'center', justifyContent: 'center' }}>
+                        borderColor: u.cor(t), alignItems: 'center', justifyContent: 'center' }}>
                         <Text style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '700',
                           color: u.fill ? '#FFFFFF' : t.text2 }}>{idx}</Text>
                       </View>
@@ -140,7 +144,7 @@ export default function Tarefas({ t, user, abrir }) {
                         color={done ? t.state.ok : pend ? t.state.info : t.text3} />
                       <Avatar {...avatarDe(x.who, MEMBERS[x.who], t.text3)} />
                       <View style={{ flex: 1, gap: 2 }}>
-                        <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{x.title}</Text>
+                        <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{x.title}</Text>
                         <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5,
                           color: d && d.late ? t.state.errTexto : d && d.soon ? t.state.warnTexto : t.text3 }}>
                           {done && rec ? 'feita hoje · volta amanhã'
@@ -205,7 +209,7 @@ export default function Tarefas({ t, user, abrir }) {
 
       {task ? (
         <Sheet t={t} title={task.title} sub={subtituloDaTarefa(task)} onClose={() => setManage(null)}
-          action={<Primary t={t} comum label="Guardar Alterações" onPress={() => setManage(null)} />}>
+          action={<Primary t={t} comum label="Guardar alterações" onPress={() => setManage(null)} />}>
           <View style={{ gap: S.md }}>
             <Label t={t}>Urgência</Label>
             <Segmented t={t} small value={task.urgency}

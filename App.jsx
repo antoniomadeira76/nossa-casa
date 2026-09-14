@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, useColorScheme, StatusBar, Modal, Image } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Font from 'expo-font';
@@ -132,6 +132,15 @@ function Shell() {
   const [googleImport, setGoogleImport] = useState(false);
   // Abrir a folha de importação ao chegar à Agenda, vindo do Início.
   const [importarNaAgenda, setImportarNaAgenda] = useState(false);
+  // ⚠ O scroll volta ao TOPO quando o ecrã muda (revisão de coerência de
+  // 14/09/2026). Os separadores e as vistas de ecrã inteiro partilham a mesma
+  // área de scroll, e ela guardava a posição: abrir a Gestão, descer até ao
+  // fim, voltar e abrir a Documentação abria-a a 933 px do topo, a meio do
+  // registo. Hooks ANTES dos `return` antecipados do Shell (classe 48).
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    if (scrollRef.current && scrollRef.current.scrollTo) scrollRef.current.scrollTo({ y: 0, animated: false });
+  }, [tab, saude, equip, gestao, doc, ficha, loja, ida, pesquisa === null]);
   // Os eventos que saíram da agenda da Google e ainda estão nesta casa.
   // Guardam-se para PERGUNTAR — nunca se apagam sem resposta.
   const [saidosDaGoogle, setSaidosDaGoogle] = useState([]);
@@ -397,7 +406,7 @@ function Shell() {
         <Text style={{ fontFamily: FONT.display, fontSize: 20, color: '#FFFFFF', textAlign: 'center' }}>
           {user} não faz parte desta casa
         </Text>
-        <Text style={{ fontFamily: FONT.ui, fontSize: 13.5, lineHeight: 21,
+        <Text style={{ fontFamily: FONT.ui, fontSize: 13, lineHeight: 21,
           color: 'rgba(255,255,255,0.75)', textAlign: 'center' }}>
           A conta entrou, mas não está entre os membros de {nomeDaCasa}. Peça a
           quem administra a casa que a acrescente, e entre outra vez.
@@ -681,7 +690,11 @@ function Shell() {
             o mesmo tamanho. Uma marca que muda de medida ao mudar de
             separador é o mesmo defeito que o avatar tinha. */}
         <Marca size={72} opacity={0.22}
-          style={{ position: 'absolute', top: insets.top + 4, right: 16 }} />
+          // ⚠ `right: 68`, à ESQUERDA do avatar (40 de largura a `right: 16`,
+          // mais 12 de intervalo), e não por trás dele. Estava a `right: 16`,
+          // na mesma vertical do avatar, e os dois sobrepunham-se em todos os
+          // ecrãs — a única sobreposição da interface (revisão de 14/09/2026).
+          style={{ position: 'absolute', top: insets.top + 4, right: 68 }} />
 
         {V ? (
           // Vista de ecrã inteiro: o cabeçalho passa a ser o dela.
@@ -822,7 +835,7 @@ function Shell() {
                         com os dois achatava a hierarquia do cabeçalho à troca
                         de nada. */}
                     <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: onC }}>{rot}</Text>
-                    <Text style={{ fontFamily: FONT.display, fontSize: 19, fontWeight: '500',
+                    <Text style={{ fontFamily: FONT.display, fontSize: 20, fontWeight: '500',
                       color: '#FFFFFF' }}>{val}</Text>
                   </Pressable>
                 </View>
@@ -886,7 +899,7 @@ function Shell() {
             É o Modo Compras, com os corredores parados por cima da lista. As
             outras continuam a ser filhas do ScrollView único. */}
         {V && V.coluna ? V.render() : (
-        <ScrollView style={{ flex: 1, minHeight: 0 }}
+        <ScrollView ref={scrollRef} style={{ flex: 1, minHeight: 0 }}
           contentContainerStyle={{ padding: 16, gap: S.xl, paddingBottom: S.xl }}>
           {V ? V.render()
             : tab === 'inicio' && pesquisa !== null
@@ -928,7 +941,7 @@ function Shell() {
               accessibilityState={{ selected: on }}
               style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
               <Icon name={x.icon} size={22} color={on ? '#FFFFFF' : onC} />
-              <Text style={{ fontFamily: FONT.ui, fontSize: 10.5, fontWeight: '600',
+              <Text style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '600',
                 color: on ? '#FFFFFF' : onC }}>{x.label}</Text>
             </Pressable>
           );

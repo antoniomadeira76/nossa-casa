@@ -285,10 +285,19 @@ export default function Gestao({ t, user, onClose }) {
             return (
               <Linha key={env.name} t={t} last={i === envelopes.length - 1}>
                 <View style={{ gap: S.md, paddingVertical: S.sm }}>
+                  {/* A MESMA gramática do Dinheiro (revisão de 14/09/2026):
+                      «gasto / limite» à direita, como na lista dos envelopes
+                      do separador; o «livre» fica por baixo do nome, pequeno.
+                      Eram dois formatos para o mesmo envelope. */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{env.name}</Text>
+                    <View style={{ gap: 2 }}>
+                      <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{env.name}</Text>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: over ? t.state.errTexto : t.text3 }}>
+                        {over ? `excedido em ${EUR(-sobra)}` : `livre ${EUR(sobra)}`}
+                      </Text>
+                    </View>
                     <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: over ? t.state.errTexto : t.text3 }}>
-                      {over ? `excedido em ${EUR(-sobra)}` : `livre ${EUR(sobra)}`}
+                      {EUR(env.used)} / {EUR(env.limit)}
                     </Text>
                   </View>
                   <View style={{ height: 6, borderRadius: R.pill, backgroundColor: t.page, overflow: 'hidden' }}>
@@ -298,11 +307,6 @@ export default function Gestao({ t, user, onClose }) {
                       borderRadius: R.pill,
                       backgroundColor: over ? t.state.err : t.accent,
                     }} />
-                  </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-                      {EUR(env.used)} de {EUR(env.limit)}
-                    </Text>
                   </View>
                 </View>
               </Linha>
@@ -440,27 +444,24 @@ export default function Gestao({ t, user, onClose }) {
                 texto e o «Limite: 590,00 €» colava-se ao «43,40 € livre»:
                 lia-se «590,00 €43,40 €» (09/09/2026). */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
+              {/* «gasto / limite» à direita e «livre» por baixo do nome — a
+                  gramática do Dinheiro, uma casa, uma forma (14/09/2026). */}
               <View style={{ gap: 2 }}>
                 <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{env.name}</Text>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-                  Limite: {EUR(env.limit)}
-                </Text>
-              </View>
-              <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>
-                  {EUR(env.used)}
-                </Text>
                 <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>
-                  {EUR(env.limit - env.used)} livre
+                  livre {EUR(env.limit - env.used)}
                 </Text>
               </View>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text2 }}>
+                {EUR(env.used)} / {EUR(env.limit)}
+              </Text>
               <Icon name="caretRight" size={18} color={t.text3} style={{ marginLeft: S.md }} />
             </View>
           </Tap>
         </Linha>
       ))}
 
-      <AddButton t={t} label="Criar novo envelope" onPress={() => {
+      <AddButton t={t} label="criar envelope" onPress={() => {
         setInput('');
         setSheetOpen('newEnvelope');
       }} />
@@ -863,7 +864,7 @@ export default function Gestao({ t, user, onClose }) {
       )}
 
       {sheetOpen === 'newEnvelope' && (
-        <Sheet t={t} title="Criar envelope"
+        <Sheet t={t} title="Criar envelope" sub="Um envelope novo para esta casa, com o seu limite"
           onClose={() => {
             setSheetOpen(null);
             setInput('');

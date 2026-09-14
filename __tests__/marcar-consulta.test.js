@@ -104,7 +104,7 @@ const marcar = ({ user, membro, especialidade, chave, medico, nota }) => {
   escreverData(r, chave);
   if (medico) escreverCampo(r, 'Médico ou clínica', medico);
   if (nota) escreverCampo(r, 'Nota da consulta', nota);
-  tocar(r, 'Marcar e Pôr na Agenda');
+  tocar(r, 'Marcar e pôr na agenda');
   return { r, loja };
 };
 
@@ -143,7 +143,7 @@ describe('⚠ marcar consulta cria o episódio, não só o evento', () => {
     escolherEspecialidade(r, 'Dentista');
     const antes = loja().s.health.length;
     // O botão está lá, mas a folha recusa sem data.
-    if (alvos(r, 'Marcar Consulta').length) tocar(r, 'Marcar e Pôr na Agenda');
+    if (alvos(r, 'Marcar Consulta').length) tocar(r, 'Marcar e pôr na agenda');
     expect(loja().s.health).toHaveLength(antes);
   });
 });
@@ -317,7 +317,7 @@ describe('renomear uma especialidade, pela interface', () => {
 
     tocar(r, 'Fechar');   // fechar as especialidades volta a marcar, não sai
     // Escolhida: o botão de marcar exige data E especialidade, e está vivo.
-    expect(alvos(r, 'Marcar e Pôr na Agenda').length).toBeGreaterThan(0);
+    expect(alvos(r, 'Marcar e pôr na agenda').length).toBeGreaterThan(0);
   });
 });
 
@@ -538,7 +538,7 @@ describe('⚠ o aviso da privacidade diz a verdade para cada membro', () => {
       const disseSoEu = junta(r.toJSON()).includes('Só eu');
       escolherEspecialidade(r, 'Dentista');
       escreverData(r, 'd2026-09-20');
-      tocar(r, 'Marcar e Pôr na Agenda');
+      tocar(r, 'Marcar e pôr na agenda');
       const ev = loja().s.added.find(e => e.tag === 'Saúde');
       expect(visibilidadeDe(ev)).toBe(esperado);
       expect(disseSoEu).toBe(esperado === 'so-eu');
@@ -558,7 +558,7 @@ describe('o botão e o «Gerir», como no protótipo', () => {
     tocar(r, 'marcar consulta');
     escolherEspecialidade(r, 'Dentista');
     escreverData(r, 'd2026-09-20');
-    expect(alvos(r, 'Marcar e Pôr na Agenda').length).toBeGreaterThan(0);
+    expect(alvos(r, 'Marcar e pôr na agenda').length).toBeGreaterThan(0);
     expect(alvos(r, 'Marcar Consulta').length).toBe(0);
   });
 

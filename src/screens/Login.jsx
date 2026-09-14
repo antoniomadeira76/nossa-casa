@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { S, R, FONT, elev, corDoMembro, chromeDaCrianca, LARGURA_APP } from '../theme';
+import { S, R, FONT, elev, corDoMembro, chromeDaCrianca, LARGURA_APP, buildTheme } from '../theme';
 
 // O cinzento do texto pequeno sobre os cartões brancos da entrada. Era
 // #6A7282: 4,17 sobre o cartão a 95 % de branco — abaixo dos 4,5 que 12 px
 // pedem. É o `text3` do aspeto claro, medido a 4,54 (09/09/2026). Literal
 // porque a entrada é sempre a mesma nos dois aspetos: o `t` que aqui chega
 // pode ser o escuro, e o `text3` escuro é claro demais para um cartão branco.
-const CINZA_DO_CARTAO = '#656C7C';
+// As cores do ecrã de entrada vêm do TEMA (revisão de 14/09/2026): o cartão é
+// claro sobre a fotografia, e os avisos são os do aspeto escuro — eram cinco
+// cores escritas à mão, uma delas um pêssego que a app não tem.
+const CLARO = buildTheme(0, false);
+const ESCURO = buildTheme(0, true);
+const CINZA_DO_CARTAO = CLARO.text3;
 import Icon, { Marca, GoogleG as G } from '../Icon';
 import { FEM } from '../data';
 import { useStore } from '../store';
@@ -174,13 +179,13 @@ export default function Login({ t, onEnter }) {
               Entre com a sua Conta Google para aceder à casa partilhada.
             </Text>
             <Pressable onPress={entrarComGoogle} accessibilityRole="button" accessibilityLabel="Continuar com Google"
-              style={({ pressed }) => ({ minHeight: 56, borderRadius: R.row, backgroundColor: pressed ? '#FAFAFA' : '#FFFFFF',
+              style={({ pressed }) => ({ minHeight: 56, borderRadius: R.row, backgroundColor: pressed ? CLARO.subtle : '#FFFFFF',
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, ...elev(3) })}>
               <G />
-              <Text style={{ fontFamily: FONT.display, fontSize: 16, fontWeight: '700', color: '#262626', letterSpacing: 0.4 }}>Continuar com Google</Text>
+              <Text style={{ fontFamily: FONT.display, fontSize: 16, fontWeight: '700', color: CLARO.text1, letterSpacing: 0.4 }}>Continuar com Google</Text>
             </Pressable>
             {erroGoogle ? (
-              <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 19, color: '#FFB27A' }}>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 19, color: ESCURO.state.errTexto }}>
                 {erroGoogle}
               </Text>
             ) : null}
@@ -192,7 +197,7 @@ export default function Login({ t, onEnter }) {
               style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, borderColor: 'rgba(255,255,255,0.45)',
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
               <Icon name="smile" size={20} color="#FFFFFF" />
-              <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '500', color: '#FFFFFF', letterSpacing: 0.4 }}>Entrar como Criança</Text>
+              <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '500', color: '#FFFFFF', letterSpacing: 0.4 }}>Entrar como criança</Text>
             </Pressable>
           </View>
 
@@ -214,7 +219,7 @@ export default function Login({ t, onEnter }) {
                 pela Google falha. Estava só no ecrã anterior: era escrito e
                 nunca visto. */}
             {erroGoogle ? (
-              <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 19, color: '#FFB27A' }}>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 19, color: ESCURO.state.errTexto }}>
                 {erroGoogle}
               </Text>
             ) : null}
@@ -226,7 +231,7 @@ export default function Login({ t, onEnter }) {
                   <Text style={{ fontFamily: FONT.display, fontSize: 17, fontWeight: '500', color: '#FFFFFF' }}>{MEMBERS[n].initial}</Text>
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={{ fontFamily: FONT.body, fontSize: 16, color: '#262626' }}>{n} {nomeDaCasa}</Text>
+                  <Text style={{ fontFamily: FONT.body, fontSize: 16, color: CLARO.text1 }}>{n} {nomeDaCasa}</Text>
                   <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 12, color: CINZA_DO_CARTAO }}>{MEMBERS[n].email}</Text>
                 </View>
                 {/* Pastilha contornada, como na referência 02 — e com a
@@ -291,7 +296,7 @@ export default function Login({ t, onEnter }) {
                     <Text style={{ fontFamily: FONT.display, fontSize: 17, fontWeight: '500', color: '#FFFFFF' }}>{MEMBERS[n].initial}</Text>
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
-                    <Text style={{ fontFamily: FONT.body, fontSize: 16, color: '#262626' }}>{n}</Text>
+                    <Text style={{ fontFamily: FONT.body, fontSize: 16, color: CLARO.text1 }}>{n}</Text>
                     <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: CINZA_DO_CARTAO }}>
                       {hasPin ? 'Perfil de criança' : 'Ainda sem PIN — pedir a um adulto'}
                     </Text>
@@ -327,15 +332,15 @@ export default function Login({ t, onEnter }) {
               ))}
             </View>
             {blocked > Date.now() ? (
-              <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: '#FF8A8C', textAlign: 'center' }}>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: ESCURO.state.errTexto, textAlign: 'center' }}>
                 Demasiadas tentativas. Tente dentro de um minuto.
               </Text>
             ) : tries > 0 ? (
-              <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: '#FFB27A', textAlign: 'center' }}>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: ESCURO.state.errTexto, textAlign: 'center' }}>
                 PIN incorreto. Faltam {5 - tries} tentativas.
               </Text>
             ) : erroPin ? (
-              <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: '#FFB27A', textAlign: 'center' }}>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: ESCURO.state.errTexto, textAlign: 'center' }}>
                 {erroPin}
               </Text>
             ) : null}

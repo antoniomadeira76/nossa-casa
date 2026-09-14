@@ -260,12 +260,11 @@ export default function Dinheiro({ t, user, onEquip }) {
       {/* Registar despesa é a acção mais frequente deste ecrã e estava no fim
           do cartão dos envelopes, como um «+ registar despesa» pequeno. Na
           referência é a primeira linha depois do saldo. */}
-      {/* Linha plana, sem cartão — desenho C (09/09/2026). */}
-      <Linha t={t} last>
-        <Row t={t} icon="plus" title="Registar Despesa"
-          sub="Combustível, farmácia, restaurante…"
-          onPress={() => setSheet('despesa')} last />
-      </Linha>
+      {/* O botão de acrescentar da app — o tracejado em minúsculas das
+          Tarefas, da Agenda e dos Equipamentos (revisão de 14/09/2026). Era
+          uma linha com «+» dentro de um cartão: a terceira forma de
+          «acrescentar» na mesma app. */}
+      <AddButton t={t} label="registar despesa" onPress={() => setSheet('despesa')} />
 
       <View>
         <SectionTitle t={t}>Envelopes</SectionTitle>
@@ -468,7 +467,7 @@ export default function Dinheiro({ t, user, onEquip }) {
                     minHeight: 44, opacity: pressed ? 0.7 : 1 })}>
                   <Avatar {...avatarDe(k, MEMBERS[k], t.text3)} />
                   <View style={{ flex: 1, gap: 2 }}>
-                    <Text style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{k}</Text>
+                    <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{k}</Text>
                     <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
                       {pontosNasTarefas
                         ? `${plural(pend, 'ponto', 'pontos')}${s.pointValue > 0 ? ` · ${EUR(pend * s.pointValue)} por pagar` : ''}`
@@ -647,7 +646,7 @@ export default function Dinheiro({ t, user, onEquip }) {
             sub="Registar o pagamento das despesas partilhadas"
             onClose={() => setSheet(null)}
             action={<Primary t={t} disabled={settleAmount <= 0}
-              label="Confirmar Pagamento"
+              label="Confirmar pagamento"
               sub={acerto ? `${EUR(settleAmount)} ${aoNome(acerto.credor)}` : null}
               onPress={handleSettle} />}>
             <View style={{ gap: S.lg }}>
@@ -764,7 +763,7 @@ export default function Dinheiro({ t, user, onEquip }) {
       {sheet === 'despesa' ? (
         <Sheet t={t} title="Registar Despesa" sub="Entra no envelope e na conta entre os dois"
           onClose={() => setSheet(null)}
-          action={<Primary t={t} comum disabled={exp.amount <= 0} label="Registar Despesa"
+          action={<Primary t={t} comum disabled={exp.amount <= 0} label="Registar despesa"
             onPress={() => {
               // ⚠ Pela loja, que também a manda para o servidor. Isto somava
               // ao `registered` local e mais nada — as despesas nunca
@@ -830,7 +829,7 @@ export default function Dinheiro({ t, user, onEquip }) {
         <Sheet t={t} title="Abrir Mês"
           sub="Distribuir o rendimento aos envelopes"
           onClose={() => setSheet(null)}
-          action={<Primary t={t} label="Confirmar Abertura"
+          action={<Primary t={t} label="Confirmar abertura"
             sub={`${EUR(Object.values(openMonth.envelopes || {}).reduce((a, b) => a + b, budget))} distribuídos`}
             onPress={handleOpenMonth} />}>
           <View style={{ gap: S.lg }}>
@@ -868,7 +867,7 @@ export default function Dinheiro({ t, user, onEquip }) {
         <Sheet t={t} title="Fechar Mês"
           sub="Arquivar as despesas e recomeçar a contagem"
           onClose={() => setSheet(null)}
-          action={<Primary t={t} label="Confirmar Encerramento"
+          action={<Primary t={t} label="Confirmar encerramento"
             sub={vaiParaMeta
               ? `${EUR(spent)} gastos · ${EUR(paraMeta)} para «${metaDoFecho.name}»`
               : `${EUR(spent)} gastos em ${s.monthName} · o saldo fica`}

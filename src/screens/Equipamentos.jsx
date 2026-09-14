@@ -116,14 +116,14 @@ export default function Equipamentos({ t, user = null, abrir }) {
             ['Contratos a renovar', String(aRenovar), aRenovar ? t.state.warnTexto : t.text2]].map(([rot, val, cor]) => (
             <View key={rot} style={{ width: '50%', gap: 2 }}>
               <Label t={t}>{rot}</Label>
-              <Text style={{ fontFamily: FONT.display, fontSize: 21, color: cor }}>{val}</Text>
+              <Text style={{ fontFamily: FONT.display, fontSize: 20, color: cor }}>{val}</Text>
             </View>
           ))}
         </View>
         {proxima ? (
           <View style={{ gap: 2 }}>
             <Label t={t}>Próxima manutenção</Label>
-            <Text style={{ fontFamily: FONT.display, fontSize: 21, color: t.text2 }}>{proxima.v}</Text>
+            <Text style={{ fontFamily: FONT.display, fontSize: 20, color: t.text2 }}>{proxima.v}</Text>
           </View>
         ) : null}
       </Card>

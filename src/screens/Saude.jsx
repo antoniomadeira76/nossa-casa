@@ -694,7 +694,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                   </View>
                 ))}
 
-                <AddButton t={t} label="Anexar Exame ou Receita"
+                <AddButton t={t} label="anexar exame ou receita"
                   onPress={() => { setAnexoDe(record.id); setAnexoForm({ kind: 'Exame', title: '', expires: '', foto: null }); }} />
 
                 {/* ── Arquivar ──────────────────────────────────────────
@@ -807,7 +807,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52 }}>
                     <Avatar {...avatarDe(m, MEMBERS[m], t.text3)} size={40} />
                     <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text1 }}>
+                      <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>
                         {m === user ? 'A minha ficha' : m}
                       </Text>
                       <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
@@ -1380,10 +1380,10 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
               </Text>
             </View>
 
-            {/* «Marcar e Pôr na Agenda», como no protótipo: promete as duas
+            {/* «Marcar e pôr na agenda», como no protótipo: promete as duas
                 coisas que acontecem, e são duas — o episódio na ficha e o
                 evento na agenda. Dizia só «Marcar Consulta». */}
-            <Primary t={t} comum label="Marcar e Pôr na Agenda" onPress={handleSaveConsultation}
+            <Primary t={t} comum label="Marcar e pôr na agenda" onPress={handleSaveConsultation}
               disabled={!form.date || !form.specialty} />
           </View>
         </View>

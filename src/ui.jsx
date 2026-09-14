@@ -59,7 +59,7 @@ export function NumField({ t, value, onChange, step = 5, min = 0, max = 99999, s
       accessibilityLabel={rotulo}
       style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
         alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontFamily: FONT.display, fontSize: 19, color: t.actFg }}>{sinal}</Text>
+      <Text style={{ fontFamily: FONT.display, fontSize: 20, color: t.actFg }}>{sinal}</Text>
     </Pressable>
   );
   return (
@@ -318,7 +318,7 @@ export const Row = ({ t, icon, iconColor, leading, title, sub, value, onPress, l
       <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{title}</Text>
       {sub ? <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{sub}</Text> : null}
     </View>
-    {value ? <Text style={{ fontFamily: FONT.ui, fontSize: 13.5, fontWeight: '600', color: t.text2 }}>{value}</Text> : null}
+    {value ? <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>{value}</Text> : null}
     {right !== undefined ? right : (onPress ? <Icon name="caretRight" size={18} color={t.text3} /> : null)}
   </Pressable>
 );
@@ -528,7 +528,7 @@ export function BotaoCompacto({ t, label, etiqueta, tom = 'contorno', disabled, 
           de metade da largura útil; «Fechar Fevereiro» é o pior caso e cabe
           também. Sem isto, um mês longo partia o botão em dois e a coluna dos
           dois deixava de ter a mesma altura. */}
-      <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 13.5,
+      <Text numberOfLines={1} style={{ fontFamily: FONT.display, fontSize: 13,
         fontWeight: '700', color: cor, paddingHorizontal: 8 }}>{label}</Text>
     </Pressable>
   );
@@ -599,7 +599,7 @@ export const AddButton = ({ t, label, onPress }) => (
       justifyContent: 'center', gap: 8, opacity: pressed ? 0.7 : 1,
     })}>
     <Icon name="plus" size={18} color={t.titulo} />
-    <Text style={{ fontFamily: FONT.ui, fontSize: 13.5, color: t.text2 }}>{label}</Text>
+    <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: t.text2 }}>{label}</Text>
   </Pressable>
 );
 

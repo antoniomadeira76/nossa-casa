@@ -121,7 +121,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                     alignItems: 'center', justifyContent: 'center', gap: 2,
                     backgroundColor: hoje || escolhido ? t.subtle : 'transparent',
                     borderWidth: escolhido ? 1 : 0, borderColor: t.accent }}>
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 10.5, fontWeight: '600', color: t.text3 }}>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '600', color: t.text3 }}>
                     {d.wd}
                   </Text>
                   <Text style={{ fontFamily: FONT.display, fontSize: 17,
@@ -165,7 +165,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
             <View style={{ flexDirection: 'row' }}>
               {WD_SHORT.map(w => (
                 <Text key={w} style={{ flex: 1, textAlign: 'center', fontFamily: FONT.ui,
-                  fontSize: 10.5, fontWeight: '600', color: t.text3 }}>{w}</Text>
+                  fontSize: 11, fontWeight: '600', color: t.text3 }}>{w}</Text>
               ))}
             </View>
 
@@ -273,7 +273,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                       <Text style={{ width: 42, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3 }}>{evTime(e.time)}</Text>
                       <Avatar {...avatarDe(e.owner, MEMBERS[e.owner], t.text3)} />
                       <View style={{ flex: 1, gap: 2 }}>
-                        <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15.5, color: t.text2 }}>{e.title}</Text>
+                        <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{e.title}</Text>
                         <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{e.who}</Text>
                       </View>
                       <PastilhaVisibilidade t={t} evento={e} />

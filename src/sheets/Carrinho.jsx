@@ -108,7 +108,7 @@ export default function Carrinho({ t, doneItems, items, cart, pago, user, store,
                 aparece no acerto de contas entre os dois adultos.
                 A linha por baixo diz para onde vai, que é o que a folha não
                 dizia: mostrava o total e ficava calada quanto ao destino. */}
-            <Primary t={t} label="Fechar Conta e Registar" icon="check"
+            <Primary t={t} label="Fechar conta e registar" icon="check"
               sub={destino ? `${EUR(cart)} em ${destino}, por ${who || user}` : null}
               onPress={onConfirm} />
             <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Cancelar"

@@ -1,7 +1,7 @@
 /**
  * O ecrã de entrada não manda fazer o que não oferece.
  *
- * ⚠ «Entrar como Criança» numa casa SEM crianças mostrava:
+ * ⚠ «Entrar como criança» numa casa SEM crianças mostrava:
  *
  *     Quem está a entrar?
  *     Escolha o seu nome e introduza o PIN de 4 dígitos.
