@@ -113,7 +113,7 @@ describe('o claro não mexeu', () => {
   // Mexer no claro ao mesmo tempo seria responder a outra pergunta.
   it('a página clara continua a ser a mesma nos seis', () => {
     const claras = new Set(SCHEMES.map((_, i) => buildTheme(i, false).page));
-    expect(claras).toEqual(new Set(['#F0F2F5']));
+    expect(claras).toEqual(new Set(['#F6F7F9']));
   });
 
   it('e o título claro continua a ser o acento, sem clarear', () => {

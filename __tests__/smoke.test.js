@@ -484,7 +484,7 @@ describe('🔥 Smoke Tests — Nossa Casa', () => {
 
     test('o claro não mexeu', () => {
       const claras = new Set(SCHEMES.map((_, i) => buildTheme(i, false).page));
-      expect(claras).toEqual(new Set(['#F0F2F5']));
+      expect(claras).toEqual(new Set(['#F6F7F9']));
     });
   });
 

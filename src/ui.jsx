@@ -9,19 +9,23 @@ import Figura from './Avatares';
 //
 // 13/09/2026, o dono da casa: «põe o logo da app como marca de água em todos
 // os ecrãs». A mesma marca dos documentos em papel (`documento.js`, 7 %),
-// centrada na ÁREA DE CONTEÚDO — entre o cabeçalho e o rodapé —, numa tinta só
-// (`t.text1`, que muda com o aspeto), e a uma opacidade que não disputa com o
-// texto. É fundo: `pointerEvents="none"` para não apanhar toque nenhum, e
-// posição absoluta para não mexer na coluna flex do INVARIANTE #1 — vive como
-// PRIMEIRO filho da área de conteúdo, atrás do scroll, e o rodapé continua o
-// último filho da raiz. Os cartões (superfície opaca) tapam-na; a página não.
-export const OPACIDADE_DA_MARCA = 0.06;
+// centrada na ÁREA DE CONTEÚDO — entre o cabeçalho e o rodapé —, A CORES
+// (14/09/2026, «a marca de água no background deve ser a cores»): as quatro
+// bolas com as cores da marca, e só o telhado na tinta do texto (`t.text1`),
+// porque o branco dele não se via sobre a página. A opacidade é 0,08: a 0,06 as
+// cores não passavam de cinzentos, a 0,12 «devia ser mais suave» (ele, ao ver).
+// É fundo: `pointerEvents="none"`
+// para não apanhar toque nenhum, e posição absoluta para não mexer na coluna
+// flex do INVARIANTE #1 — vive como PRIMEIRO filho da área de conteúdo, atrás
+// do scroll, e o rodapé continua o último filho da raiz. Os cartões (superfície
+// opaca) tapam-na; a página não.
+export const OPACIDADE_DA_MARCA = 0.08;
 export function MarcaDeAgua({ t, tamanho = 260 }) {
   return (
     <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
       style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
         alignItems: 'center', justifyContent: 'center' }}>
-      <Marca size={tamanho} cor={t.text1} opacity={OPACIDADE_DA_MARCA} />
+      <Marca size={tamanho} telhado={t.text1} opacity={OPACIDADE_DA_MARCA} />
     </View>
   );
 }

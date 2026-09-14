@@ -64,7 +64,11 @@ export const SCHEMES = [
 ];
 
 const LIGHT = {
-  page: '#F0F2F5', card: '#FCFCFD', surface: '#FFFFFF', subtle: '#FAFAFA', border: '#D9D9D9',
+  // ⚠ A página era `#F0F2F5` (o protótipo); o dono da casa, em 14/09/2026:
+  // «o cinza de fundo dos ecrãs deve ser mais claro». Um tom acima. Os
+  // contrastes das etiquetas pequenas (medidos sobre a página) só melhoram; o
+  // `divider` fica no tom antigo, para as divisórias continuarem a ver-se.
+  page: '#F6F7F9', card: '#FCFCFD', surface: '#FFFFFF', subtle: '#FAFAFA', border: '#D9D9D9',
   // ⚠ `text3` e `slate` estão UM TOM abaixo do protótipo (`#6A7282` e
   // `#67769B`), e é medido: a 11,5–12 px pedem 4,5:1, e sobre a PÁGINA
   // (#F0F2F5) o protótipo dava 4,31 e 4,03 — e o `slate` dava 4,41 até sobre o

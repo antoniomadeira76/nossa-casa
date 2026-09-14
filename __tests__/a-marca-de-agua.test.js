@@ -27,7 +27,7 @@ const ler = (p) => fs.readFileSync(path.join(RAIZ, p), 'utf8');
 const semComentarios = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/[^\n]*/gm, '');
 
 describe('⚠ a marca de água', () => {
-  it('é fundo: absoluta, sem toque, quase transparente, numa tinta do tema', () => {
+  it('é fundo: absoluta, sem toque, quase transparente, a cores com o telhado na tinta do tema', () => {
     for (const [esquema, escuro] of [[0, false], [1, false], [3, true], [5, true]]) {
       const t = buildTheme(esquema, escuro);
       let r = null;
@@ -37,14 +37,21 @@ describe('⚠ a marca de água', () => {
       const estilo = Object.assign({}, ...[].concat(raiz.props.style));
       expect(estilo.position).toBe('absolute');
       expect(estilo).toMatchObject({ left: 0, right: 0, top: 0, bottom: 0 });
-      // A marca leva a tinta principal do tema — clara no escuro, escura no
-      // claro — e a opacidade dos documentos em papel, que ele já aprovou.
+      // A CORES (14/09/2026): as bolas com as cores da marca, e só o telhado na
+      // tinta principal do tema — clara no escuro, escura no claro —, porque o
+      // branco dele não se via sobre a página. Quase transparente na mesma.
       const svg = r.root.findAll(n => n.props && n.props.viewBox === '0 0 24 24')[0];
       expect(svg).toBeTruthy();
       expect(svg.props.opacity).toBe(OPACIDADE_DA_MARCA);
-      expect(OPACIDADE_DA_MARCA).toBeLessThanOrEqual(0.08);
+      expect(OPACIDADE_DA_MARCA).toBeGreaterThanOrEqual(0.06);
+      expect(OPACIDADE_DA_MARCA).toBeLessThanOrEqual(0.1);
       const telhado = r.root.findAll(n => n.props && typeof n.props.d === 'string')[0];
       expect(telhado.props.stroke).toBe(t.text1);
+      // (o test-renderer devolve o `Circle` e o nó nativo dele, onde a cor já
+      // vem processada num objeto — ficam só as cores em texto, sem repetições)
+      const bolas = [...new Set(r.root.findAll(n => n.props && n.props.cx !== undefined)
+        .map(n => n.props.fill).filter(f => typeof f === 'string'))];
+      expect(bolas).toEqual(['#8B4EE0', '#13ADB3', '#4A8FE0', '#E8EDF5']);
     }
   });
 
