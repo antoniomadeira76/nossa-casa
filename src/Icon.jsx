@@ -126,13 +126,15 @@ export function GoogleG({ size = 22, style }) {
 // `cor`: a marca numa tinta só — telhado e bolas — para a marca de água sobre a
 // página, onde o branco do telhado não se via (13/09/2026). O mesmo que o
 // `logotipo({ cor })` do documento.js faz no papel.
-// `telhado`: só a cor do telhado, com as bolas A CORES — a marca de água sobre a
-// página (14/09/2026, «a marca de água deve ser a cores»): o telhado branco não
-// se via sobre a página clara, e as quatro bolas ficam com as cores da marca.
+// `telhado`: a cor do telhado E da quarta bola, com as outras três A CORES — a
+// marca de água sobre a página (14/09/2026, «a marca de água deve ser a
+// cores»). O telhado branco e a quarta bola (`#E8EDF5`, quase branca, feita
+// para o cabeçalho escuro) não se viam sobre a página clara — «a última bola
+// não se vê, porquê?» — e passam os dois à tinta do texto.
 export function Marca({ size = 46, mono = false, cor = null, telhado = null, opacity = 1, style }) {
   const dots = cor ? [cor, cor, cor, cor] : mono
     ? ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF']
-    : ['#8B4EE0', '#13ADB3', '#4A8FE0', '#E8EDF5'];
+    : ['#8B4EE0', '#13ADB3', '#4A8FE0', telhado || '#E8EDF5'];
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" opacity={opacity} style={style}>
       <Path d="M3.6 10.9L12 4.1l8.4 6.8" stroke={cor || telhado || '#FFFFFF'} strokeWidth={1.9}

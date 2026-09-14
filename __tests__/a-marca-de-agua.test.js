@@ -51,7 +51,9 @@ describe('⚠ a marca de água', () => {
       // vem processada num objeto — ficam só as cores em texto, sem repetições)
       const bolas = [...new Set(r.root.findAll(n => n.props && n.props.cx !== undefined)
         .map(n => n.props.fill).filter(f => typeof f === 'string'))];
-      expect(bolas).toEqual(['#8B4EE0', '#13ADB3', '#4A8FE0', '#E8EDF5']);
+      // A quarta bola é quase branca na marca do cabeçalho; sobre a página
+      // não se via («a última bola não se vê, porquê?») — leva a tinta do texto.
+      expect(bolas).toEqual(['#8B4EE0', '#13ADB3', '#4A8FE0', t.text1]);
     }
   });
 
