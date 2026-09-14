@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import FiltroDeMembros from '../FiltroDeMembros';
@@ -138,22 +138,32 @@ const ICONE_DA_AREA = {
   Equipamentos: 'houseGear', 'Saúde': 'heartPulse', 'Gestão da Casa': 'houseGear', Perfil: 'user',
   'Início': 'home', 'A App': 'fileText',
 };
+//
+// ⚠ E as áreas NÃO rolam (14/09/2026, «há um botão escondido, arranja melhor
+// solução»): a fila que rolava de lado cortava a última pastilha visível e
+// escondia as seguintes. Passam a uma grelha que embrulha, na FORMA das bolas
+// das pessoas logo acima — um ícone de 44 numa caixa, o nome por baixo a 10 px,
+// 64 de largura — cinco por linha em 355 px, todas à vista, nenhuma escondida.
+const LARGURA_DA_AREA = 64;
 const Filtros = ({ t, quemHa, areasHa, quem, area, mudarQuem, mudarArea, MEMBERS }) => {
   if (quemHa.length <= 1 && areasHa.length <= 1) return null;
-  // A escolhida vem para a frente, logo a seguir a «Tudo»: numa fila que rola,
-  // o filtro ativo tem de se ver sem rolar.
-  const ordem = area && areasHa.includes(area) ? [area, ...areasHa.filter(a => a !== area)] : areasHa;
-  const Pastilha = ({ rotulo, icone, on, onPress, label }) => (
+  const Area = ({ rotulo, icone, on, onPress, label }) => (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
       accessibilityState={{ selected: on }}
-      style={({ pressed }) => ({
-        minHeight: 44, paddingHorizontal: 14, borderRadius: R.row, borderWidth: 1,
-        flexDirection: 'row', alignItems: 'center', gap: S.md,
-        backgroundColor: on ? t.accent : t.card, borderColor: on ? t.accent : t.border,
-        opacity: pressed ? 0.85 : 1,
-      })}>
-      {icone ? <Icon name={icone} size={16} color={on ? '#FFFFFF' : t.titulo} /> : null}
-      <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: on ? '#FFFFFF' : t.text2 }}>{rotulo}</Text>
+      style={({ pressed }) => ({ width: LARGURA_DA_AREA, minHeight: 44, alignItems: 'center', gap: 2,
+        opacity: pressed ? 0.7 : 1 })}>
+      <View style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: on ? t.accent : t.card, borderColor: on ? t.accent : t.border }}>
+        {icone
+          ? <Icon name={icone} size={20} color={on ? '#FFFFFF' : t.titulo} />
+          : <Text style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '600', color: on ? '#FFFFFF' : t.text2 }}>{rotulo}</Text>}
+      </View>
+      {icone ? (
+        // 10 px, como o nome por baixo das bolas: a 11 «Equipamentos» partia a
+        // meio da palavra nos 64 de largura.
+        <Text numberOfLines={2} style={{ fontFamily: FONT.ui, fontSize: 10, lineHeight: 12, textAlign: 'center',
+          color: on ? t.actFg : t.text3 }}>{rotulo}</Text>
+      ) : null}
     </Pressable>
   );
   return (
@@ -163,14 +173,13 @@ const Filtros = ({ t, quemHa, areasHa, quem, area, mudarQuem, mudarArea, MEMBERS
           MEMBERS={MEMBERS || {}} rotuloDe={(n) => `Mostrar só o que ${n} fez`} />
       ) : null}
       {areasHa.length > 1 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ flexDirection: 'row', gap: S.md, paddingVertical: S.xs }}>
-          <Pastilha rotulo="Tudo" on={!area} onPress={() => mudarArea(null)} label="Mostrar todas as áreas" />
-          {ordem.map(a => (
-            <Pastilha key={a} rotulo={a} icone={ICONE_DA_AREA[a] || 'fileText'} on={area === a}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md, alignItems: 'flex-start' }}>
+          <Area rotulo="Tudo" on={!area} onPress={() => mudarArea(null)} label="Mostrar todas as áreas" />
+          {areasHa.map(a => (
+            <Area key={a} rotulo={a} icone={ICONE_DA_AREA[a] || 'fileText'} on={area === a}
               onPress={() => mudarArea(area === a ? null : a)} label={`Mostrar só ${a}`} />
           ))}
-        </ScrollView>
+        </View>
       ) : null}
     </View>
   );

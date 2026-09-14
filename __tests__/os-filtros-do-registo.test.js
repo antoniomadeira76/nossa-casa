@@ -30,21 +30,27 @@ describe('⚠ os filtros do registo', () => {
     expect(doc).toMatch(/<Filtros t=\{t\} quemHa=\{quemHa\} areasHa=\{areasHa\} MEMBERS=\{membrosDaCasa\}/);
   });
 
-  it('as áreas são UMA fila que rola, com o ícone do rodapé, «Tudo» primeiro e a escolhida a seguir', () => {
-    expect(bloco).toMatch(/<ScrollView horizontal showsHorizontalScrollIndicator=\{false\}/);
+  // 14/09/2026, ao ver a fila a rolar: «há um botão escondido, arranja melhor
+  // solução». As áreas passaram a uma GRELHA que embrulha — ícone de 44 numa
+  // caixa com o nome por baixo, 64 de largura, na forma das bolas das pessoas
+  // — em que nenhuma fica cortada nem escondida.
+  it('as áreas são uma grelha que embrulha — ícone com o nome por baixo, 64 de largura, nada escondido', () => {
+    expect(bloco).not.toMatch(/<ScrollView/);
+    expect(bloco).toMatch(/flexDirection: 'row', flexWrap: 'wrap'/);
+    expect(doc).toMatch(/const LARGURA_DA_AREA = 64;/);
+    expect(bloco).toMatch(/width: LARGURA_DA_AREA, minHeight: 44/);
+    expect(bloco).toMatch(/width: 44, height: 44, borderRadius: R\.row/);
     expect(bloco).toMatch(/rotulo="Tudo" on=\{!area\}/);
-    expect(bloco).toMatch(/\[area, \.\.\.areasHa\.filter\(a => a !== area\)\]/);
     expect(bloco).toMatch(/icone=\{ICONE_DA_AREA\[a\] \|\| 'fileText'\}/);
     expect(bloco).toMatch(/label=\{`Mostrar só \$\{a\}`\}/);
-    expect(bloco).toMatch(/minHeight: 44/);
+    expect(bloco).toMatch(/numberOfLines=\{2\}/);
     // Os ícones são os do rodapé — o mesmo significado, o mesmo desenho.
     expect(doc).toMatch(/Tarefas: 'checkSquare', Agenda: 'calendar', Compras: 'fileDone', Dinheiro: 'wallet'/);
   });
 
-  it('sem cartão à volta, sem os rótulos «Quem» e «Onde», sem pastilhas a embrulhar', () => {
+  it('sem cartão à volta, sem os rótulos «Quem» e «Onde»', () => {
     expect(bloco).not.toMatch(/<Card\b/);
     expect(bloco).not.toMatch(/<Label\b/);
-    expect(bloco).not.toMatch(/flexWrap/);
     expect(bloco).not.toMatch(/"Quem"|"Onde"/);
     // E continua a não aparecer quando não há por onde escolher.
     expect(bloco).toMatch(/if \(quemHa\.length <= 1 && areasHa\.length <= 1\) return null;/);
