@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useStore } from '../store';
-import { S, FONT } from '../theme';
+import { S, R, FONT } from '../theme';
+import FiltroDeMembros from '../FiltroDeMembros';
 import { Card, SectionTitle, Pill, Segmented, Empty, Pager, usePaged, Choice, Label, Row, Linha as LinhaPlana } from '../ui';
 import RetratoDoMes from '../sheets/RetratoDoMes';
 import { plural, pad2, EUR } from '../format';
@@ -122,27 +123,55 @@ const AreaAberta = ({ t, g, corDo }) => {
 // seis linhas, e a prova `secoes-vazias` deixava de a ver. A prova tinha razão
 // — um título e o seu conteúdo a trinta linhas de distância leem-se mal — e a
 // resposta certa era encurtar, não alargar a janela dela.
-const Filtros = ({ t, quemHa, areasHa, quem, area, mudarQuem, mudarArea }) => {
+//
+// ⚠ Opção A de `design/filtros-do-registo.dc.html` (14/09/2026): eram duas
+// filas de pastilhas dentro de um cartão — nove áreas em três linhas, ~190 px
+// antes da primeira entrada, e as pessoas pelo nome. Agora: o «Quem» é o
+// `FiltroDeMembros` das Tarefas e da Saúde (a bola com o nome por baixo — o
+// escolhedor de pessoa desta app); o «Onde» é UMA fila que rola de lado, como
+// os corredores do Modo Compras, com o ícone do rodapé de cada área, «Tudo»
+// primeiro e a escolhida logo a seguir. Duas linhas fixas, sem cartão nem
+// rótulos: as bolas e os ícones dizem o que cada fila é.
+const ICONE_DA_AREA = {
+  Tarefas: 'checkSquare', Agenda: 'calendar', Compras: 'fileDone', Dinheiro: 'wallet',
+  Equipamentos: 'houseGear', 'Saúde': 'heartPulse', 'Gestão da Casa': 'houseGear', Perfil: 'user',
+  'Início': 'home', 'A App': 'fileText',
+};
+const Filtros = ({ t, quemHa, areasHa, quem, area, mudarQuem, mudarArea, MEMBERS }) => {
   if (quemHa.length <= 1 && areasHa.length <= 1) return null;
-  const Fila = ({ titulo, todos, opcoes, valor, mudar }) => (
-    <>
-      <Label t={t}>{titulo}</Label>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
-        <Choice t={t} label={todos} selected={!valor} onPress={() => mudar(null)} />
-        {opcoes.map(o => (
-          <Choice key={o} t={t} label={o} selected={valor === o}
-            onPress={() => mudar(valor === o ? null : o)} />
-        ))}
-      </View>
-    </>
+  // A escolhida vem para a frente, logo a seguir a «Tudo»: numa fila que rola,
+  // o filtro ativo tem de se ver sem rolar.
+  const ordem = area && areasHa.includes(area) ? [area, ...areasHa.filter(a => a !== area)] : areasHa;
+  const Pastilha = ({ rotulo, icone, on, onPress, label }) => (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
+      accessibilityState={{ selected: on }}
+      style={({ pressed }) => ({
+        minHeight: 44, paddingHorizontal: 14, borderRadius: R.row, borderWidth: 1,
+        flexDirection: 'row', alignItems: 'center', gap: S.md,
+        backgroundColor: on ? t.accent : t.card, borderColor: on ? t.accent : t.border,
+        opacity: pressed ? 0.85 : 1,
+      })}>
+      {icone ? <Icon name={icone} size={16} color={on ? '#FFFFFF' : t.titulo} /> : null}
+      <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: on ? '#FFFFFF' : t.text2 }}>{rotulo}</Text>
+    </Pressable>
   );
   return (
-    <Card t={t} style={{ gap: S.sm }}>
-      {quemHa.length > 1
-        ? <Fila titulo="Quem" todos="Todos" opcoes={quemHa} valor={quem} mudar={mudarQuem} /> : null}
-      {areasHa.length > 1
-        ? <Fila titulo="Onde" todos="Tudo" opcoes={areasHa} valor={area} mudar={mudarArea} /> : null}
-    </Card>
+    <View style={{ gap: S.md }}>
+      {quemHa.length > 1 ? (
+        <FiltroDeMembros t={t} membros={quemHa} escolhido={quem} onEscolher={mudarQuem}
+          MEMBERS={MEMBERS || {}} rotuloDe={(n) => `Mostrar só o que ${n} fez`} />
+      ) : null}
+      {areasHa.length > 1 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ flexDirection: 'row', gap: S.md, paddingVertical: S.xs }}>
+          <Pastilha rotulo="Tudo" on={!area} onPress={() => mudarArea(null)} label="Mostrar todas as áreas" />
+          {ordem.map(a => (
+            <Pastilha key={a} rotulo={a} icone={ICONE_DA_AREA[a] || 'fileText'} on={area === a}
+              onPress={() => mudarArea(area === a ? null : a)} label={`Mostrar só ${a}`} />
+          ))}
+        </ScrollView>
+      ) : null}
+    </View>
   );
 };
 
@@ -168,7 +197,7 @@ const DESTINO = {
 };
 
 export default function Documentacao({ t, onIr, podeGerir, user }) {
-  const { s, retratosDaCasa } = useStore();
+  const { s, retratosDaCasa, membros: membrosDaCasa } = useStore();
   const [aba, setAba] = useState('novidades');
   // O retrato de um mês com a folha aberta (12/09/2026).
   const [retrato, setRetrato] = useState(null);
@@ -317,7 +346,7 @@ export default function Documentacao({ t, onIr, podeGerir, user }) {
             Histórico da Casa
           </SectionTitle>
 
-          <Filtros t={t} quemHa={quemHa} areasHa={areasHa}
+          <Filtros t={t} quemHa={quemHa} areasHa={areasHa} MEMBERS={membrosDaCasa}
             quem={filtroQuem} area={filtroArea}
             mudarQuem={setFiltroQuem} mudarArea={setFiltroArea} />
 
