@@ -135,50 +135,48 @@ const AreaAberta = ({ t, g, corDo }) => {
 // rótulos: as bolas e os ícones dizem o que cada fila é.
 const ICONE_DA_AREA = {
   Tarefas: 'checkSquare', Agenda: 'calendar', Compras: 'fileDone', Dinheiro: 'wallet',
-  Equipamentos: 'houseGear', 'Saúde': 'heartPulse', 'Gestão da Casa': 'houseGear', Perfil: 'user',
+  // ⚠ `sliders`, o ícone do cabeçalho da Gestão — e não `houseGear`, que é o
+  // dos Equipamentos: dois ícones iguais numa fila só de ícones eram um erro
+  // de leitura garantido.
+  Equipamentos: 'houseGear', 'Saúde': 'heartPulse', 'Gestão da Casa': 'sliders', Perfil: 'user',
   'Início': 'home', 'A App': 'fileText',
 };
 //
-// ⚠ E as áreas NÃO rolam (14/09/2026, «há um botão escondido, arranja melhor
-// solução»): a fila que rolava de lado cortava a última pastilha visível e
-// escondia as seguintes. Passam a uma grelha que embrulha, na FORMA das bolas
-// das pessoas logo acima — um ícone de 44 numa caixa, o nome por baixo a 10 px,
-// 64 de largura — cinco por linha em 355 px, todas à vista, nenhuma escondida.
-const LARGURA_DA_AREA = 64;
+// ⚠ E as áreas cabem numa LINHA SÓ (14/09/2026). A fila que rolava cortava a
+// última pastilha («há um botão escondido»); a grelha com o nome por baixo
+// embrulhava em duas linhas («gosto da ideia mas não gosto de estar em 2
+// linhas»). Fica uma linha de ÍCONES de 44, o do rodapé de cada área, a
+// repartir a largura (`flex: 1`, nunca abaixo de 44): oito áreas em 355 px dão
+// 44 cada. Sem pastilha «Tudo» — tocar outra vez na área escolhida desfaz o
+// filtro — e o NOME da área escolhida vai para o título da secção, como a Saúde
+// faz com a pessoa («Precisa de ação · Léo»).
 const Filtros = ({ t, quemHa, areasHa, quem, area, mudarQuem, mudarArea, MEMBERS }) => {
   if (quemHa.length <= 1 && areasHa.length <= 1) return null;
-  const Area = ({ rotulo, icone, on, onPress, label }) => (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
-      accessibilityState={{ selected: on }}
-      style={({ pressed }) => ({ width: LARGURA_DA_AREA, minHeight: 44, alignItems: 'center', gap: 2,
-        opacity: pressed ? 0.7 : 1 })}>
-      <View style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1, alignItems: 'center', justifyContent: 'center',
-        backgroundColor: on ? t.accent : t.card, borderColor: on ? t.accent : t.border }}>
-        {icone
-          ? <Icon name={icone} size={20} color={on ? '#FFFFFF' : t.titulo} />
-          : <Text style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '600', color: on ? '#FFFFFF' : t.text2 }}>{rotulo}</Text>}
-      </View>
-      {icone ? (
-        // 10 px, como o nome por baixo das bolas: a 11 «Equipamentos» partia a
-        // meio da palavra nos 64 de largura.
-        <Text numberOfLines={2} style={{ fontFamily: FONT.ui, fontSize: 10, lineHeight: 12, textAlign: 'center',
-          color: on ? t.actFg : t.text3 }}>{rotulo}</Text>
-      ) : null}
-    </Pressable>
-  );
+  // `marginVertical: S.lg`: um intervalo de 16 para o título acima e para o que
+  // vem abaixo — o aviso «Nada com esse filtro» ficava colado à fila de ícones
+  // («a info está colada aos filtros, muda isso», 14/09/2026).
   return (
-    <View style={{ gap: S.md }}>
+    <View style={{ gap: S.md, marginVertical: S.lg }}>
       {quemHa.length > 1 ? (
         <FiltroDeMembros t={t} membros={quemHa} escolhido={quem} onEscolher={mudarQuem}
           MEMBERS={MEMBERS || {}} rotuloDe={(n) => `Mostrar só o que ${n} fez`} />
       ) : null}
       {areasHa.length > 1 ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md, alignItems: 'flex-start' }}>
-          <Area rotulo="Tudo" on={!area} onPress={() => mudarArea(null)} label="Mostrar todas as áreas" />
-          {areasHa.map(a => (
-            <Area key={a} rotulo={a} icone={ICONE_DA_AREA[a] || 'fileText'} on={area === a}
-              onPress={() => mudarArea(area === a ? null : a)} label={`Mostrar só ${a}`} />
-          ))}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
+          {areasHa.map(a => {
+            const on = area === a;
+            return (
+              <Pressable key={a} onPress={() => mudarArea(on ? null : a)} accessibilityRole="button"
+                accessibilityLabel={on ? `Deixar de mostrar só ${a}` : `Mostrar só ${a}`}
+                accessibilityState={{ selected: on }}
+                style={({ pressed }) => ({ flex: 1, minWidth: 44, height: 44, borderRadius: R.row, borderWidth: 1,
+                  alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: on ? t.accent : t.card, borderColor: on ? t.accent : t.border,
+                  opacity: pressed ? 0.7 : 1 })}>
+                <Icon name={ICONE_DA_AREA[a] || 'fileText'} size={20} color={on ? '#FFFFFF' : t.titulo} />
+              </Pressable>
+            );
+          })}
         </View>
       ) : null}
     </View>
@@ -355,7 +353,9 @@ export default function Documentacao({ t, onIr, podeGerir, user }) {
             ? <Pill label={plural(daCasa.length, 'registo', 'registos')}
                 fg={t.text3} bg={t.subtle} border={t.border} />
             : null}>
-            Histórico da Casa
+            {/* O filtro ativo lê-se no título — a pessoa e a área — como a Saúde
+                faz com «Precisa de ação · Léo»: a fila de áreas é só de ícones. */}
+            {['Histórico da Casa', filtroQuem, filtroArea].filter(Boolean).join(' · ')}
           </SectionTitle>
 
           <Filtros t={t} quemHa={quemHa} areasHa={areasHa} MEMBERS={membrosDaCasa}
@@ -379,7 +379,7 @@ export default function Documentacao({ t, onIr, podeGerir, user }) {
             // destinos («uma linha, um destino», CLAUDE.md).
             <View>
               {agruparPorDia(pgCasa.slice).map((g) => (
-                <View key={g.chave || 'sem-data'} style={{ marginTop: S.md }}>
+                <View key={g.chave || 'sem-data'} style={{ marginBottom: S.md }}>
                   <SectionTitle t={t}>{g.rotulo}</SectionTitle>
                   {g.linhas.map((r, i) => {
                     const destino = DESTINO[r.a] || null;
@@ -431,7 +431,7 @@ export default function Documentacao({ t, onIr, podeGerir, user }) {
             <Empty t={t} icon="fileText"
               title={todoOregisto.length ? 'Nada com esse filtro.' : 'Ainda sem registos.'}
               hint={todoOregisto.length
-                ? 'Escolha «Todos» e «Tudo» para ver o histórico inteiro.'
+                ? 'Escolha «Todos» e toque outra vez na área escolhida para ver o histórico inteiro.'
                 : 'Tudo o que a família fizer na app fica aqui: tarefas, despesas, compras, agenda e equipamentos.'} />
           )}
 

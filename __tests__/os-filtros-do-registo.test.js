@@ -30,22 +30,28 @@ describe('⚠ os filtros do registo', () => {
     expect(doc).toMatch(/<Filtros t=\{t\} quemHa=\{quemHa\} areasHa=\{areasHa\} MEMBERS=\{membrosDaCasa\}/);
   });
 
-  // 14/09/2026, ao ver a fila a rolar: «há um botão escondido, arranja melhor
-  // solução». As áreas passaram a uma GRELHA que embrulha — ícone de 44 numa
-  // caixa com o nome por baixo, 64 de largura, na forma das bolas das pessoas
-  // — em que nenhuma fica cortada nem escondida.
-  it('as áreas são uma grelha que embrulha — ícone com o nome por baixo, 64 de largura, nada escondido', () => {
+  // 14/09/2026: a fila que rolava cortava a última pastilha («há um botão
+  // escondido»); a grelha com nomes embrulhava («não gosto de estar em 2
+  // linhas»). Fica UMA linha de ícones de 44 a repartir a largura, sem «Tudo»
+  // (tocar outra vez desfaz), e o nome da área escolhida no título da secção.
+  it('as áreas são uma linha só de ícones de 44, a repartir a largura, e o nome da escolhida vai para o título', () => {
     expect(bloco).not.toMatch(/<ScrollView/);
-    expect(bloco).toMatch(/flexDirection: 'row', flexWrap: 'wrap'/);
-    expect(doc).toMatch(/const LARGURA_DA_AREA = 64;/);
-    expect(bloco).toMatch(/width: LARGURA_DA_AREA, minHeight: 44/);
-    expect(bloco).toMatch(/width: 44, height: 44, borderRadius: R\.row/);
-    expect(bloco).toMatch(/rotulo="Tudo" on=\{!area\}/);
-    expect(bloco).toMatch(/icone=\{ICONE_DA_AREA\[a\] \|\| 'fileText'\}/);
-    expect(bloco).toMatch(/label=\{`Mostrar só \$\{a\}`\}/);
-    expect(bloco).toMatch(/numberOfLines=\{2\}/);
-    // Os ícones são os do rodapé — o mesmo significado, o mesmo desenho.
+    expect(bloco).not.toMatch(/Tudo/);
+    expect(bloco).toMatch(/flex: 1, minWidth: 44, height: 44, borderRadius: R\.row/);
+    expect(bloco).toMatch(/onPress=\{\(\) => mudarArea\(on \? null : a\)\}/);
+    expect(bloco).toMatch(/accessibilityLabel=\{on \? `Deixar de mostrar só \$\{a\}` : `Mostrar só \$\{a\}`\}/);
+    expect(bloco).toMatch(/<Icon name=\{ICONE_DA_AREA\[a\] \|\| 'fileText'\} size=\{20\}/);
+    expect(bloco).not.toMatch(/fontSize/);   // só ícones — o nome está no título
+    expect(doc).toMatch(/\{\['Histórico da Casa', filtroQuem, filtroArea\]\.filter\(Boolean\)\.join\(' · '\)\}/);
+    // Os ícones são os do rodapé e dos cabeçalhos — e nenhum se repete na fila:
+    // a Gestão leva `sliders` (o do cabeçalho dela), não o `houseGear` dos Equipamentos.
     expect(doc).toMatch(/Tarefas: 'checkSquare', Agenda: 'calendar', Compras: 'fileDone', Dinheiro: 'wallet'/);
+    expect(doc).toMatch(/'Gestão da Casa': 'sliders'/);
+    const j = doc.indexOf('const ICONE_DA_AREA = {');
+    const mapa = doc.slice(j, doc.indexOf('};', j));
+    const nomes = [...mapa.matchAll(/: '(\w+)'/g)].map(m => m[1]);
+    expect(nomes.length).toBeGreaterThanOrEqual(8);
+    expect(new Set(nomes).size).toBe(nomes.length);
   });
 
   it('sem cartão à volta, sem os rótulos «Quem» e «Onde»', () => {
