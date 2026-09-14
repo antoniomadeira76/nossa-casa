@@ -158,7 +158,12 @@ const Filtros = ({ t, quemHa, areasHa, quem, area, mudarQuem, mudarArea, MEMBERS
   return (
     <View style={{ gap: S.md, marginVertical: S.lg }}>
       {quemHa.length > 1 ? (
-        <FiltroDeMembros t={t} membros={quemHa} escolhido={quem} onEscolher={mudarQuem}
+        // ⚠ O «Todos» do FiltroDeMembros devolve a PALAVRA 'Todos', não `null`
+        // (é o que as Tarefas guardam). Aqui o filtro é um nome ou nada: sem
+        // esta tradução, «Todos» filtrava por uma pessoa chamada Todos e o
+        // registo ficava vazio («o Todos não devia mostrar isso mesmo?»).
+        <FiltroDeMembros t={t} membros={quemHa} escolhido={quem || 'Todos'}
+          onEscolher={(n) => mudarQuem(n === 'Todos' ? null : n)}
           MEMBERS={MEMBERS || {}} rotuloDe={(n) => `Mostrar só o que ${n} fez`} />
       ) : null}
       {areasHa.length > 1 ? (
