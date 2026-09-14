@@ -49,37 +49,52 @@ import { visibilidadeDe } from './store';
 // campo, e quem o usar não tem de se lembrar.
 const aosCentimos = (n) => Math.round(n * 100) / 100;
 
-export function NumField({ t, value, onChange, step = 5, min = 0, max = 99999, suffix = true }) {
+// ⚠ E é O campo de número da app (revisão de coerência de 14/09/2026): os
+// pontos de bónus da tarefa, a garantia em dias, o plano de tomas, o limite de
+// um envelope e o preço estimado de um artigo eram caixas de texto simples ao
+// lado deste. `vazio` deixa o campo ficar SEM valor (`null`) — um preço que
+// ainda não se sabe não é 0,00 €; `rotulo` é o que o leitor de ecrã diz;
+// `placeholder` é o que se lê no campo vazio.
+export function NumField({ t, value, onChange, step = 5, min = 0, max = 99999, suffix = true,
+  vazio = false, rotulo = 'Valor', placeholder = null }) {
   const [txt, setTxt] = React.useState(null);
+  const semValor = vazio && (value === null || value === undefined || value === '');
+  const atual = semValor ? 0 : Number(value) || 0;
   const commit = () => {
     if (txt === null) return;
-    const v = Number(String(txt).replace(',', '.'));
+    const bruto = String(txt).trim();
     setTxt(null);
+    if (bruto === '' && vazio) { onChange(null); return; }
+    const v = Number(bruto.replace(',', '.'));
     if (!isFinite(v)) return;
     onChange(aosCentimos(Math.min(max, Math.max(min, v))));
   };
-  const Botao = ({ rotulo, sinal, para }) => (
+  const Botao = ({ rotuloDoBotao, sinal, para }) => (
     <Pressable onPress={() => onChange(para)} accessibilityRole="button"
-      accessibilityLabel={rotulo}
+      accessibilityLabel={rotuloDoBotao}
       style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
         alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ fontFamily: FONT.display, fontSize: 20, color: t.actFg }}>{sinal}</Text>
     </Pressable>
   );
+  const mostrado = txt !== null ? String(txt)
+    : semValor ? ''
+      : (suffix ? EUR(atual) : String(atual));
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-      <Botao rotulo={`Menos ${step}`} sinal="−" para={aosCentimos(Math.max(min, value - step))} />
+      <Botao rotuloDoBotao={`Menos ${step}`} sinal="−" para={aosCentimos(Math.max(min, atual - step))} />
       <TextInput
-        value={txt !== null ? String(txt) : (suffix ? EUR(value) : String(value))}
-        onFocus={() => setTxt(String(value).replace('.', ','))}
+        value={mostrado}
+        onFocus={() => setTxt(semValor ? '' : String(atual).replace('.', ','))}
         onChangeText={setTxt}
         onBlur={commit}
         onSubmitEditing={commit}
         keyboardType="decimal-pad"
-        accessibilityLabel="Valor"
+        accessibilityLabel={rotulo}
+        placeholder={placeholder || undefined} placeholderTextColor={t.text3}
         style={{ flex: 1, minHeight: 44, textAlign: 'center', fontFamily: FONT.display,
           fontSize: 18, color: t.text2, borderRadius: R.row, borderWidth: 1, borderColor: t.border }} />
-      <Botao rotulo={`Mais ${step}`} sinal="+" para={aosCentimos(Math.min(max, value + step))} />
+      <Botao rotuloDoBotao={`Mais ${step}`} sinal="+" para={aosCentimos(Math.min(max, atual + step))} />
     </View>
   );
 }

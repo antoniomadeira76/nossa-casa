@@ -3,6 +3,7 @@ import { View, Text } from 'react-native';
 import { useStore } from '../store';
 import { S, FONT } from '../theme';
 import { Primary } from '../ui';
+import { useAcaoDaFolha } from '../Sheet';
 import { EUR } from '../format';
 import CamposContaFixa from './CamposContaFixa';
 
@@ -46,13 +47,15 @@ export default function NovaContaFixa({ t, onClose }) {
 
       {/* A consequência dita no botão: a conta entra por pagar, e é o «Marcar
           como paga» de cada mês que põe a despesa no envelope. */}
-      <Primary comum t={t} label="Criar conta fixa"
+      {/* O botão principal vai para o rodapé FIXO da folha (`useAcaoDaFolha`,
+          14/09/2026): estava no fim do conteúdo, só visível depois de rolar. */}
+      {useAcaoDaFolha(<Primary comum t={t} label="Criar conta fixa"
         sub={!nome ? 'Escreva o nome da conta'
           : !(form.valor > 0) ? 'Escreva o valor'
             : !form.envelope ? 'Escolha um envelope'
               : `${EUR(form.valor)} todo o dia ${form.dia} · entra por pagar`}
         disabled={!pronto}
-        onPress={guardar} />
+        onPress={guardar} />)}
     </View>
   );
 }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import { useStore } from '../store';
 import { S, FONT } from '../theme';
-import { Label, Choice, Primary, Tile } from '../ui';
+import { Label, Choice, Primary, Tile, Empty } from '../ui';
 import Sheet from '../Sheet';
 
 // «Propor uma troca» — a criança escolhe uma tarefa sua e uma do irmão, só
@@ -31,7 +31,7 @@ export default function ProporTroca({ t, kid, onClose }) {
   };
 
   return (
-    <Sheet t={t} title="Propor uma troca" sub="Uma tarefa sua por uma do irmão · só para hoje" onClose={onClose}
+    <Sheet t={t} title="Propor uma Troca" sub="Uma tarefa sua por uma do irmão · só para hoje" onClose={onClose}
       action={<Primary t={t} comum label={escolhida ? `Propor ${aoNome(escolhida.who)}` : 'Propor a troca'}
         disabled={!minha || !dele} onPress={propor} />}>
       <View style={{ gap: S.lg }}>
@@ -45,7 +45,8 @@ export default function ProporTroca({ t, kid, onClose }) {
               ))}
             </View>
           ) : (
-            <Tile t={t} kind="info">Não tem tarefas por fazer para trocar hoje.</Tile>
+            <Empty t={t} icon="checkSquare" title="Não tem tarefas por fazer para trocar hoje."
+              hint="Uma troca precisa de uma tarefa sua ainda por fazer." />
           )}
         </View>
 
@@ -59,7 +60,8 @@ export default function ProporTroca({ t, kid, onClose }) {
               ))}
             </View>
           ) : (
-            <Tile t={t} kind="info">Nenhum irmão tem tarefas por fazer hoje.</Tile>
+            <Empty t={t} icon="checkSquare" title="Nenhum irmão tem tarefas por fazer hoje."
+              hint="Quando um irmão tiver uma tarefa por fazer, aparece aqui para trocar." />
           )}
         </View>
 

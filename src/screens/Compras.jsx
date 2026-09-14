@@ -4,7 +4,7 @@ import { View, Text, Pressable, Modal } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, dayLabel, parseKey, WD, plural } from '../format';
-import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Tile, Avatar, avatarDe, Pill, Row } from '../ui';
+import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Empty, Avatar, avatarDe, Pill, Row } from '../ui';
 import PartilharLista from '../sheets/PartilharLista';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
@@ -114,9 +114,10 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
           O plano volta assim que houver um artigo: ele existe, não se apagou —
           é o cartão que espera por ter o que anunciar. */}
       {items.length === 0 ? (
-        <Tile t={t} kind="info">
-          Não há nada na lista de compras desta casa.
-        </Tile>
+        // O vazio da app — ícone, título e o que fazer a seguir —, e não um
+        // aviso de uma linha (revisão de 14/09/2026: o vazio tinha três caras).
+        <Empty t={t} icon="fileDone" title="Não há nada na lista de compras desta casa."
+          hint="Toque em «acrescentar artigo» para começar a lista da semana." />
       ) : (
       <Card t={t} style={{ gap: S.lg }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>

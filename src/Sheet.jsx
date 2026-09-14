@@ -13,10 +13,37 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { S, R, FONT, elev, LARGURA_APP } from './theme';
 import Icon from './Icon';
 
+// ── O botão principal, fixo em baixo, vindo de DENTRO da folha ──────────────
+//
+// 14/09/2026, a segunda revisão de coerência: treze folhas tinham o botão
+// principal no fim do conteúdo, só visível depois de rolar, e treze tinham-no
+// fixo no `action`. O corpo da folha é quem sabe o que o botão faz e quando
+// está desativado; o `Sheet` é quem tem o sítio fixo. Este contexto liga os
+// dois: o corpo chama `useAcaoDaFolha` com o botão e ele aparece no rodapé
+// da folha, sempre à vista. Fora de uma folha (nas provas, ou numa vista
+// que não é folha) o hook devolve o próprio elemento, para se desenhar no
+// lugar onde estava.
+const AcaoDaFolha = React.createContext(null);
+export function useAcaoDaFolha(elemento) {
+  const registar = React.useContext(AcaoDaFolha);
+  // Sem lista de dependências de propósito: o botão muda com o estado do corpo
+  // (o rótulo, o `disabled`, a linha de consequência) e tem de acompanhar cada
+  // desenho. Não entra em ciclo: o `Sheet` que recebe o elemento não volta a
+  // desenhar o corpo, porque os `children` dele são o mesmo objeto.
+  React.useEffect(() => {
+    if (!registar) return undefined;
+    registar(elemento);
+    return () => registar(null);
+  });
+  return registar ? null : elemento;
+}
+
 // Folha inferior: cabeçalho fixo, meio a rolar, ação fixa em baixo.
 // Para a folha nunca tapar o rodapé, para nos 86 px acima do fundo.
 export default function Sheet({ t, title, sub, onClose, children, action, headerRight, leading }) {
   const insets = useSafeAreaInsets();
+  const [acaoDoFilho, setAcaoDoFilho] = React.useState(null);
+  const acao = action || acaoDoFilho;
   return (
     <Modal transparent animationType={ANIMACAO_DA_FOLHA} onRequestClose={onClose} statusBarTranslucent>
       {/* ⚠ A folha corre DENTRO da coluna da app.
@@ -48,11 +75,13 @@ export default function Sheet({ t, title, sub, onClose, children, action, header
           </View>
 
           <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ gap: S.lg, paddingBottom: S.md }}>
-            {children}
+            <AcaoDaFolha.Provider value={setAcaoDoFilho}>
+              {children}
+            </AcaoDaFolha.Provider>
           </ScrollView>
 
-          {action ? <View style={{ paddingTop: 14, paddingBottom: 30 }}>{action}</View>
-                  : <View style={{ height: 24 }} />}
+          {acao ? <View style={{ paddingTop: 14, paddingBottom: 30 }}>{acao}</View>
+                : <View style={{ height: 24 }} />}
         </View>
       </View>
     </Modal>

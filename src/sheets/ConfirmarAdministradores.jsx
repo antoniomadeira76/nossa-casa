@@ -3,6 +3,7 @@ import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { Label, Primary, Tile, Avatar, avatarDe } from '../ui';
+import { useAcaoDaFolha } from '../Sheet';
 import Icon from '../Icon';
 import * as servidor from '../pocketbase';
 
@@ -167,11 +168,13 @@ export default function ConfirmarAdministradores({
 
           ACENTO: apaga. É a regra sem excepção nenhuma. Sem linha por baixo
           porque o `aviso` acima já diz, em prosa, o que desaparece. */}
-      <Primary t={t}
+      {/* O botão principal vai para o rodapé FIXO da folha (`useAcaoDaFolha`,
+          14/09/2026): estava no fim do conteúdo, só visível depois de rolar. */}
+      {useAcaoDaFolha(<Primary t={t}
         label={aExecutar ? 'A apagar…' : rotuloAcao}
         icon="trash"
         disabled={(!podeAvancar && !semServidor) || aExecutar}
-        onPress={executar} />
+        onPress={executar} />)}
 
       {erroDeFora ? <Tile t={t} kind="err">{erroDeFora}</Tile> : null}
 

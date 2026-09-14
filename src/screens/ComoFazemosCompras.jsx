@@ -67,7 +67,7 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
           «Alterar» que aqui havia mudava só quem vai, e as outras duas coisas
           não se mudavam de sítio nenhum. */}
       <View>
-        <SectionTitle t={t}>A próxima ida</SectionTitle>
+        <SectionTitle t={t}>A Próxima Ida</SectionTitle>
         {/* Linhas planas, sem cartão — desenho C (09/09/2026). */}
         <View style={{ paddingHorizontal: S.xs }}>
           <Row t={t} icon="user" title={quem || 'Por escolher'} sub="quem vai às compras"
@@ -113,7 +113,7 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
           mesmo componente. A pressão longa é que arma o gesto: uma alça seria
           um segundo alvo na linha, contra o erro #6. */}
       <View>
-        <SectionTitle t={t}>Corredores da loja</SectionTitle>
+        <SectionTitle t={t}>Corredores da Loja</SectionTitle>
         <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18,
           color: t.text3, marginTop: -S.md, marginBottom: S.md }}>
           É por esta ordem que o Modo Compras leva a lista. Mantenha premido para mudar.
@@ -161,7 +161,7 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
 
       {/* ── Quem vai ─────────────────────────────────────────────────────── */}
       {folha === 'quem' ? (
-        <Sheet t={t} title="Quem vai às compras" sub="Só os adultos da casa"
+        <Sheet t={t} title="Quem Vai às Compras" sub="Só os adultos da casa"
           onClose={fechar}>
           <EscolherMembro t={t} valor={quem} membros={adultos}
             cores={Object.fromEntries(adultos.map(n => [n, corDoMembro(n, MEMBERS[n]?.cor)]))}
@@ -203,7 +203,7 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
 
       {/* ── Uma loja: criar ou renomear ──────────────────────────────────── */}
       {folha === 'loja' ? (
-        <Sheet t={t} title={aEditar ? 'Editar loja' : 'Nova loja'} sub={aEditar || undefined}
+        <Sheet t={t} title={aEditar ? 'Editar Loja' : 'Nova Loja'} sub={aEditar || undefined}
           onClose={fechar}
           action={
             <BotaoCompacto t={t} tom="comum" label="Guardar" disabled={!texto.trim()}
@@ -244,7 +244,7 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
 
       {/* ── Um corredor: criar ou renomear ───────────────────────────────── */}
       {folha === 'seccao' ? (
-        <Sheet t={t} title={aEditar ? 'Editar corredor' : 'Novo corredor'} sub={aEditar || undefined}
+        <Sheet t={t} title={aEditar ? 'Editar Corredor' : 'Novo Corredor'} sub={aEditar || undefined}
           onClose={fechar}
           action={
             <BotaoCompacto t={t} tom="comum" label="Guardar" disabled={!texto.trim()}

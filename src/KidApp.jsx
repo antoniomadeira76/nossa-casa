@@ -6,7 +6,7 @@ import { buildTheme, onChrome, S, R, FONT, SCHEMES, corDoMembro, chromeDaCrianca
 import { EUR, parseKey, pad2, plural, TODAY_KEY } from './format';
 import Icon from './Icon';
 import { MarcaDeAgua } from './ui';
-import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe, Linha, Choice, BotaoCompacto } from './ui';
+import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe, Linha, Choice, BotaoCompacto, NumField } from './ui';
 import Sheet from './Sheet';
 import EscolherAvatar from './sheets/EscolherAvatar';
 import ProporTroca from './sheets/ProporTroca';
@@ -34,7 +34,7 @@ function FolhaDoPerfil({ t, kid, onClose }) {
   const scheme = SCHEMES[s.schemeByUser[kid]] ? s.schemeByUser[kid] : 0;
 
   return (
-    <Sheet t={t} title="O meu perfil" sub={`Como ${kid} aparece, e o PIN com que entra`} onClose={onClose}>
+    <Sheet t={t} title="O Meu Perfil" sub={`Como ${kid} aparece, e o PIN com que entra`} onClose={onClose}>
       <View style={{ gap: S.xl }}>
         <View>
           <SectionTitle t={t}>Aparência</SectionTitle>
@@ -47,7 +47,7 @@ function FolhaDoPerfil({ t, kid, onClose }) {
         </View>
 
         <View style={{ gap: S.md }}>
-          <SectionTitle t={t}>Cor do perfil</SectionTitle>
+          <SectionTitle t={t}>Cor do Perfil</SectionTitle>
           <EscolhaDeEsquema t={t} escolhido={scheme}
             onEscolher={(i) => mudarPreferencia(kid, { esquema: i })} />
           <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
@@ -107,7 +107,7 @@ function FolhaDoPin({ t, kid, onClose }) {
   };
 
   return (
-    <Sheet t={t} title="O meu PIN" sub="Quatro dígitos, só seus" onClose={onClose}
+    <Sheet t={t} title="O Meu PIN" sub="Quatro dígitos, só seus" onClose={onClose}
       action={feito
         ? <Primary t={t} comum label="Fechar" onPress={onClose} />
         : <Primary t={t} comum label={aGuardar ? 'A guardar…' : 'Guardar o PIN novo'}
@@ -435,7 +435,7 @@ function FolhaPedirArtigo({ t, kid, onClose }) {
     onClose();
   };
   return (
-    <Sheet t={t} title="Pedir um artigo" sub="Entra na lista da casa, com o seu nome" onClose={onClose}
+    <Sheet t={t} title="Pedir um Artigo" sub="Entra na lista da casa, com o seu nome" onClose={onClose}
       action={<Primary t={t} comum label="Pedir" disabled={!pronto} onPress={pedir} />}>
       <View style={{ gap: S.lg }}>
         <View style={{ gap: S.sm }}>
@@ -537,7 +537,7 @@ function FolhaDoObjetivo({ t, kid, atual, onClose }) {
     color: t.text1, borderRadius: R.row, borderWidth: 1, borderColor: t.border, backgroundColor: t.card,
   };
   return (
-    <Sheet t={t} title={atual ? 'Mudar o objetivo' : 'O meu objetivo'} sub="Para que está a juntar?" onClose={onClose}
+    <Sheet t={t} title={atual ? 'Mudar o Objetivo' : 'O Meu Objetivo'} sub="Para que está a juntar?" onClose={onClose}
       action={<Primary t={t} comum label={atual ? 'Guardar' : 'Começar a juntar'} disabled={!nome.trim() || !alvo} onPress={guardar} />}>
       <View style={{ gap: S.lg }}>
         <View style={{ gap: S.sm }}>
@@ -547,8 +547,11 @@ function FolhaDoObjetivo({ t, kid, atual, onClose }) {
         </View>
         <View style={{ gap: S.sm }}>
           <Label t={t}>Quanto custa (€)</Label>
-          <TextInput value={alvo} onChangeText={(v) => { setErro(null); setAlvo(v); }} keyboardType="decimal-pad" maxLength={8}
-            placeholder="120,00" placeholderTextColor={t.text3} accessibilityLabel="Valor do objetivo em euros" style={campo} />
+          {/* O campo de número da app, com «−» e «+» (14/09/2026). O estado
+              continua a ser texto, que é o que o «Guardar» já lia. */}
+          <NumField t={t} vazio step={5} min={0} max={99999} rotulo="Valor do objetivo em euros" placeholder="120,00 €"
+            value={String(alvo).trim() === '' ? null : Number(String(alvo).replace(',', '.'))}
+            onChange={(v) => { setErro(null); setAlvo(v == null ? '' : String(v)); }} />
         </View>
         {erro ? <Tile t={t} kind="warn">{erro}</Tile> : null}
         {atual ? (
@@ -631,7 +634,7 @@ function KidVaultView({ t, kid }) {
           e a frase diz quantas semanadas faltam ao ritmo de agora — uma
           semanada é o que os pontos por pagar valem hoje. */}
       <View style={{ gap: S.md }}>
-        <SectionTitle t={t}>O meu objetivo</SectionTitle>
+        <SectionTitle t={t}>O Meu Objetivo</SectionTitle>
         {objetivo ? (
           <Card t={t} style={{ gap: S.sm }}>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: S.md }}>

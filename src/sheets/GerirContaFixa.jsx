@@ -3,6 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { Label, Primary } from '../ui';
+import { useAcaoDaFolha } from '../Sheet';
 import Icon from '../Icon';
 import { EUR, dmyDeChave } from '../format';
 import { estadoDaConta } from '../contas-fixas';
@@ -82,11 +83,13 @@ export default function GerirContaFixa({ t, conta, user, onApagar, onClose }) {
 
       {/* O que já foi pago não muda: as despesas dos meses passados ficam com
           o valor que tinham. Mudar a conta muda os meses que vêm. */}
-      <Primary comum t={t} label="Guardar alterações"
+      {/* O botão principal vai para o rodapé FIXO da folha (`useAcaoDaFolha`,
+          14/09/2026): estava no fim do conteúdo, só visível depois de rolar. */}
+      {useAcaoDaFolha(<Primary comum t={t} label="Guardar alterações"
         sub={!form.nome.trim() ? 'Escreva o nome da conta'
           : !mudou ? 'Nada mudou'
             : 'Vale a partir de agora; o que já foi pago fica como está'}
-        disabled={!form.nome.trim() || !mudou} onPress={guardar} />
+        disabled={!form.nome.trim() || !mudou} onPress={guardar} />)}
 
       {/* ── Apagar ─────────────────────────────────────────────────────────
           Em baixo, depois de tudo o que se ajusta, e separado por uma linha. */}

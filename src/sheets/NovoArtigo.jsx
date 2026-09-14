@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, Choice, Toggle, Primary } from '../ui';
+import { Label, Choice, Toggle, Primary, NumField } from '../ui';
+import { useAcaoDaFolha } from '../Sheet';
 
 export default function NovoArtigo({ t, user, onClose }) {
   const { criarArtigo, seccoes } = useStore();
@@ -80,17 +81,9 @@ export default function NovoArtigo({ t, user, onClose }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Preço estimado (€)</Label>
-        <TextInput accessibilityLabel="Preço estimado em euros"
-          value={String(form.est)}
-          onChangeText={(v) => setForm(f => ({ ...f, est: parseFloat(v) || 0 }))}
-          placeholder="0,00"
-          keyboardType="decimal-pad"
-          style={{
-            minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
-            fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
-            borderColor: t.border, backgroundColor: t.card,
-          }}
-        />
+        {/* O campo de número da app, com «−» e «+» de 0,50 € (14/09/2026). */}
+        <NumField t={t} value={form.est} onChange={(v) => setForm(f => ({ ...f, est: v || 0 }))}
+          step={0.5} min={0} max={9999} rotulo="Preço estimado em euros" />
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -123,12 +116,14 @@ export default function NovoArtigo({ t, user, onClose }) {
         </Text>
       </View>
 
-      <Primary comum
+      {/* O botão principal vai para o rodapé FIXO da folha (`useAcaoDaFolha`,
+          14/09/2026): estava no fim do conteúdo, só visível depois de rolar. */}
+      {useAcaoDaFolha(<Primary comum
         t={t}
         label="Guardar artigo"
         disabled={!canSave}
         onPress={handleSave}
-      />
+      />)}
     </View>
   );
 }

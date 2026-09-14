@@ -3,9 +3,9 @@ import { View, Text, TextInput, Pressable, Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import CampoData from '../CampoData';
 import { useStore } from '../store';
-import { S, R, FONT, corDoMembro, STATE } from '../theme';
+import { S, R, FONT, corDoMembro } from '../theme';
 import { DE } from '../data';
-import { Card, SectionTitle, Linha, Empty, AddButton, Label, Primary, Pill, Tile, Tap, Avatar, avatarDe, BotaoCompacto, PastilhaTocavel, Segmented } from '../ui';
+import { Card, SectionTitle, Linha, Empty, AddButton, Label, Primary, Pill, Tile, Tap, Avatar, avatarDe, BotaoCompacto, PastilhaTocavel, Segmented, NumField } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -270,7 +270,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                 mesma linha e obrigava a adivinhar onde tocar (erro #6 do
                 CLAUDE.md). */}
             {needsDec && (
-              <Pill label="Ação" bg={STATE.warnBg} fg={STATE.warnDeep} border={STATE.warn} />
+              <Pill label="Ação" bg={t.state.warnBg} fg={t.state.warnDeep} border={t.state.warn} />
             )}
             <Icon name={expanded ? 'caretUp' : 'caretDown'} size={20} color={t.text3} />
           </Pressable>
@@ -337,13 +337,13 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                               `design/botoes-da-saude.dc.html`. */}
                           {!recipe.decision && (
                             <PastilhaTocavel t={t} label="Guardada"
-                              fg={STATE.okDeep} bg={STATE.okBg} border={STATE.okBorder}
+                              fg={t.state.okDeep} bg={t.state.okBg} border={t.state.okBorder}
                               onPress={() => setRecipeDecision(record.id, recipe.id, 'guardada')} />
                           )}
                           {/* A mesma razão da dose: `decision: ''` vem do
                               servidor para a receita por decidir. */}
                           {recipe.decision ? (
-                            <Pill label={recipe.decision} bg={STATE.okBg} fg={t.state.okTexto} border={STATE.ok} />
+                            <Pill label={recipe.decision} bg={t.state.okBg} fg={t.state.okTexto} border={t.state.ok} />
                           ) : null}
                         </View>
                         {/* ── As tomas (12/09/2026) ─────────────────────────
@@ -440,17 +440,18 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                         placeholder="Validade (dd/mm/aaaa)"
                         onChange={(k) => setRecipeForm(f => ({ ...f, expiresAt: dmyDeChave(k) }))} />
                       {/* O plano de tomas, opcional: por dia, dias, caixa. */}
-                      <View style={{ flexDirection: 'row', gap: S.sm }}>
-                        {[['frequency', 'Tomas por dia', 'Por dia'], ['durationDays', 'Duração em dias', 'Dias'], ['boxSize', 'Unidades na caixa', 'Caixa']].map(([campo, rotulo, curto]) => (
-                          <TextInput key={campo} accessibilityLabel={rotulo}
-                            value={recipeForm[campo]} keyboardType="number-pad"
-                            onChangeText={(v) => setRecipeForm(f => ({ ...f, [campo]: v }))}
-                            placeholder={curto} placeholderTextColor={t.text3}
-                            style={{
-                              flex: 1, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
-                              fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
-                              borderColor: t.border, backgroundColor: t.surface, textAlign: 'center',
-                            }} />
+                      {/* O campo de número da app, com «−» e «+» (14/09/2026), um
+                          por linha com o seu rótulo — três caixas lado a lado
+                          não têm largura para os botões. Vazio é vazio: o
+                          plano é opcional, e um «0» não é «sem plano». */}
+                      <View style={{ gap: S.md }}>
+                        {[['frequency', 'Tomas por dia'], ['durationDays', 'Duração em dias'], ['boxSize', 'Unidades na caixa']].map(([campo, rotulo]) => (
+                          <View key={campo} style={{ gap: S.xs }}>
+                            <Label t={t}>{rotulo}</Label>
+                            <NumField t={t} vazio suffix={false} step={1} min={0} max={999} rotulo={rotulo} placeholder="—"
+                              value={recipeForm[campo] === '' || recipeForm[campo] == null ? null : Number(recipeForm[campo])}
+                              onChange={(v) => setRecipeForm(f => ({ ...f, [campo]: v == null ? '' : String(v) }))} />
+                          </View>
                         ))}
                       </View>
                       {/* Confirmar um campo: peso COMUM. Guardar uma receita
@@ -534,7 +535,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                             </Tap>
                             <Tap label={`Apagar a nota de ${note.author}`}
                               onPress={() => apagarNota(record.id, note.id)}>
-                              <Icon name="trash" size={16} color={STATE.err} />
+                              <Icon name="trash" size={16} color={t.state.err} />
                             </Tap>
                           </>
                         ) : null}
@@ -624,7 +625,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
 
               {/* Decisão/Ação necessária */}
               {needsDec && (
-                <View style={{ gap: S.md, padding: S.md, backgroundColor: t.card, borderRadius: R.row, borderLeftWidth: 3, borderLeftColor: STATE.warn }}>
+                <View style={{ gap: S.md, padding: S.md, backgroundColor: t.card, borderRadius: R.row, borderLeftWidth: 3, borderLeftColor: t.state.warn }}>
                   <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.state.warnTexto }}>
                     Precisa de ação
                   </Text>
@@ -689,7 +690,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                         Sem esta pastilha, uma fotografia que ficou só no
                         telemóvel parecia estar guardada em casa. */}
                     {d.foto && d.porSubir ? (
-                      <Pill label="só aqui" bg={STATE.warnBg} fg={STATE.warnDeep} border={STATE.warn} />
+                      <Pill label="só aqui" bg={t.state.warnBg} fg={t.state.warnDeep} border={t.state.warn} />
                     ) : null}
                   </View>
                 ))}
@@ -731,10 +732,10 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                   onPress={() => { setNaoApagou(null); setAApagar(record); }}
                   style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center',
                     justifyContent: 'center', gap: S.md, minHeight: 44, borderRadius: R.row,
-                    backgroundColor: pressed ? STATE.errBg : 'transparent' })}>
-                  <Icon name="trash" size={18} color={STATE.errDeep} />
+                    backgroundColor: pressed ? t.state.errBg : 'transparent' })}>
+                  <Icon name="trash" size={18} color={t.state.errTexto} />
                   <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
-                    color: STATE.errDeep }}>
+                    color: t.state.errTexto }}>
                     Apagar Consulta
                   </Text>
                 </Pressable>
@@ -871,7 +872,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
 
             {filtered.filter(h => !needsDecision.includes(h)).length > 0 && (
               <View>
-                <SectionTitle t={t}>Arquivo clínico</SectionTitle>
+                <SectionTitle t={t}>Arquivo Clínico</SectionTitle>
                 <View>
                   {filtered.filter(h => !needsDecision.includes(h)).map(record => (
                     <RecordCard key={record.id} record={record} />
@@ -1490,7 +1491,7 @@ function GerirEspecialidades({ t, user, form, setForm, onClose }) {
                   </Text>
                 ) : (
                   <Tap label={`Apagar ${esp}`} onPress={() => apagar(esp)}>
-                    <Icon name="trash" size={18} color={STATE.err} />
+                    <Icon name="trash" size={18} color={t.state.err} />
                   </Tap>
                 )}
               </View>

@@ -169,7 +169,7 @@ export default function FichaSaude({ t, member, user, onBack, onMarcar }) {
               {plural(docs.length, 'documento', 'documentos')}
             </Text>
           ) : null}>
-            Arquivo clínico
+            Arquivo Clínico
           </SectionTitle>
           {docs.length === 0 ? (
             <Empty t={t} icon="fileText" title="Sem documentos." />

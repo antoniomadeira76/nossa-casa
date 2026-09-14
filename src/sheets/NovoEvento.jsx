@@ -4,6 +4,7 @@ import { useStore, VISIBILIDADES } from '../store';
 import CampoData from '../CampoData';
 import { S, R, FONT } from '../theme';
 import { Label, Primary, EscolherMembros, Opcao, Tile, coresDe } from '../ui';
+import { useAcaoDaFolha } from '../Sheet';
 import Confirm from '../Confirm';
 import Icon from '../Icon';
 import ConfirmShare from '../ConfirmShare';
@@ -320,12 +321,14 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
           Não se escreve na agenda de outra pessoa: a agenda de cada um é dela,
           e o que a app pode fazer é convidar. Quem aceita, fica com o evento. */}
 
-      <Primary comum
+      {/* O botão principal vai para o rodapé FIXO da folha (`useAcaoDaFolha`,
+          14/09/2026): estava no fim do conteúdo, só visível depois de rolar. */}
+      {useAcaoDaFolha(<Primary comum
         t={t}
         label={aEditar ? 'Guardar alterações' : 'Guardar evento'}
         disabled={!canSave}
         onPress={handleSave}
-      />
+      />)}
 
       {aEditar ? (
         <Pressable onPress={() => setAApagar(true)}

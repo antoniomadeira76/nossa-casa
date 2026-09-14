@@ -3,6 +3,7 @@ import { View, Text, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { Label, NumField, Primary } from '../ui';
+import { useAcaoDaFolha } from '../Sheet';
 import { EUR } from '../format';
 
 /**
@@ -85,12 +86,14 @@ export default function NovaMeta({ t, user, onClose }) {
       {/* A consequência dita dentro do botão: a meta nasce a zero, e é o
           reforço que lhe põe dinheiro. Sem esta frase, quem cria uma meta de
           3 000 € espera vê-la a 3 000 €. */}
-      <Primary comum t={t} label="Criar meta"
+      {/* O botão principal vai para o rodapé FIXO da folha (`useAcaoDaFolha`,
+          14/09/2026): estava no fim do conteúdo, só visível depois de rolar. */}
+      {useAcaoDaFolha(<Primary comum t={t} label="Criar meta"
         sub={!nome ? 'Escreva um nome para a meta'
           : !(form.of > 0) ? 'Escreva quanto quer juntar'
             : `Nasce a 0,00 € de ${EUR(form.of)}`}
         disabled={!nome || !(form.of > 0)}
-        onPress={guardar} />
+        onPress={guardar} />)}
     </View>
   );
 }

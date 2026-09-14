@@ -3,6 +3,7 @@ import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { Label, NumField, Primary, Bar } from '../ui';
+import { useAcaoDaFolha } from '../Sheet';
 import Icon from '../Icon';
 import { EUR, dayLabel } from '../format';
 
@@ -182,12 +183,14 @@ export default function GerirMeta({ t, meta, user, onApagar, onClose }) {
         </Text>
       ) : null}
 
-      <Primary comum t={t} label="Guardar alterações"
+      {/* O botão principal vai para o rodapé FIXO da folha (`useAcaoDaFolha`,
+          14/09/2026): estava no fim do conteúdo, só visível depois de rolar. */}
+      {useAcaoDaFolha(<Primary comum t={t} label="Guardar alterações"
         sub={!nome ? 'Escreva um nome para a meta'
           : !mudou ? 'Nada mudou'
             : Number(form.of) !== Number(meta.of) ? `Passa a juntar até ${EUR(form.of)}`
               : 'A meta fica com o nome novo'}
-        disabled={!nome || !mudou} onPress={guardar} />
+        disabled={!nome || !mudou} onPress={guardar} />)}
 
       {/* ── Apagar ─────────────────────────────────────────────────────────
           Em baixo, depois de tudo o que se ajusta, e separado por uma linha. */}

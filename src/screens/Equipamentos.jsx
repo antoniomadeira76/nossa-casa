@@ -4,7 +4,7 @@ import CampoData from '../CampoData';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { TODAY, pad2, plural, warrantyDaysLeft, daysUntil, EUR, chaveDeDMY, dmyDeChave, TODAY_KEY } from '../format';
-import { Card, SectionTitle, Linha, Empty, AddButton, Label, Choice, Primary, Pill } from '../ui';
+import { Card, SectionTitle, Linha, Empty, AddButton, Label, Choice, Primary, Pill, NumField } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import FichaEquipamento from '../sheets/FichaEquipamento';
@@ -274,16 +274,9 @@ export default function Equipamentos({ t, user = null, abrir }) {
 
             <View style={{ gap: S.sm }}>
               <Label t={t}>Garantia (dias)</Label>
-              <TextInput accessibilityLabel="Garantia em dias"
-                value={String(form.warranty)}
-                onChangeText={(v) => setForm(f => ({ ...f, warranty: parseInt(v) || 365 }))}
-                keyboardType="number-pad"
-                style={{
-                  minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
-                  fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
-                  borderColor: t.border, backgroundColor: t.card,
-                }}
-              />
+              {/* O campo de número da app (14/09/2026): «−» e «+» de 30 dias. */}
+              <NumField t={t} value={form.warranty} onChange={(v) => setForm(f => ({ ...f, warranty: v }))}
+                step={30} min={0} max={3650} suffix={false} rotulo="Garantia em dias" />
             </View>
 
             <Primary t={t} comum label="Guardar" onPress={handleSave} disabled={!form.name.trim()} />

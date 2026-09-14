@@ -61,7 +61,7 @@ export default function FichaEmergencia({ t, member, user, onClose }) {
   };
 
   return (
-    <Sheet t={t} title="Ficha de emergência" sub={`${deNome(member)} ${member} · casa ${nomeDaCasa}`}
+    <Sheet t={t} title="Ficha de Emergência" sub={`${deNome(member)} ${member} · casa ${nomeDaCasa}`}
       onClose={onClose}
       action={ficha ? (
         // ⚠ ACENTO, como o «Guardar como PDF» da ficha de saúde: tira dados

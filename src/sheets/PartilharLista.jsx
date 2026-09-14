@@ -60,7 +60,7 @@ export default function PartilharLista({ t, user, onClose }) {
   const local = partilha && /^(https?:\/\/)?(127\.0\.0\.1|localhost)([:/]|$)/.test(partilha.url);
 
   return (
-    <Sheet t={t} title="Partilhar a lista" sub="Um endereço só de leitura, válido uma hora" onClose={onClose}
+    <Sheet t={t} title="Partilhar a Lista" sub="Um endereço só de leitura, válido uma hora" onClose={onClose}
       action={partilha
         ? <Primary t={t} comum icon="share" label="Copiar o endereço" sub="Para colar numa mensagem" onPress={copiar} />
         : <Primary t={t} comum label="Fechar" onPress={onClose} />}>

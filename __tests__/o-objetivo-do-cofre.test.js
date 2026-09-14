@@ -105,7 +105,7 @@ describe('⚠ o objetivo do cofre: o servidor', () => {
 describe('⚠ o objetivo do cofre: a criança', () => {
   it('sem objetivo, o cofre convida a escolher um', () => {
     const { r, texto } = kidCofre({ objetivosCofre: {} });
-    expect(texto()).toContain('O meu objetivo');
+    expect(texto()).toContain('O Meu Objetivo');
     expect(hospedeiro(r, 'Escolher um objetivo')).toBeTruthy();
     expect(texto()).not.toContain('Mudar o objetivo');
   });
@@ -129,6 +129,8 @@ describe('⚠ o objetivo do cofre: a criança', () => {
     tocar(r, 'Escolher um objetivo');
     escrever(r, 'Nome do objetivo', 'Bicicleta');
     escrever(r, 'Valor do objetivo em euros', '120,50');
+    // O campo de número (NumField) grava ao sair do campo, não a cada tecla.
+    TestRenderer.act(() => { hospedeiro(r, 'Valor do objetivo em euros').props.onBlur(); });
     tocar(r, 'Começar a juntar');
     expect(loja().s.objetivosCofre['Léo']).toMatchObject({ nome: 'Bicicleta', alvo: 120.5 });
     // Nenhum campo de «juntado» ficou na loja.

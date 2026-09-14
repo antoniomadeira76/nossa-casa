@@ -59,7 +59,7 @@ export default function Resultados({ t, termo, itens, onAbrir, onSugerir, areas 
     <View style={{ gap: S.xl }}>
       {curto ? (
         <View>
-          <SectionTitle t={t}>Onde se procura</SectionTitle>
+          <SectionTitle t={t}>Onde se Procura</SectionTitle>
           {onde.map((a, i) => (
             <Linha key={a} t={t} last={i === onde.length - 1}>
               <Pressable onPress={() => onAbrir(ONDE_SE_PROCURA[a].destino)} accessibilityRole="button"

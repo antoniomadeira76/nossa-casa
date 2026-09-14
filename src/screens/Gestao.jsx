@@ -229,7 +229,7 @@ export default function Gestao({ t, user, onClose }) {
       </View>
 
       <View style={{ gap: S.md }}>
-        <SectionTitle t={t}>Divisão das despesas</SectionTitle>
+        <SectionTitle t={t}>Divisão das Despesas</SectionTitle>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: t.subtle,
           borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14 }}>
           <View style={{ flex: 1, gap: 2 }}>
@@ -426,7 +426,7 @@ export default function Gestao({ t, user, onClose }) {
 
   const renderEnvelopesTab = () => (
     <View style={{ gap: S.md }}>
-      <SectionTitle t={t}>Envelopes orçamentais</SectionTitle>
+      <SectionTitle t={t}>Envelopes Orçamentais</SectionTitle>
       {!(envelopes || []).length ? (
         <Empty t={t} icon="wallet" title="Sem envelopes."
           hint="Um envelope é uma categoria com um limite mensal." />
@@ -568,7 +568,7 @@ export default function Gestao({ t, user, onClose }) {
 
       {/* ── O nome da família ────────────────────────────────────────────── */}
       {sheetOpen === 'nomeDaCasa' && (
-        <Sheet t={t} title="Nome da família" sub={`Agora: ${nomeDaCasa}`}
+        <Sheet t={t} title="Nome da Família" sub={`Agora: ${nomeDaCasa}`}
           onClose={() => { setSheetOpen(null); setInput(''); setErro(null); }}
           action={
             <Primary t={t} comum label={aGuardar ? 'A guardar…' : 'Guardar'}
@@ -598,7 +598,7 @@ export default function Gestao({ t, user, onClose }) {
 
       {/* ── Acrescentar um membro ────────────────────────────────────────── */}
       {sheetOpen === 'novoMembro' && (
-        <Sheet t={t} title="Acrescentar membro" sub={`À casa ${nomeDaCasa}`}
+        <Sheet t={t} title="Acrescentar Membro" sub={`À casa ${nomeDaCasa}`}
           onClose={() => { setSheetOpen(null); setErro(null); }}
           action={
             <Primary t={t} comum label={aGuardar ? 'A acrescentar…' : 'Acrescentar'}
@@ -797,7 +797,7 @@ export default function Gestao({ t, user, onClose }) {
       )}
 
       {sheetOpen === 'editEnvelope' && (
-        <Sheet t={t} title="Editar envelope" sub={selectedEnvelope}
+        <Sheet t={t} title="Editar Envelope" sub={selectedEnvelope}
           onClose={() => {
             setSheetOpen(null);
             setSelectedEnvelope(null);
@@ -851,20 +851,20 @@ export default function Gestao({ t, user, onClose }) {
             </View>
             <View>
               <Label t={t}>Limite mensal (€)</Label>
-              <TextInput
-                placeholder="0,00" accessibilityLabel="Limite mensal em euros"
-                keyboardType="decimal-pad"
-                value={limitInput}
-                onChangeText={setLimitInput}
-                style={campo(t)}
-              />
+              {/* O campo de número da app (14/09/2026). O estado continua a ser
+                  texto — é o que o «Guardar» já lia —; o campo traduz. */}
+              <View style={{ marginTop: S.sm }}>
+                <NumField t={t} vazio step={10} min={0} max={99999} rotulo="Limite mensal em euros" placeholder="0,00 €"
+                  value={String(limitInput).trim() === '' ? null : Number(String(limitInput).replace(',', '.'))}
+                  onChange={(v) => setLimitInput(v == null ? '' : String(v))} />
+              </View>
             </View>
           </View>
         </Sheet>
       )}
 
       {sheetOpen === 'newEnvelope' && (
-        <Sheet t={t} title="Criar envelope" sub="Um envelope novo para esta casa, com o seu limite"
+        <Sheet t={t} title="Criar Envelope" sub="Um envelope novo para esta casa, com o seu limite"
           onClose={() => {
             setSheetOpen(null);
             setInput('');

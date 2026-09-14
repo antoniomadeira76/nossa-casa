@@ -36,7 +36,7 @@ const NUNCA_VAZIAS = {
   // última — «A casa tem de ter pelo menos uma secção». Um corredor a menos é
   // uma escolha; nenhum corredor é uma lista de compras sem sítios onde pôr
   // artigos.
-  'src/screens/ComoFazemosCompras.jsx :: Corredores da loja':
+  'src/screens/ComoFazemosCompras.jsx :: Corredores da Loja':
     'a loja devolve as sementes quando a casa não tem lista, e o `apagarSeccao` recusa apagar a última',
   // A pesquisa global (13/09/2026): `pesquisar` agrupa por área e só devolve
   // as áreas COM resultados — um grupo vazio não existe para ter título. O
@@ -46,7 +46,7 @@ const NUNCA_VAZIAS = {
   // «Onde se procura» (opção C, 13/09/2026): as áreas vêm de
   // `AREAS_DA_PESQUISA` (oito constantes) ou da lista da criança (três) —
   // nunca de dados da casa, nunca vazia.
-  'src/screens/Resultados.jsx :: Onde se procura':
+  'src/screens/Resultados.jsx :: Onde se Procura':
     'as áreas são constantes de `src/pesquisa.js` ou a lista fixa da criança, não uma lista de dados',
   // O registo da casa por dias (14/09/2026): `agruparPorDia` só cria um grupo
   // a partir de uma linha — um dia sem linhas não existe para ter título.

@@ -60,9 +60,9 @@ const abrir = (antes) => {
 describe('o ecrã monta e mostra as três coisas', () => {
   it('a ida marcada, as lojas e os corredores', () => {
     const t = abrir().ecra();
-    expect(t).toContain('A próxima ida');
+    expect(t).toContain('A Próxima Ida');
     expect(t).toContain('Lojas');
-    expect(t).toContain('Corredores da loja');
+    expect(t).toContain('Corredores da Loja');
   });
 
   it('e diz quem vai, quando e onde', () => {

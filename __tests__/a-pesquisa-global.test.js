@@ -132,12 +132,12 @@ describe('⚠ 1. o módulo puro', () => {
 });
 
 describe('⚠ 2. o ecrã dos resultados', () => {
-  it('sem termo mostra «Onde se procura» — uma linha por área, que leva lá; com termo desenha os grupos com alvos de 44', () => {
+  it('sem termo mostra «Onde se Procura» — uma linha por área, que leva lá; com termo desenha os grupos com alvos de 44', () => {
     // Opção C de design/campo-de-pesquisa.dc.html (13/09/2026): em vez de um
     // cartão a repetir «Procurar na casa», as áreas em linhas tocáveis.
     const abertos = [];
     const { r: r0, texto } = montar({ termo: '', itens: CASA, onAbrir: (d) => abertos.push(d), onSugerir: () => {} });
-    expect(texto()).toMatch(/Onde se procura/);
+    expect(texto()).toMatch(/Onde se Procura/);
     expect(texto()).toMatch(/Escreva pelo menos duas letras/);
     expect(texto()).not.toMatch(/Procurar na casa/);
     const linhas = botoes(r0).filter(b => /^Ir a /.test(b.props.accessibilityLabel));

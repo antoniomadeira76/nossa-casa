@@ -77,12 +77,12 @@ const fundos = (r) => r.root.findAll(n => n.type === 'View')
 describe('⚠ a criança escolhe o avatar e o esquema de cor', () => {
   it('a bola do cabeçalho abre «O meu perfil», com avatar, cor do perfil e PIN', () => {
     const { r, texto } = kidCom({ schemeByUser: { Léo: 0 } });
-    expect(texto()).not.toContain('Cor do perfil');
+    expect(texto()).not.toContain('Cor do Perfil');
     tocar(r, 'O meu perfil');
     const tx = texto();
-    expect(tx).toContain('O meu perfil');
+    expect(tx).toContain('O Meu Perfil');
     expect(tx).toContain('Avatar');
-    expect(tx).toContain('Cor do perfil');
+    expect(tx).toContain('Cor do Perfil');
     expect(tx).toContain('O meu PIN');
     // As seis bolas, com o nome de cada esquema no rótulo em voz.
     for (const sc of SCHEMES) expect(hospedeiros(r, `Esquema ${sc.name}`)).toHaveLength(1);

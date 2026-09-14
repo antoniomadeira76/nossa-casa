@@ -3,6 +3,7 @@ import { View, Text } from 'react-native';
 import { useStore } from '../store';
 import { S, FONT } from '../theme';
 import { Primary } from '../ui';
+import { useAcaoDaFolha } from '../Sheet';
 import CamposContrato from './CamposContrato';
 
 /**
@@ -34,11 +35,13 @@ export default function NovoContrato({ t, onClose }) {
         </Text>
       ) : null}
 
-      <Primary comum t={t} label="Acrescentar contrato"
+      {/* O botão principal vai para o rodapé FIXO da folha (`useAcaoDaFolha`,
+          14/09/2026): estava no fim do conteúdo, só visível depois de rolar. */}
+      {useAcaoDaFolha(<Primary comum t={t} label="Acrescentar contrato"
         sub={!nome ? 'Escreva o nome do contrato'
           : form.renovaEm ? `Avisa 30 dias antes de ${form.renovaEm}`
             : 'Sem data de renovação, não há aviso'}
-        disabled={!nome} onPress={guardar} />
+        disabled={!nome} onPress={guardar} />)}
     </View>
   );
 }

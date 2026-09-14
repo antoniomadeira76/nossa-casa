@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, Primary, Pill, PastilhaTocavel, BotaoCompacto } from '../ui';
+import { Label, Primary, Pill, PastilhaTocavel, BotaoCompacto, NumField } from '../ui';
 import Icon from '../Icon';
 import { plural, dmyDeChave, dayLabel, TODAY_KEY } from '../format';
 import { planoDaReceita, tomasDoDia, horaDoInstante } from '../medicacao';
@@ -84,25 +84,19 @@ export default function TomasDaReceita({ t, user, record, recipe, onClose }) {
             <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 18, color: t.state.warnDeep }}>{p.aviso}</Text>
           </View>
         ) : null}
-        <View style={{ flexDirection: 'row', gap: S.sm }}>
-          <View style={{ flex: 1, gap: 4 }}>
-            <Label t={t}>Por dia</Label>
-            <TextInput accessibilityLabel="Tomas por dia" value={rascunho.frequency} keyboardType="number-pad"
-              onChangeText={(v) => { setErro(null); setPlano(x => ({ ...x, frequency: v })); }}
-              placeholder="2" placeholderTextColor={t.text3} style={campo} />
-          </View>
-          <View style={{ flex: 1, gap: 4 }}>
-            <Label t={t}>Dias</Label>
-            <TextInput accessibilityLabel="Duração em dias" value={rascunho.durationDays} keyboardType="number-pad"
-              onChangeText={(v) => { setErro(null); setPlano(x => ({ ...x, durationDays: v })); }}
-              placeholder="14" placeholderTextColor={t.text3} style={campo} />
-          </View>
-          <View style={{ flex: 1, gap: 4 }}>
-            <Label t={t}>Caixa</Label>
-            <TextInput accessibilityLabel="Unidades na caixa" value={rascunho.boxSize} keyboardType="number-pad"
-              onChangeText={(v) => { setErro(null); setPlano(x => ({ ...x, boxSize: v })); }}
-              placeholder="20" placeholderTextColor={t.text3} style={campo} />
-          </View>
+        {/* O campo de número da app, com «−» e «+» (14/09/2026), um por linha
+            com o seu rótulo — três caixas lado a lado não têm largura para os
+            botões. O rascunho continua a ser texto, que é o que o «Guardar»
+            já lia; vazio é vazio. */}
+        <View style={{ gap: S.md }}>
+          {[['frequency', 'Tomas por dia', 'Por dia', '2'], ['durationDays', 'Duração em dias', 'Dias', '14'], ['boxSize', 'Unidades na caixa', 'Caixa', '20']].map(([campoDoPlano, rotulo, curto, exemplo]) => (
+            <View key={campoDoPlano} style={{ gap: 4 }}>
+              <Label t={t}>{curto}</Label>
+              <NumField t={t} vazio suffix={false} step={1} min={0} max={999} rotulo={rotulo} placeholder={exemplo}
+                value={rascunho[campoDoPlano] === '' || rascunho[campoDoPlano] == null ? null : Number(rascunho[campoDoPlano])}
+                onChange={(v) => { setErro(null); setPlano(x => ({ ...x, [campoDoPlano]: v == null ? '' : String(v) })); }} />
+            </View>
+          ))}
         </View>
         <BotaoCompacto t={t} tom="comum" label={p ? 'Guardar plano' : 'Definir plano'}
           etiqueta="Guardar o plano de tomas" onPress={guardarPlano} />

@@ -116,3 +116,89 @@ describe('⚠ a coerência do desenho', () => {
     expect(app.slice(i, i + 200)).toMatch(/right: 68/);
   });
 });
+
+// ── A segunda revisão (14/09/2026, «verifica todo o design») ─────────────────
+describe('⚠ a coerência do desenho — segunda revisão', () => {
+  // Palavras que ficam em minúscula num título com Maiúsculas Iniciais.
+  const MIUDAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e', 'a', 'o', 'as', 'os', 'em', 'no', 'na', 'nos', 'nas',
+    'por', 'para', 'se', 'com', 'entre', 'à', 'ao', 'às', 'aos', 'um', 'uma', 'que', 'sem', 'sobre']);
+  const emTitulo = (s) => s.trim().split(/\s+/).every((p, i) => {
+    const limpa = p.replace(/[«»()·—-]/g, '');
+    if (!limpa) return true;
+    if (i > 0 && MIUDAS.has(limpa.toLowerCase())) return true;
+    return /^[A-ZÀ-Ú0-9]/.test(limpa);
+  });
+  // O conteúdo literal de um `<SectionTitle …>…</SectionTitle>`: procura-se
+  // o fim da etiqueta de abertura contando chavetas, porque um `right={<Pill/>}`
+  // tem `>` lá dentro.
+  const titulosDeSeccao = (txt) => {
+    const saida = [];
+    let i = 0;
+    while ((i = txt.indexOf('<SectionTitle', i)) !== -1) {
+      let j = i, prof = 0;
+      for (; j < txt.length; j++) {
+        if (txt[j] === '{') prof++;
+        else if (txt[j] === '}') prof--;
+        else if (txt[j] === '>' && prof === 0) break;
+      }
+      const fim = txt.indexOf('</SectionTitle>', j);
+      const dentro = fim === -1 ? '' : txt.slice(j + 1, fim).trim();
+      if (dentro && !dentro.includes('{')) saida.push(dentro);
+      i = j;
+    }
+    return saida;
+  };
+
+  it('9. o botão principal de uma folha vive no rodapé fixo, não no fim do conteúdo', () => {
+    // As dez folhas que tinham o botão a rolar com o conteúdo.
+    for (const f of ['NovaTarefa', 'NovoEvento', 'NovoArtigo', 'NovaMeta', 'NovaContaFixa', 'NovoContrato',
+      'GerirArtigo', 'GerirMeta', 'GerirContaFixa', 'ConfirmarAdministradores']) {
+      const txt = semComentarios(ler(`src/sheets/${f}.jsx`));
+      expect(`${f}: ${/useAcaoDaFolha\(<Primary/.test(txt)}`).toBe(`${f}: true`);
+    }
+    const sheet = semComentarios(ler('src/Sheet.jsx'));
+    expect(sheet).toMatch(/export function useAcaoDaFolha\(elemento\)/);
+    expect(sheet).toMatch(/const acao = action \|\| acaoDoFilho;/);
+  });
+
+  it('10. títulos de secção e de folha em Maiúsculas Iniciais — a grafia dos botões é em frase, a dos títulos não', () => {
+    const maus = [];
+    for (const f of ECRAS) {
+      const txt = semComentarios(ler(f));
+      for (const t of titulosDeSeccao(txt)) if (!emTitulo(t)) maus.push(`${f} :: ${t}`);
+      for (const m of txt.matchAll(/<Sheet\b[^>]*?\btitle="([^"]+)"/gs)) if (!emTitulo(m[1])) maus.push(`${f} :: folha «${m[1]}»`);
+    }
+    expect(maus).toEqual([]);
+  });
+
+  it('11. o vazio de uma lista é o `Empty` (ícone, título, dica), não um aviso de uma linha', () => {
+    const compras = semComentarios(ler('src/screens/Compras.jsx'));
+    expect(compras).toMatch(/items\.length === 0 \? \(\s*<Empty t=\{t\} icon="fileDone"/);
+    const troca = semComentarios(ler('src/sheets/ProporTroca.jsx'));
+    expect((troca.match(/<Empty t=\{t\} icon="checkSquare"/g) || []).length).toBe(2);
+    expect(troca).not.toMatch(/<Tile t=\{t\} kind="info">/);
+  });
+
+  it('12. nenhum ecrã lê as cores do estado fora do tema (`STATE.` fixo não segue o aspeto escuro)', () => {
+    for (const f of ECRAS) {
+      const txt = semComentarios(ler(f));
+      expect(`${f}: ${/\bSTATE\./.test(txt)}`).toBe(`${f}: false`);
+    }
+  });
+
+  it('13. um número escreve-se no NumField — as caixas de texto numéricas ficam só para o PIN e para o preço na loja', () => {
+    // O preço pago no Modo Compras fica em caixa simples de propósito: a linha
+    // do artigo tem 64 px e o preço ao lado do nome, sem lugar para «−» e «+».
+    // E a hora de um evento («HH:MM») é texto com dois pontos, não um número.
+    const FICAM = { 'src/screens/ModoCompras.jsx': 1, 'src/screens/Gestao.jsx': 2 /* os dois PIN */, 'src/sheets/NovoEvento.jsx': 1 /* a hora */ };
+    for (const f of ECRAS) {
+      const txt = semComentarios(ler(f));
+      const n = (txt.match(/keyboardType="(number-pad|decimal-pad|numeric)"/g) || []).length;
+      const permitidos = f === 'src/ui.jsx' ? 1 : f === 'src/KidApp.jsx' ? 3 : (FICAM[f] || 0);   // KidApp: os três PIN
+      expect(`${f}: ${n}`).toBe(`${f}: ${Math.min(n, permitidos)}`);
+    }
+    for (const f of ['src/sheets/NovaTarefa.jsx', 'src/screens/Equipamentos.jsx', 'src/sheets/GerirArtigo.jsx', 'src/screens/Saude.jsx']) {
+      expect(semComentarios(ler(f))).toMatch(/<NumField t=\{t\}/);
+    }
+  });
+});

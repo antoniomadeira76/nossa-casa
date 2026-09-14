@@ -215,7 +215,7 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
 
       {/* Agendar manutenção */}
       {manut ? (
-        <Sheet t={t} title="Agendar manutenção" sub={equip.name} onClose={() => setManut(null)}
+        <Sheet t={t} title="Agendar Manutenção" sub={equip.name} onClose={() => setManut(null)}
           action={<Primary t={t} comum label="Guardar" disabled={!manut.maint.trim()}
             onPress={() => { editEquip(equip.id, manut); setManut(null); }} />}>
           <View style={{ gap: S.sm }}>

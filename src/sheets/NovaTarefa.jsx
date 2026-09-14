@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, Choice, Segmented, Primary, EscolherMembro, coresDe } from '../ui';
+import { Label, Choice, Segmented, Primary, EscolherMembro, coresDe, NumField } from '../ui';
+import { useAcaoDaFolha } from '../Sheet';
 import { TODAY_KEY } from '../format';
 import Icon from '../Icon';
 
@@ -76,18 +77,11 @@ export default function NovaTarefa({ t, user, onClose }) {
       {pontosNasTarefas ? (
       <View style={{ gap: S.sm }}>
         <Label t={t}>Pontos de bónus</Label>
-        <TextInput accessibilityLabel="Pontos de bónus"
-          value={String(form.pts)}
-          onChangeText={(v) => setForm(f => ({ ...f, pts: parseInt(v) || 0 }))}
-          placeholder="0"
-          keyboardType="number-pad"
-          maxLength={2}
-          style={{
-            minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
-            fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
-            borderColor: t.border, backgroundColor: t.card,
-          }}
-        />
+        {/* O campo de número da app, com «−» e «+» (revisão de 14/09/2026):
+            era uma caixa de texto simples, a única forma diferente de
+            escrever um número entre o Dinheiro, a Gestão e as metas. */}
+        <NumField t={t} value={form.pts} onChange={(v) => setForm(f => ({ ...f, pts: v }))}
+          step={1} min={0} max={99} suffix={false} rotulo="Pontos de bónus" />
       </View>
       ) : null}
 
@@ -139,12 +133,14 @@ export default function NovaTarefa({ t, user, onClose }) {
         </View>
       </View>
 
-      <Primary comum
+      {/* O botão principal vai para o rodapé FIXO da folha (`useAcaoDaFolha`,
+          14/09/2026): estava no fim do conteúdo, só visível depois de rolar. */}
+      {useAcaoDaFolha(<Primary comum
         t={t}
         label="Guardar tarefa"
         disabled={!canSave}
         onPress={handleSave}
-      />
+      />)}
     </View>
   );
 }
