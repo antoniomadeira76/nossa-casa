@@ -43,8 +43,8 @@ describe('⚠ a marca de água', () => {
       const svg = r.root.findAll(n => n.props && n.props.viewBox === '0 0 24 24')[0];
       expect(svg).toBeTruthy();
       expect(svg.props.opacity).toBe(OPACIDADE_DA_MARCA);
-      expect(OPACIDADE_DA_MARCA).toBeGreaterThanOrEqual(0.06);
-      expect(OPACIDADE_DA_MARCA).toBeLessThanOrEqual(0.1);
+      expect(OPACIDADE_DA_MARCA).toBeGreaterThanOrEqual(0.04);
+      expect(OPACIDADE_DA_MARCA).toBeLessThanOrEqual(0.06);
       const telhado = r.root.findAll(n => n.props && typeof n.props.d === 'string')[0];
       expect(telhado.props.stroke).toBe(t.text1);
       // (o test-renderer devolve o `Circle` e o nó nativo dele, onde a cor já

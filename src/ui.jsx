@@ -12,14 +12,14 @@ import Figura from './Avatares';
 // centrada na ÁREA DE CONTEÚDO — entre o cabeçalho e o rodapé —, A CORES
 // (14/09/2026, «a marca de água no background deve ser a cores»): as quatro
 // bolas com as cores da marca, e só o telhado na tinta do texto (`t.text1`),
-// porque o branco dele não se via sobre a página. A opacidade é 0,08: a 0,06 as
-// cores não passavam de cinzentos, a 0,12 «devia ser mais suave» (ele, ao ver).
+// porque o branco dele não se via sobre a página. A opacidade é 0,05 — a 0,12 e
+// a 0,08 «tem de ser mais suave» (ele, ao ver, duas vezes em 14/09/2026).
 // É fundo: `pointerEvents="none"`
 // para não apanhar toque nenhum, e posição absoluta para não mexer na coluna
 // flex do INVARIANTE #1 — vive como PRIMEIRO filho da área de conteúdo, atrás
 // do scroll, e o rodapé continua o último filho da raiz. Os cartões (superfície
 // opaca) tapam-na; a página não.
-export const OPACIDADE_DA_MARCA = 0.08;
+export const OPACIDADE_DA_MARCA = 0.05;
 export function MarcaDeAgua({ t, tamanho = 260 }) {
   return (
     <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
