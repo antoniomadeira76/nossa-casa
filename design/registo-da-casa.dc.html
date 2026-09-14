@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O registo da casa</title>
+<style>
+  :root { --pagina: #F6F7F9; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --sub: #F3F4F6; --t1: #262626; --t2: #3B3F48; --t3: #656C7C;
+    --ac: #1D5FA8; --acfg: #1A55A0; --acbrd: #2C6FBE; --acbg: #E6EEF8; --chrome: #0F2B4C; --okbg: #E6F6EC; --oktx: #146B3A; --okbrd: #8FD3A6; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 84ch; }
+  h2.parte { font-size: 16px; margin: 28px 0 10px; color: var(--acfg); border-bottom: 1px solid var(--borda); padding-bottom: 6px; }
+  .lado { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; align-items: start; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; gap: 12px; align-content: start; }
+  section h2 { margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  section.rec { border-color: var(--ac); box-shadow: 0 0 0 3px var(--acbg); }
+  .tel { border: 1px solid var(--borda); border-radius: 12px; background: var(--pagina); width: 355px; box-sizing: border-box; overflow: hidden; display: grid; }
+  .cab { background: var(--chrome); color: #fff; padding: 12px 14px; display: flex; align-items: center; gap: 10px; min-height: 60px; }
+  .cab b { font-size: 16px; } .cab small { display: block; font-size: 11px; color: rgba(255,255,255,.8); }
+  .corpo { padding: 12px; display: grid; gap: 10px; }
+  .seg { display: flex; border: 1px solid var(--borda); border-radius: 8px; overflow: hidden; background: var(--cartao); } .seg div { flex: 1; text-align: center; padding: 10px 0; font-size: 12px; color: var(--t2); } .seg .on { background: var(--ac); color: #fff; font-weight: 600; }
+  .tit { color: var(--acfg); font-weight: 600; font-size: 12.5px; border-bottom: 1px solid var(--borda); padding: 6px 0 4px; display: flex; justify-content: space-between; align-items: center; }
+  .tit .pill { font-size: 10.5px; border: 1px solid var(--borda); border-radius: 999px; padding: 2px 8px; color: var(--t3); font-weight: 600; background: var(--sub); }
+  .bolas { display: flex; gap: 8px; align-items: flex-start; }
+  .bola { width: 52px; display: grid; justify-items: center; gap: 2px; font-size: 10px; color: var(--t3); }
+  .bola i { width: 40px; height: 40px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-style: normal; }
+  .bola.todos i { background: var(--ac); font-size: 11px; border-radius: 8px; width: 52px; }
+  .chips { display: flex; gap: 6px; flex-wrap: nowrap; overflow: hidden; mask-image: linear-gradient(90deg, #000 88%, transparent); -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); }
+  .chip { min-height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--borda); background: var(--cartao); font-size: 12.5px; color: var(--t2); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .chip.on { background: var(--ac); border-color: var(--ac); color: #fff; font-weight: 600; }
+  .card { background: var(--cartao); border-radius: 10px; padding: 12px; display: grid; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .mini { font-size: 11px; color: var(--t3); border-bottom: 1px solid var(--div); padding-bottom: 6px; }
+  .reg { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--div); font-size: 12.5px; color: var(--t2); }
+  .reg .ico { width: 22px; color: var(--t3); flex: none; padding-top: 2px; }
+  .reg .txt { flex: 1; }
+  .reg .dir { text-align: right; color: var(--t3); font-size: 11px; white-space: nowrap; } .reg .dir b { display: block; color: var(--t2); font-size: 11.5px; }
+  .reg .seta { color: var(--t3); }
+  .dia { color: var(--acfg); font-weight: 600; font-size: 12.5px; border-bottom: 1px solid var(--borda); padding: 6px 0 4px; margin-top: 4px; }
+  .linha { display: flex; align-items: center; gap: 10px; min-height: 52px; border-bottom: 1px solid var(--div); font-size: 12.5px; }
+  .linha .hora { width: 38px; color: var(--t3); font-size: 11.5px; flex: none; }
+  .linha .av { width: 28px; height: 28px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 12px; flex: none; }
+  .linha .txt { flex: 1; min-width: 0; } .linha .txt b { font-weight: 500; color: var(--t1); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .linha .txt small { display: block; color: var(--t3); font-size: 11px; }
+  .linha .pill { font-size: 10.5px; border: 1px solid var(--borda); border-radius: 999px; padding: 2px 8px; color: var(--t3); font-weight: 600; background: var(--sub); white-space: nowrap; }
+  .linha .seta { color: var(--t3); }
+  .pager { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--t3); padding-top: 6px; }
+  .pager span i { display: inline-block; width: 40px; height: 40px; border: 1px solid var(--borda); border-radius: 8px; margin-left: 6px; }
+  dl { margin: 0; display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; font-size: 12.5px; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  code { background: var(--div); padding: 0 4px; border-radius: 3px; font-size: 11.5px; }
+  ol { margin: 0; padding-left: 18px; font-size: 13px; color: var(--t2); } ol li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<h1>O registo da casa — como o desenharia</h1>
+<p class="sub">O separador «Nesta casa» da Documentação: o que a família fez, mais recente primeiro. Hoje a lista vive dentro de um cartão, cada linha tem o mesmo ícone de documento, o texto embrulha em três linhas, e à direita empilham-se o nome, a data e a hora. A proposta aplica ao registo o que o resto da app já decidiu: <b>o desenho C</b> (títulos de 13 px com régua e listas planas, sem cartão por item), <b>a linha da Agenda</b> (hora · bola de quem · título com o detalhe por baixo · pastilha · seta) e <b>os dias como secções</b>, como a Agenda faz com «Hoje · Segunda, 14/09».</p>
+
+<div class="lado">
+
+<section>
+  <h2>Hoje</h2>
+  <div class="tel">
+    <div class="cab"><b>Documentação<small>Versão 1.12.1</small></b></div>
+    <div class="corpo">
+      <div class="seg"><div>Novidades</div><div>Como funciona</div><div class="on">Nesta casa</div></div>
+      <div class="tit">Histórico da Casa <span class="pill">31 registos</span></div>
+      <div class="bolas"><div class="bola todos"><i>Todos</i></div><div class="bola"><i style="background:#3E7BD6">A</i>António</div><div class="bola"><i style="background:#8B4EE0">R</i>Rita</div></div>
+      <div class="chips"><span class="chip on">Tudo</span><span class="chip">&#9783; Agenda</span><span class="chip">&#9776; Compras</span><span class="chip">&#8364; Dinheiro</span></div>
+      <div class="card">
+        <div class="mini">Mais recente primeiro</div>
+        <div class="reg"><span class="ico">&#128462;</span><span class="txt">A lista de compras foi partilhada por um endereço só de leitura, válido uma hora</span><span class="dir"><b>António</b>13/09 · 00:59</span><span class="seta">›</span></div>
+        <div class="reg"><span class="ico">&#128462;</span><span class="txt">A lista de compras foi partilhada por um endereço só de leitura, válido uma hora</span><span class="dir"><b>António</b>13/09 · 00:26</span><span class="seta">›</span></div>
+        <div class="reg"><span class="ico">&#128462;</span><span class="txt">Meta criada: Bicicleta da Mia · 550,00 €</span><span class="dir"><b>António</b>08/09 · 18:37</span><span class="seta">›</span></div>
+        <div class="reg" style="border:0"><span class="ico">&#128462;</span><span class="txt">Envelope Lazer reforçado em 20,00 €</span><span class="dir"><b>Rita</b>06/09 · 09:12</span><span class="seta">›</span></div>
+        <div class="pager">31 no total · 1 de 7<span><i></i><i></i></span></div>
+      </div>
+    </div>
+  </div>
+  <dl>
+    <dt>O que pesa</dt><dd>O cartão à volta de uma lista (o desenho C tirou-o de todos os outros ecrãs). O mesmo ícone em todas as linhas, que não diz nada. Três linhas de texto por entrada, e a data em duas linhas à direita — cada entrada mede ~90 px. Quatro entradas iguais seguidas, uma por cada vez que se partilhou a lista.</dd>
+  </dl>
+</section>
+
+<section class="rec">
+  <h2>Proposta <small>desenho C · linha da Agenda · dias como secções</small></h2>
+  <div class="tel">
+    <div class="cab"><b>Documentação<small>Versão 1.12.1</small></b></div>
+    <div class="corpo">
+      <div class="seg"><div>Novidades</div><div>Como funciona</div><div class="on">Nesta casa</div></div>
+      <div class="tit">Nesta casa <span class="pill">31 registos</span></div>
+      <div class="bolas"><div class="bola todos"><i>Todos</i></div><div class="bola"><i style="background:#3E7BD6">A</i>António</div><div class="bola"><i style="background:#8B4EE0">R</i>Rita</div></div>
+      <div class="chips"><span class="chip on">Tudo</span><span class="chip">&#9783; Agenda</span><span class="chip">&#9776; Compras</span><span class="chip">&#8364; Dinheiro</span></div>
+
+      <div class="dia">Hoje · Segunda, 14/09</div>
+      <div class="linha"><span class="hora">09:40</span><span class="av" style="background:#13ADB3">L</span><span class="txt"><b>Tarefa «Levar o lixo» feita</b><small>Léo · 2 pontos</small></span><span class="pill">Tarefas</span><span class="seta">›</span></div>
+
+      <div class="dia">Sábado, 13/09</div>
+      <div class="linha"><span class="hora">00:59</span><span class="av" style="background:#3E7BD6">A</span><span class="txt"><b>Lista de compras partilhada</b><small>António · 4 vezes entre sábado e domingo</small></span><span class="pill">Compras</span><span class="seta">›</span></div>
+
+      <div class="dia">Terça, 08/09</div>
+      <div class="linha"><span class="hora">18:37</span><span class="av" style="background:#3E7BD6">A</span><span class="txt"><b>Meta criada: Bicicleta da Mia</b><small>António · 550,00 €</small></span><span class="pill">Dinheiro</span><span class="seta">›</span></div>
+
+      <div class="dia">Domingo, 06/09</div>
+      <div class="linha"><span class="hora">09:12</span><span class="av" style="background:#8B4EE0">R</span><span class="txt"><b>Envelope Lazer reforçado</b><small>Rita · 20,00 €</small></span><span class="pill">Dinheiro</span><span class="seta">›</span></div>
+      <div class="linha" style="border:0"><span class="hora">08:30</span><span class="av" style="background:#8B4EE0">R</span><span class="txt"><b>Mês de Setembro aberto</b><small>Rita · 2 020,00 € em envelopes</small></span><span class="pill">Dinheiro</span><span class="seta">›</span></div>
+      <div class="pager">31 no total · 1 de 7<span><i></i><i></i></span></div>
+    </div>
+  </div>
+  <dl>
+    <dt>1. Sem cartão</dt><dd>A lista assenta na página, em <code>Linha</code> de 52 px com divisória — como as Tarefas, a Agenda e o Dinheiro. Sai o «Mais recente primeiro»: a ordem lê-se pelas datas.</dd>
+    <dt>2. Dias como secções</dt><dd>Um título de secção por dia («Hoje · Segunda, 14/09», «Sábado, 13/09»), o formato que a Agenda já usa. A data sai de cada linha, e a coluna da direita fica só com a área.</dd>
+    <dt>3. A linha da Agenda</dt><dd>Hora (38 px, <code>text3</code>) · bola de quem fez (28 px, a cor do membro) · título numa linha, com o detalhe por baixo em 11 px (o nome, o valor, os pontos) · pastilha da área · seta quando leva a algum lado. É a linha que o dono da casa decidiu manter em 09/09 para a Agenda; aqui é a mesma.</dd>
+    <dt>4. Título e detalhe</dt><dd>O texto de cada entrada divide-se em título curto e detalhe: «Meta criada: Bicicleta da Mia» em cima, «António · 550,00 €» em baixo. Hoje é uma frase só, que embrulha. As entradas já vêm com área e quem; o título é o texto até ao primeiro «·» ou «:».</dd>
+    <dt>5. Repetições dobradas</dt><dd>Entradas iguais seguidas, da mesma pessoa, no mesmo dia ou no seguinte, ficam UMA linha: «Lista de compras partilhada · 4 vezes entre sábado e domingo». Abrir mostra as quatro.</dd>
+    <dt>Medidas</dt><dd>Linha 52 px; entradas ~52 px em vez de ~90 — cabem 8 no ecrã em vez de 4. Pastilha da área 10,5 px em <code>text3</code> sobre <code>subtle</code>; bola 28 com a inicial em <code>corSobre</code>; hora 11,5 px. Alvos: a linha inteira, 52 ≥ 44.</dd>
+    <dt>O que fica igual</dt><dd>O segmentado de três, o título com a contagem, os filtros da opção A, o paginador de 5 (passa a agrupar por dia dentro da página).</dd>
+  </dl>
+</section>
+
+</div>
+
+<h2 class="parte">Porquê assim</h2>
+<ol>
+  <li><b>Nada de novo para aprender.</b> Cada peça já existe noutro ecrã: o título por dia e a linha vêm da Agenda, a lista plana do desenho C, a bola do filtro de membros, a pastilha do estado. O registo passa a parecer da mesma app que os outros ecrãs.</li>
+  <li><b>Lê-se de relance.</b> Quem abre o registo quer saber «o que se passou» — o título curto e a bola de quem fez respondem em meio segundo; o detalhe está lá para quem quiser, em baixo e mais pequeno.</li>
+  <li><b>Dobra a densidade sem apertar.</b> 8 entradas por ecrã em vez de 4, com alvos de 52 e o mesmo enchimento. O que se poupa é o cartão, a data repetida e o texto embrulhado, não o espaço de toque.</li>
+  <li><b>Custo:</b> médio. A linha e o título por dia reutilizam o que a Agenda tem; o «título · detalhe» pede uma função pura que parte o texto de cada entrada (com provas); dobrar repetições é uma segunda função pura. Nada no servidor.</li>
+</ol>
+</body>
+</html>

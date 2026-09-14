@@ -48,6 +48,10 @@ const NUNCA_VAZIAS = {
   // nunca de dados da casa, nunca vazia.
   'src/screens/Resultados.jsx :: Onde se procura':
     'as áreas são constantes de `src/pesquisa.js` ou a lista fixa da criança, não uma lista de dados',
+  // O registo da casa por dias (14/09/2026): `agruparPorDia` só cria um grupo
+  // a partir de uma linha — um dia sem linhas não existe para ter título.
+  'src/screens/Documentacao.jsx :: {g.rotulo}':
+    'o `agruparPorDia` de `src/registo-da-casa.js` só devolve dias com linhas',
 };
 
 // `].map(` é um array escrito na própria linha — as opções de um Segmented, os

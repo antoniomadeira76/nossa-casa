@@ -3,7 +3,8 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import FiltroDeMembros from '../FiltroDeMembros';
-import { Card, SectionTitle, Pill, Segmented, Empty, Pager, usePaged, Choice, Label, Row, Linha as LinhaPlana } from '../ui';
+import { Card, SectionTitle, Pill, Segmented, Empty, Pager, usePaged, Choice, Label, Row, Linha as LinhaPlana, Avatar, avatarDe } from '../ui';
+import { tituloEDetalhe, detalheDaLinha, dobrarRepeticoes, agruparPorDia, horaDe } from '../registo-da-casa';
 import RetratoDoMes from '../sheets/RetratoDoMes';
 import { plural, pad2, EUR } from '../format';
 import Icon from '../Icon';
@@ -297,9 +298,11 @@ export default function Documentacao({ t, onIr, podeGerir, user }) {
   const quemHa = [...new Set(todoOregisto.map(r => r.quem).filter(Boolean))].sort();
   const areasHa = [...new Set(todoOregisto.map(r => r.a).filter(Boolean))].sort();
 
-  const daCasa = todoOregisto
+  // As repetições seguidas dobram-se ANTES de paginar: «lista partilhada» quatro
+  // vezes numa noite é uma linha («4 vezes entre sábado e domingo»), não quatro.
+  const daCasa = dobrarRepeticoes(todoOregisto
     .filter(r => !filtroQuem || r.quem === filtroQuem)
-    .filter(r => !filtroArea || r.a === filtroArea);
+    .filter(r => !filtroArea || r.a === filtroArea));
   const pgCasa = usePaged(daCasa, 5);
 
   // Data e hora da entrada, numa linha só à direita.
@@ -351,75 +354,67 @@ export default function Documentacao({ t, onIr, podeGerir, user }) {
             mudarQuem={setFiltroQuem} mudarArea={setFiltroArea} />
 
           {daCasa.length ? (
-            <Card t={t} style={{ gap: S.sm }}>
-              <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
-                Mais recente primeiro
-              </Text>
-              <View style={{ height: 1, backgroundColor: t.divider }} />
-              {pgCasa.slice.map((r, i) => {
-                // ⚠ Um ícone só, o mesmo em todas as linhas, e é uma decisão.
-                //
-                // O protótipo dá um ícone por tipo de acontecimento; as nossas
-                // entradas são texto e mais nada — não trazem tipo. Adivinhá-lo
-                // pelas palavras dava o ícone ERRADO de vez em quando, e cada
-                // ícone desta app tem um significado exclusivo: um `smile` numa
-                // linha que fala de dinheiro mente mais do que um ícone neutro
-                // não diz. Quando as entradas ganharem tipo, ganham ícone.
-
-                // ⚠ Só é tocável quem tem para onde ir, e vê-se: a linha com
-                // destino leva uma seta, a outra não.
-                //
-                // Avisei que ficaria desigual, e fica — metade das entradas
-                // fala de coisas que já não existem. O que a torna honesta é o
-                // AFIXO ser diferente: uma linha sem seta não promete nada, e o
-                // «uma linha, um destino» do CLAUDE.md continua de pé, porque
-                // nenhuma linha tem DOIS destinos.
-                const destino = DESTINO[r.a] || null;
-                const podeIr = destino && onIr
-                  && (destino !== 'gestao' || podeGerir);
-
-                const conteudo = (
-                  <>
-                    <Icon name="fileText" size={20} color={t.text3} />
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={{ fontFamily: FONT.body, fontSize: 14.5, lineHeight: 21, color: t.text2 }}>
-                        {r.t}
-                      </Text>
-                    </View>
-                    <View style={{ gap: 2, alignItems: 'flex-end' }}>
-                      {/* Quem fez. Só existe com servidor: um registo escrito
-                          neste telefone antes de haver casa ligada não sabe de
-                          quem é, e inventar um nome era pior do que não o dizer. */}
-                      {r.quem ? (
-                        <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.text2 }}>
-                          {r.quem}
-                        </Text>
-                      ) : null}
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>
-                        {quando(r.at)}
-                      </Text>
-                    </View>
-                    {podeIr ? <Icon name="caretRight" size={16} color={t.text3} /> : null}
-                  </>
-                );
-
-                const estilo = { flexDirection: 'row', alignItems: 'center', gap: S.md,
-                  minHeight: 44, paddingVertical: S.md };
-                const chave = r.id || `${r.at}-${i}`;
-
-                return podeIr ? (
-                  <Pressable key={chave} onPress={() => onIr(destino)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${r.t} — abrir ${r.a}`}
-                    style={({ pressed }) => ({ ...estilo, opacity: pressed ? 0.6 : 1 })}>
-                    {conteudo}
-                  </Pressable>
-                ) : (
-                  <View key={chave} style={estilo}>{conteudo}</View>
-                );
-              })}
+            // ⚠ Desenho de 14/09/2026 (`design/registo-da-casa.dc.html`): sem
+            // cartão, os DIAS como secções (o rótulo da Agenda), e a linha da
+            // Agenda — hora · bola de quem fez · título com o detalhe por baixo
+            // · pastilha da área · seta quando leva a algum lado. Era um cartão
+            // com o mesmo ícone em todas as linhas, o texto a embrulhar em três
+            // e a data em duas à direita: ~90 px por entrada; agora ~52.
+            //
+            // O que decide o que se mostra — partir a frase em título e
+            // detalhe, dobrar as repetições, agrupar por dia — está em
+            // `src/registo-da-casa.js`, provado. Aqui só se desenha.
+            //
+            // ⚠ Só é tocável quem tem para onde ir, e vê-se: a linha com
+            // destino leva uma seta, a outra não. Nenhuma linha tem DOIS
+            // destinos («uma linha, um destino», CLAUDE.md).
+            <View>
+              {agruparPorDia(pgCasa.slice).map((g) => (
+                <View key={g.chave || 'sem-data'} style={{ marginTop: S.md }}>
+                  <SectionTitle t={t}>{g.rotulo}</SectionTitle>
+                  {g.linhas.map((r, i) => {
+                    const destino = DESTINO[r.a] || null;
+                    const podeIr = destino && onIr && (destino !== 'gestao' || podeGerir);
+                    const { titulo } = tituloEDetalhe(r.t);
+                    const detalhe = detalheDaLinha(r);
+                    const conteudo = (
+                      <>
+                        <Text style={{ width: 38, fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{horaDe(r.at)}</Text>
+                        <Avatar size={28} {...avatarDe(r.quem, r.quem ? membrosDaCasa[r.quem] : null, t.text3)} />
+                        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                          {/* Duas linhas, como o título de um evento na Agenda: uma
+                              entrada sem separador («A lista de compras foi
+                              partilhada por um endereço só de leitura…») cortava
+                              a meio em 355 px. */}
+                          <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>{titulo}</Text>
+                          {detalhe ? (
+                            <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3 }}>{detalhe}</Text>
+                          ) : null}
+                        </View>
+                        {r.a ? <Pill label={r.a} fg={t.text3} bg={t.subtle} border={t.border} /> : null}
+                        {podeIr ? <Icon name="caretRight" size={16} color={t.text3} /> : null}
+                      </>
+                    );
+                    const estilo = { flexDirection: 'row', alignItems: 'center', gap: S.md, minHeight: 44 };
+                    const chave = r.id || `${r.at}-${i}`;
+                    return (
+                      <LinhaPlana key={chave} t={t} last={i === g.linhas.length - 1}>
+                        {podeIr ? (
+                          <Pressable onPress={() => onIr(destino)} accessibilityRole="button"
+                            accessibilityLabel={`${r.t} — abrir ${r.a}`}
+                            style={({ pressed }) => ({ ...estilo, opacity: pressed ? 0.6 : 1 })}>
+                            {conteudo}
+                          </Pressable>
+                        ) : (
+                          <View style={estilo}>{conteudo}</View>
+                        )}
+                      </LinhaPlana>
+                    );
+                  })}
+                </View>
+              ))}
               <Pager t={t} pg={pgCasa} />
-            </Card>
+            </View>
           ) : (
             // As palavras são as do protótipo — e a segunda frase muda quando o
             // vazio é do FILTRO e não da casa: dizer «ainda sem registos» a
