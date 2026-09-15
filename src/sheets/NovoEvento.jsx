@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore, VISIBILIDADES } from '../store';
 import CampoData from '../CampoData';
 import { S, R, FONT } from '../theme';
-import { Label, Primary, Opcao, Tile } from '../ui';
+import { Label, Primary, Opcao, Tile, SectionTitle } from '../ui';
 import { EscolherPessoa } from '../FiltroDeMembros';
 import { useAcaoDaFolha } from '../Sheet';
 import Confirm from '../Confirm';
@@ -192,8 +192,11 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
 
   return (
     <View style={{ gap: S.lg }}>
+      {/* ⚠ O formulário em SECÇÕES, com os campos curtos dois a dois na mesma
+          linha (15/09/2026, opção E de `design/formularios-das-folhas.dc.html`). */}
+      <SectionTitle t={t}>O Evento</SectionTitle>
       <View style={{ gap: S.sm }}>
-        <Label t={t}>Título do evento</Label>
+        <Label t={t}>Título</Label>
         <TextInput accessibilityLabel="Título do evento"
           value={form.title}
           onChangeText={(v) => setForm(f => ({ ...f, title: v }))}
@@ -208,33 +211,38 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
         />
       </View>
 
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Data</Label>
-        {/* Era um botão cujo manipulador não fazia nada e trazia um comentário
-            a prometer um calendário para mais tarde. Um controlo que parece
-            tocável e não faz nada, a meio do caminho de marcar um evento.
-            Agora escreve-se a data ou escolhe-se no calendário. */}
-        <CampoData t={t} valor={form.day}
-          onChange={(chave) => setForm(f => ({ ...f, day: chave }))} />
+      {/* O dia e a hora, lado a lado: são a mesma pergunta em duas metades, e
+          eram dois blocos de largura inteira um por baixo do outro. A hora
+          leva um terço — «HH:MM» são cinco caracteres. */}
+      <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'flex-start' }}>
+        <View style={{ flex: 2, minWidth: 0, gap: S.sm }}>
+          <Label t={t}>Data</Label>
+          {/* Era um botão cujo manipulador não fazia nada e trazia um comentário
+              a prometer um calendário para mais tarde. Um controlo que parece
+              tocável e não faz nada, a meio do caminho de marcar um evento.
+              Agora escreve-se a data ou escolhe-se no calendário. */}
+          <CampoData t={t} valor={form.day}
+            onChange={(chave) => setForm(f => ({ ...f, day: chave }))} />
+        </View>
+        <View style={{ flex: 1, minWidth: 0, gap: S.sm }}>
+          <Label t={t}>Hora</Label>
+          <TextInput accessibilityLabel="Hora do evento"
+            value={form.time}
+            onChangeText={(v) => setForm(f => ({ ...f, time: v }))}
+            placeholder="HH:MM"
+            keyboardType="decimal-pad"
+            style={{
+              minHeight: 44, paddingHorizontal: S.sm, fontFamily: FONT.body, textAlign: 'center',
+              fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
+              borderColor: t.border, backgroundColor: t.card,
+            }}
+          />
+        </View>
       </View>
 
+      {/* ── Quem ─────────────────────────────────────────────────────────── */}
+      <SectionTitle t={t}>{form.responsaveis.length > 1 ? 'Os Responsáveis' : 'O Responsável'}</SectionTitle>
       <View style={{ gap: S.sm }}>
-        <Label t={t}>Hora</Label>
-        <TextInput accessibilityLabel="Hora do evento"
-          value={form.time}
-          onChangeText={(v) => setForm(f => ({ ...f, time: v }))}
-          placeholder="HH:MM"
-          keyboardType="decimal-pad"
-          style={{
-            minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
-            fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
-            borderColor: t.border, backgroundColor: t.card,
-          }}
-        />
-      </View>
-
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>{form.responsaveis.length > 1 ? 'Responsáveis' : 'Responsável'}</Label>
         {/* A bola de cada pessoa, como nos filtros (15/09/2026); `varios`
             marca com um visto no canto — a pista de que se escolhem mais. */}
         <EscolherPessoa t={t} varios membros={adultos} MEMBERS={MEMBROS}

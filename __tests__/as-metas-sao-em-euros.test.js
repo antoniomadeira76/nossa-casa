@@ -419,7 +419,7 @@ describe('as duas folhas desenham-se sozinhas', () => {
     // Sem nome, o botão diz o que falta em vez de dizer a consequência — é o
     // rótulo desactivado a ser útil, e não o mesmo rótulo com menos brilho.
     expect(t).toContain('Escreva um nome para a meta');
-    expect(t).toContain('Quanto quer juntar');
+    expect(t).toContain('Quanto juntar');
     expect(t).not.toContain('undefined');
     expect(t).not.toContain('NaN');
   });

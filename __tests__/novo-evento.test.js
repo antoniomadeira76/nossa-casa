@@ -82,7 +82,7 @@ describe('agendar numa casa com dois adultos', () => {
 
   it('mostra os campos todos', () => {
     const texto = abrir('Rita');
-    expect(texto).toContain('Título do evento');
+    expect(texto).toContain('O Evento');
     expect(texto).toContain('Quem vê');
     expect(texto).toContain('Guardar evento');
   });

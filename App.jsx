@@ -8,6 +8,7 @@ import { StoreProvider, useStore } from './src/store';
 import { buildTheme, onChrome, chromeLine, S, R, FONT, elev, LARGURA_APP } from './src/theme';
 import Icon, { Marca } from './src/Icon';
 import { AvatarDeCabecalho, Tap, MarcaDeAgua } from './src/ui';
+import { AcaoDoEcra } from './src/AcaoDoEcra';
 import { FEM, DE } from './src/data';
 import { EUR, dayLabel, TODAY, TODAY_KEY, atualizarHoje, semanaDeHoje, plural,
          chaveRelativa } from './src/format';
@@ -118,6 +119,9 @@ function Shell() {
   // O que abrir ao chegar a um separador, vindo do Início. Limpa-se ao chegar,
   // senão voltar ao separador reabria a mesma folha para sempre.
   const [abrirNoTab, setAbrirNoTab] = useState(null);
+  // A ação do ecrã que está à frente — o «acrescentar» de cada um, desenhado
+  // numa barra fixa entre o que rola e o rodapé (`src/AcaoDoEcra.jsx`).
+  const [acaoDoEcra, setAcaoDoEcra] = useState(null);
   const [kidTab, setKidTab] = useState('tarefas');  // aba na KidApp
   const [perfil, setPerfil] = useState(false);
   const [signOut, setSignOut] = useState(false);
@@ -901,6 +905,7 @@ function Shell() {
         {V && V.coluna ? V.render() : (
         <ScrollView ref={scrollRef} style={{ flex: 1, minHeight: 0 }}
           contentContainerStyle={{ padding: 16, gap: S.xl, paddingBottom: S.xl }}>
+        <AcaoDoEcra.Provider value={setAcaoDoEcra}>
           {V ? V.render()
             : tab === 'inicio' && pesquisa !== null
               ? <Resultados t={t} termo={pesquisa} itens={indice}
@@ -922,9 +927,27 @@ function Shell() {
                   abrir={abrirNoTab && abrirNoTab.tab === tab ? abrirNoTab.id : null}
                   abrirImportar={tab === 'agenda' && importarNaAgenda}
                   onImportarAberto={() => setImportarNaAgenda(false)} />}
+        </AcaoDoEcra.Provider>
         </ScrollView>
         )}
       </View>
+
+      {/* ── A ação do ecrã, fixa ────────────────────────────────────────────
+          15/09/2026: «move o botão para o fundo e assim aproveita-se mais o
+          ecrã». O «acrescentar» de cada ecrã vive aqui, entre o que rola e o
+          rodapé — nunca por cima do rodapé, que continua a ser o último filho
+          da raiz (INVARIANTE #1). Numa lista longa deixa de ser preciso rolar
+          até ao fim para acrescentar; numa curta deixa de ficar a meio de um
+          ecrã vazio. */}
+      {acaoDoEcra ? (
+        <View style={{
+          flexGrow: 0, flexShrink: 0, flexBasis: 'auto',
+          paddingHorizontal: 16, paddingTop: S.md, paddingBottom: S.md,
+          backgroundColor: t.page, borderTopWidth: 1, borderTopColor: t.divider,
+        }}>
+          {acaoDoEcra}
+        </View>
+      ) : null}
 
       {/* rodapé — último filho da raiz, sempre (INVARIANTE #1) */}
       <View style={{

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, NumField, Primary, Bar } from '../ui';
+import { Label, NumField, Primary, Bar, SectionTitle } from '../ui';
 import { useAcaoDaFolha } from '../Sheet';
 import Icon from '../Icon';
 import { EUR, dayLabel } from '../format';
@@ -139,6 +139,7 @@ export default function GerirMeta({ t, meta, user, onApagar, onClose }) {
       ) : null}
 
       {/* ── Alterar a meta ─────────────────────────────────────────────────── */}
+      <SectionTitle t={t}>A Meta</SectionTitle>
       <View style={{ gap: S.sm }}>
         <Label t={t}>Nome</Label>
         <TextInput accessibilityLabel="Nome da meta"
@@ -155,26 +156,30 @@ export default function GerirMeta({ t, meta, user, onApagar, onClose }) {
         />
       </View>
 
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Quanto quer juntar</Label>
-        <NumField t={t} value={form.of} step={50} min={0} max={999999}
-          onChange={(v) => { setErro(null); setForm(f => ({ ...f, of: v })); }} />
-      </View>
-
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Para quando (opcional)</Label>
-        <TextInput accessibilityLabel="Para quando"
-          value={form.when}
-          onChangeText={(v) => setForm(f => ({ ...f, when: v }))}
-          placeholder="Ex: julho de 2027 · ou deixe em branco"
-          placeholderTextColor={t.text3}
-          maxLength={40}
-          style={{
-            minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
-            fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
-            borderColor: t.border, backgroundColor: t.card,
-          }}
-        />
+      {/* Quanto e para quando, lado a lado — as duas metades da mesma pergunta
+          (15/09/2026, opção E de `design/formularios-das-folhas.dc.html`). */}
+      <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'flex-start' }}>
+        <View style={{ flex: 1, minWidth: 0, gap: S.sm }}>
+          <Label t={t}>Quanto juntar</Label>
+          <NumField t={t} compacto value={form.of} step={50} min={0} max={999999}
+            rotulo="Quanto quer juntar, em euros"
+            onChange={(v) => { setErro(null); setForm(f => ({ ...f, of: v })); }} />
+        </View>
+        <View style={{ flex: 1, minWidth: 0, gap: S.sm }}>
+          <Label t={t}>Para quando</Label>
+          <TextInput accessibilityLabel="Para quando"
+            value={form.when}
+            onChangeText={(v) => setForm(f => ({ ...f, when: v }))}
+            placeholder="Ex: julho de 2027"
+            placeholderTextColor={t.text3}
+            maxLength={40}
+            style={{
+              minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
+              fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
+              borderColor: t.border, backgroundColor: t.card,
+            }}
+          />
+        </View>
       </View>
 
       {erro ? (

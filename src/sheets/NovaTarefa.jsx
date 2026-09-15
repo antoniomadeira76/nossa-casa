@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, Choice, Segmented, Primary, NumField } from '../ui';
+import { Label, Choice, Segmented, Primary, NumField, SectionTitle } from '../ui';
 import { EscolherPessoa } from '../FiltroDeMembros';
 import { useAcaoDaFolha } from '../Sheet';
 import { TODAY_KEY } from '../format';
@@ -40,8 +40,13 @@ export default function NovaTarefa({ t, user, onClose }) {
 
   return (
     <View style={{ gap: S.lg }}>
+      {/* ⚠ O formulário em SECÇÕES, com os campos curtos dois a dois na mesma
+          linha (15/09/2026, opção E de `design/formularios-das-folhas.dc.html`).
+          As secções são o `SectionTitle` que os ecrãs já usam; o título de uma
+          secção com um campo só substitui o rótulo desse campo. */}
+      <SectionTitle t={t}>A Tarefa</SectionTitle>
       <View style={{ gap: S.sm }}>
-        <Label t={t}>Título da tarefa</Label>
+        <Label t={t}>Título</Label>
         <TextInput accessibilityLabel="Título da tarefa"
           value={form.title}
           onChangeText={(v) => setForm(f => ({ ...f, title: v }))}
@@ -56,36 +61,52 @@ export default function NovaTarefa({ t, user, onClose }) {
         />
       </View>
 
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Atribuir a</Label>
-        {/* A bola de cada pessoa, como nos filtros (15/09/2026). */}
-        <EscolherPessoa t={t} membros={membrosDaCasa} MEMBERS={MEMBROS}
-          valor={form.who} onEscolher={(name) => setForm(f => ({ ...f, who: name }))} />
+      {/* Os pontos e o prazo, lado a lado: dois campos curtos. Sem os pontos
+          ligados, o prazo fica com a linha toda. */}
+      <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'flex-start' }}>
+        {pontosNasTarefas ? (
+          <View style={{ flex: 1, minWidth: 0, gap: S.sm }}>
+            <Label t={t}>Pontos</Label>
+            {/* `compacto`: em meia linha não há largura para o «−» e o «+» sem
+                descer dos 44 px (INVARIANTE #5). */}
+            <NumField t={t} compacto value={form.pts} onChange={(v) => setForm(f => ({ ...f, pts: v }))}
+              step={1} min={0} max={99} suffix={false} rotulo="Pontos de bónus" />
+          </View>
+        ) : null}
+        <View style={{ flex: 1, minWidth: 0, gap: S.sm }}>
+          <Label t={t}>Prazo</Label>
+          <View style={{ flexDirection: 'row', gap: S.sm, alignItems: 'center' }}>
+            <Pressable accessibilityRole="button"
+              accessibilityLabel={form.dueKey ? 'Tirar o prazo' : 'Pôr prazo para hoje'}
+              onPress={() => setForm(f => ({ ...f, dueKey: form.dueKey ? null : TODAY_KEY }))}
+              style={{
+                flex: 1, minWidth: 0, minHeight: 44, paddingHorizontal: S.md, borderRadius: R.row, borderWidth: 1,
+                borderColor: form.dueKey ? t.accent : t.border, backgroundColor: form.dueKey ? t.accent : t.card,
+                justifyContent: 'center',
+              }}>
+              <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 15, color: form.dueKey ? '#FFFFFF' : t.text2 }}>
+                {form.dueKey ? '✓ Com prazo' : 'Sem prazo'}
+              </Text>
+            </Pressable>
+            {/* Ternário, e não `&&`: um campo de texto que venha vazio fica
+                como filho string do View (ver a dose da receita, na Saúde). */}
+            {form.dueKey ? (
+              <TextInput accessibilityLabel="Hora do prazo"
+                value={form.dueTime}
+                onChangeText={(v) => setForm(f => ({ ...f, dueTime: v }))}
+                placeholder="18:00"
+                placeholderTextColor={t.text3}
+                maxLength={5}
+                style={{
+                  width: 62, minHeight: 44, paddingHorizontal: S.sm, fontFamily: FONT.ui,
+                  fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
+                  borderColor: t.border, backgroundColor: t.card, textAlign: 'center',
+                }}
+              />
+            ) : null}
+          </View>
+        </View>
       </View>
-
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Recorrência</Label>
-        <Segmented
-          t={t}
-          options={RECUR_OPTS}
-          value={form.recur}
-          onChange={(v) => setForm(f => ({ ...f, recur: v }))}
-        />
-      </View>
-
-      {/* ⚠ Só se os pontos estiverem ligados. Com eles desligados, o campo
-          pedia um número que a app não usava em lado nenhum — e a tarefa
-          nascia com `pts` a 0, que é o que o `form` já traz. */}
-      {pontosNasTarefas ? (
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Pontos de bónus</Label>
-        {/* O campo de número da app, com «−» e «+» (revisão de 14/09/2026):
-            era uma caixa de texto simples, a única forma diferente de
-            escrever um número entre o Dinheiro, a Gestão e as metas. */}
-        <NumField t={t} value={form.pts} onChange={(v) => setForm(f => ({ ...f, pts: v }))}
-          step={1} min={0} max={99} suffix={false} rotulo="Pontos de bónus" />
-      </View>
-      ) : null}
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Urgência</Label>
@@ -102,37 +123,21 @@ export default function NovaTarefa({ t, user, onClose }) {
         </View>
       </View>
 
+      {/* ── Quem faz, e com que frequência ───────────────────────────────── */}
+      <SectionTitle t={t}>Quem Faz</SectionTitle>
+      {/* A bola de cada pessoa, como nos filtros (15/09/2026) — o título da
+          secção é o rótulo, e por isso não há «Atribuir a» a dizer o mesmo. */}
+      <EscolherPessoa t={t} membros={membrosDaCasa} MEMBERS={MEMBROS}
+        valor={form.who} onEscolher={(name) => setForm(f => ({ ...f, who: name }))} />
+
       <View style={{ gap: S.sm }}>
-        <Label t={t}>Prazo (opcional)</Label>
-        <View style={{ flexDirection: 'row', gap: S.sm, alignItems: 'center' }}>
-          <Pressable accessibilityRole="button"
-            onPress={() => setForm(f => ({ ...f, dueKey: form.dueKey ? null : TODAY_KEY }))}
-            style={{
-              flex: 1, minHeight: 44, paddingHorizontal: S.md, borderRadius: R.row, borderWidth: 1,
-              borderColor: form.dueKey ? t.accent : t.border, backgroundColor: form.dueKey ? t.accent : t.card,
-              justifyContent: 'center',
-            }}>
-            <Text style={{ fontFamily: FONT.body, fontSize: 15, color: form.dueKey ? '#FFFFFF' : t.text2 }}>
-              {form.dueKey ? '✓ Com prazo' : 'Sem prazo'}
-            </Text>
-          </Pressable>
-          {/* Ternário, e não `&&`: um campo de texto que venha vazio fica
-              como filho string do View (ver a dose da receita, na Saúde). */}
-          {form.dueKey ? (
-            <TextInput accessibilityLabel="Hora do prazo"
-              value={form.dueTime}
-              onChangeText={(v) => setForm(f => ({ ...f, dueTime: v }))}
-              placeholder="18:00"
-              placeholderTextColor={t.text3}
-              maxLength={5}
-              style={{
-                width: 70, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.ui,
-                fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
-                borderColor: t.border, backgroundColor: t.card, textAlign: 'center',
-              }}
-            />
-          ) : null}
-        </View>
+        <Label t={t}>Recorrência</Label>
+        <Segmented
+          t={t}
+          options={RECUR_OPTS}
+          value={form.recur}
+          onChange={(v) => setForm(f => ({ ...f, recur: v }))}
+        />
       </View>
 
       {/* O botão principal vai para o rodapé FIXO da folha (`useAcaoDaFolha`,

@@ -251,19 +251,25 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
           </View>
         </View>
 
-        <View style={{ gap: S.sm }}>
-          <Label t={t}>Preço de compra</Label>
-          {/* O campo de número da app: «−» e «+» de 10 €; vazio é «não se sabe». */}
-          <NumField t={t} vazio value={form.price} step={10} min={0} max={99999}
-            rotulo="Preço de compra em euros" placeholder="0,00 €"
-            onChange={(v) => setForm(f => ({ ...f, price: v }))} />
-        </View>
-
-        <View style={{ gap: S.sm }}>
-          <Label t={t}>Data de compra</Label>
-          {/* Uma compra não é no futuro. */}
-          <CampoData t={t} valor={chaveDeDMY(form.bought)} maximo={TODAY_KEY}
-            onChange={(k) => setForm(f => ({ ...f, bought: k ? dmyDeChave(k) : '' }))} />
+        {/* O preço e a data de compra, lado a lado — e por baixo o fim da
+            garantia, que é o que se lê na caixa lá em cima (15/09/2026, opção E
+            de `design/formularios-das-folhas.dc.html`). Eram três blocos de
+            largura inteira, um por baixo do outro. */}
+        <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'flex-start' }}>
+          <View style={{ flex: 1, minWidth: 0, gap: S.sm }}>
+            <Label t={t}>Preço</Label>
+            {/* `compacto`: em meia linha não há largura para o «−» e o «+» sem
+                descer dos 44 px. Vazio é «não se sabe», e lê-se «—». */}
+            <NumField t={t} compacto vazio value={form.price} step={10} min={0} max={99999}
+              rotulo="Preço de compra em euros" placeholder="—"
+              onChange={(v) => setForm(f => ({ ...f, price: v }))} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0, gap: S.sm }}>
+            <Label t={t}>Comprado a</Label>
+            {/* Uma compra não é no futuro. */}
+            <CampoData t={t} valor={chaveDeDMY(form.bought)} maximo={TODAY_KEY}
+              onChange={(k) => setForm(f => ({ ...f, bought: k ? dmyDeChave(k) : '' }))} />
+          </View>
         </View>
 
         <View style={{ gap: S.sm }}>

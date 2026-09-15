@@ -38,6 +38,14 @@ const NUNCA_VAZIAS = {
   // artigos.
   'src/screens/ComoFazemosCompras.jsx :: Corredores da Loja':
     'a loja devolve as sementes quando a casa não tem lista, e o `apagarSeccao` recusa apagar a última',
+  // ⚠ As mesmas `seccoes`, pela mesma razão: as folhas do artigo ganharam
+  // títulos de secção em 15/09/2026 («O Artigo», «Quem Vê») e o corredor é
+  // escolhido logo por baixo do primeiro. A lista é a da casa, que nunca fica
+  // vazia — sementes quando não há, e a última não se apaga.
+  'src/sheets/NovoArtigo.jsx :: O Artigo':
+    'os corredores são os da casa: sementes quando não há lista, e o `apagarSeccao` recusa apagar o último',
+  'src/sheets/GerirArtigo.jsx :: O Artigo':
+    'os corredores são os da casa: sementes quando não há lista, e o `apagarSeccao` recusa apagar o último',
   // A pesquisa global (13/09/2026): `pesquisar` agrupa por área e só devolve
   // as áreas COM resultados — um grupo vazio não existe para ter título. O
   // «nada encontrado» é um `<Empty>` à parte, acima dos grupos.

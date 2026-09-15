@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TextInput } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
 import CampoData from '../CampoData';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
@@ -45,19 +45,26 @@ export default function CamposContrato({ t, form, onChange }) {
           placeholderTextColor={t.text3} maxLength={60} style={campo} />
       </View>
 
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Renova ou acaba a (opcional)</Label>
-        {/* Sem mínimo: um contrato cuja renovação já passou é precisamente o
-            que se quer ver a vermelho, e não uma data que a app recusa. */}
-        <CampoData t={t} valor={chaveDeDMY(form.renovaEm)}
-          onChange={(k) => muda('renovaEm')(dmyDeChave(k))} />
+      {/* As duas datas, lado a lado: são a mesma pergunta — até quando —, e
+          eram dois blocos de largura inteira (15/09/2026, opção E de
+          `design/formularios-das-folhas.dc.html`). */}
+      <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'flex-start' }}>
+        <View style={{ flex: 1, minWidth: 0, gap: S.sm }}>
+          <Label t={t}>Renova a</Label>
+          {/* Sem mínimo: um contrato cuja renovação já passou é precisamente o
+              que se quer ver a vermelho, e não uma data que a app recusa. */}
+          <CampoData t={t} valor={chaveDeDMY(form.renovaEm)}
+            onChange={(k) => muda('renovaEm')(dmyDeChave(k))} />
+        </View>
+        <View style={{ flex: 1, minWidth: 0, gap: S.sm }}>
+          <Label t={t}>Fidelização até</Label>
+          <CampoData t={t} valor={chaveDeDMY(form.fidelizacaoAte)}
+            onChange={(k) => muda('fidelizacaoAte')(dmyDeChave(k))} />
+        </View>
       </View>
-
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Fidelização até (opcional)</Label>
-        <CampoData t={t} valor={chaveDeDMY(form.fidelizacaoAte)}
-          onChange={(k) => muda('fidelizacaoAte')(dmyDeChave(k))} />
-      </View>
+      <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3, marginTop: -S.md }}>
+        As duas datas são opcionais.
+      </Text>
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Quem trata</Label>

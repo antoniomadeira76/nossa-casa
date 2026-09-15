@@ -173,9 +173,23 @@ describe('INVARIANTE #1 — o cabeçalho e o rodapé cabem no que mostram', () =
     expect(culpados).toEqual([]);
   });
 
-  it('as duas caixas fixas declaram flexShrink 0, para caberem no conteúdo', () => {
+  it('as três caixas fixas declaram flexShrink 0, para caberem no conteúdo', () => {
+    // Eram duas — o cabeçalho e o rodapé. Em 15/09/2026 juntou-se-lhes a barra
+    // da AÇÃO DO ECRÃ («move o botão para o fundo e assim aproveita-se mais o
+    // ecrã»): o «acrescentar» de cada ecrã, entre o que rola e o rodapé. É
+    // irmã das outras duas e obedece à mesma regra — não encolhe, e o que
+    // encolhe é a área do meio.
     const fixas = app.match(/flexGrow:\s*0,\s*flexShrink:\s*0,\s*flexBasis:\s*'auto'/g) || [];
-    expect(fixas.length).toBe(2);   // cabeçalho e rodapé
+    expect(fixas.length).toBe(3);   // cabeçalho, ação do ecrã, rodapé
+  });
+
+  it('⚠ e a barra da ação vem ANTES do rodapé, nunca por cima dele', () => {
+    // Um elemento a flutuar por cima do rodapé tapa a primeira linha dele em
+    // metade dos telemóveis. A barra é irmã, e é a ordem que o garante.
+    const raiz = app.slice(app.indexOf('backgroundColor: t.page'));
+    expect(raiz.indexOf('{acaoDoEcra ? (')).toBeGreaterThan(raiz.indexOf('<ScrollView'));
+    expect(raiz.indexOf('minHeight: 60')).toBeGreaterThan(raiz.indexOf('{acaoDoEcra ? ('));
+    expect(app).not.toMatch(/position: 'absolute'[^}]*acaoDoEcra/);
   });
 
   it('o rodapé continua a ser o último filho da raiz', () => {
@@ -817,7 +831,7 @@ describe('Ficha do equipamento — alinhada com 12-ficha-equipamento.png', () =>
   const ficha = read('src/sheets/FichaEquipamento.jsx');
 
   test('tem as secções que a referência mostra', () => {
-    for (const s of ['Garantia', 'Fotografias', 'Preço de compra', 'Data de compra']) {
+    for (const s of ['Garantia', 'Fotografias', 'Preço de compra', 'Comprado a']) {
       expect(ficha).toContain(s);
     }
   });

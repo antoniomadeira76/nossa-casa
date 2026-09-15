@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, Choice, Toggle, Primary, NumField } from '../ui';
+import { Label, Choice, Toggle, Primary, NumField, SectionTitle } from '../ui';
 import { useAcaoDaFolha } from '../Sheet';
 import Icon from '../Icon';
 import { EUR } from '../format';
@@ -67,8 +67,11 @@ export default function GerirArtigo({ t, artigo, onApagar, onClose }) {
 
   return (
     <View style={{ gap: S.lg }}>
+      {/* ⚠ O formulário em SECÇÕES (15/09/2026, opção E de
+          `design/formularios-das-folhas.dc.html`). */}
+      <SectionTitle t={t}>O Artigo</SectionTitle>
       <View style={{ gap: S.sm }}>
-        <Label t={t}>Artigo</Label>
+        <Label t={t}>Nome</Label>
         <TextInput accessibilityLabel="Nome do artigo"
           value={form.label}
           onChangeText={(v) => { setErro(null); setForm(f => ({ ...f, label: v })); }}
@@ -97,7 +100,7 @@ export default function GerirArtigo({ t, artigo, onApagar, onClose }) {
       </View>
 
       <View style={{ gap: S.sm }}>
-        <Label t={t}>Preço estimado (€)</Label>
+        <Label t={t}>Preço estimado</Label>
         {/* O campo de número da app, com «−» e «+» de 0,50 € (14/09/2026). */}
         <NumField t={t} value={form.est} onChange={(v) => setForm(f => ({ ...f, est: v || 0 }))}
           step={0.5} min={0} max={9999} rotulo="Preço estimado em euros" />
@@ -121,8 +124,9 @@ export default function GerirArtigo({ t, artigo, onApagar, onClose }) {
 
       {/* Quem vê — a mesma escolha da folha de criar, pela mesma razão que
           os outros campos: o que se cria com cinco coisas altera-se com cinco. */}
+      {/* O título da secção é o rótulo das duas escolhas por baixo. */}
+      <SectionTitle t={t}>Quem Vê</SectionTitle>
       <View style={{ gap: S.sm }}>
-        <Label t={t}>Quem vê</Label>
         <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
           <Choice t={t} label="A casa toda" selected={form.vis !== 'adultos'}
             onPress={() => setForm(f => ({ ...f, vis: 'familia' }))} />

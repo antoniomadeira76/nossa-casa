@@ -139,6 +139,8 @@ describe('⚠ e o que fica por pagar nunca é um número impossível', () => {
     // Uma confirmação retirada DEPOIS de a semanada sair deixa o valor
     // negativo, e é um caso real. O botão diz «Nada por pagar» em vez de
     // «Pagar Semanada · −1,00 €».
-    expect(cofre).toMatch(/porPagar > 0 \? `Pagar Semanada · \$\{EUR\(porPagar\)\}` : 'Nada por pagar'/);
+    // Em frase desde 15/09/2026 — a regra dos botões (item 3 do
+    // `a-coerencia-do-desenho`), que este rótulo em template escapava.
+    expect(cofre).toMatch(/porPagar > 0 \? `Pagar semanada · \$\{EUR\(porPagar\)\}` : 'Nada por pagar'/);
   });
 });

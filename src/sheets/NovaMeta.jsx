@@ -54,28 +54,36 @@ export default function NovaMeta({ t, user, onClose }) {
         />
       </View>
 
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Quanto quer juntar</Label>
-        {/* O passo é de 50 €, o mesmo do reforço rápido do cartão. */}
-        <NumField t={t} value={form.of} step={50} min={0} max={999999}
-          onChange={(v) => { setErro(null); setForm(f => ({ ...f, of: v })); }} />
+      {/* Quanto e para quando, lado a lado — as duas metades da mesma pergunta
+          (15/09/2026, opção E de `design/formularios-das-folhas.dc.html`). */}
+      <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'flex-start' }}>
+        <View style={{ flex: 1, minWidth: 0, gap: S.sm }}>
+          <Label t={t}>Quanto juntar</Label>
+          {/* O passo é de 50 €, o mesmo do reforço rápido do cartão.
+              `compacto`: em meia linha não há largura para o «−» e o «+». */}
+          <NumField t={t} compacto value={form.of} step={50} min={0} max={999999}
+            rotulo="Quanto quer juntar, em euros"
+            onChange={(v) => { setErro(null); setForm(f => ({ ...f, of: v })); }} />
+        </View>
+        <View style={{ flex: 1, minWidth: 0, gap: S.sm }}>
+          <Label t={t}>Para quando</Label>
+          <TextInput accessibilityLabel="Para quando"
+            value={form.when}
+            onChangeText={(v) => setForm(f => ({ ...f, when: v }))}
+            placeholder="Ex: julho de 2027"
+            placeholderTextColor={t.text3}
+            maxLength={40}
+            style={{
+              minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
+              fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
+              borderColor: t.border, backgroundColor: t.card,
+            }}
+          />
+        </View>
       </View>
-
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Para quando (opcional)</Label>
-        <TextInput accessibilityLabel="Para quando"
-          value={form.when}
-          onChangeText={(v) => setForm(f => ({ ...f, when: v }))}
-          placeholder="Ex: julho de 2027 · ou deixe em branco"
-          placeholderTextColor={t.text3}
-          maxLength={40}
-          style={{
-            minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
-            fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
-            borderColor: t.border, backgroundColor: t.card,
-          }}
-        />
-      </View>
+      <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3, marginTop: -S.md }}>
+        A data é opcional — sem ela, a meta não tem prazo.
+      </Text>
 
       {erro ? (
         <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.state.errTexto }}>

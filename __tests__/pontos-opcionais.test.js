@@ -253,10 +253,10 @@ describe('a folha de Nova Tarefa', () => {
 
   it('⚠ desligados, não pede pontos — pedia um número que ninguém usava', () => {
     const ligado = ecraCom(NovaTarefa, null);
-    expect(ligado.texto()).toContain('Pontos de bónus');
+    expect(ligado.texto()).toContain('Pontos');
 
     const { texto } = ecraCom(NovaTarefa, { pontosLigados: false });
-    expect(texto()).not.toContain('Pontos de bónus');
+    expect(texto()).not.toContain('Pontos');
     // E o resto da folha fica.
     expect(texto()).toContain('Urgência');
   });

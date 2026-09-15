@@ -38,19 +38,25 @@ export default function CamposContaFixa({ t, form, onChange }) {
         />
       </View>
 
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Valor</Label>
-        <NumField t={t} value={form.valor} step={5} min={0} max={99999}
-          onChange={campo('valor')} />
-      </View>
-
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Dia do mês em que vence</Label>
-        {/* Sem o «€»: é um dia, não um valor. E arredonda-se — o campo aceita
-            «15,5» e um dia é inteiro; a loja recusaria, mas é melhor não deixar
-            escrever o que não pode ficar. */}
-        <NumField t={t} value={form.dia} step={1} min={1} max={31} suffix={false}
-          onChange={(v) => campo('dia')(Math.round(v))} />
+      {/* O valor e o dia, lado a lado: dois números curtos que eram dois blocos
+          de largura inteira (15/09/2026, opção E de
+          `design/formularios-das-folhas.dc.html`). `compacto` porque em meia
+          linha não há largura para o «−» e o «+» sem descer dos 44 px. */}
+      <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'flex-start' }}>
+        <View style={{ flex: 1, minWidth: 0, gap: S.sm }}>
+          <Label t={t}>Valor</Label>
+          <NumField t={t} compacto value={form.valor} step={5} min={0} max={99999}
+            rotulo="Valor da conta em euros" onChange={campo('valor')} />
+        </View>
+        <View style={{ flex: 1, minWidth: 0, gap: S.sm }}>
+          <Label t={t}>Vence no dia</Label>
+          {/* Sem o «€»: é um dia, não um valor. E arredonda-se — o campo aceita
+              «15,5» e um dia é inteiro; a loja recusaria, mas é melhor não deixar
+              escrever o que não pode ficar. */}
+          <NumField t={t} compacto value={form.dia} step={1} min={1} max={31} suffix={false}
+            rotulo="Dia do mês em que vence"
+            onChange={(v) => campo('dia')(Math.round(v))} />
+        </View>
       </View>
 
       <View style={{ gap: S.sm }}>

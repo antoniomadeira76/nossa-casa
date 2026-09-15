@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Os formulários das folhas</title>
+<style>
+  :root { --pagina: #F6F7F9; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --sub: #F3F4F6; --t1: #262626; --t2: #3B3F48; --t3: #656C7C; --slate: #606E90;
+    --ac: #1D5FA8; --acfg: #1A55A0; --acbrd: #2C6FBE; --acbg: #E6EEF8; --chrome: #0F2B4C;
+    --warn: #FAAD14; --warnbg: #FFF7E0; --err: #FF4D4F; --errtx: #B3261E; --ok: #52C41A; --okbg: #EEF9E6; --oktx: #2F7A0E; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 88ch; }
+  h2.parte { font-size: 16px; margin: 30px 0 10px; color: var(--acfg); border-bottom: 1px solid var(--borda); padding-bottom: 6px; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 20px; align-items: start; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; gap: 12px; align-content: start; }
+  section h2 { margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  section.rec { border-color: var(--ac); box-shadow: 0 0 0 3px var(--acbg); }
+  section.mau { border-color: var(--err); }
+
+  /* a folha, como a app a desenha: 355 de largura útil, 16 de enchimento */
+  .folha { border: 1px solid var(--borda); border-radius: 14px 14px 0 0; background: var(--cartao); width: 387px; box-sizing: border-box; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; box-shadow: 0 -6px 18px rgba(0,0,0,.10); }
+  .cab { padding: 14px 16px 10px; display: flex; align-items: flex-start; gap: 10px; }
+  .cab b { font-size: 18px; display: block; } .cab small { display: block; font-size: 11.5px; color: var(--t3); }
+  .cab .x { margin-left: auto; color: var(--t3); font-size: 16px; }
+  .corpo { padding: 4px 16px 12px; display: grid; gap: 16px; align-content: start; }
+  .rodape { border-top: 1px solid var(--div); padding: 12px 16px 16px; background: var(--cartao); }
+  .primario { min-height: 48px; border-radius: 6px; border: 1px solid var(--acbrd); background: var(--acbg); color: var(--acfg); font-weight: 700; font-size: 14px; display: grid; place-items: center; }
+
+  .rot { font-size: 12px; color: var(--slate); font-weight: 600; }
+  .grupo { display: grid; gap: 8px; }
+  .campo { min-height: 44px; border: 1px solid var(--borda); border-radius: 6px; background: var(--cartao); padding: 0 12px; display: flex; align-items: center; font-size: 15px; color: var(--t2); box-sizing: border-box; }
+  .campo.vazio { color: var(--t3); }
+  .num { display: flex; gap: 8px; } .num .campo { flex: 1; justify-content: center; font-size: 18px; } .num i { width: 44px; min-height: 44px; border: 1px solid var(--borda); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--acfg); font-weight: 700; font-style: normal; font-size: 20px; }
+  .num.mini .campo { font-size: 15px; } .num.mini i { width: 36px; min-height: 36px; font-size: 16px; }
+  .seg { display: flex; border: 1px solid var(--borda); border-radius: 6px; overflow: hidden; } .seg div { flex: 1; text-align: center; padding: 11px 0; font-size: 12.5px; color: var(--t2); border-right: 1px solid var(--borda); } .seg div:last-child { border-right: 0; } .seg .on { background: var(--ac); color: #fff; font-weight: 600; }
+  .dica { font-size: 11.5px; line-height: 18px; color: var(--t3); }
+  .bolas { display: flex; gap: 8px; } .bola { width: 52px; display: grid; justify-items: center; gap: 2px; font-size: 11px; color: var(--t3); } .bola i { width: 40px; height: 40px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-style: normal; font-size: 14px; } .bola.on i { box-shadow: 0 0 0 2px var(--cartao), 0 0 0 4px var(--ac); } .bola.on { color: var(--acfg); font-weight: 600; }
+  .cartao { display: flex; align-items: center; gap: 14px; border: 1px solid var(--borda); border-radius: 8px; padding: 14px; }
+  .cartao .txt { flex: 1; } .cartao .txt b { display: block; font-weight: 400; font-size: 15px; color: var(--t1); } .cartao .txt small { font-size: 11.5px; color: var(--t3); }
+  .interruptor { width: 44px; height: 26px; border-radius: 999px; background: var(--div); position: relative; flex: none; } .interruptor::after { content: ''; position: absolute; width: 22px; height: 22px; border-radius: 999px; background: #fff; top: 2px; left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  .regua { height: 1px; background: var(--div); }
+  .apagar { min-height: 44px; border: 1px solid var(--err); border-radius: 6px; color: var(--errtx); font-weight: 600; font-size: 13px; display: grid; place-items: center; }
+  /* o título de secção do desenho C */
+  .tit { color: var(--acfg); font-weight: 600; font-size: 13px; border-bottom: 1px solid var(--borda); padding-bottom: 8px; letter-spacing: .2px; }
+  /* par lado a lado */
+  .par { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .par.curto { grid-template-columns: 132px 1fr; }
+  /* rótulo à esquerda */
+  .esq { display: grid; grid-template-columns: 104px 1fr; gap: 8px 12px; align-items: center; }
+  .esq .rot { padding-top: 0; }
+  /* linha de definição */
+  .linha { display: flex; align-items: center; gap: 12px; min-height: 52px; border-bottom: 1px solid var(--div); font-size: 15px; color: var(--t1); }
+  .linha:last-child { border-bottom: 0; }
+  .linha .v { margin-left: auto; color: var(--t3); font-size: 13px; } .linha .seta { color: var(--t3); }
+
+  dl { margin: 0; display: grid; grid-template-columns: 104px 1fr; gap: 4px 10px; font-size: 12.5px; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  code { background: var(--div); padding: 0 4px; border-radius: 3px; font-size: 11.5px; }
+  .mede { font-size: 12px; color: var(--t3); display: grid; gap: 2px; } .mede b { color: var(--t2); }
+  table.m { border-collapse: collapse; font-size: 12.5px; width: 100%; }
+  table.m th, table.m td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--div); }
+  table.m th { color: var(--t3); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  table.m td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .nota { font-size: 13px; color: var(--t2); background: var(--sub); border-radius: 8px; padding: 12px 14px; line-height: 1.55; }
+  ul.lista { margin: 0; padding-left: 18px; font-size: 13px; color: var(--t2); display: grid; gap: 5px; }
+</style>
+</head>
+<body>
+<h1>Os formulários das folhas — cinco organizações</h1>
+<p class="sub">Todas as folhas da app escrevem o formulário da mesma maneira: um rótulo de 12 px por cima de um controlo de largura inteira, blocos empilhados com 16 px entre eles.
+Resulta numa coluna de blocos iguais em que nada se agrupa e nada se destaca — e num campo de dois dígitos («Pontos de bónus») com 355 px de largura e dois botões de 44.
+Medi a folha de <b>gerir tarefa</b>: <b>629 px</b> de conteúdo para um corpo visível de <b>~430 px</b>. Um campo e meio fica sempre fora do ecrã.</p>
+
+<h2 class="parte">O que está hoje</h2>
+<div class="grelha">
+  <section class="mau">
+    <h2>Hoje <small>uma coluna de blocos iguais</small></h2>
+    <div class="folha">
+      <div class="cab"><div><b>Fazer a cama</b><small>Léo · Todos os dias</small></div><span class="x">×</span></div>
+      <div class="corpo">
+        <div class="grupo"><div class="rot">Título da tarefa</div><div class="campo">Fazer a cama</div></div>
+        <div class="grupo"><div class="rot">Pontos de bónus</div><div class="num"><i>−</i><div class="campo">1</div><i>+</i></div></div>
+        <div class="grupo"><div class="rot">Urgência</div><div class="seg"><div>Urgente</div><div class="on">Normal</div><div>Sem pressa</div></div>
+          <div class="dica">Fica no meio da lista, com a caixa tracejada a âmbar e borda tracejada.</div></div>
+        <div class="grupo"><div class="rot">Prazo (opcional)</div><div class="campo vazio">Sem prazo</div></div>
+        <div class="grupo"><div class="rot">Atribuir a</div>
+          <div class="bolas"><span class="bola on"><i style="background:#1890FF">L</i>Léo</span><span class="bola"><i style="background:#555">A</i>António</span><span class="bola"><i style="background:#722ED1">R</i>Rita</span><span class="bola"><i style="background:#08979C">T</i>Tomás</span></div></div>
+        <div class="cartao"><span style="color:var(--chrome)">↻</span><div class="txt"><b>Alternar entre as crianças</b><small>A tarefa fica sempre com o mesmo membro.</small></div><span class="interruptor"></span></div>
+        <div class="regua"></div>
+        <div class="apagar">🗑 Apagar tarefa</div>
+      </div>
+      <div class="rodape"><div class="primario">Guardar alterações</div></div>
+    </div>
+    <ul class="lista">
+      <li>Sete blocos, todos com o mesmo peso: nada diz que o título e a urgência são coisas de natureza diferente.</li>
+      <li>Um número de dois dígitos ocupa a largura toda; a seguir, três palavras ocupam a largura toda; a seguir, um «Sem prazo» ocupa a largura toda.</li>
+      <li>Os rótulos são sete, todos iguais, e leem-se como uma lista de sete assuntos.</li>
+      <li>629 px de conteúdo — o «Alternar» e o apagar só existem depois de rolar.</li>
+      <li>É assim em <b>dezoito</b> folhas: nova tarefa, novo evento, artigo, meta, conta fixa, contrato, equipamento, receita, envelope…</li>
+    </ul>
+  </section>
+</div>
+
+<h2 class="parte">Cinco organizações</h2>
+<div class="grelha">
+
+  <!-- A -->
+  <section>
+    <h2>A · Pares em linha <small>o curto ao lado do curto</small></h2>
+    <div class="folha">
+      <div class="cab"><div><b>Fazer a cama</b><small>Léo · Todos os dias</small></div><span class="x">×</span></div>
+      <div class="corpo">
+        <div class="grupo"><div class="rot">Título da tarefa</div><div class="campo">Fazer a cama</div></div>
+        <div class="par curto">
+          <div class="grupo"><div class="rot">Pontos</div><div class="num mini"><i>−</i><div class="campo">1</div><i>+</i></div></div>
+          <div class="grupo"><div class="rot">Prazo</div><div class="campo vazio">Sem prazo</div></div>
+        </div>
+        <div class="grupo"><div class="rot">Urgência</div><div class="seg"><div>Urgente</div><div class="on">Normal</div><div>Sem pressa</div></div></div>
+        <div class="grupo"><div class="rot">Atribuir a</div>
+          <div class="bolas"><span class="bola on"><i style="background:#1890FF">L</i>Léo</span><span class="bola"><i style="background:#555">A</i>António</span><span class="bola"><i style="background:#722ED1">R</i>Rita</span><span class="bola"><i style="background:#08979C">T</i>Tomás</span></div></div>
+        <div class="cartao"><span style="color:var(--chrome)">↻</span><div class="txt"><b>Alternar entre as crianças</b><small>Fica sempre com o mesmo membro.</small></div><span class="interruptor"></span></div>
+        <div class="regua"></div>
+        <div class="apagar">🗑 Apagar tarefa</div>
+      </div>
+      <div class="rodape"><div class="primario">Guardar alterações</div></div>
+    </div>
+    <dl>
+      <dt>A regra</dt><dd>Um campo <b>curto</b> (número, data, hora, uma palavra) ocupa meia linha; um campo <b>longo</b> (texto, escolha de três, bolas) ocupa a linha toda.</dd>
+      <dt>Ganha</dt><dd>−90 px sem mudar nada do que a app já sabe desenhar. O «−»/«+» encolhe para 36 quando está em meia linha.</dd>
+      <dt>Custa</dt><dd>Não agrupa: continuam sete rótulos do mesmo peso, só em menos linhas.</dd>
+    </dl>
+    <div class="mede"><b>539 px</b> · −14 %</div>
+  </section>
+
+  <!-- B -->
+  <section>
+    <h2>B · Secções <small>o título de secção do desenho C, dentro da folha</small></h2>
+    <div class="folha">
+      <div class="cab"><div><b>Fazer a cama</b><small>Léo · Todos os dias</small></div><span class="x">×</span></div>
+      <div class="corpo">
+        <div class="tit">A Tarefa</div>
+        <div class="grupo"><div class="rot">Título</div><div class="campo">Fazer a cama</div></div>
+        <div class="grupo"><div class="rot">Pontos de bónus</div><div class="num"><i>−</i><div class="campo">1</div><i>+</i></div></div>
+        <div class="tit">Quem e Quando</div>
+        <div class="grupo"><div class="rot">Atribuir a</div>
+          <div class="bolas"><span class="bola on"><i style="background:#1890FF">L</i>Léo</span><span class="bola"><i style="background:#555">A</i>António</span><span class="bola"><i style="background:#722ED1">R</i>Rita</span><span class="bola"><i style="background:#08979C">T</i>Tomás</span></div></div>
+        <div class="grupo"><div class="rot">Urgência</div><div class="seg"><div>Urgente</div><div class="on">Normal</div><div>Sem pressa</div></div></div>
+        <div class="grupo"><div class="rot">Prazo (opcional)</div><div class="campo vazio">Sem prazo</div></div>
+        <div class="cartao"><span style="color:var(--chrome)">↻</span><div class="txt"><b>Alternar entre as crianças</b><small>Fica sempre com o mesmo membro.</small></div><span class="interruptor"></span></div>
+        <div class="regua"></div>
+        <div class="apagar">🗑 Apagar tarefa</div>
+      </div>
+      <div class="rodape"><div class="primario">Guardar alterações</div></div>
+    </div>
+    <dl>
+      <dt>A regra</dt><dd>Duas ou três secções por folha, com o mesmo <code>SectionTitle</code> dos ecrãs (13 px em <code>actFg</code>, com régua). Uma folha de três campos não leva nenhuma.</dd>
+      <dt>Ganha</dt><dd>Dá hierarquia: lê-se «o quê» e «quem e quando» antes de se ler campo a campo. É a linguagem que a app já fala fora das folhas.</dd>
+      <dt>Custa</dt><dd>+40 px. Não resolve o campo de dois dígitos com 355 px.</dd>
+    </dl>
+    <div class="mede"><b>669 px</b> · +6 %</div>
+  </section>
+
+  <!-- C -->
+  <section>
+    <h2>C · Linhas de valor <small>como as linhas dos ecrãs</small></h2>
+    <div class="folha">
+      <div class="cab"><div><b>Fazer a cama</b><small>Léo · Todos os dias</small></div><span class="x">×</span></div>
+      <div class="corpo">
+        <div class="grupo" style="gap:0">
+          <div class="linha">Título <span class="v">Fazer a cama</span><span class="seta">›</span></div>
+          <div class="linha">Pontos de bónus <span class="v">1 ponto</span><span class="seta">›</span></div>
+          <div class="linha">Urgência <span class="v">Normal</span><span class="seta">›</span></div>
+          <div class="linha">Prazo <span class="v">Sem prazo</span><span class="seta">›</span></div>
+          <div class="linha">Atribuir a <span class="v">Léo</span><span class="seta">›</span></div>
+          <div class="linha">Alternar entre as crianças <span class="interruptor" style="margin-left:auto"></span></div>
+        </div>
+        <div class="regua"></div>
+        <div class="apagar">🗑 Apagar tarefa</div>
+      </div>
+      <div class="rodape"><div class="primario">Guardar alterações</div></div>
+    </div>
+    <dl>
+      <dt>A regra</dt><dd>Cada campo é uma <code>Linha</code> com o valor à direita; tocar abre o controlo no lugar (acordeão) ou uma folha por cima.</dd>
+      <dt>Ganha</dt><dd>A folha inteira cabe no ecrã sem rolar, e lê-se como um resumo: sabe-se o que a tarefa É antes de mexer em nada.</dd>
+      <dt>Custa</dt><dd>Duas vezes mais toques para mudar um campo, e é um idioma novo — a app não tem nenhuma folha assim. Contra o erro #6: uma linha, um destino.</dd>
+    </dl>
+    <div class="mede"><b>373 px</b> · −41 %, mas +1 toque por campo</div>
+  </section>
+
+  <!-- D -->
+  <section>
+    <h2>D · Rótulo à esquerda <small>duas colunas fixas</small></h2>
+    <div class="folha">
+      <div class="cab"><div><b>Fazer a cama</b><small>Léo · Todos os dias</small></div><span class="x">×</span></div>
+      <div class="corpo">
+        <div class="esq">
+          <div class="rot">Título</div><div class="campo">Fazer a cama</div>
+          <div class="rot">Pontos</div><div class="num mini"><i>−</i><div class="campo">1</div><i>+</i></div>
+          <div class="rot">Urgência</div><div class="seg"><div>Urg.</div><div class="on">Normal</div><div>S/ pressa</div></div>
+          <div class="rot">Prazo</div><div class="campo vazio">Sem prazo</div>
+          <div class="rot">Atribuir a</div><div class="bolas" style="gap:4px"><span class="bola on" style="width:44px"><i style="background:#1890FF">L</i>Léo</span><span class="bola" style="width:44px"><i style="background:#555">A</i>Ant.</span><span class="bola" style="width:44px"><i style="background:#722ED1">R</i>Rita</span></div>
+        </div>
+        <div class="cartao"><span style="color:var(--chrome)">↻</span><div class="txt"><b>Alternar entre as crianças</b><small>Fica sempre com o mesmo membro.</small></div><span class="interruptor"></span></div>
+        <div class="regua"></div>
+        <div class="apagar">🗑 Apagar tarefa</div>
+      </div>
+      <div class="rodape"><div class="primario">Guardar alterações</div></div>
+    </div>
+    <dl>
+      <dt>A regra</dt><dd>Rótulo numa coluna de 104 px à esquerda, controlo à direita, tudo alinhado.</dd>
+      <dt>Ganha</dt><dd>−200 px, e os rótulos formam uma coluna que se percorre de olhos.</dd>
+      <dt>Custa</dt><dd>⚠ Os controlos ficam com <b>235 px</b>: o segmentado de três precisa de abreviar («S/ pressa»), as bolas passam a três por linha, e um título longo mostra menos texto. Num telemóvel de 360 são 193 px.</dd>
+    </dl>
+    <div class="mede"><b>429 px</b> · −32 %, com abreviaturas</div>
+  </section>
+
+  <!-- E -->
+  <section class="rec">
+    <h2>E · Secções com pares <small>recomendada — A + B</small></h2>
+    <div class="folha">
+      <div class="cab"><div><b>Fazer a cama</b><small>Léo · Todos os dias</small></div><span class="x">×</span></div>
+      <div class="corpo">
+        <div class="tit">A Tarefa</div>
+        <div class="grupo"><div class="rot">Título</div><div class="campo">Fazer a cama</div></div>
+        <div class="par curto">
+          <div class="grupo"><div class="rot">Pontos</div><div class="num mini"><i>−</i><div class="campo">1</div><i>+</i></div></div>
+          <div class="grupo"><div class="rot">Prazo</div><div class="campo vazio">Sem prazo</div></div>
+        </div>
+        <div class="grupo"><div class="rot">Urgência</div><div class="seg"><div>Urgente</div><div class="on">Normal</div><div>Sem pressa</div></div></div>
+        <div class="tit">Quem Faz</div>
+        <div class="bolas"><span class="bola on"><i style="background:#1890FF">L</i>Léo</span><span class="bola"><i style="background:#555">A</i>António</span><span class="bola"><i style="background:#722ED1">R</i>Rita</span><span class="bola"><i style="background:#08979C">T</i>Tomás</span></div>
+        <div class="cartao"><span style="color:var(--chrome)">↻</span><div class="txt"><b>Alternar entre as crianças</b><small>Fica sempre com o mesmo membro.</small></div><span class="interruptor"></span></div>
+        <div class="regua"></div>
+        <div class="apagar">🗑 Apagar tarefa</div>
+      </div>
+      <div class="rodape"><div class="primario">Guardar alterações</div></div>
+    </div>
+    <dl>
+      <dt>A regra</dt><dd>Secções quando a folha tem mais de quatro campos; pares em linha quando dois campos são curtos; o rótulo de uma secção substitui o rótulo do campo quando só há um («Quem Faz» + as bolas, sem «Atribuir a»).</dd>
+      <dt>Ganha</dt><dd>Hierarquia <b>e</b> altura: a folha passa a caber quase toda, e o que se lê primeiro é a estrutura, não sete rótulos iguais.</dd>
+      <dt>Custa</dt><dd>Uma decisão por folha — quais as secções. Nas dezoito, isso são dezoito decisões (proponho-as todas de uma vez, à parte).</dd>
+    </dl>
+    <div class="mede"><b>521 px</b> · −17 %, com secções</div>
+  </section>
+</div>
+
+<h2 class="parte">Medido</h2>
+<table class="m">
+  <tr><th>Organização</th><th class="n">Altura do conteúdo</th><th class="n">Contra hoje</th><th>Toques para mudar um campo</th><th>Idioma novo?</th></tr>
+  <tr><td>Hoje</td><td class="n">629 px</td><td class="n">—</td><td>1</td><td>—</td></tr>
+  <tr><td>A · pares em linha</td><td class="n">539 px</td><td class="n">−14 %</td><td>1</td><td>não</td></tr>
+  <tr><td>B · secções</td><td class="n">669 px</td><td class="n">+6 %</td><td>1</td><td>não (o <code>SectionTitle</code> dos ecrãs)</td></tr>
+  <tr><td>C · linhas de valor</td><td class="n">373 px</td><td class="n">−41 %</td><td>2 a 3</td><td>sim</td></tr>
+  <tr><td>D · rótulo à esquerda</td><td class="n">429 px</td><td class="n">−32 %</td><td>1</td><td>sim, e abrevia</td></tr>
+  <tr><td><b>E · secções com pares</b></td><td class="n"><b>521 px</b></td><td class="n"><b>−17 %</b></td><td>1</td><td>não</td></tr>
+</table>
+<p class="nota">O corpo visível de uma folha é <b>~430 px</b> (82 % do ecrã, menos o cabeçalho e o rodapé fixo). Nenhuma das cinco faz uma folha de sete campos caber sem rolar — a C faz, ao preço de esconder todos os valores atrás de um toque.
+<b>A recomendação é a E.</b> É a única que arruma sem inventar um idioma: as secções são o <code>SectionTitle</code> que os ecrãs já usam, e os pares em linha são a mesma <code>View</code> em fila que a app já tem na dose·quantidade·unidade da receita e nos três números do plano de tomas.
+Se escolher a E, a seguir proponho as secções de cada uma das dezoito folhas numa lista, para decidir de uma vez.</p>
+</body>
+</html>

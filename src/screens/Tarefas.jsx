@@ -11,6 +11,7 @@ import Confirm from '../Confirm';
 import ListaArrastavel, { ATRASO_PARA_PEGAR } from '../ListaArrastavel';
 import NovaTarefa from '../sheets/NovaTarefa';
 import FiltroDeMembros, { EscolherPessoa } from '../FiltroDeMembros';
+import { useAcaoDoEcra } from '../AcaoDoEcra';
 
 // Urgência: a caixa do número leva a cor, e a lista ordena-se por ela.
 // A forma acompanha a cor — cheia, tracejada, contorno — para não depender do matiz.
@@ -239,7 +240,11 @@ export default function Tarefas({ t, user, abrir }) {
         </View>
       ) : null}
 
-      <AddButton t={t} label="acrescentar tarefa" onPress={() => setSheetOpen(true)} />
+      {/* ⚠ O «acrescentar» vive na barra FIXA do fundo do ecrã (15/09/2026:
+          «move o botão para o fundo e assim aproveita-se mais o ecrã»). Estava
+          no fim do conteúdo, depois da lista e da paginação: com oito tarefas
+          era preciso rolar até ao fim para acrescentar a nona. */}
+      {useAcaoDoEcra(<AddButton t={t} label="acrescentar tarefa" onPress={() => setSheetOpen(true)} />)}
 
       {sheetOpen ? (
         <Sheet t={t} title="Nova Tarefa" sub="Criar uma tarefa recorrente ou pontual"
@@ -253,8 +258,19 @@ export default function Tarefas({ t, user, abrir }) {
           action={<Primary t={t} comum label="Guardar alterações"
             sub={!tituloDoRascunho.trim() ? 'Escreva um título para a tarefa' : rascunhoMudou ? 'O título e os pontos ficam como escreveu' : null}
             disabled={!tituloDoRascunho.trim()} onPress={guardarTarefa} />}>
+          {/* ── A tarefa ─────────────────────────────────────────────────────
+              ⚠ O formulário em SECÇÕES, com os campos curtos dois a dois na
+              mesma linha (15/09/2026 — «consegues arranjar um layout mais
+              agradável e uma organização melhor?»). Era uma coluna de sete
+              blocos do mesmo peso, 629 px num corpo que mostra 430: um campo
+              de dois dígitos com a largura toda, e nada a dizer que o título e
+              a urgência são coisas de natureza diferente. As secções são o
+              `SectionTitle` que os ecrãs já usam; os pares são a mesma fila da
+              dose·quantidade·unidade da receita. Ver
+              `design/formularios-das-folhas.dc.html`, opção E. */}
+          <SectionTitle t={t}>A Tarefa</SectionTitle>
           <View style={{ gap: S.md }}>
-            <Label t={t}>Título da tarefa</Label>
+            <Label t={t}>Título</Label>
             <TextInput accessibilityLabel="Título da tarefa"
               value={tituloDoRascunho}
               onChangeText={(v) => setRascunho(r => ({ ...r, title: v }))}
@@ -269,38 +285,22 @@ export default function Tarefas({ t, user, abrir }) {
             />
           </View>
 
-          {/* Só se os pontos estiverem ligados — a mesma condição da folha de
-              criar — e só enquanto a tarefa não rendeu nada (INVARIANTE #2). */}
-          {pontosNasTarefas ? (
-            <View style={{ gap: S.md }}>
-              <Label t={t}>Pontos de bónus</Label>
-              {jaRendeu(task.id) ? (
-                <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.text3 }}>
-                  {`Vale ${plural(task.pts || 0, 'ponto', 'pontos')}, e já foi feita — um ponto ganho não se desfaz. `
-                    + 'Para mudar o valor, crie uma tarefa nova.'}
-                </Text>
-              ) : (
-                <NumField t={t} value={pontosDoRascunho} onChange={(v) => setRascunho(r => ({ ...r, pts: v }))}
+          {/* Os pontos e o prazo, lado a lado: dois campos curtos. Os pontos só
+              enquanto a tarefa não rendeu nada (INVARIANTE #2) e só com os
+              pontos ligados; sem eles, o prazo fica com a linha toda. */}
+          <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'flex-start' }}>
+            {pontosNasTarefas && !jaRendeu(task.id) ? (
+              <View style={{ flex: 1, minWidth: 0, gap: S.md }}>
+                <Label t={t}>Pontos</Label>
+                {/* `compacto`: em meia linha não há largura para o «−» e o «+»
+                    sem descer dos 44 px (INVARIANTE #5). */}
+                <NumField t={t} compacto value={pontosDoRascunho} onChange={(v) => setRascunho(r => ({ ...r, pts: v }))}
                   step={1} min={0} max={99} suffix={false} rotulo="Pontos de bónus" />
-              )}
-            </View>
-          ) : null}
-
-          <View style={{ gap: S.md }}>
-            <Label t={t}>Urgência</Label>
-            <Segmented t={t} small value={task.urgency}
-              options={URG.map(u => ({ value: u.key, label: u.label }))}
-              onChange={(v) => mudarUrgencia(task.id, v)} />
-            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
-              {task.urgency === 0 ? 'Sobe ao topo da lista, com a caixa cheia a vermelho e borda vermelha.'
-                : task.urgency === 1 ? 'Fica no meio da lista, com a caixa tracejada a âmbar e borda tracejada.'
-                : 'Desce para o fim da lista, com a caixa em contorno cinzento.'}
-            </Text>
-          </View>
-
-          <View style={{ gap: S.md }}>
-            <Label t={t}>Prazo (opcional)</Label>
-            <View style={{ flexDirection: 'row', gap: S.sm, alignItems: 'center' }}>
+              </View>
+            ) : null}
+            <View style={{ flex: 1, minWidth: 0, gap: S.md }}>
+              <Label t={t}>Prazo</Label>
+              <View style={{ flexDirection: 'row', gap: S.sm, alignItems: 'center' }}>
               {/* ⚠ «Sem prazo» nunca LIGAVA: o ramo que punha prazo gravava
                   `key: task.dueKey`, que era o `undefined` que acabava de
                   testar. Ligar é «hoje às 18:00»; a hora muda-se ao lado, e
@@ -319,30 +319,54 @@ export default function Tarefas({ t, user, abrir }) {
               </Pressable>
               {/* Ternário, e não `&&`: um campo de texto que venha vazio fica
                   como filho string do View (ver a dose da receita, na Saúde). */}
-              {task.dueKey ? (
-                <TextInput accessibilityLabel="Hora do prazo"
-                  value={task.dueTime || '18:00'}
-                  onChangeText={(v) => mudarPrazo(task.id, { key: task.dueKey, time: v })}
-                  placeholder="18:00"
-                  placeholderTextColor={t.text3}
-                  maxLength={5}
-                  style={{
-                    width: 70, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.ui,
-                    fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
-                    borderColor: t.border, backgroundColor: t.card, textAlign: 'center',
-                  }}
-                />
-              ) : null}
+                {task.dueKey ? (
+                  <TextInput accessibilityLabel="Hora do prazo"
+                    value={task.dueTime || '18:00'}
+                    onChangeText={(v) => mudarPrazo(task.id, { key: task.dueKey, time: v })}
+                    placeholder="18:00"
+                    placeholderTextColor={t.text3}
+                    maxLength={5}
+                    style={{
+                      width: 62, minHeight: 44, paddingHorizontal: S.sm, fontFamily: FONT.ui,
+                      fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
+                      borderColor: t.border, backgroundColor: t.card, textAlign: 'center',
+                    }}
+                  />
+                ) : null}
+              </View>
             </View>
-            {dueOf(task) && (
-              <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: dueOf(task).late ? t.state.errTexto : dueOf(task).soon ? t.state.warnTexto : t.text3 }}>
-                Prazo: {dueOf(task).text}
-              </Text>
-            )}
           </View>
+          {dueOf(task) ? (
+            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, marginTop: -S.md, color: dueOf(task).late ? t.state.errTexto : dueOf(task).soon ? t.state.warnTexto : t.text3 }}>
+              Prazo: {dueOf(task).text}
+            </Text>
+          ) : null}
+          {/* Os pontos de uma tarefa que já rendeu não se mudam — e diz-se
+              aqui, onde o campo estaria (INVARIANTE #2). */}
+          {pontosNasTarefas && jaRendeu(task.id) ? (
+            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, marginTop: -S.md, color: t.text3 }}>
+              {`Vale ${plural(task.pts || 0, 'ponto', 'pontos')}, e já foi feita — um ponto ganho não se desfaz. `
+                + 'Para mudar o valor, crie uma tarefa nova.'}
+            </Text>
+          ) : null}
 
           <View style={{ gap: S.md }}>
-            <Label t={t}>Atribuir a</Label>
+            <Label t={t}>Urgência</Label>
+            <Segmented t={t} small value={task.urgency}
+              options={URG.map(u => ({ value: u.key, label: u.label }))}
+              onChange={(v) => mudarUrgencia(task.id, v)} />
+            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+              {task.urgency === 0 ? 'Sobe ao topo da lista, com a caixa cheia a vermelho e borda vermelha.'
+                : task.urgency === 1 ? 'Fica no meio da lista, com a caixa tracejada a âmbar e borda tracejada.'
+                : 'Desce para o fim da lista, com a caixa em contorno cinzento.'}
+            </Text>
+          </View>
+
+          {/* ── Quem faz ─────────────────────────────────────────────────────
+              O título da secção é o rótulo: as bolas por baixo não precisam de
+              um «Atribuir a» a dizer o mesmo duas vezes. */}
+          <SectionTitle t={t}>Quem Faz</SectionTitle>
+          <View style={{ gap: S.md }}>
             {/* A bola de cada pessoa, como no filtro lá em cima (15/09/2026):
                 era um `Segmented` com os nomes. */}
             <EscolherPessoa t={t} membros={membrosDaCasa} valor={task.who} MEMBERS={MEMBERS}

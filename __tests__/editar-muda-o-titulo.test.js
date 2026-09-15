@@ -64,14 +64,19 @@ describe('a tarefa: o título e os pontos alteram-se na folha de gerir', () => {
   const tarefas = semComentarios(ler('src/screens/Tarefas.jsx'));
   const folha = tarefas.slice(tarefas.indexOf('title={task.title}'), tarefas.indexOf('Apagar Tarefa'));
 
-  it('a folha tem o campo do título, com o mesmo rótulo da folha de criar', () => {
-    expect(folha).toMatch(/<Label t=\{t\}>Título da tarefa<\/Label>/);
+  it('a folha tem o campo do título, com o mesmo rótulo em voz da folha de criar', () => {
+    // O rótulo VISÍVEL é «Título» desde que a folha passou a ter secções
+    // (15/09/2026): o título da secção «A Tarefa» diz o resto. O rótulo em
+    // VOZ, que é o que um leitor de ecrã lê sem o contexto à volta, continua
+    // a ser o inteiro, e igual ao da folha de criar.
+    expect(folha).toMatch(/<SectionTitle t=\{t\}>A Tarefa<\/SectionTitle>/);
+    expect(folha).toMatch(/<Label t=\{t\}>Título<\/Label>/);
     expect(folha).toMatch(/accessibilityLabel="Título da tarefa"/);
     expect(semComentarios(ler('src/sheets/NovaTarefa.jsx'))).toMatch(/accessibilityLabel="Título da tarefa"/);
   });
 
-  it('e os pontos, no NumField, só com os pontos ligados — como ao criar', () => {
-    expect(folha).toMatch(/\{pontosNasTarefas \? \([\s\S]*?<NumField[\s\S]*?rotulo="Pontos de bónus"/);
+  it('e os pontos, no NumField, só com os pontos ligados e só enquanto a tarefa não rendeu', () => {
+    expect(folha).toMatch(/\{pontosNasTarefas && !jaRendeu\(task\.id\) \? \([\s\S]*?<NumField[\s\S]*?rotulo="Pontos de bónus"/);
   });
 
   it('⚠ o título vai num rascunho e sobe no «Guardar alterações», não a cada tecla', () => {
@@ -113,8 +118,11 @@ describe('o equipamento: a ficha altera o que a folha de registar pede', () => {
     expect(ficha).toMatch(/accessibilityLabel="Nome do equipamento"/);
     expect(ficha).toMatch(/CATEGORIAS_DE_EQUIPAMENTO\.map\(c => \([\s\S]*?<Choice/);
     // O `(\{\}\s*)?` é o que fica de um comentário JSX depois de os tirar.
-    expect(ficha).toMatch(/<Label t=\{t\}>Preço de compra<\/Label>\s*(\{\}\s*)?<NumField/);
-    expect(ficha).toMatch(/<Label t=\{t\}>Data de compra<\/Label>\s*(\{\}\s*)?<CampoData[^>]*maximo=\{TODAY_KEY\}/);
+    expect(ficha).toMatch(/<Label t=\{t\}>Preço<\/Label>\s*(\{\}\s*)?<NumField/);
+    // «Comprado a» desde que o preço e a data passaram a partilhar a linha
+    // (15/09/2026, opção E de `design/formularios-das-folhas.dc.html`): em meia
+    // linha, «Data de compra» não cabia no rótulo.
+    expect(ficha).toMatch(/<Label t=\{t\}>Comprado a<\/Label>\s*(\{\}\s*)?<CampoData[^>]*maximo=\{TODAY_KEY\}/);
     expect(ficha).toMatch(/<Label t=\{t\}>Fim da garantia<\/Label>\s*(\{\}\s*)?<CampoData/);
   });
 
