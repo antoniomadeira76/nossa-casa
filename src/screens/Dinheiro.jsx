@@ -108,7 +108,7 @@ export default function Dinheiro({ t, user, onEquip }) {
   const eqOut = eq.filter(x => warrantyDaysLeft(x) < 0).length;
 
   const freeOf = (i) => Math.max(0, envelopes[i].limit - envelopes[i].used);
-  const envPg = usePaged(envelopes, 5);
+  const envPg = usePaged(envelopes);
 
   // ── As contas fixas deste mês ─────────────────────────────────────────────
   //

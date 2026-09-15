@@ -68,8 +68,8 @@ export default function Cofre({ t, kid, onClose }) {
     if (!(bonus > 0)) return;
     vaultAdd(kid, bonus, 'bonus', 'Bónus', 'atribuído por si');
   };
-  // O botão do bónus, com a consequência dita dentro dele — é o mesmo no corpo
-  // e no rodapé, e por isso escreve-se uma vez.
+  // O botão do bónus. No RODAPÉ leva a consequência dentro dele; na linha do
+  // campo é curto, porque a consequência fica na legenda por baixo.
   const botaoDoBonus = (
     <Primary comum t={t} label={`Dar ${EUR(bonus)} de bónus`}
       sub={bonus > 0 ? `O cofre fica com ${EUR(saldo + bonus)}` : 'Escreva um valor acima de zero'}
@@ -146,13 +146,24 @@ export default function Cofre({ t, kid, onClose }) {
           que isto cria. */}
       <View style={{ gap: S.sm }}>
         <SectionTitle t={t}>Dar um Bónus</SectionTitle>
-        <Label t={t}>Valor</Label>
-        <NumField t={t} value={bonus} step={0.5} min={0} max={999}
-          rotulo="Valor do bónus em euros" onChange={setBonus} />
-        {pontosNasTarefas ? botaoDoBonus : null}
+        {/* ⚠ O valor e o botão na MESMA linha (opção A de
+            `design/campo-de-valor.dc.html`): a caixa tinha 251 px para quatro
+            caracteres, e o botão vinha por baixo — 126 px de altura para dizer
+            «1 €». A caixa passa a ter a largura do que lá cabe, e a
+            consequência desce para a legenda. */}
+        <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'center' }}>
+          <NumField t={t} estreito value={bonus} step={0.5} min={0} max={999}
+            rotulo="Valor do bónus em euros" onChange={setBonus} />
+          {pontosNasTarefas ? (
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Primary comum t={t} label="Dar bónus"
+                disabled={!(bonus > 0)} onPress={darBonus} />
+            </View>
+          ) : null}
+        </View>
         <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
-          Um bónus não são pontos: entra no cofre como uma parcela à parte, com
-          o seu nome, e não mexe na semanada.
+          {bonus > 0 ? `O cofre fica com ${EUR(saldo + bonus)}. ` : ''}
+          Um bónus não são pontos: entra como uma parcela à parte e não mexe na semanada.
         </Text>
       </View>
 

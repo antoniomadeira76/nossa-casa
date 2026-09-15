@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O campo de valor livre</title>
+<style>
+  :root { --pagina: #F6F7F9; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --sub: #F3F4F6; --t1: #262626; --t2: #3B3F48; --t3: #656C7C; --slate: #606E90;
+    --ac: #1D5FA8; --acfg: #1A55A0; --acbrd: #2C6FBE; --acbg: #E6EEF8; --ok: #52C41A; --okbg: #EEF9E6; --oktx: #2F7A0E; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 88ch; }
+  h2.parte { font-size: 16px; margin: 28px 0 10px; color: var(--acfg); border-bottom: 1px solid var(--borda); padding-bottom: 6px; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 18px; align-items: start; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; gap: 12px; align-content: start; }
+  section h2 { margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  section.rec { border-color: var(--ac); box-shadow: 0 0 0 3px var(--acbg); }
+  section.mau { border-color: #FF4D4F; }
+  .tela { width: 355px; box-sizing: border-box; background: var(--cartao); border: 1px solid var(--div); border-radius: 8px; padding: 12px; display: grid; gap: 8px; }
+  .rot { font-size: 12px; color: var(--slate); font-weight: 600; }
+  .campo { min-height: 44px; border: 1px solid var(--borda); border-radius: 6px; background: var(--cartao); padding: 0 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--t2); box-sizing: border-box; font-family: inherit; }
+  .campo.peq { font-size: 15px; }
+  .num { display: flex; gap: 8px; } .num .campo { flex: 1; }
+  .num i { width: 44px; min-height: 44px; border: 1px solid var(--borda); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--acfg); font-weight: 700; font-style: normal; font-size: 20px; flex: none; }
+  .primario { min-height: 56px; border-radius: 6px; border: 1px solid var(--acbrd); background: var(--acbg); color: var(--acfg); font-weight: 700; font-size: 14px; display: grid; place-items: center; text-align: center; line-height: 1.25; }
+  .primario small { display: block; font-weight: 500; font-size: 11px; opacity: .85; }
+  .primario.curto { min-height: 44px; padding: 0 14px; }
+  .fila { display: flex; gap: 8px; align-items: center; }
+  .pastilha { min-height: 44px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--borda); background: var(--cartao); font-size: 13px; color: var(--t2); display: flex; align-items: center; }
+  .pastilha.on { background: var(--ac); border-color: var(--ac); color: #fff; font-weight: 600; }
+  dl { margin: 0; display: grid; grid-template-columns: 88px 1fr; gap: 4px 10px; font-size: 12.5px; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  .mede { font-size: 12px; color: var(--t3); } .mede b { color: var(--t2); }
+  table.m { border-collapse: collapse; font-size: 12.5px; width: 100%; }
+  table.m th, table.m td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--div); }
+  table.m th { color: var(--t3); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  table.m td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  code { background: var(--div); padding: 0 4px; border-radius: 3px; font-size: 11.5px; }
+  .nota { font-size: 13px; color: var(--t2); background: var(--sub); border-radius: 8px; padding: 12px 14px; line-height: 1.55; }
+</style>
+</head>
+<body>
+<h1>O campo de valor livre — cinco maneiras de ocupar menos</h1>
+<p class="sub">O <code>NumField</code> é o campo de número de toda a app: dois alvos de 44 px e uma caixa de 18 px entre eles, sempre com a largura inteira.
+Num sítio onde o valor é quase sempre o mesmo — o bónus do cofre, o reforço de uma meta — isso são <b>126 px de altura</b> e 355 de largura para escrever «1».
+Os alvos de 44 não se discutem (INVARIANTE #5); o que se pode mudar é a LARGURA e o número de linhas.</p>
+
+<h2 class="parte">O que está hoje</h2>
+<div class="grelha">
+  <section class="mau">
+    <h2>Hoje <small>126 px, largura inteira</small></h2>
+    <div class="tela">
+      <div class="rot">Valor</div>
+      <div class="num"><i>−</i><div class="campo">1,00 €</div><i>+</i></div>
+      <div class="primario">Dar 1,00 € de bónus<small>O cofre fica com 2,20 €</small></div>
+    </div>
+    <div class="mede"><b>126 px</b> · a caixa do valor tem 251 px para caber «1,00 €»</div>
+  </section>
+</div>
+
+<h2 class="parte">Cinco alternativas</h2>
+<div class="grelha">
+
+  <section class="rec">
+    <h2>A · O valor e o botão na mesma linha <small>recomendada</small></h2>
+    <div class="tela">
+      <div class="rot">Valor do bónus</div>
+      <div class="fila">
+        <div class="num" style="flex:none"><i>−</i><div class="campo peq" style="width:78px">1,00 €</div><i>+</i></div>
+        <div class="primario curto" style="flex:1">Dar bónus</div>
+      </div>
+      <div class="mede" style="padding-left:2px">O cofre fica com 2,20 €</div>
+    </div>
+    <dl>
+      <dt>O que muda</dt><dd>A caixa do valor encolhe para o que precisa (78 px chegam para «999,00 €»), e o botão vem ao lado em vez de vir por baixo. A consequência passa a uma linha de 12 px por baixo, onde a app já põe as legendas.</dd>
+      <dt>Ganha</dt><dd>De 126 px para <b>70</b>. Uma linha em vez de três.</dd>
+      <dt>Custa</dt><dd>O botão perde o valor de dentro («Dar bónus» em vez de «Dar 1,00 € de bónus»); a consequência fica na legenda.</dd>
+    </dl>
+    <div class="mede"><b>70 px</b> · −44 %</div>
+  </section>
+
+  <section>
+    <h2>B · Só a caixa encolhe <small>a mudança mais pequena</small></h2>
+    <div class="tela">
+      <div class="rot">Valor</div>
+      <div class="num" style="justify-content:flex-start"><i>−</i><div class="campo peq" style="width:96px;flex:none">1,00 €</div><i>+</i></div>
+      <div class="primario">Dar 1,00 € de bónus<small>O cofre fica com 2,20 €</small></div>
+    </div>
+    <dl>
+      <dt>O que muda</dt><dd>Uma prop no <code>NumField</code> (<code>estreito</code>): a caixa passa a 96 px e o conjunto encosta à esquerda. Mais nada.</dd>
+      <dt>Ganha</dt><dd>Deixa de haver 251 px de vazio à volta de quatro caracteres.</dd>
+      <dt>Custa</dt><dd>A altura é a mesma: continuam três linhas.</dd>
+    </dl>
+    <div class="mede"><b>126 px</b> · a altura não desce</div>
+  </section>
+
+  <section>
+    <h2>C · Valores habituais, e «outro» <small>um toque no caso comum</small></h2>
+    <div class="tela">
+      <div class="rot">Valor do bónus</div>
+      <div class="fila" style="flex-wrap:wrap">
+        <span class="pastilha">0,50 €</span><span class="pastilha on">1 €</span><span class="pastilha">2 €</span><span class="pastilha">5 €</span><span class="pastilha">Outro…</span>
+      </div>
+      <div class="primario curto">Dar 1,00 € de bónus</div>
+    </div>
+    <dl>
+      <dt>O que muda</dt><dd>Quatro valores em pastilhas, como as escolhas da app, e «Outro…» abre o campo. O valor livre continua a existir — deixa de estar sempre à vista.</dd>
+      <dt>Ganha</dt><dd>Um toque para o caso de todos os dias, e nenhum teclado.</dd>
+      <dt>Custa</dt><dd>Quatro valores escolhidos por mim; quem dá 1,50 € tem sempre dois toques. E é um idioma novo — a app não tem valores sugeridos em lado nenhum.</dd>
+    </dl>
+    <div class="mede"><b>96 px</b> · −24 %, com um passo a mais no valor livre</div>
+  </section>
+
+  <section>
+    <h2>D · O valor dentro do botão <small>uma linha só</small></h2>
+    <div class="tela">
+      <div class="rot">Dar um bónus</div>
+      <div class="fila">
+        <div class="primario curto" style="flex:1">Dar 1,00 € de bónus</div>
+        <span class="pastilha" style="width:44px;justify-content:center">−</span>
+        <span class="pastilha" style="width:44px;justify-content:center">+</span>
+      </div>
+    </div>
+    <dl>
+      <dt>O que muda</dt><dd>Não há caixa: o «−» e o «+» afinam o valor que está escrito no próprio botão.</dd>
+      <dt>Ganha</dt><dd>De 126 px para <b>44</b>. É a mais pequena de todas.</dd>
+      <dt>Custa</dt><dd>⚠ Não se ESCREVE um valor: 7,50 € são treze toques. Deixa de ser um campo de valor livre, que é precisamente o que se pediu que ele fosse.</dd>
+    </dl>
+    <div class="mede"><b>44 px</b> · −65 %, e sem teclado</div>
+  </section>
+
+  <section>
+    <h2>E · Sem «−» e «+» <small>o `compacto` que já existe</small></h2>
+    <div class="tela">
+      <div class="rot">Valor do bónus</div>
+      <div class="fila">
+        <div class="campo peq" style="width:110px;justify-content:flex-start">1,00 €</div>
+        <div class="primario curto" style="flex:1">Dar bónus</div>
+      </div>
+      <div class="mede" style="padding-left:2px">O cofre fica com 2,20 €</div>
+    </div>
+    <dl>
+      <dt>O que muda</dt><dd>A variante <code>compacto</code> do <code>NumField</code>, a que os três números do plano de tomas já usam: caixa e mais nada.</dd>
+      <dt>Ganha</dt><dd>70 px, e a linha fica mais calma — dois objetos em vez de quatro.</dd>
+      <dt>Custa</dt><dd>Sem «−» e «+», e aqui eles servem: subir de 1 para 2 € é um toque, e a escrever são quatro.</dd>
+    </dl>
+    <div class="mede"><b>70 px</b> · −44 %, sem afinação rápida</div>
+  </section>
+</div>
+
+<h2 class="parte">Medido</h2>
+<table class="m">
+  <tr><th>Alternativa</th><th class="n">Altura</th><th class="n">Contra hoje</th><th>Escreve-se um valor?</th><th>«−» e «+»?</th><th>Idioma novo?</th></tr>
+  <tr><td>Hoje</td><td class="n">126 px</td><td class="n">—</td><td>sim</td><td>sim</td><td>—</td></tr>
+  <tr><td><b>A · valor e botão na mesma linha</b></td><td class="n"><b>70 px</b></td><td class="n"><b>−44 %</b></td><td>sim</td><td>sim</td><td>não</td></tr>
+  <tr><td>B · só a caixa encolhe</td><td class="n">126 px</td><td class="n">0 %</td><td>sim</td><td>sim</td><td>não</td></tr>
+  <tr><td>C · valores habituais</td><td class="n">96 px</td><td class="n">−24 %</td><td>com «Outro…»</td><td>não</td><td>sim</td></tr>
+  <tr><td>D · valor dentro do botão</td><td class="n">44 px</td><td class="n">−65 %</td><td>não</td><td>sim</td><td>sim</td></tr>
+  <tr><td>E · sem «−» e «+»</td><td class="n">70 px</td><td class="n">−44 %</td><td>sim</td><td>não</td><td>não</td></tr>
+</table>
+<p class="nota"><b>A recomendação é a A.</b> É a única que encolhe sem tirar nada: escreve-se o valor, afina-se com o «−» e o «+», e os alvos continuam nos 44.
+A caixa passa a ter a largura do que lá cabe em vez da largura que sobra, e o botão sobe para a mesma linha — que é o que a app já faz com «Agendar manutenção» e «Exportar fatura».
+Vale para os <b>nove</b> sítios com um valor livre: o bónus e a semanada do cofre, o reforço de uma meta, quanto juntar, o valor de uma conta fixa, o limite de um envelope, a despesa, o que se move entre envelopes e o acerto de contas.</p>
+</body>
+</html>

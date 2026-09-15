@@ -147,7 +147,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
     title: plural(overdue.length, 'tarefa por fazer hoje', 'tarefas por fazer hoje'),
     sub: [...new Set(overdue.map(x => x.who))].join(', '), go: () => go('tarefas') });
 
-  const needsPg = usePaged(needs, 5);
+  const needsPg = usePaged(needs);
   // E as contas fixas que vencem hoje, como na Agenda: não são eventos —
   // não se editam — e a linha leva ao Dinheiro, onde se marcam como pagas.
   const today = [

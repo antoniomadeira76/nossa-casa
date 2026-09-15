@@ -50,7 +50,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
 
   // A Agenda começa em hoje — o passado vive na ficha de cada membro
   const keys = [...new Set([TODAY_KEY, ...mine.map(e => e.day)])].filter(k => k >= TODAY_KEY).sort();
-  const pg = usePaged(keys, 5);
+  const pg = usePaged(keys);
 
   // A semana de hoje, de segunda a domingo. É o estado fechado do cartão do
   // calendário — em docs/referencia/08-agenda.png são sete colunas com a

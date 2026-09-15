@@ -315,7 +315,7 @@ export default function Documentacao({ t, onIr, podeGerir, user }) {
   const daCasa = dobrarRepeticoes(todoOregisto
     .filter(r => !filtroQuem || r.quem === filtroQuem)
     .filter(r => !filtroArea || r.a === filtroArea));
-  const pgCasa = usePaged(daCasa, 5);
+  const pgCasa = usePaged(daCasa);
 
   // Data e hora da entrada, numa linha só à direita.
   //

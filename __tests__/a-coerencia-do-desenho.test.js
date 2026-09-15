@@ -164,6 +164,11 @@ describe('⚠ a coerência do desenho — segunda revisão', () => {
       // Confirma o CAMPO ao lado dele — só aparece quando o nome muda, e vive
       // colado ao campo do nome. O rodapé desta folha é o «Guardar PIN».
       'src/screens/Gestao.jsx': 'o «Guardar nome» do membro, que confirma o campo ao lado e só aparece a mudar',
+      // O mesmo: gasta o valor do campo que está ao lado dele, na mesma linha
+      // (opção A de `design/campo-de-valor.dc.html`). O rodapé desta folha é o
+      // «Pagar semanada» — e, sem pontos na casa, é este mesmo botão que lá
+      // vai, porque aí passa a ser a única ação da folha.
+      'src/sheets/Cofre.jsx': 'o «Dar bónus», que gasta o valor do campo ao lado — o rodapé leva o «Pagar semanada»',
     };
     const span = (txt, marca, ab, fe) => {
       const out = [];

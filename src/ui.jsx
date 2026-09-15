@@ -62,8 +62,13 @@ const aosCentimos = (n) => Math.round(n * 100) / 100;
 // botões «−»/«+», nunca a tecla a meio. Quem escreve fora deste ecrã (na loja
 // ou no servidor) usa este, e não o `onChange`: ver o «quanto vale um ponto»
 // da Gestão.
+// `estreito` (15/09/2026): a caixa deixa de esticar e fica com a largura do que
+// lá cabe — 104 px chegam para «999 999,00 €». É o que permite pôr o valor e o
+// botão que o gasta na MESMA linha, em vez de um por baixo do outro («mostra
+// alternativas para que o campo de valor livre não seja tão grande», opção A de
+// `design/campo-de-valor.dc.html`). Os «−» e «+» ficam: são eles que afinam.
 export function NumField({ t, value, onChange, aoTerminar, step = 5, min = 0, max = 99999, suffix = true,
-  vazio = false, rotulo = 'Valor', placeholder = null, compacto = false }) {
+  vazio = false, rotulo = 'Valor', placeholder = null, compacto = false, estreito = false }) {
   const [txt, setTxt] = React.useState(null);
   const semValor = vazio && (value === null || value === undefined || value === '');
   const atual = semValor ? 0 : Number(value) || 0;
@@ -102,7 +107,7 @@ export function NumField({ t, value, onChange, aoTerminar, step = 5, min = 0, ma
     : semValor ? ''
       : (suffix ? EUR(atual) : String(atual));
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, ...(estreito ? { flexGrow: 0, flexShrink: 0 } : {}) }}>
       {compacto ? null : <Botao rotuloDoBotao={`Menos ${step}`} sinal="−" para={aosCentimos(Math.max(min, atual - step))} />}
       <TextInput
         value={mostrado}
@@ -115,8 +120,9 @@ export function NumField({ t, value, onChange, aoTerminar, step = 5, min = 0, ma
         placeholder={placeholder || undefined} placeholderTextColor={t.text3}
         // ⚠ `flexBasis: 0, minWidth: 0`: na web um campo de texto tem largura
         // própria (~150 px), e três lado a lado saíam da folha pela direita.
-        style={{ flex: 1, flexBasis: 0, minWidth: 0, minHeight: 44, textAlign: 'center', fontFamily: FONT.display,
-          fontSize: compacto ? 15 : 18, color: t.text2, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
+        style={{ ...(estreito ? { width: 104, flexGrow: 0, flexShrink: 0 } : { flex: 1, flexBasis: 0, minWidth: 0 }),
+          minHeight: 44, textAlign: 'center', fontFamily: FONT.display,
+          fontSize: compacto || estreito ? 15 : 18, color: t.text2, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
           ...(compacto ? { backgroundColor: t.card } : {}) }} />
       {compacto ? null : <Botao rotuloDoBotao={`Mais ${step}`} sinal="+" para={aosCentimos(Math.min(max, atual + step))} />}
     </View>
@@ -795,7 +801,17 @@ export const Empty = ({ t, icon, title, hint }) => (
 );
 
 // Paginação: acima de cinco itens
-export const usePaged = (list, size = 5) => {
+// Quantos itens antes de a lista se partir em páginas.
+//
+// ⚠ Eram CINCO, e cinco é pouco (15/09/2026: «a lista não precisa de ter
+// paginação a não ser que não caiba no ecrã»). Com oito tarefas, a lista partia
+// ao meio e a oitava só existia depois de tocar numa seta — quando a área de
+// conteúdo rola, e rolar é o gesto que toda a gente já faz. Doze linhas de 52
+// px são 624 px: mais do que um ecrã, e a rolagem resolve-o sem um controlo
+// novo. Acima disso a página serve para alguma coisa.
+export const PAGINA = 12;
+
+export const usePaged = (list, size = PAGINA) => {
   const [page, setPage] = React.useState(0);
   const pages = Math.max(1, Math.ceil(list.length / size));
   const p = Math.min(page, pages - 1);

@@ -98,7 +98,7 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
   // domingo. Ler `s.shopPlan.day` cru punha aqui datas de há duas semanas.
   const diaDoPlano = st.diaDoPlano();
 
-  const listPg = usePaged(items, 5);
+  const listPg = usePaged(items);
 
   // Pelo `marcarArtigo` da loja, que altera a LINHA do artigo no servidor.
   const toggle = (id) => marcarArtigo(id, 'done');

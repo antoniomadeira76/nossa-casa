@@ -310,7 +310,11 @@ describe('⚠ o NumField sobe o valor a cada tecla, não só ao perder o foco', 
   it('e os três lado a lado não saem da linha: o campo não tem largura própria', () => {
     const ui = semComentarios(ler('src/ui.jsx'));
     const campo = ui.slice(ui.indexOf('export function NumField'), ui.indexOf('export const Card'));
-    expect(campo).toMatch(/style=\{\{ flex: 1, flexBasis: 0, minWidth: 0, minHeight: 44/);
+    // O `estreito` (15/09/2026) dá-lhe uma largura fixa para caber ao lado do
+    // botão; sem ele, continua a não ter largura própria — que é o que impede
+    // três campos lado a lado de saírem da linha.
+    expect(campo).toMatch(/\{ flex: 1, flexBasis: 0, minWidth: 0 \}/);
+    expect(campo).toMatch(/estreito \? \{ width: 104, flexGrow: 0, flexShrink: 0 \}/);
     expect(campo).toMatch(/onChangeText=\{escrever\}/);
   });
 

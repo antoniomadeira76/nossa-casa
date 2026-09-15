@@ -64,7 +64,11 @@ export default function GerirMeta({ t, meta, user, onApagar, onClose }) {
       {/* ── Reforçar ────────────────────────────────────────────────────── */}
       <View style={{ gap: S.sm }}>
         <Label t={t}>Reforçar ou retirar</Label>
-        <NumField t={t} value={reforco} step={50} min={0} max={999999}
+        {/* ⚠ A caixa com a largura do que lá cabe, e não a que sobra (opção A
+            de `design/campo-de-valor.dc.html`): 104 px chegam para
+            «999 999,00 €», e o resto da linha deixa de ser vazio. */}
+        <NumField t={t} estreito value={reforco} step={50} min={0} max={999999}
+          rotulo="Quanto reforçar ou retirar, em euros"
           onChange={(v) => { setErro(null); setReforco(v); }} />
         <TextInput accessibilityLabel="Motivo do movimento"
           value={motivo}

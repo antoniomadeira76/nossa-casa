@@ -51,7 +51,7 @@ export default function Tarefas({ t, user, abrir }) {
 
   const all = allTasks();
   const shown = filter === 'Todos' ? all : all.filter(x => x.who === filter);
-  const pg = usePaged(shown, 5);
+  const pg = usePaged(shown);
   const task = all.find(x => x.id === manage);
 
   // ⚠ INVARIANTE #2: os pontos de uma tarefa que JÁ RENDEU não se mudam.
