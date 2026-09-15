@@ -35,7 +35,13 @@ const ficheiros = [];
 for (const d of ['src/screens', 'src/sheets']) {
   for (const f of fs.readdirSync(path.join(raiz, d))) if (f.endsWith('.jsx')) ficheiros.push(`${d}/${f}`);
 }
-ficheiros.push('src/ui.jsx', 'src/KidApp.jsx', 'App.jsx');
+// ⚠ E os componentes da raiz de `src/` que desenham tocáveis. O
+// `FiltroDeMembros.jsx` entrou em 15/09/2026: TODOS os escolhedores de pessoa
+// da app mudaram-se para lá (`EscolherPessoa`), e uma lista que enumera
+// diretórios deixava de fora precisamente o sítio onde os alvos passaram a
+// viver — nove filas de bolas sem ninguém a medi-las.
+ficheiros.push('src/ui.jsx', 'src/KidApp.jsx', 'src/FiltroDeMembros.jsx',
+  'src/CampoData.jsx', 'src/EsquemaDeCor.jsx', 'App.jsx');
 
 // Os `Pressable` de um ficheiro, com o texto do seu `style`.
 const tocaveis = (rel) => {

@@ -241,7 +241,12 @@ export default function Equipamentos({ t, user = null, abrir }) {
 
       {sheet === 'novo' ? (
         <Sheet t={t} title="Novo Equipamento" sub="Registar com data e garantia"
-          onClose={() => setSheet(null)}>
+          onClose={() => setSheet(null)}
+          action={
+            // O botão principal no rodapé fixo — regra 9 do
+            // `a-coerencia-do-desenho` (15/09/2026): estava no fim do corpo.
+            <Primary t={t} comum label="Guardar" onPress={handleSave} disabled={!form.name.trim()} />
+          }>
           <View style={{ gap: S.lg }}>
             <View style={{ gap: S.sm }}>
               <Label t={t}>Nome</Label>
@@ -282,7 +287,6 @@ export default function Equipamentos({ t, user = null, abrir }) {
                 step={30} min={0} max={3650} suffix={false} rotulo="Garantia em dias" />
             </View>
 
-            <Primary t={t} comum label="Guardar" onPress={handleSave} disabled={!form.name.trim()} />
           </View>
         </Sheet>
       ) : null}

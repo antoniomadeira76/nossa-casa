@@ -69,18 +69,14 @@ export default function FichaContrato({ t, contrato, onClose }) {
     <>
       <Sheet t={t} title={contrato.nome} sub={contrato.fornecedor || 'Contrato'} onClose={onClose}
         action={
-          <Pressable onPress={() => setRemover(true)} accessibilityRole="button"
-            accessibilityLabel={`Remover o contrato ${contrato.nome}`}
-            style={({ pressed }) => ({
-              minHeight: 48, borderRadius: R.row, borderWidth: 1, borderColor: t.state.err,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.md,
-              backgroundColor: t.surface, opacity: pressed ? 0.85 : 1,
-            })}>
-            <Icon name="trash" size={20} color={t.state.err} />
-            <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700', color: t.state.errTexto }}>
-              Remover Contrato
-            </Text>
-          </Pressable>
+          // ⚠ O botão PRINCIPAL da folha vive no rodapé fixo — regra 9 do
+          // `a-coerencia-do-desenho` (15/09/2026). Aqui estava o «Remover», e
+          // o «Guardar alterações» ficava no fim do corpo, depois de cinco
+          // campos. Trocaram de sítio: o remover desceu para o fim, separado
+          // por uma régua, como nas folhas de gerir o artigo e a meta.
+          <Primary comum t={t} label="Guardar alterações"
+            sub={!form.nome.trim() ? 'Escreva o nome do contrato' : !mudou ? 'Nada mudou' : 'O contrato fica como escreveu'}
+            disabled={!form.nome.trim() || !mudou} onPress={guardar} />
         }>
 
         {/* ── A renovação ─────────────────────────────────────────────── */}
@@ -140,9 +136,22 @@ export default function FichaContrato({ t, contrato, onClose }) {
           </Text>
         ) : null}
 
-        <Primary comum t={t} label="Guardar alterações"
-          sub={!form.nome.trim() ? 'Escreva o nome do contrato' : !mudou ? 'Nada mudou' : 'O contrato fica como escreveu'}
-          disabled={!form.nome.trim() || !mudou} onPress={guardar} />
+        {/* ── Remover ──────────────────────────────────────────────────────
+            Em baixo, depois de tudo o que se ajusta, e separado por uma régua:
+            quem vem mudar a data de renovação não passa pelo remover. */}
+        <View style={{ height: 1, backgroundColor: t.divider }} />
+        <Pressable onPress={() => setRemover(true)} accessibilityRole="button"
+          accessibilityLabel={`Remover o contrato ${contrato.nome}`}
+          style={({ pressed }) => ({
+            minHeight: 48, borderRadius: R.row, borderWidth: 1, borderColor: t.state.err,
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: S.md,
+            backgroundColor: t.surface, opacity: pressed ? 0.85 : 1,
+          })}>
+          <Icon name="trash" size={20} color={t.state.err} />
+          <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700', color: t.state.errTexto }}>
+            Remover Contrato
+          </Text>
+        </Pressable>
       </Sheet>
 
       {remover ? (

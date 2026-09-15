@@ -58,22 +58,40 @@ const aosCentimos = (n) => Math.round(n * 100) / 100;
 // `compacto` (15/09/2026): sem «−» e «+», para três números lado a lado numa
 // linha (o plano de tomas: por dia · dias · caixa). Continua a ser O campo de
 // número da app — mesma caixa, mesmo teclado, mesmo vazio.
-export function NumField({ t, value, onChange, step = 5, min = 0, max = 99999, suffix = true,
+// `aoTerminar` é o valor ASSENTE — só o blur, o «guardar» do teclado e os
+// botões «−»/«+», nunca a tecla a meio. Quem escreve fora deste ecrã (na loja
+// ou no servidor) usa este, e não o `onChange`: ver o «quanto vale um ponto»
+// da Gestão.
+export function NumField({ t, value, onChange, aoTerminar, step = 5, min = 0, max = 99999, suffix = true,
   vazio = false, rotulo = 'Valor', placeholder = null, compacto = false }) {
   const [txt, setTxt] = React.useState(null);
   const semValor = vazio && (value === null || value === undefined || value === '');
   const atual = semValor ? 0 : Number(value) || 0;
+  const assente = (v) => { onChange(v); if (aoTerminar) aoTerminar(v); };
   const commit = () => {
     if (txt === null) return;
     const bruto = String(txt).trim();
     setTxt(null);
-    if (bruto === '' && vazio) { onChange(null); return; }
+    if (bruto === '' && vazio) { assente(null); return; }
     const v = Number(bruto.replace(',', '.'));
     if (!isFinite(v)) return;
-    onChange(aosCentimos(Math.min(max, Math.max(min, v))));
+    assente(aosCentimos(Math.min(max, Math.max(min, v))));
   };
+  // ⚠ O valor sobe a CADA tecla, e não só ao perder o foco (15/09/2026: «definir
+  // plano não está a fazer nada»). Só no `onBlur`, o primeiro toque no botão do
+  // rodapé servia para tirar o foco ao campo — o botão ainda estava desligado
+  // nesse desenho, e o `onPress` era `undefined`. O texto que se está a
+  // escrever fica em `txt` para o «1,» a meio não saltar; o blur só formata.
+  const escrever = (v) => {
+    setTxt(v);
+    const bruto = String(v).trim();
+    if (bruto === '') { if (vazio) onChange(null); return; }
+    const n = Number(bruto.replace(',', '.'));
+    if (isFinite(n)) onChange(aosCentimos(Math.min(max, Math.max(min, n))));
+  };
+  // Um toque no «−» ou no «+» é um valor assente: não há nada a meio.
   const Botao = ({ rotuloDoBotao, sinal, para }) => (
-    <Pressable onPress={() => onChange(para)} accessibilityRole="button"
+    <Pressable onPress={() => assente(para)} accessibilityRole="button"
       accessibilityLabel={rotuloDoBotao}
       style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
         alignItems: 'center', justifyContent: 'center' }}>
@@ -89,13 +107,15 @@ export function NumField({ t, value, onChange, step = 5, min = 0, max = 99999, s
       <TextInput
         value={mostrado}
         onFocus={() => setTxt(semValor ? '' : String(atual).replace('.', ','))}
-        onChangeText={setTxt}
+        onChangeText={escrever}
         onBlur={commit}
         onSubmitEditing={commit}
         keyboardType="decimal-pad"
         accessibilityLabel={rotulo}
         placeholder={placeholder || undefined} placeholderTextColor={t.text3}
-        style={{ flex: 1, minHeight: 44, textAlign: 'center', fontFamily: FONT.display,
+        // ⚠ `flexBasis: 0, minWidth: 0`: na web um campo de texto tem largura
+        // própria (~150 px), e três lado a lado saíam da folha pela direita.
+        style={{ flex: 1, flexBasis: 0, minWidth: 0, minHeight: 44, textAlign: 'center', fontFamily: FONT.display,
           fontSize: compacto ? 15 : 18, color: t.text2, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
           ...(compacto ? { backgroundColor: t.card } : {}) }} />
       {compacto ? null : <Botao rotuloDoBotao={`Mais ${step}`} sinal="+" para={aosCentimos(Math.min(max, atual + step))} />}
@@ -231,71 +251,14 @@ export const Choice = ({ t, label, selected, onPress }) => (
   </Pressable>
 );
 
-// Escolher um membro: grelha de dois por linha, com o ponto de cor de cada
-// um — é assim nas referências 18, 19 e 20. Estava uma fila de quatro
-// pastilhas sem ponto: os nomes cabiam à justa e nada dizia de quem era a
-// cor que a linha do evento ou da tarefa depois mostra.
-// Uma pastilha de membro. O ponto de cor à esquerda é a identidade; a marca à
-// direita é a escolha. Duas coisas diferentes em dois sítios diferentes —
-// antes a escolha era a linha inteira pintada, e o ponto de cor desaparecia
-// contra o fundo escuro no preciso momento em que a pessoa estava escolhida.
-//
-// A FORMA da marca diz quantos se podem escolher, e é a única pista que o faz:
-// redonda quer dizer um, quadrada quer dizer vários. Sem isso, duas listas com
-// o mesmo aspeto comportam-se de maneiras diferentes e ninguém sabe porquê até
-// tentar.
-const PastilhaMembro = ({ t, nome, cor, on, varios, onPress }) => (
-  <Pressable onPress={onPress}
-    accessibilityRole={varios ? 'checkbox' : 'button'} accessibilityLabel={nome}
-    accessibilityState={{ selected: on, checked: varios ? on : undefined }}
-    style={({ pressed }) => ({
-      width: '47%', minHeight: 48, borderRadius: R.row, borderWidth: 1,
-      paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10,
-      borderColor: on ? t.accent : t.border,
-      backgroundColor: pressed ? t.subtle : t.card,
-    })}>
-    <View style={{ width: 9, height: 9, borderRadius: R.pill,
-      backgroundColor: corDoMembro(nome, cor) || t.text3 }} />
-    <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{nome}</Text>
-    <View style={{
-      width: 18, height: 18, borderRadius: varios ? R.sm : R.pill, borderWidth: 2,
-      alignItems: 'center', justifyContent: 'center',
-      borderColor: on ? t.accent : t.border,
-      backgroundColor: on && varios ? t.accent : 'transparent',
-    }}>
-      {on ? (varios
-        ? <Icon name="check" size={11} color="#FFFFFF" />
-        : <View style={{ width: 9, height: 9, borderRadius: R.pill, backgroundColor: t.accent }} />
-      ) : null}
-    </View>
-  </Pressable>
-);
-
-// `cores` é o mapa nome → cor escolhida. Opcional: sem ele, a cor sai do
-// nome como sempre saiu, e nada rebenta em quem ainda não o passa.
-export const EscolherMembro = ({ t, valor, onEscolher, membros, cores = {} }) => (
-  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
-    {membros.map(nome => (
-      <PastilhaMembro key={nome} t={t} nome={nome} cor={cores[nome]} on={valor === nome}
-        onPress={() => onEscolher(nome)} />
-    ))}
-  </View>
-);
-
-// O mesmo, para escolher mais do que um. `valor` é uma lista, e tocar numa
-// pastilha já escolhida tira-a — que é o que uma pessoa espera de uma marca
-// e o que não se consegue fazer com a de escolha única.
-export const EscolherMembros = ({ t, valor = [], onEscolher, membros, cores = {} }) => (
-  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
-    {membros.map(nome => {
-      const on = valor.includes(nome);
-      return (
-        <PastilhaMembro key={nome} t={t} nome={nome} cor={cores[nome]} on={on} varios
-          onPress={() => onEscolher(on ? valor.filter(x => x !== nome) : [...valor, nome])} />
-      );
-    })}
-  </View>
-);
+// ⚠ Escolher uma PESSOA saiu deste ficheiro (15/09/2026). A `PastilhaMembro`
+// daqui — ponto de cor, nome, marca redonda ou quadrada — era a quarta forma de
+// escolher alguém nesta app, a par das pastilhas de texto da Saúde, do
+// `Segmented` das Tarefas e do `Choice` das contas fixas. O dono da casa:
+// «deve ser coerente com o design da app e ter os avatares como os outros
+// filtros». Agora é uma só: `EscolherPessoa`, em `src/FiltroDeMembros.jsx`,
+// que é a mesma bola do filtro. Guarda: `visibilidade-eventos`
+// («a marca diz quantos se podem escolher»).
 
 // A visibilidade de um evento, em pastilha. Estava escrita à mão em dois
 // ecrãs — com dois estados, e a cor a repetir-se em quatro props de cada vez.
@@ -703,10 +666,6 @@ export const AvatarDeCabecalho = ({ t, nome, membro, size = 36 }) => {
     </View>
   );
 };
-
-// O mapa nome → cor escolhida, para os dois escolhedores de membro.
-export const coresDe = (membros = {}) => Object.fromEntries(
-  Object.entries(membros).map(([n, m]) => [n, (m || {}).cor]).filter(([, c]) => c));
 
 // A fotografia da conta, desenhada.
 //

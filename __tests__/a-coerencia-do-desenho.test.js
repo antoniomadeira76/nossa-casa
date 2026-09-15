@@ -149,6 +149,66 @@ describe('⚠ a coerência do desenho — segunda revisão', () => {
     return saida;
   };
 
+  // ⚠ O GUARDA GENÉRICO da regra 9, escrito em 15/09/2026 depois de a lista
+  // fechada do `it` seguinte deixar passar quatro folhas: a ficha do
+  // equipamento e a do contrato (com o «Guardar alterações» a rolar e o rodapé
+  // ocupado pelo remover), o «Novo Equipamento» e o «Marcar Consulta» (com o
+  // rodapé vazio). Uma lista de dez nomes só guarda dez nomes — este percorre a
+  // árvore e não envelhece.
+  //
+  // A propriedade: dentro do corpo de uma `<Sheet>` não há `<Primary>`. O botão
+  // principal chega ao rodapé pelo `action=` da folha ou pelo `useAcaoDaFolha`.
+  it('9b. nenhuma folha tem um botão principal no corpo — é o rodapé fixo ou nada', () => {
+    // O que fica, com o motivo escrito. Um por ficheiro.
+    const FICAM = {
+      // Confirma o CAMPO ao lado dele — só aparece quando o nome muda, e vive
+      // colado ao campo do nome. O rodapé desta folha é o «Guardar PIN».
+      'src/screens/Gestao.jsx': 'o «Guardar nome» do membro, que confirma o campo ao lado e só aparece a mudar',
+    };
+    const span = (txt, marca, ab, fe) => {
+      const out = [];
+      let i = txt.indexOf(marca);
+      while (i !== -1) {
+        let n = 0, fim = -1;
+        for (let k = i + marca.length - 1; k < txt.length; k++) {
+          const c = txt[k];
+          if (c === ab) n += 1;
+          else if (c === fe) { n -= 1; if (n === 0) { fim = k; break; } }
+        }
+        out.push([i, fim === -1 ? txt.length : fim]);
+        i = txt.indexOf(marca, i + 1);
+      }
+      return out;
+    };
+    const maus = [];
+    let folhas = 0;
+    for (const f of ECRAS) {
+      const txt = semComentarios(ler(f));
+      const rodape = [...span(txt, 'action={', '{', '}'), ...span(txt, 'useAcaoDaFolha(', '(', ')')];
+      let i = txt.indexOf('<Sheet');
+      while (i !== -1) {
+        folhas += 1;
+        const abre = txt.indexOf('>', i);
+        const fecha = txt.indexOf('</Sheet>', i);
+        if (fecha !== -1) {
+          let m = txt.indexOf('<Primary', abre);
+          while (m !== -1 && m < fecha) {
+            if (!rodape.some(([a, b]) => m > a && m < b) && !FICAM[f]) {
+              maus.push(`${f}: ${txt.slice(m, m + 60).replace(/\s+/g, ' ')}`);
+            }
+            m = txt.indexOf('<Primary', m + 1);
+          }
+        }
+        i = txt.indexOf('<Sheet', i + 1);
+      }
+    }
+    expect(folhas).toBeGreaterThan(20);
+    expect(maus).toEqual([]);
+    // E nenhum motivo sobra: o ficheiro com licença tem mesmo um `<Primary` no
+    // corpo de uma folha — senão a licença envelheceu a dizer sim.
+    for (const f of Object.keys(FICAM)) expect(semComentarios(ler(f))).toMatch(/<Primary/);
+  });
+
   it('9. o botão principal de uma folha vive no rodapé fixo, não no fim do conteúdo', () => {
     // As dez folhas que tinham o botão a rolar com o conteúdo.
     for (const f of ['NovaTarefa', 'NovoEvento', 'NovoArtigo', 'NovaMeta', 'NovaContaFixa', 'NovoContrato',

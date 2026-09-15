@@ -3,7 +3,8 @@ import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore, VISIBILIDADES } from '../store';
 import CampoData from '../CampoData';
 import { S, R, FONT } from '../theme';
-import { Label, Primary, EscolherMembros, Opcao, Tile, coresDe } from '../ui';
+import { Label, Primary, Opcao, Tile } from '../ui';
+import { EscolherPessoa } from '../FiltroDeMembros';
 import { useAcaoDaFolha } from '../Sheet';
 import Confirm from '../Confirm';
 import Icon from '../Icon';
@@ -234,7 +235,9 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>{form.responsaveis.length > 1 ? 'Responsáveis' : 'Responsável'}</Label>
-        <EscolherMembros t={t} membros={adultos} cores={coresDe(MEMBROS)}
+        {/* A bola de cada pessoa, como nos filtros (15/09/2026); `varios`
+            marca com um visto no canto — a pista de que se escolhem mais. */}
+        <EscolherPessoa t={t} varios membros={adultos} MEMBERS={MEMBROS}
           valor={form.responsaveis}
           onEscolher={(nomes) => setForm(f => ({ ...f, responsaveis: nomes }))} />
         <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>

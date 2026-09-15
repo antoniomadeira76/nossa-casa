@@ -74,7 +74,13 @@ export default function Sheet({ t, title, sub, onClose, children, action, header
             </Pressable>
           </View>
 
-          <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ gap: S.lg, paddingBottom: S.md }}>
+          {/* ⚠ Sem a barra de rolar (15/09/2026: «o botão do rodapé não está
+              alinhado com os outros»): na web a barra vive DENTRO dos 16 px de
+              enchimento e come ~12 px ao conteúdo, e os campos ficavam mais
+              estreitos do que o botão fixo do rodapé. No telemóvel nunca há
+              barra; assim a web fica igual. */}
+          <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ gap: S.lg, paddingBottom: S.md }}
+            showsVerticalScrollIndicator={false}>
             <AcaoDaFolha.Provider value={setAcaoDoFilho}>
               {children}
             </AcaoDaFolha.Provider>

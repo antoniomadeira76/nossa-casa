@@ -3,7 +3,8 @@ import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { plural, dayLabel, TODAY_KEY } from '../format';
-import { Label, Primary, Choice, Opcao, EscolherMembro, Tile } from '../ui';
+import { Label, Primary, Choice, Opcao, Tile } from '../ui';
+import { EscolherPessoa } from '../FiltroDeMembros';
 import Sheet from '../Sheet';
 import Icon from '../Icon';
 import {
@@ -233,11 +234,11 @@ export default function ExportarSaude({
         {destinatarios.length ? (
           <View style={{ gap: S.md }}>
             <Label t={t}>Enviar a</Label>
-            {/* A mesma grelha das referências 18, 19 e 20 — dois por linha, com
-                o ponto de cor de cada um. É como a app escolhe um membro em
-                todo o lado; não havia razão para esta folha inventar outra. */}
-            <EscolherMembro t={t} membros={destinatarios.map(d => d.nome)}
-              valor={para && para.nome}
+            {/* A bola de cada pessoa, como nos filtros (15/09/2026). É como a
+                app escolhe um membro em todo o lado; não havia razão para esta
+                folha inventar outra. Tocar no escolhido tira-o. */}
+            <EscolherPessoa t={t} membros={destinatarios.map(d => d.nome)} MEMBERS={MEMBROS}
+              valor={para ? para.nome : null}
               onEscolher={(nome) => {
                 setPara(p => (p && p.nome === nome ? null : destinatarios.find(d => d.nome === nome)));
                 setErro(null); setFeito(null);

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
-import { S, R, FONT, corDoMembro } from '../theme';
+import { S, R, FONT } from '../theme';
 import { dayLabel, parseKey, chaveDeDMY, dmyDeChave } from '../format';
 import { Card, SectionTitle, Label, Row, Tap, Avatar, avatarDe, Tile, Empty,
-         BotaoCompacto, EscolherMembro, AddButton, Choice, Linha } from '../ui';
+         BotaoCompacto, AddButton, Choice, Linha } from '../ui';
+import { EscolherPessoa } from '../FiltroDeMembros';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -163,8 +164,8 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
       {folha === 'quem' ? (
         <Sheet t={t} title="Quem Vai às Compras" sub="Só os adultos da casa"
           onClose={fechar}>
-          <EscolherMembro t={t} valor={quem} membros={adultos}
-            cores={Object.fromEntries(adultos.map(n => [n, corDoMembro(n, MEMBERS[n]?.cor)]))}
+          {/* A bola de cada pessoa, como nos filtros (15/09/2026). */}
+          <EscolherPessoa t={t} valor={quem} membros={adultos} MEMBERS={MEMBERS}
             onEscolher={(n) => { mudarPlanoDeCompras({ who: n }); fechar(); }} />
         </Sheet>
       ) : null}

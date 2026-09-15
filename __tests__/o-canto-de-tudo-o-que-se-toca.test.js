@@ -48,8 +48,9 @@ const FICAM_REDONDOS = {
     'pastilha de estado — não se toca, é uma etiqueta',
     'anel do rádio da Opcao',
     'disco do rádio da Opcao',
-    'disco de cor do membro, 9 px',
-    'disco da caixa de seleção, 9 px',
+    // O «disco de cor do membro» e o «disco da caixa de seleção» eram da
+    // `PastilhaMembro`, que saiu daqui em 15/09/2026: escolher uma pessoa é a
+    // bola do filtro (`EscolherPessoa`, em FiltroDeMembros.jsx).
     'carril do interruptor',
     'bola do interruptor',
     'avatar do cabeçalho — é um círculo',
@@ -69,8 +70,12 @@ const FICAM_REDONDOS = {
   // `design/filtro-de-membros.dc.html`) e em 13/09/2026 saiu das Tarefas para um
   // componente próprio, que a Saúde também usa: o anel do escolhido é um
   // círculo à volta de um círculo; o alvo é o `Pressable` de 44 por fora, sem raio.
+  // E em 15/09/2026 recebeu o ESCOLHEDOR de pessoa («deve ser coerente com o
+  // design da app e ter os avatares como os outros filtros»): a mesma bola,
+  // com uma marca no canto quando se podem escolher várias.
   'src/FiltroDeMembros.jsx': [
     'anel do avatar escolhido no filtro — é um círculo',
+    'marca de escolhido quando são vários — é um disco no canto do avatar',
   ],
   'src/sheets/EscolherAvatar.jsx': [
     'bola do avatar de uma figura',

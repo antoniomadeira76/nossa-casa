@@ -3,6 +3,7 @@ import { View, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { Label, NumField, Choice } from '../ui';
+import { EscolherPessoa } from '../FiltroDeMembros';
 
 /**
  * Os campos de uma conta fixa — nome, valor, dia do mês, envelope, quem paga.
@@ -16,7 +17,7 @@ import { Label, NumField, Choice } from '../ui';
  * ecrã mostra a frase que ela devolver.
  */
 export default function CamposContaFixa({ t, form, onChange }) {
-  const { envelopes, adultos } = useStore();
+  const { envelopes, adultos, membros: MEMBROS } = useStore();
   const campo = (k) => (v) => onChange({ ...form, [k]: v });
 
   return (
@@ -68,14 +69,10 @@ export default function CamposContaFixa({ t, form, onChange }) {
         {/* «Quem marcar»: a despesa fica em nome de quem tocar em «Marcar como
             paga». Com um nome escolhido, fica sempre nesse — a renda sai da
             conta do Tomás, marque quem marcar. */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
-          <Choice t={t} label="Quem marcar" selected={!form.quemPaga}
-            onPress={() => campo('quemPaga')(null)} />
-          {adultos.map(n => (
-            <Choice key={n} t={t} label={n} selected={form.quemPaga === n}
-              onPress={() => campo('quemPaga')(n)} />
-          ))}
-        </View>
+        {/* A bola de cada pessoa, como nos filtros (15/09/2026); «Quem
+            marcar» é a pastilha de texto, como o «Todos». */}
+        <EscolherPessoa t={t} membros={adultos} valor={form.quemPaga || null} MEMBERS={MEMBROS}
+          opcional="Quem marcar" onEscolher={(n) => campo('quemPaga')(n)} />
       </View>
     </>
   );

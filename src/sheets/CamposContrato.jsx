@@ -3,7 +3,8 @@ import { View, TextInput } from 'react-native';
 import CampoData from '../CampoData';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, Choice } from '../ui';
+import { Label } from '../ui';
+import { EscolherPessoa } from '../FiltroDeMembros';
 import { chaveDeDMY, dmyDeChave } from '../format';
 
 /**
@@ -16,7 +17,7 @@ import { chaveDeDMY, dmyDeChave } from '../format';
  * validação é da loja (`validarContrato`); o ecrã mostra a frase que ela devolver.
  */
 export default function CamposContrato({ t, form, onChange }) {
-  const { adultos } = useStore();
+  const { adultos, membros: MEMBROS } = useStore();
   const muda = (k) => (v) => onChange({ ...form, [k]: v });
   // `campo`, com os 44 px: é o nome que o guarda `todo-campo-tem-44` reconhece
   // como estilo partilhado de um `<TextInput>`, o mesmo da Gestão.
@@ -60,14 +61,10 @@ export default function CamposContrato({ t, form, onChange }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Quem trata</Label>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
-          <Choice t={t} label="A casa" selected={!form.responsavel}
-            onPress={() => muda('responsavel')(null)} />
-          {adultos.map(n => (
-            <Choice key={n} t={t} label={n} selected={form.responsavel === n}
-              onPress={() => muda('responsavel')(n)} />
-          ))}
-        </View>
+        {/* A bola de cada pessoa, como nos filtros (15/09/2026); «A casa» é
+            a pastilha de texto, como o «Todos». */}
+        <EscolherPessoa t={t} membros={adultos} valor={form.responsavel || null} MEMBERS={MEMBROS}
+          opcional="A casa" onEscolher={(n) => muda('responsavel')(n)} />
       </View>
     </>
   );

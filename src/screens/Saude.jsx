@@ -12,7 +12,7 @@ import Confirm from '../Confirm';
 import { plural, dayLabel, daysUntil, chaveDeDMY, dmyDeChave, listaEmPortugues, TODAY_KEY } from '../format';
 import { planoDaReceita, tomasDoDia } from '../medicacao';
 import TomasDaReceita from '../sheets/TomasDaReceita';
-import FiltroDeMembros from '../FiltroDeMembros';
+import FiltroDeMembros, { EscolherPessoa } from '../FiltroDeMembros';
 
 export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMarcado }) {
   const st = useStore();
@@ -469,7 +469,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                         <Label t={t}>Plano de tomas</Label>
                         <View style={{ flexDirection: 'row', gap: S.sm }}>
                           {[['frequency', 'Por dia', 'Tomas por dia'], ['durationDays', 'Dias', 'Duração em dias'], ['boxSize', 'Caixa', 'Unidades na caixa']].map(([campo, curto, rotulo]) => (
-                            <View key={campo} style={{ flex: 1, gap: 4 }}>
+                            <View key={campo} style={{ flex: 1, minWidth: 0, gap: 4 }}>
                               <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3, textAlign: 'center' }}>{curto}</Text>
                               <NumField t={t} compacto vazio suffix={false} step={1} min={0} max={999} rotulo={rotulo} placeholder="—"
                                 value={recipeForm[campo] === '' || recipeForm[campo] == null ? null : Number(recipeForm[campo])}
@@ -1189,7 +1189,17 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
   return (
     <Sheet t={t} title="Marcar Consulta"
       sub={form.member ? `Para ${form.member}` : 'Uma consulta e o evento na agenda'}
-      onClose={onClose}>
+      onClose={onClose}
+      action={
+        // «Marcar e pôr na agenda», como no protótipo: promete as duas coisas
+        // que acontecem — o episódio na ficha e o evento na agenda. Dizia só
+        // «Marcar Consulta».
+        // ⚠ E vive no RODAPÉ FIXO (15/09/2026): estava no fim de uma folha com
+        // oito campos, e numa marcação de consulta isso são dois ecrãs de
+        // rolagem até ao botão. É a regra 9 do `a-coerencia-do-desenho`.
+        <Primary t={t} comum label="Marcar e pôr na agenda" onPress={handleSaveConsultation}
+          disabled={!form.date || !form.specialty} />
+      }>
       <View style={{ gap: S.lg }}>
         {/* ⚠ Aqui havia uma faixa de abas — «Nova Consulta» e «Especialidades»
             — E o «Gerir», os dois a levar ao mesmo sítio. Duas portas para a
@@ -1226,29 +1236,11 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
 
             <View style={{ gap: S.sm }}>
               <Label t={t}>Membro</Label>
-              <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-                {marcaveis.map(name => (
-                  <Pressable accessibilityRole="button"
-                    key={name}
-                    accessibilityLabel={name}
-                    accessibilityState={{ selected: form.member === name }}
-                    onPress={() => setForm(f => ({ ...f, member: name }))}
-                    style={{
-                      paddingHorizontal: S.md, minHeight: 44, borderRadius: R.row,
-                      borderWidth: 2,
-                      borderColor: form.member === name ? corDoMembro(name, MEMBERS[name]?.cor) : t.border,
-                      backgroundColor: form.member === name ? 'rgba(0,0,0,0.02)' : 'transparent',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Text style={{
-                      fontFamily: FONT.ui, fontSize: 12, color: form.member === name ? corDoMembro(name, MEMBERS[name]?.cor) : t.text3,
-                    }}>
-                      {name}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+              {/* A bola de cada pessoa, como nos filtros (15/09/2026): eram
+                  pastilhas de texto com a borda na cor do membro — a quarta
+                  forma de escolher alguém nesta app. */}
+              <EscolherPessoa t={t} membros={marcaveis} valor={form.member} MEMBERS={MEMBERS}
+                onEscolher={(name) => setForm(f => ({ ...f, member: name }))} />
             </View>
 
             {/* ── Dia e hora, UM controlo ──────────────────────────────────
@@ -1405,11 +1397,6 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
               </Text>
             </View>
 
-            {/* «Marcar e pôr na agenda», como no protótipo: promete as duas
-                coisas que acontecem, e são duas — o episódio na ficha e o
-                evento na agenda. Dizia só «Marcar Consulta». */}
-            <Primary t={t} comum label="Marcar e pôr na agenda" onPress={handleSaveConsultation}
-              disabled={!form.date || !form.specialty} />
           </View>
         </View>
     </Sheet>
@@ -1471,7 +1458,14 @@ function GerirEspecialidades({ t, user, form, setForm, onClose }) {
 
   return (
     <Sheet t={t} title="Especialidades" sub={`${lista.length} na lista`}
-      onClose={onClose}>
+      onClose={onClose}
+      action={
+        // O botão principal no rodapé fixo — regra 9 do
+        // `a-coerencia-do-desenho` (15/09/2026): estava no fim de uma lista
+        // que cresce com as especialidades da casa, e fugia do ecrã.
+        <Primary t={t} comum label={aRenomear ? 'Guardar Nome' : 'Criar Especialidade'}
+          onPress={guardar} disabled={!nome.trim()} />
+      }>
       <View style={{ gap: S.lg }}>
         <View style={{ gap: S.sm }}>
           {!lista.length ? (
@@ -1559,8 +1553,6 @@ function GerirEspecialidades({ t, user, form, setForm, onClose }) {
           ) : null}
         </View>
 
-        <Primary t={t} comum label={aRenomear ? 'Guardar Nome' : 'Criar Especialidade'}
-          onPress={guardar} disabled={!nome.trim()} />
       </View>
     </Sheet>
   );

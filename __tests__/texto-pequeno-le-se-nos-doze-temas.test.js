@@ -324,4 +324,29 @@ describe('⚠ e nenhum ecrã volta a pintar texto pequeno com o acento ou com um
       for (const k of ['ok', 'err', 'warn', 'info']) expect(typeof t.state[`${k}Texto`]).toBe('string');
     }
   });
+
+  // ⚠ A marca de «escolhido» de uma pessoa leva o ESQUEMA de quem está a usar a
+  // app, não a cor do membro (15/09/2026: «a cor é consoante o perfil do user
+  // em uso»). Cheguei a pintá-la com a cor de cada um e foi recusado no mesmo
+  // dia. O que isto mede é o visto branco-ou-preto sobre o disco do acento: a
+  // cor era `#FFFFFF` fixo, e nos esquemas claros um visto branco sobre o
+  // acento não se via.
+  describe('⚠ o visto da marca de escolha múltipla', () => {
+    const { corSobre } = require('../src/theme');
+
+    it('lê-se sobre o disco do acento, nos doze temas', () => {
+      const maus = [];
+      for (const { nome, t } of TEMAS) {
+        const v = contraste(corSobre(t.accent), t.accent);
+        if (v < 3) maus.push(`${nome}: visto sobre o acento ${t.accent} dá ${v.toFixed(2)}`);
+      }
+      expect(maus).toEqual([]);
+    });
+
+    it('e não é branco fixo — o `corSobre` é que decide', () => {
+      const filtro = fs.readFileSync(path.join(RAIZ, 'src/FiltroDeMembros.jsx'), 'utf8');
+      expect(filtro).toMatch(/color=\{corSobre\(cor\)\}/);
+      expect(filtro).not.toMatch(/name="check"[^/]*color="#FFFFFF"/);
+    });
+  });
 });

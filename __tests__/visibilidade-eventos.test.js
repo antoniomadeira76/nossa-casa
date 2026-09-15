@@ -160,7 +160,9 @@ describe('Responsáveis: entre os adultos, um ou mais', () => {
 
   // Um evento é um compromisso, e um compromisso é de quem o pode cumprir.
   test('a escolha é entre os adultos da casa, não entre todos', () => {
-    expect(fonte).toMatch(/<EscolherMembros[\s\S]{0,80}membros=\{adultos\}/);
+    // `EscolherPessoa varios` desde 15/09/2026 — a bola de cada pessoa, como
+    // nos filtros (era a `EscolherMembros` do ui.jsx).
+    expect(fonte).toMatch(/<EscolherPessoa t=\{t\} varios membros=\{adultos\}/);
     expect(fonte).not.toMatch(/membros=\{membrosDaCasa\}/);
   });
 
@@ -216,27 +218,51 @@ describe('Responsáveis: entre os adultos, um ou mais', () => {
 });
 
 describe('A marca diz quantos se podem escolher', () => {
+  // Desde 15/09/2026 a escolha de pessoas é a bola do filtro (`EscolherPessoa`
+  // em FiltroDeMembros.jsx); a `PastilhaMembro` do ui.jsx saiu. A pista de
+  // «vários» passou a ser o visto no canto da bola, e o papel do controlo.
+  const filtro = fs.readFileSync(path.join(__dirname, '..', 'src/FiltroDeMembros.jsx'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  // Sem comentários: o ui.jsx explica onde o escolhedor foi parar, e o nome
+  // antigo aparece nessa explicação.
   const ui = fs.readFileSync(path.join(__dirname, '..', 'src/ui.jsx'), 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
-  // Redonda quer dizer um, quadrada quer dizer vários. Sem essa pista, duas
-  // listas com o mesmo aspeto comportam-se de maneiras diferentes.
   test('a forma da marca muda com a escolha ser única ou múltipla', () => {
-    expect(ui).toMatch(/borderRadius: varios \? R\.sm : R\.pill/);
+    expect(filtro).toMatch(/accessibilityRole=\{varios \? 'checkbox' : 'button'\}/);
+    // A marca desenha-se sempre que são vários — cheia ou vazia. Só a mostrar
+    // quando escolhida, uma fila por tocar era igual a uma de escolha única.
+    expect(filtro).toMatch(/\{varios \? \(/);
+    expect(filtro).toMatch(/backgroundColor: on \? cor : t\.surface/);
   });
 
-  test('e as duas listas partilham a mesma pastilha', () => {
-    expect(ui).toMatch(/const PastilhaMembro = /);
-    expect(ui).toMatch(/export const EscolherMembro = /);
-    expect(ui).toMatch(/export const EscolherMembros = /);
+  // ⚠ 15/09/2026: a marca de «escolhido» leva o esquema de QUEM ESTÁ A USAR a
+  // app, e não a cor do membro da bola — «a cor é consoante o perfil do user
+  // em uso». A cor do membro vive no avatar, que é quem diz de quem é a linha.
+  test('e a marca de escolhido é o acento de quem usa a app, não a cor do membro', () => {
+    expect(filtro).toMatch(/const cor = t\.accent;/);
+    expect(filtro).toMatch(/color: on \? t\.actFg : t\.text3/);   // o nome, a 11 px
+    expect(filtro).toMatch(/color=\{corSobre\(cor\)\}/);          // o visto, legível
+    expect(filtro).not.toMatch(/corDeMembroLegivel|corDoMembro\(/);
+    expect(fs.readFileSync(path.join(__dirname, '..', 'src/theme.js'), 'utf8'))
+      .not.toMatch(/export const corDeMembroLegivel/);
   });
 
-  // A linha inteira pintada apagava o ponto de cor do membro no preciso
-  // momento em que ele estava escolhido.
-  test('a linha não se pinta — o ponto de cor tem de continuar a ver-se', () => {
-    const i = ui.indexOf('const PastilhaMembro');
-    const bloco = ui.slice(i, ui.indexOf('\n\n', i));
-    expect(bloco).not.toMatch(/backgroundColor: on \? t\.chrome/);
-    expect(bloco).toMatch(/borderColor: on \? t\.accent/);
+  test('e as duas listas partilham a mesma bola', () => {
+    expect(filtro).toMatch(/function BolaDeMembro\(/);
+    expect(filtro).toMatch(/export function EscolherPessoa\(/);
+    expect(ui).not.toMatch(/PastilhaMembro|EscolherMembros?\b/);
+  });
+
+  // A bola não se pinta: o escolhido ganha um ANEL do acento, e a cor do
+  // membro continua a ver-se no avatar — era a linha inteira pintada que
+  // apagava o ponto de cor no preciso momento em que a pessoa era escolhida.
+  test('a bola não se pinta — o anel é que marca', () => {
+    const i = filtro.indexOf('function BolaDeMembro');
+    const bloco = filtro.slice(i, filtro.indexOf('\n}\n', i));
+    expect(bloco).toMatch(/borderColor: on \? cor : 'transparent'/);
+    // O tocável não leva fundo nenhum: o `Pressable` só tem medidas.
+    const pressable = bloco.slice(bloco.indexOf('<Pressable'), bloco.indexOf('</View>'));
+    expect(pressable).not.toMatch(/backgroundColor/);
   });
 });

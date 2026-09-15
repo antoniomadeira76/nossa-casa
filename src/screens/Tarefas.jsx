@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { subtituloDaTarefa, TODAY_KEY } from '../format';
+import { subtituloDaTarefa, plural, TODAY_KEY } from '../format';
 
 import { SectionTitle, Linha, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe, BotaoCompacto, NumField } from '../ui';
 import Icon from '../Icon';
@@ -10,7 +10,7 @@ import Sheet from '../Sheet';
 import Confirm from '../Confirm';
 import ListaArrastavel, { ATRASO_PARA_PEGAR } from '../ListaArrastavel';
 import NovaTarefa from '../sheets/NovaTarefa';
-import FiltroDeMembros from '../FiltroDeMembros';
+import FiltroDeMembros, { EscolherPessoa } from '../FiltroDeMembros';
 
 // Urgência: a caixa do número leva a cor, e a lista ordena-se por ela.
 // A forma acompanha a cor — cheia, tracejada, contorno — para não depender do matiz.
@@ -53,6 +53,22 @@ export default function Tarefas({ t, user, abrir }) {
   const pg = usePaged(shown, 5);
   const task = all.find(x => x.id === manage);
 
+  // ⚠ INVARIANTE #2: os pontos de uma tarefa que JÁ RENDEU não se mudam.
+  //
+  // O `pontosGanhos` da loja soma `t.pts` — o valor de AGORA — sobre cada
+  // marcação confirmada do livro (`feitas`) ou sobre o `done` de hoje quando
+  // não há servidor. Pôr 8 numa tarefa de 5 que a criança já fez reescreve o
+  // passado: os pontos dela sobem sozinhos, e baixar de 5 para 2 com os pontos
+  // já pagos deixa o `kidPts - paidPts` NEGATIVO — a criança passa a dever
+  // pontos à casa por uma correção de um adulto. É o mesmo defeito que o
+  // apagar teve, e a resposta é a mesma: um ponto ganho não se desfaz.
+  //
+  // Por isso os pontos só se mudam ENQUANTO a tarefa não rendeu nada. Quem
+  // quiser mudar o valor de uma tarefa que já rende cria outra — e a de antes
+  // fica valendo o que valia.
+  const jaRendeu = (id) => !!s.done[id]
+    || Object.keys(s.feitas || {}).some(c => c.split('|')[0] === id);
+
   const tituloDoRascunho = task ? (rascunho.title ?? task.title) : '';
   const pontosDoRascunho = task ? (rascunho.pts ?? (task.pts || 0)) : 0;
   const rascunhoMudou = !!task && (tituloDoRascunho.trim() !== task.title || pontosDoRascunho !== (task.pts || 0));
@@ -63,7 +79,10 @@ export default function Tarefas({ t, user, abrir }) {
     if (rascunhoMudou) {
       editarTarefa(task.id, {
         ...(tituloDoRascunho.trim() !== task.title ? { title: tituloDoRascunho.trim() } : {}),
-        ...(pontosDoRascunho !== (task.pts || 0) ? { pts: pontosDoRascunho } : {}),
+        // ⚠ E os pontos NUNCA sobem se a tarefa já rendeu, mesmo que o
+        // rascunho traga um valor — o campo está escondido, mas a guarda vive
+        // aqui, que é onde a escrita acontece.
+        ...(pontosDoRascunho !== (task.pts || 0) && !jaRendeu(task.id) ? { pts: pontosDoRascunho } : {}),
       });
     }
     fecharTarefa();
@@ -251,12 +270,19 @@ export default function Tarefas({ t, user, abrir }) {
           </View>
 
           {/* Só se os pontos estiverem ligados — a mesma condição da folha de
-              criar. */}
+              criar — e só enquanto a tarefa não rendeu nada (INVARIANTE #2). */}
           {pontosNasTarefas ? (
             <View style={{ gap: S.md }}>
               <Label t={t}>Pontos de bónus</Label>
-              <NumField t={t} value={pontosDoRascunho} onChange={(v) => setRascunho(r => ({ ...r, pts: v }))}
-                step={1} min={0} max={99} suffix={false} rotulo="Pontos de bónus" />
+              {jaRendeu(task.id) ? (
+                <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.text3 }}>
+                  {`Vale ${plural(task.pts || 0, 'ponto', 'pontos')}, e já foi feita — um ponto ganho não se desfaz. `
+                    + 'Para mudar o valor, crie uma tarefa nova.'}
+                </Text>
+              ) : (
+                <NumField t={t} value={pontosDoRascunho} onChange={(v) => setRascunho(r => ({ ...r, pts: v }))}
+                  step={1} min={0} max={99} suffix={false} rotulo="Pontos de bónus" />
+              )}
             </View>
           ) : null}
 
@@ -317,9 +343,10 @@ export default function Tarefas({ t, user, abrir }) {
 
           <View style={{ gap: S.md }}>
             <Label t={t}>Atribuir a</Label>
-            <Segmented t={t} small value={task.who}
-              options={membrosDaCasa.map(n => ({ value: n, label: n }))}
-              onChange={(v) => editarTarefa(task.id, { who: v })} />
+            {/* A bola de cada pessoa, como no filtro lá em cima (15/09/2026):
+                era um `Segmented` com os nomes. */}
+            <EscolherPessoa t={t} membros={membrosDaCasa} valor={task.who} MEMBERS={MEMBERS}
+              onEscolher={(v) => editarTarefa(task.id, { who: v })} />
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: t.subtle,
@@ -360,7 +387,12 @@ export default function Tarefas({ t, user, abrir }) {
       {/* ⚠ A pergunta diz o que a tarefa RENDEU, quando rendeu.
           Apagar uma tarefa feita não tira pontos a ninguém — ficam guardados
           num movimento aditivo (INVARIANTE #2) — e quem apaga tem de saber
-          isso ANTES de decidir, senão hesita por uma razão que não existe. */}
+          isso ANTES de decidir, senão hesita por uma razão que não existe.
+
+          ⚠ E o confirmar fecha pelo `fecharTarefa`, que também limpa o
+          rascunho: com o `setManage(null)` sozinho, o título escrito ficava em
+          memória e aparecia na tarefa seguinte que se abrisse — e o «Guardar
+          alterações» escrevia-o por cima dela. */}
       {aApagar && aApagarTarefa ? (
         <Confirm t={t} destructive icon="trash"
           title={`Apagar «${aApagarTarefa.title}»?`}
@@ -369,7 +401,7 @@ export default function Tarefas({ t, user, abrir }) {
               + `com ${aApagarTarefa.who} — um ponto ganho não se desfaz. Não se desfaz.`
             : 'A tarefa sai da lista e não volta. Não se desfaz.'}
           confirmLabel="Apagar"
-          onConfirm={() => { removerTarefa(aApagar); setAApagar(null); setManage(null); }}
+          onConfirm={() => { removerTarefa(aApagar); setAApagar(null); fecharTarefa(); }}
           onCancel={() => setAApagar(null)} />
       ) : null}
 

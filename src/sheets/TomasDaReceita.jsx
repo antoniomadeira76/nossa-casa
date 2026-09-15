@@ -94,14 +94,23 @@ export default function TomasDaReceita({ t, user, record, recipe }) {
   };
 
   // O estado com plano: em que dia se está, quantas doses vão, o que falta hoje.
-  const diaDoPlano = p ? (p.dias.indexOf(TODAY_KEY) + 1 || (TODAY_KEY > p.fim ? p.duracao : 1)) : 0;
-  const faltamHoje = p ? Math.max(0, p.frequencia - hoje.length) : 0;
+  //
+  // ⚠ Três dias diferentes, e cada um diz outra coisa: o plano pode ainda não
+  // ter COMEÇADO (uma consulta marcada para a semana que vem), estar a decorrer,
+  // ou já ter terminado. Dizia «Dia 1 de 14 · faltam 2 hoje» nos três — e num
+  // plano que só começa daqui a cinco dias isso é uma instrução errada.
+  const porComecar = !!p && TODAY_KEY < p.inicio;
+  const terminado = !!p && TODAY_KEY > p.fim;
+  const diaDoPlano = p ? (p.dias.indexOf(TODAY_KEY) + 1 || (terminado ? p.duracao : 0)) : 0;
+  const faltamHoje = p && !porComecar && !terminado ? Math.max(0, p.frequencia - hoje.length) : 0;
   const pct = p ? (tomas.length / p.doses) * 100 : 0;
-  const estado = p ? [
-    `Dia ${diaDoPlano} de ${p.duracao}`,
-    `${tomas.length} de ${plural(p.doses, 'dose', 'doses')}`,
-    TODAY_KEY > p.fim ? 'plano terminado' : faltamHoje ? `faltam ${faltamHoje} hoje` : 'hoje está feito',
-  ].join(' · ') : null;
+  const estado = !p ? null : porComecar
+    ? `Começa a ${dmyDeChave(p.inicio)} · ${p.descricao}`
+    : [
+      terminado ? `Plano de ${plural(p.duracao, 'dia', 'dias')}, terminado` : `Dia ${diaDoPlano} de ${p.duracao}`,
+      `${tomas.length} de ${plural(p.doses, 'dose', 'doses')}`,
+      terminado ? null : faltamHoje ? `faltam ${faltamHoje} hoje` : 'hoje está feito',
+    ].filter(Boolean).join(' · ');
   // A validade da receita, quando está perto ou já passou.
   const diasDeValidade = daysUntil(recipe.expiresAt);
   const validade = diasDeValidade === null ? null
@@ -243,7 +252,7 @@ export default function TomasDaReceita({ t, user, record, recipe }) {
         <Label t={t}>Plano de tomas</Label>
         <View style={{ flexDirection: 'row', gap: S.sm }}>
           {[['frequency', 'Por dia', 'Tomas por dia'], ['durationDays', 'Dias', 'Duração em dias'], ['boxSize', 'Caixa', 'Unidades na caixa']].map(([campoDoPlano, curto, rotulo]) => (
-            <View key={campoDoPlano} style={{ flex: 1, gap: 4 }}>
+            <View key={campoDoPlano} style={{ flex: 1, minWidth: 0, gap: 4 }}>
               <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3, textAlign: 'center' }}>{curto}</Text>
               {/* Vazio é «—», como na folha de criar: um exemplo num campo
                   vazio lia-se como o valor. */}
@@ -261,9 +270,14 @@ export default function TomasDaReceita({ t, user, record, recipe }) {
       </View>
 
       {/* Um só botão compacto para tudo o que se altera — e só quando algo
-          mudou (o padrão do membro, na Gestão). Sem plano, quem guarda é o
-          rodapé. */}
-      {p && mudou ? (
+          mudou (o padrão do membro, na Gestão).
+          ⚠ Sem plano também: era `p && mudou`, e numa receita ainda sem plano
+          não havia botão NENHUM que guardasse o nome, a dose, a validade ou as
+          notas — o do rodapé pede o plano preenchido, e o que se escrevia
+          perdia-se ao fechar a folha. Quando é o PLANO que muda e ainda não há
+          plano, quem guarda é o rodapé, e este não aparece para não haver dois
+          botões a dizer o mesmo. */}
+      {(textoMudou || (p && planoMudou)) ? (
         <BotaoCompacto t={t} tom="comum" label="Guardar alterações"
           etiqueta="Guardar as alterações à receita" onPress={guardar} />
       ) : null}
@@ -278,9 +292,17 @@ export default function TomasDaReceita({ t, user, record, recipe }) {
           muda com o estado: sem plano, definir o plano é o que falta; com
           plano, marcar a toma é a ação de todos os dias. Botão comum nos dois
           casos: acrescenta, não se desfaz nada. */}
+      {/* ⚠ E desliga-se quando não há dose para marcar: o plano já terminou,
+          ainda não começou, ou as de hoje já estão todas. Marcava na mesma, e
+          anunciava «4.ª de 3 hoje» — uma dose que o plano não tem. A contagem
+          é a soma das linhas (INVARIANTE #2), e por isso uma a mais fica lá. */}
       {useAcaoDaFolha(p
         ? <Primary comum t={t} label="Tomado agora"
-            sub={TODAY_KEY > p.fim ? 'O plano já terminou' : `${hoje.length + 1}.ª de ${p.frequencia} hoje · fica em nome de ${user}`}
+            sub={terminado ? 'O plano já terminou'
+              : porComecar ? `Começa a ${dmyDeChave(p.inicio)}`
+                : faltamHoje ? `${hoje.length + 1}.ª de ${p.frequencia} hoje · fica em nome de ${user}`
+                  : `As ${plural(p.frequencia, 'toma', 'tomas')} de hoje já estão marcadas`}
+            disabled={terminado || porComecar || !faltamHoje}
             onPress={marcar} />
         : <Primary comum t={t} label="Definir plano"
             sub={planoPreenchido ? `${Number(rascunho.frequency) * Number(rascunho.durationDays)} doses · a partir de ${dayLabel(record.day)}` : 'Diga as tomas por dia e os dias'}

@@ -60,7 +60,10 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
     if (!form.name.trim() || !mudou) return;
     editEquip(equip.id, {
       name: form.name.trim(), cat: form.cat,
-      price: form.price ?? 0,
+      // ⚠ `null`, e não 0: o preço por saber lê-se «—» na ficha e no PDF da
+      // fatura (`typeof equip.price === 'number'`). A 0 passava a «0,00 €», que
+      // é uma afirmação — a de que o equipamento não custou nada.
+      price: form.price ?? null,
       bought: form.bought, warrantyEnd: form.warrantyEnd,
     });
     onClose();
@@ -135,6 +138,18 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
       <Sheet t={t} title={equip.name} sub={equip.cat} onClose={onClose}
         action={
           <View style={{ gap: S.md }}>
+            {/* ⚠ O botão PRINCIPAL da folha vive aqui, no rodapé fixo — é a
+                regra 9 do `a-coerencia-do-desenho`. Desde que a ficha ganhou
+                campos (15/09/2026), o principal é «Guardar alterações», e ele
+                estava no fim do corpo, só visível depois de rolar cinco
+                campos; o rodapé levava as três ações secundárias.
+                O «Remover equipamento» desceu para o fim do corpo, separado
+                por uma régua — é onde as folhas de gerir o têm (o artigo, a
+                meta, a conta fixa, a tarefa): quem vem mudar o nome não passa
+                pelo apagar a caminho. */}
+            <Primary comum t={t} label="Guardar alterações"
+              sub={!form.name.trim() ? 'Escreva o nome do equipamento' : !mudou ? 'Nada mudou' : 'A ficha fica como escreveu'}
+              disabled={!form.name.trim() || !mudou} onPress={guardar} />
             {/* Lado a lado, como «Exportar» e «Marcar» na ficha de saúde — o
                 dono da casa (13/09/2026): «botões lado a lado (agendar e
                 exportar) em todos os ecrãs que tiverem estes dois». */}
@@ -150,7 +165,6 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
               <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 18, textAlign: 'center',
                 color: /^PDF pronto/.test(exportacao) ? t.state.okTexto : t.state.errTexto }}>{exportacao}</Text>
             ) : null}
-            <Acao perigo label="Remover equipamento" icone="trash" onPress={() => setRemover(true)} />
           </View>
         }>
 
@@ -258,10 +272,6 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
             onChange={(k) => setForm(f => ({ ...f, warrantyEnd: k ? dmyDeChave(k) : '' }))} />
         </View>
 
-        <Primary comum t={t} label="Guardar alterações"
-          sub={!form.name.trim() ? 'Escreva o nome do equipamento' : !mudou ? 'Nada mudou' : 'A ficha fica como escreveu'}
-          disabled={!form.name.trim() || !mudou} onPress={guardar} />
-
         {/* Manutenção marcada, se houver */}
         {equip.maint ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -276,6 +286,13 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
             </View>
           </View>
         ) : null}
+
+        {/* ── Remover ─────────────────────────────────────────────────────
+            Em baixo, depois de tudo o que se ajusta, e separado por uma
+            régua — a mesma ordem das folhas de gerir o artigo, a meta, a
+            conta fixa e a tarefa. */}
+        <View style={{ height: 1, backgroundColor: t.divider }} />
+        <Acao perigo label="Remover equipamento" icone="trash" onPress={() => setRemover(true)} />
       </Sheet>
 
       {/* Agendar manutenção */}

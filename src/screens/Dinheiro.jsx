@@ -3,7 +3,8 @@ import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, onChrome } from '../theme';
 import { EUR, warrantyDaysLeft, plural, mesSeguinte, TODAY_KEY } from '../format';
-import { Card, SectionTitle, Linha, Label, Pill, Row, Bar, Primary, AddButton, Segmented, Toggle, Choice, Empty, usePaged, Pager, Opcao, NumField, BotaoCompacto, Avatar, avatarDe } from '../ui';
+import { Card, SectionTitle, Linha, Label, Pill, Row, Bar, Primary, AddButton, Toggle, Choice, Empty, usePaged, Pager, Opcao, NumField, BotaoCompacto, Avatar, avatarDe } from '../ui';
+import { EscolherPessoa } from '../FiltroDeMembros';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -805,9 +806,10 @@ export default function Dinheiro({ t, user, onEquip }) {
           </View>
           <View style={{ gap: S.md }}>
             <Label t={t}>Quem pagou</Label>
-            <Segmented t={t} small value={exp.payer}
-              options={adultos.map(n => ({ value: n, label: n }))}
-              onChange={(v) => setExp(x => ({ ...x, payer: v }))} />
+            {/* A bola de cada pessoa, como nos filtros (15/09/2026): era um
+                `Segmented` com os nomes. */}
+            <EscolherPessoa t={t} membros={adultos} valor={exp.payer} MEMBERS={MEMBERS}
+              onEscolher={(v) => setExp(x => ({ ...x, payer: v }))} />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: t.subtle,
             borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14 }}>

@@ -170,7 +170,11 @@ describe('a Gestão da Casa', () => {
     const path = require('path');
     const codigo = fs.readFileSync(path.join(__dirname, '..', 'src/screens/Gestao.jsx'), 'utf8');
     const campo = codigo.slice(codigo.indexOf('<NumField'), codigo.indexOf('<NumField') + 220);
-    expect(campo).toMatch(/value=\{s\.pointValue\}/);
+    // ⚠ O valor mostrado é o rascunho ENQUANTO se escreve, e o da casa quando
+    // não se está a escrever (15/09/2026): o `NumField` passou a dar o valor a
+    // cada tecla, e a casa só se escreve no valor assente — ver o
+    // `aoTerminar` e o guarda em `editar-muda-o-titulo`.
+    expect(campo).toMatch(/value=\{pontoAEscrever \?\? s\.pointValue\}/);
     expect(campo).toMatch(/min=\{0\}/);
     // E o máximo do ecrã é o do servidor: `num('valor_ponto', { min: 0, max: 5 })`.
     expect(campo).toMatch(/max=\{5\}/);

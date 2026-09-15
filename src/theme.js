@@ -345,6 +345,12 @@ export const corDoMembro = (nome, cor) => {
 // fica em 4,4. Com 5,0 os dois passam — provado em `o-cabecalho-da-crianca-le-se`.
 export const chromeDaCrianca = (cor) => escurecerAte(cor, '#FFFFFF', 5.0);
 
+// ⚠ Houve aqui um `corDeMembroLegivel`, em 15/09/2026, para pintar a marca de
+// «escolhido» com a cor de cada membro. O dono da casa recusou-o no mesmo dia:
+// «a cor é consoante o perfil do user em uso». A cor do membro vive na BOLA do
+// avatar — é ela que diz de quem é a linha —, e o que a app pinta ao marcar uma
+// escolha é o acento de QUEM está a usar a app. Não voltar a misturar as duas.
+
 // A largura da coluna da app.
 //
 // Estava só no App.jsx, e as modais não a viam: no monitor, uma folha abria de

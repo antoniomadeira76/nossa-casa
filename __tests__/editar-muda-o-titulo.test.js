@@ -155,7 +155,10 @@ describe('a receita: o nome do medicamento altera-se na folha das tomas', () => 
     const folha = semComentarios(ler('src/sheets/TomasDaReceita.jsx'));
     expect(folha).toMatch(/accessibilityLabel="Nome do medicamento"/);
     expect(folha).toMatch(/accessibilityLabel="Notas da receita"/);
-    expect(folha).toMatch(/\{p && mudou \? \(\s*<BotaoCompacto[^>]*label="Guardar alterações"/);
+    // ⚠ `textoMudou || (p && planoMudou)`, e não `p && mudou`: numa receita
+    // ainda sem plano não havia botão nenhum que guardasse o nome, a dose, a
+    // validade ou as notas, e o que se escrevia perdia-se ao fechar a folha.
+    expect(folha).toMatch(/\{\(textoMudou \|\| \(p && planoMudou\)\) \? \(\s*<BotaoCompacto[^>]*label="Guardar alterações"/);
     expect(folha).toMatch(/alterarReceita\(record\.id, recipe\.id, \{\s*name: rascunho\.name, dosage: rascunho\.dosage, quantity: rascunho\.quantity, unit: rascunho\.unit,\s*expiresAt: rascunho\.expiresAt, notas: rascunho\.notas,/);
     // A receita completa (15/09/2026, «parece-me incompleto»): o que a folha
     // de criar pede, esta altera — com os mesmos rótulos.
@@ -266,6 +269,105 @@ describe('a receita: o nome do medicamento altera-se na folha das tomas', () => 
     expect(fn).toMatch(/if \('nome' in campos\) linha\.nome = /);
     expect(fn).toMatch(/\['frequencia', 'duracaoDias', 'caixa'\]\.some\(k => k in campos\)\) Object\.assign\(linha, planoNoServidor\(campos\)\)/);
     expect(fn).not.toMatch(/update\(idNoServidor, planoNoServidor\(campos\)\)/);
+  });
+});
+
+// ── O NumField sobe o valor a cada tecla ─────────────────────────────────────
+describe('⚠ o NumField sobe o valor a cada tecla, não só ao perder o foco', () => {
+  // «Definir plano não está a fazer nada» (15/09/2026): o valor só subia no
+  // `onBlur`, e o primeiro toque no botão do rodapé servia para tirar o foco
+  // ao campo — nesse desenho o botão ainda estava desligado e o `onPress` era
+  // `undefined`. Vale para todas as folhas com um número e um botão a seguir.
+  const { NumField } = require('../src/ui');
+  const { buildTheme } = require('../src/theme');
+  const T = buildTheme(0, false);
+  const campoDe = (r) => r.root.findAll(n => typeof n.type === 'string' && n.props && n.props.accessibilityLabel === 'Tomas por dia').pop();
+
+  it('escrever «2» chama o onChange com 2 antes de qualquer blur', () => {
+    const visto = [];
+    let r;
+    TestRenderer.act(() => {
+      r = TestRenderer.create(React.createElement(NumField, { t: T, compacto: true, vazio: true, suffix: false, step: 1, min: 0, max: 999,
+        rotulo: 'Tomas por dia', value: null, onChange: (v) => visto.push(v) }));
+    });
+    TestRenderer.act(() => { campoDe(r).props.onChangeText('2'); });
+    expect(visto).toEqual([2]);
+    TestRenderer.act(() => { campoDe(r).props.onChangeText('2,'); });   // a meio, ainda 2
+    expect(visto).toEqual([2, 2]);
+    TestRenderer.act(() => { campoDe(r).props.onChangeText(''); });     // vazio é vazio
+    expect(visto).toEqual([2, 2, null]);
+    r.unmount();
+  });
+
+  it('e os três lado a lado não saem da linha: o campo não tem largura própria', () => {
+    const ui = semComentarios(ler('src/ui.jsx'));
+    const campo = ui.slice(ui.indexOf('export function NumField'), ui.indexOf('export const Card'));
+    expect(campo).toMatch(/style=\{\{ flex: 1, flexBasis: 0, minWidth: 0, minHeight: 44/);
+    expect(campo).toMatch(/onChangeText=\{escrever\}/);
+  });
+
+  // ⚠ O GUARDA GENÉRICO desta classe: a cada tecla é seguro para um `useState`
+  // do ecrã, e não é seguro para uma escrita na LOJA ou no SERVIDOR — «0,35»
+  // manda «0», «0», «0,3» e «0,35», quatro PATCH diretos e sem fila, e ganha o
+  // último a CHEGAR. Quem escreve fora do ecrã usa o `aoTerminar`, que só
+  // dispara no valor assente (blur, «guardar» do teclado, «−»/«+»).
+  it('⚠ nenhum `onChange` de um NumField escreve fora do ecrã — isso é o `aoTerminar`', () => {
+    const fs = require('fs'); const path = require('path');
+    const jsx = [];
+    (function percorrer(dir) {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) percorrer(p);
+        else if (/\.jsx$/.test(e.name)) jsx.push(path.relative(RAIZ, p).split(path.sep).join('/'));
+      }
+    })(path.join(RAIZ, 'src'));
+
+    // O que um `onChange` PODE chamar: um setter de estado do React (`setX`), e
+    // os dois ajudantes locais que só fazem `onChange` para o pai.
+    const LOCAIS = /^(set[A-Z]\w*|campo|muda|Number|String|Math)$/;
+    const maus = [];
+    let campos = 0;
+    for (const rel of jsx) {
+      const txt = semComentarios(ler(rel));
+      let i = txt.indexOf('<NumField');
+      while (i !== -1) {
+        const fim = txt.indexOf('/>', i);
+        const tag = txt.slice(i, fim === -1 ? txt.length : fim);
+        campos += 1;
+        const m = /onChange=\{([\s\S]*?)\}\s*(?:\/|[a-zA-Z-]+=)/.exec(tag + ' ')
+          || /onChange=\{([\s\S]*)$/.exec(tag);
+        const corpo = m ? m[1] : '';
+        // ⚠ O `(?<![.\w$])` é para não apanhar o que vem depois de um ponto: o
+        // `Math.round(v)` da conta fixa dava «round» e passava por chamada solta.
+        const chamadas = [...corpo.matchAll(/(?<![.\w$])([A-Za-z_$][\w$]*)\s*\(/g)].map(x => x[1]);
+        const foraDoEcra = chamadas.filter(c => !LOCAIS.test(c));
+        if (foraDoEcra.length && !/aoTerminar=/.test(tag)) {
+          maus.push(`${rel}: onChange chama ${foraDoEcra.join(', ')} sem aoTerminar`);
+        }
+        i = txt.indexOf('<NumField', i + 1);
+      }
+    }
+    // Se o varrimento deixar de encontrar campos, o guarda deixou de guardar.
+    expect(campos).toBeGreaterThan(15);
+    expect(maus).toEqual([]);
+  });
+
+  it('e o `aoTerminar` dispara no blur e nos botões, nunca a meio de uma tecla', () => {
+    const ui = semComentarios(ler('src/ui.jsx'));
+    const campo = ui.slice(ui.indexOf('export function NumField'), ui.indexOf('export const Card'));
+    expect(campo).toMatch(/const assente = \(v\) => \{ onChange\(v\); if \(aoTerminar\) aoTerminar\(v\); \}/);
+    expect(campo).toMatch(/onPress=\{\(\) => assente\(para\)\}/);   // os botões
+    expect(campo).toMatch(/assente\(aosCentimos\(/);                // o commit do blur
+    // O `escrever` (a cada tecla) NÃO passa pelo assente.
+    const escrever = campo.slice(campo.indexOf('const escrever'), campo.indexOf('const Botao'));
+    expect(escrever).not.toMatch(/assente\(/);
+  });
+
+  it('o valor do ponto da Gestão escreve na casa só no valor assente', () => {
+    const gestao = semComentarios(ler('src/screens/Gestao.jsx'));
+    expect(gestao).toMatch(/value=\{pontoAEscrever \?\? s\.pointValue\}/);
+    expect(gestao).toMatch(/onChange=\{setPontoAEscrever\}/);
+    expect(gestao).toMatch(/aoTerminar=\{\(v\) => \{ setPontoAEscrever\(null\); mudarRegraDaCasa\(\{ pointValue: v \}\); \}\}/);
   });
 });
 

@@ -70,6 +70,14 @@ export default function Gestao({ t, user, onClose }) {
   const [modal, setModal] = useState(null);
   const [input, setInput] = useState('');
   const [limitInput, setLimitInput] = useState('');
+  // ⚠ O valor do ponto ENQUANTO se escreve. `null` quer dizer «não se está a
+  // escrever» — e aí mostra-se o da casa. Sem isto, desde que o `NumField`
+  // passou a dar o valor a cada tecla (15/09/2026), escrever «0,35» eram
+  // quatro escritas na casa e quatro PATCH ao servidor, diretos e sem fila
+  // (`regrasDaCasa`, com o `autoCancellation(false)` do PocketBase): ganhava o
+  // último a CHEGAR, que podia ser o «0». A casa só se escreve no valor
+  // assente — o `aoTerminar`.
+  const [pontoAEscrever, setPontoAEscrever] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
   const [selectedEnvelope, setSelectedEnvelope] = useState(null);
   // O formulário do membro, e a recusa que vier do servidor. O erro é estado
@@ -206,8 +214,9 @@ export default function Gestao({ t, user, onClose }) {
             já tinha o campo de texto lá dentro — só não estava a ser usado
             aqui, porque vivia dentro do ecrã do Dinheiro e a Gestão não pode
             importar um ecrã. */}
-        <NumField t={t} value={s.pointValue} step={0.05} min={0} max={5}
-          onChange={(v) => mudarRegraDaCasa({ pointValue: v })} />
+        <NumField t={t} value={pontoAEscrever ?? s.pointValue} step={0.05} min={0} max={5}
+          onChange={setPontoAEscrever}
+          aoTerminar={(v) => { setPontoAEscrever(null); mudarRegraDaCasa({ pointValue: v }); }} />
         <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
           {(() => {
             const porPagar = Object.keys(MEMBERS)

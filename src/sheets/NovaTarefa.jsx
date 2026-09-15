@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, Choice, Segmented, Primary, EscolherMembro, coresDe, NumField } from '../ui';
+import { Label, Choice, Segmented, Primary, NumField } from '../ui';
+import { EscolherPessoa } from '../FiltroDeMembros';
 import { useAcaoDaFolha } from '../Sheet';
 import { TODAY_KEY } from '../format';
 import Icon from '../Icon';
@@ -57,7 +58,8 @@ export default function NovaTarefa({ t, user, onClose }) {
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Atribuir a</Label>
-        <EscolherMembro t={t} membros={membrosDaCasa} cores={coresDe(MEMBROS)}
+        {/* A bola de cada pessoa, como nos filtros (15/09/2026). */}
+        <EscolherPessoa t={t} membros={membrosDaCasa} MEMBERS={MEMBROS}
           valor={form.who} onEscolher={(name) => setForm(f => ({ ...f, who: name }))} />
       </View>
 
