@@ -55,8 +55,11 @@ const aosCentimos = (n) => Math.round(n * 100) / 100;
 // lado deste. `vazio` deixa o campo ficar SEM valor (`null`) — um preço que
 // ainda não se sabe não é 0,00 €; `rotulo` é o que o leitor de ecrã diz;
 // `placeholder` é o que se lê no campo vazio.
+// `compacto` (15/09/2026): sem «−» e «+», para três números lado a lado numa
+// linha (o plano de tomas: por dia · dias · caixa). Continua a ser O campo de
+// número da app — mesma caixa, mesmo teclado, mesmo vazio.
 export function NumField({ t, value, onChange, step = 5, min = 0, max = 99999, suffix = true,
-  vazio = false, rotulo = 'Valor', placeholder = null }) {
+  vazio = false, rotulo = 'Valor', placeholder = null, compacto = false }) {
   const [txt, setTxt] = React.useState(null);
   const semValor = vazio && (value === null || value === undefined || value === '');
   const atual = semValor ? 0 : Number(value) || 0;
@@ -82,7 +85,7 @@ export function NumField({ t, value, onChange, step = 5, min = 0, max = 99999, s
       : (suffix ? EUR(atual) : String(atual));
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-      <Botao rotuloDoBotao={`Menos ${step}`} sinal="−" para={aosCentimos(Math.max(min, atual - step))} />
+      {compacto ? null : <Botao rotuloDoBotao={`Menos ${step}`} sinal="−" para={aosCentimos(Math.max(min, atual - step))} />}
       <TextInput
         value={mostrado}
         onFocus={() => setTxt(semValor ? '' : String(atual).replace('.', ','))}
@@ -93,8 +96,9 @@ export function NumField({ t, value, onChange, step = 5, min = 0, max = 99999, s
         accessibilityLabel={rotulo}
         placeholder={placeholder || undefined} placeholderTextColor={t.text3}
         style={{ flex: 1, minHeight: 44, textAlign: 'center', fontFamily: FONT.display,
-          fontSize: 18, color: t.text2, borderRadius: R.row, borderWidth: 1, borderColor: t.border }} />
-      <Botao rotuloDoBotao={`Mais ${step}`} sinal="+" para={aosCentimos(Math.min(max, atual + step))} />
+          fontSize: compacto ? 15 : 18, color: t.text2, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
+          ...(compacto ? { backgroundColor: t.card } : {}) }} />
+      {compacto ? null : <Botao rotuloDoBotao={`Mais ${step}`} sinal="+" para={aosCentimos(Math.min(max, atual + step))} />}
     </View>
   );
 }

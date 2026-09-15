@@ -2096,6 +2096,8 @@ export async function puxarSaude(idsDosMembros) {
         // a classe de defeito do `sem-stock`, do `plano.time` e do `section`.
         ...(r.expira_em ? { expiresAt: dmyDeChave(`d${String(r.expira_em).slice(0, 10)}`) } : {}),
         decision: r.decisao || '',
+        // As notas da receita (15/09/2026): texto livre, vazio quando não há.
+        notas: r.notas || '',
         // O plano de tomas (12/09/2026). Zero no servidor é «não definido», e
         // a loja lê-o como zero também — o `planoDaReceita` devolve nulo.
         frequency: Number(r.frequencia) || 0,
@@ -2154,21 +2156,37 @@ const planoNoServidor = ({ frequencia, duracaoDias, caixa } = {}) => ({
   caixa: Math.max(0, Math.round(Number(caixa) || 0)),
 });
 
-export async function receitaDeSaude({ casa, episodio, nome, dose, quantidade, unidade, expiraEm, decisao, frequencia, duracaoDias, caixa }) {
+export async function receitaDeSaude({ casa, episodio, nome, dose, quantidade, unidade, expiraEm, decisao, notas, frequencia, duracaoDias, caixa }) {
   if (!episodio) throw new Error('Uma receita sem consulta não se grava.');
   return criarOuEnfileirar('receitas_saude', {
     casa, episodio, nome, dose: dose || '', quantidade: quantidade || '',
     unidade: unidade || '', expira_em: expiraEm || null, decisao: decisao || '',
+    notas: String(notas || '').trim(),
     ...planoNoServidor({ frequencia, duracaoDias, caixa }),
   });
 }
 
-// O plano de tomas de uma receita que já existe — para as receitas escritas
-// antes de 12/09/2026, que não o têm.
+// Alterar uma receita que já existe: o plano de tomas (para as receitas
+// escritas antes de 12/09/2026, que não o têm) e, desde 15/09/2026, o nome do
+// medicamento.
+//
+// ⚠ O plano só vai quando VEM. Isto mandava sempre os três números do plano, e
+// um pedido só com o nome punha-os a zero — a receita perdia o plano por se
+// corrigir uma gralha no nome.
 export async function alterarReceitaDeSaude(idNoServidor, campos = {}) {
   recusaSaude('receitas_saude');
   if (!idNoServidor) return { pendente: true };
-  return servidor.pb.collection('receitas_saude').update(idNoServidor, planoNoServidor(campos));
+  const linha = {};
+  if ('nome' in campos) linha.nome = String(campos.nome || '').trim();
+  if ('notas' in campos) linha.notas = String(campos.notas || '').trim();
+  // A dose, a quantidade, a unidade e a validade (15/09/2026): o que a folha
+  // de criar pede, a folha das tomas altera.
+  if ('dose' in campos) linha.dose = String(campos.dose || '').trim();
+  if ('quantidade' in campos) linha.quantidade = String(campos.quantidade || '').trim();
+  if ('unidade' in campos) linha.unidade = String(campos.unidade || '').trim();
+  if ('expiraEm' in campos) linha.expira_em = isoDeDMY(campos.expiraEm) || campos.expiraEm || null;
+  if (['frequencia', 'duracaoDias', 'caixa'].some(k => k in campos)) Object.assign(linha, planoNoServidor(campos));
+  return servidor.pb.collection('receitas_saude').update(idNoServidor, linha);
 }
 
 // ── As tomas ─────────────────────────────────────────────────────────────────

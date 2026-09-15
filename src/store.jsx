@@ -5326,9 +5326,11 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     durationDays: Math.max(0, Math.round(Number(plano.durationDays) || 0)),
     boxSize: Math.max(0, Math.round(Number(plano.boxSize) || 0)),
   });
+  // `plano` traz também as `notas` da receita (15/09/2026), texto livre.
   const addRecipe = (healthId, name, dosage, quantity, unit, expiresAt, plano = {}) => {
     const idLocal = 'rx-' + Date.now();
     const p = planoLimpo(plano);
+    const notas = String(plano.notas || '').trim();
     set(x => ({
       healthRecipes: {
         ...x.healthRecipes,
@@ -5337,6 +5339,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
           name, dosage, quantity, unit,
           expiresAt,
           decision: null,
+          notas,
           ...p,
         }],
       },
@@ -5347,7 +5350,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       const episodio = episodioNoServidor(healthId);
       if (ses && episodio) sync.receitaDeSaude({
         casa: ses.casa, episodio, nome: name, dose: dosage,
-        quantidade: quantity, unidade: unit, expiraEm: expiresAt,
+        quantidade: quantity, unidade: unit, expiraEm: expiresAt, notas,
         frequencia: p.frequency, duracaoDias: p.durationDays, caixa: p.boxSize,
       })
         .then((r) => { if (r && r.id) set(x => ({
@@ -5402,6 +5405,49 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         frequencia: p.frequency, duracaoDias: p.durationDays, caixa: p.boxSize,
       }).catch(() => {});
     }
+    return null;
+  };
+
+  // Muda o nome do medicamento e as notas de uma receita (15/09/2026 — «quando
+  // se faz editar, o título não tem opção de alterar», e «adicionar notas»).
+  // Cada campo só conta quando VEM. Devolve `null` quando ficou, ou a frase do
+  // que falta. As tomas não se mexem: a chave delas é o id da receita.
+  const alterarReceita = (healthId, recipeId, campos = {}) => {
+    const receita = receitaDe(healthId, recipeId);
+    if (!receita) return 'Essa receita não existe nesta ficha.';
+    const mudanca = {};
+    if ('name' in campos) {
+      const nome = String(campos.name || '').trim();
+      if (!nome) return 'Escreva o nome do medicamento.';
+      if (nome !== receita.name) mudanca.name = nome;
+    }
+    if ('notas' in campos) {
+      const notas = String(campos.notas || '').trim();
+      if (notas !== (receita.notas || '')) mudanca.notas = notas;
+    }
+    // A dose, a quantidade, a unidade e a validade — o que a folha de criar
+    // pede (15/09/2026: «parece-me incompleto»).
+    for (const k of ['dosage', 'quantity', 'unit', 'expiresAt']) {
+      if (!(k in campos)) continue;
+      const v = String(campos[k] || '').trim();
+      if (k === 'expiresAt' && !v) return 'A receita precisa de uma validade.';
+      if (v !== (receita[k] || '')) mudanca[k] = v;
+    }
+    if (!Object.keys(mudanca).length) return null;
+    set(x => ({
+      healthRecipes: {
+        ...x.healthRecipes,
+        [healthId]: (x.healthRecipes[healthId] || []).map(r => (r.id === recipeId ? { ...r, ...mudanca } : r)),
+      },
+    }));
+    if (sync && receita.idServidor) sync.alterarReceitaDeSaude(receita.idServidor, {
+      ...('name' in mudanca ? { nome: mudanca.name } : {}),
+      ...('notas' in mudanca ? { notas: mudanca.notas } : {}),
+      ...('dosage' in mudanca ? { dose: mudanca.dosage } : {}),
+      ...('quantity' in mudanca ? { quantidade: mudanca.quantity } : {}),
+      ...('unit' in mudanca ? { unidade: mudanca.unit } : {}),
+      ...('expiresAt' in mudanca ? { expiraEm: mudanca.expiresAt } : {}),
+    }).catch(() => {});
     return null;
   };
 
@@ -5782,7 +5828,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // Health feature methods
     addHealthRecord, addHealthNote, editarNotaSaude, apagarNotaSaude, notaDaConsulta,
     addRecipe, setRecipeDecision, setHealthDecision,
-    definirTomas, tomasDaReceita, marcarToma, desmarcarToma, agendaTemTomas, porTomasNaAgenda,
+    definirTomas, alterarReceita, tomasDaReceita, marcarToma, desmarcarToma, agendaTemTomas, porTomasNaAgenda,
     alergiasDe, criarAlergia, apagarAlergia, fichaDeEmergencia,
     addHealthDoc, arquivarConsulta, docsDaConsulta, estaArquivada,
     apagarConsulta, porqueNaoApaga, oQueCaiCom, lerSaudeDoServidor,

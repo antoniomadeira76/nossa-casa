@@ -72,6 +72,8 @@ const CAMPOS = [
   ['receitas_saude', 'frequencia', { type: 'number', min: 0, onlyInt: true }],
   ['receitas_saude', 'duracao_dias', { type: 'number', min: 0, onlyInt: true }],
   ['receitas_saude', 'caixa', { type: 'number', min: 0, onlyInt: true }],
+  // As notas da receita (15/09/2026): texto livre, opcional.
+  ['receitas_saude', 'notas', { type: 'text', max: 500 }],
   // O interruptor da ementa da semana (12/09/2026): regra da casa. ⚠ Pela
   // NEGATIVA: um `bool` novo nasce a `false` em todas as linhas que já existem,
   // e `false` tem de ser «ligada». Ver o comentário no `criar-colecoes.mjs`.

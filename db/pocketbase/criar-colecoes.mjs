@@ -1506,6 +1506,10 @@ await criar({
     txt('unidade'),
     data('expira_em'),
     txt('decisao'),
+    // As notas da receita (15/09/2026 — «adicionar notas», na folha das tomas):
+    // «tomar depois do jantar», «não com leite». Texto livre, opcional; nasce
+    // também na tabela `CAMPOS` do `acrescentar-campos.mjs`.
+    txt('notas', { max: 500 }),
     // A medicação a partir da receita (12/09/2026, a sexta das dez
     // funcionalidades): quantas tomas por dia, durante quantos dias, e quantas
     // unidades traz a caixa — é o que permite dizer «a caixa acaba a 28/09,

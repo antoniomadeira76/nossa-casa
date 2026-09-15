@@ -60,7 +60,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   const [newNoteForm, setNewNoteForm] = useState({});
   // A receita: o que sempre teve, e o plano de tomas (12/09/2026) — por dia,
   // dias, caixa — que é opcional: uma receita sem plano continua a ser uma receita.
-  const RECEITA_VAZIA = { name: '', dosage: '', quantity: '', unit: '', expiresAt: '', frequency: '', durationDays: '', boxSize: '' };
+  const RECEITA_VAZIA = { name: '', dosage: '', quantity: '', unit: '', expiresAt: '', notas: '', frequency: '', durationDays: '', boxSize: '' };
   const [recipeForm, setRecipeForm] = useState(RECEITA_VAZIA);
   // A receita cuja folha das tomas está aberta: `{ healthId, recipeId }`.
   const [tomasDe, setTomasDe] = useState(null);
@@ -178,7 +178,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
   const handleAddRecipe = (healthId) => {
     if (!recipeForm.name.trim() || !recipeForm.expiresAt.trim()) return;
     addRecipe(healthId, recipeForm.name, recipeForm.dosage, recipeForm.quantity, recipeForm.unit, recipeForm.expiresAt,
-      { frequency: recipeForm.frequency, durationDays: recipeForm.durationDays, boxSize: recipeForm.boxSize });
+      { frequency: recipeForm.frequency, durationDays: recipeForm.durationDays, boxSize: recipeForm.boxSize, notas: recipeForm.notas });
     setRecipeForm(RECEITA_VAZIA);
   };
 
@@ -308,6 +308,12 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                                 Dose: {recipe.dosage} · {recipe.quantity} {recipe.unit}
                               </Text>
                             ) : null}
+                            {/* As notas da receita (15/09/2026), quando há. */}
+                            {recipe.notas ? (
+                              <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 17, color: t.text3 }}>
+                                {recipe.notas}
+                              </Text>
+                            ) : null}
                             <Text style={{
                               fontFamily: FONT.ui, fontSize: 11, color: isExpired ? t.state.errTexto : isWarning ? t.state.warnTexto : t.text3,
                               fontWeight: isWarning || isExpired ? '600' : '400',
@@ -408,7 +414,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                           placeholder="Dose"
                           placeholderTextColor={t.text3}
                           style={{
-                            flex: 1, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
+                            flex: 1, flexBasis: 0, minWidth: 0, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
                             fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
                             borderColor: t.border, backgroundColor: t.surface,
                           }}
@@ -419,18 +425,20 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                           placeholder="Qtd"
                           placeholderTextColor={t.text3}
                           style={{
-                            flex: 0.6, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
+                            flex: 0.5, flexBasis: 0, minWidth: 0, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
                             fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
                             borderColor: t.border, backgroundColor: t.surface,
                           }}
                         />
+                        {/* ⚠ `flexBasis: 0, minWidth: 0`: na web um campo tem
+                            largura própria e a unidade cortava «frasco». */}
                         <TextInput accessibilityLabel="Unidade"
                           value={recipeForm.unit}
                           onChangeText={(v) => setRecipeForm(f => ({ ...f, unit: v }))}
                           placeholder="Unid"
                           placeholderTextColor={t.text3}
                           style={{
-                            flex: 0.6, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
+                            flex: 0.9, flexBasis: 0, minWidth: 0, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
                             fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
                             borderColor: t.border, backgroundColor: t.surface,
                           }}
@@ -439,20 +447,36 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                       <CampoData t={t} valor={chaveDeDMY(recipeForm.expiresAt)}
                         placeholder="Validade (dd/mm/aaaa)"
                         onChange={(k) => setRecipeForm(f => ({ ...f, expiresAt: dmyDeChave(k) }))} />
-                      {/* O plano de tomas, opcional: por dia, dias, caixa. */}
-                      {/* O campo de número da app, com «−» e «+» (14/09/2026), um
-                          por linha com o seu rótulo — três caixas lado a lado
-                          não têm largura para os botões. Vazio é vazio: o
+                      {/* As notas da receita (15/09/2026): opcionais, e as
+                          mesmas que a folha das tomas deixa alterar. */}
+                      <TextInput accessibilityLabel="Notas da receita"
+                        value={recipeForm.notas}
+                        onChangeText={(v) => setRecipeForm(f => ({ ...f, notas: v }))}
+                        placeholder="Notas (ex: tomar depois do jantar)"
+                        placeholderTextColor={t.text3}
+                        maxLength={500}
+                        style={{
+                          minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
+                          fontSize: 14, color: t.text2, borderRadius: R.row, borderWidth: 1,
+                          borderColor: t.border, backgroundColor: t.surface,
+                        }}
+                      />
+                      {/* O plano de tomas, opcional: por dia · dias · caixa,
+                          três `NumField compacto` lado a lado — a mesma linha
+                          da folha das tomas (15/09/2026). Vazio é vazio: o
                           plano é opcional, e um «0» não é «sem plano». */}
-                      <View style={{ gap: S.md }}>
-                        {[['frequency', 'Tomas por dia'], ['durationDays', 'Duração em dias'], ['boxSize', 'Unidades na caixa']].map(([campo, rotulo]) => (
-                          <View key={campo} style={{ gap: S.xs }}>
-                            <Label t={t}>{rotulo}</Label>
-                            <NumField t={t} vazio suffix={false} step={1} min={0} max={999} rotulo={rotulo} placeholder="—"
-                              value={recipeForm[campo] === '' || recipeForm[campo] == null ? null : Number(recipeForm[campo])}
-                              onChange={(v) => setRecipeForm(f => ({ ...f, [campo]: v == null ? '' : String(v) }))} />
-                          </View>
-                        ))}
+                      <View style={{ gap: S.xs }}>
+                        <Label t={t}>Plano de tomas</Label>
+                        <View style={{ flexDirection: 'row', gap: S.sm }}>
+                          {[['frequency', 'Por dia', 'Tomas por dia'], ['durationDays', 'Dias', 'Duração em dias'], ['boxSize', 'Caixa', 'Unidades na caixa']].map(([campo, curto, rotulo]) => (
+                            <View key={campo} style={{ flex: 1, gap: 4 }}>
+                              <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3, textAlign: 'center' }}>{curto}</Text>
+                              <NumField t={t} compacto vazio suffix={false} step={1} min={0} max={999} rotulo={rotulo} placeholder="—"
+                                value={recipeForm[campo] === '' || recipeForm[campo] == null ? null : Number(recipeForm[campo])}
+                                onChange={(v) => setRecipeForm(f => ({ ...f, [campo]: v == null ? '' : String(v) }))} />
+                            </View>
+                          ))}
+                        </View>
                       </View>
                       {/* Confirmar um campo: peso COMUM. Guardar uma receita
                           acrescenta uma linha à ficha — não é dinheiro entre
@@ -1090,8 +1114,8 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
         const recipe = (s.healthRecipes[tomasDe.healthId] || []).find(r => r.id === tomasDe.recipeId);
         if (!record || !recipe) return null;
         return (
-          <Sheet t={t} title={recipe.name} sub={`${record.member} · as tomas`} onClose={() => setTomasDe(null)}>
-            <TomasDaReceita t={t} user={user} record={record} recipe={recipe} onClose={() => setTomasDe(null)} />
+          <Sheet t={t} title={recipe.name} sub={`${record.member} · ${record.specialty || 'as tomas'}`} onClose={() => setTomasDe(null)}>
+            <TomasDaReceita t={t} user={user} record={record} recipe={recipe} />
           </Sheet>
         );
       })() : null}

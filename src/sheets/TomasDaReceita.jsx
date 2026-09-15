@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
+import CampoData from '../CampoData';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, Primary, Pill, PastilhaTocavel, BotaoCompacto, NumField } from '../ui';
+import { Label, Primary, BotaoCompacto, NumField, Bar, Linha, Row, Avatar, avatarDe } from '../ui';
+import { useAcaoDaFolha } from '../Sheet';
 import Icon from '../Icon';
-import { plural, dmyDeChave, dayLabel, TODAY_KEY } from '../format';
-import { planoDaReceita, tomasDoDia, horaDoInstante } from '../medicacao';
+import { plural, dayLabel, TODAY_KEY, chaveDeDMY, dmyDeChave, daysUntil } from '../format';
+import { planoDaReceita, tomasDoDia, horaDoInstante, diaDoInstante } from '../medicacao';
 
 /**
- * As tomas de uma receita: o plano, a agenda, e o que já se tomou.
+ * As tomas de uma receita: o estado, o que já se tomou, a Agenda, e a receita.
  *
  * ── O que se pediu ───────────────────────────────────────────────────────────
  *
@@ -17,30 +19,67 @@ import { planoDaReceita, tomasDoDia, horaDoInstante } from '../medicacao';
  * cada toma marca-se e fica com quem e quando. Aviso quando a caixa acaba
  * antes da receita.
  *
+ * ── A forma é a da folha Gerir Meta (desenho A, 15/09/2026) ─────────────────
+ *
+ * «Este layout não me parece consistente com o resto da app», e depois
+ * «parece-me incompleto». Ver `design/folha-das-tomas.dc.html`. A folha:
+ *
+ *   - CRESCE com o plano. Sem plano só há a receita e o rodapé diz «Definir
+ *     plano»; com plano aparecem o estado (barra + números), «Hoje», «Antes de
+ *     hoje» e a Agenda, e o rodapé passa a «Tomado agora». Mostrar «Hoje»
+ *     vazio e uma Agenda desligada a quem ainda não tem plano era o que a
+ *     fazia parecer incompleta;
+ *   - a RECEITA é completa: o que a folha de criar pede (nome, dose ·
+ *     quantidade · unidade, validade, notas, plano) altera-se aqui — quem cria
+ *     com sete altera com sete;
+ *   - o PLANO é uma linha de três números lado a lado (`NumField compacto`),
+ *     não três blocos altos com «−» e «+»;
+ *   - «Hoje» é uma `Linha` por toma (hora · bola de quem · «tomado» · ×);
+ *   - a Agenda é uma `Row` com seta — leva à ação, não compete com o rodapé;
+ *   - UM botão compacto «Guardar alterações» para tudo o que se altera, e só
+ *     aparece quando algo mudou; o rodapé fixo (`useAcaoDaFolha`) leva a ação
+ *     do estado, em botão comum — acrescenta, não se desfaz nada.
+ *
  * ⚠ «Quantas tomas» é a CONTAGEM das linhas, nunca um número na receita
  * (INVARIANTE #2). Só quem marcou desmarca. Tudo sobe pelo travão de casa.
  *
  * `record` é a consulta (`{ id, member, day }`), `recipe` a receita dela.
  */
-export default function TomasDaReceita({ t, user, record, recipe, onClose }) {
-  const { definirTomas, tomasDaReceita, marcarToma, desmarcarToma, agendaTemTomas, porTomasNaAgenda } = useStore();
-  // `rascunho`, e não `plano`: o guarda do plano de COMPRAS lê `plano.x` em
-  // todos os ecrãs como um campo do `shopPlan`.
-  const [rascunho, setPlano] = useState({
+export default function TomasDaReceita({ t, user, record, recipe }) {
+  const { definirTomas, alterarReceita, tomasDaReceita, marcarToma, desmarcarToma, agendaTemTomas, porTomasNaAgenda,
+    membros: MEMBROS } = useStore();
+  // O rascunho da receita — os campos da folha de criar. O plano continua a
+  // ser texto, que é o que o `definirTomas` já lia; vazio é vazio. `rascunho`,
+  // e não `plano`: o guarda do plano de COMPRAS lê `plano.x` nos ecrãs.
+  const [rascunho, setRascunho] = useState({
+    name: recipe.name || '', dosage: recipe.dosage || '', quantity: recipe.quantity || '', unit: recipe.unit || '',
+    expiresAt: recipe.expiresAt || '', notas: recipe.notas || '',
     frequency: String(recipe.frequency || ''), durationDays: String(recipe.durationDays || ''), boxSize: String(recipe.boxSize || ''),
   });
+  const muda = (campo, v) => { setErro(null); setRascunho(x => ({ ...x, [campo]: v })); };
   const [erro, setErro] = useState(null);
   const [aviso, setAviso] = useState(null);
 
   const p = planoDaReceita(recipe, record.day);
   const tomas = tomasDaReceita(record.id, recipe.id);
   const hoje = tomasDoDia(tomas, TODAY_KEY);
+  const antes = tomas.filter(tm => !hoje.includes(tm));
   const naAgenda = agendaTemTomas(record.id, recipe.id);
 
-  const guardarPlano = () => {
-    const msg = definirTomas(record.id, recipe.id, rascunho);
+  // O que mudou, campo a campo — o botão só aparece quando algo mudou.
+  const planoMudou = ['frequency', 'durationDays', 'boxSize'].some(k => rascunho[k] !== String(recipe[k] || ''));
+  const textoMudou = ['name', 'dosage', 'quantity', 'unit', 'expiresAt', 'notas'].some(k => rascunho[k].trim() !== (recipe[k] || ''));
+  const mudou = textoMudou || planoMudou;
+  const planoPreenchido = !!(Number(rascunho.frequency) && Number(rascunho.durationDays));
+
+  const guardar = () => {
+    let msg = textoMudou ? alterarReceita(record.id, recipe.id, {
+      name: rascunho.name, dosage: rascunho.dosage, quantity: rascunho.quantity, unit: rascunho.unit,
+      expiresAt: rascunho.expiresAt, notas: rascunho.notas,
+    }) : null;
+    if (!msg && planoMudou) msg = definirTomas(record.id, recipe.id, rascunho);
     setErro(msg);
-    if (!msg) setAviso('Plano guardado.');
+    if (!msg) setAviso(p ? 'Receita guardada.' : 'Plano definido. Já pode marcar as tomas.');
   };
   const marcar = () => {
     const msg = marcarToma(record.id, recipe.id, user);
@@ -54,29 +93,65 @@ export default function TomasDaReceita({ t, user, record, recipe, onClose }) {
     setAviso(r ? `${plural(r, 'dia', 'dias')} na Agenda, só para os adultos.` : 'Os dias que faltam já estão na Agenda.');
   };
 
+  // O estado com plano: em que dia se está, quantas doses vão, o que falta hoje.
+  const diaDoPlano = p ? (p.dias.indexOf(TODAY_KEY) + 1 || (TODAY_KEY > p.fim ? p.duracao : 1)) : 0;
+  const faltamHoje = p ? Math.max(0, p.frequencia - hoje.length) : 0;
+  const pct = p ? (tomas.length / p.doses) * 100 : 0;
+  const estado = p ? [
+    `Dia ${diaDoPlano} de ${p.duracao}`,
+    `${tomas.length} de ${plural(p.doses, 'dose', 'doses')}`,
+    TODAY_KEY > p.fim ? 'plano terminado' : faltamHoje ? `faltam ${faltamHoje} hoje` : 'hoje está feito',
+  ].join(' · ') : null;
+  // A validade da receita, quando está perto ou já passou.
+  const diasDeValidade = daysUntil(recipe.expiresAt);
+  const validade = diasDeValidade === null ? null
+    : diasDeValidade < 0 ? { texto: `A receita expirou em ${recipe.expiresAt}.`, cor: t.state.errTexto }
+      : diasDeValidade <= 30 ? { texto: `A receita expira em ${recipe.expiresAt} (${plural(diasDeValidade, 'dia', 'dias')}).`, cor: t.state.warnTexto }
+        : null;
+
   // `campo`, com os 44 px — o nome que o guarda `todo-campo-tem-44` reconhece.
   const campo = {
-    flex: 1, minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body, fontSize: 15,
+    minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body, fontSize: 15,
     color: t.text2, borderRadius: R.row, borderWidth: 1, borderColor: t.border, backgroundColor: t.card,
-    textAlign: 'center',
   };
+
+  // Uma toma numa linha: hora · bola de quem · «tomado» · × (só a quem marcou).
+  const linhaDaToma = (tm, i, arr, comDia) => (
+    <Linha key={tm.id} t={t} last={i === arr.length - 1}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
+        <Text style={{ width: 42, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3 }}>{horaDoInstante(tm.quando)}</Text>
+        <Avatar {...avatarDe(tm.por, MEMBROS[tm.por], t.text3)} size={28} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>tomado</Text>
+          <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
+            {comDia ? `${dayLabel(diaDoInstante(tm.quando))} · ${tm.por}` : tm.por}
+          </Text>
+        </View>
+        {/* Só quem marcou desmarca — e o alvo só aparece a essa pessoa. */}
+        {tm.por === user ? (
+          <Pressable onPress={() => setErro(desmarcarToma(record.id, recipe.id, tm.id, user))}
+            accessibilityRole="button" accessibilityLabel={`Desmarcar a toma das ${horaDoInstante(tm.quando)}`}
+            style={{ minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="close" size={18} color={t.text3} />
+          </Pressable>
+        ) : null}
+      </View>
+    </Linha>
+  );
 
   return (
     <View style={{ gap: S.lg }}>
-      {/* ── O plano ──────────────────────────────────────────────────────── */}
+      {/* ── O estado ─────────────────────────────────────────────────────── */}
       <View style={{ gap: S.sm }}>
-        <Label t={t}>Plano de tomas</Label>
-        {p ? (
-          <Text style={{ fontFamily: FONT.body, fontSize: 14.5, lineHeight: 21, color: t.text2 }}>
-            {`${p.descricao} · de ${dmyDeChave(p.inicio)} a ${dmyDeChave(p.fim)} · ${plural(p.doses, 'dose', 'doses')} no total`}
-          </Text>
-        ) : (
-          <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.text3 }}>
-            Sem plano ainda. Diga quantas tomas por dia e durante quantos dias — a caixa é opcional.
-          </Text>
-        )}
-        {/* O aviso da caixa: leva o tijolo âmbar, e o texto «deep» que é o
-            único que se lê sobre ele. */}
+        {p ? <Bar t={t} pct={pct} color={t.accent} height={6} /> : null}
+        <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.text3 }}>
+          {p ? estado : 'Ainda sem plano. Diga em baixo quantas tomas por dia e durante quantos dias — a caixa é opcional.'}
+        </Text>
+        {validade ? (
+          <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, fontWeight: '600', color: validade.cor }}>{validade.texto}</Text>
+        ) : null}
+        {/* O aviso da caixa: o tijolo âmbar, e o texto «deep» que é o único
+            que se lê sobre ele. */}
         {p && p.aviso ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, padding: S.md,
             borderRadius: R.row, backgroundColor: t.state.warnBg, borderWidth: 1, borderColor: t.state.warn }}>
@@ -84,72 +159,113 @@ export default function TomasDaReceita({ t, user, record, recipe, onClose }) {
             <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 18, color: t.state.warnDeep }}>{p.aviso}</Text>
           </View>
         ) : null}
-        {/* O campo de número da app, com «−» e «+» (14/09/2026), um por linha
-            com o seu rótulo — três caixas lado a lado não têm largura para os
-            botões. O rascunho continua a ser texto, que é o que o «Guardar»
-            já lia; vazio é vazio. */}
-        <View style={{ gap: S.md }}>
-          {[['frequency', 'Tomas por dia', 'Por dia', '2'], ['durationDays', 'Duração em dias', 'Dias', '14'], ['boxSize', 'Unidades na caixa', 'Caixa', '20']].map(([campoDoPlano, rotulo, curto, exemplo]) => (
-            <View key={campoDoPlano} style={{ gap: 4 }}>
-              <Label t={t}>{curto}</Label>
-              <NumField t={t} vazio suffix={false} step={1} min={0} max={999} rotulo={rotulo} placeholder={exemplo}
+      </View>
+
+      {/* ── Hoje, antes, e a Agenda — só com plano ───────────────────────── */}
+      {p ? (
+        <>
+          <View style={{ gap: S.sm }}>
+            <Label t={t}>{`Hoje · ${plural(hoje.length, 'toma', 'tomas')} de ${p.frequencia}`}</Label>
+            {hoje.length === 0 ? (
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, color: t.text3 }}>Ainda nenhuma toma marcada hoje.</Text>
+            ) : <View>{hoje.map((tm, i, arr) => linhaDaToma(tm, i, arr, false))}</View>}
+          </View>
+
+          {antes.length ? (
+            <View style={{ gap: S.sm }}>
+              <Label t={t}>Antes de hoje</Label>
+              <View>{antes.slice(0, 8).map((tm, i, arr) => linhaDaToma(tm, i, arr, true))}</View>
+              {antes.length > 8 ? (
+                <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>e mais {antes.length - 8}.</Text>
+              ) : null}
+            </View>
+          ) : null}
+
+          <View style={{ gap: S.sm }}>
+            <Label t={t}>Agenda</Label>
+            {/* Uma linha com seta, não um botão: leva à ação e não compete
+                com o do rodapé. E o «só adultos» está escrito, porque é a
+                decisão que importa: a criança não vê a medicação na agenda. */}
+            {naAgenda ? (
+              <Row t={t} icon="calendar" title="Na Agenda" sub="Um dia por toma, só para os adultos" last />
+            ) : (
+              <Row t={t} icon="calendar" title="Pôr as tomas na Agenda" last
+                sub={`${plural(p.dias.filter(d => d >= TODAY_KEY).length, 'dia', 'dias')} a partir de hoje · só adultos`}
+                onPress={agendar} />
+            )}
+          </View>
+        </>
+      ) : null}
+
+      {/* ── A receita ────────────────────────────────────────────────────── */}
+      <View style={{ gap: S.sm }}>
+        <Label t={t}>Receita</Label>
+        <TextInput accessibilityLabel="Nome do medicamento"
+          value={rascunho.name} onChangeText={(v) => muda('name', v)}
+          placeholder="Ex: Ferro 30 mg" placeholderTextColor={t.text3} maxLength={60}
+          style={{ ...campo, minHeight: 44 }} />
+        {/* Dose · quantidade · unidade, na mesma linha da folha de criar.
+            ⚠ `flexBasis: 0, minWidth: 0`: na web um campo de texto tem largura
+            própria, e sem isto os três dividiam a linha em partes iguais
+            e a unidade cortava «frasco» em «fras». */}
+        <View style={{ flexDirection: 'row', gap: S.sm }}>
+          <TextInput accessibilityLabel="Dose"
+            value={rascunho.dosage} onChangeText={(v) => muda('dosage', v)}
+            placeholder="Dose" placeholderTextColor={t.text3} maxLength={40}
+            style={{ ...campo, minHeight: 44, flex: 1, flexBasis: 0, minWidth: 0 }} />
+          <TextInput accessibilityLabel="Quantidade"
+            value={rascunho.quantity} onChangeText={(v) => muda('quantity', v)}
+            placeholder="Qtd" placeholderTextColor={t.text3} maxLength={12}
+            style={{ ...campo, minHeight: 44, flex: 0.5, flexBasis: 0, minWidth: 0 }} />
+          <TextInput accessibilityLabel="Unidade"
+            value={rascunho.unit} onChangeText={(v) => muda('unit', v)}
+            placeholder="Unid" placeholderTextColor={t.text3} maxLength={12}
+            style={{ ...campo, minHeight: 44, flex: 0.9, flexBasis: 0, minWidth: 0 }} />
+        </View>
+      </View>
+
+      <View style={{ gap: S.sm }}>
+        <Label t={t}>Validade</Label>
+        <CampoData t={t} valor={chaveDeDMY(rascunho.expiresAt)} placeholder="Validade (dd/mm/aaaa)"
+          onChange={(k) => muda('expiresAt', k ? dmyDeChave(k) : '')} />
+      </View>
+
+      <View style={{ gap: S.sm }}>
+        <Label t={t}>Notas</Label>
+        <TextInput accessibilityLabel="Notas da receita"
+          value={rascunho.notas} onChangeText={(v) => muda('notas', v)}
+          placeholder="Ex: tomar depois do jantar" placeholderTextColor={t.text3} maxLength={500} multiline
+          style={{ ...campo, minHeight: 44, paddingVertical: S.md, lineHeight: 21 }} />
+      </View>
+
+      {/* ── O plano: três números lado a lado ────────────────────────────── */}
+      <View style={{ gap: S.sm }}>
+        <Label t={t}>Plano de tomas</Label>
+        <View style={{ flexDirection: 'row', gap: S.sm }}>
+          {[['frequency', 'Por dia', 'Tomas por dia'], ['durationDays', 'Dias', 'Duração em dias'], ['boxSize', 'Caixa', 'Unidades na caixa']].map(([campoDoPlano, curto, rotulo]) => (
+            <View key={campoDoPlano} style={{ flex: 1, gap: 4 }}>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.text3, textAlign: 'center' }}>{curto}</Text>
+              {/* Vazio é «—», como na folha de criar: um exemplo num campo
+                  vazio lia-se como o valor. */}
+              <NumField t={t} compacto vazio suffix={false} step={1} min={0} max={999} rotulo={rotulo} placeholder="—"
                 value={rascunho[campoDoPlano] === '' || rascunho[campoDoPlano] == null ? null : Number(rascunho[campoDoPlano])}
-                onChange={(v) => { setErro(null); setPlano(x => ({ ...x, [campoDoPlano]: v == null ? '' : String(v) })); }} />
+                onChange={(v) => muda(campoDoPlano, v == null ? '' : String(v))} />
             </View>
           ))}
         </View>
-        <BotaoCompacto t={t} tom="comum" label={p ? 'Guardar plano' : 'Definir plano'}
-          etiqueta="Guardar o plano de tomas" onPress={guardarPlano} />
+        <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 17, color: t.text3 }}>
+          {planoPreenchido
+            ? `${plural(Number(rascunho.frequency), 'toma', 'tomas')} por dia · ${plural(Number(rascunho.durationDays), 'dia', 'dias')}${Number(rascunho.boxSize) ? ` · caixa de ${Number(rascunho.boxSize)}` : ''} · ${Number(rascunho.frequency) * Number(rascunho.durationDays)} doses no total`
+            : 'Tomas por dia e dias são precisos; a caixa avisa quando não chega ao fim.'}
+        </Text>
       </View>
 
-      {/* ── A Agenda ─────────────────────────────────────────────────────── */}
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Agenda</Label>
-        {/* Botão comum: acrescenta eventos, não fecha nem apaga. E o «só
-            adultos» está escrito nele, porque é a decisão que importa: a
-            criança não vê a medicação dela na agenda. */}
-        <Primary comum t={t} label={naAgenda ? 'As tomas estão na Agenda' : 'Pôr as tomas na Agenda'}
-          sub={!p ? 'Defina o plano primeiro' : naAgenda ? 'Um dia por toma, só para os adultos' : `${plural(p.dias.filter(d => d >= TODAY_KEY).length, 'dia', 'dias')} a partir de hoje · só adultos`}
-          disabled={!p} onPress={agendar} />
-      </View>
-
-      {/* ── Hoje ─────────────────────────────────────────────────────────── */}
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>{`Hoje · ${plural(hoje.length, 'toma', 'tomas')}${p ? ` de ${p.frequencia}` : ''}`}</Label>
-        {hoje.length === 0 ? (
-          <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, color: t.text3 }}>Ainda nenhuma toma marcada hoje.</Text>
-        ) : hoje.map(tm => (
-          <View key={tm.id} style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, minHeight: 44 }}>
-            <Pill label="tomado" fg={t.state.okTexto} bg={t.state.okBg} border={t.state.okBorder} />
-            <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 14.5, color: t.text2 }}>
-              {`${horaDoInstante(tm.quando)} · ${tm.por}`}
-            </Text>
-            {/* Só quem marcou desmarca — e o alvo só aparece a essa pessoa. */}
-            {tm.por === user ? (
-              <Pressable onPress={() => setErro(desmarcarToma(record.id, recipe.id, tm.id, user))}
-                accessibilityRole="button" accessibilityLabel={`Desmarcar a toma das ${horaDoInstante(tm.quando)}`}
-                style={{ minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name="close" size={18} color={t.text3} />
-              </Pressable>
-            ) : null}
-          </View>
-        ))}
-        {/* Marcar vira estado: verde, com a marca, como a pastilha que fica. */}
-        <PastilhaTocavel t={t} label="Tomado agora"
-          fg={t.state.okDeep} bg={t.state.okBg} border={t.state.okBorder}
-          onPress={marcar} />
-      </View>
-
-      {/* ── Os outros dias ──────────────────────────────────────────────── */}
-      {tomas.some(tm => !hoje.includes(tm)) ? (
-        <View style={{ gap: S.sm }}>
-          <Label t={t}>Antes de hoje</Label>
-          {tomas.filter(tm => !hoje.includes(tm)).slice(0, 8).map(tm => (
-            <Text key={tm.id} style={{ fontFamily: FONT.ui, fontSize: 12.5, color: t.text3 }}>
-              {`${dayLabel(require('../medicacao').diaDoInstante(tm.quando))} · ${horaDoInstante(tm.quando)} · ${tm.por}`}
-            </Text>
-          ))}
-        </View>
+      {/* Um só botão compacto para tudo o que se altera — e só quando algo
+          mudou (o padrão do membro, na Gestão). Sem plano, quem guarda é o
+          rodapé. */}
+      {p && mudou ? (
+        <BotaoCompacto t={t} tom="comum" label="Guardar alterações"
+          etiqueta="Guardar as alterações à receita" onPress={guardar} />
       ) : null}
 
       {erro ? (
@@ -158,10 +274,17 @@ export default function TomasDaReceita({ t, user, record, recipe, onClose }) {
         <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.state.okTexto }}>{aviso}</Text>
       ) : null}
 
-      <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Fechar as tomas"
-        style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '500', color: t.text2 }}>Fechar</Text>
-      </Pressable>
+      {/* O botão principal vai para o rodapé FIXO da folha (`useAcaoDaFolha`) e
+          muda com o estado: sem plano, definir o plano é o que falta; com
+          plano, marcar a toma é a ação de todos os dias. Botão comum nos dois
+          casos: acrescenta, não se desfaz nada. */}
+      {useAcaoDaFolha(p
+        ? <Primary comum t={t} label="Tomado agora"
+            sub={TODAY_KEY > p.fim ? 'O plano já terminou' : `${hoje.length + 1}.ª de ${p.frequencia} hoje · fica em nome de ${user}`}
+            onPress={marcar} />
+        : <Primary comum t={t} label="Definir plano"
+            sub={planoPreenchido ? `${Number(rascunho.frequency) * Number(rascunho.durationDays)} doses · a partir de ${dayLabel(record.day)}` : 'Diga as tomas por dia e os dias'}
+            disabled={!planoPreenchido} onPress={guardar} />)}
     </View>
   );
 }

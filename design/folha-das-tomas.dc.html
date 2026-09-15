@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A folha das tomas</title>
+<style>
+  :root { --pagina: #F6F7F9; --cartao: #FCFCFD; --borda: #D9D9D9; --div: #E7E9EE; --sub: #F3F4F6; --t1: #262626; --t2: #3B3F48; --t3: #656C7C;
+    --ac: #1D5FA8; --acfg: #1A55A0; --acbrd: #2C6FBE; --acbg: #E6EEF8; --chrome: #0F2B4C;
+    --ok: #52C41A; --okbg: #EEF9E6; --oktx: #2F7A0E; --warn: #FAAD14; --warnbg: #FFF7E0; --warndeep: #7A5200; --err: #FF4D4F; --errtx: #B3261E; }
+  body { margin: 0; background: var(--pagina); color: var(--t1); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--t3); margin: 0 0 20px; max-width: 84ch; }
+  h2.parte { font-size: 16px; margin: 28px 0 10px; color: var(--acfg); border-bottom: 1px solid var(--borda); padding-bottom: 6px; }
+  .grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; }
+  section { background: var(--cartao); border: 1px solid var(--borda); border-radius: 10px; padding: 16px; display: grid; gap: 12px; align-content: start; }
+  section h2 { margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  section h2 small { font-weight: 500; font-size: 11px; color: var(--t3); letter-spacing: .04em; text-transform: uppercase; }
+  section.rec { border-color: var(--ac); box-shadow: 0 0 0 3px var(--acbg); }
+  section.mau { border-color: var(--err); }
+  /* a folha, como a app a desenha: cabeçalho fixo, corpo que rola, rodapé fixo */
+  .folha { border: 1px solid var(--borda); border-radius: 14px 14px 0 0; background: var(--cartao); width: 355px; box-sizing: border-box; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; height: 620px; box-shadow: 0 -6px 18px rgba(0,0,0,.10); }
+  .cab { padding: 14px 16px 10px; display: flex; align-items: flex-start; gap: 10px; }
+  .cab b { font-size: 18px; display: block; } .cab small { display: block; font-size: 11.5px; color: var(--t3); }
+  .cab .x { margin-left: auto; color: var(--t3); font-size: 16px; }
+  .corpo { padding: 4px 16px 12px; display: grid; gap: 14px; overflow: hidden; align-content: start; position: relative; }
+  .corpo::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 26px; background: linear-gradient(transparent, var(--cartao)); }
+  .rodape { border-top: 1px solid var(--div); padding: 12px 16px; background: var(--cartao); display: grid; gap: 8px; }
+  .label { font-size: 11.5px; color: var(--t3); font-weight: 600; }
+  .grupo { display: grid; gap: 6px; }
+  .campo { min-height: 40px; border: 1px solid var(--borda); border-radius: 8px; background: var(--cartao); padding: 0 12px; display: flex; align-items: center; font-size: 13px; color: var(--t2); }
+  .campo.vazio { color: var(--t3); }
+  .num { display: flex; gap: 6px; } .num .campo { flex: 1; justify-content: center; } .num i { width: 40px; min-height: 40px; border: 1px solid var(--borda); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--acfg); font-weight: 700; font-style: normal; }
+  .primario { min-height: 48px; border-radius: 8px; border: 1px solid var(--acbrd); background: var(--acbg); color: var(--acfg); font-weight: 700; font-size: 14px; display: grid; place-items: center; text-align: center; line-height: 1.2; padding: 6px; }
+  .primario small { font-weight: 500; font-size: 11px; color: var(--acfg); opacity: .85; }
+  .primario.tracejado { border-style: dashed; }
+  .compacto { min-height: 40px; border-radius: 8px; border: 1px solid var(--acbrd); background: var(--acbg); color: var(--acfg); font-weight: 600; font-size: 12.5px; display: grid; place-items: center; }
+  .pastilha { min-height: 40px; border-radius: 8px; border: 1px solid var(--ok); background: var(--okbg); color: var(--oktx); font-weight: 600; font-size: 12.5px; display: grid; place-items: center; }
+  .linha { display: flex; align-items: center; gap: 10px; min-height: 44px; border-bottom: 1px solid var(--div); font-size: 13px; color: var(--t2); }
+  .linha:last-child { border-bottom: 0; }
+  .linha .hora { color: var(--t3); font-size: 12px; width: 40px; }
+  .linha .bola { width: 28px; height: 28px; border-radius: 999px; background: #7B61FF; color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; flex: none; }
+  .linha small { display: block; color: var(--t3); font-size: 11px; }
+  .linha .dir { margin-left: auto; color: var(--t3); font-size: 12px; }
+  .linha .pill { margin-left: auto; font-size: 10.5px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--ok); background: var(--okbg); color: var(--oktx); font-weight: 600; }
+  .linha .x { color: var(--t3); width: 32px; text-align: center; }
+  .estado { display: grid; gap: 6px; }
+  .barra { height: 6px; border-radius: 3px; background: var(--div); overflow: hidden; } .barra i { display: block; height: 100%; width: 36%; background: var(--ac); }
+  .estado small { color: var(--t3); font-size: 12px; }
+  .aviso { border: 1px solid var(--warn); background: var(--warnbg); color: var(--warndeep); border-radius: 8px; padding: 8px 10px; font-size: 12px; }
+  .texto { font-size: 12.5px; color: var(--t3); }
+  .fechar { text-align: center; color: var(--t2); font-size: 13px; padding: 10px; }
+  .divisoria { height: 1px; background: var(--div); }
+  .apagar { min-height: 44px; border: 1px solid var(--err); border-radius: 8px; color: var(--errtx); font-weight: 600; font-size: 13px; display: grid; place-items: center; }
+  dl { margin: 0; display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; font-size: 12.5px; }
+  dt { color: var(--t3); font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding-top: 2px; }
+  dd { margin: 0; color: var(--t2); }
+  code { background: var(--div); padding: 0 4px; border-radius: 3px; font-size: 11.5px; }
+  .mede { font-size: 12px; color: var(--t3); display: grid; gap: 2px; }
+  .mede b { color: var(--t2); }
+  .nota { font-size: 12.5px; color: var(--t2); background: var(--sub); border-radius: 8px; padding: 10px 12px; }
+  ul.lista { margin: 0; padding-left: 18px; font-size: 13px; color: var(--t2); display: grid; gap: 4px; }
+</style>
+</head>
+<body>
+<h1>A folha das tomas — o que está e três desenhos</h1>
+<p class="sub">«Este layout não me parece consistente com o resto da app» (15/09/2026). Tem razão, e mede-se: a folha das tomas é a única
+folha da app com um botão principal <b>dentro do corpo</b> e o rodapé fixo vazio, a única com um «Fechar» escrito (todas as outras fecham no ×),
+e usa <b>quatro formas de botão</b> para quatro ações — pastilha verde, botão compacto, botão comum, texto. A irmã dela é a folha
+<b>Gerir Meta</b>: estado em cima, secções com etiqueta, o botão principal no rodapé, o resto por baixo separado por uma régua.</p>
+
+<h2 class="parte">O que está hoje</h2>
+<div class="grelha">
+  <section class="mau">
+    <h2>Hoje <small>sete divergências</small></h2>
+    <div class="folha">
+      <div class="cab"><div><b>Xarope para a tosse</b><small>Léo · as tomas</small></div><span class="x">×</span></div>
+      <div class="corpo">
+        <div class="grupo"><div class="label">Medicamento</div><div class="campo">Xarope para a tosse</div></div>
+        <div class="grupo"><div class="label">Notas</div><div class="campo vazio">Ex: tomar depois do jantar</div></div>
+        <div class="grupo"><div class="label">Plano de tomas</div><div class="texto">Sem plano ainda. Diga quantas tomas por dia e durante quantos dias — a caixa é opcional.</div></div>
+        <div class="grupo"><div class="label">Por dia</div><div class="num"><i>−</i><div class="campo">2</div><i>+</i></div></div>
+        <div class="grupo"><div class="label">Dias</div><div class="num"><i>−</i><div class="campo">14</div><i>+</i></div></div>
+        <div class="grupo"><div class="label">Caixa</div><div class="num"><i>−</i><div class="campo">20</div><i>+</i></div></div>
+        <div class="compacto">Definir plano</div>
+        <div class="grupo"><div class="label">Agenda</div><div class="primario tracejado">Pôr as tomas na Agenda<small>Defina o plano primeiro</small></div></div>
+        <div class="grupo"><div class="label">Hoje · 0 tomas</div><div class="texto">Ainda nenhuma toma marcada hoje.</div></div>
+        <div class="pastilha">✓ Tomado agora</div>
+        <div class="fechar">Fechar</div>
+      </div>
+      <div class="rodape" style="color: var(--t3); font-size: 12px; text-align: center;">(rodapé fixo vazio)</div>
+    </div>
+    <ul class="lista">
+      <li>O botão comum «Pôr as tomas na Agenda» vive no corpo; o rodapé fixo, onde todas as folhas põem a ação, está vazio (regra 9 da coerência).</li>
+      <li>«Fechar» escrito no fim — nenhuma outra folha o tem; o × já fecha.</li>
+      <li>Quatro formas para quatro ações: pastilha verde («Tomado agora»), compacto («Definir plano»), comum tracejado (Agenda), texto («Fechar»).</li>
+      <li>A ação de todos os dias — marcar a toma — é a pastilha mais pequena e está no fundo, depois de rolar por cinco campos.</li>
+      <li>As tomas de hoje são linhas ad hoc (pastilha + texto + ×), não a <code>Linha</code> da app (hora · bola de quem · título).</li>
+      <li>Duas camadas da mesma etiqueta: «Plano de tomas» é um <code>Label</code>, e «Por dia», «Dias», «Caixa» por baixo também.</li>
+      <li>O estado da folha é uma frase; nas metas é uma barra com números.</li>
+    </ul>
+  </section>
+</div>
+
+<h2 class="parte">Três desenhos</h2>
+<div class="grelha">
+  <!-- A -->
+  <section class="rec">
+    <h2>A · A folha de gerir <small>recomendada</small></h2>
+    <div class="folha">
+      <div class="cab"><div><b>Xarope para a tosse</b><small>Léo · Pediatria, 03/09</small></div><span class="x">×</span></div>
+      <div class="corpo">
+        <div class="estado"><div class="barra"><i></i></div><small>Dia 5 de 14 · 10 de 28 doses · a caixa chega ao fim</small></div>
+        <div class="grupo"><div class="label">Hoje · 1 toma de 2</div>
+          <div class="linha"><span class="hora">08:10</span><span class="bola">A</span><div>tomado<small>António</small></div><span class="x">×</span></div>
+        </div>
+        <div class="grupo"><div class="label">Agenda</div>
+          <div class="linha"><div>Pôr as tomas na Agenda<small>9 dias a partir de hoje · só adultos</small></div><span class="dir">›</span></div>
+        </div>
+        <div class="grupo"><div class="label">Receita</div>
+          <div class="campo">Xarope para a tosse</div>
+          <div class="campo vazio">Notas · ex: tomar depois do jantar</div>
+        </div>
+        <div class="grupo"><div class="label">Tomas por dia</div><div class="num"><i>−</i><div class="campo">2</div><i>+</i></div></div>
+        <div class="grupo"><div class="label">Duração em dias</div><div class="num"><i>−</i><div class="campo">14</div><i>+</i></div></div>
+        <div class="grupo"><div class="label">Unidades na caixa</div><div class="num"><i>−</i><div class="campo">20</div><i>+</i></div></div>
+        <div class="compacto">Guardar alterações</div>
+      </div>
+      <div class="rodape"><div class="primario">Tomado agora<small>2.ª de 2 hoje · fica em nome de António</small></div></div>
+    </div>
+    <dl>
+      <dt>Rodapé</dt><dd>«Tomado agora» — a ação de todos os dias, fixa, sempre à mão, no botão comum (acrescenta uma linha, não se desfaz nada). Desliga-se com o plano por definir, e diz porquê.</dd>
+      <dt>Estado</dt><dd>Barra + números, como a meta: dia do plano, doses, e o aviso da caixa em âmbar quando não chega.</dd>
+      <dt>Hoje</dt><dd>Uma <code>Linha</code> por toma: hora · bola de quem · «tomado» · × para quem marcou.</dd>
+      <dt>Agenda</dt><dd>Uma <code>Linha</code> com seta — leva à ação, não é um botão a competir com o do rodapé. Quando já está na Agenda, diz «Na Agenda · só adultos» sem seta.</dd>
+      <dt>Receita</dt><dd>Nome, notas, plano — os campos da folha de criar, com UM «Guardar alterações» compacto que só aparece quando algo mudou (o padrão do membro na Gestão).</dd>
+      <dt>Sai</dt><dd>O «Fechar» escrito, a pastilha verde, o botão comum no corpo, a frase «Sem plano ainda».</dd>
+    </dl>
+    <div class="mede"><b>Medido</b><span>Formas de botão: 4 → 2 (comum no rodapé, compacto no corpo).</span><span>Marcar uma toma: 1 toque sem rolar (era rolar 5 campos + 1 toque).</span><span>Alturas: hoje 3 secções de ação + 5 campos + 2 botões no corpo; A: 1 estado + 2 listas + 5 campos + 1 compacto, e o rodapé.</span></div>
+  </section>
+
+  <!-- B -->
+  <section>
+    <h2>B · Duas folhas <small>agir aqui, alterar noutra</small></h2>
+    <div class="folha">
+      <div class="cab"><div><b>Xarope para a tosse</b><small>Léo · Pediatria, 03/09</small></div><span class="x">×</span></div>
+      <div class="corpo">
+        <div class="estado"><div class="barra"><i></i></div><small>Dia 5 de 14 · 10 de 28 doses · 2 por dia · caixa de 20</small></div>
+        <div class="grupo"><div class="label">Hoje · 1 toma de 2</div>
+          <div class="linha"><span class="hora">08:10</span><span class="bola">A</span><div>tomado<small>António</small></div><span class="x">×</span></div>
+        </div>
+        <div class="grupo"><div class="label">Antes de hoje</div>
+          <div class="linha"><span class="hora">21:05</span><span class="bola" style="background:#1D9E75">R</span><div>tomado<small>ontem · Rita</small></div></div>
+          <div class="linha"><span class="hora">08:30</span><span class="bola">A</span><div>tomado<small>ontem · António</small></div></div>
+        </div>
+        <div class="grupo"><div class="label">Agenda</div>
+          <div class="linha"><div>Pôr as tomas na Agenda<small>9 dias a partir de hoje · só adultos</small></div><span class="dir">›</span></div>
+        </div>
+        <div class="divisoria"></div>
+        <div class="linha"><div>Alterar a receita<small>nome, notas, tomas por dia, dias, caixa</small></div><span class="dir">›</span></div>
+      </div>
+      <div class="rodape"><div class="primario">Tomado agora<small>2.ª de 2 hoje · fica em nome de António</small></div></div>
+    </div>
+    <dl>
+      <dt>Esta folha</dt><dd>Só o que se faz todos os dias: estado, tomas de hoje e de antes, Agenda, e o rodapé «Tomado agora».</dd>
+      <dt>A outra</dt><dd>«Alterar a receita ›» abre uma segunda folha, «Editar Receita», com nome, notas e o plano, e «Guardar alterações» no rodapé — como Envelopes → Editar Envelope na Gestão.</dd>
+      <dt>Ganha</dt><dd>A folha do dia a dia cabe sem rolar; a de editar é igual a todas as «Gerir…».</dd>
+      <dt>Custa</dt><dd>Uma folha em cima de outra (a app já o faz na Gestão, mas é a única). Definir o plano pela primeira vez leva dois toques a mais.</dd>
+    </dl>
+    <div class="mede"><b>Medido</b><span>Formas de botão: 2 (comum no rodapé, linhas com seta).</span><span>Marcar uma toma: 1 toque. Alterar o plano: 2 toques + campos + guardar.</span></div>
+  </section>
+
+  <!-- C -->
+  <section>
+    <h2>C · Acordeão <small>alterar dobrado, na mesma folha</small></h2>
+    <div class="folha">
+      <div class="cab"><div><b>Xarope para a tosse</b><small>Léo · Pediatria, 03/09</small></div><span class="x">×</span></div>
+      <div class="corpo">
+        <div class="estado"><div class="barra"><i></i></div><small>Dia 5 de 14 · 10 de 28 doses · a caixa chega ao fim</small></div>
+        <div class="grupo"><div class="label">Hoje · 1 toma de 2</div>
+          <div class="linha"><span class="hora">08:10</span><span class="bola">A</span><div>tomado<small>António</small></div><span class="x">×</span></div>
+        </div>
+        <div class="grupo"><div class="label">Agenda</div>
+          <div class="linha"><div>Pôr as tomas na Agenda<small>9 dias a partir de hoje · só adultos</small></div><span class="dir">›</span></div>
+        </div>
+        <div class="linha" style="border-bottom:0"><div>Alterar a receita<small>Xarope para a tosse · 2 por dia · 14 dias · caixa de 20</small></div><span class="dir">⌄</span></div>
+        <div style="border-left: 2px solid var(--acbg); padding-left: 12px; display: grid; gap: 10px;">
+          <div class="campo">Xarope para a tosse</div>
+          <div class="campo vazio">Notas · ex: tomar depois do jantar</div>
+          <div class="grupo"><div class="label">Tomas por dia</div><div class="num"><i>−</i><div class="campo">2</div><i>+</i></div></div>
+          <div class="compacto">Guardar alterações</div>
+        </div>
+      </div>
+      <div class="rodape"><div class="primario">Tomado agora<small>2.ª de 2 hoje · fica em nome de António</small></div></div>
+    </div>
+    <dl>
+      <dt>Como</dt><dd>A de cima é a A; a secção «Receita» fica dobrada numa linha que resume o plano e abre no lugar, como «Adicionar receita» na consulta.</dd>
+      <dt>Ganha</dt><dd>A folha abre curta; quem só vem marcar não vê campos.</dd>
+      <dt>Custa</dt><dd>Mais um estado (aberto/fechado) para decorar; a linha-resumo repete o que a barra do estado já diz; um acordeão dentro de uma folha que rola é o que a Saúde já tem e o dono achou pesado.</dd>
+    </dl>
+    <div class="mede"><b>Medido</b><span>Formas de botão: 2. Marcar: 1 toque. Alterar: 1 toque para abrir + campos + guardar.</span></div>
+  </section>
+</div>
+
+<h2 class="parte">O que fica igual nos três</h2>
+<p class="nota">O rodapé fixo leva «Tomado agora» (botão comum: acrescenta uma linha, não se desfaz nada — a mesma razão do «Marcar como paga» das contas fixas);
+o «Fechar» escrito sai; as tomas são <code>Linha</code> (hora · bola · «tomado»); a Agenda é uma linha com seta; o estado é barra + números como na meta;
+o aviso da caixa fica em âmbar por baixo da barra. A recomendação é a <b>A</b>: é a folha «Gerir…» que a app já tem seis vezes, sem folha em cima de folha nem acordeão.</p>
+</body>
+</html>

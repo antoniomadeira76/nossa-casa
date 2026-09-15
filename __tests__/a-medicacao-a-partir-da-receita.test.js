@@ -217,7 +217,10 @@ describe('⚠ a medicação: os ecrãs', () => {
     expect(texto()).toContain('1 toma por dia · 14 dias · caixa de 20');
     tocar(r, 'Tomas de Ferro 30 mg');
     let tx = texto();
-    expect(tx).toContain('Plano de tomas');
+    // A folha é a «Gerir…» da app desde 15/09/2026 (desenho A de
+    // design/folha-das-tomas.dc.html): estado em cima, receita em baixo.
+    expect(tx).toContain('Receita');
+    expect(tx).toMatch(/Dia \d+ de 14 · 0 de 14 doses/);
     expect(tx).toContain('Pôr as tomas na Agenda');
     expect(tx).toContain('Ainda nenhuma toma marcada hoje');
     tocar(r, 'Tomado agora');

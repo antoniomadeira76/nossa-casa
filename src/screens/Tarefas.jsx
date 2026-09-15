@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { subtituloDaTarefa, TODAY_KEY } from '../format';
 
-import { SectionTitle, Linha, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe, BotaoCompacto } from '../ui';
+import { SectionTitle, Linha, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe, BotaoCompacto, NumField } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -38,14 +38,36 @@ export default function Tarefas({ t, user, abrir }) {
   const trocas = trocasDeHoje();
   const [filter, setFilter] = useState('Todos');
   const [manage, setManage] = useState(abrir || null);
-  React.useEffect(() => { if (abrir) setManage(abrir); }, [abrir]);
+  React.useEffect(() => { if (abrir) { setManage(abrir); setRascunho({ title: null, pts: null }); } }, [abrir]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [aApagar, setAApagar] = useState(null);
+  // O rascunho do TÍTULO e dos PONTOS da tarefa aberta (15/09/2026 — «quando se
+  // faz editar, o título não tem opção de alterar»). `null` é «ainda não se
+  // tocou»: mostra-se o da tarefa. Os outros campos aplicam-se ao toque, como
+  // sempre; estes dois juntam-se e vão no «Guardar alterações» — aplicar a
+  // cada tecla era uma escrita no servidor por cada letra do nome.
+  const [rascunho, setRascunho] = useState({ title: null, pts: null });
 
   const all = allTasks();
   const shown = filter === 'Todos' ? all : all.filter(x => x.who === filter);
   const pg = usePaged(shown, 5);
   const task = all.find(x => x.id === manage);
+
+  const tituloDoRascunho = task ? (rascunho.title ?? task.title) : '';
+  const pontosDoRascunho = task ? (rascunho.pts ?? (task.pts || 0)) : 0;
+  const rascunhoMudou = !!task && (tituloDoRascunho.trim() !== task.title || pontosDoRascunho !== (task.pts || 0));
+  const fecharTarefa = () => { setManage(null); setRascunho({ title: null, pts: null }); };
+  const guardarTarefa = () => {
+    if (!task) return;
+    if (!tituloDoRascunho.trim()) return;
+    if (rascunhoMudou) {
+      editarTarefa(task.id, {
+        ...(tituloDoRascunho.trim() !== task.title ? { title: tituloDoRascunho.trim() } : {}),
+        ...(pontosDoRascunho !== (task.pts || 0) ? { pts: pontosDoRascunho } : {}),
+      });
+    }
+    fecharTarefa();
+  };
 
   // A tarefa que está a ser apagada, e o que ela já rendeu.
   //
@@ -208,8 +230,36 @@ export default function Tarefas({ t, user, abrir }) {
       ) : null}
 
       {task ? (
-        <Sheet t={t} title={task.title} sub={subtituloDaTarefa(task)} onClose={() => setManage(null)}
-          action={<Primary t={t} comum label="Guardar alterações" onPress={() => setManage(null)} />}>
+        <Sheet t={t} title={task.title} sub={subtituloDaTarefa(task)} onClose={fecharTarefa}
+          action={<Primary t={t} comum label="Guardar alterações"
+            sub={!tituloDoRascunho.trim() ? 'Escreva um título para a tarefa' : rascunhoMudou ? 'O título e os pontos ficam como escreveu' : null}
+            disabled={!tituloDoRascunho.trim()} onPress={guardarTarefa} />}>
+          <View style={{ gap: S.md }}>
+            <Label t={t}>Título da tarefa</Label>
+            <TextInput accessibilityLabel="Título da tarefa"
+              value={tituloDoRascunho}
+              onChangeText={(v) => setRascunho(r => ({ ...r, title: v }))}
+              placeholder="Ex: Lavar a louça"
+              placeholderTextColor={t.text3}
+              maxLength={60}
+              style={{
+                minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body,
+                fontSize: 15, color: t.text2, borderRadius: R.row, borderWidth: 1,
+                borderColor: t.border, backgroundColor: t.card,
+              }}
+            />
+          </View>
+
+          {/* Só se os pontos estiverem ligados — a mesma condição da folha de
+              criar. */}
+          {pontosNasTarefas ? (
+            <View style={{ gap: S.md }}>
+              <Label t={t}>Pontos de bónus</Label>
+              <NumField t={t} value={pontosDoRascunho} onChange={(v) => setRascunho(r => ({ ...r, pts: v }))}
+                step={1} min={0} max={99} suffix={false} rotulo="Pontos de bónus" />
+            </View>
+          ) : null}
+
           <View style={{ gap: S.md }}>
             <Label t={t}>Urgência</Label>
             <Segmented t={t} small value={task.urgency}

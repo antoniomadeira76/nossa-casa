@@ -186,7 +186,17 @@ export default function ListaArrastavel({
       // ⚠ Na web o scroll do dedo é do navegador e o PanResponder não o
       // trava. Enquanto está armado, `touchAction: none` diz ao navegador
       // para não o fazer — senão a página rolava por baixo do arrasto.
-      style={Platform.OS === 'web' && armado ? { touchAction: 'none' } : null}>
+      //
+      // ⚠ E a SELEÇÃO de texto é dele também (15/09/2026 — «nos telemóveis
+      // quando se arrasta uma tarefa ou uma compra acaba sempre por selecionar
+      // texto»): a pressão longa que arma é, para o navegador do telemóvel, o
+      // gesto de começar a selecionar, e o arrasto a seguir estendia a seleção
+      // pelo título da linha abaixo. `userSelect: none` sempre — e não só
+      // armado, porque a seleção começa ANTES de armar — e sem o balão de
+      // «Copiar» do iOS (`WebkitTouchCallout`).
+      style={Platform.OS === 'web'
+        ? { userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none', ...(armado ? { touchAction: 'none' } : {}) }
+        : null}>
       {itens.map((x, j) => {
         const eEsta = armado === x.id;
         return (

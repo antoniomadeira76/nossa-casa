@@ -4,14 +4,15 @@ import CampoData from '../CampoData';
 import * as ImagePicker from 'expo-image-picker';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { EUR, plural, warrantyDaysLeft, chaveDeDMY, dmyDeChave, TODAY_KEY } from '../format';
-import { Label, Primary } from '../ui';
+import { plural, warrantyDaysLeft, chaveDeDMY, dmyDeChave, TODAY_KEY } from '../format';
+import { Label, Primary, Choice, NumField } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
 import { documentoDaFatura, nomeDoFicheiroDaFatura } from '../exportar-equipamento';
 import { lerComoDataURI } from '../ler-imagem';
 import { guardarPDF } from '../guardar-ficheiro';
+import { CATEGORIAS_DE_EQUIPAMENTO } from '../categorias-de-equipamento';
 
 // Estado da garantia: a mesma regra de três estados da lista, para a ficha e a
 // lista nunca discordarem.
@@ -39,6 +40,31 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
   const [manut, setManut] = useState(null);   // rascunho da manutenção
   // A exportação da fatura: `null` parada, `'a preparar'`, ou a frase do fim.
   const [exportacao, setExportacao] = useState(null);
+  // O que se altera (15/09/2026 — «quando se faz editar, o título não tem
+  // opção de alterar»): o nome, a categoria, o preço, a data de compra e o fim
+  // da garantia, como a ficha do contrato. Um rascunho, e vai de uma vez no
+  // «Guardar alterações»; as fotografias e a manutenção continuam a ir por
+  // si — duas escritas à mesma linha no mesmo tique é a classe 27.
+  const [form, setForm] = useState({
+    name: equip.name || '', cat: equip.cat || CATEGORIAS_DE_EQUIPAMENTO[0],
+    price: typeof equip.price === 'number' ? equip.price : null,
+    bought: equip.bought || '', warrantyEnd: equip.warrantyEnd || '',
+  });
+  const precoAntes = typeof equip.price === 'number' ? equip.price : null;
+  const mudou = form.name.trim() !== (equip.name || '')
+    || form.cat !== (equip.cat || CATEGORIAS_DE_EQUIPAMENTO[0])
+    || (form.price ?? null) !== precoAntes
+    || form.bought !== (equip.bought || '')
+    || form.warrantyEnd !== (equip.warrantyEnd || '');
+  const guardar = () => {
+    if (!form.name.trim() || !mudou) return;
+    editEquip(equip.id, {
+      name: form.name.trim(), cat: form.cat,
+      price: form.price ?? 0,
+      bought: form.bought, warrantyEnd: form.warrantyEnd,
+    });
+    onClose();
+  };
 
   const dias = warrantyDaysLeft(equip);
   const e = estado(t, dias, equip.warrantyEnd);
@@ -184,18 +210,57 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
           </View>
         </View>
 
-        {/* Compra */}
-        <View style={{ borderRadius: R.card, backgroundColor: t.subtle, paddingHorizontal: 14 }}>
-          {/* Duas linhas, como na referência. A loja fica de fora de propósito. */}
-          {[['Preço de compra', typeof equip.price === 'number' ? EUR(equip.price) : '—'],
-            ['Data de compra', equip.bought || '—']].map(([k, v], i, arr) => (
-            <View key={k} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48,
-              borderBottomWidth: i === arr.length - 1 ? 0 : 1, borderBottomColor: t.divider }}>
-              <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13, color: t.text3 }}>{k}</Text>
-              <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>{v}</Text>
-            </View>
-          ))}
+        {/* ── Alterar ──────────────────────────────────────────────────────
+            Era um cartão só de leitura com o preço e a data de compra; agora
+            são os campos da folha de registar, preenchidos com o que está. A
+            loja fica de fora de propósito, como estava. */}
+        <View style={{ gap: S.sm }}>
+          <Label t={t}>Nome</Label>
+          <TextInput accessibilityLabel="Nome do equipamento"
+            value={form.name}
+            onChangeText={(v) => setForm(f => ({ ...f, name: v }))}
+            placeholder="Ex: Frigorífico LG"
+            placeholderTextColor={t.text3}
+            maxLength={60}
+            style={{ minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body, fontSize: 15,
+              color: t.text2, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
+              backgroundColor: t.card }} />
         </View>
+
+        <View style={{ gap: S.sm }}>
+          <Label t={t}>Categoria</Label>
+          <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
+            {CATEGORIAS_DE_EQUIPAMENTO.map(c => (
+              <Choice key={c} t={t} label={c} selected={form.cat === c}
+                onPress={() => setForm(f => ({ ...f, cat: c }))} />
+            ))}
+          </View>
+        </View>
+
+        <View style={{ gap: S.sm }}>
+          <Label t={t}>Preço de compra</Label>
+          {/* O campo de número da app: «−» e «+» de 10 €; vazio é «não se sabe». */}
+          <NumField t={t} vazio value={form.price} step={10} min={0} max={99999}
+            rotulo="Preço de compra em euros" placeholder="0,00 €"
+            onChange={(v) => setForm(f => ({ ...f, price: v }))} />
+        </View>
+
+        <View style={{ gap: S.sm }}>
+          <Label t={t}>Data de compra</Label>
+          {/* Uma compra não é no futuro. */}
+          <CampoData t={t} valor={chaveDeDMY(form.bought)} maximo={TODAY_KEY}
+            onChange={(k) => setForm(f => ({ ...f, bought: k ? dmyDeChave(k) : '' }))} />
+        </View>
+
+        <View style={{ gap: S.sm }}>
+          <Label t={t}>Fim da garantia</Label>
+          <CampoData t={t} valor={chaveDeDMY(form.warrantyEnd)}
+            onChange={(k) => setForm(f => ({ ...f, warrantyEnd: k ? dmyDeChave(k) : '' }))} />
+        </View>
+
+        <Primary comum t={t} label="Guardar alterações"
+          sub={!form.name.trim() ? 'Escreva o nome do equipamento' : !mudou ? 'Nada mudou' : 'A ficha fica como escreveu'}
+          disabled={!form.name.trim() || !mudou} onPress={guardar} />
 
         {/* Manutenção marcada, se houver */}
         {equip.maint ? (

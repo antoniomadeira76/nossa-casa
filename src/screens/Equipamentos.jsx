@@ -11,6 +11,7 @@ import FichaEquipamento from '../sheets/FichaEquipamento';
 import FichaContrato from '../sheets/FichaContrato';
 import NovoContrato from '../sheets/NovoContrato';
 import { estadoDoContrato, linhaDoContrato } from '../contratos';
+import { CATEGORIAS_DE_EQUIPAMENTO } from '../categorias-de-equipamento';
 
 // dd/mm/aaaa → milissegundos UTC. É o formato em que as datas são guardadas.
 const parseDMY = (s) => {
@@ -22,7 +23,9 @@ const fmtDMY = (ms) => {
   return `${pad2(d.getUTCDate())}/${pad2(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`;
 };
 
-const CATS = ['Eletrodomésticos', 'Aquecimento', 'Informática', 'Outros'];
+// As categorias vivem num módulo próprio desde 15/09/2026: a ficha também as
+// lê, para se poder mudar a categoria depois de registar.
+const CATS = CATEGORIAS_DE_EQUIPAMENTO;
 
 // Um número negativo de «dias de garantia» não se lê. Diga-se o que aconteceu.
 const warrantyLabel = (days) => {
