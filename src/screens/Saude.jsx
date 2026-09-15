@@ -252,7 +252,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
               tocou em «Ação» e não aconteceu nada. */}
           <Pressable accessibilityRole="button"
             accessibilityLabel={`${record.specialty}, ${record.member}${needsDec ? ' · precisa de ação' : ''}`}
-            accessibilityState={{ expanded }}
+            accessibilityState={{ expanded }} aria-expanded={expanded}
             accessibilityHint={expanded ? 'Toque para fechar' : 'Toque para ver notas, receitas e decidir'}
             onPress={() => setExpandedRecord(expanded ? null : record.id)}
             style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, minHeight: 44 }}>
@@ -961,7 +961,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
                   const escolhido = anexoForm.kind === k;
                   return (
                     <Pressable key={k} accessibilityRole="button" accessibilityLabel={k}
-                      accessibilityState={{ selected: escolhido }}
+                      accessibilityState={{ selected: escolhido }} aria-pressed={escolhido}
                       onPress={() => setAnexoForm(f => ({ ...f, kind: k,
                         // Só as receitas têm prazo. Trocar de tipo tem de
                         // limpar a validade, senão um exame ficava com data e
@@ -1280,7 +1280,7 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
                   borderRadius: R.row, backgroundColor: t.card, overflow: 'hidden' }}>
                   <Pressable accessibilityRole="button"
                     accessibilityLabel="Escolher a especialidade"
-                    accessibilityState={{ expanded: escolhendoEsp }}
+                    accessibilityState={{ expanded: escolhendoEsp }} aria-expanded={escolhendoEsp}
                     onPress={() => setEscolhendoEsp(v => !v)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
                       minHeight: 44, paddingHorizontal: S.md }}>
@@ -1300,7 +1300,7 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
                         <Pressable accessibilityRole="button"
                           key={spec}
                           accessibilityLabel={spec}
-                          accessibilityState={{ selected: form.specialty === spec }}
+                          accessibilityState={{ selected: form.specialty === spec }} aria-pressed={form.specialty === spec}
                           onPress={() => { setForm(f => ({ ...f, specialty: spec })); setEscolhendoEsp(false); }}
                           // ⚠ `divider` e não `subtle`. Medido no navegador:
                           // o `subtle` é #FAFAFA sobre uma caixa #FCFCFD —

@@ -206,9 +206,9 @@ export const Pill = ({ label, fg, bg, border }) => (
 // com o resto da folha. O contorno muda de cor, o fundo fica quieto, e o texto
 // não tem de trocar de cor com ele.
 export const Opcao = ({ t, titulo, detalhe, selected, onPress, disabled }) => (
-  <Pressable onPress={disabled ? undefined : onPress}
+  <Pressable onPress={disabled ? undefined : onPress} disabled={!!disabled}
     accessibilityRole="button" accessibilityLabel={titulo}
-    accessibilityState={{ selected: !!selected, disabled: !!disabled }}
+    accessibilityState={{ selected: !!selected, disabled: !!disabled }} aria-pressed={!!selected}
     style={({ pressed }) => ({
       minHeight: 48, borderRadius: R.row, paddingHorizontal: 14, paddingVertical: S.md,
       borderWidth: 1, borderColor: selected ? t.accent : t.border,
@@ -238,7 +238,7 @@ export const Opcao = ({ t, titulo, detalhe, selected, onPress, disabled }) => (
 // Só fora de linhas tocáveis — uma linha, um destino.
 export const Choice = ({ t, label, selected, onPress }) => (
   <Pressable onPress={onPress} accessibilityRole="button"
-    accessibilityLabel={label} accessibilityState={{ selected: !!selected }}
+    accessibilityLabel={label} accessibilityState={{ selected: !!selected }} aria-pressed={!!selected}
     style={({ pressed }) => ({
       minHeight: 44, paddingHorizontal: S.lg, borderRadius: R.row, borderWidth: 1,
       alignItems: 'center', justifyContent: 'center',
@@ -321,7 +321,7 @@ export const Segmented = ({ t, options, value, onChange, small }) => (
       return (
         <Pressable key={o.value} onPress={() => onChange(o.value)}
           accessibilityRole="button" accessibilityLabel={o.label}
-          accessibilityState={{ selected: on }}
+          accessibilityState={{ selected: on }} aria-pressed={on}
           // ⚠ O `small` valia 38 de altura, e era o ÚNICO efeito que tinha.
           //
           // Media 38 na Gestão, nas Tarefas e no Dinheiro — abaixo dos 44 do
@@ -356,7 +356,7 @@ export const Segmented = ({ t, options, value, onChange, small }) => (
 //
 // Medido no Perfil, com todos os alvos do ecrã: era o único abaixo de 44.
 export const Toggle = ({ t, on, onPress, label }) => (
-  <Pressable onPress={onPress} accessibilityRole="switch" accessibilityState={{ checked: on }}
+  <Pressable onPress={onPress} accessibilityRole="switch" accessibilityState={{ checked: on }} aria-checked={on}
     accessibilityLabel={label} hitSlop={10}
     style={{ minWidth: 46, minHeight: 44, alignItems: 'flex-end', justifyContent: 'center' }}>
     <View style={{ width: 46, height: 27, borderRadius: R.pill, padding: 3,
@@ -425,7 +425,11 @@ const rotuloDo = (t, { disabled, comum }) =>
   (disabled || comum ? t.actFg : '#FFFFFF');
 
 export const Primary = ({ t, label, sub, icon, onPress, disabled, comum }) => (
-  <Pressable onPress={disabled ? undefined : onPress} accessibilityRole="button"
+  // ⚠ A prop `disabled` do `Pressable`, e não um `aria-disabled` à mão: na web
+  // é o próprio `Pressable` que escreve o `aria-disabled` a partir dela (e
+  // sobrepõe-se a qualquer um que lhe passem), e é ela que tira o botão da
+  // ordem do TAB. O `onPress` já vinha desligado; faltava dizê-lo.
+  <Pressable onPress={disabled ? undefined : onPress} disabled={!!disabled} accessibilityRole="button"
     accessibilityLabel={sub ? `${label} — ${sub}` : label}
     accessibilityState={{ disabled: !!disabled }}
     style={({ pressed }) => ({
@@ -494,7 +498,7 @@ export function BotaoCompacto({ t, label, etiqueta, tom = 'contorno', disabled, 
     : tom === 'acento' ? '#FFFFFF'
       : tom === 'comum' ? t.actFg : t.text2;
   return (
-    <Pressable onPress={disabled ? undefined : onPress}
+    <Pressable onPress={disabled ? undefined : onPress} disabled={!!disabled}
       accessibilityRole="button" accessibilityLabel={etiqueta || label}
       accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => ({

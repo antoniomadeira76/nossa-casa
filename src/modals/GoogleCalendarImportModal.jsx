@@ -71,7 +71,7 @@ export default function GoogleCalendarImportModal({ t, events, onImportar, onIgn
           const on = !!selected[e.id];
           return (
             <Pressable key={e.id} onPress={() => toggleEvent(e.id)}
-              accessibilityRole="checkbox" accessibilityState={{ checked: on }}
+              accessibilityRole="checkbox" accessibilityState={{ checked: on }} aria-checked={on}
               accessibilityLabel={e.title}
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44,

@@ -63,7 +63,7 @@ export default function Cofre({ t, kid, onClose }) {
   const darBonus = () => vaultAdd(kid, bonus, 'bonus', 'Bónus', 'atribuído por si');
 
   const Acao = ({ label, icon, onPress, disabled, filled }) => (
-    <Pressable onPress={disabled ? undefined : onPress} accessibilityRole="button"
+    <Pressable onPress={disabled ? undefined : onPress} disabled={!!disabled} accessibilityRole="button"
       accessibilityLabel={label} accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => ({
         minHeight: 48, borderRadius: R.row, borderWidth: 1,

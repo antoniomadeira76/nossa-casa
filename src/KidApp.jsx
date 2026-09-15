@@ -168,11 +168,16 @@ function KidTaskRow({ t, task, kid, onPress }) {
   const isDone = !!s.done[task.id];
   const isPending = !isDone && !!s.pending[task.id];
 
+  // ⚠ Na web é o `aria-pressed` que diz o estado, e não o `aria-checked`: o
+  // papel aqui é `button`, e num botão que alterna o atributo é o `pressed` —
+  // o `checked` só vale num `checkbox`, num `radio` ou num `switch`. O «mixed»
+  // é a tarefa marcada pela criança e ainda por confirmar por um adulto.
   return (
     <Pressable onPress={isDone ? undefined : onPress} disabled={isDone}
       accessibilityRole="button"
       accessibilityLabel={task.title}
       accessibilityState={{ checked: isDone ? true : isPending ? 'mixed' : false, disabled: isDone }}
+      aria-pressed={isDone ? true : isPending ? 'mixed' : false}
       style={({ pressed }) => ({
         minHeight: 64, paddingHorizontal: 16, paddingVertical: 12,
         flexDirection: 'row', alignItems: 'center', gap: 16,
@@ -926,7 +931,7 @@ export default function KidApp({ kid, kidTab, setKidTab, onLogout }) {
           return (
             <Pressable key={x.key} onPress={() => { setPesquisa(null); setKidTab(x.key); }}
               accessibilityRole="tab" accessibilityLabel={x.label}
-              accessibilityState={{ selected: on }}
+              accessibilityState={{ selected: on }} aria-selected={on}
               style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
               <Icon name={x.icon} size={24} color={on ? '#FFFFFF' : onC} />
               <Text style={{

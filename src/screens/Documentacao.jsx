@@ -81,7 +81,7 @@ const AreaAberta = ({ t, g, corDo }) => {
           <View style={{ height: 1, backgroundColor: t.divider }} />
           <Pressable onPress={() => setAberto(v => !v)} accessibilityRole="button"
             accessibilityLabel={`O que mudou em ${g.area}`}
-            accessibilityState={{ expanded: aberto }}
+            accessibilityState={{ expanded: aberto }} aria-expanded={aberto}
             style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: S.md }}>
             <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 12.5, fontWeight: '600', color: t.text3 }}>
               {plural(g.itens.length, 'alteração desde então', 'alterações desde então')}
@@ -173,7 +173,7 @@ const Filtros = ({ t, quemHa, areasHa, quem, area, mudarQuem, mudarArea, MEMBERS
             return (
               <Pressable key={a} onPress={() => mudarArea(on ? null : a)} accessibilityRole="button"
                 accessibilityLabel={on ? `Deixar de mostrar só ${a}` : `Mostrar só ${a}`}
-                accessibilityState={{ selected: on }}
+                accessibilityState={{ selected: on }} aria-pressed={on}
                 style={({ pressed }) => ({ flex: 1, minWidth: 44, height: 44, borderRadius: R.row, borderWidth: 1,
                   alignItems: 'center', justifyContent: 'center',
                   backgroundColor: on ? t.accent : t.card, borderColor: on ? t.accent : t.border,

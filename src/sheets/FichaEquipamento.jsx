@@ -105,7 +105,7 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
     const tomTexto = perigo ? t.state.errTexto : t.actFg;
     return (
       <View style={{ gap: 4, ...(meio ? { flex: 1 } : {}) }}>
-        <Pressable onPress={desativado ? undefined : onPress} accessibilityRole="button"
+        <Pressable onPress={desativado ? undefined : onPress} disabled={!!desativado} accessibilityRole="button"
           accessibilityLabel={label} accessibilityState={{ disabled: !!desativado }}
           style={({ pressed }) => ({
             minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: S.sm,

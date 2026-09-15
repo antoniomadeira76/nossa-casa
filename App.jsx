@@ -938,7 +938,7 @@ function Shell() {
           return (
             <Pressable key={x.key} onPress={() => { setAbrirNoTab(null); setPesquisa(null); fecharVistas(); setTab(x.key); }}
               accessibilityRole="tab" accessibilityLabel={x.label}
-              accessibilityState={{ selected: on }}
+              accessibilityState={{ selected: on }} aria-selected={on}
               style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
               <Icon name={x.icon} size={22} color={on ? '#FFFFFF' : onC} />
               <Text style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '600',

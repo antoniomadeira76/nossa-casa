@@ -549,7 +549,7 @@ export default function Gestao({ t, user, onClose }) {
           ].map(({ key, label }) => (
             <Pressable key={key} onPress={() => setTab(key)}
               accessibilityRole="tab" accessibilityLabel={label}
-              accessibilityState={{ selected: tab === key }}
+              accessibilityState={{ selected: tab === key }} aria-selected={tab === key}
               style={{ minHeight: 44, minWidth: 44, paddingHorizontal: 10,
                 alignItems: 'center', justifyContent: 'flex-end', paddingBottom: S.sm,
                 borderBottomWidth: tab === key ? 2 : 0,

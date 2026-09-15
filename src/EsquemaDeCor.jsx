@@ -27,7 +27,7 @@ export default function EscolhaDeEsquema({ t, escolhido, onEscolher }) {
         const on = escolhido === i;
         return (
           <Pressable key={sc.name} onPress={() => onEscolher(i)}
-            accessibilityRole="button" accessibilityLabel={`Esquema ${sc.name}`} accessibilityState={{ selected: on }}
+            accessibilityRole="button" accessibilityLabel={`Esquema ${sc.name}`} accessibilityState={{ selected: on }} aria-pressed={on}
             style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
             {/* Dois tons: a cor de ação e a do cabeçalho. Um esquema são as
                 duas, e uma bolinha só não distingue os que partilham o acento.

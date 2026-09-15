@@ -183,7 +183,7 @@ export default function ImportarGoogle({ t, user, onClose }) {
               <Pressable key={e.id}
                 onPress={() => setEscolhidos(p => ({ ...p, [e.id]: !p[e.id] }))}
                 accessibilityRole="checkbox"
-                accessibilityState={{ checked: on }}
+                accessibilityState={{ checked: on }} aria-checked={on}
                 accessibilityLabel={`Trazer ${e.titulo}`}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
                   minHeight: 44, padding: 14, borderRadius: R.row,

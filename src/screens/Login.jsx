@@ -288,6 +288,7 @@ export default function Login({ t, onEnter }) {
               const hasPin = temPin(n);
               return (
                 <Pressable key={n} onPress={() => { if (hasPin) { setKid(n); setPin(''); setStep('pin'); } }}
+                  disabled={!hasPin}
                   accessibilityRole="button" accessibilityLabel={n} accessibilityState={{ disabled: !hasPin }}
                   style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: R.row, padding: 14,
                     minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 14, opacity: hasPin ? 1 : 0.55 }}>

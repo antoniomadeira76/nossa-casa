@@ -34,7 +34,7 @@ function GrelhaEnvelopes({ t, envelopes, livre, escolhido, onEscolher }) {
         return (
           <Pressable key={e.name} onPress={() => onEscolher(i)}
             accessibilityRole="button" accessibilityLabel={`${e.name} · livre ${EUR(livre(i))}`}
-            accessibilityState={{ selected: on }}
+            accessibilityState={{ selected: on }} aria-pressed={on}
             style={{ width: '47%', minHeight: 56, borderRadius: R.row, borderWidth: 1,
               paddingHorizontal: 12, justifyContent: 'center', gap: 2,
               borderColor: on ? t.accent : t.border,
@@ -792,7 +792,7 @@ export default function Dinheiro({ t, user, onEquip }) {
             <Label t={t}>Envelope</Label>
             {envelopes.map((e, i) => (
               <Pressable key={e.name} onPress={() => setExp(x => ({ ...x, env: i }))}
-                accessibilityRole="button" accessibilityLabel={e.name} accessibilityState={{ selected: exp.env === i }}
+                accessibilityRole="button" accessibilityLabel={e.name} accessibilityState={{ selected: exp.env === i }} aria-pressed={exp.env === i}
                 style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: 14,
                   borderColor: exp.env === i ? t.accent : t.border,
                   backgroundColor: exp.env === i ? t.accent : t.subtle,

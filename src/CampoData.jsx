@@ -165,7 +165,7 @@ export default function CampoData({ t, valor, onChange, placeholder = 'dd/mm/aaa
         <Pressable onPress={() => setAberto(a => !a)}
           accessibilityRole="button"
           accessibilityLabel={aberto ? 'Fechar o calendário' : 'Escolher no calendário'}
-          accessibilityState={{ expanded: aberto }}
+          accessibilityState={{ expanded: aberto }} aria-expanded={aberto}
           style={({ pressed }) => ({
             width: 46, alignItems: 'center', justifyContent: 'center',
             backgroundColor: aberto ? t.subtle : pressed ? t.subtle : 'transparent',
@@ -217,10 +217,10 @@ export default function CampoData({ t, valor, onChange, placeholder = 'dd/mm/aaa
                   const escolhido = chave === valor;
                   const fora = foraDoIntervalo(chave);
                   return (
-                    <Pressable key={di} onPress={() => { if (!fora) escolher(dia); }}
+                    <Pressable key={di} onPress={() => { if (!fora) escolher(dia); }} disabled={fora}
                       accessibilityRole="button"
                       accessibilityLabel={`${dia} de ${MONTHS[ym.m].toLowerCase()} de ${ym.y}`}
-                      accessibilityState={{ selected: escolhido, disabled: fora }}
+                      accessibilityState={{ selected: escolhido, disabled: fora }} aria-pressed={escolhido}
                       style={({ pressed }) => ({
                         flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center',
                         opacity: fora ? 0.25 : (pressed ? 0.6 : 1),
@@ -287,7 +287,7 @@ export default function CampoData({ t, valor, onChange, placeholder = 'dd/mm/aaa
                     <Pressable key={min} onPress={() => porHora(hp.h, min)}
                       accessibilityRole="button"
                       accessibilityLabel={`${doisDigitos(hp.h)}:${doisDigitos(min)}`}
-                      accessibilityState={{ selected: escolhido }}
+                      accessibilityState={{ selected: escolhido }} aria-pressed={escolhido}
                       style={({ pressed }) => ({
                         flex: 1, minHeight: 44, borderRadius: R.row, borderWidth: 1,
                         alignItems: 'center', justifyContent: 'center',

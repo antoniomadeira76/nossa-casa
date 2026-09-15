@@ -163,7 +163,7 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
             const on = mode === o.k;
             return (
               <Pressable key={o.k} onPress={() => mudarPreferencia(user, { aspeto: o.k })}
-                accessibilityRole="button" accessibilityLabel={`Aspeto ${o.label}`} accessibilityState={{ selected: on }}
+                accessibilityRole="button" accessibilityLabel={`Aspeto ${o.label}`} accessibilityState={{ selected: on }} aria-pressed={on}
                 style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1,
                   borderColor: on ? t.accent : t.border, backgroundColor: on ? t.accent : 'transparent',
                   alignItems: 'center', justifyContent: 'center' }}>

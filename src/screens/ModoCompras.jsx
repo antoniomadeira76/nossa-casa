@@ -128,7 +128,7 @@ export default function ModoCompras({ t, user, onClose }) {
             && naSeccao.every(i => stateOf(i) !== 'open');
           return (
             <Pressable key={x.i} onPress={() => setStep(x.i)} accessibilityRole="tab"
-              accessibilityLabel={x.label} accessibilityState={{ selected: on }}
+              accessibilityLabel={x.label} accessibilityState={{ selected: on }} aria-selected={on}
               style={rolam
                 ? { minWidth: 72, paddingHorizontal: S.xs, minHeight: 44, gap: 6, justifyContent: 'center' }
                 : { flex: 1, minHeight: 44, gap: 6, justifyContent: 'center' }}>

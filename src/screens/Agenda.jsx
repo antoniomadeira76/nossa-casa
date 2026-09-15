@@ -116,7 +116,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                   accessibilityRole="button"
                   // ⚠ `plural`: o rótulo lido em voz dizia «1 eventos» (09/09/2026).
                   accessibilityLabel={`${d.wd} ${d.dia}${d.n ? ` · ${plural(d.n, 'evento', 'eventos')}` : ''}`}
-                  accessibilityState={{ selected: hoje || escolhido }}
+                  accessibilityState={{ selected: hoje || escolhido }} aria-pressed={hoje || escolhido}
                   style={{ flex: 1, minHeight: 64, borderRadius: R.row, paddingVertical: 6,
                     alignItems: 'center', justifyContent: 'center', gap: 2,
                     backgroundColor: hoje || escolhido ? t.subtle : 'transparent',
@@ -185,7 +185,7 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                       }}
                       accessibilityRole="button"
                       accessibilityLabel={`${c.n} de ${MONTHS[ym.m].toLowerCase()}${c.evs.length ? ` · ${plural(c.evs.length, 'evento', 'eventos')}` : ''}`}
-                      accessibilityState={{ selected: on }}
+                      accessibilityState={{ selected: on }} aria-pressed={on}
                       style={{ flex: 1, minHeight: 46, borderRadius: R.row, alignItems: 'center',
                         justifyContent: 'center', gap: 4,
                         borderWidth: on ? 2 : 0, borderColor: t.accent,

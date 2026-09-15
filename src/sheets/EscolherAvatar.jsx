@@ -91,7 +91,7 @@ export default function EscolherAvatar({ t, user, onFeito, comFotografia = true 
                 <Pressable key={k} disabled={aGuardar}
                   onPress={() => guardar({ figura: k, usarFoto: false })}
                   accessibilityRole="button" accessibilityLabel={nomeDaFigura(k)}
-                  accessibilityState={{ selected: escolhida }}
+                  accessibilityState={{ selected: escolhida }} aria-pressed={escolhida}
                   style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center' }}>
                   <View style={{ width: BOLA, height: BOLA, borderRadius: R.pill,
                     backgroundColor: cor, alignItems: 'center', justifyContent: 'center',
@@ -110,7 +110,7 @@ export default function EscolherAvatar({ t, user, onFeito, comFotografia = true 
         <Etiqueta t={t}>Sem figura</Etiqueta>
         <Pressable disabled={aGuardar} onPress={() => guardar({ figura: '', usarFoto: false })}
           accessibilityRole="button" accessibilityLabel="A minha inicial"
-          accessibilityState={{ selected: !usarFoto && !figura }}
+          accessibilityState={{ selected: !usarFoto && !figura }} aria-pressed={!usarFoto && !figura}
           style={{ minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: S.lg,
             paddingHorizontal: S.lg, borderRadius: R.row,
             borderWidth: (!usarFoto && !figura) ? 2 : 1,
@@ -140,7 +140,7 @@ export default function EscolherAvatar({ t, user, onFeito, comFotografia = true 
                 onPress={() => guardar({ cor: c })}
                 accessibilityRole="button"
                 accessibilityLabel={dono ? `Cor de ${dono}, indisponível` : `Cor ${c}`}
-                accessibilityState={{ selected: escolhida, disabled: !!dono }}
+                accessibilityState={{ selected: escolhida, disabled: !!dono }} aria-pressed={escolhida}
                 style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center' }}>
                 <View style={{ width: 44, height: 44, borderRadius: R.pill, backgroundColor: c,
                   alignItems: 'center', justifyContent: 'center', opacity: dono ? 0.28 : 1,
@@ -166,7 +166,7 @@ export default function EscolherAvatar({ t, user, onFeito, comFotografia = true 
         {foto ? (
           <Pressable onPress={() => guardar({ usarFoto: !usarFoto })} disabled={aGuardar}
             accessibilityRole="button" accessibilityLabel="Usar a fotografia da conta Google"
-            accessibilityState={{ selected: usarFoto }}
+            accessibilityState={{ selected: usarFoto }} aria-pressed={usarFoto}
             style={{ minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: S.lg,
               paddingHorizontal: S.lg, borderRadius: R.row, borderWidth: usarFoto ? 2 : 1,
               borderColor: usarFoto ? t.accent : t.border, backgroundColor: t.card }}>
