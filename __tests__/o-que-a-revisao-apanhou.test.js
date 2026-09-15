@@ -164,7 +164,10 @@ describe('⚠ 4. a urgência e o prazo passam pela loja', () => {
   it('a loja sobe a urgência e o prazo pelo `alterarTarefa`', () => {
     const loja = semComentarios(ler('src/store.jsx'));
     expect(loja).toMatch(/sync\.alterarTarefa\(noServidor, \{ urgencia: n \}\)/);
-    expect(loja).toMatch(/sync\.alterarTarefa\(noServidor, \{ prazo: /);
+    // E a HORA vai junto desde 15/09/2026: só a data subia, e a leitura
+    // seguinte punha todas as tarefas com prazo a dizer «atrasada» às 00:00.
+    expect(loja).toMatch(/sync\.alterarTarefa\(noServidor, \{\s*prazo: /);
+    expect(loja).toMatch(/prazoHora: prazo && prazo\.time \? prazo\.time : null,/);
   });
   it('«Sem prazo» LIGA — para hoje às 18:00 — e desliga', () => {
     const { loja } = kidApp('Léo', null);

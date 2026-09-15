@@ -2687,7 +2687,20 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       if (!linha || !linha.confirmada) continue;
       const [idTarefa, diaISO] = chave.split('|');
       const t = porId[idTarefa];
-      if (!t || donoNoDia(t, diaISO ? `d${diaISO}` : TODAY_KEY) !== k) continue;
+      if (!t) continue;
+      // ⚠ QUEM MARCOU a linha ganha o ponto — e não quem tem a tarefa agora
+      // (15/09/2026). Reatribuir uma rotina diária ao fim de um mês movia
+      // trinta marcações confirmadas de uma criança para a outra de uma vez, e
+      // deixava o «por pagar» da primeira negativo. Um ponto ganho é de quem o
+      // ganhou; o `marcada_por` sabe-o e passou a descer do servidor.
+      //
+      // O ramo antigo fica para as linhas SEM `por` — as que desceram antes
+      // desta correção — e para as marcadas por um adulto em nome de uma
+      // criança, onde quem marca não é quem faz.
+      const marcou = linha.por;
+      const dono = (marcou && criancas.includes(marcou))
+        ? marcou : donoNoDia(t, diaISO ? `d${diaISO}` : TODAY_KEY);
+      if (dono !== k) continue;
       contadas.add(chave);
       n += t.pts || 0;
     }
@@ -3988,7 +4001,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       if (ses) sync.tarefaDaCasa({
         casa: ses.casa, titulo: t, atribuidoA,
         recorrencia: recur, pontos: Number(pts) || 0,
-        urgencia, prazo: dueKey || null,
+        urgencia, prazo: dueKey || null, prazoHora: dueTime || null,
       })
         // O id do servidor guarda-se para que marcar, alterar e apagar tenham
         // para onde ir. Sem ele, a tarefa fica partilhada e imutável.
@@ -4042,7 +4055,13 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       return { due };
     });
     const noServidor = tarefaNoServidor(id);
-    if (sync && noServidor) sync.alterarTarefa(noServidor, { prazo: prazo && prazo.key ? prazo.key : null }).catch(() => {});
+    // ⚠ A hora vai JUNTO (15/09/2026): só a data subia, e a leitura seguinte
+    // punha todas as tarefas com prazo às 00:00, ou seja «atrasadas» desde a
+    // meia-noite.
+    if (sync && noServidor) sync.alterarTarefa(noServidor, {
+      prazo: prazo && prazo.key ? prazo.key : null,
+      prazoHora: prazo && prazo.time ? prazo.time : null,
+    }).catch(() => {});
   };
 
   // O `id` de uma tarefa no servidor. Nulo enquanto ela for só local.

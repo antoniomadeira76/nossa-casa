@@ -540,7 +540,15 @@ export async function puxarCasa() {
     const dia = String(f.data || '').slice(0, 10);
     // Guarda-se o id da LINHA para se poder desmarcar: sem ele, desmarcar no
     // servidor não tinha o que apagar.
-    feitas[`${f.tarefa}|${dia}`] = { id: f.id, confirmada: !!f.confirmada_em };
+    // ⚠ E QUEM a marcou (15/09/2026). Sem isto, os pontos de sempre eram
+    // atribuídos a quem tem a tarefa AGORA: reatribuir uma rotina diária ao fim
+    // de um mês movia trinta marcações confirmadas de uma criança para a outra,
+    // e deixava o «por pagar» da primeira negativo. Um ponto ganho é de quem o
+    // ganhou — o `marcada_por` da linha sabia-o desde sempre e não subia.
+    feitas[`${f.tarefa}|${dia}`] = {
+      id: f.id, confirmada: !!f.confirmada_em,
+      por: nomeDoMembro[f.marcada_por] || '',
+    };
     // ⚠ Uma linha SEM `confirmada_em` é uma marcação de criança à espera de um
     // adulto: é `pending`, não `done`. Entrava em `done` — a criança marcava
     // no telemóvel dela e no da mãe a tarefa aparecia FEITA, sem ninguém a
@@ -1182,7 +1190,7 @@ export async function apagarEvento(idNoServidor) {
   return servidor.pb.collection('eventos').delete(idNoServidor);
 }
 
-export async function tarefaDaCasa({ casa, titulo, atribuidoA, recorrencia, pontos, urgencia, prazo }) {
+export async function tarefaDaCasa({ casa, titulo, atribuidoA, recorrencia, pontos, urgencia, prazo, prazoHora }) {
   return criarOuEnfileirarCasa('tarefas', {
     casa,
     titulo,
@@ -1193,7 +1201,7 @@ export async function tarefaDaCasa({ casa, titulo, atribuidoA, recorrencia, pont
     // ninguém os pediu.
     pontos: Number(pontos) || 0,
     urgencia: Number.isFinite(Number(urgencia)) ? Number(urgencia) : 1,
-    prazo: prazo ? isoDeChave(prazo) : null,
+    prazo: prazo ? isoComHora(prazo, prazoHora) : null,
   });
 }
 
@@ -1205,7 +1213,11 @@ export async function alterarTarefa(idNoServidor, campos) {
   if ('pontos' in campos) linha.pontos = Number(campos.pontos) || 0;
   if ('urgencia' in campos) linha.urgencia = Number(campos.urgencia) || 0;
   if ('recorrencia' in campos) linha.recorrencia = RECORRENCIA_NO_SERVIDOR[campos.recorrencia] || 'uma_vez';
-  if ('prazo' in campos) linha.prazo = campos.prazo ? isoDeChave(campos.prazo) : null;
+  // ⚠ COM a hora (15/09/2026). O ecrã tem um campo «Hora do prazo» e só a data
+  // subia: a leitura seguinte trazia «00:00» e punha TODAS as tarefas com prazo
+  // a dizer «atrasada» desde a meia-noite. O  já existia e era usado
+  // pelas compras; as tarefas não o chamavam.
+  if ('prazo' in campos) linha.prazo = campos.prazo ? isoComHora(campos.prazo, campos.prazoHora) : null;
   // ⚠ Zero é «sem posto», e os postos contam de UM. Um campo `number` do
   // PocketBase não é anulável — escrever `null` guarda 0 —, por isso é o zero
   // que faz de ausência. Ver o campo em `criar-colecoes.mjs`.
