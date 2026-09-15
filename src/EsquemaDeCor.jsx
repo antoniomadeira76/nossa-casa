@@ -48,9 +48,14 @@ export default function EscolhaDeEsquema({ t, escolhido, onEscolher }) {
                 diagonal — por isso o centro do quadrado tem de recuar dessa
                 distância a partir do centro da bola, e o canto superior
                 esquerdo fica em D/2 + (S/2)·(√½ − 1). */}
+            {/* ⚠ O anel do escolhido é o ACENTO do tema, e não um verde fixo
+                (15/09/2026). Era `t.state.ok`: 2,21:1 contra o cartão claro,
+                abaixo dos 3 que um objeto gráfico pede — no claro não se via
+                qual estava escolhido. E é o mesmo anel da bola de uma pessoa,
+                que é o que a app usa em todo o lado para dizer «este». */}
             <View style={{ width: BOLA, height: BOLA, borderRadius: R.pill, overflow: 'hidden',
               backgroundColor: sc.accent,
-              borderWidth: on ? 2 : 0, borderColor: t.state.ok }}>
+              borderWidth: on ? 2 : 0, borderColor: t.accent }}>
               <View style={{ position: 'absolute',
                 width: CORTE, height: CORTE, left: RECUO, top: RECUO,
                 backgroundColor: sc.chrome, transform: [{ rotate: '45deg' }] }} />

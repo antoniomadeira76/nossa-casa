@@ -77,6 +77,14 @@ const FICAM_REDONDOS = {
     'anel do avatar escolhido no filtro — é um círculo',
     'marca de escolhido quando são vários — é um disco no canto do avatar',
   ],
+  // O escolhedor de ASPETO passou a bolas com o nome por baixo (15/09/2026:
+  // «põe em círculo como o avatar e cor do perfil»). São três: o anel do
+  // escolhido e a amostra do aspeto — um círculo à volta de um círculo, como
+  // na bola de uma pessoa.
+  'src/screens/Perfil.jsx': [
+    'anel do aspeto escolhido — é um círculo',
+    'amostra do aspeto (clara, escura, ou as duas metades) — é um círculo',
+  ],
   'src/sheets/EscolherAvatar.jsx': [
     'bola do avatar de uma figura',
     'bola da inicial',

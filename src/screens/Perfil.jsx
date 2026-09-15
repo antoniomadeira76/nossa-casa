@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 
 import { useStore } from '../store';
-import { SCHEMES, S, R, FONT } from '../theme';
+import { SCHEMES, S, R, FONT, buildTheme } from '../theme';
 import { plural } from '../format';
 import { FEM } from '../data';
 import { Card, SectionTitle, Label, Row, Pill, Toggle, Tap, Avatar, avatarDe, mostraFotografia } from '../ui';
@@ -15,7 +15,14 @@ import EscolhaDeEsquema from '../EsquemaDeCor';
 import * as servidor from '../pocketbase';
 
 // O aspeto por extenso, para a frase que diz o que está escolhido.
-const MODO_LABEL = { claro: 'Claro', escuro: 'Escuro', sistema: 'Segue o dispositivo' };
+const MODO_LABEL = { claro: 'Claro', escuro: 'Escuro', sistema: 'Segue o telemóvel' };
+
+// As duas metades da amostra do aspeto. Não mudam com o tema em vigor — de
+// propósito: a bola mostra como a app FICA em cada aspeto, e uma amostra que
+// seguisse o tema mostrava o mesmo dos dois lados. Vêm do `buildTheme`, e não
+// escritas à mão (o `Login` faz o mesmo, pela mesma regra do CLAUDE.md).
+const CLARO_DA_AMOSTRA = buildTheme(0, false).page;
+const ESCURO_DA_AMOSTRA = buildTheme(0, true).page;
 
 const ROLE_LABEL = (r, name) => {
   const fem = FEM(name);
@@ -156,18 +163,48 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
       <Card t={t} style={{ gap: S.lg }}>
       <View style={{ gap: S.md }}>
         <Label t={t}>Claro ou escuro</Label>
-        <View style={{ flexDirection: 'row', gap: S.md }}>
+        {/* ⚠ Bolas com o NOME por baixo, como o escolhedor de pessoa
+            (15/09/2026: «põe em círculo como o avatar e cor do perfil»). Eram
+            três quadrados de 44 com um ícone dentro, e o terceiro levava o
+            `refresh` — o ícone que a app já usa para a alternância das tarefas
+            e para a manutenção de um equipamento. Sem nome por baixo e com um
+            ícone emprestado, ninguém sabia o que era: o dono da casa leu-o como
+            «igual ao Claro». Não é — é o que SEGUE O TELEMÓVEL, e por isso
+            parece o claro num telemóvel claro. Agora diz-se o nome, e a bola
+            do «Sistema» é meia clara e meia escura, que é o que ele faz.
+            O escolhido leva o anel do acento, como a bola de uma pessoa. */}
+        <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'flex-start' }}>
           {[{ k: 'claro', icon: 'sun', label: 'Claro' },
             { k: 'escuro', icon: 'moon', label: 'Escuro' },
-            { k: 'sistema', icon: 'refresh', label: 'Sistema' }].map(o => {
+            { k: 'sistema', icon: null, label: 'Sistema' }].map(o => {
             const on = mode === o.k;
             return (
               <Pressable key={o.k} onPress={() => mudarPreferencia(user, { aspeto: o.k })}
-                accessibilityRole="button" accessibilityLabel={`Aspeto ${o.label}`} accessibilityState={{ selected: on }} aria-pressed={on}
-                style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1,
-                  borderColor: on ? t.accent : t.border, backgroundColor: on ? t.accent : 'transparent',
-                  alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name={o.icon} size={20} color={on ? '#FFFFFF' : t.text2} />
+                accessibilityRole="button"
+                accessibilityLabel={o.k === 'sistema' ? 'Aspeto igual ao do telemóvel' : `Aspeto ${o.label}`}
+                accessibilityState={{ selected: on }} aria-pressed={on}
+                style={{ width: 52, minHeight: 44, alignItems: 'center', justifyContent: 'flex-start' }}>
+                <View style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                  <View style={{ width: 40, height: 40, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center',
+                    borderWidth: 2, borderColor: on ? t.accent : 'transparent' }}>
+                    {/* A bola é uma AMOSTRA do aspeto: clara, escura, ou as
+                        duas metades para quem segue o telemóvel. */}
+                    <View style={{ width: 32, height: 32, borderRadius: R.pill, overflow: 'hidden',
+                      borderWidth: 1, borderColor: t.border,
+                      backgroundColor: o.k === 'escuro' ? ESCURO_DA_AMOSTRA : CLARO_DA_AMOSTRA,
+                      alignItems: 'center', justifyContent: 'center' }}>
+                      {o.k === 'sistema' ? (
+                        <View style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 16,
+                          backgroundColor: ESCURO_DA_AMOSTRA }} />
+                      ) : null}
+                      {o.icon ? (
+                        <Icon name={o.icon} size={18} color={o.k === 'escuro' ? CLARO_DA_AMOSTRA : t.text2} />
+                      ) : null}
+                    </View>
+                  </View>
+                </View>
+                <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11, lineHeight: 12, marginTop: -2,
+                  maxWidth: 52, color: on ? t.actFg : t.text3, fontWeight: on ? '600' : '400' }}>{o.label}</Text>
               </Pressable>
             );
           })}
