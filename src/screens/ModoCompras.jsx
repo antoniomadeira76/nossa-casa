@@ -312,7 +312,10 @@ export default function ModoCompras({ t, user, onClose }) {
               shopHistory: [{
                 // Sem ida marcada, a linha do histórico fica com quem fechou a
                 // conta — e não rebenta a fechá-la.
-                at: Date.now(), store: (x.stores || [])[(x.shopPlan || {}).store] || null,
+                // ⚠ Pelo `lojaDoPlano` da loja, que lê o NOME e o índice das
+                // casas antigas (15/09/2026). Aqui lia-se o índice à mão, e uma
+                // loja apagada punha a linha do histórico na loja errada.
+                at: Date.now(), store: loja || null,
                 who: (x.shopPlan || {}).who || user,
                 total: cart, items: doneItems.length,
               }, ...x.shopHistory].slice(0, 10),

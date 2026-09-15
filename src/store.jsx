@@ -857,6 +857,20 @@ export const registosPorEnviar = (lista, jaEnviados) => (lista || []).filter((r)
   return !jaEnviados.has(chaveDeRegisto(r));
 });
 
+// ⚠ HÁ SERVIDOR, e não «o módulo carregou».
+//
+// Três sítios perguntavam `sync ? … : …` a querer dizer «esta casa está ligada
+// a um servidor». Não é o que a expressão diz: o `sync` é o MÓDULO, e o
+// `carregarSync` atribui-o no arranque haja ou não `EXPO_PUBLIC_PB_URL` — o
+// `pocketbase.js` carrega sem URL, e é o `estaLigado()` que sabe a diferença.
+// Na app o ramo local nunca corria; corria só no Jest, onde o `import('./sync')`
+// rebenta com o SDK em ESM e cai no `catch`. As provas viam o lado certo e a
+// app o errado, que é a pior maneira de um defeito viver (15/09/2026).
+//
+// O que isso partia: «Pagar semanada» não descontava os pontos e o segundo
+// toque pagava outra vez; fechar o mês não limpava o gasto nem o acerto.
+const comServidor = () => !!(sync && sync.ligado && sync.ligado());
+
 export function StoreProvider({ children }) {
   const [state, set] = useReducer(reducer, null, DEMO);
   const ready = useRef(false);
@@ -1822,8 +1836,17 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   //
   // Sem servidor, as sementes ficam: a app tem de correr sem rede, e corria
   // assim antes de haver servidor.
+  // ⚠ O `used` que a linha TRAZ, e não zero (15/09/2026).
+  //
+  // Era `{ ...e, used: 0 }`. Numa casa sem servidor o gasto de cada envelope
+  // vive nas sementes, e a lista da casa só passa a existir quando alguém
+  // mexe nos envelopes — criar, renomear ou apagar um materializava as
+  // sementes SEM o `used` e punha o «Gasto até agora» da casa inteira a zero:
+  // 1 387,00 € a desaparecer e o «Disponível» a subir outro tanto, por se ter
+  // criado um envelope chamado «Férias». Com servidor o número vinha certo na
+  // leitura seguinte e por isso passou despercebido.
   const baseDeEnvelopes = (s.envelopesDaCasa || []).length
-    ? s.envelopesDaCasa.map(e => ({ ...e, used: 0 }))
+    ? s.envelopesDaCasa.map(e => ({ ...e, used: e.used || 0 }))
     : ENV_BASE;
 
   // ⚠ O gasto de cada envelope é o DELE, e não o do mês inteiro.
@@ -1978,7 +2001,12 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   const pagarAcerto = (valor, nota, de, para) => {
     const v = Math.round(Number(valor) * 100) / 100;
     if (!(v > 0)) return;
-    set(x => ({ acertoMovs: [...(x.acertoMovs || []), { valor: v, data: TODAY_KEY, nota: nota || '' }] }));
+    set(x => ({
+      acertoMovs: [...(x.acertoMovs || []), { valor: v, data: TODAY_KEY, nota: nota || '' }],
+      // ⚠ E no registo (15/09/2026): é dinheiro que passa de uma pessoa para a
+      // outra, e era a operação com mais razão para deixar rasto de todas.
+      registo: maisRegisto(x, `Acerto de contas: ${EUR(v)}${de && para ? ` de ${de} para ${para}` : ''}${nota ? ` · ${nota}` : ''}`, 'Dinheiro'),
+    }));
 
     // ⚠ E sobe. O `sync.acerto` existia e ninguém o chamava: o acerto entre os
     // dois adultos ficava no telefone de quem carregou no botão, e o outro
@@ -2016,7 +2044,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       // segunda leitura que o refaça. Com servidor NÃO se escreve: a próxima
       // `puxarCasa` traz a soma, e escrevê-lo aqui era voltar a ter duas
       // versões do mesmo número — a local e a do servidor — a divergir.
-      ...(sync || !pontos ? {} : {
+      ...(comServidor() || !pontos ? {} : {
         paidPts: { ...x.paidPts, [kid]: (x.paidPts[kid] ?? 0) + pontos },
       }),
       // No registo da casa, dito por palavras: quem, quanto, e a troco de quê.
@@ -3311,7 +3339,14 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // dois: «sem stock» não é o mesmo que «por comprar», e quem está na loja já
   // lá foi ver.
   const marcarArtigo = (id, estado) => {
-    const agora = s.status[id] || 'open';
+    // ⚠ A MESMA omissão que os ecrãs leem (15/09/2026): `s.status[id] ||
+    // (i.real ? 'done' : 'open')`. Aqui era só `|| 'open'`, e um artigo com
+    // preço pago de uma ida anterior — que os três ecrãs mostram apanhado —
+    // contava como por apanhar: o primeiro toque para o desmarcar gravava
+    // «done» por cima de «done» e não mudava nada no ecrã. Eram precisos dois
+    // toques para desfazer um, o primeiro sem resposta nenhuma.
+    const artigo = allItems().find(i => i.id === id);
+    const agora = s.status[id] || ((artigo && artigo.real) ? 'done' : 'open');
     const proximo = agora === estado ? 'open' : estado;
     set(x => ({ status: { ...x.status, [id]: proximo } }));
 
@@ -3364,6 +3399,21 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     const loja = lojaDoPlano();
     set(x => ({
       registo: maisRegisto(x, `Ida às compras fechada${loja ? ` · ${loja}` : ''} · ${EUR(total)}`, 'Compras'),
+      // ⚠ A IDA TERMINA AQUI, e não só no servidor (15/09/2026).
+      //
+      // Isto escrevia uma linha de registo e mais nada. Com servidor o lixo era
+      // apanhado na leitura seguinte (`status: {}` quando não há lista aberta);
+      // SEM servidor nada o apanhava: a lista ficava toda confirmada, o botão
+      // continuava armado, e tocá-lo outra vez registava uma SEGUNDA despesa do
+      // mesmo valor. Medido na casa de demonstração: 50,90 € a virarem 101,80 €
+      // por uma ida ao supermercado.
+      //
+      // O que termina: as marcas desta ida (`status`) e os artigos que só
+      // valiam para ela. Os habituais ficam — voltam à lista na semana
+      // seguinte, que é o que «habitual» quer dizer.
+      status: {},
+      newItems: (x.newItems || []).filter(i => i.staple),
+      itemGone: {},
     }));
     const lista = listaAberta();
     if (sync && lista) {
@@ -3417,6 +3467,22 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       registered: x.registered + v,
       gastoLocal: { ...(x.gastoLocal || {}), [envelope]: ((x.gastoLocal || {})[envelope] || 0) + v },
       registo: maisRegisto(x, `Despesa de ${EUR(v)} em ${envelope}${descricao ? ` · ${descricao}` : ''}`, 'Dinheiro'),
+      // ⚠ «Dividir a meias» entra MESMO nas «Contas entre Nós» (15/09/2026).
+      //
+      // A folha promete-o em letras — «Metade (20,00 €) entra na conta entre os
+      // dois» — e isto não lhe tocava: o `partilhasPagas` e o `despesasMeias`
+      // só eram escritos pela leitura do servidor, e nada relê a casa depois de
+      // uma escrita. O cartão do acerto ficava igual durante toda a sessão, por
+      // mais despesas a meias que se registassem.
+      //
+      // O `partilhasPagas` é quanto CADA adulto pôs em despesas partilhadas
+      // deste mês — uma soma aditiva, como tudo o resto (INVARIANTE #2). Com
+      // servidor a leitura seguinte traz a soma dele e substitui esta; até lá,
+      // o ecrã diz a verdade em vez de dizer a de ontem.
+      ...(divideMeias && pagador ? {
+        partilhasPagas: { ...(x.partilhasPagas || {}), [pagador]: ((x.partilhasPagas || {})[pagador] || 0) + v },
+        despesasMeias: (x.despesasMeias || 0) + 1,
+      } : {}),
     }));
 
     if (sync) {
@@ -3461,6 +3527,11 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         [deNome]: (x.envMove[deNome] || 0) - v,
         [paraNome]: (x.envMove[paraNome] || 0) + v,
       },
+      // ⚠ E no registo da casa (15/09/2026). O orçamento dos dois adultos muda,
+      // e o sítio que existe para responder a «quem mudou isto?» ficava calado
+      // — era uma das cinco operações de dinheiro sem rasto, ao lado de todas
+      // as outras que registam.
+      registo: maisRegisto(x, `${EUR(v)} movidos de ${deNome} para ${paraNome}`, 'Dinheiro'),
     }));
 
     if (sync) {
@@ -3593,9 +3664,11 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // o `envelopesDaCasa` está vazio. No momento em que a casa cria, apaga ou
   // renomeia um, passa a ser dona da lista inteira — senão criar «Férias»
   // deixava a casa com UM envelope e os outros quatro desapareciam.
+  // ⚠ E o `used` das sementes acompanha (15/09/2026): materializar a lista sem
+  // ele apagava o gasto de toda a casa numa app sem servidor.
   const listaDeEnvelopes = (x) => ((x.envelopesDaCasa || []).length
     ? x.envelopesDaCasa
-    : ENV_BASE.map(e => ({ id: null, name: e.name, limit: e.limit, color: e.color || null })));
+    : ENV_BASE.map(e => ({ id: null, name: e.name, limit: e.limit, color: e.color || null, used: e.used || 0 })));
 
   // ⚠ E escreve-se LOCAL PRIMEIRO, como tudo o resto nesta app.
   //
@@ -3609,6 +3682,9 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     set(x => ({
       envelopesDaCasa: [...listaDeEnvelopes(x), { id: null, name: n, limit: limite, color: null }],
       monthLimits: { ...(x.monthLimits || {}), [n]: limite },
+      // ⚠ E no registo da casa (15/09/2026): um envelope novo soma ao orçamento
+      // da casa, e era uma das cinco escritas de dinheiro sem rasto.
+      registo: maisRegisto(x, `Envelope «${n}» criado · limite ${EUR(limite)}`, 'Dinheiro'),
     }));
     if (sync) {
       const ses = sync.sessao();
@@ -3647,7 +3723,10 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         lista = lista.map(e => (e.name === novoNome ? { ...e, limit: v } : e));
         if (novoNome in limites) limites[novoNome] = v;
       }
-      return { envelopesDaCasa: lista, monthLimits: limites };
+      return { envelopesDaCasa: lista, monthLimits: limites,
+        registo: maisRegisto(x, novoNome !== nome
+          ? `Envelope «${nome}» passou a «${novoNome}»`
+          : `Envelope «${novoNome}»: limite ${EUR(Number(campos.limite) || 0)}`, 'Dinheiro') };
     });
   };
 
@@ -3663,6 +3742,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       return {
         envelopesDaCasa: listaDeEnvelopes(x).filter(e => e.name !== nome),
         monthLimits: limites,
+        registo: maisRegisto(x, `Envelope «${nome}» apagado`, 'Dinheiro'),
       };
     });
   };
@@ -3691,7 +3771,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       // ⚠ O `registered` e o `envMove` NÃO se zeram à mão. Sem servidor ficam
       // como estão até haver despesas do mês novo; com servidor, a leitura
       // seguinte traz as somas já filtradas.
-      ...(sync ? {} : { registered: 0, gastoLocal: {}, envMove: {} }),
+      ...(comServidor() ? {} : { registered: 0, gastoLocal: {}, envMove: {} }),
     }));
 
     if (!sync) return;
@@ -3717,7 +3797,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
       // servidor, e escrever zero por cima delas dura até à leitura seguinte.
       // O mês novo começa limpo por ser OUTRA soma — os acertos filtram-se pelo
       // mês, e os pontos pagos acompanham as tarefas que os ganharam.
-      ...(sync ? {} : {
+      ...(comServidor() ? {} : {
         acertoMovs: [],
         paidPts: Object.fromEntries(criancas.map(n => [n, 0])),
         registered: 0,
@@ -3833,7 +3913,20 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // pedir a quem chama que o diga, e não há como enganar-se sobre a operação.
   const mudarListaDaCasa = (chave, proxima) => {
     const antes = s[chave] || [];
+    // ⚠ A LOJA DA IDA é um índice nesta lista, e um índice não sobrevive a uma
+    // linha apagada (15/09/2026). Apagar «Continente de Belém» deixava o
+    // `shopPlan.store` a 0 e a ida passava, em silêncio, a ser no «Pingo Doce
+    // da Ajuda» — e o histórico de preços da ida inteira ia para a loja errada,
+    // que é o dado que sustenta o conselho «esta lista sai mais barata no X».
+    // Aqui resolve-se o NOME antes de a lista mudar, e volta a escrever-se como
+    // nome: o `lojaDoPlano` lê as duas formas, e a partir daqui nunca mais há
+    // índices por resolver.
+    const lojaAntes = chave === 'stores' ? lojaDoPlano() : null;
     set({ [chave]: proxima });
+    if (chave === 'stores') {
+      const fica = lojaAntes && proxima.includes(lojaAntes) ? lojaAntes : null;
+      set(x => ({ shopPlan: { ...(x.shopPlan || {}), store: fica } }));
+    }
 
     const entraram = proxima.filter(n => !antes.includes(n));
     const sairam = antes.filter(n => !proxima.includes(n));
@@ -4327,10 +4420,14 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // — e uma casa nova não tem nenhuma — isso é ler uma posição que não existe,
   // e o ecrã escrevia «undefined» a seguir à hora. Aqui a resposta é uma só, e
   // é `null` quando não há loja escolhida.
+  // ⚠ Aceita as DUAS formas: o NOME (o que se escreve desde 15/09/2026) e o
+  // índice (o que está gravado nas casas de antes). Um índice não sobrevive a
+  // uma loja apagada — ver o `mudarListaDaCasa`.
   const lojaDoPlano = () => {
     const lista = s.stores || [];
-    const i = s.shopPlan ? s.shopPlan.store : null;
-    return (typeof i === 'number' && lista[i]) ? lista[i] : null;
+    const v = s.shopPlan ? s.shopPlan.store : null;
+    if (typeof v === 'string') return lista.includes(v) ? v : null;
+    return (typeof v === 'number' && lista[v]) ? lista[v] : null;
   };
 
   // ⚠ Sem loja não se grava histórico de preços.

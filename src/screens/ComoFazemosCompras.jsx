@@ -195,7 +195,7 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
               {lojas.map((nome, i) => (
                 <Choice key={nome} t={t} label={nome} selected={nome === loja}
-                  onPress={() => { mudarPlanoDeCompras({ store: i }); fechar(); }} />
+                  onPress={() => { mudarPlanoDeCompras({ store: nome }); fechar(); }} />
               ))}
             </View>
           )}

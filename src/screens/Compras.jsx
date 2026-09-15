@@ -232,7 +232,7 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
               loja que saiu dava −1, e o plano ficava a apontar para nada. */}
           {comparacao.loja !== loja && s.stores.includes(comparacao.loja) ? (
             <Pressable
-              onPress={() => mudarPlanoDeCompras({ store: s.stores.indexOf(comparacao.loja) })}
+              onPress={() => mudarPlanoDeCompras({ store: comparacao.loja })}
               accessibilityRole="button"
               accessibilityLabel={`Passar as compras para o ${comparacao.loja}`}
               style={({ pressed }) => ({ minHeight: 44, borderRadius: R.row, borderWidth: 1,
