@@ -52,6 +52,17 @@ const P = {
   smile: 'M8.5 14s1.2 1.5 3.5 1.5S15.5 14 15.5 14|',
   sun: 'M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M17.7 6.3l-1.4 1.4M7.7 16.3l-1.4 1.4|',
   moon: 'M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z',
+  // ⚠ `telemovel` quer dizer «o que o aparelho disser», e só isso (15/09/2026):
+  // o aspeto que segue o sistema. Corpo de 10×18 centrado em (12,12) e a barra
+  // de baixo. O `sun` é o aspeto claro e o `moon` o escuro — os três vivem
+  // juntos no escolhedor do Perfil, e nenhum se empresta a outro sentido.
+  //
+  // Nasceu porque o terceiro aspeto não tinha ícone próprio: levou o `refresh`
+  // (que é «alternância» e «manutenção») e o dono da casa leu-o como «igual ao
+  // Claro»; passou a ser só a amostra partida ao meio, e essa também se
+  // confundia com o claro num telemóvel claro. Um aparelho desenhado não se
+  // confunde com nada.
+  telemovel: 'M9 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z|M10.6 18.2h2.8',
   sliders: 'M4 7h6M14 7h6M4 17h10M18 17h2',
   caretDown: 'M6 9.5l6 6 6-6',
   caretUp: 'M6 14.5l6-6 6 6',

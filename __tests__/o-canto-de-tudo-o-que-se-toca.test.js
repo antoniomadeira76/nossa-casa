@@ -48,6 +48,12 @@ const FICAM_REDONDOS = {
     'pastilha de estado — não se toca, é uma etiqueta',
     'anel do rádio da Opcao',
     'disco do rádio da Opcao',
+    // A marca de estado de uma linha que se marca (15/09/2026). Dois discos: o
+    // âmbar com o relógio de «à espera de confirmação», e o círculo VAZIO de
+    // «por marcar», que substituiu o `infoCircle` em seis ecrãs. Redondos por
+    // forma — é a marca que se lê, não um alvo: quem toca é a linha inteira.
+    'disco âmbar de «à espera de confirmação» — é a marca, não o alvo',
+    'círculo vazio de «por marcar» — é a marca, não o alvo',
     // O «disco de cor do membro» e o «disco da caixa de seleção» eram da
     // `PastilhaMembro`, que saiu daqui em 15/09/2026: escolher uma pessoa é a
     // bola do filtro (`EscolherPessoa`, em FiltroDeMembros.jsx).
@@ -73,17 +79,30 @@ const FICAM_REDONDOS = {
   // E em 15/09/2026 recebeu o ESCOLHEDOR de pessoa («deve ser coerente com o
   // design da app e ter os avatares como os outros filtros»): a mesma bola,
   // com uma marca no canto quando se podem escolher várias.
+  // E em 15/09/2026 a PASTILHA DE TEXTO («Todos», «Quem marcar», «A casa»)
+  // deixou de ser o retângulo de raio 6 da `Choice` à cabeça de uma fila de
+  // bolas: «implementa este ícone em todos os ecrãs que tenham ícone semelhante
+  // ou igual ao segundo print», com o círculo num print e o retângulo no outro.
+  // Tem agora a geometria da bola — anel de 2, vão de 2, disco por dentro —, e
+  // a largura acompanha a palavra: «Todos» sai um círculo, «Quem marcar» sai uma
+  // pastilha de extremos redondos.
   'src/FiltroDeMembros.jsx': [
     'anel do avatar escolhido no filtro — é um círculo',
     'marca de escolhido quando são vários — é um disco no canto do avatar',
+    // ⚠ UMA pílula e não duas: a pastilha é um círculo só, sem o anel com vão
+    // que a bola de uma pessoa tem. Com o anel fechava a 57 × 39 — um oval,
+    // medido no navegador. Sem ele fecha a 40 × 40.
+    'pastilha de texto do filtro — um círculo, como a bola ao lado',
   ],
   // O escolhedor de ASPETO passou a bolas com o nome por baixo (15/09/2026:
   // «põe em círculo como o avatar e cor do perfil»). São três: o anel do
   // escolhido e a amostra do aspeto — um círculo à volta de um círculo, como
   // na bola de uma pessoa.
+  // E em 15/09/2026 passou a ser UMA bola só, com a borda por dentro e o mesmo
+  // diâmetro da bola do esquema de cor, que vive quatro linhas abaixo no mesmo
+  // cartão: «os círculos de cima devem ter o mesmo tamanho dos de baixo».
   'src/screens/Perfil.jsx': [
-    'anel do aspeto escolhido — é um círculo',
-    'amostra do aspeto (clara, escura, ou as duas metades) — é um círculo',
+    'bola do aspeto — um círculo, do tamanho da bola do esquema',
   ],
   'src/sheets/EscolherAvatar.jsx': [
     'bola do avatar de uma figura',

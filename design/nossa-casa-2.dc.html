@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nossa Casa 2 — o desenho inteiro</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   O SISTEMA
+   Tudo o que se segue sai destas variáveis. Nenhum valor escrito à mão.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root{
+  /* Neutros — cinco degraus, e mais nenhum. O fundo é quase branco mas não
+     branco: o branco fica para as superfícies que sobem. */
+  --fundo:#F4F5F7; --sup:#FFFFFF; --sup2:#FAFAFB; --linha:#E6E8EC; --linha2:#F0F1F4;
+  --t1:#16181D; --t2:#4A4F5A; --t3:#797F8C;
+  /* O acento é o esquema do perfil. Aqui, o «Céu». */
+  --ac:#1E63C4; --ac-t:#1A57AC; --ac-sup:#EAF1FC; --ac-b:#C8DCF7;
+  /* Estados — um tom para o objeto, outro para o texto, outro para o tijolo. */
+  --ok:#1F9254; --ok-t:#136B3C; --ok-sup:#E9F7EF;
+  --av:#9A6400; --av-t:#7A5000; --av-sup:#FDF4E3;
+  --er:#C4302B; --er-t:#A32621; --er-sup:#FCEEED;
+  /* Elevação — sombras curtas e de baixo contraste. Três, e chega. */
+  --e1:0 1px 2px rgba(16,18,29,.06);
+  --e2:0 4px 16px rgba(16,18,29,.10);
+  --e3:0 12px 40px rgba(16,18,29,.18);
+  /* Raios */
+  --r-s:8px; --r-m:12px; --r-l:18px; --r-xl:28px; --r-p:999px;
+  /* Movimento */
+  --m-rapido:120ms cubic-bezier(.2,0,0,1);
+  --m-normal:220ms cubic-bezier(.2,0,0,1);
+  --m-folha:300ms cubic-bezier(.32,.72,0,1);
+}
+*{box-sizing:border-box}
+body{margin:0;background:#E9EBEF;color:var(--t1);
+  font:15px/1.5 -apple-system,"SF Pro Text","Segoe UI",Roboto,sans-serif;padding:28px;
+  font-feature-settings:"tnum" 0}
+h1{font-size:30px;line-height:1.15;letter-spacing:-.02em;margin:0 0 8px}
+p.intro{color:var(--t2);max-width:78ch;margin:0 0 6px;font-size:16px;line-height:1.6}
+h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.10em;color:var(--t3);
+  margin:44px 0 14px;padding-bottom:8px;border-bottom:1px solid #D7DAE0}
+h3.nome{font-size:15px;margin:0 0 2px;font-weight:600}
+.dizer{color:var(--t3);font-size:12.5px;line-height:1.55;margin:0 0 10px;max-width:46ch}
+
+/* ── a moldura do telemóvel ─────────────────────────────────────────────── */
+.tapete{display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start}
+/* `color` tem de ser reposto AQUI: o texto que não declara cor herda o valor
+   JÁ CALCULADO do <body>, e a redefinição de --t1 no telemóvel escuro não lhe
+   chega. Sem esta linha, metade do escuro fica preto sobre preto. */
+.tel{color:var(--t1);width:340px;height:700px;background:var(--fundo);border-radius:var(--r-xl);
+  box-shadow:var(--e3),0 0 0 1px rgba(16,18,29,.08);overflow:hidden;
+  display:grid;grid-template-rows:auto 1fr auto;position:relative;flex:none}
+.tel.escuro{--fundo:#101216;--sup:#191C22;--sup2:#15181D;--linha:#262A32;--linha2:#1E222A;
+  --t1:#F2F3F5;--t2:#B4BAC6;--t3:#858C9A;--ac:#6BA6F5;--ac-t:#8FBEF8;--ac-sup:#1A2436;--ac-b:#2A3A55;
+  --ok-sup:#12241A;--av-sup:#251D0C;--er-sup:#2A1514;--ok-t:#5FD08D;--av-t:#E3B457;--er-t:#F08A85}
+/* No escuro o acento é CLARO — o que leva acento cheio leva texto escuro,
+   nunca branco: branco sobre #6BA6F5 dá 2,5:1. */
+.tel.escuro .fab,.tel.escuro .bt.p,.tel.escuro .tira div.on b{color:#0B1118}
+.tel.escuro .tira div.on{color:rgba(11,17,24,.72)}
+.cab{padding:14px 18px 10px;background:var(--sup);border-bottom:1px solid var(--linha)}
+.cab.grande{padding-bottom:16px}
+.cab .fila{display:flex;align-items:center;gap:12px}
+.cab h4{margin:0;font-size:13px;color:var(--t3);font-weight:600;letter-spacing:.01em}
+.cab .tit{font-size:26px;letter-spacing:-.02em;font-weight:600;margin:2px 0 0}
+.cab .tit.peq{font-size:17px}
+.av{width:36px;height:36px;border-radius:var(--r-p);flex:none;display:grid;place-items:center;
+  color:#fff;font-weight:600;font-size:14px;overflow:hidden}
+.corpo{overflow:hidden;padding:14px 18px 8px;display:flex;flex-direction:column;gap:22px;position:relative}
+.corpo.sem{padding-left:0;padding-right:0}
+.barra{display:flex;background:var(--sup);border-top:1px solid var(--linha);padding:6px 6px 14px}
+.barra a{flex:1;display:grid;justify-items:center;gap:3px;padding:6px 0;color:var(--t3);
+  font-size:10.5px;font-weight:600;text-decoration:none;position:relative}
+.barra a .pilula{width:52px;height:30px;border-radius:var(--r-p);display:grid;place-items:center;
+  transition:background var(--m-normal)}
+.barra a.on{color:var(--ac-t)}
+.barra a.on .pilula{background:var(--ac-sup)}
+svg{display:block}
+.i{width:22px;height:22px;stroke:currentColor;stroke-width:1.75;fill:none;
+  stroke-linecap:round;stroke-linejoin:round}
+.i.s{width:18px;height:18px}.i.g{width:26px;height:26px}
+
+/* ── peças ──────────────────────────────────────────────────────────────── */
+.rot{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3)}
+.grupo{display:flex;flex-direction:column;gap:10px}
+.cartao{background:var(--sup);border-radius:var(--r-l);box-shadow:var(--e1);padding:16px}
+.heroi{font-size:34px;letter-spacing:-.025em;font-weight:600;font-variant-numeric:tabular-nums}
+.sub{font-size:12.5px;color:var(--t3);overflow-wrap:anywhere}
+/* Um filho de grelha tem `min-width:auto` e recusa-se a encolher abaixo do
+   seu conteúdo — um endereço de correio sem espaços empurrava o ecrã da
+   Entrada 14 px para fora do telemóvel. */
+.tel>*{min-width:0}
+.corta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
+.ln{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--linha2)}
+.ln:last-child{border-bottom:0}
+.ln .txt{flex:1;min-width:0}
+/* O título e o detalhe cortam-se; a pastilha do lado nunca encolhe nem sai
+   do ecrã. A largura útil são 304 px, e os nomes das pessoas são longos. */
+.ln .txt b,.ln .txt span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ln .txt b{display:block;font-weight:500;font-size:15px;letter-spacing:-.01em}
+.ln .txt span{display:block;font-size:12.5px;color:var(--t3);margin-top:1px}
+.ln .pil,.ln .val{flex:none}
+/* No registo a frase é a informação toda — parte em duas linhas em vez de cortar. */
+.ln.solta .txt b{white-space:normal;overflow:visible}
+.ln .val{font-variant-numeric:tabular-nums;font-size:14px;color:var(--t2);font-weight:500}
+.ic{width:38px;height:38px;border-radius:var(--r-m);background:var(--sup2);display:grid;place-items:center;
+  color:var(--t3);flex:none;border:1px solid var(--linha2)}
+.ic.ac{background:var(--ac-sup);color:var(--ac-t);border-color:transparent}
+.ic.ok{background:var(--ok-sup);color:var(--ok-t);border-color:transparent}
+.ic.aviso{background:var(--av-sup);color:var(--av-t);border-color:transparent}
+.ic.er{background:var(--er-sup);color:var(--er-t);border-color:transparent}
+.pil{font-size:11px;font-weight:600;padding:3px 9px;border-radius:var(--r-p);white-space:nowrap}
+.pil.ok{background:var(--ok-sup);color:var(--ok-t)}
+.pil.aviso{background:var(--av-sup);color:var(--av-t)}
+.pil.er{background:var(--er-sup);color:var(--er-t)}
+.pil.ac{background:var(--ac-sup);color:var(--ac-t)}
+.bar{height:6px;border-radius:var(--r-p);background:var(--linha);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:var(--r-p);background:var(--ac);
+  animation:encher 900ms cubic-bezier(.2,0,0,1) both}
+.bar i.ok{background:var(--ok)}.bar i.aviso{background:var(--av)}.bar i.er{background:var(--er)}
+@keyframes encher{from{width:0}}
+.bt{height:50px;border-radius:var(--r-m);display:grid;place-items:center;font-weight:600;font-size:15px;
+  transition:transform var(--m-rapido),filter var(--m-rapido)}
+.bt:active{transform:scale(.985)}
+.bt.p{background:var(--ac);color:#fff;box-shadow:var(--e1)}
+.bt.s{background:var(--ac-sup);color:var(--ac-t)}
+.bt.n{background:transparent;color:var(--t2);border:1px solid var(--linha)}
+.bt.d{background:transparent;color:var(--er-t);border:1px solid var(--er-sup)}
+.campo{height:48px;border-radius:var(--r-m);background:var(--sup);border:1px solid var(--linha);
+  display:flex;align-items:center;padding:0 14px;font-size:15px;color:var(--t2)}
+.campo.vazio{color:var(--t3)}
+/* Flutua ACIMA da barra quando o ecrã tem barra; encostado ao fundo quando não tem. */
+.tel:has(.barra) .fab{bottom:98px}
+.fab{position:absolute;right:16px;bottom:16px;height:52px;padding:0 20px;border-radius:var(--r-p);
+  background:var(--ac);color:#fff;display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px;
+  box-shadow:var(--e2);animation:subir 320ms cubic-bezier(.2,0,0,1) both}
+@keyframes subir{from{transform:translateY(14px) scale(.94);opacity:0}}
+.vazio-est{display:grid;justify-items:center;text-align:center;gap:8px;padding:26px 18px}
+.vazio-est .ic{width:52px;height:52px;border-radius:var(--r-p)}
+.vazio-est b{font-size:15px;font-weight:600}
+.vazio-est span{font-size:12.5px;color:var(--t3);max-width:30ch;line-height:1.5}
+.folha{position:absolute;left:0;right:0;bottom:0;background:var(--sup);border-radius:var(--r-xl) var(--r-xl) 0 0;
+  box-shadow:var(--e3);padding:8px 18px 18px;display:flex;flex-direction:column;gap:14px;
+  animation:subirFolha var(--m-folha) both}
+@keyframes subirFolha{from{transform:translateY(100%)}}
+.puxador{width:38px;height:4px;border-radius:var(--r-p);background:var(--linha);margin:0 auto 4px}
+.veu{position:absolute;inset:0;background:rgba(16,18,29,.32);animation:aparecer var(--m-folha) both}
+/* INVARIANTE #1 — o rodapé fica visível com a folha aberta. A folha e o véu
+   param onde a barra começa; nunca a tapam. */
+.tel:has(.barra) .veu,.tel:has(.barra) .folha{bottom:82px}
+@keyframes aparecer{from{opacity:0}}
+.seg{display:flex;background:var(--sup2);border:1px solid var(--linha);border-radius:var(--r-m);padding:3px;gap:3px}
+.seg div{flex:1;text-align:center;padding:8px 0;font-size:13px;color:var(--t2);border-radius:9px;
+  transition:background var(--m-rapido),color var(--m-rapido)}
+.seg .on{background:var(--sup);color:var(--t1);font-weight:600;box-shadow:var(--e1)}
+.bolas{display:flex;gap:10px}
+.bola{display:grid;justify-items:center;gap:4px;font-size:11px;color:var(--t3);width:48px}
+.bola i{width:42px;height:42px;border-radius:var(--r-p);display:grid;place-items:center;color:#fff;
+  font-weight:600;font-size:15px;font-style:normal;transition:box-shadow var(--m-rapido)}
+.bola.on i{box-shadow:0 0 0 2px var(--sup),0 0 0 4px var(--ac)}
+.bola.on{color:var(--ac-t);font-weight:600}
+.visto{stroke-dasharray:22;stroke-dashoffset:0;animation:desenhar 420ms cubic-bezier(.2,0,0,1) both}
+@keyframes desenhar{from{stroke-dashoffset:22}}
+.tira{display:flex;gap:6px}
+.tira div{flex:1;text-align:center;padding:8px 0;border-radius:var(--r-m);font-size:12px;color:var(--t3)}
+.tira div b{display:block;font-size:16px;color:var(--t1);font-weight:600;margin-top:2px}
+.tira div.on{background:var(--ac);color:rgba(255,255,255,.8)}
+.tira div.on b{color:#fff}
+.nums{display:flex;gap:10px}
+.nums div{flex:1}
+.nums span{font-size:11.5px;color:var(--t3);display:block}
+.nums b{font-size:19px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.marca{position:absolute;right:-30px;top:120px;opacity:.045;pointer-events:none}
+table.d{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--sup);border-radius:var(--r-m);overflow:hidden;box-shadow:var(--e1)}
+table.d th,table.d td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--linha2);vertical-align:top}
+table.d th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);background:var(--sup2)}
+table.d td:first-child{font-weight:600;white-space:nowrap}
+.amostras{display:flex;flex-wrap:wrap;gap:10px}
+.am{background:var(--sup);border-radius:var(--r-m);padding:12px 14px;box-shadow:var(--e1);min-width:150px}
+.am .c{height:34px;border-radius:var(--r-s);margin-bottom:8px}
+.am b{font-size:12.5px;display:block}.am span{font-size:11px;color:var(--t3)}
+.esp{display:flex;align-items:flex-end;gap:10px}
+.esp div{background:var(--ac-sup);border-radius:4px;width:34px;display:grid;place-items:center;
+  color:var(--ac-t);font-size:10px;font-weight:700;padding-bottom:3px}
+.tipo div{margin-bottom:6px;color:var(--t1)}
+.tipo span{font-size:11px;color:var(--t3);margin-left:10px;font-weight:400;letter-spacing:0}
+</style>
+</head>
+<body>
+
+<h1>Nossa Casa 2</h1>
+<p class="intro">Um desenho inteiro, meu, para a app toda. Mantém o que a casa já decidiu — o português europeu, o euro com espaço inquebrável, os alvos de 44, nenhum emoji, a cor por perfil — e muda a estrutura visual: a cor deixa de ser um bloco e passa a ser um sinal, o tipo passa a ter sete tamanhos com papéis, as listas ganham ritmo, e cada ecrã tem uma ação única e sempre à mão.</p>
+<p class="intro"><b>A ideia em uma linha:</b> menos superfícies, mais espaço, e a cor reservada para dizer «isto é seu, isto é agora, isto é o que falta».</p>
+
+<h2 class="sec">1 · O sistema</h2>
+
+<h3 class="nome">Cor</h3>
+<p class="dizer">Neutros para tudo o que é estrutura; o acento do perfil só na ação principal, no separador aberto e no que está escolhido. Cada estado tem três papéis: o objeto (barra, ícone), o texto sobre a página, e o tijolo onde assenta.</p>
+<div class="amostras">
+  <div class="am"><div class="c" style="background:var(--ac)"></div><b>Acento</b><span>ação, escolhido, separador</span></div>
+  <div class="am"><div class="c" style="background:var(--ac-sup)"></div><b>Acento em tinta</b><span>fundo da ação secundária</span></div>
+  <div class="am"><div class="c" style="background:var(--ok)"></div><b>Feito</b><span>dentro do limite, confirmado</span></div>
+  <div class="am"><div class="c" style="background:var(--av)"></div><b>Atenção</b><span>a expirar, por decidir</span></div>
+  <div class="am"><div class="c" style="background:var(--er)"></div><b>Fora</b><span>atrasado, acabou</span></div>
+  <div class="am"><div class="c" style="background:var(--fundo);border:1px solid var(--linha)"></div><b>Página</b><span>o fundo de tudo</span></div>
+  <div class="am"><div class="c" style="background:var(--sup);border:1px solid var(--linha)"></div><b>Superfície</b><span>cartões e folhas</span></div>
+</div>
+
+<h3 class="nome" style="margin-top:22px">Tipo — sete tamanhos, sete papéis</h3>
+<div class="cartao tipo" style="max-width:640px">
+  <div style="font-size:34px;font-weight:600;letter-spacing:-.025em">1 250,00 € <span>34 · o número herói</span></div>
+  <div style="font-size:26px;font-weight:600;letter-spacing:-.02em">Título do ecrã <span>26 · o nome de onde se está</span></div>
+  <div style="font-size:19px;font-weight:600;letter-spacing:-.015em">Título de cartão <span>19 · o resumo de um bloco</span></div>
+  <div style="font-size:15px">Corpo — a linha de uma lista, o texto de um campo <span>15 · o que se lê</span></div>
+  <div style="font-size:13px;color:var(--t2)">Secundário — o que acompanha a linha <span>13 · o detalhe</span></div>
+  <div style="font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3)">Rótulo de secção <span style="text-transform:none;letter-spacing:0">11,5 · a etiqueta</span></div>
+  <div style="font-size:11px;color:var(--t3)">Legenda — a consequência, a dica <span>11 · o que se lê depois</span></div>
+</div>
+
+<h3 class="nome" style="margin-top:22px">Espaço, raio, elevação, movimento</h3>
+<div style="display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start">
+  <div class="cartao" style="flex:1;min-width:260px">
+    <div class="rot" style="margin-bottom:10px">Espaço · 4 / 8 / 12 / 16 / 22</div>
+    <div class="esp">
+      <div style="height:4px"></div><div style="height:8px">8</div><div style="height:12px">12</div>
+      <div style="height:16px">16</div><div style="height:22px">22</div>
+    </div>
+    <p class="dizer" style="margin:12px 0 0">22 entre secções, 16 dentro de um cartão, 12 entre uma linha e a seguinte, 8 entre um rótulo e o campo, 4 entre duas linhas de texto.</p>
+  </div>
+  <div class="cartao" style="flex:1;min-width:260px">
+    <div class="rot" style="margin-bottom:10px">Raio e elevação</div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div style="width:56px;height:44px;border-radius:8px;background:var(--sup2);border:1px solid var(--linha);display:grid;place-items:center;font-size:11px;color:var(--t3)">8</div>
+      <div style="width:56px;height:44px;border-radius:12px;background:var(--sup);box-shadow:var(--e1);display:grid;place-items:center;font-size:11px;color:var(--t3)">12</div>
+      <div style="width:56px;height:44px;border-radius:18px;background:var(--sup);box-shadow:var(--e2);display:grid;place-items:center;font-size:11px;color:var(--t3)">18</div>
+      <div style="width:56px;height:44px;border-radius:28px;background:var(--sup);box-shadow:var(--e3);display:grid;place-items:center;font-size:11px;color:var(--t3)">28</div>
+    </div>
+    <p class="dizer" style="margin:12px 0 0">8 num campo, 12 num botão, 18 num cartão, 28 numa folha. A sombra é curta e quase incolor — a hierarquia faz-se com o fundo, não com a sombra.</p>
+  </div>
+  <div class="cartao" style="flex:1;min-width:260px">
+    <div class="rot" style="margin-bottom:10px">Movimento</div>
+    <p class="dizer" style="margin:0">
+      <b style="color:var(--t1)">120 ms</b> — um estado que muda (escolher, marcar).<br>
+      <b style="color:var(--t1)">220 ms</b> — algo que aparece no sítio (uma pastilha, um aviso).<br>
+      <b style="color:var(--t1)">300 ms</b> — uma folha a subir, com travagem.<br>
+      Nada acima de 300. Nada que atrase um toque. Nenhuma animação numa lista que rola.
+    </p>
+  </div>
+</div>
+
+<h2 class="sec">2 · Os ecrãs</h2>
+<div class="tapete">
+
+<!-- ═══════════ INÍCIO ═══════════ -->
+<div>
+  <div class="tel">
+    <div class="cab grande">
+      <div class="fila">
+        <div style="flex:1">
+          <h4>Terça, 15 de setembro</h4>
+          <div class="tit">Bom dia, António</div>
+        </div>
+        <div class="av" style="background:#3B5BDB">A</div>
+      </div>
+      <div class="nums" style="margin-top:14px">
+        <div><span>Disponível</span><b style="color:var(--ok-t)">771,36 €</b></div>
+        <div><span>Tarefas hoje</span><b>5</b></div>
+        <div><span>Eventos</span><b>1</b></div>
+      </div>
+    </div>
+    <div class="corpo">
+      <div class="grupo">
+        <div class="rot">Precisa de si</div>
+        <div class="cartao" style="padding:6px 16px">
+          <div class="ln"><div class="ic er"><svg class="i s" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4.5"/></svg></div>
+            <div class="txt"><b>Contas por acertar</b><span>A Rita deve 83,67 €</span></div>
+            <svg class="i s" viewBox="0 0 24 24" style="color:var(--t3)"><path d="M9.5 6l6 6-6 6"/></svg></div>
+          <div class="ln"><div class="ic aviso"><svg class="i s" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></div>
+            <div class="txt"><b>Garantia a expirar</b><span>Frigorífico · faltam 17 dias</span></div>
+            <svg class="i s" viewBox="0 0 24 24" style="color:var(--t3)"><path d="M9.5 6l6 6-6 6"/></svg></div>
+        </div>
+      </div>
+      <div class="grupo">
+        <div class="rot">Hoje</div>
+        <div class="cartao" style="padding:6px 16px">
+          <div class="ln"><div class="val" style="width:40px">10:00</div>
+            <div class="av" style="width:28px;height:28px;font-size:12px;background:#7048E8">R</div>
+            <div class="txt"><b>Consulta da Mia</b><span>Rita</span></div>
+            <span class="pil ac">Família</span></div>
+          <div class="ln"><div class="val" style="width:40px">18:30</div>
+            <div class="av" style="width:28px;height:28px;font-size:12px;background:#0CA678">T</div>
+            <div class="txt"><b>Treino de natação</b><span>Tomás</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="barra">
+      <a class="on"><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg></span>Início</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg></span>Dinheiro</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg></span>Tarefas</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9.5 13l2 2 3.5-4"/></svg></span>Compras</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>Agenda</a>
+    </div>
+  </div>
+  <h3 class="nome" style="margin-top:12px">Início</h3>
+  <p class="dizer">O cabeçalho deixa de ser um bloco de cor e passa a ser superfície: os três números ganham ar e leem-se a 19 px com algarismos de largura fixa. A cor fica para o que a precisa — o verde do disponível, o vermelho do que está por acertar.</p>
+</div>
+
+<!-- ═══════════ TAREFAS ═══════════ -->
+<div>
+  <div class="tel">
+    <div class="cab">
+      <div class="fila"><div style="flex:1"><h4>Semana de 14/09</h4><div class="tit peq">Tarefas</div></div>
+        <div class="av" style="background:#3B5BDB">A</div></div>
+    </div>
+    <div class="corpo">
+      <div class="bolas">
+        <div class="bola on"><i style="background:var(--ac);font-size:12px;width:42px;border-radius:var(--r-p)">Todos</i></div>
+        <div class="bola"><i style="background:#1C7ED6">L</i>Léo</div>
+        <div class="bola"><i style="background:#7048E8">R</i>Rita</div>
+        <div class="bola"><i style="background:#0CA678">T</i>Tomás</div>
+        <div class="bola"><i style="background:#1E3A8A">M</i>Mia</div>
+      </div>
+      <div class="grupo">
+        <div style="display:flex;align-items:baseline"><div class="rot" style="flex:1">Rotinas e tarefas</div><span class="sub">por urgência</span></div>
+        <div class="cartao" style="padding:4px 16px">
+          <div class="ln"><span style="width:3px;height:30px;border-radius:2px;background:var(--er);flex:none"></span>
+            <div class="av" style="width:30px;height:30px;font-size:12px;background:#3B5BDB">A</div>
+            <div class="txt"><b>Pagar o condomínio</b><span style="color:var(--er-t)">atrasada 5 dias</span></div></div>
+          <div class="ln"><span style="width:3px;height:30px;border-radius:2px;background:var(--er);flex:none"></span>
+            <div class="av" style="width:30px;height:30px;font-size:12px;background:#1C7ED6">L</div>
+            <div class="txt"><b>Levar o lixo</b><span style="color:var(--er-t)">atrasada 8 dias</span></div>
+            <span class="pil ac">2 pt</span></div>
+          <div class="ln"><span style="width:3px;height:30px;border-radius:2px;background:var(--av);flex:none"></span>
+            <div class="av" style="width:30px;height:30px;font-size:12px;background:#7048E8">R</div>
+            <div class="txt"><b>Fazer a cama</b><span>todos os dias</span></div>
+            <span class="pil ac">1 pt</span></div>
+          <div class="ln" style="opacity:.55"><span style="width:3px;height:30px;border-radius:2px;background:var(--ok);flex:none"></span>
+            <div class="ic ok" style="width:30px;height:30px;border-radius:var(--r-p)"><svg class="i s" viewBox="0 0 24 24"><path class="visto" d="M6 12.5l4 4 8-9"/></svg></div>
+            <div class="txt"><b style="text-decoration:line-through;text-decoration-color:var(--t3)">Pôr a mesa</b><span>Mia · feita hoje</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="fab"><svg class="i s" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Tarefa</div>
+    <div class="barra">
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg></span>Início</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg></span>Dinheiro</a>
+      <a class="on"><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg></span>Tarefas</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9.5 13l2 2 3.5-4"/></svg></span>Compras</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>Agenda</a>
+    </div>
+  </div>
+  <h3 class="nome" style="margin-top:12px">Tarefas</h3>
+  <p class="dizer">A urgência é uma barra de 3 px à esquerda, não um número numa caixa: lê-se de relance e não rouba largura ao título. O «acrescentar» é um botão flutuante — ganha-se a linha inteira que ele ocupava, e está sempre ao alcance do polegar. A tarefa feita desce de opacidade e o visto desenha-se em 420 ms.</p>
+</div>
+
+<!-- ═══════════ DINHEIRO ═══════════ -->
+<div>
+  <div class="tel">
+    <div class="cab grande">
+      <div class="fila"><div style="flex:1"><h4>Conta conjunta · setembro</h4><div class="tit peq">Dinheiro</div></div>
+        <div class="av" style="background:#3B5BDB">A</div></div>
+    </div>
+    <div class="corpo">
+      <div class="cartao">
+        <div class="sub">Disponível este mês</div>
+        <div class="heroi" style="color:var(--ok-t);margin:2px 0 10px">771,36 €</div>
+        <div class="bar"><i style="width:62%"></i></div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px" class="sub">
+          <span>1 248,64 € gastos</span><span>de 2 020,00 €</span></div>
+      </div>
+      <div class="grupo">
+        <div style="display:flex;align-items:baseline"><div class="rot" style="flex:1">Envelopes</div><span class="sub">3</span></div>
+        <div class="cartao" style="padding:12px 16px;display:flex;flex-direction:column;gap:13px">
+          <div><div style="display:flex;margin-bottom:6px"><b style="flex:1;font-weight:500;font-size:14px">Mercearia</b>
+            <span class="val" style="font-size:13px">546,60 / 590,00 €</span></div>
+            <div class="bar" style="height:5px"><i class="aviso" style="width:93%;animation-delay:60ms"></i></div></div>
+          <div><div style="display:flex;margin-bottom:6px"><b style="flex:1;font-weight:500;font-size:14px">Casa &amp; contas</b>
+            <span class="val" style="font-size:13px">357,69 / 780,00 €</span></div>
+            <div class="bar" style="height:5px"><i class="ok" style="width:46%;animation-delay:120ms"></i></div></div>
+          <div><div style="display:flex;margin-bottom:6px"><b style="flex:1;font-weight:500;font-size:14px">Transportes</b>
+            <span class="val" style="font-size:13px">178,00 / 240,00 €</span></div>
+            <div class="bar" style="height:5px"><i class="ok" style="width:74%;animation-delay:180ms"></i></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="fab"><svg class="i s" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Despesa</div>
+    <div class="barra">
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg></span>Início</a>
+      <a class="on"><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg></span>Dinheiro</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg></span>Tarefas</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9.5 13l2 2 3.5-4"/></svg></span>Compras</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>Agenda</a>
+    </div>
+  </div>
+  <h3 class="nome" style="margin-top:12px">Dinheiro</h3>
+  <p class="dizer">Um número herói e uma barra, e só depois a repartição. Cada envelope é duas linhas — nome e valores em cima, barra por baixo — em vez de uma linha apertada: a barra passa a ser lida como progresso e não como decoração. As barras enchem-se em cascata de 60 ms ao entrar no ecrã.</p>
+</div>
+
+<!-- ═══════════ COMPRAS ═══════════ -->
+<div>
+  <div class="tel">
+    <div class="cab">
+      <div class="fila"><div style="flex:1"><h4>Partilhada com 3 adultos</h4><div class="tit peq">Lista de compras</div></div>
+        <div class="av" style="background:#3B5BDB">A</div></div>
+    </div>
+    <div class="corpo">
+      <div class="cartao" style="display:flex;gap:14px;align-items:center">
+        <div class="av" style="background:#7048E8">R</div>
+        <div style="flex:1"><b style="font-size:15px;font-weight:500">Domingo, 20/09 · 10:30</b>
+          <div class="sub">Rita · Pingo Doce do Restelo</div></div>
+        <span class="pil ac">Alterar</span>
+      </div>
+      <div class="grupo">
+        <div style="display:flex;align-items:baseline"><div class="rot" style="flex:1">Frutas e legumes</div><span class="sub">3</span></div>
+        <div class="cartao" style="padding:4px 16px">
+          <div class="ln"><div class="ic ok" style="width:30px;height:30px;border-radius:var(--r-p)"><svg class="i s" viewBox="0 0 24 24"><path class="visto" d="M6 12.5l4 4 8-9"/></svg></div>
+            <div class="txt"><b style="text-decoration:line-through;text-decoration-color:var(--t3)">Alface</b><span>Rita</span></div>
+            <span class="val">1,19 €</span></div>
+          <div class="ln"><span style="width:30px;height:30px;border-radius:var(--r-p);border:1.75px solid var(--linha);flex:none"></span>
+            <div class="txt"><b>Ovos · dúzia</b><span>habitual</span></div>
+            <span class="val" style="color:var(--t3)">~ 2,40 €</span></div>
+          <div class="ln"><span style="width:30px;height:30px;border-radius:var(--r-p);border:1.75px solid var(--linha);flex:none"></span>
+            <div class="txt"><b>Bananas · 1 kg</b><span>pedido pelo Léo</span></div>
+            <span class="val" style="color:var(--t3)">—</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="fab" style="background:var(--ok)"><svg class="i s" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/></svg>Ir às compras</div>
+    <div class="barra">
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg></span>Início</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg></span>Dinheiro</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg></span>Tarefas</a>
+      <a class="on"><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9.5 13l2 2 3.5-4"/></svg></span>Compras</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>Agenda</a>
+    </div>
+  </div>
+  <h3 class="nome" style="margin-top:12px">Compras</h3>
+  <p class="dizer">O preço por saber lê-se «—» e não «0,00 €» — zero é uma afirmação, e a app não sabe. A ida marcada é um cartão com a bola de quem vai. O botão flutuante é verde porque é o começo de uma coisa, não mais um «acrescentar».</p>
+</div>
+
+<!-- ═══════════ MODO COMPRAS ═══════════ -->
+<div>
+  <div class="tel">
+    <div class="cab">
+      <div class="fila">
+        <svg class="i" viewBox="0 0 24 24" style="color:var(--t2)"><path d="M11 5l-7 7 7 7M4 12h16"/></svg>
+        <div style="flex:1"><h4>Pingo Doce do Restelo</h4><div class="tit peq">Corredor 2 de 5</div></div>
+      </div>
+      <div class="bar" style="margin-top:10px"><i style="width:40%"></i></div>
+    </div>
+    <div class="corpo" style="gap:14px">
+      <div class="rot">Frescos</div>
+      <div class="cartao" style="padding:4px 16px">
+        <div class="ln" style="padding:15px 0"><span style="width:34px;height:34px;border-radius:var(--r-p);border:1.75px solid var(--linha);flex:none"></span>
+          <div class="txt"><b style="font-size:16px">Iogurtes naturais</b><span>4 un.</span></div>
+          <div class="campo" style="width:92px;height:44px;justify-content:center;font-variant-numeric:tabular-nums">2,49 €</div></div>
+        <div class="ln" style="padding:15px 0"><div class="ic ok" style="width:34px;height:34px;border-radius:var(--r-p)"><svg class="i s" viewBox="0 0 24 24"><path class="visto" d="M6 12.5l4 4 8-9"/></svg></div>
+          <div class="txt"><b style="font-size:16px;text-decoration:line-through;text-decoration-color:var(--t3)">Queijo fresco</b><span>Rita · agora</span></div>
+          <div class="campo" style="width:92px;height:44px;justify-content:center;background:var(--ok-sup);border-color:transparent;color:var(--ok-t);font-weight:600">1,89 €</div></div>
+      </div>
+    </div>
+    <div style="padding:12px 18px 18px;background:var(--sup);border-top:1px solid var(--linha);display:flex;gap:12px;align-items:center">
+      <div style="flex:1"><div class="sub">No carrinho · 6 artigos</div><div style="font-size:21px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums">14,25 €</div></div>
+      <div class="bt p" style="padding:0 20px">Corredor seguinte</div>
+    </div>
+  </div>
+  <h3 class="nome" style="margin-top:12px">Modo compras</h3>
+  <p class="dizer">Uma barra de progresso por corredores em vez de um contador, linhas de 64 px porque se toca com o carrinho na mão, e o carrinho sempre à vista no rodapé — o total é a soma do que está marcado, e é a única coisa que não pode desaparecer.</p>
+</div>
+
+<!-- ═══════════ AGENDA ═══════════ -->
+<div>
+  <div class="tel">
+    <div class="cab">
+      <div class="fila"><div style="flex:1"><h4>14 – 20 de setembro</h4><div class="tit peq">Agenda</div></div>
+        <div class="av" style="background:#3B5BDB">A</div></div>
+      <div class="tira" style="margin-top:12px">
+        <div>Seg<b>14</b></div><div class="on">Ter<b>15</b></div><div>Qua<b>16</b></div>
+        <div>Qui<b>17</b></div><div>Sex<b>18</b></div><div>Sáb<b>19</b></div><div>Dom<b>20</b></div>
+      </div>
+    </div>
+    <div class="corpo">
+      <div class="grupo">
+        <div class="rot">Hoje</div>
+        <div class="cartao" style="padding:4px 16px">
+          <div class="ln"><div class="val" style="width:40px">10:00</div>
+            <span style="width:3px;height:34px;border-radius:2px;background:#7048E8;flex:none"></span>
+            <div class="txt"><b>Consulta da Mia</b><span>Rita · Dr.ª Neves</span></div>
+            <span class="pil ac">Família</span></div>
+          <div class="ln"><div class="val" style="width:40px">18:30</div>
+            <span style="width:3px;height:34px;border-radius:2px;background:#0CA678;flex:none"></span>
+            <div class="txt"><b>Treino de natação</b><span>Tomás</span></div>
+            <svg class="i s" viewBox="0 0 24 24" style="color:var(--t3)"><path d="M6 11h12v9H6z"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/></svg></div>
+        </div>
+      </div>
+      <div class="grupo">
+        <div class="rot">Amanhã</div>
+        <div class="vazio-est cartao">
+          <div class="ic ac"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></div>
+          <b>Nada marcado</b><span>Toque em Evento para marcar o primeiro.</span>
+        </div>
+      </div>
+    </div>
+    <div class="fab"><svg class="i s" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Evento</div>
+    <div class="barra">
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg></span>Início</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg></span>Dinheiro</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg></span>Tarefas</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9.5 13l2 2 3.5-4"/></svg></span>Compras</a>
+      <a class="on"><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>Agenda</a>
+    </div>
+  </div>
+  <h3 class="nome" style="margin-top:12px">Agenda</h3>
+  <p class="dizer">A tira da semana vive no cabeçalho, com o dia escolhido cheio de acento. A cor de cada evento é a da pessoa, numa barra de 3 px — a mesma linguagem das tarefas. O cadeado diz «só eu» sem precisar de palavra.</p>
+</div>
+
+<!-- ═══════════ SAÚDE ═══════════ -->
+<div>
+  <div class="tel">
+    <div class="cab">
+      <div class="fila">
+        <svg class="i" viewBox="0 0 24 24" style="color:var(--t2)"><path d="M11 5l-7 7 7 7M4 12h16"/></svg>
+        <div style="flex:1"><h4>3 consultas · 4 documentos</h4><div class="tit peq">Saúde da família</div></div>
+      </div>
+    </div>
+    <div class="corpo">
+      <div class="grupo">
+        <div class="rot">Fichas</div>
+        <div class="cartao" style="padding:4px 16px">
+          <div class="ln"><div class="av" style="background:#3B5BDB">A</div>
+            <div class="txt"><b>A minha ficha</b><span>privada · 1 consulta</span></div>
+            <svg class="i s" viewBox="0 0 24 24" style="color:var(--t3)"><path d="M9.5 6l6 6-6 6"/></svg></div>
+          <div class="ln"><div class="av" style="background:#1C7ED6">L</div>
+            <div class="txt"><b>Léo</b><span>visível aos adultos</span></div>
+            <span class="pil aviso">1 receita</span></div>
+          <div class="ln"><div class="av" style="background:#1E3A8A">M</div>
+            <div class="txt"><b>Mia</b><span>visível aos adultos</span></div>
+            <svg class="i s" viewBox="0 0 24 24" style="color:var(--t3)"><path d="M9.5 6l6 6-6 6"/></svg></div>
+        </div>
+      </div>
+      <div class="grupo">
+        <div class="rot">Por decidir</div>
+        <div class="cartao" style="border-left:3px solid var(--av)">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div class="ic aviso"><svg class="i s" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4.5"/></svg></div>
+            <div style="flex:1"><b style="font-weight:500">Pediatria · Léo</b>
+              <div class="sub" style="margin-top:2px">03/09 · falta dizer se ficou resolvida</div>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <div class="bt s" style="flex:1;height:42px;font-size:14px">Resolvida</div>
+                <div class="bt n" style="flex:1;height:42px;font-size:14px">Pendente</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="fab"><svg class="i s" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Consulta</div>
+  </div>
+  <h3 class="nome" style="margin-top:12px">Saúde</h3>
+  <p class="dizer">A decisão que falta é um cartão com a barra âmbar à esquerda e as duas respostas lá dentro — deixa de ser uma pastilha «Ação» que obriga a abrir para perceber o que se pede. As fichas dizem quem as vê, porque é a pergunta que uma ficha de saúde levanta.</p>
+</div>
+
+<!-- ═══════════ FOLHA ═══════════ -->
+<div>
+  <div class="tel">
+    <div class="cab">
+      <div class="fila"><div style="flex:1"><h4>Semana de 14/09</h4><div class="tit peq">Tarefas</div></div>
+        <div class="av" style="background:#3B5BDB">A</div></div>
+    </div>
+    <div class="corpo" style="filter:blur(1px);opacity:.5">
+      <div class="cartao" style="height:80px"></div><div class="cartao" style="height:120px"></div>
+    </div>
+    <div class="barra">
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg></span>Início</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg></span>Dinheiro</a>
+      <a class="on"><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg></span>Tarefas</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9.5 13l2 2 3.5-4"/></svg></span>Compras</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>Agenda</a>
+    </div>
+    <div class="veu"></div>
+    <div class="folha">
+      <div class="puxador"></div>
+      <div><div style="font-size:21px;font-weight:600;letter-spacing:-.02em">Fazer a cama</div>
+        <div class="sub">Léo · todos os dias</div></div>
+      <div class="grupo" style="gap:8px">
+        <div class="rot">A tarefa</div>
+        <div class="campo">Fazer a cama</div>
+        <div style="display:flex;gap:10px">
+          <div style="flex:1"><div class="sub" style="margin-bottom:4px">Pontos</div><div class="campo" style="justify-content:center">1</div></div>
+          <div style="flex:1"><div class="sub" style="margin-bottom:4px">Prazo</div><div class="campo vazio">Sem prazo</div></div>
+        </div>
+        <div class="seg" style="margin-top:4px"><div>Urgente</div><div class="on">Normal</div><div>Sem pressa</div></div>
+      </div>
+      <div class="grupo" style="gap:8px">
+        <div class="rot">Quem faz</div>
+        <div class="bolas">
+          <div class="bola on"><i style="background:#1C7ED6">L</i>Léo</div>
+          <div class="bola"><i style="background:#7048E8">R</i>Rita</div>
+          <div class="bola"><i style="background:#0CA678">T</i>Tomás</div>
+          <div class="bola"><i style="background:#1E3A8A">M</i>Mia</div>
+        </div>
+      </div>
+      <div class="bt p" style="margin-top:2px">Guardar alterações</div>
+      <div class="bt d" style="height:44px;font-size:14px">Apagar tarefa</div>
+    </div>
+  </div>
+  <h3 class="nome" style="margin-top:12px">Uma folha</h3>
+  <p class="dizer">Puxador, título grande, secções, campos curtos dois a dois, e o botão principal no fim — com o apagar por baixo, separado e em contorno. A folha sobe em 300 ms com travagem e o fundo escurece ao mesmo tempo.</p>
+</div>
+
+<!-- ═══════════ EQUIPAMENTOS ═══════════ -->
+<div>
+  <div class="tel">
+    <div class="cab">
+      <div class="fila">
+        <svg class="i" viewBox="0 0 24 24" style="color:var(--t2)"><path d="M11 5l-7 7 7 7M4 12h16"/></svg>
+        <div style="flex:1"><h4>3 equipamentos · 2 contratos</h4><div class="tit peq">Equipamentos</div></div>
+      </div>
+    </div>
+    <div class="corpo">
+      <div class="cartao">
+        <div class="nums">
+          <div><span>Valor registado</span><b>3 247,00 €</b></div>
+          <div><span>A expirar</span><b style="color:var(--av-t)">1</b></div>
+          <div><span>Fora</span><b style="color:var(--er-t)">1</b></div>
+        </div>
+      </div>
+      <div class="grupo">
+        <div class="rot">Registados</div>
+        <div class="cartao" style="padding:4px 16px">
+          <div class="ln"><span style="width:3px;height:36px;border-radius:2px;background:var(--er);flex:none"></span>
+            <div class="txt"><b>Caldeira</b><span>30/07/2022 · 1 200,00 €</span></div>
+            <span class="pil er">Fora de garantia</span></div>
+          <div class="ln"><span style="width:3px;height:36px;border-radius:2px;background:var(--av);flex:none"></span>
+            <div class="txt"><b>Frigorífico</b><span>03/09/2023 · 899,00 €</span></div>
+            <span class="pil aviso">17 dias</span></div>
+          <div class="ln"><span style="width:3px;height:36px;border-radius:2px;background:var(--ok);flex:none"></span>
+            <div class="txt"><b>Máquina de lavar</b><span>07/10/2024 · 449,00 €</span></div>
+            <span class="pil ok">Em garantia</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="fab"><svg class="i s" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Equipamento</div>
+  </div>
+  <h3 class="nome" style="margin-top:12px">Equipamentos</h3>
+  <p class="dizer">O estado da garantia é a barra à esquerda mais a pastilha à direita — cor e palavra, nunca só cor. A pastilha do meio diz os dias que faltam em vez de repetir «a expirar»: é o número que decide se se liga à assistência hoje ou para a semana.</p>
+</div>
+
+<!-- ═══════════ DOCUMENTAÇÃO / REGISTO ═══════════ -->
+<div>
+  <div class="tel">
+    <div class="cab">
+      <div class="fila">
+        <svg class="i" viewBox="0 0 24 24" style="color:var(--t2)"><path d="M11 5l-7 7 7 7M4 12h16"/></svg>
+        <div style="flex:1"><h4>O que esta casa fez</h4><div class="tit peq">Nesta casa</div></div>
+      </div>
+      <div class="seg" style="margin-top:12px"><div class="on">Nesta casa</div><div>Como funciona</div></div>
+    </div>
+    <div class="corpo">
+      <div class="bolas">
+        <div class="bola on"><i style="background:var(--ac);font-size:12px;width:42px;border-radius:var(--r-p)">Todos</i></div>
+        <div class="bola"><i style="background:#3B5BDB">A</i>António</div>
+        <div class="bola"><i style="background:#7048E8">R</i>Rita</div>
+        <div class="bola"><i style="background:#0CA678">T</i>Tomás</div>
+      </div>
+      <div class="grupo">
+        <div class="rot">Hoje</div>
+        <div class="cartao" style="padding:4px 16px">
+          <div class="ln solta"><div class="val" style="width:40px">14:20</div>
+            <div class="av" style="width:28px;height:28px;font-size:12px;background:#7048E8">R</div>
+            <div class="txt"><b>Despesa de 45,00 € em Mercearia</b>
+              <span><b style="color:var(--ac-t);font-weight:600;display:inline">Dinheiro</b> · Rita</span></div></div>
+          <div class="ln solta"><div class="val" style="width:40px">09:05</div>
+            <div class="av" style="width:28px;height:28px;font-size:12px;background:#1C7ED6">L</div>
+            <div class="txt"><b>Léo marcou «Levar o lixo»</b>
+              <span><b style="color:var(--ac-t);font-weight:600;display:inline">Tarefas</b> · a confirmar</span></div></div>
+          <div class="ln solta"><div class="val" style="width:40px">08:12</div>
+            <div class="av" style="width:28px;height:28px;font-size:12px;background:#3B5BDB">A</div>
+            <div class="txt"><b>Envelope «Férias» criado com 150,00 €</b>
+              <span><b style="color:var(--ac-t);font-weight:600;display:inline">Dinheiro</b> · António</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <h3 class="nome" style="margin-top:12px">Nesta casa</h3>
+  <p class="dizer">O registo é uma linha do tempo com a hora à esquerda e a bola de quem fez — a mesma linha da Agenda, para a app ter UMA forma cronológica em vez de duas. A área vai na segunda linha, em acento, e não numa pastilha à direita: a frase do registo é longa e a pastilha roubava-lhe metade da largura.</p>
+</div>
+
+<!-- ═══════════ APP DA CRIANÇA ═══════════ -->
+<div>
+  <div class="tel" style="--ac:#1C7ED6;--ac-sup:#E7F1FC;--ac-t:#14559B">
+    <div class="cab grande" style="background:linear-gradient(180deg,#1C7ED6,#1769B5);border:0">
+      <div class="fila">
+        <div class="av" style="background:rgba(255,255,255,.22);width:44px;height:44px;font-size:17px">L</div>
+        <div style="flex:1"><h4 style="color:rgba(255,255,255,.78)">Terça, 15/09</h4>
+          <div class="tit" style="color:#fff;font-size:22px">Olá, Léo</div></div>
+      </div>
+      <div class="nums" style="margin-top:14px">
+        <div><span style="color:rgba(255,255,255,.72)">O meu cofre</span><b style="color:#fff">12,40 €</b></div>
+        <div><span style="color:rgba(255,255,255,.72)">Pontos</span><b style="color:#fff">14</b></div>
+      </div>
+    </div>
+    <div class="corpo">
+      <div class="cartao">
+        <div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:16px;font-weight:600">Bicicleta</b>
+          <span class="sub" style="margin-left:auto">12,40 de 120,00 €</span></div>
+        <div class="bar" style="margin:10px 0 8px"><i style="width:10%"></i></div>
+        <div class="sub">Faltam 107,60 € · 18 semanadas ao ritmo de agora.</div>
+      </div>
+      <div class="grupo">
+        <div class="rot">As minhas tarefas</div>
+        <div class="cartao" style="padding:4px 16px">
+          <div class="ln" style="padding:14px 0"><span style="width:34px;height:34px;border-radius:var(--r-p);border:1.75px solid var(--linha);flex:none"></span>
+            <div class="txt"><b style="font-size:16px">Levar o lixo</b><span>2 pontos</span></div></div>
+          <div class="ln" style="padding:14px 0"><div class="ic aviso" style="width:34px;height:34px;border-radius:var(--r-p)"><svg class="i s" viewBox="0 0 24 24"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="8"/></svg></div>
+            <div class="txt"><b style="font-size:16px">Fazer a cama</b><span>a confirmar</span></div></div>
+          <div class="ln" style="padding:14px 0;opacity:.55"><div class="ic ok" style="width:34px;height:34px;border-radius:var(--r-p)"><svg class="i s" viewBox="0 0 24 24"><path class="visto" d="M6 12.5l4 4 8-9"/></svg></div>
+            <div class="txt"><b style="font-size:16px;text-decoration:line-through;text-decoration-color:var(--t3)">Arrumar o quarto</b><span>3 pontos · feita</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="barra">
+      <a class="on"><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg></span>Tarefas</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg></span>Cofre</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/></svg></span>Compras</a>
+    </div>
+  </div>
+  <h3 class="nome" style="margin-top:12px">A app da criança</h3>
+  <p class="dizer">A única com cabeçalho de cor — a dela, escurecida até o branco se ler. Texto maior, alvos maiores, três separadores. O objetivo do cofre é o primeiro cartão porque é o que a faz querer fazer as tarefas. Nenhum número do orçamento da casa entra aqui.</p>
+</div>
+
+<!-- ═══════════ ENTRADA ═══════════ -->
+<div>
+  <div class="tel" style="grid-template-rows:1fr">
+    <div style="background:linear-gradient(165deg,#0F2B4C,#1E63C4);padding:34px 24px;display:flex;flex-direction:column;gap:22px">
+      <div style="margin-top:30px">
+        <svg width="54" height="54" viewBox="0 0 24 24" style="stroke:#fff;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round"><path d="M3 11.5l9-7.5 9 7.5"/><path d="M6 10.5V20h12v-9.5"/></svg>
+        <div style="color:#fff;font-size:30px;font-weight:600;letter-spacing:-.02em;margin-top:14px">Nossa Casa</div>
+        <div style="color:rgba(255,255,255,.7);font-size:14px;margin-top:4px">A casa Madeira</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:auto;margin-bottom:26px">
+        <div style="background:#fff;border-radius:var(--r-l);padding:14px;display:flex;gap:14px;align-items:center;box-shadow:var(--e2)">
+          <div class="av" style="background:#3B5BDB;width:42px;height:42px">A</div>
+          <div style="flex:1;min-width:0"><b style="font-weight:600">António</b><div class="sub corta">tojomadeira@gmail.com</div></div>
+          <span class="pil ac" style="flex:none">Administra</span>
+        </div>
+        <div style="background:#fff;border-radius:var(--r-l);padding:14px;display:flex;gap:14px;align-items:center;box-shadow:var(--e2)">
+          <div class="av" style="background:#7048E8;width:42px;height:42px">R</div>
+          <div style="flex:1;min-width:0"><b style="font-weight:600">Rita</b><div class="sub corta">rita@gmail.com</div></div>
+        </div>
+        <div style="border:1px dashed rgba(255,255,255,.4);border-radius:var(--r-l);padding:14px;text-align:center;color:#fff;font-size:14px;font-weight:500">Entrar com outra conta Google</div>
+        <div style="text-align:center;color:rgba(255,255,255,.72);font-size:13px;margin-top:8px">As crianças entram com o PIN</div>
+      </div>
+    </div>
+  </div>
+  <h3 class="nome" style="margin-top:12px">Entrada</h3>
+  <p class="dizer">Um degradê do azul-marinho ao acento, o logótipo em cima, as contas em cartões brancos no fundo — onde o polegar chega. A entrada das crianças é uma linha de texto, não um botão: não é o caminho de todos os dias.</p>
+</div>
+
+<!-- ═══════════ ESCURO ═══════════ -->
+<div>
+  <div class="tel escuro">
+    <div class="cab grande">
+      <div class="fila"><div style="flex:1"><h4>Conta conjunta · setembro</h4><div class="tit peq">Dinheiro</div></div>
+        <div class="av" style="background:#3B5BDB">A</div></div>
+    </div>
+    <div class="corpo">
+      <div class="cartao">
+        <div class="sub">Disponível este mês</div>
+        <div class="heroi" style="color:var(--ok-t);margin:2px 0 10px">771,36 €</div>
+        <div class="bar"><i style="width:62%"></i></div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px" class="sub"><span>1 248,64 € gastos</span><span>de 2 020,00 €</span></div>
+      </div>
+      <div class="grupo">
+        <div class="rot">Envelopes</div>
+        <div class="cartao" style="padding:12px 16px;display:flex;flex-direction:column;gap:13px">
+          <div><div style="display:flex;margin-bottom:6px"><b style="flex:1;font-weight:500;font-size:14px">Mercearia</b><span class="val" style="font-size:13px">546,60 / 590,00 €</span></div>
+            <div class="bar" style="height:5px"><i class="aviso" style="width:93%"></i></div></div>
+          <div><div style="display:flex;margin-bottom:6px"><b style="flex:1;font-weight:500;font-size:14px">Casa &amp; contas</b><span class="val" style="font-size:13px">357,69 / 780,00 €</span></div>
+            <div class="bar" style="height:5px"><i class="ok" style="width:46%"></i></div></div>
+        </div>
+      </div>
+      <div class="grupo">
+        <div class="rot">Contas entre nós</div>
+        <div class="cartao" style="border-left:3px solid var(--av)">
+          <b style="font-weight:500">A Rita deve-lhe 83,67 €</b>
+          <div class="sub" style="margin-top:2px">14 despesas a meias este mês</div>
+        </div>
+      </div>
+    </div>
+    <div class="fab"><svg class="i s" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Despesa</div>
+    <div class="barra">
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg></span>Início</a>
+      <a class="on"><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg></span>Dinheiro</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg></span>Tarefas</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9.5 13l2 2 3.5-4"/></svg></span>Compras</a>
+      <a><span class="pilula"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>Agenda</a>
+    </div>
+  </div>
+  <h3 class="nome" style="margin-top:12px">O escuro</h3>
+  <p class="dizer">Três níveis de superfície — página, cartão, folha —, o acento clareado para se ler sobre eles, e os estados com texto próprio. Nenhum preto puro: o fundo é #101216, que descansa a vista e deixa a sombra existir.</p>
+</div>
+
+</div><!-- /tapete -->
+
+<h2 class="sec">3 · O que muda, e porquê</h2>
+<table class="d">
+  <tr><th>Decisão</th><th>Hoje</th><th>Proposta</th><th>Porquê</th></tr>
+  <tr><td>Cabeçalho</td><td>Bloco da cor do esquema, em todos os ecrãs</td><td>Superfície branca; a cor só no que ela significa</td><td>O bloco de cor consome o contraste todo e obriga o resto a competir com ele. A cor vale mais usada uma vez do que em todo o topo.</td></tr>
+  <tr><td>Acrescentar</td><td>Botão tracejado no fim da lista</td><td>Botão flutuante com verbo («Tarefa», «Despesa»)</td><td>Devolve a linha inteira à lista e fica ao alcance do polegar em qualquer ponto do scroll.</td></tr>
+  <tr><td>Urgência</td><td>Número numa caixa de cor</td><td>Barra de 3 px à esquerda</td><td>A ordem já é a lista; o número era redundante e roubava 40 px ao título.</td></tr>
+  <tr><td>Envelopes</td><td>Uma linha: nome, valores, barra fina</td><td>Duas linhas: nome e valores em cima, barra em baixo</td><td>Uma barra ao lado de texto lê-se como decoração; por baixo lê-se como medida.</td></tr>
+  <tr><td>Preço por saber</td><td>«0,00 €»</td><td>«—»</td><td>Zero é uma afirmação. A app não sabe, e dizê-lo é mais honesto do que inventar.</td></tr>
+  <tr><td>Decisão pendente</td><td>Pastilha «Ação» que obriga a abrir</td><td>Cartão com as duas respostas à vista</td><td>Uma pergunta de um toque não deve custar três.</td></tr>
+  <tr><td>Tipo</td><td>17 tamanhos</td><td>7, com papéis</td><td>Uma escala com nomes decide-se sozinha; dezassete números decidem-se a cada ecrã.</td></tr>
+  <tr><td>Números</td><td>Proporcionais</td><td>Largura fixa (tabular)</td><td>Colunas de euros que não dançam ao mudar de valor.</td></tr>
+  <tr><td>Movimento</td><td>Nenhum</td><td>120 / 220 / 300 ms, três papéis</td><td>Dá continuidade ao que aparece e ao que sai. Nada acima de 300, nada que atrase um toque, nada em listas que rolam.</td></tr>
+  <tr><td>Separadores</td><td>Ícone e texto a branco</td><td>Pastilha de acento por trás do ícone aberto</td><td>Diz onde se está sem depender só da cor do texto — e move-se com 220 ms ao mudar.</td></tr>
+</table>
+
+<h2 class="sec">4 · O ícone do «Sistema» — cinco hipóteses</h2>
+<p class="intro">Ficou por responder: no escolhedor de aspeto, o «Claro» e o «Escuro» mostram a página real de cada um, e o «Sistema» precisa de dizer «o que o telemóvel disser». Todas em círculo de 42, com o anel do esquema quando está escolhido — como o avatar. Nenhuma reutiliza um ícone que já tem outro sentido nesta casa.</p>
+<div class="cartao" style="max-width:720px">
+  <div style="display:flex;gap:26px;flex-wrap:wrap">
+
+    <div style="display:grid;justify-items:center;gap:8px;width:118px;text-align:center">
+      <span style="width:42px;height:42px;border-radius:999px;overflow:hidden;display:flex;
+        box-shadow:0 0 0 2px #fff,0 0 0 4px var(--ac)">
+        <i style="flex:1;background:#F4F5F7"></i><i style="flex:1;background:#101216"></i></span>
+      <b style="font-size:12.5px">1 · Amostra partida</b>
+      <span style="font-size:11px;color:var(--t3);line-height:1.45">A que existe hoje. Mostra as duas páginas a sério, sem traço nenhum. Fica igual ao «Claro» visto de longe.</span>
+    </div>
+
+    <div style="display:grid;justify-items:center;gap:8px;width:118px;text-align:center">
+      <span style="width:42px;height:42px;border-radius:999px;background:#FFF;border:1px solid var(--linha);
+        display:grid;place-items:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" style="stroke:#16181D;fill:none;stroke-width:1.75"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 0 0 17z" fill="#16181D" stroke="none"/></svg></span>
+      <b style="font-size:12.5px">2 · Contraste</b>
+      <span style="font-size:11px;color:var(--t3);line-height:1.45">Metade cheia, metade vazia. É o símbolo que o mundo já usa para aparência — lê-se a qualquer tamanho.</span>
+    </div>
+
+    <div style="display:grid;justify-items:center;gap:8px;width:118px;text-align:center">
+      <span style="width:42px;height:42px;border-radius:999px;background:#FFF;border:1px solid var(--linha);
+        display:grid;place-items:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" style="stroke:#16181D;fill:none;stroke-width:1.75;stroke-linecap:round"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg></span>
+      <b style="font-size:12.5px">3 · Telemóvel</b>
+      <span style="font-size:11px;color:var(--t3);line-height:1.45">Diz literalmente o que a opção faz: segue o aparelho. Ícone novo, sem colisão. <b style="color:var(--ac-t)">A minha escolha.</b></span>
+    </div>
+
+    <div style="display:grid;justify-items:center;gap:8px;width:118px;text-align:center">
+      <span style="width:42px;height:42px;border-radius:999px;background:#FFF;border:1px solid var(--linha);
+        display:grid;place-items:center">
+        <svg width="30" height="30" viewBox="0 0 30 30" style="stroke:#16181D;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.75">
+          <circle cx="9" cy="15" r="3.4"/>
+          <path d="M9 9.2V7.4M9 22.6v-1.8M2.4 15H.9M4.6 10.6 3.4 9.4M4.6 19.4l-1.2 1.2"/>
+          <path d="M26.4 17.4a6.2 6.2 0 1 1-6.7-8.4 4.9 4.9 0 0 0 6.7 8.4z"/></svg></span>
+      <b style="font-size:12.5px">4 · Sol e lua</b>
+      <span style="font-size:11px;color:var(--t3);line-height:1.45">Os dois aspetos lado a lado. Bonito, mas dois desenhos em 24 px ficam apertados.</span>
+    </div>
+
+    <div style="display:grid;justify-items:center;gap:8px;width:118px;text-align:center">
+      <span style="width:42px;height:42px;border-radius:999px;background:#FFF;border:1px solid var(--linha);
+        display:grid;place-items:center">
+        <svg width="30" height="30" viewBox="0 0 30 30" style="stroke:#16181D;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.75">
+          <circle cx="13" cy="16" r="4.4"/>
+          <path d="M13 8.6V6.6M13 25.4v-2M4.6 16h-2M21.4 16h2M7.1 10.1 5.7 8.7M18.9 21.9l1.4 1.4M7.1 21.9l-1.4 1.4M18.9 10.1l1.4-1.4"/>
+          <circle cx="18.6" cy="11.4" r="5.6" fill="#16181D" stroke="#FFFFFF" stroke-width="2.6"/></svg></span>
+      <b style="font-size:12.5px">5 · Eclipse</b>
+      <span style="font-size:11px;color:var(--t3);line-height:1.45">A lua a tapar o sol: «muda ao anoitecer». Mais expressivo, mas pede que se perceba a metáfora.</span>
+    </div>
+
+  </div>
+</div>
+<p class="dizer" style="max-width:74ch;margin-top:12px">Recomendo a <b style="color:var(--t1)">3 · Telemóvel</b>: é a única que diz o que a opção faz em vez de mostrar o resultado, e resolve a queixa de origem — a amostra partida parecia o «Claro». Se preferir não juntar um ícone novo, a <b style="color:var(--t1)">2 · Contraste</b> é a segunda melhor e não precisa de desenho novo no <span style="font-family:ui-monospace,monospace;font-size:12px">Icon</span>.</p>
+
+<h2 class="sec">5 · O que NÃO muda</h2>
+<p class="intro">O português europeu e o registo formal. O euro com espaço inquebrável. Os alvos de 44 px, e 64 nas linhas do modo compras. O cabeçalho e o rodapé em todas as janelas. Nenhum saldo escrito — tudo somas de movimentos. A visibilidade imposta no servidor. Nenhum emoji. A cor por perfil, com os seis esquemas e os dois aspetos. Os ícones com um sentido cada.</p>
+</body>
+</html>

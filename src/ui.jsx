@@ -169,15 +169,30 @@ export const SectionTitle = ({ t, children, right }) => (
 // — cerca de 700 px de linha azul contínua, que se lia como uma régua da página
 // e não como a marca de uma consulta. O dono da casa escolheu a opção A de
 // `design/faixa-da-consulta.dc.html`. Fechada, as duas são iguais.
+// ⚠ A FAIXA JÁ NÃO EMPURRA A LINHA (15/09/2026: «os círculos devem ter o
+// alinhamento do 1.º ecrã»).
+//
+// Era `borderLeftWidth: 3` mais `paddingLeft: 10`, e só quando havia faixa: uma
+// linha com faixa tinha o conteúdo 11 px à direita do conteúdo de uma linha sem
+// ela. Numa lista de compras onde a faixa marca o que já se apanhou, isso dá uma
+// coluna de círculos aos bicos — o apanhado um degrau à direita do por apanhar,
+// linha sim linha não. Ele viu-o na lista das compras e tinha razão em todas as
+// listas: Tarefas, Modo Compras, Início, Saúde, todas alternam faixa com nada.
+//
+// Agora a faixa desenha-se ABSOLUTA, como a `faixaCurta` sempre se desenhou, e
+// o corredor dos 10 px existe em TODAS as linhas, com faixa ou sem ela. O
+// conteúdo fica no mesmo sítio, e a faixa aparece e desaparece ao lado dele.
 export const Linha = ({ t, children, faixa, faixaCurta, tinta, last, style }) => (
   <View style={[{
     minHeight: 52, justifyContent: 'center',
-    paddingVertical: S.sm, paddingHorizontal: S.xs,
+    paddingVertical: S.sm, paddingLeft: S.md + S.xs, paddingRight: S.xs,
     borderBottomWidth: last ? 0 : 1, borderBottomColor: t.divider,
-    ...(faixa ? { borderLeftWidth: 3, borderLeftColor: faixa, paddingLeft: S.md + S.xs } : {}),
-    ...(faixaCurta ? { paddingLeft: S.md + S.xs } : {}),
     ...(tinta ? { backgroundColor: tinta } : {}),
   }, style]}>
+    {faixa ? (
+      <View pointerEvents="none" testID="faixa"
+        style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: faixa }} />
+    ) : null}
     {faixaCurta ? (
       <View pointerEvents="none" testID="faixa-curta"
         style={{ position: 'absolute', left: 0, top: 0, width: 3, height: 52, backgroundColor: faixaCurta }} />
@@ -265,6 +280,58 @@ export const Choice = ({ t, label, selected, onPress }) => (
 // filtros». Agora é uma só: `EscolherPessoa`, em `src/FiltroDeMembros.jsx`,
 // que é a mesma bola do filtro. Guarda: `visibilidade-eventos`
 // («a marca diz quantos se podem escolher»).
+
+// ── A marca de estado de uma linha que se marca ─────────────────────────────
+//
+// Quatro estados, um desenho, e o MESMO DIÂMETRO nos quatro — é isso que os
+// alinha na coluna (15/09/2026: «tudo o que não está selecionado deve ter um
+// círculo em branco antes e estar alinhado com o visto existente»).
+//
+// ⚠ «Por marcar» era o `infoCircle` — um «i» dentro de um círculo — em SEIS
+// sítios: Tarefas, Compras, Modo Compras, Início, a lista da criança e o
+// carrinho. Um «i» quer dizer INFORMAÇÃO; o que aquelas linhas queriam dizer
+// era «isto ainda não foi marcado». Um ícone com dois sentidos é pior do que um
+// ícone menos evocativo (CLAUDE.md), e este andava com seis. Agora «por marcar»
+// é um círculo vazio, que é o que o mundo inteiro lê como «por marcar».
+//
+// ⚠ O VISTO leva o ACENTO DO PERFIL e não o verde de «ok» («a cor do visto deve
+// ser igual à do perfil escolhido»). É a regra que o resto da app já segue: o
+// que se pinta com o acento é o que ESTA pessoa escolheu ao tocar. O verde fica
+// na faixa e na tinta da linha — essas são o estado dela, não a marca do dedo.
+// `t.titulo` e não `t.accent`: é o acento já clareado até aos 3:1 contra o
+// cartão escuro, que é o que um ícone precisa (ver `buildTheme`).
+//
+// ⚠ E as medidas saem do PRÓPRIO GLIFO, para os quatro se alinharem a qualquer
+// tamanho: o `checkCircle` desenha uma circunferência de raio 9 numa grelha de
+// 24 com traço de 1,75 — logo 19,75 de caixa e 1,75 de borda, à escala pedida.
+// Escrever «20» à mão alinhava neste tamanho e desalinhava no seguinte.
+export const MarcaDeEstado = ({ t, estado = 'por-marcar', size = 24 }) => {
+  const d = (19.75 * size) / 24;
+  const b = (1.75 * size) / 24;
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      {estado === 'marcado' ? (
+        <Icon name="checkCircle" size={size} color={t.titulo} />
+      ) : estado === 'aguarda' ? (
+        // «Feito — à espera que um adulto confirme»: o relógio num disco âmbar.
+        // ⚠ `warnBg` é tijolo — opaco e claro nos DOIS aspetos —, e um tijolo
+        // `xBg` só aceita o `xDeep` por cima (CLAUDE.md). Daí o `warnDeep`, e
+        // não o `warnTexto`, que no escuro clareia e aqui ficaria a 1,4.
+        <View style={{ width: d, height: d, borderRadius: R.pill, alignItems: 'center',
+          justifyContent: 'center', backgroundColor: t.state.warnBg }}>
+          <Icon name="clock" size={d * 0.74} color={t.state.warnDeep} />
+        </View>
+      ) : estado === 'sem' ? (
+        // ⚠ `warnTexto` e não `warn`: o `#FAAD14` sobre a página clara dá 1,9,
+        // e um ícone precisa de 3. Aqui o fundo é a página, não o tijolo.
+        <Icon name="closeCircle" size={size} color={t.state.warnTexto} />
+      ) : (
+        <View style={{ width: d, height: d, borderRadius: R.pill, borderWidth: b,
+          borderColor: t.border, backgroundColor: t.surface }} />
+      )}
+    </View>
+  );
+};
 
 // A visibilidade de um evento, em pastilha. Estava escrita à mão em dois
 // ecrãs — com dois estados, e a cor a repetir-se em quatro props de cada vez.

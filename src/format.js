@@ -223,6 +223,33 @@ export const subtituloDaTarefa = (t = {}, prazo = null) => {
   return resto ? `${quem} · ${resto}` : quem;
 };
 
+// A legenda de uma linha de tarefa, nos QUATRO estados.
+//
+// ⚠ Uma tarefa de UMA VEZ SÓ, marcada, não dizia nada de estar feita. A frase
+// só existia para a recorrente — «feita hoje · volta amanhã» — e a outra caía
+// no subtítulo normal, a mostrar o prazo. No ecrã ficava um visto ao lado de
+// «António · Segunda, 21/09 às 00:00»: a marca dizia feita e as palavras
+// diziam por fazer, na mesma linha. (16/09/2026, o dono da casa, com o print
+// da linha à frente: «o que acontece quando marco alguma coisa como feita?».)
+//
+// ⚠ E diz «feita», sem o «hoje». O «hoje» da recorrente é verdade porque ela
+// se desmarca sozinha no dia seguinte; uma tarefa de uma vez só fica marcada, e
+// amanhã «feita hoje» passava a mentira. A app não guarda o dia em que uma
+// tarefa de uma vez só foi feita — e inventá-lo era pior do que não o dizer.
+//
+// Vive aqui, e não nos ecrãs, porque a mesma expressão estava escrita à mão nas
+// Tarefas E no Início: a mesma tarefa, vista de dois sítios, com duas legendas
+// à espera de divergirem.
+export const legendaDaTarefa = (t = {}, prazo = null, estado = {}) => {
+  const { feita, pendente, recorrente } = estado;
+  if (feita) {
+    if (recorrente) return 'feita hoje · volta amanhã';
+    return t.who ? `${t.who} · feita` : 'feita';
+  }
+  if (pendente) return 'Feito — a aguardar confirmação';
+  return subtituloDaTarefa(t, prazo);
+};
+
 export const dayLabel = (key) => {
   const o = parseKey(key);
   if (!o) return '';

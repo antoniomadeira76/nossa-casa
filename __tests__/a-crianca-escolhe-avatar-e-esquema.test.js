@@ -125,7 +125,11 @@ describe('⚠ a criança escolhe o avatar e o esquema de cor', () => {
   it('as bolas do esquema são UM componente, usado pelo Perfil e pela KidApp', () => {
     const perfil = ler('src/screens/Perfil.jsx');
     const kid = ler('src/KidApp.jsx');
-    expect(perfil).toMatch(/import EscolhaDeEsquema from '\.\.\/EsquemaDeCor'/);
+    // O Perfil traz também a medida da bola (`BOLA`), para o escolhedor de
+    // aspeto medir o mesmo que o de cor — 15/09/2026, «os círculos de cima
+    // devem ter o mesmo tamanho dos de baixo». Daí o import ter chaves.
+    expect(perfil).toMatch(/import EscolhaDeEsquema(?:, \{[^}]*\})? from '\.\.\/EsquemaDeCor'/);
+    expect(perfil).toMatch(/BOLA as BOLA_DO_ESQUEMA/);
     expect(kid).toMatch(/import EscolhaDeEsquema from '\.\/EsquemaDeCor'/);
     // E a geometria do risco diagonal só existe no componente.
     expect(perfil).not.toMatch(/const RECUO = /);

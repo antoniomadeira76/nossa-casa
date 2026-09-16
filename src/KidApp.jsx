@@ -6,7 +6,7 @@ import { buildTheme, onChrome, S, R, FONT, SCHEMES, corDoMembro, chromeDaCrianca
 import { EUR, parseKey, pad2, plural, TODAY_KEY } from './format';
 import Icon from './Icon';
 import { MarcaDeAgua } from './ui';
-import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe, Linha, Choice, BotaoCompacto, NumField } from './ui';
+import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe, Linha, Choice, BotaoCompacto, NumField, MarcaDeEstado } from './ui';
 import Sheet from './Sheet';
 import EscolherAvatar from './sheets/EscolherAvatar';
 import ProporTroca from './sheets/ProporTroca';
@@ -187,7 +187,10 @@ function KidTaskRow({ t, task, kid, onPress }) {
       })}>
 
       <View style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-        <TaskIcon size={28} color={isDone ? t.state.ok : isPending ? t.state.info : t.slate} />
+        {/* ⚠ `okTexto`/`warnTexto` e não `ok`/`info`: um ícone precisa de 3:1 e
+            o verde `#52C41A` dá 2,18 sobre a página clara. E «a confirmar» é
+            ÂMBAR, como nas Tarefas e no Início — um estado, uma cor. */}
+        <TaskIcon size={28} color={isDone ? t.state.okTexto : isPending ? t.state.warnTexto : t.slate} />
       </View>
 
       <View style={{ flex: 1, gap: 4 }}>
@@ -197,7 +200,7 @@ function KidTaskRow({ t, task, kid, onPress }) {
           textDecorationLine: isDone ? 'line-through' : 'none',
         }}>{task.title}</Text>
         {isPending ? <Text numberOfLines={1} style={{
-          fontFamily: FONT.ui, fontSize: 12, color: t.state.infoTexto,
+          fontFamily: FONT.ui, fontSize: 12, color: t.state.warnTexto,
         }}>A confirmar por um adulto</Text>
         : task.meta ? <Text numberOfLines={1} style={{
           fontFamily: FONT.ui, fontSize: 12, color: t.text3,
@@ -490,12 +493,15 @@ function KidComprasView({ t, kid }) {
             <View style={{ marginHorizontal: 16 }}>
               {rows.map(i => {
                 const done = stateOf(i) === 'done';
+                // A faixa do apanhado fica, como na lista dos adultos.
                 return (
                   <Linha key={i.id} t={t}
                     faixa={done ? t.state.okBorder : undefined}
                     tinta={done ? t.state.okBg : undefined}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
-                      <Icon name={done ? 'checkCircle' : 'infoCircle'} size={24} color={done ? t.state.ok : t.text3} />
+                      {/* O mesmo marcador das compras dos adultos: círculo
+                          vazio por apanhar, visto do acento apanhado. */}
+                      <MarcaDeEstado t={t} estado={done ? 'marcado' : 'por-marcar'} size={24} />
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 16, color: done ? t.text3 : t.text2,
                           textDecorationLine: done ? 'line-through' : 'none' }}>{i.label}</Text>

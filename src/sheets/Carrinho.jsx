@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
 import { S, R, FONT, elev , LARGURA_APP } from '../theme';
 import { EUR } from '../format';
-import { Label, Primary, Tile } from '../ui';
+import { Label, Primary, Tile, MarcaDeEstado } from '../ui';
 import Icon from '../Icon';
 import { ANIMACAO_DA_FOLHA } from '../Sheet';
 
@@ -83,7 +83,9 @@ export default function Carrinho({ t, doneItems, items, cart, pago, user, store,
                       minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 12,
                       borderBottomWidth: idx === Math.min(4, arr.length - 1) ? 0 : 1, borderBottomColor: t.divider
                     }}>
-                      <Icon name="infoCircle" size={20} color={t.text3} />
+                      {/* Estes são os artigos SEM STOCK — a cruz âmbar, como no
+                          modo compras. Levavam um «i», que dizia «informação». */}
+                      <MarcaDeEstado t={t} estado="sem" size={20} />
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>{i.label}</Text>
                       </View>

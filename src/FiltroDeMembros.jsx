@@ -87,14 +87,46 @@ function BolaDeMembro({ t, nome, MEMBERS, on, varios, rotulo, onPress }) {
 // Uma pastilha de texto ao lado das bolas: o «Todos» do filtro, o «Quem marcar»
 // da conta fixa, «A casa» do contrato. Alvo de 44 (tinha 40: era o único alvo
 // abaixo dos 44 do INVARIANTE #5, e o primeiro que a mão encontra).
+//
+// ⚠ REDONDA desde 15/09/2026 — «implementa este ícone em todos os ecrãs que
+// tenham ícone semelhante ou igual ao segundo print», com o retângulo de raio 6
+// no segundo print e o círculo no primeiro.
+//
+// Era o desenho da `Choice`: canto de 6, traço de 1, 13 px de texto. Ficava à
+// cabeça de uma fila de bolas — duas formas na mesma linha, para a mesma
+// decisão, e a primeira que a mão encontra era a que destoava. Agora tem a
+// GEOMETRIA DA BOLA: 40 de altura, extremos redondos, anel de 2 do acento com
+// um vão de 2 até ao disco — as mesmas medidas do anel à volta de um avatar.
+//
+// ⚠ A largura acompanha a palavra, e é de propósito. «Todos» sai um círculo;
+// «Quem marcar» sai uma pastilha de extremos redondos. O que ele recusou foi o
+// CANTO, não o comprimento — encolher o texto até «Quem marcar» caber num
+// círculo de 40 punha-o abaixo de qualquer tamanho que esta app escreva, e
+// cortá-lo com «…» deixava duas opções chamadas «Quem…» e «A ca…».
 function PastilhaDeTexto({ t, rotulo, on, onPress }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button"
       accessibilityLabel={rotulo} accessibilityState={{ selected: on }} aria-pressed={on}
-      style={{ minHeight: 44, paddingHorizontal: 14, borderRadius: R.row, borderWidth: 1,
-        borderColor: on ? t.accent : t.border, backgroundColor: on ? t.accent : 'transparent',
-        alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: on ? '#FFFFFF' : t.text2 }}>{rotulo}</Text>
+      style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+      {/* ⚠ UM círculo só, e não um anel à volta de um disco como na bola de uma
+          pessoa. O anel com vão precisa de 8 px de raio a mais, e com o rótulo
+          por dentro a forma fechava a 57 × 39 — um oval, medido no navegador, e
+          o que ele pediu foi um círculo. Sem o anel, o «Todos» fecha a 42 × 40.
+          O avatar pode dar-se ao luxo do anel porque o que tem dentro é uma
+          imagem de 32; aqui o que está dentro é uma palavra, e uma palavra não
+          encolhe sem deixar de se ler. */}
+      {/* ⚠ `S.xs` de enchimento, medido e não escolhido: «Todos» a 11 px mede
+          31,9, e 31,9 + 2 + 2 de enchimento + 2 + 2 de traço dá 39,9 — os 40
+          da altura. Com `5` fechava a 45,9 × 40, que é um oval. */}
+      <View style={{ minWidth: 40, height: 40, borderRadius: R.pill, paddingHorizontal: S.xs,
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 2, borderColor: on ? t.accent : t.border,
+        backgroundColor: on ? t.accent : t.surface }}>
+        {/* Branco sobre o acento, como a `Choice`, o `Segmented` e o botão
+            principal — 4,62 no pior dos seis esquemas. */}
+        <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '600',
+          color: on ? '#FFFFFF' : t.text2 }}>{rotulo}</Text>
+      </View>
     </Pressable>
   );
 }

@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { subtituloDaTarefa, plural, TODAY_KEY } from '../format';
+import { subtituloDaTarefa, legendaDaTarefa, plural, TODAY_KEY } from '../format';
 
-import { SectionTitle, Linha, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe, BotaoCompacto, NumField } from '../ui';
+import { SectionTitle, Linha, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe, BotaoCompacto, NumField, MarcaDeEstado } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -157,7 +157,14 @@ export default function Tarefas({ t, user, abrir }) {
                   // O estado que era a borda do cartão passa a ser a faixa e a
                   // tinta da linha (desenho C, 09/09/2026): verde feita, azul à
                   // espera, o acento enquanto se arrasta.
-                  faixa={arrastando ? t.accent : done ? t.state.okBorder : pend ? t.state.info : undefined}
+                  // ⚠ «A aguardar confirmação» é ÂMBAR e já não azul
+                  // (15/09/2026). A marca da linha passou a ser um relógio em
+                  // disco âmbar, e uma faixa azul por baixo de uma marca âmbar
+                  // são duas cores para um estado só. Âmbar é o que esta app usa
+                  // para «falta alguém decidir», que é exactamente isto — o azul
+                  // de informação é passivo. A mesma troca no Início e na app da
+                  // criança, para o estado ter UMA cor.
+                  faixa={arrastando ? t.accent : done ? t.state.okBorder : pend ? t.state.warn : undefined}
                   tinta={arrastando ? t.subtle : done ? t.state.okBg : undefined}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     {/* ⚠ É o `onLongPress` DESTE Pressable que arma o arrasto.
@@ -179,19 +186,23 @@ export default function Tarefas({ t, user, abrir }) {
                         <Text style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '700',
                           color: u.fill ? '#FFFFFF' : t.text2 }}>{idx}</Text>
                       </View>
-                      {/* Ícone de estado, como na referência: entre o número
-                          e o avatar. Faltava — a linha não dizia se estava
-                          feita, à espera, ou por fazer, sem ler a legenda. */}
-                      <Icon name={done ? 'checkCircle' : pend ? 'clock' : 'infoCircle'} size={20}
-                        color={done ? t.state.ok : pend ? t.state.info : t.text3} />
+                      {/* Marca de estado, entre o número e o avatar: círculo
+                          vazio por fazer, relógio em disco âmbar à espera de
+                          confirmação, visto do acento quando feita. Ver
+                          `MarcaDeEstado` — as três alinham no mesmo diâmetro. */}
+                      <MarcaDeEstado t={t} size={20}
+                        estado={done ? 'marcado' : pend ? 'aguarda' : 'por-marcar'} />
                       <Avatar {...avatarDe(x.who, MEMBERS[x.who], t.text3)} />
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{x.title}</Text>
+                        {/* ⚠ A legenda vem do `legendaDaTarefa` e já não está
+                            escrita aqui: a mesma frase vivia também no Início,
+                            e uma tarefa de uma vez só marcada não dizia nada de
+                            estar feita em nenhum dos dois. */}
                         <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5,
-                          color: d && d.late ? t.state.errTexto : d && d.soon ? t.state.warnTexto : t.text3 }}>
-                          {done && rec ? 'feita hoje · volta amanhã'
-                            : pend ? 'Feito — a aguardar confirmação'
-                            : subtituloDaTarefa(x, d)}
+                          color: done ? t.text3
+                            : d && d.late ? t.state.errTexto : d && d.soon ? t.state.warnTexto : t.text3 }}>
+                          {legendaDaTarefa(x, d, { feita: done, pendente: pend, recorrente: rec })}
                         </Text>
                       </View>
                       {/* Pastilha contornada, como na referência: o amarelo

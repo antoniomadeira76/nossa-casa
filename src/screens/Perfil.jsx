@@ -11,7 +11,7 @@ import { nomeDaFigura } from '../Avatares';
 import Sheet from '../Sheet';
 import ConfirmarAdministradores from '../sheets/ConfirmarAdministradores';
 import EscolherAvatar from '../sheets/EscolherAvatar';
-import EscolhaDeEsquema from '../EsquemaDeCor';
+import EscolhaDeEsquema, { BOLA as BOLA_DO_ESQUEMA } from '../EsquemaDeCor';
 import * as servidor from '../pocketbase';
 
 // O aspeto por extenso, para a frase que diz o que está escolhido.
@@ -22,7 +22,17 @@ const MODO_LABEL = { claro: 'Claro', escuro: 'Escuro', sistema: 'Segue o telemó
 // seguisse o tema mostrava o mesmo dos dois lados. Vêm do `buildTheme`, e não
 // escritas à mão (o `Login` faz o mesmo, pela mesma regra do CLAUDE.md).
 const CLARO_DA_AMOSTRA = buildTheme(0, false).page;
-const ESCURO_DA_AMOSTRA = buildTheme(0, true).page;
+// ⚠ E a TINTA sai da mesma função, pela mesma razão.
+//
+// O sol estava pintado com o `t.text2` do tema EM VIGOR. No modo escuro esse
+// token é quase branco (`#DCE3EA`) e o fundo da bola é quase branco
+// (`#F6F7F9`): 1,15:1 — quem tinha a app escura não via sol nenhum. O fundo
+// destas três bolas não pertence ao tema em vigor, e a tinta também não.
+//
+// O par `buildTheme(0, true).page` / `.text2` — o escuro — viveu aqui enquanto
+// a bola do «Escuro» foi uma AMOSTRA da página escura. Deixou de o ser em
+// 15/09/2026: as três são iguais e o que as distingue é o ícone.
+const TINTA_NO_CLARO = buildTheme(0, false).text2;
 
 const ROLE_LABEL = (r, name) => {
   const fem = FEM(name);
@@ -169,14 +179,31 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
             `refresh` — o ícone que a app já usa para a alternância das tarefas
             e para a manutenção de um equipamento. Sem nome por baixo e com um
             ícone emprestado, ninguém sabia o que era: o dono da casa leu-o como
-            «igual ao Claro». Não é — é o que SEGUE O TELEMÓVEL, e por isso
-            parece o claro num telemóvel claro. Agora diz-se o nome, e a bola
-            do «Sistema» é meia clara e meia escura, que é o que ele faz.
-            O escolhido leva o anel do acento, como a bola de uma pessoa. */}
+            «igual ao Claro». Não é — é o que SEGUE O TELEMÓVEL.
+            O escolhido leva o anel do acento, como a bola de uma pessoa.
+
+            ⚠ O «Sistema» tem agora ÍCONE PRÓPRIO (15/09/2026, a pedido: «o
+            ícone do telemóvel»). A amostra partida ao meio dizia «os dois
+            aspetos», mas não dizia de onde vem a escolha — e num telemóvel
+            claro continuava a parecer-se com o «Claro». O aparelho desenhado
+            di-lo sem palavra nenhuma: o que o telemóvel disser.
+
+            ⚠ E AS TRÊS BOLAS SÃO IGUAIS — mesmo fundo, mesma tinta («todos
+            devem ter o mesmo background e cor do ícone que o Claro tem,
+            sempre»). Eram AMOSTRAS: a do «Escuro» com a página escura por
+            dentro, a do «Sistema» partida ao meio. Uma amostra tem de se
+            entender antes de se ler, e três amostras diferentes davam três
+            pesos diferentes na mesma fila — a escura puxava o olho para si
+            como se fosse a escolhida.
+
+            Agora o que distingue os três é o ÍCONE, que é o que se lê primeiro,
+            e a escolha é o anel do acento. O fundo fixo tem ainda a vantagem de
+            não depender do tema em vigor: a tinta do ícone está medida contra
+            ele nos doze temas, e não há como um deles a apagar. */}
         <View style={{ flexDirection: 'row', gap: S.md, alignItems: 'flex-start' }}>
           {[{ k: 'claro', icon: 'sun', label: 'Claro' },
             { k: 'escuro', icon: 'moon', label: 'Escuro' },
-            { k: 'sistema', icon: null, label: 'Sistema' }].map(o => {
+            { k: 'sistema', icon: 'telemovel', label: 'Sistema' }].map(o => {
             const on = mode === o.k;
             return (
               <Pressable key={o.k} onPress={() => mudarPreferencia(user, { aspeto: o.k })}
@@ -184,23 +211,23 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
                 accessibilityLabel={o.k === 'sistema' ? 'Aspeto igual ao do telemóvel' : `Aspeto ${o.label}`}
                 accessibilityState={{ selected: on }} aria-pressed={on}
                 style={{ width: 52, minHeight: 44, alignItems: 'center', justifyContent: 'flex-start' }}>
+                {/* ⚠ A MESMA BOLA DAS CORES, à letra (15/09/2026: «os círculos de
+                    cima devem ter o mesmo tamanho dos de baixo»). Eram 32 dentro
+                    de um anel de 40; as do esquema de cor, quatro linhas abaixo
+                    no mesmo cartão, são 34 com a borda POR DENTRO. Duas bolas
+                    com dois diâmetros e duas maneiras de dizer «esta» — à
+                    distância de um olhar uma da outra.
+                    Agora é o `BOLA_DO_ESQUEMA`, lido do outro componente e não
+                    escrito aqui: se lá mudar, muda aqui. */}
                 <View style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-                  <View style={{ width: 40, height: 40, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center',
-                    borderWidth: 2, borderColor: on ? t.accent : 'transparent' }}>
-                    {/* A bola é uma AMOSTRA do aspeto: clara, escura, ou as
-                        duas metades para quem segue o telemóvel. */}
-                    <View style={{ width: 32, height: 32, borderRadius: R.pill, overflow: 'hidden',
-                      borderWidth: 1, borderColor: t.border,
-                      backgroundColor: o.k === 'escuro' ? ESCURO_DA_AMOSTRA : CLARO_DA_AMOSTRA,
-                      alignItems: 'center', justifyContent: 'center' }}>
-                      {o.k === 'sistema' ? (
-                        <View style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 16,
-                          backgroundColor: ESCURO_DA_AMOSTRA }} />
-                      ) : null}
-                      {o.icon ? (
-                        <Icon name={o.icon} size={18} color={o.k === 'escuro' ? CLARO_DA_AMOSTRA : t.text2} />
-                      ) : null}
-                    </View>
+                  <View style={{ width: BOLA_DO_ESQUEMA, height: BOLA_DO_ESQUEMA, borderRadius: R.pill,
+                    backgroundColor: CLARO_DA_AMOSTRA,
+                    // A borda de 1 existe sempre: a bola é quase branca e sem
+                    // ela desaparecia dentro de um cartão claro. A de 2 no
+                    // acento é a marca de escolhida, como na bola das cores.
+                    borderWidth: on ? 2 : 1, borderColor: on ? t.accent : t.border,
+                    alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon name={o.icon} size={18} color={TINTA_NO_CLARO} />
                   </View>
                 </View>
                 <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11, lineHeight: 12, marginTop: -2,

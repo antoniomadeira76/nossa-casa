@@ -44,15 +44,50 @@ describe('⚠ a faixa curta', () => {
     expect(estilo(faixa)).toMatchObject({ position: 'absolute', left: 0, top: 0, width: 3, height: 52, backgroundColor: '#2F6FED' });
   });
 
-  it('e a `faixa` de sempre continua a ser a borda — as linhas fechadas não mudam', () => {
+  // ⚠ Esta prova exigia `borderLeftWidth: 3` na raiz, e deixou de valer em
+  // 15/09/2026. A faixa comprida era uma BORDA mais um recuo, e ambos só
+  // apareciam quando havia faixa: uma linha com faixa tinha o conteúdo 11 px à
+  // direita do conteúdo de uma linha sem ela, e numa lista onde a faixa marca o
+  // que já se apanhou isso dá uma coluna de círculos aos degraus. O dono da casa
+  // viu-o nas compras — «quando desmarcado deve continuar no mesmo sítio onde
+  // está o visto agora».
+  //
+  // A faixa passa a desenhar-se ABSOLUTA, como a curta sempre se desenhou, e o
+  // corredor dos 10 px existe em TODAS as linhas. O que esta prova defende é o
+  // mesmo de antes — a faixa comprida acompanha a linha inteira e a curta para
+  // aos 52 —, dito nos termos novos.
+  it('a `faixa` comprida é absoluta e vai de cima a baixo — a curta para aos 52', () => {
     let r;
     TestRenderer.act(() => {
       r = TestRenderer.create(React.createElement(Linha, { t: T, faixa: '#2F6FED' },
         React.createElement(require('react-native').Text, null, 'x')));
     });
     const raiz = r.root.findAll(n => typeof n.type === 'string')[0];
-    expect(estilo(raiz)).toMatchObject({ borderLeftWidth: 3, borderLeftColor: '#2F6FED', paddingLeft: RECUO, minHeight: 52 });
+    const e = estilo(raiz);
+    expect(e.borderLeftWidth).toBeUndefined();
+    expect(e).toMatchObject({ paddingLeft: RECUO, minHeight: 52 });
+    const faixa = r.root.findAll(n => n.props && n.props.testID === 'faixa')[0];
+    expect(faixa).toBeTruthy();
+    expect(estilo(faixa)).toMatchObject({ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: '#2F6FED' });
+    // De cima a baixo, e não 52 px: é o que a distingue da curta.
+    expect(estilo(faixa).height).toBeUndefined();
     expect(r.root.findAll(n => n.props && n.props.testID === 'faixa-curta')).toHaveLength(0);
+  });
+
+  // ⚠ E o corredor é o MESMO com faixa e sem ela. É esta a propriedade que a
+  // coluna de círculos das compras precisa, e a que faltava.
+  it('uma linha SEM faixa tem o mesmo recuo de uma linha COM faixa', () => {
+    const recuoDe = (props) => {
+      let r;
+      TestRenderer.act(() => {
+        r = TestRenderer.create(React.createElement(Linha, { t: T, ...props },
+          React.createElement(require('react-native').Text, null, 'x')));
+      });
+      return estilo(r.root.findAll(n => typeof n.type === 'string')[0]).paddingLeft;
+    };
+    expect(recuoDe({})).toBe(RECUO);
+    expect(recuoDe({ faixa: '#2F6FED' })).toBe(RECUO);
+    expect(recuoDe({ faixaCurta: '#2F6FED' })).toBe(RECUO);
   });
 
   it('⚠ a consulta da Saúde usa a faixa curta — é a única linha da app que abre em acordeão', () => {

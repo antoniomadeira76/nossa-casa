@@ -111,27 +111,55 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
             {semana.map(d => {
               const hoje = d.key === TODAY_KEY;
               const escolhido = sel === d.key;
+              // ⚠ SEM NADA ESCOLHIDO, o dia marcado é HOJE. O print que ele
+              // mandou («o dia deve ser marcado na agenda conforme o print»)
+              // era o «Ter 15» cheio de acento — e nesse dia o 15 era hoje, com
+              // a semana acabada de abrir e `sel` a null. Marcar só o escolhido
+              // deixava a tira inteira apagada até alguém tocar nela, que é
+              // exactamente o que ele viu a seguir: «não está consoante o que
+              // pedi», com o «Qua 16» em cinzento.
+              //
+              // Escolher um dia passa a marca para esse; hoje fica com o
+              // cinzento e o número a negro. Dois dias cheios de acento na
+              // mesma tira não diziam qual era qual.
+              const marcado = escolhido || (hoje && !sel);
               return (
                 <Pressable key={d.key} onPress={() => setSel(escolhido ? null : d.key)}
                   accessibilityRole="button"
                   // ⚠ `plural`: o rótulo lido em voz dizia «1 eventos» (09/09/2026).
                   accessibilityLabel={`${d.wd} ${d.dia}${d.n ? ` · ${plural(d.n, 'evento', 'eventos')}` : ''}`}
                   accessibilityState={{ selected: hoje || escolhido }} aria-pressed={hoje || escolhido}
+                  // ⚠ O dia escolhido leva o ACENTO CHEIO (15/09/2026: «o dia
+                  // deve ser marcado na agenda conforme o print e a cor deve
+                  // ser a escolhida do perfil»). Era o `subtle` com um contorno
+                  // de 1 — a mesma tinta cinzenta que o dia de HOJE já usava, e
+                  // um contorno de 1 px não chega para separar os dois. Agora
+                  // hoje é o cinzento e o escolhido é o acento, e não há como
+                  // confundi-los.
+                  // ⚠ `R.row` e não `R.card`: é um TOCÁVEL, e todos os tocáveis
+                  // desta app têm o mesmo canto (`o-canto-de-tudo-o-que-se-toca`).
                   style={{ flex: 1, minHeight: 64, borderRadius: R.row, paddingVertical: 6,
                     alignItems: 'center', justifyContent: 'center', gap: 2,
-                    backgroundColor: hoje || escolhido ? t.subtle : 'transparent',
-                    borderWidth: escolhido ? 1 : 0, borderColor: t.accent }}>
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '600', color: t.text3 }}>
+                    backgroundColor: marcado ? t.accent : hoje ? t.subtle : 'transparent' }}>
+                  {/* ⚠ Sobre o acento vai BRANCO INTEIRO nas três linhas, e não
+                      um branco com alfa por cima: um alfa fixo calibrado num
+                      esquema escuro falha o contraste nos claros (é o erro #4
+                      do CLAUDE.md, e já aconteceu no cabeçalho). O branco puro
+                      dá 4,62 no pior dos seis. A hierarquia faz-se com o
+                      tamanho e o peso, que é para o que eles servem. */}
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '600',
+                    color: marcado ? '#FFFFFF' : t.text3 }}>
                     {d.wd}
                   </Text>
                   <Text style={{ fontFamily: FONT.display, fontSize: 17,
-                    fontWeight: hoje ? '700' : '400', color: hoje ? t.text1 : t.text2 }}>
+                    fontWeight: hoje || marcado ? '700' : '400',
+                    color: marcado ? '#FFFFFF' : hoje ? t.text1 : t.text2 }}>
                     {d.dia}
                   </Text>
                   {/* Um travessão quando não há nada: uma coluna vazia lê-se
                       como «não carregou», um travessão lê-se como «nada». */}
                   <Text style={{ fontFamily: FONT.ui, fontSize: 11,
-                    color: d.n ? t.actFg : t.text3 }}>{d.n || '—'}</Text>
+                    color: marcado ? '#FFFFFF' : d.n ? t.actFg : t.text3 }}>{d.n || '—'}</Text>
                 </Pressable>
               );
             })}

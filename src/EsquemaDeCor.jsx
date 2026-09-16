@@ -16,7 +16,12 @@ import { SCHEMES, R } from './theme';
 // CORTE o quadrado que tapa metade — maior do que a bola, para a cobrir
 //       inteira depois de rodado
 // RECUO onde o quadrado assenta, para a aresta passar pelo centro da bola
-const BOLA = 34;
+// ⚠ `BOLA` é exportada porque o escolhedor de ASPETO, que vive quatro linhas
+// acima desta fila no mesmo cartão do Perfil, tem de medir o mesmo. Media 32, e
+// ele viu as duas filas lado a lado: «os círculos de cima devem ter o mesmo
+// tamanho dos de baixo». Uma constante partilhada, e não dois 34 escritos em
+// dois ficheiros à espera de divergirem.
+export const BOLA = 34;
 const CORTE = 60;
 const RECUO = BOLA / 2 + (CORTE / 2) * (Math.SQRT1_2 - 1);
 

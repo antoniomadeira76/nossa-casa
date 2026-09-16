@@ -170,7 +170,17 @@ describe('⚠ 4. os alvos da Saúde', () => {
     // design/nome-no-filtro.dc.html); o «Todos» continua a 44.
     expect(filtro).toMatch(/width: 52, minHeight: 44/);
     expect(filtro).toMatch(/numberOfLines=\{1\}/);
-    expect(filtro).toMatch(/minHeight: 44, paddingHorizontal: 14/);
+    // ⚠ O «Todos» era um RETÂNGULO de raio 6 com 14 de enchimento — o desenho
+    // da `Choice` — à cabeça de uma fila de bolas. 15/09/2026, o dono da casa:
+    // «implementa este ícone em todos os ecrãs que tenham ícone semelhante ou
+    // igual ao segundo print», com o círculo num print e o retângulo no outro.
+    // Passa a ter a geometria da bola: alvo de 44, anel de 2 com vão de 2, e um
+    // disco de 32 de altura com os extremos redondos. O que se defende aqui é
+    // que o alvo continua nos 44 e que o CANTO é redondo.
+    expect(filtro).toMatch(/minHeight: 44, alignItems: 'center', justifyContent: 'center'/);
+    // Um círculo de 40, com a largura a crescer só se a palavra não couber.
+    expect(filtro).toMatch(/minWidth: 40, height: 40, borderRadius: R\.pill/);
+    expect(filtro).not.toMatch(/borderRadius: R\.row/);
     // E a pesquisa por texto saiu (opção E de design/pesquisa-da-saude.dc.html).
     expect(saude).not.toMatch(/Procurar por especialidade/);
     expect(saude).not.toMatch(/searchText/);

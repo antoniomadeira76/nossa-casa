@@ -3,7 +3,7 @@ import { View, Text, Pressable, TextInput, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, elev } from '../theme';
 import { EUR, plural } from '../format';
-import { Card, Label, Bar, Primary, AddButton, usePaged, Pager, Linha } from '../ui';
+import { Card, Label, Bar, Primary, AddButton, usePaged, Pager, Linha, MarcaDeEstado } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import NovoArtigo from '../sheets/NovoArtigo';
@@ -194,11 +194,16 @@ export default function ModoCompras({ t, user, onClose }) {
                cozinha» ficava a 1,26. Um tijolo `xBg` só aceita `xDeep`; a
                linha fica na página e o estado na faixa. */
             <Linha key={i.id} t={t} style={{ minHeight: 64, paddingVertical: S.md, gap: 12 }}
+              // A faixa do apanhado FICA, como na lista de compras — o que se
+              // corrigiu foi ela empurrar a linha, e isso vive na `Linha`.
               faixa={feito ? t.state.okBorder : sem ? t.state.warn : undefined}
               tinta={feito ? t.state.okBg : undefined}>
              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-              <Icon name={feito ? 'checkCircle' : sem ? 'closeCircle' : 'infoCircle'} size={30}
-                color={feito ? t.state.ok : sem ? t.state.warn : t.text3} />
+              {/* Círculo vazio por apanhar, cruz âmbar sem stock, visto do
+                  acento apanhado — os três no mesmo diâmetro (`MarcaDeEstado`).
+                  Era um «i» dentro de um círculo a fazer de «por apanhar». */}
+              <MarcaDeEstado t={t} size={30}
+                estado={feito ? 'marcado' : sem ? 'sem' : 'por-marcar'} />
               <View style={{ flex: 1, gap: 3 }}>
                 <Text style={{ fontFamily: FONT.body, fontSize: 16, color: t.text2 }}>{i.label}</Text>
                 {/* O que a app SABE, e de onde. Uma estimativa sem origem não

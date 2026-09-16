@@ -4,7 +4,7 @@ import { View, Text, Pressable, Modal } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, dayLabel, parseKey, WD, plural } from '../format';
-import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Empty, Avatar, avatarDe, Pill, Row } from '../ui';
+import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Empty, Avatar, avatarDe, Pill, Row, MarcaDeEstado } from '../ui';
 import PartilharLista from '../sheets/PartilharLista';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
@@ -280,6 +280,15 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
                     // Linha plana (desenho C, 09/09/2026): o estado que era a
                     // borda do cartão passa a faixa e tinta — verde apanhado,
                     // o acento enquanto se arrasta.
+                    // ⚠ A FAIXA VERDE DO APANHADO FICA. Cheguei a tirá-la — li
+                    // «a linha quando é marcado mantém» como «fica na mesma» e
+                    // era o contrário: «as linhas quando se põe visto não era
+                    // para sair, volta a pôr, sem afetar o sítio do visto e o
+                    // texto à frente». O que estava mal nunca foi a faixa; era
+                    // a faixa a EMPURRAR a linha 11 px para a direita, e isso
+                    // resolve-se na `Linha` — desenha-se absoluta e o corredor
+                    // existe em todas. A faixa diz o estado, o visto diz o
+                    // toque, e nenhum mexe no outro.
                     faixa={arrastando ? t.accent : done ? t.state.okBorder : undefined}
                     tinta={arrastando ? t.subtle : done ? t.state.okBg : undefined}>
                     {/* A LINHA alterna apanhado/por apanhar; o lápis abre a
@@ -299,7 +308,10 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
                         accessibilityLabel={i.label}
                         accessibilityHint="Mantenha premido para mudar a ordem dentro do corredor"
                         style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
-                        <Icon name={done ? 'checkCircle' : 'infoCircle'} size={24} color={done ? t.state.ok : t.text3} />
+                        {/* O círculo vazio de «por apanhar» e o visto do acento
+                            do perfil, alinhados no mesmo diâmetro — ver
+                            `MarcaDeEstado`. Era um «i» dentro de um círculo. */}
+                        <MarcaDeEstado t={t} estado={done ? 'marcado' : 'por-marcar'} size={24} />
                         <View style={{ flex: 1, gap: 2 }}>
                           <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{i.label}</Text>
                           {/* Uma prenda: a criança não recebe esta linha do

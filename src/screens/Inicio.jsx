@@ -2,9 +2,9 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, FONT } from '../theme';
-import { EUR, plural, evTime, TODAY_KEY, dayLabel, agoraNaApp, subtituloDaTarefa } from '../format';
+import { EUR, plural, evTime, TODAY_KEY, dayLabel, agoraNaApp, legendaDaTarefa } from '../format';
 
-import { Card, SectionTitle, Linha, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade, avatarDe } from '../ui';
+import { Card, SectionTitle, Linha, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade, avatarDe, MarcaDeEstado } from '../ui';
 import Icon from '../Icon';
 
 export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir,
@@ -260,14 +260,16 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
             // tinta da linha: verde feita, azul à espera de confirmação.
             return (
               <Linha key={x.id} t={t} last={i === todayTasks.length - 1}
-                faixa={done ? t.state.okBorder : pend ? t.state.info : undefined}
+                // ⚠ Âmbar em «a aguardar confirmação», como nas Tarefas: um
+                // estado, uma cor. Era azul aqui e passou a âmbar lá.
+                faixa={done ? t.state.okBorder : pend ? t.state.warn : undefined}
                 tinta={done ? t.state.okBg : undefined}>
                 <Row t={t} last
                   onPress={() => (onAbrir ? onAbrir('tarefas', x.id) : go('tarefas'))}
                   title={x.title}
-                  sub={done && rec ? 'feita hoje · volta amanhã'
-                    : pend ? 'Feito — a aguardar confirmação'
-                    : subtituloDaTarefa(x, d)}
+                  // A mesma legenda das Tarefas, do mesmo sítio — era a mesma
+                  // expressão escrita à mão nos dois ecrãs.
+                  sub={legendaDaTarefa(x, d, { feita: done, pendente: pend, recorrente: rec })}
                   right={<>
                     {/* A pastilha dos pontos como o protótipo a desenha no
                         Início: contorno e fundo âmbar, texto âmbar-escuro.
@@ -278,7 +280,10 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
                         distintivo da urgência, que aqui não existe. */}
                     {pontosNasTarefas && x.pts > 0 && !done ? <Pill label={`${x.pts} pt`} fg={t.state.warnDeep} bg={t.state.warnBg} border={t.state.warn} /> : null}
                   </>}
-                  icon={done ? 'checkCircle' : pend ? 'clock' : 'infoCircle'} />
+                  // A mesma marca das Tarefas, no mesmo tamanho que a `Row` dá
+                  // a um ícone — é a mesma tarefa vista de dois ecrãs.
+                  leading={<MarcaDeEstado t={t} size={20}
+                    estado={done ? 'marcado' : pend ? 'aguarda' : 'por-marcar'} />} />
               </Linha>
             );
           })}
