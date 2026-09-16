@@ -4,7 +4,7 @@ import { View, Text, Pressable, Modal } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, dayLabel, parseKey, WD, plural } from '../format';
-import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Empty, Avatar, avatarDe, Pill, Row, MarcaDeEstado } from '../ui';
+import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Empty, Avatar, avatarDe, Pill, Row, MarcaDeEstado, BotaoCompacto } from '../ui';
 import PartilharLista from '../sheets/PartilharLista';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
@@ -26,6 +26,9 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
   const { s, set, allItems, envelopes, membros: MEMBERS, precoDe, compararLojas, removerArtigo, marcarArtigo, mudarPlanoDeCompras, seccoes } = st;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [aApagar, setAApagar] = useState(null);
+  // A ida às compras que se vai repetir, à espera de confirmação. Trinta
+  // artigos acrescentados sem aviso são uma lista que ninguém reconhece.
+  const [aRepetir, setARepetir] = useState(null);
   const [gerir, setGerir] = useState(null);   // id do artigo com a folha aberta
 
   // ── Dois adultos na mesma loja ────────────────────────────────────────────
@@ -362,6 +365,25 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
           onCancel={() => setAApagar(null)} />
       ) : null}
 
+      {/* Repetir uma ida às compras: pergunta primeiro, e diz quantos artigos
+          vai acrescentar e quais os que já lá estão. Não é destrutivo — é uma
+          confirmação de VOLUME, que é o que uma lista de trinta artigos pede. */}
+      {aRepetir !== null ? (() => {
+        const ida = s.shopHistory.find(h => h.at === aRepetir);
+        const faltam = st.artigosQueFaltamDaIda(aRepetir);
+        const jaLa = (ida && ida.items ? ida.items : 0) - faltam.length;
+        return (
+          <Confirm t={t} icon="fileDone"
+            title={`Repetir a ida de ${new Date(aRepetir).toLocaleDateString('pt-PT')}?`}
+            message={`${plural(faltam.length, 'artigo entra', 'artigos entram')} na lista de hoje`
+              + `${jaLa > 0 ? `, e ${plural(jaLa, 'já lá estava', 'já lá estavam')}` : ''}`
+              + `. Os preços ficam por escrever — a app estima-os pelo que a casa já pagou.`}
+            confirmLabel={`Acrescentar ${plural(faltam.length, 'artigo', 'artigos')}`}
+            onConfirm={() => { st.repetirCompra(aRepetir, user); setARepetir(null); }}
+            onCancel={() => setARepetir(null)} />
+        );
+      })() : null}
+
       {/* Alterar o artigo: o rótulo, o corredor, a estimativa, o habitual — os
           mesmos quatro campos com que ele foi criado. Havia criar e apagar, e
           mais nada: mudar o nome era apagar e voltar a escrever, e com isso
@@ -381,27 +403,46 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
       {s.shopHistory.length ? (
         <View>
           <SectionTitle t={t}>Histórico de Compras</SectionTitle>
-          {/* Linhas planas, sem cartão — desenho C (09/09/2026). */}
+          {/* Linhas planas, sem cartão — desenho C (09/09/2026).
+
+              ⚠ A LINHA VOLTA A FAZER ALGUMA COISA (16/09/2026 — ele, a olhar
+              para esta secção: «para que serve isto afinal???»).
+
+              Cada linha foi um botão «Repetir compra» com o `onPress` VAZIO —
+              um botão que prometia e não fazia. Em 13/09 tirou-se o botão, e é
+              o que ele viu: uma lista só de leitura, ao lado de uma despesa
+              que o Dinheiro já regista. Não servia para nada.
+              O que faltava não era o botão: eram os artigos. Vinham do servidor
+              como uma CONTAGEM, e as linhas de cada ida continuavam lá, presas
+              à sua lista. Agora vêm com rótulo e corredor (ver o `shopHistory`
+              em `src/sync.js`), e repetir uma ida é acrescentar à lista de hoje
+              o que falta dela. */}
           <View style={{ paddingHorizontal: S.xs }}>
-            {/* ⚠ Cada linha era um botão «Repetir compra» com o `onPress`
-                VAZIO — um botão que prometia e não fazia, com seta e tudo.
-                O histórico não guarda os artigos de cada ida, logo não há o
-                que repetir: a linha é só de leitura, sem seta, e diz o que
-                sabe (a loja e quem foi podem vir vazios do servidor).
-                Revisão de 13/09/2026. */}
-            {s.shopHistory.slice(0, 10).map((h, i, arr) => (
-              <View key={h.at}
-                style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12,
-                  borderBottomWidth: i === Math.min(9, arr.length - 1) ? 0 : 1, borderBottomColor: t.divider }}>
-                <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{h.store || 'Ida às compras'}</Text>
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
-                    {`${h.who ? `${h.who} · ` : ''}${plural(h.items || 0, 'artigo', 'artigos')} · ${new Date(h.at).toLocaleDateString('pt-PT')}`}
-                  </Text>
+            {s.shopHistory.slice(0, 10).map((h, i, arr) => {
+              const faltam = st.artigosQueFaltamDaIda(h.at).length;
+              const podeRepetir = faltam > 0;
+              return (
+                <View key={h.at}
+                  style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12,
+                    borderBottomWidth: i === Math.min(9, arr.length - 1) ? 0 : 1, borderBottomColor: t.divider }}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{h.store || 'Ida às compras'}</Text>
+                    <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
+                      {`${h.who ? `${h.who} · ` : ''}${plural(h.items || 0, 'artigo', 'artigos')} · ${new Date(h.at).toLocaleDateString('pt-PT')}`}
+                    </Text>
+                  </View>
+                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>{EUR(h.total)}</Text>
+                  {/* ⚠ O botão só aparece quando há mesmo o que repetir. Uma ida
+                      cujos artigos já estão todos na lista de hoje não tem nada
+                      a acrescentar, e um botão que não faz nada foi o defeito
+                      que esta secção já teve uma vez. */}
+                  {podeRepetir ? (
+                    <BotaoCompacto t={t} label="Repetir" etiqueta={`Repetir a ida de ${new Date(h.at).toLocaleDateString('pt-PT')}`}
+                      onPress={() => setARepetir(h.at)} />
+                  ) : null}
                 </View>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>{EUR(h.total)}</Text>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
       ) : null}

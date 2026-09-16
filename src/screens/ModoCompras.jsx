@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, TextInput, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, elev } from '../theme';
 import { EUR, plural } from '../format';
-import { Card, Label, Bar, Primary, AddButton, usePaged, Pager, Linha, MarcaDeEstado, SectionTitle, Empty } from '../ui';
+import { Card, Label, Bar, Primary, usePaged, Pager, Linha, MarcaDeEstado, SectionTitle, Empty, NumField, BotaoCompacto } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import NovoArtigo from '../sheets/NovoArtigo';
@@ -29,6 +29,16 @@ export default function ModoCompras({ t, user, onClose }) {
   const [step, setStep] = useState(null);          // null = Todos
   const [novoArtigo, setNovoArtigo] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  // O que se está a escrever no campo do preço, por artigo, antes de assentar.
+  // A loja recebe-o no `aoTerminar`; aqui fica o que os dedos ainda estão a
+  // compor. Ver o guarda `editar-muda-o-titulo`.
+  const [rascunhoDoPreco, setRascunhoDoPreco] = useState({});
+  // Qual o artigo com o editor de preço aberto. Um de cada vez: trinta campos
+  // abertos ao mesmo tempo são um formulário, e na loja ninguém preenche um.
+  const [precoAberto, setPrecoAberto] = useState(null);
+  // O grupo dos apanhados começa fechado — o que já se resolveu não tem de
+  // estar à vista.
+  const [verApanhados, setVerApanhados] = useState(false);
 
   const items = allItems();
   const stateOf = (i) => s.status[i.id] || (i.real ? 'done' : 'open');
@@ -54,6 +64,35 @@ export default function ModoCompras({ t, user, onClose }) {
     return `estimativa ${EUR(p.valor)}`;
   };
 
+  // ── Quanto é que este artigo saiu acima ou abaixo do esperado ─────────────
+  //
+  // É a razão pela qual se escreve o preço na loja, e a linha antiga não a
+  // dizia: mostrava o campo e ficava calada quanto ao que ele significava
+  // (16/09/2026, opção D de `design/campos-e-botoes.dc.html`).
+  //
+  // Devolve `null` — e não «0,00 €» — quando não há nada a dizer: sem preço
+  // escrito, sem estimativa, ou com os dois iguais ao cêntimo. Um zero é uma
+  // afirmação, e aqui a app não tem nada a afirmar.
+  const diferenca = (i) => {
+    const escrito = s.precoPago[i.id];
+    if (escrito === undefined || escrito === null || escrito === '') return null;
+    const pagoAgora = Number(escrito);
+    const esperado = precoDe(i, loja).valor;
+    if (!Number.isFinite(pagoAgora) || !esperado) return null;
+    const delta = Math.round((pagoAgora - esperado) * 100) / 100;
+    if (delta === 0) return null;
+    return {
+      acima: delta > 0,
+      texto: `${delta > 0 ? '+' : '−'}${EUR(Math.abs(delta))} ${delta > 0 ? 'acima' : 'abaixo'}`,
+    };
+  };
+
+  // O corredor a seguir a este, pelo nome — é o que o botão anuncia. Com
+  // `step` a null («Toda a lista») não há seguinte: o botão de baixo passa a
+  // ser o de fechar a conta.
+  const seguinte = step === null ? null
+    : seccoes[Math.min(seccoes.length - 1, seccoes.indexOf(step) + 1)];
+
   const cart = doneItems.reduce((a, i) => a + pago(i), 0);
   const estimate = items.reduce((a, i) => a + i.est, 0);
   const mercearia = envelopes.find(e => e.name === 'Mercearia');
@@ -63,7 +102,11 @@ export default function ModoCompras({ t, user, onClose }) {
   // passou a poder reordenar as secções — um índice deixaria de apontar para o
   // mesmo sítio à primeira mudança.
   const inStep = step === null ? items : items.filter(i => i.s === step);
-  const pg = usePaged(inStep, 10);
+  // ⚠ A lista de cima é só O QUE FALTA (17/09/2026, desenho 7). O apanhado vai
+  // para o grupo fechado do fim, e a lista encolhe à medida que se compra.
+  const porFazer = inStep.filter(i => stateOf(i) !== 'done');
+  const apanhados = inStep.filter(i => stateOf(i) === 'done');
+  const pg = usePaged(porFazer, 10);
 
   // Um artigo tem três estados nesta lista, não dois. «Sem stock» não é o
   // mesmo que «por comprar»: quem está na loja já lá foi ver.
@@ -77,6 +120,162 @@ export default function ModoCompras({ t, user, onClose }) {
   // A barra do carrinho: vermelha acima do limite, âmbar perto dele, e do
   // ESQUEMA no caso normal — que não é um estado, é o progresso da compra.
   const barColor = pctCart > 100 ? t.state.err : pctCart > 80 ? t.state.warnTexto : t.titulo;
+
+  // ── Os preços que a app já conhece deste artigo ───────────────────────────
+  //
+  // 17/09/2026, desenho 4 de `design/dez-linhas-da-loja.dc.html`. Na loja, com
+  // o carrinho numa mão, não se quer ESCREVER — quer-se confirmar. A app já
+  // sabe o que a casa pagou aqui e noutra loja, e o que está escrito na lista:
+  // oferece esses, e o teclado fica para o caso que foge à regra.
+  //
+  // Sem repetidos e sem zeros: dois botões com o mesmo número não são duas
+  // escolhas, e «0,00 €» é uma afirmação que a app não pode fazer.
+  const sugestoesDe = (i) => {
+    const p = precoDe(i, loja);
+    const vistos = new Set();
+    return [
+      p.origem === 'loja' ? { v: p.valor, de: 'aqui' } : null,
+      p.origem === 'outra-loja' ? { v: p.valor, de: p.loja } : null,
+      i.est ? { v: i.est, de: 'na lista' } : null,
+    ].filter(x => {
+      if (!x || !x.v) return false;
+      const c = Math.round(x.v * 100);
+      if (vistos.has(c)) return false;
+      vistos.add(c);
+      return true;
+    });
+  };
+
+  // ── A linha de um artigo ──────────────────────────────────────────────────
+  //
+  // É a mesma para a lista de cima e para o grupo dos apanhados, e por isso
+  // vive numa função: duas cópias divergiriam à primeira correção.
+  //
+  // ⚠ O PREÇO É UM NÚMERO QUE SE TOCA, e não um campo sempre aberto
+  // (17/09/2026, desenho 3). Cinzento é o que a app estima, escuro é o que se
+  // pagou; tocar abre o editor por baixo, com as sugestões. Um campo por artigo
+  // numa lista de trinta é um formulário, e ninguém preenche um formulário a
+  // empurrar um carrinho.
+  const LinhaDoArtigo = (i) => {
+    const estado = stateOf(i);
+    const feito = estado === 'done';
+    const sem = estado === 'sem-stock';
+    const escrito = s.precoPago[i.id] !== undefined;
+    const aEditar = precoAberto === i.id;
+    const sugestoes = sugestoesDe(i);
+    return (
+      /* Linha plana, sem cartão — desenho C (09/09/2026), com os 64 px que a
+         loja exige (INVARIANTE #5). O estado é a faixa: verde apanhado, âmbar
+         sem stock. ⚠ A linha sem stock era pintada com o `warnBg` — o tijolo
+         âmbar OPACO e claro nos dois aspetos — e levava por cima `text2`, que
+         no escuro é claro: «Papel de cozinha» ficava a 1,26. Um tijolo `xBg` só
+         aceita `xDeep`; a linha fica na página e o estado na faixa. */
+      <Linha key={i.id} t={t} style={{ minHeight: 64, paddingVertical: S.md, gap: 10 }}
+        faixa={feito ? t.state.okBorder : sem ? t.state.warn : undefined}
+        tinta={feito ? t.state.okBg : undefined}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {/* ⚠ A MARCA passa a ser o botão de marcar (17/09/2026). Era um
+              desenho sem toque, e ao lado dele um «Confirmar» escrito. Tocar no
+              círculo para marcar é o que toda a gente já tenta fazer primeiro —
+              e liberta a direita da linha para o preço. */}
+          <Pressable onPress={() => marcar(i.id, 'done')} accessibilityRole="checkbox"
+            accessibilityLabel={i.label}
+            accessibilityState={{ checked: feito }} aria-checked={feito}
+            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -7 }}>
+            <MarcaDeEstado t={t} size={30} estado={feito ? 'marcado' : sem ? 'sem' : 'por-marcar'} />
+          </Pressable>
+
+          <View style={{ flex: 1, gap: 3 }}>
+            <Text style={{ fontFamily: FONT.body, fontSize: 16, color: t.text2 }}>{i.label}</Text>
+            {/* O que a app SABE, e de onde. Uma estimativa sem origem não ajuda
+                a decidir se vale a pena verificar a prateleira. */}
+            <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5,
+              color: sem ? t.state.warnTexto : t.text3 }}>
+              {sem ? 'Sem stock na loja' : legendaDoPreco(i)}
+            </Text>
+          </View>
+
+          {/* ⚠ Um só controlo à direita, e não dois empilhados. Marcado, é o
+              PREÇO; por marcar, é o «sem stock»; sem stock, é o «repor». */}
+          {feito ? (
+            <Pressable onPress={() => setPrecoAberto(x => (x === i.id ? null : i.id))}
+              accessibilityRole="button"
+              accessibilityLabel={escrito
+                ? `Alterar o preço de ${i.label}, ${EUR(s.precoPago[i.id])}`
+                : `Escrever o preço pago por ${i.label}`}
+              accessibilityState={{ expanded: aEditar }} aria-expanded={aEditar}
+              style={{ minHeight: 44, minWidth: 80, alignItems: 'flex-end', justifyContent: 'center', gap: 2 }}>
+              <Text style={{ fontFamily: FONT.display, fontSize: 17,
+                fontWeight: escrito ? '600' : '400',
+                color: escrito ? t.text2 : t.text3 }}>
+                {precoDe(i, loja).valor || escrito ? EUR(pago(i)) : '—'}
+              </Text>
+              {diferenca(i) ? (
+                <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '600',
+                  color: diferenca(i).acima ? t.state.warnTexto : t.state.okTexto }}>
+                  {diferenca(i).texto}
+                </Text>
+              ) : null}
+            </Pressable>
+          ) : (
+            <Pressable onPress={() => marcar(i.id, 'sem-stock')} accessibilityRole="button"
+              accessibilityLabel={`${sem ? 'Repor' : 'Marcar sem stock'} ${i.label}`}
+              style={{ minHeight: 44, minWidth: 80, alignItems: 'flex-end', justifyContent: 'center' }}>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, fontWeight: '600',
+                color: sem ? t.state.warnTexto : t.text3 }}>
+                {sem ? 'Repor' : 'Sem stock'}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* ── O editor do preço, só do artigo que se tocou ──────────────────
+            As sugestões primeiro (um toque resolve o caso normal) e o campo a
+            seguir, para o que foge. Fecha ao escolher. */}
+        {aEditar ? (
+          <View style={{ gap: S.md, paddingLeft: 44, paddingTop: S.sm }}>
+            {sugestoes.length ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
+                {sugestoes.map(sg => (
+                  <Pressable key={`${sg.v}-${sg.de}`} accessibilityRole="button"
+                    accessibilityLabel={`Pagou ${EUR(sg.v)}, ${sg.de}`}
+                    onPress={() => { definirPrecoPago(i.id, sg.v); setPrecoAberto(null); }}
+                    // ⚠ , e não : nesta app TUDO o que se toca tem o mesmo
+                      // canto, e um cilindro entre dois botões de canto 6 lê-se como
+                      // peça de outra app. Guarda: .
+                      style={{ minHeight: 44, paddingHorizontal: 12, borderRadius: R.row,
+                      borderWidth: 1, borderColor: t.actBrd, backgroundColor: t.actBg,
+                      alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '600', color: t.actFg }}>
+                      {EUR(sg.v)}
+                    </Text>
+                    <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.actFg }}>{sg.de}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+              {/* ⚠ O valor vai para a loja no `aoTerminar`, não no `onChange`:
+                  a cada tecla, «2,49» passava pela loja como 2, 24, 2,49.
+                  Regra de 15/09/2026. */}
+              <NumField t={t} estreito compacto vazio
+                value={rascunhoDoPreco[i.id] ?? s.precoPago[i.id]}
+                step={0.1} min={0} max={9999}
+                rotulo={`Preço pago por ${i.label}`}
+                placeholder={precoDe(i, loja).valor ? EUR(precoDe(i, loja).valor) : undefined}
+                onChange={(v) => setRascunhoDoPreco(r => ({ ...r, [i.id]: v }))}
+                aoTerminar={(v) => definirPrecoPago(i.id, v)} />
+              <Pressable onPress={() => setPrecoAberto(null)} accessibilityRole="button"
+                accessibilityLabel="Fechar o preço"
+                style={{ minHeight: 44, paddingHorizontal: S.md, justifyContent: 'center' }}>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.actFg }}>Pronto</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+      </Linha>
+    );
+  };
 
   return (
     // ⚠ Esta vista é dona da sua COLUNA (`coluna: true` no registo do App.jsx):
@@ -213,123 +412,105 @@ export default function ModoCompras({ t, user, onClose }) {
             secção com nada por baixo. A lista da casa muda enquanto se compra —
             um artigo movido de corredor esvazia o anterior —, e quem está na
             loja precisa de saber se não há nada ali ou se a app não carregou. */}
-        {inStep.length === 0 ? (
+        {porFazer.length === 0 ? (
+          // ⚠ Olha para o que FALTA, não para o corredor inteiro: com tudo
+          // apanhado a lista de cima fica vazia, e é aí que vale a pena dizer
+          // que este corredor está despachado. Dizer «nada em Frescos» com
+          // cinco artigos no grupo de baixo seria mentira.
           <Empty t={t} icon="fileDone"
-            title={step === null ? 'Não há nada na lista desta ida.' : `Nada em ${step}.`}
-            hint="Toque em «acrescentar artigo» para juntar o que faltar." />
+            title={apanhados.length
+              ? (step === null ? 'Está tudo apanhado.' : `${step} está despachado.`)
+              : (step === null ? 'Não há nada na lista desta ida.' : `Nada em ${step}.`)}
+            hint={apanhados.length
+              ? 'Toque em «já apanhados» para rever os preços, ou siga para o corredor seguinte.'
+              : 'Toque em «acrescentar artigo» para juntar o que faltar.'} />
         ) : null}
 
-        {pg.slice.map(i => {
-          const estado = stateOf(i);
-          const feito = estado === 'done';
-          const sem = estado === 'sem-stock';
-          return (
-            /* Linha plana, sem cartão — desenho C (09/09/2026), com os 64 px
-               que a loja exige (INVARIANTE #5). O estado é a faixa: verde
-               apanhado, âmbar sem stock. ⚠ A linha sem stock era pintada com o
-               `warnBg` — o tijolo âmbar OPACO e claro nos dois aspetos — e levava
-               por cima `text2`/`text3`, que no escuro são claros: «Papel de
-               cozinha» ficava a 1,26. Um tijolo `xBg` só aceita `xDeep`; a
-               linha fica na página e o estado na faixa. */
-            <Linha key={i.id} t={t} style={{ minHeight: 64, paddingVertical: S.md, gap: 12 }}
-              // A faixa do apanhado FICA, como na lista de compras — o que se
-              // corrigiu foi ela empurrar a linha, e isso vive na `Linha`.
-              faixa={feito ? t.state.okBorder : sem ? t.state.warn : undefined}
-              tinta={feito ? t.state.okBg : undefined}>
-             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-              {/* Círculo vazio por apanhar, cruz âmbar sem stock, visto do
-                  acento apanhado — os três no mesmo diâmetro (`MarcaDeEstado`).
-                  Era um «i» dentro de um círculo a fazer de «por apanhar». */}
-              <MarcaDeEstado t={t} size={30}
-                estado={feito ? 'marcado' : sem ? 'sem' : 'por-marcar'} />
-              <View style={{ flex: 1, gap: 3 }}>
-                <Text style={{ fontFamily: FONT.body, fontSize: 16, color: t.text2 }}>{i.label}</Text>
-                {/* O que a app SABE, e de onde. Uma estimativa sem origem não
-                    ajuda a decidir se vale a pena verificar a prateleira. */}
-                <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: sem ? t.state.warnTexto : t.text3 }}>
-                  {sem ? 'Sem stock na loja' : legendaDoPreco(i)}
-                </Text>
-              </View>
-
-              {/* Duas acções por linha, como na referência. Cada uma no seu
-                  alvo de 44 — uma pastilha tocável dentro de uma linha
-                  tocável obrigava a adivinhar onde se tinha tocado. */}
-              <View style={{ gap: 2 }}>
-                <Pressable onPress={() => marcar(i.id, 'done')} accessibilityRole="button"
-                  accessibilityLabel={`${feito ? 'Desconfirmar' : 'Confirmar'} ${i.label}`}
-                  style={{ minHeight: 44, minWidth: 88, alignItems: 'flex-end', justifyContent: 'center' }}>
-                  <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '700',
-                    // ⚠ `actFg`, não `accent`: 14 px é texto pequeno, e sobre a
-                    // linha sem stock (âmbar) o acento Cião dava 4,49 (09/09/2026).
-                    color: feito ? t.text3 : t.actFg, letterSpacing: 0.4 }}>
-                    {feito ? 'Desfazer' : 'Confirmar'}
-                  </Text>
-                </Pressable>
-                {!feito ? (
-                  <Pressable onPress={() => marcar(i.id, 'sem-stock')} accessibilityRole="button"
-                    accessibilityLabel={`${sem ? 'Repor' : 'Marcar sem stock'} ${i.label}`}
-                    style={{ minHeight: 44, minWidth: 88, alignItems: 'flex-end', justifyContent: 'center' }}>
-                    <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, fontWeight: '600',
-                      // `warnTexto`: já não há tijolo por baixo, é a página.
-                      color: sem ? t.state.warnTexto : t.text3 }}>
-                      {sem ? 'Repor' : 'Sem stock'}
-                    </Text>
-                  </Pressable>
-                ) : null}
-              </View>
-             </View>
-
-             {/* O preço escreve-se AQUI, no corredor, com o artigo na mão e a
-                 prateleira à frente. É o único momento em que se sabe.
-
-                 Aparece ao confirmar e não antes: um campo por artigo numa
-                 lista de trinta é um formulário, e ninguém preenche um
-                 formulário a empurrar um carrinho. */}
-             {feito ? (
-               <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
-                 borderTopWidth: 1, borderTopColor: t.state.okBorder, paddingTop: 12 }}>
-                 <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, color: t.text2 }}>
-                   Preço pago
-                 </Text>
-                 <TextInput
-                   value={s.precoPago[i.id] !== undefined ? String(s.precoPago[i.id]).replace('.', ',') : ''}
-                   onChangeText={(v) => definirPrecoPago(i.id, v)}
-                   placeholder={String((precoDe(i, loja).valor || 0).toFixed(2)).replace('.', ',')}
-                   placeholderTextColor={t.text3}
-                   keyboardType="decimal-pad"
-                   accessibilityLabel={`Preço pago por ${i.label}`}
-                   style={{ flex: 1, minHeight: 44, paddingHorizontal: S.md, borderRadius: R.row,
-                     borderWidth: 1, borderColor: t.border, backgroundColor: t.card,
-                     fontFamily: FONT.body, fontSize: 16, color: t.text1 }}
-                 />
-                 <Text style={{ fontFamily: FONT.display, fontSize: 16, color: t.text3 }}>€</Text>
-               </View>
-             ) : null}
-            </Linha>
-          );
-        })}
+        {pg.slice.map(i => LinhaDoArtigo(i))}
 
         <Pager t={t} pg={pg} />
-        <AddButton t={t} label="acrescentar artigo à lista" onPress={() => setNovoArtigo(true)} />
+
+        {/* ── O QUE JÁ SE APANHOU, num grupo fechado ──────────────────────────
+            17/09/2026, desenho 7 de `design/dez-linhas-da-loja.dc.html`.
+
+            Um artigo marcado sai da lista de cima e vem para aqui. A lista
+            encolhe à medida que se compra, e no fim fica vazia — que é a melhor
+            coisa que uma lista de compras pode fazer. Antes ficavam todos
+            misturados, e num corredor de doze artigos a meio das compras era
+            preciso ler a coluna dos vistos para saber o que faltava.
+
+            Fechado por omissão: o que já se resolveu não tem de estar à vista.
+            O total ao lado é a soma do que está cá dentro, e não uma contagem
+            à parte — abre-se para rever um preço. */}
+        {apanhados.length ? (
+          <View style={{ gap: S.md }}>
+            <Pressable onPress={() => setVerApanhados(v => !v)} accessibilityRole="button"
+              accessibilityLabel={`${verApanhados ? 'Fechar' : 'Abrir'} os artigos já apanhados`}
+              accessibilityState={{ expanded: verApanhados }} aria-expanded={verApanhados}
+              style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+              <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 12, fontWeight: '600',
+                letterSpacing: 0.4, textTransform: 'uppercase', color: t.slate }}>
+                {`Já apanhados · ${apanhados.length}`}
+              </Text>
+              <Text style={{ fontFamily: FONT.display, fontSize: 14, fontWeight: '600', color: t.state.okTexto }}>
+                {EUR(apanhados.reduce((a, i) => a + pago(i), 0))}
+              </Text>
+              <Icon name={verApanhados ? 'caretUp' : 'caretDown'} size={18} color={t.text3} />
+            </Pressable>
+            {verApanhados ? apanhados.map(i => LinhaDoArtigo(i)) : null}
+          </View>
+        ) : null}
+
+        <Pager t={t} pg={pg} />
+        {/* ⚠ Uma PASTILHA, e não um botão de largura inteira (16/09/2026,
+            opção C de `design/campos-e-botoes.dc.html`). Dois botões de 48 px
+            empilhados no fim da lista comiam uma quinta parte do ecrã para
+            duas ações, e este usa-se uma vez por corredor, se tanto. O
+            «à lista» sai do rótulo: a lista está por cima dele. */}
+        <View style={{ flexDirection: 'row' }}>
+          {/* ⚠ `largura="conteudo"`: sem isto o `BotaoCompacto` leva `flex: 1`
+              e volta a esticar-se de ponta a ponta — que era o que se queria
+              tirar. Medido no ecrã dele, depois de eu já o ter «encolhido». */}
+          <BotaoCompacto t={t} label="acrescentar artigo" tom="contorno"
+            largura="conteudo" onPress={() => setNovoArtigo(true)} />
+        </View>
       </View>
-
-      {/* A acção final vai no fim da lista, não numa barra fixa: a barra
-          ficava colada por cima do rodapé, e a referência não a tem.
-
-          Os dois são COMUNS, e por razões diferentes. O «Secção seguinte» é
-          navegação. O «Fechar Conta» não fecha conta nenhuma: abre o carrinho,
-          onde está o botão que fecha — e é esse que leva o acento. Um passo
-          intermédio pintado como decisão final ensina a família a carregar sem
-          ler. A linha por baixo diz o que vai encontrar lá dentro. */}
-      {step === null || seccoes.indexOf(step) >= seccoes.length - 1 ? (
-        <Primary t={t} comum label="Fechar conta e registar despesa"
-          sub={cart > 0 ? `${EUR(cart)} · ${plural(doneItems.length, 'artigo', 'artigos')}` : null}
-          onPress={() => setCartOpen(true)} />
-      ) : (
-        <Primary t={t} comum label="Secção seguinte" icon="caretRight"
-          onPress={() => setStep(x => seccoes[Math.min(seccoes.length - 1, seccoes.indexOf(x) + 1)])} />
-      )}
       </ScrollView>
+
+      {/* ── A acção do corredor, FIXA em baixo ───────────────────────────────
+          16/09/2026, opção C. Vivia no fim da lista e era preciso rolar trinta
+          artigos para lá chegar; a barra de ação existe na app desde 15/09 e só
+          as Tarefas a usavam.
+
+          ⚠ Aqui é desenhada à mão e não pelo `useAcaoDoEcra`: esta vista é dona
+          da sua COLUNA (`coluna: true` no App.jsx), portanto corre FORA do
+          `ScrollView` onde vive o `AcaoDoEcra.Provider`. O hook devolveria o
+          elemento para se desenhar no lugar, que é o que aqui se faz — mas
+          então mais vale dizê-lo por extenso do que parecer que funciona.
+
+          Fica ACIMA do rodapé, dentro da coluna desta vista: o rodapé continua
+          a ser o último filho da raiz (INVARIANTE #1).
+
+          Os dois botões são COMUNS, e por razões diferentes. O «corredor
+          seguinte» é navegação. O «Fechar conta» não fecha conta nenhuma: abre
+          o carrinho, onde está o botão que fecha — e é esse que leva o acento.
+          Um passo intermédio pintado como decisão final ensina a família a
+          carregar sem ler.
+
+          ⚠ E o botão DIZ PARA ONDE VAI. Era «Secção seguinte», e quem está na
+          loja precisa de saber para que lado andar antes de tocar. */}
+      <View style={{ flexGrow: 0, flexShrink: 0, paddingHorizontal: 16,
+        paddingTop: S.md, paddingBottom: S.md, backgroundColor: t.page,
+        borderTopWidth: 1, borderTopColor: t.divider }}>
+        {step === null || seccoes.indexOf(step) >= seccoes.length - 1 ? (
+          <Primary t={t} comum label="Fechar conta e registar despesa"
+            sub={cart > 0 ? `${EUR(cart)} · ${plural(doneItems.length, 'artigo', 'artigos')}` : null}
+            onPress={() => setCartOpen(true)} />
+        ) : (
+          <Primary t={t} comum label={`Corredor seguinte · ${seguinte}`} icon="caretRight"
+            onPress={() => setStep(seguinte)} />
+        )}
+      </View>
 
       {novoArtigo ? (
         <Sheet t={t} title="Novo Artigo" sub="Acrescentar à lista de compras"

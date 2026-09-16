@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dez linhas da loja</title>
+<style>
+:root{
+  --page:#F6F7F9; --card:#FCFCFD; --surface:#FFFFFF; --subtle:#FAFAFA;
+  --border:#D9D9D9; --divider:#F0F2F5;
+  --t1:#262626; --t2:#434343; --t3:#656C7C; --slate:#606E90;
+  --ac:#078286; --acFg:#056b6e; --acBg:#E6F4F4; --acBrd:#8FC9CB;
+  --okBorder:#BAE7A3; --okBg:rgba(220,243,209,.35); --okTexto:#237804;
+  --warn:#FAAD14; --warnBg:#FEFFD0; --warnTexto:#8F5600;
+  --err:#FF4D4F; --errTexto:#A32621;
+  --rc:8px; --rr:6px; --rp:100px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#EEF0F3;color:var(--t1);padding:26px;
+  font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif}
+h1{font-size:27px;letter-spacing:-.02em;margin:0 0 8px}
+p.intro{color:var(--t2);max-width:82ch;margin:0 0 4px;line-height:1.6}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);
+  margin:36px 0 14px;padding-bottom:7px;border-bottom:1px solid #DADDE2}
+h3{font-size:15.5px;margin:0 0 2px}
+.diz{color:var(--t3);font-size:12.5px;line-height:1.55;margin:0 0 8px;max-width:44ch}
+.bom{color:var(--okTexto);font-weight:600}.mau{color:var(--errTexto);font-weight:600}
+.med{font-size:11px;color:var(--t3);font-variant-numeric:tabular-nums;margin-top:6px}
+.tapete{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.op{width:352px;flex:none}
+.tel{background:var(--page);border-radius:12px;padding:12px;
+  box-shadow:0 8px 24px rgba(16,18,29,.13),0 0 0 1px rgba(16,18,29,.07)}
+.lista{background:var(--card);border-radius:var(--rc);overflow:hidden}
+.ln{display:flex;align-items:center;gap:12px;min-height:64px;
+  padding:10px 10px 10px 13px;position:relative;border-bottom:1px solid var(--divider)}
+.ln:last-child{border-bottom:0}
+.ln::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:transparent}
+.ln.ok::before{background:var(--okBorder)}.ln.ok{background:var(--okBg)}
+.ln.sem::before{background:var(--warn)}
+.mk{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center}
+.mk.on{border:1.9px solid var(--ac)}
+.mk.off{border:1.8px solid var(--t3);background:#fff}
+.mk.x{border:1.9px solid var(--warnTexto)}
+.mk svg{width:15px;height:15px;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.mk.on svg{stroke:var(--ac)}.mk.x svg{stroke:var(--warnTexto)}
+.tx{flex:1;min-width:0}
+.tx b{display:block;font-weight:400;font-size:16px;color:var(--t2)}
+.tx span{display:block;font-size:11.5px;color:var(--t3);margin-top:2px}
+.campo{height:44px;width:104px;border:1px solid var(--border);border-radius:var(--rr);
+  background:var(--surface);display:grid;place-items:center;font-size:15px;color:var(--t2);flex:none}
+.campo.vaz{color:var(--t3)}
+.campo.mini{width:84px;height:38px;font-size:14px}
+.acao{font-size:14px;font-weight:700;color:var(--acFg);letter-spacing:.02em;white-space:nowrap}
+.acao.off{color:var(--t3);font-weight:600;font-size:12.5px}
+.col{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.dif{font-size:11px;font-weight:600}
+.dif.up{color:var(--warnTexto)}.dif.dn{color:var(--okTexto)}
+.pil{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 11px;
+  border-radius:var(--rp);font-size:12.5px;font-weight:600;white-space:nowrap}
+.pil.ac{background:var(--acBg);color:var(--acFg);border:1px solid var(--acBrd)}
+.pil.gh{background:transparent;color:var(--t3);border:1px dashed var(--border)}
+.pil.ok{background:rgba(220,243,209,.6);color:var(--okTexto);border:1px solid var(--okBorder)}
+.bt{height:48px;border-radius:var(--rr);display:flex;align-items:center;justify-content:center;
+  gap:8px;font-size:15px;font-weight:600;border:1px solid var(--acBrd);background:var(--acBg);color:var(--acFg)}
+.bt.ch{background:var(--ac);color:#fff;border-color:var(--ac)}
+.bt.pq{height:40px;font-size:14px;padding:0 14px}
+.barra{margin:10px -12px -12px;padding:10px 12px 12px;background:var(--page);
+  border-top:1px solid var(--divider);display:flex;gap:10px;align-items:center;border-radius:0 0 10px 10px}
+.i{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.sw{width:100%;height:8px;border-radius:var(--rp);background:var(--page);overflow:hidden;margin-top:6px}
+.sw i{display:block;height:100%;border-radius:var(--rp);background:var(--ac)}
+.rot{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3)}
+table.d{border-collapse:collapse;width:100%;max-width:980px;font-size:13.5px;background:var(--surface);
+  border-radius:var(--rc);overflow:hidden;box-shadow:0 1px 2px rgba(16,18,29,.06)}
+table.d th,table.d td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--divider);vertical-align:top}
+table.d th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);background:var(--subtle)}
+table.d td:first-child{font-weight:600;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<h1>Dez linhas da loja</h1>
+<p class="intro">Dez desenhos para a mesma coisa: a linha de um artigo no modo compras, com o que se marca, o que se escreve e o que se faz a seguir. Todos com os tokens reais da app — o acento do perfil, o verde do apanhado, o âmbar do sem stock, os alvos de 44, o euro com espaço inquebrável. O que muda é a arrumação, não o vocabulário.</p>
+<p class="intro"><b>A tensão a resolver:</b> o valor tem quatro caracteres e a linha tem 340 px; a ação tem uma palavra e o botão tem a largura toda. Cada opção resolve isso de outra maneira, e cada uma perde alguma coisa.</p>
+
+<h2>1 – 5 · a linha</h2>
+<div class="tapete">
+
+  <div class="op">
+    <div class="tel"><div class="lista">
+      <div class="ln ok"><span class="mk on"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>
+        <div class="tx"><b>Leite</b><span>1,19&nbsp;€ da última vez aqui</span></div>
+        <span class="col"><span class="campo">1,89&nbsp;€</span><span class="dif up">+0,70 acima</span></span></div>
+      <div class="ln"><span class="mk off"></span>
+        <div class="tx"><b>Ovos</b><span>estimativa 2,40&nbsp;€</span></div>
+        <span class="acao">Confirmar</span></div>
+    </div></div>
+    <h3 style="margin-top:12px">1 · O que está lá agora</h3>
+    <p class="diz">O campo de 104 na linha, com a diferença por baixo, e o «Confirmar» só enquanto não se marcou. <span class="bom">É o que implementei</span>. Perde: com o campo e a diferença a linha do apanhado fica com 64 px cheios, e o «Desfazer» teve de sair para um toque longo.</p>
+    <p class="med">64 px · campo 104 × 44</p>
+  </div>
+
+  <div class="op">
+    <div class="tel"><div class="lista">
+      <div class="ln ok"><span class="mk on"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>
+        <div class="tx"><b>Leite</b><span>1,19&nbsp;€ estimado · <b style="color:var(--warnTexto);font-weight:600">pagou 1,89&nbsp;€</b></span></div>
+        <span class="pil ac">alterar</span></div>
+      <div class="ln"><span class="mk off"></span>
+        <div class="tx"><b>Ovos</b><span>estimativa 2,40&nbsp;€</span></div>
+        <span class="acao">Confirmar</span></div>
+    </div></div>
+    <h3 style="margin-top:12px">2 · O preço na legenda</h3>
+    <p class="diz">Depois de escrito, o preço deixa de ser um campo e passa a fazer parte da frase: «1,19 € estimado · pagou 1,89 €». O campo só existe enquanto se escreve. <span class="bom">A lista fica de leitura</span>, e o que se lê é uma frase inteira. Perde: alterar é mais um toque.</p>
+    <p class="med">56 px depois de escrito · o campo aparece ao tocar em «alterar»</p>
+  </div>
+
+  <div class="op">
+    <div class="tel"><div class="lista">
+      <div class="ln ok"><span class="mk on"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>
+        <div class="tx"><b>Leite</b><span>1,19&nbsp;€ da última vez aqui</span></div>
+        <span style="font-family:inherit;font-size:17px;font-weight:600;color:var(--t2);font-variant-numeric:tabular-nums">1,89&nbsp;€</span></div>
+      <div class="ln"><span class="mk off"></span>
+        <div class="tx"><b>Ovos</b><span>estimativa 2,40&nbsp;€</span></div>
+        <span style="font-size:17px;color:var(--t3);font-variant-numeric:tabular-nums">2,40&nbsp;€</span></div>
+    </div></div>
+    <h3 style="margin-top:12px">3 · Sem campo nenhum</h3>
+    <p class="diz">O preço é texto, alinhado à direita como uma coluna de conta. Cinzento é o estimado, escuro é o pago. Toca-se no número e ele vira campo no mesmo sítio. <span class="bom">É a lista mais limpa das dez</span>, e a coluna de euros lê-se de cima a baixo. Perde: nada diz que se pode tocar.</p>
+    <p class="med">56 px · o número tem os algarismos de largura fixa</p>
+  </div>
+
+  <div class="op">
+    <div class="tel"><div class="lista">
+      <div class="ln ok" style="flex-wrap:wrap"><span class="mk on"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>
+        <div class="tx"><b>Leite</b><span>1,19&nbsp;€ da última vez aqui</span></div>
+        <span class="acao off">Desfazer</span>
+        <div style="flex-basis:100%;height:0"></div>
+        <div style="display:flex;gap:8px;padding-left:38px;width:100%">
+          <span class="pil gh">1,19&nbsp;€</span><span class="pil ac">1,89&nbsp;€</span><span class="pil gh">outro…</span>
+        </div></div>
+      <div class="ln"><span class="mk off"></span><div class="tx"><b>Ovos</b><span>estimativa 2,40&nbsp;€</span></div><span class="acao">Confirmar</span></div>
+    </div></div>
+    <h3 style="margin-top:12px">4 · Sugestões em pastilha</h3>
+    <p class="diz">A app já sabe o que a casa pagou aqui e noutras lojas: oferece-os como pastilhas. Um toque resolve o caso normal, «outro…» abre o teclado. <span class="bom">Na maior parte das vezes não se escreve nada</span>. Perde: 30 px numa linha que já tem 64, e só funciona com histórico.</p>
+    <p class="med">94 px com as pastilhas · desaparecem depois de escolher</p>
+  </div>
+
+  <div class="op">
+    <div class="tel"><div class="lista">
+      <div class="ln ok"><span class="mk on"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>
+        <div class="tx"><b>Leite</b><span>1,19&nbsp;€ da última vez aqui</span></div>
+        <span class="campo mini">1,89&nbsp;€</span>
+        <span class="acao off">×2</span></div>
+      <div class="ln"><span class="mk off"></span>
+        <div class="tx"><b>Ovos · dúzia</b><span>estimativa 2,40&nbsp;€</span></div>
+        <span class="acao">Confirmar</span></div>
+    </div></div>
+    <h3 style="margin-top:12px">5 · Preço e quantidade</h3>
+    <p class="diz">Um campo de 84 para o preço unitário e um contador ao lado. <span class="bom">É o que falta de verdade no supermercado</span> — levar dois iogurtes e escrever o preço de um. Perde: duas coisas para tocar numa linha, e o erro #6 do CLAUDE.md avisa contra isso.</p>
+    <p class="med">64 px · campo 84 + contador de 44</p>
+  </div>
+
+</div>
+
+<h2>6 – 10 · a lista e as ações</h2>
+<div class="tapete">
+
+  <div class="op">
+    <div class="tel">
+      <div class="lista">
+        <div class="ln ok"><span class="mk on"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span><div class="tx"><b>Leite</b><span>1,89&nbsp;€ pago</span></div></div>
+        <div class="ln"><span class="mk off"></span><div class="tx"><b>Ovos</b><span>estimativa 2,40&nbsp;€</span></div><span class="acao">Confirmar</span></div>
+      </div>
+      <div style="margin-top:10px"><span class="pil gh"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>acrescentar artigo</span></div>
+      <div class="barra">
+        <div style="flex:1"><div style="font-size:11px;color:var(--t3)">No carrinho · 5 artigos</div>
+          <div style="font-size:19px;font-weight:600">14,25&nbsp;€</div></div>
+        <div class="bt ch pq">Frescos<svg class="i" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></svg></div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">6 · Carrinho na barra</h3>
+    <p class="diz">O total do carrinho passa da caixa no topo para a barra fixa, ao lado do botão. <span class="bom">O número que muda a cada artigo fica sempre à vista</span> sem ocupar o topo. Perde: o topo perde a estimativa e o envelope, que passam a viver só no carrinho.</p>
+    <p class="med">barra de 64 · liberta 96 px no topo</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="lista">
+        <div class="ln"><span class="mk off"></span><div class="tx"><b>Ovos</b><span>estimativa 2,40&nbsp;€</span></div><span class="acao">Confirmar</span></div>
+        <div class="ln"><span class="mk off"></span><div class="tx"><b>Frango</b><span>estimativa 6,90&nbsp;€</span></div><span class="acao">Confirmar</span></div>
+      </div>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+        <span class="rot" style="flex:1">Já apanhados · 5</span>
+        <span class="pil ok">14,25&nbsp;€ <svg class="i" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6"/></svg></span>
+      </div>
+      <div class="barra"><div class="bt ch pq" style="flex:1">Corredor seguinte · Frescos</div></div>
+    </div>
+    <h3 style="margin-top:12px">7 · O apanhado sai da lista</h3>
+    <p class="diz">Marcar um artigo tira-o da lista e mete-o num grupo fechado em baixo, com o total. <span class="bom">A lista encolhe à medida que se compra</span>, e no fim fica vazia — que é a melhor coisa que uma lista de compras pode fazer. Perde: rever um preço é abrir o grupo.</p>
+    <p class="med">a lista fica só com o que falta · grupo fechado de 40</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">
+        <span class="rot" style="flex:1">Frutas &amp; Legumes</span>
+        <span style="font-size:11.5px;color:var(--t3)">2 de 3</span>
+      </div>
+      <div class="sw"><i style="width:66%"></i></div>
+      <div class="lista" style="margin-top:10px">
+        <div class="ln ok"><span class="mk on"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span><div class="tx"><b>Leite</b><span>1,89&nbsp;€ pago</span></div></div>
+        <div class="ln"><span class="mk off"></span><div class="tx"><b>Ovos</b><span>estimativa 2,40&nbsp;€</span></div><span class="acao">Confirmar</span></div>
+      </div>
+      <div class="barra"><div class="bt ch pq" style="flex:1">Corredor seguinte · Frescos</div></div>
+    </div>
+    <h3 style="margin-top:12px">8 · Progresso por corredor</h3>
+    <p class="diz">Uma barra por cima da lista diz quanto falta DESTE corredor, em vez de o dizer só na cor de um separador de 4 px. <span class="bom">Responde à pergunta «já posso andar?»</span> sem contar linhas. Perde: mais 22 px por corredor, e a informação já está nos separadores.</p>
+    <p class="med">barra de 8 · substitui a cor do separador por um número</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="lista">
+        <div class="ln ok"><span class="mk on"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span><div class="tx"><b>Leite</b><span>1,89&nbsp;€ pago · Rita</span></div></div>
+        <div class="ln"><span class="mk off"></span><div class="tx"><b>Ovos</b><span>estimativa 2,40&nbsp;€</span></div>
+          <span style="display:flex;gap:6px"><span class="pil ac">tenho</span><span class="pil gh">não há</span></span></div>
+      </div>
+      <div class="barra"><div class="bt ch pq" style="flex:1">Corredor seguinte · Frescos</div></div>
+    </div>
+    <h3 style="margin-top:12px">9 · Duas respostas, duas palavras</h3>
+    <p class="diz">«Confirmar» e «Sem stock» empilhados à direita passam a duas pastilhas lado a lado: «tenho» e «não há». <span class="bom">A linha desce de 64 para 56</span> e as duas respostas ficam à mesma distância do polegar. Perde: duas pastilhas tocáveis dentro da linha — o erro #6, outra vez.</p>
+    <p class="med">56 px · pastilhas de 30 em alvos de 44</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="lista">
+        <div class="ln ok"><span class="mk on"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span><div class="tx"><b>Leite</b><span>1,89&nbsp;€ pago</span></div></div>
+        <div class="ln sem"><span class="mk x"><svg viewBox="0 0 24 24"><path d="M8 8l8 8M16 8l-8 8"/></svg></span><div class="tx"><b>Papel de cozinha</b><span style="color:var(--warnTexto)">Sem stock · fica para a próxima</span></div></div>
+        <div class="ln"><span class="mk off"></span><div class="tx"><b>Ovos</b><span>estimativa 2,40&nbsp;€</span></div><span class="acao">Confirmar</span></div>
+      </div>
+      <div class="barra">
+        <div class="bt pq" style="flex:none;padding:0 12px"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+        <div class="bt ch pq" style="flex:1">Corredor seguinte · Frescos</div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">10 · A linha toda é o toque</h3>
+    <p class="diz">Nenhuma ação escrita: tocar na linha marca, tocar outra vez desmarca, e a pressão longa abre «sem stock» e o preço. <span class="bom">Um alvo por linha</span>, que é o que o CLAUDE.md pede desde sempre. Perde: o «sem stock» deixa de se ver, e um gesto que não se anuncia não existe.</p>
+    <p class="med">56 px · o «+» encolhe para um ícone na barra</p>
+  </div>
+
+</div>
+
+<h2>Como escolher</h2>
+<table class="d">
+  <tr><th>Se o que quer é…</th><th>Opção</th><th>O que custa</th></tr>
+  <tr><td>Escrever o preço depressa</td><td><b>4 · sugestões em pastilha</b></td><td>Só funciona depois de a casa ter histórico; sem ele é a 1.</td></tr>
+  <tr><td>A lista mais limpa</td><td><b>3 · sem campo nenhum</b></td><td>Nada diz que o número se toca. Precisa de um lápis pequeno ao lado.</td></tr>
+  <tr><td>Ver a lista encolher</td><td><b>7 · o apanhado sai</b></td><td>Rever um preço já escrito passa a ser abrir um grupo.</td></tr>
+  <tr><td>O total sempre à vista</td><td><b>6 · carrinho na barra</b></td><td>A estimativa e o envelope saem do topo.</td></tr>
+  <tr><td>Menos toques por artigo</td><td><b>10 · a linha é o toque</b></td><td>O «sem stock» fica escondido num gesto.</td></tr>
+  <tr><td>Não mudar nada de fundo</td><td><b>1 · o que está lá</b></td><td>Nada; é o estado atual.</td></tr>
+</table>
+<p class="intro" style="margin-top:12px"><b>A minha ordem:</b> 4, depois 3, depois 7. A 4 resolve o problema real — na loja não se quer escrever, quer-se confirmar. A 3 é a mais bonita e a que menos pesa. A 7 é a que mais muda a sensação de estar a avançar. As três combinam entre si: dá para ter as pastilhas de sugestão (4) sobre uma coluna de números sem campo (3), com o apanhado a sair para baixo (7).</p>
+<p class="intro">Nenhuma está implementada. Diga o número.</p>
+</body>
+</html>

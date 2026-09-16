@@ -3200,6 +3200,59 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     return id;
   };
 
+  // ── Repetir uma ida às compras ──────────────────────────────────────────
+  //
+  // 16/09/2026, o dono da casa, a olhar para o Histórico de Compras: «para que
+  // serve isto afinal???». Não servia para nada: era uma lista só de leitura, e
+  // o botão «Repetir compra» que ela teve foi tirado em 13/09 porque a entrada
+  // do histórico não guardava os artigos — não havia o que repetir.
+  //
+  // Os artigos das listas fechadas nunca saíram do servidor: continuam presos à
+  // sua lista, com o rótulo e o corredor. O que faltava era trazê-los na leitura
+  // (ver `shopHistory`, em `src/sync.js`), e é isto que os usa.
+  //
+  // ⚠ Acrescenta só O QUE FALTA. Repetir uma ida com a lista de hoje já meia
+  // feita não pode duplicar o que já lá está — a comparação é pelo rótulo, sem
+  // maiúsculas nem acentos a contar, que é como uma pessoa compara «Leite» com
+  // «leite».
+  //
+  // ⚠ E devolve a CONTAGEM, para quem chama poder perguntar antes de fazer. Uma
+  // ida de trinta artigos acrescentada sem aviso é uma lista de compras que
+  // ninguém reconhece.
+  const semAcentos = (x) => String(x || '').trim().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+  const artigosQueFaltamDaIda = (at) => {
+    const ida = (s.shopHistory || []).find(h => h.at === at);
+    if (!ida || !Array.isArray(ida.artigos)) return [];
+    const jaLa = new Set(allItems().map(i => semAcentos(i.label)));
+    const vistos = new Set();
+    return ida.artigos.filter(a => {
+      const chave = semAcentos(a.rotulo);
+      if (!chave || jaLa.has(chave) || vistos.has(chave)) return false;
+      vistos.add(chave);
+      return true;
+    });
+  };
+
+  const repetirCompra = (at, quem) => {
+    const faltam = artigosQueFaltamDaIda(at);
+    // ⚠ Pelo `criarArtigo`, um a um, e não por um `set` com a lista inteira: é
+    // ele que sabe traduzir o corredor, falar com o servidor e guardar o
+    // `idServidor` de cada linha. Escrever aqui uma segunda via era a classe de
+    // defeito que já pôs a grelha de envelopes a mostrar uma lista e a
+    // confirmação a aplicar outra.
+    for (const a of faltam) {
+      criarArtigo({
+        label: a.rotulo,
+        // O corredor da outra vez, se a casa ainda o tiver; senão o primeiro.
+        section: (a.corredor && seccoes.includes(a.corredor)) ? a.corredor : seccoes[0],
+        est: 0, staple: false, by: quem, vis: 'familia',
+      });
+    }
+    return faltam.length;
+  };
+
   // ── Alterar um artigo ───────────────────────────────────────────────────
   //
   // Havia criar e apagar, e mais nada: escrever «Leite meio-gordo» em vez de
@@ -5927,7 +5980,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     partilharLista, desfazerPartilha,
     moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope, registarDespesa,
     criarEvento, alterarEventoDaCasa, eventoNoServidor, escoarFilaGoogle,
-    criarArtigo, alterarArtigo, reordenarArtigos,
+    criarArtigo, alterarArtigo, reordenarArtigos, repetirCompra, artigosQueFaltamDaIda,
     definirObjetivo, apagarObjetivo,
     criarPrato, alterarPrato, apagarPrato, marcarJantar, oQueFalta, porOQueFaltaNaLista,
     contasDoMes, contasAVencer, contasNaAgenda, criarContaFixa, alterarContaFixa, apagarContaFixa, pagarContaFixa,

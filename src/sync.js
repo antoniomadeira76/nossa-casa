@@ -755,10 +755,23 @@ export async function puxarCasa() {
   //
   // Agora deriva-se das listas FECHADAS, que são as mesmas para os dois. Dez, a
   // contar da mais recente, como o ecrã sempre mostrou.
+  // ⚠ E os RÓTULOS, não só a contagem (16/09/2026).
+  //
+  // O histórico contava «4 artigos» e mais nada, e a linha era só de leitura —
+  // o botão «Repetir compra» que ela teve foi tirado em 13/09 porque não havia
+  // o que repetir. Os artigos das listas fechadas continuam no servidor, presos
+  // à sua lista: o que faltava era trazê-los. Com eles, repetir uma ida é
+  // acrescentar à lista de agora o que se comprou da outra vez.
+  //
+  // O corredor vem junto porque um artigo sem corredor cai no primeiro, e quem
+  // repete uma compra quer o percurso que já tinha.
   const artigosPorLista = {};
   for (const a of casa.artigos || []) {
     if (a.estado === 'confirmado') {
-      artigosPorLista[a.lista] = (artigosPorLista[a.lista] || 0) + 1;
+      (artigosPorLista[a.lista] = artigosPorLista[a.lista] || []).push({
+        rotulo: a.rotulo || '',
+        corredor: nomeDoCorredor[a.corredor] || null,
+      });
     }
   }
   const shopHistory = (casa.listas_compras || [])
@@ -772,7 +785,11 @@ export async function puxarCasa() {
       store: nomeDaLoja[l.loja] || null,
       who: nomeDoMembro[l.comprador] || null,
       total: Number(l.total) || 0,
-      items: artigosPorLista[l.id] || 0,
+      // A contagem continua a ser um número — é o que a linha mostra.
+      items: (artigosPorLista[l.id] || []).length,
+      // E os artigos, para se poder repetir a ida. Só os que têm rótulo: um
+      // artigo sem nome não se acrescenta a lista nenhuma.
+      artigos: (artigosPorLista[l.id] || []).filter(a => a.rotulo),
     }));
 
   const shopPlan = aberta ? {
