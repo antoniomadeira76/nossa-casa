@@ -316,10 +316,18 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
                           <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{i.label}</Text>
                           {/* Uma prenda: a criança não recebe esta linha do
                               servidor. A pastilha diz-o a quem a vê, para
-                              ninguém a ler em voz alta à mesa. */}
+                              ninguém a ler em voz alta à mesa.
+
+                              ⚠ `t.tileInfo` e não `t.state.tileInfo`: o tijolo
+                              com alfa vive na RAIZ do tema, não dentro do
+                              `state`. O que lá estava era `undefined`, e um
+                              `backgroundColor` a `undefined` não dá erro — dá
+                              transparente: a pastilha ficava contorno azul e
+                              letra azul sobre a página, a única da app sem
+                              tijolo. */}
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.sm }}>
                             {i.vis === 'adultos' ? (
-                              <Pill label="Só adultos" fg={t.state.infoTexto} bg={t.state.tileInfo} border={t.state.info} />
+                              <Pill label="Só adultos" fg={t.state.infoTexto} bg={t.tileInfo} border={t.state.info} />
                             ) : null}
                             <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>{i.by}</Text>
                           </View>

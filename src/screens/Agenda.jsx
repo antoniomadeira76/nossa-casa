@@ -128,7 +128,12 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                   accessibilityRole="button"
                   // ⚠ `plural`: o rótulo lido em voz dizia «1 eventos» (09/09/2026).
                   accessibilityLabel={`${d.wd} ${d.dia}${d.n ? ` · ${plural(d.n, 'evento', 'eventos')}` : ''}`}
-                  accessibilityState={{ selected: hoje || escolhido }} aria-pressed={hoje || escolhido}
+                  // ⚠ Só o ESCOLHIDO se anuncia como escolhido. Era
+                  // `hoje || escolhido`: com o 18 escolhido, um leitor de ecrã
+                  // dizia que o 16 e o 18 estavam ambos escolhidos. Hoje é um
+                  // facto do calendário, não uma escolha de quem usa — e quem
+                  // não vê o ecrã não tem como desfazer a confusão.
+                  accessibilityState={{ selected: marcado }} aria-pressed={marcado}
                   // ⚠ O dia escolhido leva o ACENTO CHEIO (15/09/2026: «o dia
                   // deve ser marcado na agenda conforme o print e a cor deve
                   // ser a escolhida do perfil»). Era o `subtle` com um contorno
@@ -214,12 +219,26 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
                       accessibilityRole="button"
                       accessibilityLabel={`${c.n} de ${MONTHS[ym.m].toLowerCase()}${c.evs.length ? ` · ${plural(c.evs.length, 'evento', 'eventos')}` : ''}`}
                       accessibilityState={{ selected: on }} aria-pressed={on}
+                      // ⚠ O ACENTO CHEIO É O ESCOLHIDO, e não o dia de hoje
+                      // (16/09/2026). Estava ao contrário — `isToday ? t.accent`
+                      // com o escolhido a levar só um contorno de 2 —, e as
+                      // duas metades do MESMO cartão diziam coisas opostas:
+                      // escolhia-se o dia 18 na tira da semana, tocava-se em
+                      // «Ver mês», e a cor cheia saltava para o 16 sem a
+                      // escolha ter mudado. Pior: escolher HOJE não se via, com
+                      // a borda do acento a desaparecer dentro do fundo do
+                      // acento.
+                      //
+                      // Hoje passa ao tijolo do acento — a mesma solução do
+                      // protótipo e a mesma do `CampoData`, que já tinha este
+                      // defeito corrigido com a razão escrita lá.
                       style={{ flex: 1, minHeight: 46, borderRadius: R.row, alignItems: 'center',
                         justifyContent: 'center', gap: 4,
-                        borderWidth: on ? 2 : 0, borderColor: t.accent,
-                        backgroundColor: isToday ? t.accent : c.evs.length ? t.subtle : 'transparent' }}>
-                      <Text style={{ fontFamily: FONT.ui, fontSize: 14, fontWeight: '600',
-                        color: isToday ? '#FFFFFF' : t.text2 }}>{c.n}</Text>
+                        backgroundColor: on ? t.accent
+                          : isToday ? t.actBg : c.evs.length ? t.subtle : 'transparent',
+                        borderWidth: isToday && !on ? 1 : 0, borderColor: t.actBrd }}>
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 14, fontWeight: isToday || on ? '700' : '600',
+                        color: on ? '#FFFFFF' : isToday ? t.actFg : t.text2 }}>{c.n}</Text>
                       <View style={{ flexDirection: 'row', gap: 3, height: 5 }}>
                         {c.evs.slice(0, 3).map(e => (
                           <View key={e.id} style={{ width: 5, height: 5, borderRadius: R.pill,
@@ -255,7 +274,12 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
             {dayLabel(sel)}
           </Text>
           {selEvents.length === 0 ? (
-            <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: t.text3 }}>Nada agendado neste dia.</Text>
+            // ⚠ O vazio da app, e não uma linha de texto cinzento escrita à
+            // mão. Este ecrã tem dois `<Empty>` dez linhas abaixo, com ícone,
+            // título e o que fazer a seguir; este dizia só «Nada agendado
+            // neste dia.» a 13 px e não dizia o passo seguinte.
+            <Empty t={t} icon="calendar" title="Nada agendado neste dia."
+              hint="Toque em «agendar» aqui em baixo para marcar o primeiro." />
           ) : selEvents.map(e => (
             <View key={e.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
               <Text style={{ width: 42, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text3 }}>{evTime(e.time)}</Text>
@@ -263,7 +287,12 @@ export default function Agenda({ t, user, abrir, abrirImportar, onImportarAberto
               <Text numberOfLines={2} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{e.title}</Text>
             </View>
           ))}
-          <AddButton t={t} label={`agendar em ${sel.slice(9)}/${sel.slice(6, 8)}`} onPress={() => {}} />
+          {/* ⚠ Este botão tinha `onPress={() => {}}` — um controlo morto, com a
+              cor do perfil, a dizer «agendar em 16/09» e a não fazer nada.
+              Agora abre a folha COM O DIA já escolhido, que é o que a grelha do
+              mês já fazia e o que o rótulo promete. */}
+          <AddButton t={t} label={`agendar em ${sel.slice(9)}/${sel.slice(6, 8)}`}
+            onPress={() => { setPreFillDay(sel); setSheetOpen(true); }} />
         </Card>
       ) : null}
 

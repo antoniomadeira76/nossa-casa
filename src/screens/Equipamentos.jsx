@@ -131,13 +131,18 @@ export default function Equipamentos({ t, user = null, abrir }) {
         ) : null}
       </Card>
 
-      {eq.length ? (
-        <View>
-          <SectionTitle t={t}>Registados</SectionTitle>
-          {eq.length === 0 ? (
-            <Empty t={t} icon="houseGear" title="Sem equipamentos registados."
-              hint="Registe um para a app avisar antes de a garantia acabar." />
-          ) : null}
+      {/* ⚠ A MESMA FORMA DOS CONTRATOS, vinte linhas abaixo (16/09/2026).
+          Aqui o título da secção só aparecia quando havia equipamentos, e
+          lá dentro havia um `<Empty>` num ramo `eq.length === 0` que NUNCA
+          corria — estava dentro do `eq.length ? …`. Quatro linhas de código
+          morto, e uma casa sem equipamentos ficava com um aviso sem título de
+          secção por cima, ao lado dos Contratos que têm os dois. */}
+      <View>
+        <SectionTitle t={t}>Registados</SectionTitle>
+        {eq.length === 0 ? (
+          <Empty t={t} icon="houseGear" title="Sem equipamentos registados."
+            hint="Comece a registar os aparelhos da casa: a app avisa antes de a garantia acabar." />
+        ) : (
           <View>
             {/* Linhas planas (desenho C, 09/09/2026): o estado da garantia,
                 que era a borda do cartão, passa a faixa da linha. */}
@@ -176,10 +181,8 @@ export default function Equipamentos({ t, user = null, abrir }) {
               );
             })}
           </View>
-        </View>
-      ) : (
-        <Empty t={t} icon="houseGear" title="Sem equipamentos registados." hint="Comece a registar os aparelhos da casa." />
-      )}
+        )}
+      </View>
 
       <AddButton t={t} label="registar equipamento" onPress={() => setSheet('novo')} />
 

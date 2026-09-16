@@ -3,7 +3,7 @@ import { View, Text, Pressable, TextInput, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, elev } from '../theme';
 import { EUR, plural } from '../format';
-import { Card, Label, Bar, Primary, AddButton, usePaged, Pager, Linha, MarcaDeEstado } from '../ui';
+import { Card, Label, Bar, Primary, AddButton, usePaged, Pager, Linha, MarcaDeEstado, SectionTitle, Empty } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import NovoArtigo from '../sheets/NovoArtigo';
@@ -128,12 +128,35 @@ export default function ModoCompras({ t, user, onClose }) {
             && naSeccao.every(i => stateOf(i) !== 'open');
           return (
             <Pressable key={x.i} onPress={() => setStep(x.i)} accessibilityRole="tab"
-              accessibilityLabel={x.label} accessibilityState={{ selected: on }} aria-selected={on}
+              // E quem não vê a barra também tem de saber: o estado vai no
+              // rótulo, que era só o nome do corredor.
+              accessibilityLabel={limpo ? `${x.label} · despachado` : x.label}
+              accessibilityState={{ selected: on }} aria-selected={on}
               style={rolam
                 ? { minWidth: 72, paddingHorizontal: S.xs, minHeight: 44, gap: 6, justifyContent: 'center' }
                 : { flex: 1, minHeight: 44, gap: 6, justifyContent: 'center' }}>
+              {/* ⚠ A BARRA NÃO PODE SER O ÚNICO SINAL (16/09/2026 — ele
+                  perguntou «porque é que umas linhas estão a verde e outras a
+                  cinza?», e a app não tinha como lhe responder).
+
+                  Três estados numa barra de 4 px, sem palavra e sem legenda, e
+                  as cores não chegavam: o `state.ok` mede 2,27:1 contra a
+                  superfície nos seis esquemas e o `border` 1,41, onde um objeto
+                  gráfico pede 3. Pior, a distância entre o acento e o verde
+                  desce a 2,04 em dois dos esquemas: «estou aqui» e «já está»
+                  ficavam a parecer-se.
+
+                  Agora a barra leva tokens que se veem — `titulo` para o
+                  corredor aberto, `okTexto` para o despachado — e o corredor
+                  despachado ganha um VISTO ao lado do nome. Cor e palavra,
+                  nunca só cor. */}
               <View style={{ height: 4, borderRadius: R.pill,
-                backgroundColor: on ? t.accent : limpo ? t.state.ok : t.border }} />
+                backgroundColor: on ? t.titulo : limpo ? t.state.okTexto : t.text3 }} />
+              {limpo && !on ? (
+                <View style={{ position: 'absolute', top: 10, right: 2 }}>
+                  <Icon name="check" size={11} color={t.state.okTexto} />
+                </View>
+              ) : null}
               <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11, textAlign: 'center',
                 fontWeight: on || limpo ? '600' : '400',
                 color: on ? t.actFg : limpo ? t.state.okTexto : t.text3 }}>{x.label}</Text>
@@ -171,15 +194,30 @@ export default function ModoCompras({ t, user, onClose }) {
       </Card>
 
       <View style={{ gap: S.md }}>
-        <Text style={{ fontFamily: FONT.display, fontSize: 18, fontWeight: '700', color: t.slate }}>
-          {/* ⚠ Era «artigos» escrito à mão, e um corredor com um artigo só dizia
-              «Mercearia · 1 artigos». Visto ao percorrer os quatro corredores
-              depois de eles voltarem a ter artigos — dois dos quatro tinham um.
-              O `plural` do `format.js` existe para isto e estava a três linhas
-              de distância, usado no ecrã das Compras. */}
-          {step === null ? `Toda a lista · ${plural(items.length, 'artigo', 'artigos')}`
-            : `${step} · ${plural(inStep.length, 'artigo', 'artigos')}`}
-        </Text>
+        {/* ⚠ O `SectionTitle` da app, e não um título escrito à mão a 18 px em
+            slate (16/09/2026). Era o único título de secção da app fora do
+            componente — 18 px a 700 onde os outros vinte e tal têm 13 em
+            `actFg` com a régua por baixo (desenho C, 09/09/2026). A contagem
+            passa para a ranhura da direita, que é onde o resto da app a põe.
+
+            ⚠ E o `plural`: era «artigos» escrito à mão, e um corredor com um
+            artigo só dizia «Mercearia · 1 artigos». */}
+        <SectionTitle t={t}
+          right={<Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
+            {plural(step === null ? items.length : inStep.length, 'artigo', 'artigos')}
+          </Text>}>
+          {step === null ? 'Toda a lista' : step}
+        </SectionTitle>
+
+        {/* ⚠ Um corredor pode estar VAZIO, e até agora ficava um título de
+            secção com nada por baixo. A lista da casa muda enquanto se compra —
+            um artigo movido de corredor esvazia o anterior —, e quem está na
+            loja precisa de saber se não há nada ali ou se a app não carregou. */}
+        {inStep.length === 0 ? (
+          <Empty t={t} icon="fileDone"
+            title={step === null ? 'Não há nada na lista desta ida.' : `Nada em ${step}.`}
+            hint="Toque em «acrescentar artigo» para juntar o que faltar." />
+        ) : null}
 
         {pg.slice.map(i => {
           const estado = stateOf(i);

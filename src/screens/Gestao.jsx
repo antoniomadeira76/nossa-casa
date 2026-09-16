@@ -475,16 +475,15 @@ export default function Gestao({ t, user, onClose }) {
         setSheetOpen('newEnvelope');
       }} />
 
-      {envelopes && envelopes.length > 1 && (
-        <Pressable accessibilityRole="button" onPress={() => setSheetOpen('transferEnvelopes')}
-          style={({ pressed }) => ({
-            minHeight: 48, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
-            alignItems: 'center', justifyContent: 'center',
-            opacity: pressed ? 0.7 : 1,
-          })}>
-          <Text style={{ fontFamily: FONT.display, fontSize: 14, color: t.text2 }}>Transferir entre envelopes</Text>
-        </Pressable>
-      )}
+      {/* ⚠ O botão «Transferir entre envelopes» SAIU daqui (16/09/2026).
+          Punha `setSheetOpen('transferEnvelopes')` e nenhuma folha lia esse
+          valor — não há `sheetOpen === 'transferEnvelopes'` em lado nenhum
+          deste ficheiro. Era um controlo morto: tocava-se e o ecrã ficava na
+          mesma, sem erro e sem resposta.
+          Mover dinheiro entre envelopes existe, e funciona, no Dinheiro
+          («mover dinheiro entre envelopes», que abre a folha `mover`). Um
+          segundo caminho para a mesma coisa, num ecrã que não a sabe fazer,
+          não é uma falta — é uma promessa por cumprir. */}
     </View>
   );
 

@@ -957,7 +957,20 @@ function Shell() {
         zIndex: 100,
       }}>
         {TABS.map(x => {
-          const on = tab === x.key;
+          // ⚠ Com uma VISTA DE ECRÃ INTEIRO aberta — a Saúde, os Equipamentos,
+          // a Gestão, a Documentação, a ficha, a loja — nenhum separador está
+          // aceso (16/09/2026). O `on` era só `tab === x.key`, e o `tab` não
+          // muda quando uma dessas vistas abre por cima: o rodapé continuava a
+          // acender o separador de onde se tinha vindo.
+          //
+          // Medido no navegador: com a Saúde aberta o rodapé dizia «Agenda»;
+          // com a Gestão e com os Equipamentos dizia «Início». E não era só a
+          // tinta — o `aria-selected` ia a `true`, portanto um leitor de ecrã
+          // anunciava o sítio errado.
+          //
+          // O guarda `alvos-e-navegacao` já tratava da outra metade deste mesmo
+          // defeito (tocar num separador fecha as vistas); faltava esta.
+          const on = !vistaAberta && tab === x.key;
           return (
             <Pressable key={x.key} onPress={() => { setAbrirNoTab(null); setPesquisa(null); fecharVistas(); setTab(x.key); }}
               accessibilityRole="tab" accessibilityLabel={x.label}

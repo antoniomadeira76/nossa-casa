@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, TextInput, useColorScheme } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from './store';
 import { buildTheme, onChrome, S, R, FONT, SCHEMES, corDoMembro, chromeDaCrianca, elev, LARGURA_APP } from './theme';
-import { EUR, parseKey, pad2, plural, TODAY_KEY } from './format';
+import { EUR, parseKey, pad2, plural, legendaDaTarefa, TODAY_KEY } from './format';
 import Icon from './Icon';
 import { MarcaDeAgua } from './ui';
 import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe, Linha, Choice, BotaoCompacto, NumField, MarcaDeEstado } from './ui';
@@ -151,12 +151,9 @@ const dayShort = (k) => {
   return p ? `${pad2(p.d)}/${pad2(p.m + 1)}` : null;
 };
 
-// Ícone de tarefa: traço aberto, 1,75 de espessura, grelha de 24
-// Sem cor por omissão: era o slate antigo (`#67769B`) escrito à mão, fora do
-// tema. Quem chama passa a cor do estado (revisão de 14/09/2026).
-const TaskIcon = ({ size = 32, color }) => (
-  <Icon name="checkSquare" size={size} color={color} />
-);
+// ⚠ O `TaskIcon` SAIU (16/09/2026). Era um `checkSquare` pintado de três
+// cores, e a linha de tarefa passou a usar a `MarcaDeEstado` — a mesma dos
+// adultos e a mesma da lista de compras desta app, um separador ao lado.
 
 // Linha de tarefa da criança
 function KidTaskRow({ t, task, kid, onPress }) {
@@ -187,10 +184,17 @@ function KidTaskRow({ t, task, kid, onPress }) {
       })}>
 
       <View style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-        {/* ⚠ `okTexto`/`warnTexto` e não `ok`/`info`: um ícone precisa de 3:1 e
-            o verde `#52C41A` dá 2,18 sobre a página clara. E «a confirmar» é
-            ÂMBAR, como nas Tarefas e no Início — um estado, uma cor. */}
-        <TaskIcon size={28} color={isDone ? t.state.okTexto : isPending ? t.state.warnTexto : t.slate} />
+        {/* ⚠ A MESMA MARCA DOS ADULTOS (16/09/2026). Era um quadrado de visto
+            (`checkSquare`) pintado de três cores — o mesmo glifo nos três
+            estados, só a cor a distingui-los, e por fazer era um quadrado
+            cinzento com um visto já lá dentro.
+
+            No mesmo telemóvel, um separador ao lado, a lista de compras desta
+            criança já mostrava a `MarcaDeEstado`: círculo vazio por apanhar,
+            visto na cor do perfil apanhado. «Feito» tinha duas caras a uma
+            passagem de distância. */}
+        <MarcaDeEstado t={t} size={28}
+          estado={isDone ? 'marcado' : isPending ? 'aguarda' : 'por-marcar'} />
       </View>
 
       <View style={{ flex: 1, gap: 4 }}>
@@ -199,12 +203,19 @@ function KidTaskRow({ t, task, kid, onPress }) {
           color: isDone ? t.text3 : t.text2,
           textDecorationLine: isDone ? 'line-through' : 'none',
         }}>{task.title}</Text>
-        {isPending ? <Text numberOfLines={1} style={{
-          fontFamily: FONT.ui, fontSize: 12, color: t.state.warnTexto,
-        }}>A confirmar por um adulto</Text>
-        : task.meta ? <Text numberOfLines={1} style={{
-          fontFamily: FONT.ui, fontSize: 12, color: t.text3,
-        }}>{task.meta}</Text> : null}
+        {/* ⚠ A legenda vem do `legendaDaTarefa`, como nas Tarefas e no Início
+            (16/09/2026). Estava escrita à mão, e dizia coisas diferentes: a
+            criança lia «A confirmar por um adulto» onde a mãe, na mesma linha,
+            lia «Feito — a aguardar confirmação»; e uma tarefa confirmada não
+            dizia nada — a legenda desaparecia e ficava o `meta`, se houvesse.
+            A frase de «à espera» fica mais explícita para a criança, e é isso
+            que o terceiro argumento faz. */}
+        <Text numberOfLines={1} style={{
+          fontFamily: FONT.ui, fontSize: 12,
+          color: isPending ? t.state.warnTexto : t.text3,
+        }}>{isPending ? 'A confirmar por um adulto'
+            : legendaDaTarefa({ ...task, who: '' }, null,
+                { feita: isDone, recorrente: !!task.recur })}</Text>
       </View>
 
       {useStore().pontosNasTarefas && task.pts > 0 ? (

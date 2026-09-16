@@ -107,7 +107,13 @@ function PastilhaDeTexto({ t, rotulo, on, onPress }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button"
       accessibilityLabel={rotulo} accessibilityState={{ selected: on }} aria-pressed={on}
-      style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+      // ⚠ `minWidth: 44` no ALVO (16/09/2026). O círculo tem 40 e o Pressable
+      // não tinha largura própria, portanto encolhia com ele: 40 × 44, o único
+      // alvo desta fila abaixo dos 44 do INVARIANTE #5, e o primeiro que a mão
+      // encontra. O desenho continua a ser um círculo de 40; o que cresce é a
+      // área de toque à volta dele, como na bola de uma pessoa (52 de largo
+      // para um anel de 40).
+      style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
       {/* ⚠ UM círculo só, e não um anel à volta de um disco como na bola de uma
           pessoa. O anel com vão precisa de 8 px de raio a mais, e com o rótulo
           por dentro a forma fechava a 57 × 39 — um oval, medido no navegador, e

@@ -15,6 +15,7 @@ const CLARO = buildTheme(0, false);
 const ESCURO = buildTheme(0, true);
 const CINZA_DO_CARTAO = CLARO.text3;
 import Icon, { Marca, GoogleG as G } from '../Icon';
+import { plural } from '../format';
 import { FEM } from '../data';
 import { useStore } from '../store';
 import * as sync from '../sync';
@@ -338,7 +339,9 @@ export default function Login({ t, onEnter }) {
               </Text>
             ) : tries > 0 ? (
               <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: ESCURO.state.errTexto, textAlign: 'center' }}>
-                PIN incorreto. Faltam {5 - tries} tentativas.
+                {/* ⚠ Pelo `plural`, não pelo «s» escrito à mão: à quarta
+                    tentativa lia-se «Faltam 1 tentativas». */}
+                PIN incorreto. {5 - tries === 1 ? 'Falta' : 'Faltam'} {plural(5 - tries, 'tentativa', 'tentativas')}.
               </Text>
             ) : erroPin ? (
               <Text style={{ fontFamily: FONT.ui, fontSize: 13, color: ESCURO.state.errTexto, textAlign: 'center' }}>

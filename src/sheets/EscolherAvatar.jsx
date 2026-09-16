@@ -95,7 +95,14 @@ export default function EscolherAvatar({ t, user, onFeito, comFotografia = true 
                   style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center' }}>
                   <View style={{ width: BOLA, height: BOLA, borderRadius: R.pill,
                     backgroundColor: cor, alignItems: 'center', justifyContent: 'center',
-                    borderWidth: escolhida ? 3 : 0, borderColor: t.state.ok }}>
+                    // ⚠ O anel do escolhido é o ACENTO, com 2, e não um verde
+                    // fixo com 3 (16/09/2026). É a mesma correção que o
+                    // `EsquemaDeCor` levou em 15/09, com a razão escrita lá: o
+                    // `t.state.ok` dá 2,21:1 contra o cartão claro, abaixo dos
+                    // 3 que um objeto gráfico pede, e no claro não se via qual
+                    // estava escolhida. Esta folha ficou para trás, com as
+                    // bolas do esquema quatro linhas abaixo já corrigidas.
+                    borderWidth: escolhida ? 2 : 0, borderColor: t.accent }}>
                     <Figura nome={k} size={30} color="#FFFFFF" />
                   </View>
                 </Pressable>
@@ -144,7 +151,8 @@ export default function EscolherAvatar({ t, user, onFeito, comFotografia = true 
                 style={{ width: 60, height: 60, alignItems: 'center', justifyContent: 'center' }}>
                 <View style={{ width: 44, height: 44, borderRadius: R.pill, backgroundColor: c,
                   alignItems: 'center', justifyContent: 'center', opacity: dono ? 0.28 : 1,
-                  borderWidth: escolhida ? 3 : 0, borderColor: t.state.ok }}>
+                  // O mesmo anel da fila de cima, pela mesma razão.
+                  borderWidth: escolhida ? 2 : 0, borderColor: t.accent }}>
                   {figura ? <Figura nome={figura} size={24} color="#FFFFFF" /> : null}
                 </View>
               </Pressable>

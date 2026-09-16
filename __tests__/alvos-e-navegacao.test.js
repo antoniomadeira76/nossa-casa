@@ -121,10 +121,32 @@ describe('⚠ o rodapé leva sempre onde diz que leva', () => {
   const app = ler('App.jsx');
 
   it('o separador fecha as vistas de ecrã inteiro antes de mudar de separador', () => {
+    // ⚠ A janela era de 600 caracteres a partir do `TABS.map`, e um comentário
+    // acrescentado lá dentro empurrava o `fecharVistas()` para fora dela — a
+    // prova falhava sem nada ter partido. Agora lê até ao fim do bloco.
     const i = app.indexOf('TABS.map');
-    const bloco = app.slice(i, i + 600);
+    const bloco = app.slice(i, app.indexOf('</View>', i));
     expect(bloco).toMatch(/fecharVistas\(\)/);
     expect(bloco).toMatch(/setTab\(x\.key\)/);
+  });
+
+  // ⚠ A OUTRA METADE DO MESMO DEFEITO, que ficou de fora da primeira correção.
+  //
+  // Corrigiu-se o toque — tocar num separador fecha as vistas — e não se
+  // corrigiu a TINTA: com uma vista de ecrã inteiro aberta por cima, o `tab`
+  // não muda, e o rodapé continuava a acender o separador de onde se tinha
+  // vindo. Medido no navegador em 16/09/2026: com a Saúde aberta o rodapé dizia
+  // «Agenda»; com a Gestão e com os Equipamentos dizia «Início». E o
+  // `aria-selected` ia a `true`, portanto um leitor de ecrã anunciava o sítio
+  // errado — que é pior do que a tinta, porque não há como desconfiar.
+  it('⚠ e com uma vista de ecrã inteiro aberta, NENHUM separador está aceso', () => {
+    const i = app.indexOf('TABS.map');
+    const bloco = app.slice(i, app.indexOf('</View>', i));
+    // O «aceso» tem de depender de NÃO haver vista aberta, e não só do `tab`.
+    expect(bloco).toMatch(/const on = !vistaAberta && tab === x\.key/);
+    // E é o mesmo `on` que pinta e que anuncia — não dois cálculos.
+    expect(bloco).toMatch(/accessibilityState=\{\{ selected: on \}\} aria-selected=\{on\}/);
+    expect(bloco).toMatch(/color=\{on \? '#FFFFFF'/);
   });
 
   it('e o `fecharVistas` fecha TODAS as que correm por cima', () => {

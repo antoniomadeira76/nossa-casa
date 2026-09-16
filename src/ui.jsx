@@ -326,8 +326,13 @@ export const MarcaDeEstado = ({ t, estado = 'por-marcar', size = 24 }) => {
         // e um ícone precisa de 3. Aqui o fundo é a página, não o tijolo.
         <Icon name="closeCircle" size={size} color={t.state.warnTexto} />
       ) : (
+        // ⚠ `t.text3` e NÃO `t.border`: a borda mede 1,38:1 contra o cartão no
+        // pior dos doze temas, e este círculo é a única coisa que diz «por
+        // marcar» — um objeto gráfico pede 3. O `t.text3` dá 5,13, e é o mesmo
+        // cinzento que o «i» que aqui estava levava. Medido em 16/09/2026:
+        // troquei um ícone com o sentido errado por uma marca que não se via.
         <View style={{ width: d, height: d, borderRadius: R.pill, borderWidth: b,
-          borderColor: t.border, backgroundColor: t.surface }} />
+          borderColor: t.text3, backgroundColor: t.surface }} />
       )}
     </View>
   );
