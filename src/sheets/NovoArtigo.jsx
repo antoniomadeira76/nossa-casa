@@ -67,7 +67,12 @@ export default function NovoArtigo({ t, user, onClose }) {
       </View>
 
       <View style={{ gap: S.sm }}>
-        <Label t={t}>Secção</Label>
+        {/* ⚠ «Corredor», como na folha de gerir e como em todo o resto da app
+            (16/09/2026). O mesmo campo do mesmo artigo chamava-se «Secção» a
+            criar e «Corredor» a editar — e o modo de loja, a lista e o «Como
+            fazemos compras» dizem todos corredor. A palavra interna
+            (`seccoes`, `section`) fica como está: essa não se lê. */}
+        <Label t={t}>Corredor</Label>
         <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
           {/* ⚠ As secções da CASA. E a escolha guarda o NOME — o formulário
               guardava o índice, e a partir do momento em que a casa pode

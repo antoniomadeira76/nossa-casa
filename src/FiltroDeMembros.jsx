@@ -43,7 +43,13 @@ function BolaDeMembro({ t, nome, MEMBERS, on, varios, rotulo, onPress }) {
   // Tomás com cião veem a mesma fila marcada de maneiras diferentes, e cada um
   // vê a sua. `actFg` no nome, que é texto de 11 px e pede 4,5; `accent` no
   // anel e no disco, que são objetos gráficos.
-  const cor = t.accent;
+  // ⚠ `t.titulo` e NÃO `t.accent` (16/09/2026). O anel é um OBJETO GRÁFICO, e o
+  // acento cru mede 2,12:1 contra o cartão no Cinza escuro — abaixo dos 3. O
+  // `titulo` é o próprio acento, clareado até aos 3 contra o cartão escuro,
+  // e existe exactamente para isto («ícone em cor de ação leva titulo», no
+  // CLAUDE.md). No claro os dois são a mesma cor; no escuro este vê-se.
+  // Medido nos doze temas: `accent` desce a 2,12, `titulo` fica em 3,01.
+  const cor = t.titulo;
   return (
     // ⚠ `aria-checked`/`aria-pressed` ALÉM do `accessibilityState` (15/09/2026):
     // o react-native-web 0.21 não conhece o `accessibilityState` — deita-o fora
@@ -126,7 +132,7 @@ function PastilhaDeTexto({ t, rotulo, on, onPress }) {
           da altura. Com `5` fechava a 45,9 × 40, que é um oval. */}
       <View style={{ minWidth: 40, height: 40, borderRadius: R.pill, paddingHorizontal: S.xs,
         alignItems: 'center', justifyContent: 'center',
-        borderWidth: 2, borderColor: on ? t.accent : t.border,
+        borderWidth: 2, borderColor: on ? t.titulo : t.border,
         backgroundColor: on ? t.accent : t.surface }}>
         {/* Branco sobre o acento, como a `Choice`, o `Segmented` e o botão
             principal — 4,62 no pior dos seis esquemas. */}

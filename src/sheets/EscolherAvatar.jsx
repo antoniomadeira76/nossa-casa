@@ -102,7 +102,7 @@ export default function EscolherAvatar({ t, user, onFeito, comFotografia = true 
                     // 3 que um objeto gráfico pede, e no claro não se via qual
                     // estava escolhida. Esta folha ficou para trás, com as
                     // bolas do esquema quatro linhas abaixo já corrigidas.
-                    borderWidth: escolhida ? 2 : 0, borderColor: t.accent }}>
+                    borderWidth: escolhida ? 2 : 0, borderColor: t.titulo }}>
                     <Figura nome={k} size={30} color="#FFFFFF" />
                   </View>
                 </Pressable>
@@ -152,7 +152,7 @@ export default function EscolherAvatar({ t, user, onFeito, comFotografia = true 
                 <View style={{ width: 44, height: 44, borderRadius: R.pill, backgroundColor: c,
                   alignItems: 'center', justifyContent: 'center', opacity: dono ? 0.28 : 1,
                   // O mesmo anel da fila de cima, pela mesma razão.
-                  borderWidth: escolhida ? 2 : 0, borderColor: t.accent }}>
+                  borderWidth: escolhida ? 2 : 0, borderColor: t.titulo }}>
                   {figura ? <Figura nome={figura} size={24} color="#FFFFFF" /> : null}
                 </View>
               </Pressable>

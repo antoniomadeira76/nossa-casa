@@ -235,7 +235,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
          abaixo. A faixa mede a primeira linha e para aí (opção A de
          `design/faixa-da-consulta.dc.html`). */
       <Linha t={t} style={{ paddingVertical: S.md }}
-        faixaCurta={corDoMembro(record.member, MEMBERS[record.member]?.cor) || t.accent}>
+        faixaCurta={corDoMembro(record.member, MEMBERS[record.member]?.cor) || t.titulo}>
         <View style={{ gap: S.md }}>
           {/* ⚠ O `Pressable` está DENTRO do cartão, e é o único sítio onde
               pode estar. O `Card` não aceita `onPress` — nem nunca aceitou —
@@ -256,7 +256,7 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
             accessibilityHint={expanded ? 'Toque para fechar' : 'Toque para ver notas, receitas e decidir'}
             onPress={() => setExpandedRecord(expanded ? null : record.id)}
             style={{ flexDirection: 'row', alignItems: 'center', gap: S.md, minHeight: 44 }}>
-            <Icon name="heartPulse" size={20} color={corDoMembro(record.member, MEMBERS[record.member]?.cor) || t.accent} />
+            <Icon name="heartPulse" size={20} color={corDoMembro(record.member, MEMBERS[record.member]?.cor) || t.titulo} />
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={{ fontFamily: FONT.body, fontSize: 15, fontWeight: '500', color: t.text1 }}>
                 {record.specialty}

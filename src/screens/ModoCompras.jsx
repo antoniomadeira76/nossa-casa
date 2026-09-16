@@ -76,7 +76,7 @@ export default function ModoCompras({ t, user, onClose }) {
   const pctCart = merc > 0 ? (cart / merc) * 100 : 0;
   // A barra do carrinho: vermelha acima do limite, âmbar perto dele, e do
   // ESQUEMA no caso normal — que não é um estado, é o progresso da compra.
-  const barColor = pctCart > 100 ? t.state.err : pctCart > 80 ? t.state.warn : t.accent;
+  const barColor = pctCart > 100 ? t.state.err : pctCart > 80 ? t.state.warnTexto : t.titulo;
 
   return (
     // ⚠ Esta vista é dona da sua COLUNA (`coluna: true` no registo do App.jsx):

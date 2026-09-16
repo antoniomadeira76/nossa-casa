@@ -89,7 +89,7 @@ export default function Cofre({ t, kid, onClose }) {
         borderColor: disabled ? t.border : filled ? t.actBrd : t.border,
         opacity: pressed ? 0.85 : 1,
       })}>
-      {icon ? <Icon name={icon} size={20} color={disabled ? t.text3 : t.accent} /> : null}
+      {icon ? <Icon name={icon} size={20} color={disabled ? t.text3 : t.titulo} /> : null}
       <Text style={{ fontFamily: FONT.display, fontSize: 15, fontWeight: '700',
         color: disabled ? t.text3 : t.actFg }}>{label}</Text>
     </Pressable>

@@ -152,7 +152,7 @@ export default function TomasDaReceita({ t, user, record, recipe }) {
     <View style={{ gap: S.lg }}>
       {/* ── O estado ─────────────────────────────────────────────────────── */}
       <View style={{ gap: S.sm }}>
-        {p ? <Bar t={t} pct={pct} color={t.accent} height={6} /> : null}
+        {p ? <Bar t={t} pct={pct} color={t.titulo} height={6} /> : null}
         <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, lineHeight: 19, color: t.text3 }}>
           {p ? estado : 'Ainda sem plano. Diga em baixo quantas tomas por dia e durante quantos dias — a caixa é opcional.'}
         </Text>

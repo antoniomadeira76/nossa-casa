@@ -365,11 +365,12 @@ export default function NovoEvento({ t, user, onClose, preFillDay, evento }) {
           onCancel={() => setAApagar(false)} />
       ) : null}
 
+      {/* ⚠ A visibilidade INTEIRA, e não um `isPrivate` de sim ou não: são
+          três níveis, e o diálogo dizia «toda a família» ao do meio. */}
       {confirming ? (
         <ConfirmShare
           t={t}
-          type="evento"
-          isPrivate={form.visibilidade === 'so-eu'}
+          visibilidade={form.visibilidade}
           onConfirm={handleConfirm}
           onCancel={() => setConfirming(false)}
         />

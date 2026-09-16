@@ -120,7 +120,7 @@ export default function ConfirmarAdministradores({
                   </Text>
                   {feito ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Icon name="checkCircle" size={18} color={t.state.ok} />
+                      <Icon name="checkCircle" size={18} color={t.state.okTexto} />
                       <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.state.okTexto }}>
                         {nome === user ? 'já está nesta sessão' : 'confirmado'}
                       </Text>

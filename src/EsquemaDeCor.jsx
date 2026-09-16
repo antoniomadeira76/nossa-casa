@@ -60,7 +60,7 @@ export default function EscolhaDeEsquema({ t, escolhido, onEscolher }) {
                 que é o que a app usa em todo o lado para dizer «este». */}
             <View style={{ width: BOLA, height: BOLA, borderRadius: R.pill, overflow: 'hidden',
               backgroundColor: sc.accent,
-              borderWidth: on ? 2 : 0, borderColor: t.accent }}>
+              borderWidth: on ? 2 : 0, borderColor: t.titulo }}>
               <View style={{ position: 'absolute',
                 width: CORTE, height: CORTE, left: RECUO, top: RECUO,
                 backgroundColor: sc.chrome, transform: [{ rotate: '45deg' }] }} />

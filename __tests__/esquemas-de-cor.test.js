@@ -196,7 +196,15 @@ describe('os avisos seguem o esquema escolhido', () => {
 
   it('a barra do carrinho e a das metas são do esquema', () => {
     // O progresso de uma compra ou de uma meta não é um estado.
-    expect(ler('src/screens/ModoCompras.jsx')).toMatch(/pctCart > 80 \? t\.state\.warn : t\.accent/);
-    expect(ler('src/screens/Dinheiro.jsx')).toMatch(/color=\{t\.accent\} height=\{6\}/);
+    //
+    // ⚠ `t.titulo` e não `t.accent`, `warnTexto` e não `warn` (16/09/2026): a
+    // barra é um OBJETO GRÁFICO e pede 3:1 contra o carril, que é a página. O
+    // acento cru mede 2,12 e o `warn` 1,77. O `titulo` é o próprio acento
+    // clareado até aos 3 — o esquema continua a mandar, e agora vê-se.
+    // Guarda: `um-objeto-grafico-ve-se-nos-doze-temas`.
+    expect(ler('src/screens/ModoCompras.jsx')).toMatch(/pctCart > 80 \? t\.state\.warnTexto : t\.titulo/);
+    expect(ler('src/screens/Dinheiro.jsx')).toMatch(/color=\{t\.titulo\} height=\{6\}/);
+    // E a do envelope, que cai no mesmo token quando a casa não lhe deu cor.
+    expect(ler('src/screens/Dinheiro.jsx')).toMatch(/color=\{e\.color \|\| t\.titulo\}/);
   });
 });

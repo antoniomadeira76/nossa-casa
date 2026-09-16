@@ -15,7 +15,14 @@ import EscolhaDeEsquema, { BOLA as BOLA_DO_ESQUEMA } from '../EsquemaDeCor';
 import * as servidor from '../pocketbase';
 
 // O aspeto por extenso, para a frase que diz o que está escolhido.
-const MODO_LABEL = { claro: 'Claro', escuro: 'Escuro', sistema: 'Segue o telemóvel' };
+// ⚠ UM nome por aspeto, e este mapa é a fonte dele (16/09/2026). O mesmo
+// aspeto chamava-se «Sistema» na bola, «Segue o telemóvel» na frase de baixo
+// e «Aspeto igual ao do telemóvel» no rótulo de voz — três nomes no mesmo
+// cartão, para quem tivesse de os relacionar.
+const MODO_LABEL = { claro: 'Claro', escuro: 'Escuro', sistema: 'Sistema' };
+// O que o «Sistema» faz, por extenso: entra no rótulo de voz e na frase que
+// diz o que está escolhido.
+const MODO_EXPLICA = { claro: 'sempre claro', escuro: 'sempre escuro', sistema: 'segue o telemóvel' };
 
 // As duas metades da amostra do aspeto. Não mudam com o tema em vigor — de
 // propósito: a bola mostra como a app FICA em cada aspeto, e uma amostra que
@@ -208,7 +215,7 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
             return (
               <Pressable key={o.k} onPress={() => mudarPreferencia(user, { aspeto: o.k })}
                 accessibilityRole="button"
-                accessibilityLabel={o.k === 'sistema' ? 'Aspeto igual ao do telemóvel' : `Aspeto ${o.label}`}
+                accessibilityLabel={`Aspeto ${o.label} — ${MODO_EXPLICA[o.k]}`}
                 accessibilityState={{ selected: on }} aria-pressed={on}
                 style={{ width: 52, minHeight: 44, alignItems: 'center', justifyContent: 'flex-start' }}>
                 {/* ⚠ A MESMA BOLA DAS CORES, à letra (15/09/2026: «os círculos de
@@ -225,7 +232,7 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
                     // A borda de 1 existe sempre: a bola é quase branca e sem
                     // ela desaparecia dentro de um cartão claro. A de 2 no
                     // acento é a marca de escolhida, como na bola das cores.
-                    borderWidth: on ? 2 : 1, borderColor: on ? t.accent : t.border,
+                    borderWidth: on ? 2 : 1, borderColor: on ? t.titulo : t.border,
                     alignItems: 'center', justifyContent: 'center' }}>
                     <Icon name={o.icon} size={18} color={TINTA_NO_CLARO} />
                   </View>
@@ -245,8 +252,8 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
         <EscolhaDeEsquema t={t} escolhido={scheme}
           onEscolher={(i) => mudarPreferencia(user, { esquema: i })} />
         <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
-          {MODO_LABEL[mode]} · {SCHEMES[scheme].name}. Vale só para este perfil — os outros
-          membros mantêm o que escolheram.
+          {MODO_LABEL[mode]} ({MODO_EXPLICA[mode]}) · {SCHEMES[scheme].name}. Vale só para
+          este perfil — os outros membros mantêm o que escolheram.
         </Text>
       </View>
       </Card>
@@ -258,9 +265,14 @@ export default function Perfil({ t, user, onClose, onSignOut, onSaude, onDoc, on
         <SectionTitle t={t}>Avisos</SectionTitle>
         <Card t={t} style={{ gap: S.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
+            {/* ⚠ A frase tem de dizer o que É, e não o que seria (16/09/2026).
+                Estava no presente do indicativo — «Um resumo por dia às 20:00»
+                — com o interruptor ao lado DESLIGADO: a app afirmava um aviso
+                que não manda. Desligada, diz o que está desligado. */}
             <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 14.5, lineHeight: 22, color: t.text2 }}>
-              Um resumo por dia às {s.notif.hour}, avisando{' '}
-              {plural(s.notif.lead, 'dia', 'dias')} antes de cada prazo.
+              {s.notif.digest
+                ? `Um resumo por dia às ${s.notif.hour}, avisando ${plural(s.notif.lead, 'dia', 'dias')} antes de cada prazo.`
+                : `Sem resumo diário. Ligue para receber um por dia às ${s.notif.hour}, ${plural(s.notif.lead, 'dia', 'dias')} antes de cada prazo.`}
             </Text>
             <Toggle t={t} on={s.notif.digest} label="Resumo diário"
               onPress={() => mudarPreferencia(user, { notif: { digest: !s.notif.digest } })} />

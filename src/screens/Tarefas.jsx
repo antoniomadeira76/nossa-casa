@@ -24,8 +24,13 @@ const URG = [
   // do «Sem pressa» ficava a mesma sobre a página escura. `errDeep` é o par
   // do botão destrutivo do `Confirm` (branco por cima dá 5,79 a 11 px).
   { key: 0, label: 'Urgente',    fill: true,  cor: (t) => t.state.errDeep, dash: false },
-  { key: 1, label: 'Normal',     fill: false, cor: (t) => t.state.warn, dash: true },
-  { key: 2, label: 'Sem pressa', fill: false, cor: (t) => t.border, dash: false },
+  // ⚠ As duas CONTORNADAS levam tokens de TEXTO, e não a cor-base nem a
+  // borda (16/09/2026). A caixa cheia do «Urgente» leva branco por cima e
+  // aguenta o `errDeep`; as outras duas são só um traço de 1,5 sobre a página,
+  // e aí o `warn` mede 1,77:1 e o `border` 1,32 — a caixa do «Sem pressa» era
+  // um contorno que quase não existia, com o número lá dentro a boiar.
+  { key: 1, label: 'Normal',     fill: false, cor: (t) => t.state.warnTexto, dash: true },
+  { key: 2, label: 'Sem pressa', fill: false, cor: (t) => t.text3, dash: false },
 ];
 
 // `abrir` é o id de uma tarefa cuja folha de gestão deve estar aberta à
@@ -175,7 +180,10 @@ export default function Tarefas({ t, user, abrir }) {
                         estar armada. */}
                     <Pressable onPress={() => st.tapTask(x.id, false)} accessibilityRole="button"
                       onLongPress={() => armar(x.id)} delayLongPress={ATRASO_PARA_PEGAR}
-                      accessibilityLabel={`${pend ? 'Confirmar' : 'Marcar'} ${x.title} · ${u.label}${done ? ' · concluída' : ''}`}
+                      // ⚠ O verbo tem de ser o que o toque FAZ. Dizia «Marcar» a uma tarefa já
+                      // feita, que o toque vai DESmarcar — e acrescentava
+                      // «concluída» a seguir, na mesma frase.
+                      accessibilityLabel={`${done ? 'Desmarcar' : pend ? 'Confirmar' : 'Marcar'} ${x.title} · ${u.label}`}
                       accessibilityHint="Mantenha premido para mudar a ordem dentro do grupo de urgência"
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minHeight: 44 }}>
                       {/* caixa do número: cor E forma dizem a urgência */}
@@ -236,7 +244,7 @@ export default function Tarefas({ t, user, abrir }) {
             <Linha key={tr.id} t={t}>
               <View style={{ gap: S.sm }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 }}>
-                  <Icon name="swap" size={20} color={tr.aceiteEm ? t.state.ok : t.state.info} />
+                  <Icon name="swap" size={20} color={tr.aceiteEm ? t.state.okTexto : t.state.infoTexto} />
                   <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, lineHeight: 21, color: t.text2 }}>
                     {`${tr.quemDe} e ${tr.quemPara}: «${tr.tarefaDe}» por «${tr.tarefaPara}»`}
                   </Text>
@@ -386,7 +394,10 @@ export default function Tarefas({ t, user, abrir }) {
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: t.subtle,
             borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14 }}>
-            <Icon name="refresh" size={22} color={t.chrome} />
+            {/* ⚠  e não : a cor do CABEÇALHO sobre o cartão mede
+                1,01:1 no Violeta escuro — um ícone invisível. O  é
+                fundo, não tinta; um ícone em cor de ação leva . */}
+            <Icon name="refresh" size={22} color={t.titulo} />
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>Alternar entre as crianças</Text>
               <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>

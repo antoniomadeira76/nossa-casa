@@ -247,7 +247,7 @@ export default function Dinheiro({ t, user, onEquip }) {
             {EUR(spent)} gastos{'\n'}de {EUR(budget)}
           </Text>
         </View>
-        <Bar t={t} pct={pct} color={t.accent} />
+        <Bar t={t} pct={pct} color={t.titulo} />
         {/* Sem rendimento declarado não há nada de que atribuir: a frase
             calava-se a meio («0 % dos 0,00 €») em vez de se calar toda. */}
         {rendimento > 0 ? (
@@ -297,10 +297,12 @@ export default function Dinheiro({ t, user, onEquip }) {
                     pareciam a zero com 546,60 € de 590,00 € escrito ao lado.
                     O dono da casa perguntou porque não enchiam. A cor do
                     esquema é a mesma da barra do orçamento e das metas. */}
-                <Bar t={t} pct={e.limit > 0 ? (e.used / e.limit) * 100 : 0} color={e.color || t.accent} height={6} />
+                <Bar t={t} pct={e.limit > 0 ? (e.used / e.limit) * 100 : 0} color={e.color || t.titulo} height={6} />
                 {tight ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-                    <Icon name="warning" size={16} color={t.state.warn} />
+                    {/* ⚠  e não : o `#FAAD14` sobre o cartão mede 1,85:1, e
+                        um ícone pede 3. O texto ao lado dele já usava o token certo. */}
+                    <Icon name="warning" size={16} color={t.state.warnTexto} />
                     <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 11.5, color: t.state.warnTexto }}>
                       Restam {EUR(e.limit - e.used)} neste envelope.
                     </Text>
@@ -552,7 +554,7 @@ export default function Dinheiro({ t, user, onEquip }) {
                 {/* O progresso de uma meta não é um estado — é do esquema. E a
                     barra é um objeto de interface: 3:1 basta-lhe, ao contrário
                     de um rótulo de 12 px. */}
-                <Bar t={t} pct={g.of > 0 ? (g.at / g.of) * 100 : 0} color={t.accent} height={6} />
+                <Bar t={t} pct={g.of > 0 ? (g.at / g.of) * 100 : 0} color={t.titulo} height={6} />
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
                   <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
                     {[falta > 0 ? `faltam ${EUR(falta)}` : 'meta alcançada', g.when]

@@ -53,7 +53,7 @@ export default function GerirMeta({ t, meta, user, onApagar, onClose }) {
       {/* Onde a meta está, em euros. A barra é o progresso; os números são o
           que a família precisa de saber para decidir quanto reforçar. */}
       <View style={{ gap: S.sm }}>
-        <Bar t={t} pct={meta.of > 0 ? (meta.at / meta.of) * 100 : 0} color={t.accent} height={6} />
+        <Bar t={t} pct={meta.of > 0 ? (meta.at / meta.of) * 100 : 0} color={t.titulo} height={6} />
         <Text style={{ fontFamily: FONT.ui, fontSize: 12.5, color: t.text3 }}>
           {[`${EUR(meta.at)} de ${EUR(meta.of)}`,
             falta > 0 ? `faltam ${EUR(falta)}` : 'meta alcançada',

@@ -290,7 +290,7 @@ function LinhaDeTroca({ t, tr, kid }) {
     <Linha t={t}>
       <View style={{ gap: S.sm }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
-          <Icon name="swap" size={24} color={aceite ? t.state.ok : t.state.info} />
+          <Icon name="swap" size={24} color={aceite ? t.state.okTexto : t.state.infoTexto} />
           <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 15, lineHeight: 21, color: t.text2 }}>{frase}</Text>
           {aceite
             ? <Pill label={estado} fg={t.state.okTexto} bg={t.state.okBg} border={t.state.okBorder} />

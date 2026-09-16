@@ -303,7 +303,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
               de {EUR(budget)}{'\n'}orçamento
             </Text>
           </View>
-          <Bar t={t} pct={pct} color={t.accent} />
+          <Bar t={t} pct={pct} color={t.titulo} />
           {/* ⚠ Dizia «{pct} % do orçamento de Setembro usado até agora».
               A percentagem era CERTA — gasto sobre orçamento —, ao contrário da
               do Dinheiro, mas obrigava a fazer a conta de cabeça para saber de

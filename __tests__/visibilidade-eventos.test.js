@@ -240,7 +240,13 @@ describe('A marca diz quantos se podem escolher', () => {
   // app, e não a cor do membro da bola — «a cor é consoante o perfil do user
   // em uso». A cor do membro vive no avatar, que é quem diz de quem é a linha.
   test('e a marca de escolhido é o acento de quem usa a app, não a cor do membro', () => {
-    expect(filtro).toMatch(/const cor = t\.accent;/);
+    // ⚠ `t.titulo` desde 16/09/2026, e é o MESMO acento: o `titulo` é o acento
+    // do esquema clareado até aos 3:1 contra o cartão escuro. O que esta prova
+    // defende — que a marca é o esquema de QUEM USA a app, e não a cor do
+    // membro da bola — continua inteiro; o que mudou é que agora se vê também
+    // no Cinza escuro, onde o acento cru media 2,12.
+    expect(filtro).toMatch(/const cor = t\.titulo;/);
+    expect(filtro).not.toMatch(/const cor = corDoMembro/);
     expect(filtro).toMatch(/color: on \? t\.actFg : t\.text3/);   // o nome, a 11 px
     expect(filtro).toMatch(/color=\{corSobre\(cor\)\}/);          // o visto, legível
     expect(filtro).not.toMatch(/corDeMembroLegivel|corDoMembro\(/);

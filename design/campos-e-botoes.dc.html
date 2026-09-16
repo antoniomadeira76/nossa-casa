@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campos pequenos, botões grandes</title>
+<style>
+:root{
+  --page:#F6F7F9; --card:#FCFCFD; --surface:#FFFFFF; --subtle:#FAFAFA;
+  --border:#D9D9D9; --divider:#F0F2F5;
+  --t1:#262626; --t2:#434343; --t3:#656C7C; --slate:#606E90;
+  --ac:#078286; --acFg:#056b6e; --acBg:#E6F4F4; --acBrd:#8FC9CB;
+  --ok:#52C41A; --okBorder:#BAE7A3; --okBg:rgba(220,243,209,.35); --okTexto:#237804;
+  --warn:#FAAD14; --warnBg:#FEFFD0; --warnTexto:#8F5600;
+  --r-card:8px; --r-row:6px; --r-pill:100px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#EEF0F3;color:var(--t1);padding:26px;
+  font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif}
+h1{font-size:27px;letter-spacing:-.02em;margin:0 0 8px}
+p.intro{color:var(--t2);max-width:80ch;margin:0 0 4px;line-height:1.6}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);
+  margin:38px 0 6px;padding-bottom:7px;border-bottom:1px solid #DADDE2}
+h3{font-size:15px;margin:0 0 2px}
+.diz{color:var(--t3);font-size:12.5px;line-height:1.55;margin:0 0 10px;max-width:48ch}
+.bom{color:var(--okTexto)}.mau{color:#A32621}
+.tapete{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.tel{width:372px;background:var(--page);border-radius:14px;padding:14px;
+  box-shadow:0 10px 30px rgba(16,18,29,.14),0 0 0 1px rgba(16,18,29,.07);flex:none}
+.opt{width:372px;flex:none}
+.card{background:var(--card);border-radius:var(--r-card);padding:14px;box-shadow:0 1px 2px rgba(16,18,29,.06)}
+.linha{display:flex;align-items:center;gap:12px;min-height:56px;
+  padding:8px 2px 8px 10px;position:relative;border-bottom:1px solid var(--divider)}
+.linha.feita::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--okBorder)}
+.linha.feita{background:var(--okBg)}
+.visto{width:22px;height:22px;border-radius:50%;border:1.75px solid var(--ac);
+  display:grid;place-items:center;flex:none}
+.visto svg{stroke:var(--ac);fill:none;stroke-width:2.2;width:13px;height:13px;stroke-linecap:round;stroke-linejoin:round}
+.vazio{width:22px;height:22px;border-radius:50%;border:1.6px solid var(--t3);flex:none;background:#fff}
+.txt{flex:1;min-width:0}
+.txt b{display:block;font-weight:500;font-size:15px}
+.txt span{display:block;font-size:11.5px;color:var(--t3);margin-top:1px}
+.rot{font-size:12px;font-weight:600;color:var(--slate)}
+.desfazer{font-size:13px;font-weight:600;color:var(--acFg);white-space:nowrap}
+
+/* ── os campos ──────────────────────────────────────────────────────────── */
+.campo{height:44px;border:1px solid var(--border);border-radius:var(--r-row);
+  background:var(--surface);display:flex;align-items:center;padding:0 12px;
+  font-size:16px;color:var(--t1)}
+.campo.vaz{color:var(--t3)}
+.campo.largo{flex:1}
+.campo.estreito{width:104px;justify-content:flex-end;gap:4px}
+.campo.mini{width:88px;justify-content:flex-end;gap:3px;height:40px;font-size:15px}
+.eur{font-size:14px;color:var(--t3);font-weight:500}
+.eurfora{font-size:16px;color:var(--t3);margin-left:8px}
+.precoLinha{display:flex;align-items:center;gap:10px;padding:0 2px 10px 10px}
+.preco-toque{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;
+  border-radius:var(--r-pill);background:var(--acBg);color:var(--acFg);
+  font-size:14px;font-weight:600;border:1px solid var(--acBrd)}
+.preco-toque.vazio{background:var(--surface);border:1px dashed var(--border);color:var(--t3);font-weight:500}
+.tecla{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.tecla div{height:40px;border-radius:var(--r-row);background:var(--surface);
+  border:1px solid var(--border);display:grid;place-items:center;font-size:17px;color:var(--t1)}
+
+/* ── os botões ──────────────────────────────────────────────────────────── */
+.bt{height:48px;border-radius:var(--r-row);display:flex;align-items:center;
+  justify-content:center;gap:8px;font-size:15px;font-weight:600}
+.bt.trac{border:1px dashed var(--border);color:var(--acFg);background:transparent}
+.bt.cont{border:1px solid var(--acBrd);background:var(--acBg);color:var(--acFg)}
+.bt.cheio{background:var(--ac);color:#fff}
+.bt.peq{height:40px;font-size:14px;padding:0 14px}
+.par{display:flex;gap:8px}
+.par>*{flex:1}
+.barra{margin-top:10px;padding:10px 12px 12px;background:var(--page);
+  border-top:1px solid var(--divider);display:flex;gap:10px;align-items:center;
+  border-radius:0 0 10px 10px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;
+  border-radius:var(--r-pill);border:1px dashed var(--border);color:var(--acFg);
+  font-size:13.5px;font-weight:600;background:transparent}
+.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;
+  stroke-linecap:round;stroke-linejoin:round}
+.medida{font-size:11px;color:var(--t3);margin-top:8px;font-variant-numeric:tabular-nums}
+table.d{border-collapse:collapse;width:100%;max-width:900px;font-size:13.5px;
+  background:var(--surface);border-radius:var(--r-card);overflow:hidden;box-shadow:0 1px 2px rgba(16,18,29,.06)}
+table.d th,table.d td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--divider);vertical-align:top}
+table.d th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);background:var(--subtle)}
+table.d td:first-child{font-weight:600;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<h1>Campos pequenos, botões grandes</h1>
+<p class="intro">O modo compras tem um campo de largura inteira para escrever «2,49» e dois botões de largura inteira empilhados. Um valor de quatro caracteres recebe 340 px; duas ações recebem 108 px de altura. Estas são as alternativas, todas com os tokens reais da app e medidas em pixels.</p>
+
+<h2>Agora</h2>
+<div class="tapete">
+  <div>
+    <div class="tel">
+      <div class="card" style="padding:4px 0">
+        <div class="linha feita">
+          <span class="visto"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>
+          <div class="txt"><b>Bananas</b><span>estimativa 0,00&nbsp;€</span></div>
+          <span class="desfazer">Desfazer</span>
+        </div>
+        <div class="precoLinha">
+          <span class="rot">Preço pago</span>
+          <span class="campo largo vaz">0,00</span>
+          <span class="eurfora">€</span>
+        </div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="bt trac"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>acrescentar artigo à lista</div>
+      <div style="height:10px"></div>
+      <div class="bt cont"><svg class="i" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></svg>Secção seguinte</div>
+    </div>
+    <h3 style="margin-top:12px">O que está lá</h3>
+    <p class="diz"><span class="mau">O campo mede 340 px para guardar quatro caracteres</span>, e o «€» fica fora dele, solto. Os dois botões somam 106 px de altura mais o vão — uma quinta parte do ecrã para duas ações, uma das quais se usa uma vez por corredor.</p>
+  </div>
+</div>
+
+<h2>O campo do preço — quatro opções</h2>
+<div class="tapete">
+
+  <div class="opt">
+    <div class="tel">
+      <div class="card" style="padding:4px 0">
+        <div class="linha feita" style="border-bottom:0">
+          <span class="visto"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>
+          <div class="txt"><b>Bananas</b><span>estimativa 1,89&nbsp;€</span></div>
+          <span class="campo estreito">2,49 <span class="eur">€</span></span>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">A · Na própria linha, 104 px</h3>
+    <p class="diz">O campo vem para a linha do artigo, com o «€» lá dentro, e o «Desfazer» passa a um toque longo. É o <b>NumField estreito</b> que a app já tem — a mesma peça do bónus do cofre. <span class="bom">Poupa uma linha inteira por artigo</span> e o valor fica ao lado do nome a que pertence.</p>
+    <p class="medida">104 × 44 · a linha continua nos 64 px que a loja pede</p>
+  </div>
+
+  <div class="opt">
+    <div class="tel">
+      <div class="card" style="padding:4px 0">
+        <div class="linha feita" style="border-bottom:0">
+          <span class="visto"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>
+          <div class="txt"><b>Bananas</b><span>estimativa 1,89&nbsp;€</span></div>
+          <span class="preco-toque">2,49&nbsp;€ <svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><path d="M4 20h4L20 8l-4-4L4 16z"/></svg></span>
+        </div>
+        <div class="linha" style="border-bottom:0">
+          <span class="vazio"></span>
+          <div class="txt"><b>Iogurtes</b><span>1,19&nbsp;€ da última vez aqui</span></div>
+          <span class="preco-toque vazio">pôr preço</span>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">B · Pastilha que se toca</h3>
+    <p class="diz">Sem campo nenhum até ser preciso: o preço é uma pastilha. Cheia quando já se escreveu, tracejada com «pôr preço» quando não. Tocar abre o teclado. <span class="bom">É o que menos ocupa</span>, e a lista lê-se de uma vez.</p>
+    <p class="medida">altura 36 dentro do alvo de 44 · largura conforme o número</p>
+  </div>
+
+  <div class="opt">
+    <div class="tel">
+      <div class="card" style="padding:4px 0">
+        <div class="linha feita" style="border-bottom:0">
+          <span class="visto"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>
+          <div class="txt"><b>Bananas</b><span>estimativa 1,89&nbsp;€</span></div>
+          <span class="campo mini">2,49 <span class="eur">€</span></span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:8px">
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <span class="rot">Bananas</span>
+          <span style="margin-left:auto;font-size:19px;font-weight:600">2,49&nbsp;€</span>
+        </div>
+        <div class="tecla">
+          <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div>
+          <div>7</div><div>8</div><div>9</div><div>,</div><div>0</div>
+          <div><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M9 6h11v12H9L3 12z"/><path d="M13 10l4 4M17 10l-4 4"/></svg></div>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">C · Campo mínimo e teclado próprio</h3>
+    <p class="diz">O campo tem 88 px na linha, e tocar abre um teclado de números dentro da app, por baixo. Na loja, com uma mão no carrinho, <span class="bom">as teclas grandes acertam melhor</span> do que o teclado do sistema — e o «,» está onde se espera, que no teclado decimal do Android nem sempre está.</p>
+    <p class="medida">teclas de 40 · o teclado só aparece com um campo em foco</p>
+  </div>
+
+  <div class="opt">
+    <div class="tel">
+      <div class="card" style="padding:4px 0">
+        <div class="linha feita" style="border-bottom:0">
+          <span class="visto"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span>
+          <div class="txt"><b>Bananas</b><span>1,89&nbsp;€ estimado</span></div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+            <span class="campo mini" style="height:36px">2,49 <span class="eur">€</span></span>
+            <span style="font-size:10.5px;color:var(--okTexto);font-weight:600">+0,60 acima</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">D · Campo mínimo com a diferença</h3>
+    <p class="diz">O mesmo campo de 88, e por baixo o que isto muda: quanto é que ficou acima ou abaixo do que se esperava. <span class="bom">É a razão pela qual se escreve o preço</span> — e é a única opção que a diz sem se abrir mais nada.</p>
+    <p class="medida">88 × 36 mais a legenda · a linha cresce 14 px</p>
+  </div>
+
+</div>
+
+<h2>Os dois botões — quatro opções</h2>
+<div class="tapete">
+
+  <div class="opt">
+    <div class="tel" style="padding-bottom:0">
+      <div class="card" style="padding:4px 0;opacity:.45">
+        <div class="linha" style="border-bottom:0"><span class="vazio"></span><div class="txt"><b>Iogurtes</b><span>1,19&nbsp;€</span></div></div>
+      </div>
+      <div style="height:10px"></div>
+      <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>acrescentar artigo</span>
+      <div class="barra">
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--t3)">No carrinho · 6 artigos</div>
+          <div style="font-size:19px;font-weight:600">14,25&nbsp;€</div>
+        </div>
+        <div class="bt cheio peq" style="padding:0 18px">Secção seguinte</div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">A · O principal na barra fixa</h3>
+    <p class="diz">O «Secção seguinte» vai para a barra de ação do ecrã, que a app já tem e só as Tarefas usam, ao lado do total do carrinho. O «acrescentar» encolhe para uma pastilha no fim da lista. <span class="bom">Ganha 60 px de lista e o botão fica sempre à mão</span>, sem rolar.</p>
+    <p class="medida">barra de 64 fixa · pastilha de 36 num alvo de 44</p>
+  </div>
+
+  <div class="opt">
+    <div class="tel">
+      <div class="card" style="padding:4px 0;opacity:.45">
+        <div class="linha" style="border-bottom:0"><span class="vazio"></span><div class="txt"><b>Iogurtes</b><span>1,19&nbsp;€</span></div></div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="par">
+        <div class="bt trac peq"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>artigo</div>
+        <div class="bt cont peq">Secção seguinte<svg class="i" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></svg></div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">B · Lado a lado</h3>
+    <p class="diz">Os mesmos dois botões, na mesma linha, a 40 de altura. <span class="bom">Passa de 106 px para 40</span> e não muda nada da estrutura. O «acrescentar» perde as palavras «à lista», que a lista já diz.</p>
+    <p class="medida">40 de altura · o alvo cresce para 44 com o enchimento</p>
+  </div>
+
+  <div class="opt">
+    <div class="tel">
+      <div class="card" style="padding:4px 0;opacity:.45">
+        <div class="linha" style="border-bottom:0"><span class="vazio"></span><div class="txt"><b>Iogurtes</b><span>1,19&nbsp;€</span></div></div>
+      </div>
+      <div style="height:10px"></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="chip" style="flex:none"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>artigo</span>
+        <div style="flex:1;text-align:right;font-size:13px;color:var(--t3)">Frescos · 3 de 5 corredores</div>
+      </div>
+      <div class="barra">
+        <div class="bt cheio peq" style="flex:1">Corredor seguinte · Mercearia</div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">C · O seguinte diz para onde vai</h3>
+    <p class="diz">O mesmo da A, mas o botão nomeia o destino em vez de dizer «seguinte». <span class="bom">Quem está na loja sabe para que lado andar</span> antes de tocar, e a linha por cima diz onde vai a meio do percurso.</p>
+    <p class="medida">barra de 64 · o nome do corredor corta-se com «…» se for longo</p>
+  </div>
+
+  <div class="opt">
+    <div class="tel">
+      <div class="card" style="padding:4px 0;opacity:.45">
+        <div class="linha" style="border-bottom:0"><span class="vazio"></span><div class="txt"><b>Iogurtes</b><span>1,19&nbsp;€</span></div></div>
+      </div>
+      <div style="height:10px"></div>
+      <span class="chip"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>acrescentar artigo</span>
+    </div>
+    <h3 style="margin-top:12px">D · Sem botão de secção</h3>
+    <p class="diz">O «Secção seguinte» desaparece: mudar de corredor já se faz nos separadores que estão fixos no topo, e eles dizem quais estão despachados. <span class="bom">Um caminho para cada coisa</span> — mas obriga a subir a mão até ao topo do ecrã, que com o carrinho é pior.</p>
+    <p class="medida">zero px · a navegação fica só nos separadores</p>
+  </div>
+
+</div>
+
+<h2>O que eu faria</h2>
+<table class="d">
+  <tr><th>Decisão</th><th>Escolha</th><th>Porquê</th></tr>
+  <tr><td>Campo do preço</td><td><b>A + D</b> — 104 na linha, com a diferença por baixo</td><td>O «estreito» já existe e já foi aprovado no cofre, e a diferença é a razão de se escrever o preço. O teclado próprio da C é bom mas é peça nova, e uma peça nova pede provas próprias.</td></tr>
+  <tr><td>Botões</td><td><b>C</b> — pastilha em cima, barra fixa com o destino</td><td>Aproveita a barra de ação que a app tem e não usa, devolve 60 px à lista, e o botão passa a dizer para onde leva. É a mesma decisão de 15/09 no cofre, aplicada onde faz mais falta.</td></tr>
+  <tr><td>Onde mais se aplica</td><td>Compras, Dinheiro, Equipamentos, Saúde, Gestão</td><td>Os catorze ecrãs que deixam o «acrescentar» no fim do conteúdo. A revisão de hoje já tinha assinalado que só as Tarefas usam a barra fixa.</td></tr>
+</table>
+<p class="intro" style="margin-top:12px">Nada disto está implementado. Diga qual quer de cada lado e faço.</p>
+</body>
+</html>
