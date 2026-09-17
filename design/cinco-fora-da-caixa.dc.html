@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinco fora da caixa</title>
+<style>
+:root{
+  --page:#F6F7F9; --card:#FCFCFD; --surface:#FFFFFF; --subtle:#FAFAFA;
+  --border:#D9D9D9; --divider:#F0F2F5;
+  --t1:#262626; --t2:#434343; --t3:#656C7C; --slate:#606E90;
+  --ac:#078286; --acFg:#056b6e; --acBg:#E6F4F4; --acBrd:#8FC9CB;
+  --okTexto:#237804; --okBorder:#BAE7A3;
+  --warn:#FAAD14; --warnTexto:#8F5600;
+  --errTexto:#A32621;
+  --rc:8px; --rr:6px; --rp:100px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#EEF0F3;color:var(--t1);padding:26px;
+  font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif}
+h1{font-size:27px;letter-spacing:-.02em;margin:0 0 8px}
+p.intro{color:var(--t2);max-width:84ch;margin:0 0 4px;line-height:1.6}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);
+  margin:34px 0 14px;padding-bottom:7px;border-bottom:1px solid #DADDE2}
+h3{font-size:16px;margin:0 0 3px}
+.diz{color:var(--t3);font-size:12.5px;line-height:1.55;margin:0 0 8px;max-width:46ch}
+.bom{color:var(--okTexto);font-weight:600}.mau{color:var(--errTexto);font-weight:600}
+.med{font-size:11px;color:var(--t3);font-variant-numeric:tabular-nums;margin-top:6px}
+.tapete{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.op{width:368px;flex:none}
+.tel{background:var(--page);border-radius:12px;padding:0;overflow:hidden;
+  box-shadow:0 8px 24px rgba(16,18,29,.13),0 0 0 1px rgba(16,18,29,.07)}
+.topo{background:var(--surface);padding:11px 14px;border-bottom:1px solid var(--divider);
+  display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--t2)}
+.corpo{padding:12px 14px}
+.num{font-variant-numeric:tabular-nums}
+.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.barra{padding:10px 14px 13px;background:var(--page);border-top:1px solid var(--divider);
+  display:flex;gap:10px;align-items:center}
+.bt{height:46px;border-radius:var(--rr);display:flex;align-items:center;justify-content:center;gap:8px;
+  font-size:15px;font-weight:600;border:1px solid var(--acBrd);background:var(--acBg);color:var(--acFg)}
+.bt.ch{background:var(--ac);color:#fff;border-color:var(--ac)}
+.rot{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3)}
+
+/* 1 · talão */
+.talao{background:var(--surface);border-radius:var(--rc);padding:12px 14px}
+.tl{display:flex;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px dotted #E3E6EB;min-height:34px}
+.tl:last-child{border-bottom:0}
+.tl .mk{width:15px;flex:none;color:var(--ac);font-size:13px;line-height:1}
+.tl .nm{flex:1;min-width:0;font-size:14.5px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl .pr{font-size:14.5px;color:var(--t2);font-weight:600}
+.tl.por .nm{color:var(--t3)}.tl.por .pr{color:var(--t3);font-weight:400}
+.tl.sem .nm{color:var(--warnTexto)}.tl.sem .pr{color:var(--warnTexto);font-size:12px;font-weight:600}
+.tsoma{display:flex;justify-content:space-between;align-items:baseline;
+  border-top:2px solid var(--t1);margin-top:8px;padding-top:8px}
+.tsoma b{font-size:19px}
+
+/* 2 · arrastar */
+.sw{background:var(--surface);border-radius:var(--rc);overflow:hidden}
+.sl{display:flex;align-items:center;gap:10px;height:46px;padding:0 12px;border-bottom:1px solid var(--divider);position:relative;background:var(--surface)}
+.sl:last-child{border-bottom:0}
+.sl .nm{flex:1;font-size:15px;color:var(--t2)}
+.sl .pr{font-size:14px;color:var(--t3);font-variant-numeric:tabular-nums}
+.sl.ok{background:rgba(220,243,209,.32)}
+.sl.ok .nm{color:var(--t3);text-decoration:line-through;text-decoration-color:var(--t3)}
+.sl.arr{transform:translateX(64px);box-shadow:-2px 0 0 var(--ac)}
+.atras{position:absolute;left:0;top:0;bottom:0;width:64px;background:var(--acBg);
+  display:grid;place-items:center;color:var(--acFg)}
+.dica{display:flex;gap:14px;align-items:center;padding:8px 12px;font-size:11.5px;color:var(--t3)}
+
+/* 3 · contagem */
+.conta{background:var(--surface);border-radius:var(--rc);padding:14px;text-align:center}
+.conta .big{font-size:44px;font-weight:600;letter-spacing:-.03em;line-height:1;color:var(--ac)}
+.conta .sub{font-size:12.5px;color:var(--t3);margin-top:3px}
+.anel{display:flex;gap:5px;justify-content:center;margin-top:11px}
+.anel i{width:26px;height:5px;border-radius:var(--rp);background:var(--border)}
+.anel i.f{background:var(--ac)}
+.cl{display:flex;align-items:center;gap:10px;height:42px;padding:0 12px;border-bottom:1px solid var(--divider);font-size:15px;color:var(--t2)}
+.cl:last-child{border-bottom:0}
+.cl .bx{width:20px;height:20px;border-radius:var(--rr);border:1.7px solid var(--t3);flex:none}
+.cl .bx.on{background:var(--ac);border-color:var(--ac);display:grid;place-items:center}
+.cl .bx.on svg{width:12px;height:12px;stroke:#fff;stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.cl.ok{color:var(--t3);text-decoration:line-through;text-decoration-color:var(--border)}
+
+/* 4 · cartão por corredor */
+.pilha{display:flex;gap:9px;overflow:hidden}
+.crd{flex:none;width:238px;background:var(--surface);border-radius:var(--rc);padding:12px;
+  box-shadow:0 1px 2px rgba(16,18,29,.06)}
+.crd.fundo{opacity:.45;width:60px;padding:12px 8px}
+.crd h4{margin:0 0 2px;font-size:14.5px;font-weight:600}
+.crd .cnt{font-size:11.5px;color:var(--t3)}
+.crd .it{display:flex;align-items:center;gap:8px;height:36px;font-size:14px;color:var(--t2);border-bottom:1px solid var(--divider)}
+.crd .it:last-child{border-bottom:0}
+.crd .it .d{width:16px;height:16px;border-radius:50%;border:1.6px solid var(--t3);flex:none}
+.crd .it .d.on{background:var(--ac);border-color:var(--ac)}
+.crd .it.ok{color:var(--t3);text-decoration:line-through;text-decoration-color:var(--border)}
+.pontos{display:flex;gap:5px;justify-content:center;margin-top:10px}
+.pontos i{width:6px;height:6px;border-radius:50%;background:var(--border)}
+.pontos i.on{background:var(--ac);width:16px;border-radius:var(--rp)}
+
+/* 5 · posto de registo */
+.posto{background:var(--surface);border-radius:var(--rc);padding:12px 14px}
+.posto .agora{font-size:19px;font-weight:600;letter-spacing:-.01em}
+.posto .de{font-size:11.5px;color:var(--t3)}
+.visor{display:flex;align-items:baseline;justify-content:flex-end;gap:4px;
+  border-bottom:2px solid var(--ac);padding:6px 2px;margin-top:9px}
+.visor b{font-size:30px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.visor span{font-size:15px;color:var(--t3)}
+.teclas{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.teclas div{height:44px;border-radius:var(--rr);background:var(--page);border:1px solid var(--border);
+  display:grid;place-items:center;font-size:17px;color:var(--t1)}
+.teclas .ac{background:var(--acBg);border-color:var(--acBrd);color:var(--acFg);font-size:13px;font-weight:600}
+.teclas .ch{background:var(--ac);border-color:var(--ac);color:#fff;font-size:13px;font-weight:600}
+.fila{display:flex;gap:6px;overflow:hidden;margin-top:10px}
+.fila span{flex:none;font-size:11.5px;padding:4px 9px;border-radius:var(--rp);
+  background:var(--page);border:1px solid var(--border);color:var(--t3);white-space:nowrap}
+.fila span.ja{background:rgba(220,243,209,.5);border-color:var(--okBorder);color:var(--okTexto)}
+
+table.d{border-collapse:collapse;width:100%;max-width:1000px;font-size:13.5px;background:var(--surface);
+  border-radius:var(--rc);overflow:hidden;box-shadow:0 1px 2px rgba(16,18,29,.06)}
+table.d th,table.d td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--divider);vertical-align:top}
+table.d th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);background:var(--subtle)}
+table.d td:first-child{font-weight:600;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<h1>Cinco fora da caixa</h1>
+<p class="intro">O problema do que está lá não é o campo nem o botão: é a <b>densidade</b>. Cinco artigos ocupam o ecrã todo, cada um num bloco verde de 64 px, todos com o mesmo peso — e num supermercado o que se quer é ver doze de uma vez e saber num relance o que falta. Estes cinco atacam isso, e nenhum foi mostrado antes.</p>
+<p class="intro">Todos usam o vocabulário da casa: o acento do perfil, o âmbar do sem stock, o euro com espaço inquebrável, os alvos de 44. O que muda é a <b>forma</b> da lista, não as peças.</p>
+
+<h2>1 · O talão</h2>
+<div class="tapete">
+  <div class="op">
+    <div class="tel">
+      <div class="topo"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 4.5h17l1.5 5H2z"/><path d="M5 9.5V20h14V9.5"/></svg>Pingo Doce do Restelo · ordem do corredor</div>
+      <div class="corpo">
+        <div class="talao">
+          <div class="rot" style="margin-bottom:6px">Frutas &amp; Legumes</div>
+          <div class="tl"><span class="mk">✓</span><span class="nm">Leite</span><span class="pr num">1,89&nbsp;€</span></div>
+          <div class="tl"><span class="mk">✓</span><span class="nm">Alface</span><span class="pr num">1,19&nbsp;€</span></div>
+          <div class="tl por"><span class="mk"></span><span class="nm">Bananas · 1 kg</span><span class="pr num">~ 2,40&nbsp;€</span></div>
+          <div class="tl sem"><span class="mk">✕</span><span class="nm">Papel de cozinha</span><span class="pr">sem stock</span></div>
+          <div class="rot" style="margin:11px 0 6px">Frescos</div>
+          <div class="tl"><span class="mk">✓</span><span class="nm">Queijo fresco</span><span class="pr num">2,49&nbsp;€</span></div>
+          <div class="tl por"><span class="mk"></span><span class="nm">Iogurtes naturais</span><span class="pr num">~ 1,79&nbsp;€</span></div>
+          <div class="tl por"><span class="mk"></span><span class="nm">Frango</span><span class="pr num">~ 6,90&nbsp;€</span></div>
+          <div class="tsoma"><span style="font-size:12.5px;color:var(--t3)">No carrinho · 3 de 7</span><b class="num">5,57&nbsp;€</b></div>
+        </div>
+      </div>
+      <div class="barra"><div class="bt ch" style="flex:1">Corredor seguinte · Mercearia</div></div>
+    </div>
+    <h3 style="margin-top:12px">O talão</h3>
+    <p class="diz">A lista é um talão de supermercado: nome à esquerda, preço à direita em algarismos de largura fixa, pontilhado a ligar os dois, e a soma com a régua dupla por cima. O estado é <b>tipográfico</b> — visto, cinzento, ou âmbar — e não um bloco de cor.<br><span class="bom">Sete artigos no espaço onde cabiam quatro</span>, a coluna de euros lê-se de cima a baixo, e toda a gente já sabe ler isto sem aprender nada.<br>Toca-se no preço para o escrever; toca-se no nome para marcar.</p>
+    <p class="med">34 px por linha · 7 artigos visíveis contra 4</p>
+  </div>
+</div>
+
+<h2>2 · Arrastar</h2>
+<div class="tapete">
+  <div class="op">
+    <div class="tel">
+      <div class="topo"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 4.5h17l1.5 5H2z"/><path d="M5 9.5V20h14V9.5"/></svg>Frescos · 4 por apanhar</div>
+      <div class="corpo">
+        <div class="sw">
+          <div style="position:relative;overflow:hidden">
+            <div class="atras"><svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M6 12.5l4 4 8-9"/></svg></div>
+            <div class="sl arr"><span class="nm">Iogurtes naturais</span><span class="pr">~ 1,79&nbsp;€</span></div>
+          </div>
+          <div class="sl"><span class="nm">Frango</span><span class="pr">~ 6,90&nbsp;€</span></div>
+          <div class="sl ok"><span class="nm">Queijo fresco</span><span class="pr">2,49&nbsp;€</span></div>
+          <div class="sl"><span class="nm">Manteiga</span><span class="pr">~ 2,20&nbsp;€</span></div>
+          <div class="sl"><span class="nm">Ovos · dúzia</span><span class="pr">~ 2,40&nbsp;€</span></div>
+          <div class="sl ok"><span class="nm">Natas</span><span class="pr">1,09&nbsp;€</span></div>
+          <div class="sl"><span class="nm">Fiambre</span><span class="pr">~ 3,40&nbsp;€</span></div>
+        </div>
+        <div class="dica">
+          <span><b style="color:var(--acFg)">→</b> apanhei</span>
+          <span><b style="color:var(--warnTexto)">←</b> sem stock</span>
+          <span>toque no preço para o escrever</span>
+        </div>
+      </div>
+      <div class="barra"><div class="bt ch" style="flex:1">Corredor seguinte · Mercearia</div></div>
+    </div>
+    <h3 style="margin-top:12px">Arrastar</h3>
+    <p class="diz">Nenhum botão na linha. Arrasta-se para a direita para apanhar, para a esquerda para «sem stock», e o dedo já está na linha porque foi lá que se leu o nome.<br><span class="bom">A linha desce a 46 px</span> e cabem sete. A app já sabe arrastar — é o mesmo gesto que ordena as tarefas e os corredores.<br>Custa: um gesto que não se anuncia não existe, e por isso a fila de dicas por baixo é obrigatória, não decorativa.</p>
+    <p class="med">46 px por linha · o alvo é a linha inteira</p>
+  </div>
+</div>
+
+<h2>3 · A contagem decrescente</h2>
+<div class="tapete">
+  <div class="op">
+    <div class="tel">
+      <div class="topo"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 4.5h17l1.5 5H2z"/><path d="M5 9.5V20h14V9.5"/></svg>Pingo Doce do Restelo</div>
+      <div class="corpo" style="display:flex;flex-direction:column;gap:11px">
+        <div class="conta">
+          <div class="big num">4</div>
+          <div class="sub">artigos por apanhar · 5,57&nbsp;€ no carrinho</div>
+          <div class="anel"><i class="f"></i><i class="f"></i><i></i><i></i><i></i></div>
+        </div>
+        <div style="background:var(--surface);border-radius:var(--rc);overflow:hidden">
+          <div class="cl"><span class="bx"></span><span style="flex:1">Bananas · 1 kg</span><span class="num" style="color:var(--t3);font-size:13.5px">~ 2,40&nbsp;€</span></div>
+          <div class="cl"><span class="bx"></span><span style="flex:1">Iogurtes naturais</span><span class="num" style="color:var(--t3);font-size:13.5px">~ 1,79&nbsp;€</span></div>
+          <div class="cl"><span class="bx"></span><span style="flex:1">Frango</span><span class="num" style="color:var(--t3);font-size:13.5px">~ 6,90&nbsp;€</span></div>
+          <div class="cl"><span class="bx"></span><span style="flex:1">Manteiga</span><span class="num" style="color:var(--t3);font-size:13.5px">~ 2,20&nbsp;€</span></div>
+          <div class="cl ok"><span class="bx on"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span><span style="flex:1">Leite</span><span class="num" style="font-size:13.5px">1,89&nbsp;€</span></div>
+          <div class="cl ok"><span class="bx on"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg></span><span style="flex:1">Alface</span><span class="num" style="font-size:13.5px">1,19&nbsp;€</span></div>
+        </div>
+      </div>
+      <div class="barra"><div class="bt ch" style="flex:1">Corredor seguinte · Mercearia</div></div>
+    </div>
+    <h3 style="margin-top:12px">A contagem decrescente</h3>
+    <p class="diz">O ecrã inteiro passa a ser sobre <b>acabar</b>. Um número grande diz quantos faltam e desce a cada artigo; os traços por baixo são os corredores, e enchem-se à medida que se despacham.<br>A lista é uma lista de verificação apertada — 42 px, caixa quadrada, riscado quando feito. Nenhum bloco de cor, nenhuma faixa.<br><span class="bom">É o único desenho que responde à pergunta que se faz no corredor</span>: «falta muito?».</p>
+    <p class="med">42 px por linha · o número grande substitui o cartão de quatro contadores</p>
+  </div>
+</div>
+
+<h2>4 · Um cartão por corredor</h2>
+<div class="tapete">
+  <div class="op">
+    <div class="tel">
+      <div class="topo"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 4.5h17l1.5 5H2z"/><path d="M5 9.5V20h14V9.5"/></svg>Pingo Doce do Restelo · 2 de 5</div>
+      <div class="corpo">
+        <div class="pilha">
+          <div class="crd fundo"><h4 style="writing-mode:vertical-rl;transform:rotate(180deg);margin:0">Frutas</h4></div>
+          <div class="crd">
+            <h4>Frescos</h4>
+            <div class="cnt" style="margin-bottom:6px">4 por apanhar · 2 feitos</div>
+            <div class="it"><span class="d"></span><span style="flex:1">Iogurtes</span><span class="num" style="font-size:12.5px;color:var(--t3)">~1,79</span></div>
+            <div class="it"><span class="d"></span><span style="flex:1">Frango</span><span class="num" style="font-size:12.5px;color:var(--t3)">~6,90</span></div>
+            <div class="it"><span class="d"></span><span style="flex:1">Manteiga</span><span class="num" style="font-size:12.5px;color:var(--t3)">~2,20</span></div>
+            <div class="it"><span class="d"></span><span style="flex:1">Ovos</span><span class="num" style="font-size:12.5px;color:var(--t3)">~2,40</span></div>
+            <div class="it ok"><span class="d on"></span><span style="flex:1">Queijo fresco</span><span class="num" style="font-size:12.5px">2,49</span></div>
+            <div class="it ok"><span class="d on"></span><span style="flex:1">Natas</span><span class="num" style="font-size:12.5px">1,09</span></div>
+          </div>
+          <div class="crd fundo"><h4 style="writing-mode:vertical-rl;transform:rotate(180deg);margin:0">Mercearia</h4></div>
+        </div>
+        <div class="pontos"><i></i><i class="on"></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="barra">
+        <div style="flex:1;font-size:12.5px;color:var(--t3)">No carrinho<br><b class="num" style="font-size:17px;color:var(--t1)">5,57&nbsp;€</b></div>
+        <div class="bt ch" style="padding:0 16px">Mercearia →</div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">Um cartão por corredor</h3>
+    <p class="diz">A fila de separadores no topo desaparece. Cada corredor é um cartão, e passa-se de um para o outro com o dedo — os vizinhos espreitam nas margens para se saber que existem, e os pontos por baixo dizem onde se está.<br><span class="bom">Um corredor inteiro cabe num ecrã</span>, sem rolar, porque a linha desce a 36 px dentro do cartão.<br>Custa: saltar do primeiro para o quinto corredor passa a ser quatro gestos, e há corredores com vinte artigos que não cabem.</p>
+    <p class="med">36 px por linha · até 8 artigos por cartão sem rolar</p>
+  </div>
+</div>
+
+<h2>5 · O posto de registo</h2>
+<div class="tapete">
+  <div class="op">
+    <div class="tel">
+      <div class="topo"><svg class="i" viewBox="0 0 24 24"><path d="M3.5 4.5h17l1.5 5H2z"/><path d="M5 9.5V20h14V9.5"/></svg>Frescos · 3 de 7</div>
+      <div class="corpo">
+        <div class="talao" style="padding:10px 12px">
+          <div class="tl"><span class="mk">✓</span><span class="nm">Queijo fresco</span><span class="pr num">2,49&nbsp;€</span></div>
+          <div class="tl"><span class="mk">✓</span><span class="nm">Natas</span><span class="pr num">1,09&nbsp;€</span></div>
+          <div class="tl por"><span class="mk"></span><span class="nm">Frango</span><span class="pr num">~ 6,90&nbsp;€</span></div>
+          <div class="tl por"><span class="mk"></span><span class="nm">Manteiga</span><span class="pr num">~ 2,20&nbsp;€</span></div>
+        </div>
+      </div>
+      <div style="padding:0 14px 12px"><div class="posto">
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <div style="flex:1"><div class="agora">Iogurtes naturais</div><div class="de">4 un. · 1,79&nbsp;€ da última vez aqui</div></div>
+          <span class="rot">3 de 7</span>
+        </div>
+        <div class="visor"><b class="num">1,89</b><span>€</span></div>
+        <div class="teclas">
+          <div>1</div><div>2</div><div>3</div><div class="ac">1,79</div>
+          <div>4</div><div>5</div><div>6</div><div class="ac">sem<br>stock</div>
+          <div>7</div><div>8</div><div>9</div><div class="ch" style="grid-row:span 2">apanhei<br>→</div>
+          <div>,</div><div>0</div><div>⌫</div>
+        </div>
+        <div class="fila">
+          <span class="ja">Queijo</span><span class="ja">Natas</span><span>Frango</span><span>Manteiga</span><span>Ovos</span>
+        </div>
+      </div></div>
+    </div>
+    <h3 style="margin-top:12px">O posto de registo</h3>
+    <p class="diz">A app deixa de ser uma lista e passa a ser um <b>posto</b>, como a caixa do supermercado. Em cima o que já passou, em baixo o artigo em mão: o nome, o visor, o teclado, e três teclas que resolvem tudo — o preço da última vez, «sem stock», e «apanhei», que grava e avança para o seguinte.<br><span class="bom">Zero navegação</span>: não se procura o artigo na lista, ele é que vem ter connosco. A fila por baixo mostra o que vem a seguir.<br>Custa: obriga a uma ordem, e quem anda no supermercado às voltas não anda por ordem.</p>
+    <p class="med">teclas de 44 · o artigo em mão ocupa o terço de baixo, ao alcance do polegar</p>
+  </div>
+</div>
+
+<h2>O que eu escolheria</h2>
+<table class="d">
+  <tr><th>Desenho</th><th>Resolve</th><th>Risco</th><th>Esforço</th></tr>
+  <tr><td><b>1 · O talão</b></td><td>A densidade, de uma vez: sete artigos onde cabiam quatro, com a coluna de euros a ler-se de cima a baixo. E é a forma que uma app de dinheiro devia ter desde o princípio.</td><td>Baixo. Não muda gesto nenhum — muda o peso visual.</td><td>Pequeno: é a mesma `Linha` com outra arrumação.</td></tr>
+  <tr><td><b>3 · A contagem</b></td><td>A pergunta do corredor: «falta muito?». Substitui o cartão de quatro contadores por um número que desce.</td><td>Médio. O cartão do topo perde a estimativa e o envelope.</td><td>Pequeno.</td></tr>
+  <tr><td><b>5 · O posto</b></td><td>O trabalho de escrever preços, que é o que ninguém faz. Uma tecla por artigo.</td><td>Alto. Impõe uma ordem que a loja real não tem.</td><td>Grande: peça nova, com provas próprias.</td></tr>
+</table>
+<p class="intro" style="margin-top:12px"><b>A minha escolha: 1 + 3.</b> O talão resolve a densidade, que é a queixa; a contagem resolve o topo, que é o outro terço do ecrã gasto. Juntos, um corredor de sete artigos cabe num ecrã com o número grande por cima — e nem um bloco verde à vista. O 5 fica como ideia para o dia em que a casa quiser mesmo registar preços a sério.</p>
+<p class="intro">Nada implementado. Diga o número.</p>
+</body>
+</html>
