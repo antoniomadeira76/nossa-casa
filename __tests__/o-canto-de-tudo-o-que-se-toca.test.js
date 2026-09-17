@@ -69,7 +69,13 @@ const FICAM_REDONDOS = {
     'discos de cor da legenda, 10 px',
   ],
   'src/CampoData.jsx': ['disco do dia escolhido no calendário'],
-  'src/screens/ModoCompras.jsx': ['barra de progresso do corredor'],
+  // E o traço por corredor da contagem decrescente (17/09/2026, desenho 3 de
+  // `design/cinco-fora-da-caixa.dc.html`): um por corredor, cheio quando lá não
+  // falta nada. É um indicador, não um alvo — ninguém lhe toca.
+  'src/screens/ModoCompras.jsx': [
+    'barra de progresso do corredor',
+    'traço por corredor da contagem — indicador, não alvo',
+  ],
   // O «disco de cor da criança no cofre» saiu das Tarefas com a semanada, que
   // passou ao Dinheiro em 10/09/2026 — e lá a linha usa o `Avatar`. O filtro
   // por membro passou a avatares (12/09/2026, opção A de

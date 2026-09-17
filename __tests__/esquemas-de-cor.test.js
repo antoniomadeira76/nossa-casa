@@ -202,7 +202,19 @@ describe('os avisos seguem o esquema escolhido', () => {
     // acento cru mede 2,12 e o `warn` 1,77. O `titulo` é o próprio acento
     // clareado até aos 3 — o esquema continua a mandar, e agora vê-se.
     // Guarda: `um-objeto-grafico-ve-se-nos-doze-temas`.
-    expect(ler('src/screens/ModoCompras.jsx')).toMatch(/pctCart > 80 \? t\.state\.warnTexto : t\.titulo/);
+    // ⚠ O Modo Compras JÁ NÃO TEM BARRA (17/09/2026, desenho 3 de
+    // `design/cinco-fora-da-caixa.dc.html`). O cartão de quatro números do topo
+    // — total, estimativa, envelope e uma frase de contagem — passou a uma
+    // contagem decrescente: o número dos que faltam, o carrinho na linha de
+    // baixo, e um traço por corredor. Quatro números ao mesmo peso não
+    // respondiam a nada; a pergunta que se faz num corredor é «falta muito?».
+    //
+    // O que esta prova defende continua de pé onde a barra existe — o progresso
+    // de uma meta é o esquema, e não um estado. E o envelope, que era o número
+    // permanente que ninguém lia, ficou como AVISO acima dos 80 %, com a cor
+    // que o estado pede.
+    expect(ler('src/screens/ModoCompras.jsx')).not.toMatch(/<Bar /);
+    expect(ler('src/screens/ModoCompras.jsx')).toMatch(/pctCart > 100\s*\?\s*t\.state\.errTexto\s*:\s*t\.state\.warnTexto/);
     expect(ler('src/screens/Dinheiro.jsx')).toMatch(/color=\{t\.titulo\} height=\{6\}/);
     // E a do envelope, que cai no mesmo token quando a casa não lhe deu cor.
     expect(ler('src/screens/Dinheiro.jsx')).toMatch(/color=\{e\.color \|\| t\.titulo\}/);

@@ -79,11 +79,19 @@ describe('⚠ os separadores por corredor não rolam com a lista', () => {
   });
 
   it('e o carrinho e os artigos ficam DENTRO dele — é o que rola', () => {
+    // ⚠ Os rótulos mudaram com o TALÃO (17/09/2026, desenho 1 de
+    // `design/cinco-fora-da-caixa.dc.html`). A linha deixou de ter dois botões
+    // de texto — «Confirmar» e «Sem stock» — e passou a ter dois alvos: o nome,
+    // que marca, e o preço, que abre o editor. O que esta prova defende não
+    // mudou: as linhas dos artigos rolam, os separadores não.
+    //
+    // O alvo do PREÇO é o que se procura aqui porque existe em toda a linha,
+    // marcada ou não, e o seu rótulo é estável.
     const arvore = montar();
     const [rola] = oQueRola(arvore);
     const artigos = arvore.root.findAll(n => n.props
       && typeof n.props.accessibilityLabel === 'string'
-      && /^(Confirmar|Desfazer|Marcar|Sem stock)/.test(n.props.accessibilityLabel));
+      && /^(Escrever o preço pago por|Alterar o preço de)/.test(n.props.accessibilityLabel));
     expect(artigos.length).toBeGreaterThan(0);
     for (const a of artigos) expect(descendeDe(a, rola)).toBe(true);
   });

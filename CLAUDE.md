@@ -161,7 +161,15 @@ Já implementado em `src/format.js` (`EUR`). Use sempre essa função; nunca for
 
 ### 5. Alvos de toque nunca abaixo de 44 px
 
-Inclui ícones sozinhos, alternadores, pastilhas e setas. Em linhas de compras na loja: 64 px.
+Inclui ícones sozinhos, alternadores, pastilhas e setas.
+
+⚠ **A linha do modo compras passou de 64 a 48 px** (17/09/2026, com o talão).
+Os 64 nasceram de uma linha que tinha, do lado direito, DOIS botões de texto
+empilhados de 88 × 44 — «Confirmar» e «Sem stock» — e era preciso acertar num
+deles com o carrinho na mão. A linha do talão tem dois alvos e mais nenhum: o
+nome, que ocupa a largura toda e marca, e o preço, encostado à direita. Um alvo
+largo de 48 acerta-se melhor do que um de 64 dividido em duas zonas. O mínimo
+de 44 continua a valer para tudo, sem excepção.
 Um ícone de 20 px vive dentro de um alvo de 44. Isto falhou repetidamente ao comprimir
 espaçamentos — **verifique depois de mexer em qualquer gap**.
 
