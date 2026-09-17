@@ -46,6 +46,21 @@ não estão escritas e esperadas — estão **provadas a correr**:
 npm run db:servir     # o servidor. Sem ele a app corre local, e o ecrã de
                       # entrada diz que o servidor não responde — não que a
                       # Google esteja mal configurada. Já enganou duas vezes.
+                      # ⚠ ISTO FALHA NA CONSOLA DAS FERRAMENTAS (17/09/2026):
+                      # o script chama `pocketbase` sem caminho e o PATH de lá
+                      # não o vê — «'pocketbase' is not recognized». É a mesma
+                      # história do `gh`. Com o caminho completo, a partir da
+                      # raiz do projeto, e apontando os hooks à worktree onde
+                      # se está a trabalhar:
+                      #
+                      #   ./pocketbase.exe serve --http=127.0.0.1:8095 \
+                      #     --dir "<raiz>/pb_data" \
+                      #     --migrationsDir "<worktree>/db/pocketbase/pb_migrations" \
+                      #     --hooksDir "<worktree>/db/pocketbase/pb_hooks"
+                      #
+                      # E depois de o servidor cair, a sessão vai-se: a app
+                      # volta ao «Continuar com Google», e só o dono da casa a
+                      # pode reabrir. Ver [[servidor-em-baixo-expulsa-o-utilizador]].
 npm run db:provar     # as regras, coleção a coleção — 32 ficheiros, 565 provas (13/09/2026)
 npm run aceitacao     # as HISTÓRIAS, de ponta a ponta pela camada da app — 10 histórias,
                       # 70 passos «Dado / Quando / Então», em db/pocketbase/aceitacao/
