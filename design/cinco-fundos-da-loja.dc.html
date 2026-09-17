@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinco fundos da loja</title>
+<style>
+:root{
+  --page:#F6F7F9; --card:#FCFCFD; --surface:#FFFFFF; --subtle:#FAFAFA;
+  --border:#D9D9D9; --divider:#F0F2F5;
+  --t1:#262626; --t2:#434343; --t3:#656C7C; --slate:#606E90;
+  --ac:#078286; --acFg:#056b6e; --acBg:#E6F4F4; --acBrd:#8FC9CB;
+  --okBorder:#BAE7A3; --okBg:rgba(220,243,209,.35); --okTexto:#237804;
+  --warn:#FAAD14; --warnTexto:#8F5600; --err:#FF4D4F; --errTexto:#A32621;
+  --rc:8px; --rr:6px; --rp:100px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#EEF0F3;color:var(--t1);padding:26px;
+  font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif}
+h1{font-size:27px;letter-spacing:-.02em;margin:0 0 8px}
+p.intro{color:var(--t2);max-width:82ch;margin:0 0 4px;line-height:1.6}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);
+  margin:36px 0 14px;padding-bottom:7px;border-bottom:1px solid #DADDE2}
+h3{font-size:15.5px;margin:0 0 2px}
+.diz{color:var(--t3);font-size:12.5px;line-height:1.55;margin:0 0 8px;max-width:46ch}
+.bom{color:var(--okTexto);font-weight:600}.mau{color:var(--errTexto);font-weight:600}
+.med{font-size:11px;color:var(--t3);font-variant-numeric:tabular-nums;margin-top:6px}
+.tapete{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.op{width:372px;flex:none}
+.tel{background:var(--page);border-radius:12px;overflow:hidden;
+  box-shadow:0 8px 24px rgba(16,18,29,.13),0 0 0 1px rgba(16,18,29,.07)}
+.corpo{padding:12px 12px 0}
+.lista{background:var(--card);border-radius:var(--rc);padding:8px 14px;overflow:hidden}
+.ln{display:flex;align-items:center;gap:10px;min-height:48px;position:relative;
+  margin:0 -14px;padding:0 14px;border-bottom:1px solid var(--divider)}
+.ln:last-of-type{border-bottom:0}
+.ln.ok{background:var(--okBg)}
+.ln.ok::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--okBorder)}
+.mk{width:20px;height:20px;flex:none;display:grid;place-items:center}
+.mk i{width:16.5px;height:16.5px;border-radius:50%;border:1.5px solid var(--t3);display:block}
+.mk.on i{border-color:var(--ac);position:relative}
+.mk.on i::after{content:"";position:absolute;left:3.4px;top:4.6px;width:8px;height:4px;
+  border-left:1.7px solid var(--ac);border-bottom:1.7px solid var(--ac);transform:rotate(-45deg)}
+.nm{flex:1;min-width:0;font-size:15px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ln.ok .nm{color:var(--t2)}
+.pc{font-size:15px;color:var(--t3);font-variant-numeric:tabular-nums}
+.pc.b{color:var(--t2);font-weight:600}
+.rot{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--slate);
+  margin:8px 0 2px}
+.soma{display:flex;align-items:baseline;gap:10px;border-top:2px solid var(--t1);
+  margin-top:8px;padding-top:8px}
+.soma span{flex:1;font-size:12px;color:var(--t3)}
+.soma b{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ── as barras de fundo ─────────────────────────────────────────────────── */
+.fundo{background:var(--page);border-top:1px solid var(--divider);padding:10px 12px 12px;margin-top:10px}
+.bt{height:48px;border-radius:var(--rr);display:flex;align-items:center;justify-content:center;
+  gap:8px;font-size:15px;font-weight:600;border:1px solid var(--acBrd);background:var(--acBg);color:var(--acFg)}
+.bt.ch{background:var(--ac);color:#fff;border-color:var(--ac)}
+.bt.pq{height:44px;font-size:14px}
+.pil{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;
+  border-radius:var(--rr);border:1px solid var(--border);color:var(--t2);
+  font-size:13px;font-weight:600;background:transparent}
+.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.rodape{display:flex;background:#0f6c6f;padding:6px 4px 10px}
+.rodape a{flex:1;display:grid;justify-items:center;gap:3px;color:rgba(255,255,255,.62);
+  font-size:10px;font-weight:600;text-decoration:none}
+.rodape a.on{color:#fff}
+.seg{display:flex;height:6px;border-radius:var(--rp);overflow:hidden;background:var(--border);gap:2px}
+.seg i{flex:1;background:var(--border)}
+.seg i.ok{background:var(--okTexto)}
+.seg i.aqui{background:var(--ac)}
+.gaveta{background:var(--surface);border-top:1px solid var(--border);border-radius:12px 12px 0 0;
+  padding:8px 14px 12px;box-shadow:0 -6px 18px rgba(16,18,29,.08)}
+.puxador{width:34px;height:4px;border-radius:var(--rp);background:var(--border);margin:0 auto 8px}
+.enche{position:relative;height:48px;border-radius:var(--rr);overflow:hidden;
+  border:1px solid var(--acBrd);background:var(--acBg);display:grid;place-items:center}
+.enche i{position:absolute;left:0;top:0;bottom:0;background:rgba(7,130,134,.16)}
+.enche span{position:relative;font-size:15px;font-weight:600;color:var(--acFg)}
+.linhaAcao{display:flex;align-items:center;gap:8px}
+table.d{border-collapse:collapse;width:100%;max-width:980px;font-size:13.5px;background:var(--surface);
+  border-radius:var(--rc);overflow:hidden;box-shadow:0 1px 2px rgba(16,18,29,.06)}
+table.d th,table.d td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--divider);vertical-align:top}
+table.d th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);background:var(--subtle)}
+table.d td:first-child{font-weight:600;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<h1>Cinco fundos da loja</h1>
+<p class="intro">O fundo do modo compras tem hoje duas ações que não se entendem: uma pastilha fantasma de «acrescentar artigo» a flutuar, e por baixo dela uma barra de largura inteira. São dois pesos, dois alinhamentos e um vão entre eles — e a pastilha, que é a menos usada, está mais perto do polegar do que a que se toca a cada corredor.</p>
+<p class="intro"><b>A regra que não se quebra:</b> o rodapé da app fica sempre visível (invariante #1), e nada desce abaixo dos 44 px.</p>
+
+<h2>Agora</h2>
+<div class="tapete">
+  <div class="op">
+    <div class="tel">
+      <div class="corpo">
+        <div class="lista">
+          <div class="ln ok"><span class="mk on"><i></i></span><span class="nm">Ovos</span><span class="pc b">2,49&nbsp;€</span></div>
+          <div class="ln"><span class="mk"><i></i></span><span class="nm">Frango</span><span class="pc">~ 6,90&nbsp;€</span></div>
+        </div>
+        <div style="margin-top:10px"><span class="pil"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>acrescentar artigo</span></div>
+      </div>
+      <div class="fundo"><div class="bt">Fechar conta e registar despesa</div></div>
+      <div class="rodape"><a>Início</a><a>Dinheiro</a><a>Tarefas</a><a class="on">Compras</a><a>Agenda</a></div>
+    </div>
+    <h3 style="margin-top:12px">O que está lá</h3>
+    <p class="diz"><span class="mau">Duas ações, dois desenhos, um vão a separá-las</span> — e a barra fixa repete a largura do rodapé logo por cima dele, o que dá três faixas horizontais empilhadas no fundo do ecrã.</p>
+    <p class="med">36 da pastilha + 10 de vão + 70 da barra = 116 px</p>
+  </div>
+</div>
+
+<h2>Cinco fora da caixa</h2>
+<div class="tapete">
+
+  <div class="op">
+    <div class="tel">
+      <div class="corpo">
+        <div class="lista">
+          <div class="ln ok"><span class="mk on"><i></i></span><span class="nm">Ovos</span><span class="pc b">2,49&nbsp;€</span></div>
+          <div class="ln"><span class="mk"><i></i></span><span class="nm">Frango</span><span class="pc">~ 6,90&nbsp;€</span></div>
+        </div>
+      </div>
+      <div class="fundo">
+        <div class="seg" style="margin-bottom:10px"><i class="ok"></i><i class="ok"></i><i class="aqui"></i><i></i><i></i></div>
+        <div class="linhaAcao">
+          <div class="bt ch pq" style="flex:1">Mercearia<svg class="i" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></svg></div>
+          <div class="pil" style="height:44px;width:44px;justify-content:center;padding:0">
+            <svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+      </div>
+      <div class="rodape"><a>Início</a><a>Dinheiro</a><a>Tarefas</a><a class="on">Compras</a><a>Agenda</a></div>
+    </div>
+    <h3 style="margin-top:12px">1 · O percurso é a barra</h3>
+    <p class="diz">Cinco segmentos, um por corredor: cheios os despachados, aceso o de agora. Por baixo, o botão nomeia o corredor seguinte e o «+» encolhe para um alvo de 44 ao lado. <span class="bom">O fundo passa a dizer onde se está e quanto falta</span>, que é a pergunta de quem empurra o carrinho. O «fechar conta» só aparece no último.</p>
+    <p class="med">6 + 10 + 44 + 12 = 72 px · menos 44 do que agora</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="corpo">
+        <div class="lista">
+          <div class="ln ok"><span class="mk on"><i></i></span><span class="nm">Ovos</span><span class="pc b">2,49&nbsp;€</span></div>
+          <div class="ln"><span class="mk"><i></i></span><span class="nm">Frango</span><span class="pc">~ 6,90&nbsp;€</span></div>
+        </div>
+      </div>
+      <div class="gaveta">
+        <div class="puxador"></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="flex:1">
+            <div style="font-size:11px;color:var(--t3)">No carrinho · 6 de 8</div>
+            <div style="font-size:21px;font-weight:600;font-variant-numeric:tabular-nums">14,25&nbsp;€</div>
+          </div>
+          <div class="pil" style="height:44px;width:44px;justify-content:center;padding:0">
+            <svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+          <div class="bt ch pq" style="padding:0 16px">Mercearia</div>
+        </div>
+      </div>
+      <div class="rodape"><a>Início</a><a>Dinheiro</a><a>Tarefas</a><a class="on">Compras</a><a>Agenda</a></div>
+    </div>
+    <h3 style="margin-top:12px">2 · O carrinho é uma gaveta</h3>
+    <p class="diz">O fundo é o carrinho, com um puxador. Fechado mostra o total e o botão do corredor; puxado para cima abre o talão completo e o «fechar conta». <span class="bom">O número que muda a cada artigo fica sempre à vista</span>, e o topo do ecrã liberta-se por inteiro. Perde: um gesto novo, e a gaveta tapa lista enquanto está aberta.</p>
+    <p class="med">78 px fechada · o talão sai do meio do ecrã</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="corpo">
+        <div class="lista">
+          <div class="ln ok"><span class="mk on"><i></i></span><span class="nm">Ovos</span><span class="pc b">2,49&nbsp;€</span></div>
+          <div class="ln"><span class="mk"><i></i></span><span class="nm">Frango</span><span class="pc">~ 6,90&nbsp;€</span></div>
+        </div>
+      </div>
+      <div class="fundo">
+        <div class="linhaAcao">
+          <div class="enche" style="flex:1"><i style="width:75%"></i><span>faltam 2 artigos</span></div>
+          <div class="pil" style="height:48px;width:48px;justify-content:center;padding:0">
+            <svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+      </div>
+      <div class="rodape"><a>Início</a><a>Dinheiro</a><a>Tarefas</a><a class="on">Compras</a><a>Agenda</a></div>
+    </div>
+    <h3 style="margin-top:12px">3 · O botão que se enche</h3>
+    <p class="diz">Um só controlo, que é barra de progresso enquanto falta alguma coisa e botão quando não falta. O rótulo muda sozinho: «faltam 2 artigos» → «Fechar conta · 14,25 €». <span class="bom">Não se pode fechar a conta a meio sem dar por isso</span> — o próprio botão diz que ainda não é altura. Perde: um controlo que às vezes não responde precisa de explicar porquê.</p>
+    <p class="med">48 + 12 = 60 px · um alvo, não dois</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="corpo" style="padding-bottom:12px">
+        <div class="lista">
+          <div class="ln ok"><span class="mk on"><i></i></span><span class="nm">Ovos</span><span class="pc b">2,49&nbsp;€</span></div>
+          <div class="ln"><span class="mk"><i></i></span><span class="nm">Frango</span><span class="pc">~ 6,90&nbsp;€</span></div>
+          <div class="ln" style="min-height:44px"><span class="mk"><svg class="i" viewBox="0 0 24 24" style="color:var(--acFg)"><path d="M12 5v14M5 12h14"/></svg></span>
+            <span class="nm" style="color:var(--acFg);font-weight:600">acrescentar artigo</span></div>
+          <div class="soma"><span>No carrinho · 6 de 8</span><b>14,25&nbsp;€</b>
+            <svg class="i" viewBox="0 0 24 24" style="color:var(--acFg);width:18px;height:18px"><path d="M9.5 6l6 6-6 6"/></svg></div>
+        </div>
+      </div>
+      <div class="rodape"><a>Início</a><a>Dinheiro</a><a>Tarefas</a><a class="on">Compras</a><a>Agenda</a></div>
+    </div>
+    <h3 style="margin-top:12px">4 · Não há barra nenhuma</h3>
+    <p class="diz">O «acrescentar» passa a ser a última linha do talão — como escrever no fim de uma lista de papel — e a SOMA passa a ser o botão de fechar a conta, com a seta à direita. <span class="bom">Zero px de barra</span>, e o fundo do ecrã fica só com o rodapé da app. Perde: a ação de fechar sai do alcance do polegar e é preciso rolar até ao fim.</p>
+    <p class="med">0 px de barra · a lista ganha 116</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="corpo">
+        <div class="lista">
+          <div class="ln ok"><span class="mk on"><i></i></span><span class="nm">Ovos</span><span class="pc b">2,49&nbsp;€</span></div>
+          <div class="ln"><span class="mk"><i></i></span><span class="nm">Frango</span><span class="pc">~ 6,90&nbsp;€</span></div>
+        </div>
+      </div>
+      <div class="fundo" style="padding:0;border-top:0;background:transparent;margin-top:10px">
+        <div style="display:flex;gap:8px;padding:0 12px 12px">
+          <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--rc);
+            padding:8px 12px;min-height:56px;display:flex;flex-direction:column;justify-content:center">
+            <div style="font-size:10.5px;color:var(--t3)">No carrinho</div>
+            <div style="font-size:17px;font-weight:600;font-variant-numeric:tabular-nums">14,25&nbsp;€</div>
+          </div>
+          <div class="bt ch" style="flex:1.4;height:56px;flex-direction:column;gap:1px">
+            <span style="font-size:14px">Mercearia</span>
+            <span style="font-size:10.5px;font-weight:400;opacity:.85">corredor 3 de 5</span>
+          </div>
+          <div class="pil" style="height:56px;width:48px;justify-content:center;padding:0;background:var(--surface)">
+            <svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+        </div>
+      </div>
+      <div class="rodape"><a>Início</a><a>Dinheiro</a><a>Tarefas</a><a class="on">Compras</a><a>Agenda</a></div>
+    </div>
+    <h3 style="margin-top:12px">5 · Três cartões, uma fila</h3>
+    <p class="diz">Nada de barra atravessada: três peças soltas sobre a página, com o mesmo canto dos cartões da app. O carrinho à esquerda, o corredor seguinte ao centro com duas linhas, o «+» à direita. <span class="bom">Deixa de haver três faixas horizontais empilhadas</span> no fundo do ecrã. Perde: três alvos lado a lado num telemóvel estreito ficam justos.</p>
+    <p class="med">56 + 12 = 68 px · 104 / 146 / 48 de largura</p>
+  </div>
+
+</div>
+
+<h2>O que eu escolheria</h2>
+<table class="d">
+  <tr><th>Se o que quer é…</th><th>Opção</th><th>O que custa</th></tr>
+  <tr><td>Saber sempre quanto falta da ida</td><td><b>1 · o percurso é a barra</b></td><td>Nada de fundo. É a que eu punha: responde à pergunta do corredor e ainda encolhe o fundo em 44 px.</td></tr>
+  <tr><td>O total sempre debaixo do polegar</td><td><b>2 · a gaveta</b></td><td>Um gesto novo para ensinar, e tapa lista enquanto está aberta.</td></tr>
+  <tr><td>Um só controlo, sem hipótese de erro</td><td><b>3 · o botão que se enche</b></td><td>Um botão que não responde tem de dizer porquê, senão parece avariado.</td></tr>
+  <tr><td>O máximo de lista possível</td><td><b>4 · sem barra</b></td><td>Fechar a conta passa a exigir rolar até ao fim — mau com o carrinho na mão.</td></tr>
+  <tr><td>Tirar as faixas empilhadas</td><td><b>5 · três cartões</b></td><td>Três alvos lado a lado ficam justos num telemóvel de 360.</td></tr>
+</table>
+<p class="intro" style="margin-top:12px"><b>A minha ordem:</b> 1, depois 5, depois 2. A 1 usa o espaço do fundo para dizer alguma coisa em vez de só lá estar, e é a única que responde a «falta muito?» sem se olhar para cima. A 5 é a que melhor resolve a queixa visual — as três faixas empilhadas — sem mudar comportamento nenhum. A 2 é a mais ambiciosa e a que mais liberta o ecrã, mas pede um gesto que a app ainda não usa em lado nenhum.</p>
+<p class="intro">Nenhuma está implementada. Diga o número.</p>
+</body>
+</html>
