@@ -213,7 +213,35 @@ export default function ModoCompras({ t, user, onClose }) {
     const sugestoes = sugestoesDe(i);
     const estimado = precoDe(i, loja).valor;
     return (
-      <View key={i.id} style={{ borderBottomWidth: ultima && !aEditar ? 0 : 1, borderBottomColor: t.divider }}>
+      // ⚠ A LINHA MARCADA LEVA A FAIXA E A TINTA DAS TAREFAS (17/09/2026: «no
+      // modo compras, quando se seleciona um artigo, deve aparecer a
+      // configuração em anexo, deve ter o mesmo design», com o print de uma
+      // tarefa feita — faixa verde à esquerda, fundo verde claro).
+      //
+      // O talão nasceu sem faixas nem tintas, de propósito: cinco blocos verdes
+      // iguais a gritar ao mesmo tempo eram metade do problema de densidade que
+      // ele mandou resolver. Mas a faixa de 3 px com a tinta a 12 % não é um
+      // bloco — é o que as Tarefas, o Início e a Saúde já usam para dizer «esta
+      // está feita», e a loja era o único sítio onde o apanhado não o dizia com
+      // o mesmo desenho.
+      //
+      // Fica numa LINHA SÓ. A tarefa do print tem duas — título e «António ·
+      // feita» — e trazer a segunda para cá devolvia a altura que o talão
+      // ganhou. Quem apanhou o artigo lê-se no carrinho, ao fechar a conta.
+      //
+      // ⚠ A faixa é ABSOLUTA, e não uma borda esquerda: uma borda empurra o
+      // conteúdo 3 px e a coluna dos vistos ficava aos degraus, linha sim linha
+      // não. É o defeito que a `Linha` do `ui.jsx` levou a corrigir em 16/09.
+      // A margem negativa leva a tinta e a faixa até ao BORDO DO CARTÃO — o
+      // cartão tem 14 de enchimento, e uma tinta que parasse lá dentro lia-se
+      // como um retângulo solto em vez de uma linha marcada.
+      <View key={i.id} style={{ marginHorizontal: -14, paddingHorizontal: 14,
+        borderBottomWidth: ultima && !aEditar ? 0 : 1, borderBottomColor: t.divider,
+        backgroundColor: feito ? t.state.okBg : 'transparent' }}>
+        {feito || sem ? (
+          <View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
+            backgroundColor: feito ? t.state.okBorder : t.state.warn }} />
+        ) : null}
         <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 48 }}>
           {/* O NOME é o alvo de marcar, e ocupa a largura toda até ao preço.
               ⚠ A pressão longa marca «sem stock». Um gesto que não se anuncia
