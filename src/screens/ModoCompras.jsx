@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, elev } from '../theme';
 import { EUR, plural } from '../format';
-import { Card, Primary, SectionTitle, Empty, NumField, BotaoCompacto, MarcaDeEstado, MARCA } from '../ui';
+import { Card, SectionTitle, Empty, NumField, MarcaDeEstado, MARCA } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import NovoArtigo from '../sheets/NovoArtigo';
@@ -465,7 +465,12 @@ export default function ModoCompras({ t, user, onClose }) {
       {/* ── O que rola: o carrinho, os artigos, o paginador e o botão ───────
           O mesmo enchimento e o mesmo espaço do ScrollView da app, para a
           lista ler igual à de qualquer outro ecrã. */}
-      <ScrollView style={{ flex: 1, minHeight: 0 }}
+      {/* ⚠ Sem a barra de rolar, pela mesma razão do `Sheet.jsx` (15/09/2026):
+          na web a barra vive DENTRO do enchimento e come ~15 px ao conteúdo, e
+          o talão ficava mais estreito do que a barra fixa do fundo. Foi assim
+          que a coluna dos euros do talão deixou de bater certo com o carrinho
+          lá em baixo. No telemóvel nunca há barra; assim a web fica igual. */}
+      <ScrollView style={{ flex: 1, minHeight: 0 }} showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 16, gap: S.xl, paddingBottom: S.xl }}>
       {/* ── A CONTAGEM DECRESCENTE ──────────────────────────────────────────
           17/09/2026, desenho 3 de `design/cinco-fora-da-caixa.dc.html`.
@@ -497,20 +502,13 @@ export default function ModoCompras({ t, user, onClose }) {
             : `apanhado · ${EUR(cart)} no carrinho`}
         </Text>
 
-        {/* Um traço por corredor, cheio quando lá não falta nada. É a mesma
-            conta dos separadores de cima, dita de outra maneira: ali diz-se
-            «onde estou», aqui «quanto falta da ida toda». */}
-        <View style={{ flexDirection: 'row', gap: S.sm, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {seccoes.map(nome => {
-            const naSeccao = items.filter(i => i.s === nome);
-            const limpo = naSeccao.length > 0 && naSeccao.every(i => stateOf(i) !== 'open');
-            return (
-              <View key={nome} accessibilityLabel={`${nome}${limpo ? ' · despachado' : ''}`}
-                style={{ width: 26, height: 5, borderRadius: R.pill,
-                  backgroundColor: limpo ? t.state.okTexto : t.border }} />
-            );
-          })}
-        </View>
+        {/* ⚠ OS TRAÇOS POR CORREDOR SAÍRAM DAQUI (17/09/2026), com a gaveta.
+            Viveram um dia neste cartão. Com os segmentos a entrarem na barra do
+            fundo, o mesmo facto — quantos corredores estão despachados — ficava
+            em TRÊS sítios do mesmo ecrã: nos separadores de cima, aqui, e em
+            baixo. Ficam onde o polegar está e onde servem de botão.
+            Este cartão fica com o que faz melhor: o número que falta e o
+            carrinho. */}
 
         {/* ⚠ O envelope só quando aperta — e com a cor que o estado pede. */}
         {merc > 0 && pctCart > 80 ? (
@@ -556,7 +554,7 @@ export default function ModoCompras({ t, user, onClose }) {
           // seria mentira.
           <Empty t={t} icon="fileDone"
             title={step === null ? 'Não há nada na lista desta ida.' : `Nada em ${step}.`}
-            hint="Toque em «acrescentar artigo» para juntar o que faltar." />
+            hint="Toque no «+» da barra de baixo para juntar o que faltar." />
         ) : porFazer.length === 0 ? (
           <Empty t={t} icon="fileDone"
             title={step === null ? 'Está tudo apanhado.' : `${step} está despachado.`}
@@ -603,55 +601,117 @@ export default function ModoCompras({ t, user, onClose }) {
           </Card>
         ) : null}
 
-        {/* ⚠ Uma PASTILHA, e não um botão de largura inteira (16/09/2026,
-            opção C de `design/campos-e-botoes.dc.html`). Dois botões de 48 px
-            empilhados no fim da lista comiam uma quinta parte do ecrã para
-            duas ações, e este usa-se uma vez por corredor, se tanto. O
-            «à lista» sai do rótulo: a lista está por cima dele.
-
-            ⚠ `largura="conteudo"`: sem isto o `BotaoCompacto` leva `flex: 1` e
-            volta a esticar-se de ponta a ponta. Medido no ecrã dele, depois de
-            eu já o ter dado por encolhido. */}
-        <View style={{ flexDirection: 'row' }}>
-          <BotaoCompacto t={t} label="acrescentar artigo" tom="contorno"
-            largura="conteudo" onPress={() => setNovoArtigo(true)} />
-        </View>
+        {/* ⚠ O «ACRESCENTAR ARTIGO» SAIU DAQUI (17/09/2026), com a gaveta.
+            Era uma pastilha no fim da lista, e foi para o «+» da barra do
+            fundo, onde está sempre à mão sem se rolar. Duas portas para a mesma
+            folha, uma delas a precisar de scroll, não são duas portas — é uma
+            porta e um desvio. */}
       </View>
       </ScrollView>
 
-      {/* ── A acção do corredor, FIXA em baixo ───────────────────────────────
-          16/09/2026, opção C. Vivia no fim da lista e era preciso rolar trinta
-          artigos para lá chegar; a barra de ação existe na app desde 15/09 e só
-          as Tarefas a usavam.
+      {/* ── O FUNDO: o percurso à esquerda, o carrinho à direita ─────────────
+          17/09/2026, desenho 2 de `design/cinco-fundos-da-loja.dc.html` com a
+          arrumação que ele pediu: «usa a 2 mas o "No carrinho" fica do lado
+          direito e o segmento no lado esquerdo, seguido do "+"».
 
-          ⚠ Aqui é desenhada à mão e não pelo `useAcaoDoEcra`: esta vista é dona
-          da sua COLUNA (`coluna: true` no App.jsx), portanto corre FORA do
-          `ScrollView` onde vive o `AcaoDoEcra.Provider`. O hook devolveria o
-          elemento para se desenhar no lugar, que é o que aqui se faz — mas
-          então mais vale dizê-lo por extenso do que parecer que funciona.
+          O que aqui estava era um botão de largura inteira — «Corredor seguinte
+          · Frescos» ou «Fechar conta» — com uma pastilha fantasma de
+          «acrescentar artigo» a flutuar por cima dele. Dois pesos, dois
+          alinhamentos, um vão a separá-los, e com o rodapé da app por baixo
+          davam TRÊS faixas horizontais empilhadas no fundo do ecrã.
 
-          Fica ACIMA do rodapé, dentro da coluna desta vista: o rodapé continua
-          a ser o último filho da raiz (INVARIANTE #1).
+          Agora é uma fila só, com três coisas e três alvos:
 
-          Os dois botões são COMUNS, e por razões diferentes. O «corredor
-          seguinte» é navegação. O «Fechar conta» não fecha conta nenhuma: abre
-          o carrinho, onde está o botão que fecha — e é esse que leva o acento.
-          Um passo intermédio pintado como decisão final ensina a família a
-          carregar sem ler.
+            [ segmentos + «seguinte · X» ]  [ + ]        [ No carrinho · 14,25 € ]
 
-          ⚠ E o botão DIZ PARA ONDE VAI. Era «Secção seguinte», e quem está na
-          loja precisa de saber para que lado andar antes de tocar. */}
-      <View style={{ flexGrow: 0, flexShrink: 0, paddingHorizontal: 16,
-        paddingTop: S.md, paddingBottom: S.md, backgroundColor: t.page,
-        borderTopWidth: 1, borderTopColor: t.divider }}>
-        {step === null || seccoes.indexOf(step) >= seccoes.length - 1 ? (
-          <Primary t={t} comum label="Fechar conta e registar despesa"
-            sub={cart > 0 ? `${EUR(cart)} · ${plural(doneItems.length, 'artigo', 'artigos')}` : null}
-            onPress={() => setCartOpen(true)} />
-        ) : (
-          <Primary t={t} comum label={`Corredor seguinte · ${seguinte}`} icon="caretRight"
-            onPress={() => setStep(seguinte)} />
-        )}
+          ⚠ OS SEGMENTOS SÃO O BOTÃO. Não são um indicador ao lado de um botão:
+          a faixa inteira é o alvo, e tocar nela avança para o corredor
+          seguinte. Uma coisa que mostra o progresso e faz andar é melhor do que
+          duas coisas ao lado uma da outra, e a linha por baixo diz para onde
+          vai — quem está na loja precisa de saber o lado antes de tocar.
+
+          ⚠ E O CARRINHO ABRE COM UM TOQUE, não com um arrasto. O desenho tinha
+          um puxador, e um puxador promete um gesto de arrastar que esta app não
+          tem em lado nenhum. Prometer um gesto que não existe é o mesmo defeito
+          de não anunciar o que existe, visto do outro lado. A seta para cima diz
+          «isto abre», que é verdade.
+
+          Fica ACIMA do rodapé, dentro da coluna desta vista: o rodapé continua a
+          ser o último filho da raiz (INVARIANTE #1). */}
+      <View style={{ flexGrow: 0, flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: S.md,
+        // ⚠ 16 — o mesmo enchimento da LISTA, para a barra bater certo com a
+        // BORDA DO CARTÃO do talão e não com o texto lá dentro («alinhado pela
+        // linha da caixa acima e não pelo texto»). Cheguei a pôr 30 (16 + 14,
+        // o enchimento do cartão) e isso alinhava com os euros; o que ele quer
+        // é a coluna do cartão.
+        //
+        // Isto só bate certo porque a barra de rolar da web deixou de comer
+        // largura à lista — ver o `showsVerticalScrollIndicator` lá em cima.
+        // Com ela, o cartão ficava 15 px mais estreito do que a barra.
+        paddingHorizontal: 16, paddingTop: S.md, paddingBottom: S.md,
+        backgroundColor: t.page, borderTopWidth: 1, borderTopColor: t.divider }}>
+
+        {/* O PERCURSO, que também é o botão de avançar. No último corredor (ou
+            em «Toda a lista») não há seguinte: fica só o desenho, sem toque. */}
+        {(() => {
+          const segmentos = (
+            <>
+              <View style={{ flexDirection: 'row', gap: 2 }}>
+                {seccoes.map(nome => {
+                  const naSeccao = items.filter(i => i.s === nome);
+                  const limpo = naSeccao.length > 0 && naSeccao.every(i => stateOf(i) !== 'open');
+                  const aqui = nome === step;
+                  return (
+                    <View key={nome} style={{ flex: 1, height: 6, borderRadius: R.pill,
+                      backgroundColor: aqui ? t.titulo : limpo ? t.state.okTexto : t.border }} />
+                  );
+                })}
+              </View>
+              <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, fontWeight: '600',
+                color: seguinte ? t.actFg : t.text3 }}>
+                {/* ⚠ Pelo `plural`: numa ida de um artigo só, «1 de 1
+                    apanhados» era o que aqui estava. */}
+                {seguinte ? `seguinte · ${seguinte}`
+                  : `${doneItems.length} de ${plural(items.length, 'apanhado', 'apanhados')}`}
+              </Text>
+            </>
+          );
+          return seguinte ? (
+            <Pressable onPress={() => setStep(seguinte)} accessibilityRole="button"
+              accessibilityLabel={`Corredor seguinte · ${seguinte}`}
+              style={{ flex: 1, minHeight: 44, justifyContent: 'center', gap: 5 }}>
+              {segmentos}
+            </Pressable>
+          ) : (
+            <View style={{ flex: 1, minHeight: 44, justifyContent: 'center', gap: 5 }}>{segmentos}</View>
+          );
+        })()}
+
+        {/* O «+», a seguir ao percurso, como ele pediu. */}
+        <Pressable onPress={() => setNovoArtigo(true)} accessibilityRole="button"
+          accessibilityLabel="Acrescentar artigo à lista"
+          style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1, borderColor: t.border,
+            alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="plus" size={20} color={t.actFg} />
+        </Pressable>
+
+        {/* O CARRINHO, à direita. Um toque abre a folha que já existe — a mesma
+            que fecha a conta —, e é lá que vive o botão com o acento cheio: um
+            passo intermédio pintado como decisão final ensina a família a
+            carregar sem ler. */}
+        <Pressable onPress={() => setCartOpen(true)} accessibilityRole="button"
+          accessibilityLabel={`Abrir o carrinho · ${plural(doneItems.length, 'artigo', 'artigos')}, ${EUR(cart)}`}
+          style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: S.sm,
+            paddingLeft: S.md, paddingRight: S.sm, borderRadius: R.row,
+            borderWidth: 1, borderColor: t.actBrd, backgroundColor: t.actBg }}>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={{ fontFamily: FONT.ui, fontSize: 11, color: t.actFg }}>No carrinho</Text>
+            <Text style={{ fontFamily: FONT.display, fontSize: 16, fontWeight: '600', color: t.actFg }}>
+              {EUR(cart)}
+            </Text>
+          </View>
+          <Icon name="caretUp" size={18} color={t.actFg} />
+        </Pressable>
       </View>
 
       {novoArtigo ? (
