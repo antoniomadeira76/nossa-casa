@@ -302,15 +302,17 @@ export default function ModoCompras({ t, user, onClose }) {
                 placeholder={estimado ? EUR(estimado) : undefined}
                 onChange={(v) => setRascunhoDoPreco(r => ({ ...r, [i.id]: v }))}
                 aoTerminar={(v) => definirPrecoPago(i.id, v)} />
-              {sem ? null : (
-                <Pressable onPress={() => { marcar(i.id, 'sem-stock'); setPrecoAberto(null); }}
-                  accessibilityRole="button" accessibilityLabel={`Não há ${i.label} na loja`}
-                  style={{ minHeight: 44, paddingHorizontal: S.md, justifyContent: 'center' }}>
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.state.warnTexto }}>
-                    não há
-                  </Text>
-                </Pressable>
-              )}
+              {/* ⚠ O «não há» SAIU daqui (17/09/2026, ele: «o que é o não há?»).
+                  Marcava o artigo como sem stock, e estava mal em três frentes.
+                  Contradizia a própria linha: este editor só abre depois de se
+                  tocar no preço, e o preço só existe depois de o artigo estar
+                  marcado como apanhado — oferecia-se «não havia» de uma coisa
+                  que se acabara de dizer que se trouxe. Não dizia o que fazia:
+                  duas palavras soltas entre um campo de preço e um «Pronto»
+                  leem-se como «sem preço». E era um terceiro caminho para a
+                  mesma coisa, que já se faz com pressão longa no nome e que a
+                  linha de dicas por cima da lista anuncia.
+                  O sítio do «sem stock» é a LINHA, antes de se marcar. */}
               <Pressable onPress={() => setPrecoAberto(null)} accessibilityRole="button"
                 accessibilityLabel="Fechar o preço"
                 style={{ minHeight: 44, paddingHorizontal: S.md, justifyContent: 'center', marginLeft: 'auto' }}>
