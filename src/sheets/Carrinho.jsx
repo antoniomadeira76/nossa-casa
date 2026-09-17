@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { S, FONT } from '../theme';
 import { EUR, plural } from '../format';
-import { Label, Primary, Tile, MarcaDeEstado } from '../ui';
+import { Label, Primary, Tile, MarcaDeEstado, MARCA } from '../ui';
 import Sheet from '../Sheet';
 
 // Validação antes de fechar a conta. Vivia dentro do Compras.jsx, ao lado do
@@ -56,7 +56,7 @@ export default function Carrinho({ t, doneItems, items, cart, pago, user, store,
                   a `MarcaDeEstado`: o mesmo ecrã tinha o visto a verde em cima
                   e a cruz do tema em baixo. E o ecrã anterior — o Modo Compras
                   — mostrava os MESMOS artigos com o visto na cor do perfil. */}
-              <MarcaDeEstado t={t} estado="marcado" size={20} />
+              <MarcaDeEstado t={t} estado="marcado" size={MARCA} />
               <View style={{ flex: 1, gap: 2 }}>
                 <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>{i.label}</Text>
               </View>
@@ -96,7 +96,7 @@ export default function Carrinho({ t, doneItems, items, cart, pago, user, store,
               }}>
                 {/* Estes são os artigos SEM STOCK — a cruz âmbar, como no
                     modo compras. Levavam um «i», que dizia «informação». */}
-                <MarcaDeEstado t={t} estado="sem" size={20} />
+                <MarcaDeEstado t={t} estado="sem" size={MARCA} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 14, color: t.text2 }}>{i.label}</Text>
                 </View>

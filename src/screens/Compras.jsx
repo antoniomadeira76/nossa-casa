@@ -4,7 +4,7 @@ import { View, Text, Pressable, Modal } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, dayLabel, parseKey, WD, plural } from '../format';
-import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Empty, Avatar, avatarDe, Pill, Row, MarcaDeEstado, BotaoCompacto } from '../ui';
+import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Empty, Avatar, avatarDe, Pill, Row, MarcaDeEstado, MARCA, BotaoCompacto } from '../ui';
 import PartilharLista from '../sheets/PartilharLista';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
@@ -314,7 +314,7 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
                         {/* O círculo vazio de «por apanhar» e o visto do acento
                             do perfil, alinhados no mesmo diâmetro — ver
                             `MarcaDeEstado`. Era um «i» dentro de um círculo. */}
-                        <MarcaDeEstado t={t} estado={done ? 'marcado' : 'por-marcar'} size={24} />
+                        <MarcaDeEstado t={t} estado={done ? 'marcado' : 'por-marcar'} size={MARCA} />
                         <View style={{ flex: 1, gap: 2 }}>
                           <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{i.label}</Text>
                           {/* Uma prenda: a criança não recebe esta linha do

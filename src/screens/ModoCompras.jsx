@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, elev } from '../theme';
 import { EUR, plural } from '../format';
-import { Card, Primary, SectionTitle, Empty, NumField, BotaoCompacto } from '../ui';
+import { Card, Primary, SectionTitle, Empty, NumField, BotaoCompacto, MarcaDeEstado, MARCA } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import NovoArtigo from '../sheets/NovoArtigo';
@@ -225,13 +225,21 @@ export default function ModoCompras({ t, user, onClose }) {
             accessibilityHint="Mantenha premido para marcar que não há na loja"
             accessibilityState={{ checked: feito }} aria-checked={feito}
             style={{ flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            {/* A marca do talão: 16 px, não 30. Num talão o visto é uma nota à
-                margem, não o assunto da linha. */}
-            <View style={{ width: 16, alignItems: 'center' }}>
-              {feito ? <Icon name="check" size={14} color={t.titulo} />
-                : sem ? <Icon name="close" size={13} color={t.state.warnTexto} />
-                  : null}
-            </View>
+            {/* ⚠ A MARCA DA APP, a 20 (17/09/2026: «põe o visto com o mesmo
+                visual que este das tarefas»).
+                Aqui esteve um visto solto de 14 px — a ideia era que num talão
+                a marca fosse uma nota à margem. Tinha um buraco: um visto solto
+                não tem contrário. A linha por apanhar mostrava espaço vazio, e
+                numa lista de compras as linhas que interessam são justamente
+                essas — o olho tem de contar a ausência de uma coisa em vez da
+                presença de outra.
+                A `MarcaDeEstado` traz o círculo vazio de volta, que diz «isto
+                ainda falta» e diz onde tocar; e é a mesma marca dos outros seis
+                ecrãs, em vez de um sétimo idioma só para a loja.
+                ⚠ 20, e não os 30 que esta linha teve: metade do peso dos
+                blocos vinha daí. */}
+            <MarcaDeEstado t={t} size={MARCA}
+              estado={feito ? 'marcado' : sem ? 'sem' : 'por-marcar'} />
             <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15,
               color: sem ? t.state.warnTexto : feito ? t.text2 : t.text3 }}>
               {i.label}
@@ -254,12 +262,23 @@ export default function ModoCompras({ t, user, onClose }) {
               <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.state.warnTexto }}>
                 sem stock
               </Text>
-            ) : (
+            ) : escrito || estimado ? (
               <Text style={{ fontFamily: FONT.display, fontSize: 15,
                 fontWeight: escrito ? '600' : '400',
                 color: escrito ? t.text2 : t.text3 }}>
-                {escrito ? EUR(s.precoPago[i.id]) : estimado ? `~ ${EUR(estimado)}` : '—'}
+                {escrito ? EUR(s.precoPago[i.id]) : `~ ${EUR(estimado)}`}
               </Text>
+            ) : (
+              // ⚠ O LÁPIS DA APP, e não um travessão (17/09/2026: «passa o traço
+              // para um lápis como já está no resto da app»).
+              //
+              // O «—» dizia a verdade — a app não sabe o preço deste artigo —
+              // mas não dizia o que fazer com isso, e numa casa sem histórico a
+              // coluna inteira era uma fila de travessões. O lápis é o mesmo
+              // que a lista de compras, as tarefas e a saúde usam para «isto
+              // altera-se aqui», e resolve de caminho a única coisa que faltava
+              // a este desenho: nada dizia que o número se tocava.
+              <Icon name="edit" size={18} color={t.text3} />
             )}
             {diferenca(i) ? (
               <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11, fontWeight: '600',

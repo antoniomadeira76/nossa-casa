@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, FONT } from '../theme';
 import { EUR, plural, evTime, TODAY_KEY, dayLabel, agoraNaApp, legendaDaTarefa } from '../format';
 
-import { Card, SectionTitle, Linha, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade, avatarDe, MarcaDeEstado } from '../ui';
+import { Card, SectionTitle, Linha, Label, Pill, Row, Bar, Tile, Avatar, Empty, usePaged, Pager, PastilhaVisibilidade, avatarDe, MarcaDeEstado, MARCA } from '../ui';
 import Icon from '../Icon';
 
 export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir,
@@ -282,7 +282,7 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
                   </>}
                   // A mesma marca das Tarefas, no mesmo tamanho que a `Row` dá
                   // a um ícone — é a mesma tarefa vista de dois ecrãs.
-                  leading={<MarcaDeEstado t={t} size={20}
+                  leading={<MarcaDeEstado t={t} size={MARCA}
                     estado={done ? 'marcado' : pend ? 'aguarda' : 'por-marcar'} />} />
               </Linha>
             );

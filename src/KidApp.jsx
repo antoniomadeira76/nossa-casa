@@ -6,7 +6,7 @@ import { buildTheme, onChrome, S, R, FONT, SCHEMES, corDoMembro, chromeDaCrianca
 import { EUR, parseKey, pad2, plural, legendaDaTarefa, TODAY_KEY } from './format';
 import Icon from './Icon';
 import { MarcaDeAgua } from './ui';
-import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe, Linha, Choice, BotaoCompacto, NumField, MarcaDeEstado } from './ui';
+import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe, Linha, Choice, BotaoCompacto, NumField, MarcaDeEstado, MARCA_DA_CRIANCA } from './ui';
 import Sheet from './Sheet';
 import EscolherAvatar from './sheets/EscolherAvatar';
 import ProporTroca from './sheets/ProporTroca';
@@ -193,7 +193,7 @@ function KidTaskRow({ t, task, kid, onPress }) {
             criança já mostrava a `MarcaDeEstado`: círculo vazio por apanhar,
             visto na cor do perfil apanhado. «Feito» tinha duas caras a uma
             passagem de distância. */}
-        <MarcaDeEstado t={t} size={28}
+        <MarcaDeEstado t={t} size={MARCA_DA_CRIANCA}
           estado={isDone ? 'marcado' : isPending ? 'aguarda' : 'por-marcar'} />
       </View>
 
@@ -512,7 +512,7 @@ function KidComprasView({ t, kid }) {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 }}>
                       {/* O mesmo marcador das compras dos adultos: círculo
                           vazio por apanhar, visto do acento apanhado. */}
-                      <MarcaDeEstado t={t} estado={done ? 'marcado' : 'por-marcar'} size={24} />
+                      <MarcaDeEstado t={t} estado={done ? 'marcado' : 'por-marcar'} size={MARCA_DA_CRIANCA} />
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text numberOfLines={2} style={{ fontFamily: FONT.body, fontSize: 16, color: done ? t.text3 : t.text2,
                           textDecorationLine: done ? 'line-through' : 'none' }}>{i.label}</Text>

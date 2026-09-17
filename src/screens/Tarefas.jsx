@@ -4,7 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { subtituloDaTarefa, legendaDaTarefa, plural, TODAY_KEY } from '../format';
 
-import { SectionTitle, Linha, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe, BotaoCompacto, NumField, MarcaDeEstado } from '../ui';
+import { SectionTitle, Linha, Label, Pill, Avatar, Empty, AddButton, Primary, Segmented, Toggle, usePaged, Pager, Tap, avatarDe, BotaoCompacto, NumField, MarcaDeEstado, MARCA } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -198,7 +198,7 @@ export default function Tarefas({ t, user, abrir }) {
                           vazio por fazer, relógio em disco âmbar à espera de
                           confirmação, visto do acento quando feita. Ver
                           `MarcaDeEstado` — as três alinham no mesmo diâmetro. */}
-                      <MarcaDeEstado t={t} size={20}
+                      <MarcaDeEstado t={t} size={MARCA}
                         estado={done ? 'marcado' : pend ? 'aguarda' : 'por-marcar'} />
                       <Avatar {...avatarDe(x.who, MEMBERS[x.who], t.text3)} />
                       <View style={{ flex: 1, gap: 2 }}>

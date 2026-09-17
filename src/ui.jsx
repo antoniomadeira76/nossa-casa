@@ -305,7 +305,21 @@ export const Choice = ({ t, label, selected, onPress }) => (
 // tamanho: o `checkCircle` desenha uma circunferência de raio 9 numa grelha de
 // 24 com traço de 1,75 — logo 19,75 de caixa e 1,75 de borda, à escala pedida.
 // Escrever «20» à mão alinhava neste tamanho e desalinhava no seguinte.
-export const MarcaDeEstado = ({ t, estado = 'por-marcar', size = 24 }) => {
+// ⚠ A MARCA TEM DOIS TAMANHOS, E SÓ DOIS (17/09/2026: «os vistos das compras
+// devem ficar do mesmo tamanho dos vistos das tarefas»).
+//
+// Tinha quatro em oito sítios — 20 nas tarefas, no início e no carrinho, 24 nas
+// compras, 24 e 28 na app da criança. Ninguém os escolheu: cada ecrã escreveu o
+// seu à medida que a marca partilhada foi chegando lá, e a mesma peça ficou com
+// quatro pesos. O da criança é maior DE PROPÓSITO — a app dela tem letra maior
+// e linhas maiores —, e é a única diferença que se defende.
+//
+// Quem usa a marca passa uma destas duas e mais nada. O guarda que o confere é
+// `a-marca-de-estado-tem-dois-tamanhos`.
+export const MARCA = 20;          // a app dos adultos
+export const MARCA_DA_CRIANCA = 24;   // a app da criança, que é maior por decisão
+
+export const MarcaDeEstado = ({ t, estado = 'por-marcar', size = MARCA }) => {
   const d = (19.75 * size) / 24;
   const b = (1.75 * size) / 24;
   return (
