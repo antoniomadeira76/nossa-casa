@@ -53,24 +53,40 @@ describe('a entrada na casa não depende de uma janela', () => {
     // A ordem: a janela primeiro, porque não exige configuração nenhuma; o
     // redireccionamento como RESERVA, que entra quando ela for recusada.
     //
-    // ⚠ Pô-lo à frente foi um erro de 18/09/2026: o redireccionamento exige o
-    // endereço registado na consola da Google, e quem ainda o não tivesse
-    // registado ficava na página de erro da Google, sem volta — pior do que
-    // estava. Uma reserva nunca pode ser o caminho principal.
+    // ⚠ Pô-lo à frente foi um erro de 18/09/2026: ele exige o endereço desta
+    // app registado na consola da Google, e quem o não tivesse registado ficava
+    // na página de erro da Google, sem volta — pior do que estava.
     const i = login.indexOf('const entrarComGoogle');
     expect(i).toBeGreaterThan(0);
     const corpo = login.slice(i, login.indexOf('const press', i));
     const ondeJanela = corpo.indexOf('servidor.auth.entrarComGoogle');
     const ondeReserva = corpo.indexOf('comecarEntradaGoogle');
     expect(ondeJanela).toBeGreaterThan(0);
-    expect(ondeReserva).toBeGreaterThan(ondeJanela);   // a reserva vem DEPOIS
-    // E só entra quando a causa for mesmo o bloqueador.
-    expect(corpo).toMatch(/if \(!\/bloqueou a janela\/i\.test\(daJanela\.message \|\| ''\)\) throw daJanela;/);
+    expect(ondeReserva).toBeGreaterThan(ondeJanela);
+    expect(corpo).toContain("if (!/bloqueou a janela/i.test(daJanela.message || '')) throw daJanela;");
 
-    // O caminho da reserva navega mesmo, e não abre janela nenhuma.
+    // E a reserva navega mesmo, sem abrir janela nenhuma.
     const j = pb.indexOf('async comecarEntradaGoogle');
-    expect(pb.slice(j, j + 2000)).toMatch(/window\.location\.assign\(/);
-    expect(pb.slice(j, j + 2000)).not.toMatch(/window\.open|abrirNoGesto/);
+    const dele = pb.slice(j, j + 2600);
+    expect(dele).toContain('window.location.assign(');
+    expect(dele).not.toMatch(/window\.open|abrirNoGesto/);
+  });
+
+  it('⚠ o `redirect_uri` é o DESTA APP — e não há gancho nenhum a desviar a volta', () => {
+    // Tentei poupar ao dono da casa o passo na consola da Google: usar o
+    // endereço do PocketBase (já registado) e pôr um `routerUse` a reencaminhar
+    // a volta para a app. Funcionava — e PARTIA AS REGRAS DE ESCRITA.
+    //
+    // Medido: com o gancho, 46 das 51 provas do `provar-relacoes-ancoradas`
+    // passaram a falhar, e a falha era «PASSOU — a linha foi criada»: uma casa
+    // a escrever dentro de outra. Um `routerUse` a mais desarranja a cadeia do
+    // PocketBase. Nenhuma conveniência de entrada paga isso, e este guarda
+    // existe para ninguém o voltar a tentar sem reler isto.
+    const j = pb.indexOf('async comecarEntradaGoogle');
+    const dele = pb.slice(j, j + 2600);
+    expect(dele).toContain('g.authURL + encodeURIComponent(retorno)');
+    expect(dele).not.toContain('oauth2-redirect');
+    expect(fs.existsSync(path.join(RAIZ, 'db/pocketbase/pb_hooks/entrada-sem-janela.pb.js'))).toBe(false);
   });
 
   it('⚠ o `state` compara-se à volta', () => {

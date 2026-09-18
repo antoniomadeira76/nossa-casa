@@ -35,6 +35,9 @@ export default function Login({ t, onEnter, erroInicial = null }) {
   // não neste ecrã. E começa-se no passo das CONTAS, porque quem acabou de
   // falhar a entrada pela Google precisa do caminho local à vista.
   const [erroGoogle, setErroGoogle] = useState(erroInicial);
+  // A razão crua, por baixo da frase. É o que uma captura tem de trazer
+  // para se saber o que correu mal sem adivinhar.
+  const [detalheDoErro, setDetalheDoErro] = useState(null);
   const [aEntrar, setAEntrar] = useState(false);
   const [erroPin, setErroPin] = useState(null);
 
@@ -76,8 +79,7 @@ export default function Login({ t, onEnter, erroInicial = null }) {
     try {
       // ── DOIS CAMINHOS, E A ORDEM IMPORTA ────────────────────────────────
       //
-      // 18/09/2026. Há duas maneiras de entrar pela Google, e cada uma precisa
-      // de uma coisa que a app não controla:
+      // Cada um precisa de uma coisa que a app não controla:
       //
       //   · a JANELA precisa que o navegador a deixe abrir;
       //   · o REDIRECCIONAMENTO precisa que o endereço desta app esteja nos
@@ -85,13 +87,12 @@ export default function Login({ t, onEnter, erroInicial = null }) {
       //
       // A janela vem primeiro porque não exige configuração nenhuma: com o
       // `abrirNoGesto` ela abre, e quando um navegador a recusar basta
-      // permiti-la. Pus o redireccionamento à frente durante vinte minutos e
-      // foi um erro meu: quem ainda não tinha registado o endereço ficava na
-      // página de erro da Google, sem volta — pior do que estava.
+      // permiti-la, uma vez. O redireccionamento é a RESERVA e entra
+      // exactamente quando é preciso — quando a janela foi recusada.
       //
-      // O redireccionamento é a RESERVA, e entra exactamente quando é preciso:
-      // quando a janela foi recusada. Aí não há nada a permitir, e a pessoa não
-      // fica sem caminho.
+      // ⚠ Tentei tirar o passo da consola com um gancho do servidor, e não dá:
+      // ver o comentário do `redirect_uri` no `comecarEntradaGoogle`. Partia as
+      // regras de escrita do PocketBase.
       //
       // A agenda NÃO se pede aqui: o consentimento que aparecia não produzia
       // autorização de longa duração, porque o PocketBase não pede
@@ -101,8 +102,6 @@ export default function Login({ t, onEnter, erroInicial = null }) {
         r = await servidor.auth.entrarComGoogle();
       } catch (daJanela) {
         if (!/bloqueou a janela/i.test(daJanela.message || '')) throw daJanela;
-        // A janela foi recusada. Vai-se pela página inteira, que nenhum
-        // bloqueador trava — e isto navega, não volta.
         if (await servidor.auth.comecarEntradaGoogle()) return;
         throw daJanela;
       }
@@ -123,6 +122,21 @@ export default function Login({ t, onEnter, erroInicial = null }) {
       // vezes à procura de um problema que estava aqui.
       const p = await servidor.auth.provedores();
       const cancelado = /cancel|closed|aborted/i.test(e.message || '');
+      // ⚠ A RAZÃO CRUA NÃO SE DEITA FORA (18/09/2026).
+      //
+      // Estas cinco frases são boas para quem quer entrar e más para quem tem
+      // de descobrir porquê: a mensagem do SDK — a única que diz o que a Google
+      // ou o servidor responderam mesmo — era trocada por uma delas e perdia-se.
+      // Passei uma tarde a adivinhar entre «o servidor não responde» e «a janela
+      // foi bloqueada», com o servidor bom e a janela permitida.
+      //
+      // Vai para a consola inteira, e para o ecrã em letra pequena por baixo da
+      // frase. Uma captura passa a bastar.
+      const cru = (e && (e.message || String(e))) || 'sem mensagem';
+      if (typeof console !== 'undefined') {
+        console.error('[entrada] falhou:', e);
+        console.error('[entrada] estado do servidor:', p);
+      }
       // ⚠ A janela recusada pelo navegador é uma causa à PARTE, e a primeira
       // a testar: não houve pedido nenhum ao servidor, e dizer «o servidor não
       // responde» sobre um bloqueador de janelas manda a pessoa reiniciar um
@@ -146,6 +160,7 @@ export default function Login({ t, onEnter, erroInicial = null }) {
           ? 'Entrada cancelada. A abrir as contas desta casa.'
           : 'A Google autorizou, mas o servidor não conseguiu concluir a entrada. '
             + 'A abrir as contas desta casa.');
+      setDetalheDoErro(cru);
       setStep('contas');
     }
   };
@@ -224,9 +239,19 @@ export default function Login({ t, onEnter, erroInicial = null }) {
               <Text style={{ fontFamily: FONT.display, fontSize: 16, fontWeight: '700', color: CLARO.text1, letterSpacing: 0.4 }}>Continuar com Google</Text>
             </Pressable>
             {erroGoogle ? (
-              <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 19, color: ESCURO.state.errTexto }}>
-                {erroGoogle}
-              </Text>
+              <View style={{ gap: 4 }}>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 19, color: ESCURO.state.errTexto }}>
+                  {erroGoogle}
+                </Text>
+                {/* A razão crua, em letra pequena. Não é para se ler todos os
+                    dias — é para uma captura bastar quando a entrada falha. */}
+                {detalheDoErro ? (
+                  <Text selectable style={{ fontFamily: FONT.ui, fontSize: 11, lineHeight: 16,
+                    color: 'rgba(255,255,255,0.55)' }}>
+                    {detalheDoErro}
+                  </Text>
+                ) : null}
+              </View>
             ) : null}
             <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 19, color: 'rgba(255,255,255,0.62)' }}>
               Ao continuar, a Nossa Casa recebe o seu nome e endereço de e-mail. Nenhum dado bancário é partilhado com a Google.
@@ -258,9 +283,19 @@ export default function Login({ t, onEnter, erroInicial = null }) {
                 pela Google falha. Estava só no ecrã anterior: era escrito e
                 nunca visto. */}
             {erroGoogle ? (
-              <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 19, color: ESCURO.state.errTexto }}>
-                {erroGoogle}
-              </Text>
+              <View style={{ gap: 4 }}>
+                <Text style={{ fontFamily: FONT.ui, fontSize: 12, lineHeight: 19, color: ESCURO.state.errTexto }}>
+                  {erroGoogle}
+                </Text>
+                {/* A razão crua, em letra pequena. Não é para se ler todos os
+                    dias — é para uma captura bastar quando a entrada falha. */}
+                {detalheDoErro ? (
+                  <Text selectable style={{ fontFamily: FONT.ui, fontSize: 11, lineHeight: 16,
+                    color: 'rgba(255,255,255,0.55)' }}>
+                    {detalheDoErro}
+                  </Text>
+                ) : null}
+              </View>
             ) : null}
             {adultos.map(n => (
               <Pressable key={n} onPress={() => onEnter(n)} accessibilityRole="button" accessibilityLabel={n}

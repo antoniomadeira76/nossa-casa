@@ -226,6 +226,24 @@ const abrirNoGesto = (nome) => {
 // de mostrar o erro cru da Google.
 const CHAVE_DO_RETORNO = 'nossa-casa/entrada-google';
 
+// Trocar (ou acrescentar) um parâmetro de um endereço, à mão.
+//
+// ⚠ À mão porque o `new URL` NÃO EXISTE aqui. O React Native substitui o `URL`
+// global por um esboço que atira «URL is not a constructor», e o
+// `src/endereco.js` já o tinha escrito — «o React Native não tem um `URL`
+// completo; no ambiente das provas desta app não tem nenhum». Usei-o na mesma,
+// e o botão da Google passou a não fazer nada: a excepção saía antes de a
+// página navegar, e um `catch` mais acima engolia-a numa frase amigável.
+//
+// É a segunda vez que este `URL` engana esta casa. O guarda é
+// `__tests__/o-react-native-nao-tem-url.test.js`.
+const comParametro = (endereco, nome, valor) => {
+  const escapado = encodeURIComponent(valor);
+  const re = new RegExp(`([?&])${nome}=[^&]*`);
+  if (re.test(endereco)) return endereco.replace(re, (todo, antes) => `${antes}${nome}=${escapado}`);
+  return `${endereco}${endereco.indexOf('?') >= 0 ? '&' : '?'}${nome}=${escapado}`;
+};
+
 // O endereço a que a Google devolve a pessoa: esta página, sem interrogação
 // nem âncora. É este que se regista na consola, e por isso a app mostra-o
 // quando a Google o recusa.
@@ -354,11 +372,30 @@ export const auth = {
     const g = (m.oauth2?.providers || []).find(p => p.name === 'google');
     if (!g) throw new Error('A entrada pela Google não está configurada neste servidor.');
 
-    // ⚠ Os scopes SUBSTITUEM os do PocketBase, como no outro caminho: a
+    // ⚠ O `redirect_uri` é O DESTA APP, e tem de estar registado na consola da
+    // Google, em «URIs de redireccionamento autorizados».
+    //
+    // Tentei evitar esse passo: usar o endereço do PocketBase (que já lá está
+    // registado) e pôr um gancho do servidor a reencaminhar a volta para a app.
+    // Funcionava — e PARTIA AS REGRAS DE SEGURANÇA. Medido em 18/09/2026: com o
+    // gancho, 46 das 51 provas do `provar-relacoes-ancoradas` passaram a falhar,
+    // e a falha era «PASSOU — a linha foi criada»: uma casa a escrever dentro de
+    // outra. Um `routerUse` a mais desarranja a cadeia do PocketBase e as regras
+    // de escrita deixam de ser aplicadas. Nenhuma conveniência de entrada paga
+    // isso.
+    //
+    // Fica o passo na consola. É uma vez por endereço, e é honesto.
+
+    // ⚠ SEM `new URL`. O React Native substitui o `URL` global por um esboço
+    // que rebenta — «TypeError: URL is not a constructor» —, e o
+    // `src/endereco.js` já o dizia por escrito antes de eu aqui tropeçar. O
+    // clique não fazia nada: a excepção saía antes de a página navegar.
+    //
+    // Os scopes SUBSTITUEM os do PocketBase, como no outro caminho: a
     // identidade tem de ir toda, senão o `oauth2/v3/userinfo` responde 401 e o
     // erro que chega ao ecrã manda-nos à consola da Google sem razão.
-    const url = new URL(g.authURL + encodeURIComponent(retorno));
-    url.searchParams.set('scope', [
+    let url = g.authURL + encodeURIComponent(retorno);
+    url = comParametro(url, 'scope', [
       'openid',
       'https://www.googleapis.com/auth/userinfo.email',
       'https://www.googleapis.com/auth/userinfo.profile',
@@ -368,6 +405,9 @@ export const auth = {
     // volta, e um verificador PKCE esquecido num disco é uma credencial a
     // apanhar pó. O separador fecha, isto desaparece — como deve ser.
     try {
+      // ⚠ Guarda-se o `state` VERDADEIRO (o gancho tira-lhe a marca antes de
+      // no-lo devolver) e o `redirect_uri` que foi mesmo mandado à Google — a
+      // troca do código tem de repetir o mesmo, senão a Google recusa-a.
       window.sessionStorage.setItem(CHAVE_DO_RETORNO, JSON.stringify({
         codeVerifier: g.codeVerifier, state: g.state, retorno,
       }));
