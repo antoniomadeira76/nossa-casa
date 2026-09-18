@@ -93,11 +93,19 @@ export default function Login({ t, onEnter }) {
       // vezes à procura de um problema que estava aqui.
       const p = await servidor.auth.provedores();
       const cancelado = /cancel|closed|aborted/i.test(e.message || '');
+      // ⚠ A janela recusada pelo navegador é uma causa à PARTE, e a primeira
+      // a testar: não houve pedido nenhum ao servidor, e dizer «o servidor não
+      // responde» sobre um bloqueador de janelas manda a pessoa reiniciar um
+      // servidor que está bom. Foi o que aconteceu em 18/09/2026.
+      const bloqueada = /bloqueou a janela/i.test(e.message || '');
       setErroGoogle(
-        // Quatro causas, e nenhuma se deduz da frase do erro. O «não responde»
+        // Cinco causas, e nenhuma se deduz da frase do erro. O «não responde»
         // era dito como «não está configurada», e mandou-nos à consola da
         // Google procurar um problema que era o servidor estar desligado.
-        p.semServidor
+        bloqueada
+          ? 'O navegador bloqueou a janela da Google. Permita janelas para este '
+            + 'endereço e tente outra vez. Não é o servidor nem a conta.'
+        : p.semServidor
           ? 'Esta app está a correr sem servidor. A abrir as contas desta casa.'
         : !p.alcancavel
           ? 'O servidor da casa não está a responder. Não é a Google: quando ele '

@@ -161,6 +161,39 @@ export const pb = new Proxy({}, { get: (_, p) => { const c = obter(); return c ?
 
 const semLigacao = () => Promise.reject(new Error('Servidor não configurado.'));
 
+// ── Abrir uma janela DURANTE o gesto que a pediu ─────────────────────────────
+//
+// 18/09/2026, ele: «não abre quando clico na Google». Não era o servidor nem a
+// Google: o Chrome recusava a janela, e em silêncio.
+//
+// Um navegador só deixa `window.open` passar enquanto durar o gesto que o
+// pediu. Basta um `await` pelo caminho — uma ida à rede, uma leitura do disco —
+// para o gesto expirar, e a partir daí a janela é bloqueada. Não há erro: o
+// `window.open` devolve `null` e quem não o lê fica à espera de uma janela que
+// nunca abre.
+//
+// Aconteceu em DOIS sítios, com a mesma forma:
+//
+//   · a entrada pela Google — o `authWithOAuth2` do SDK vai buscar os métodos
+//     de entrada ao servidor antes de abrir a janela;
+//   · ligar a agenda — pede o endereço do consentimento numa chamada
+//     autenticada e só depois abre.
+//
+// A cura é uma só: abrir a janela EM BRANCO no gesto, e apontá-la ao endereço
+// quando ele chegar. Uma janela que já existe navega-se sem pedir licença.
+//
+// Devolve `null` fora do navegador (no telemóvel o fluxo é outro), e ATIRA se
+// o navegador recusar — porque aí há mesmo uma coisa a dizer a quem carregou.
+// O guarda que enumera é `__tests__/a-janela-abre-se-no-gesto.test.js`.
+export const JANELA_BLOQUEADA = 'O navegador bloqueou a janela. Permita janelas para este endereço e tente outra vez.';
+
+const abrirNoGesto = (nome) => {
+  if (typeof window === 'undefined' || !window.open) return null;
+  const janela = window.open('', nome, 'width=520,height=680');
+  if (!janela) throw new Error(JANELA_BLOQUEADA);
+  return janela;
+};
+
 // O token de acesso da Google — em memória, e mais nada.
 //
 // ── Onde a autorização vive ─────────────────────────────────────────────────
@@ -266,6 +299,9 @@ export const auth = {
   // redirecionamento também.
   //
   // A identidade vai SEMPRE. A agenda é que é opcional.
+  //
+  // ⚠ Ver o `abrirNoGesto` — a janela do consentimento abre-se antes de
+  // qualquer `await`, e é a diferença entre a entrada funcionar e não funcionar.
   async entrarComGoogle({ calendario = false } = {}) {
     if (!estaLigado()) return semLigacao();
     const IDENTIDADE = [
@@ -273,8 +309,25 @@ export const auth = {
       'https://www.googleapis.com/auth/userinfo.email',
       'https://www.googleapis.com/auth/userinfo.profile',
     ];
-    const r = await pb.collection('membros').authWithOAuth2({
+    // ⚠ A JANELA ABRE-SE AQUI, ANTES DE QUALQUER `await`.
+    //
+    // 18/09/2026, ele: «não abre quando clico na Google». Não era o servidor
+    // nem a Google — era o bloqueador de janelas do Chrome, e em silêncio.
+    //
+    // Um navegador só deixa abrir uma janela DURANTE o gesto que a pediu. O
+    // `authWithOAuth2` do SDK do PocketBase vai buscar os métodos de entrada ao
+    // servidor primeiro — vê-se no registo de rede, um
+    // `GET /api/collections/membros/auth-methods` a responder 200 — e só depois
+    // chama o `window.open`. Nessa altura o gesto já expirou e o Chrome recusa,
+    // sem erro nenhum: a promessa fica pendurada e o ecrã não diz nada.
+    //
+    // O SDK tem o `urlCallback` exactamente para isto: abre-se a janela no
+    // gesto, em branco, e aponta-se-lhe o endereço quando ele estiver pronto.
+    const janela = abrirNoGesto('nossa-casa-google');
+    try {
+      const r = await pb.collection('membros').authWithOAuth2({
       provider: 'google',
+      ...(janela ? { urlCallback: (url) => { janela.location.href = url; } } : {}),
       scopes: calendario
         // `calendar.events` e não `calendar.readonly`: a app passou a criar
         // eventos, não só a lê-los. É um scope MAIS LARGO, e quem já tinha
@@ -322,7 +375,13 @@ export const auth = {
         if (typeof console !== 'undefined') console.warn('[avatar]', erroDaFotografia);
       }
     }
-    return r;
+      return r;
+    } catch (e) {
+      // A janela em branco não pode ficar pendurada por cima da app quando a
+      // entrada falha ou é cancelada.
+      if (janela) { try { janela.close(); } catch (x) { /* já fechada */ } }
+      throw e;
+    }
   },
 
   // Que provedores é que o servidor tem mesmo configurados. Serve para o ecrã
@@ -774,28 +833,33 @@ export const google = {
     return agendaLigada;
   },
 
-  // Ligar a agenda: pedir o endereço do consentimento e abrir a janela.
+  // Ligar a agenda: abrir a janela, pedir o endereço, e apontá-la a ele.
   //
-  // O endereço vem numa chamada AUTENTICADA, e só depois se abre a janela. Uma
-  // janela do navegador não manda cabeçalhos, e a alternativa — pôr a sessão no
-  // endereço — deixava-a no histórico do navegador e nos registos de tudo o
-  // que estivesse pelo caminho.
+  // O endereço vem numa chamada AUTENTICADA. Uma janela do navegador não manda
+  // cabeçalhos, e a alternativa — pôr a sessão no endereço — deixava-a no
+  // histórico do navegador e nos registos de tudo o que estivesse pelo caminho.
+  //
+  // ⚠ Mas a janela abre-se ANTES dessa chamada, e não depois (18/09/2026).
+  // Abria depois, e por isso o gesto já tinha expirado: o Chrome recusava-a
+  // pelo mesmo motivo que recusava a da entrada. Aqui havia ao menos a
+  // mensagem do «bloqueou a janela» — mas a mensagem estava a acusar o
+  // bloqueador de uma coisa que era nossa. Ver o `abrirNoGesto`.
   async ligar() {
     if (!estaLigado()) throw new Error('Servidor não configurado.');
+    const janela = abrirNoGesto('nossa-casa-agenda');
+    if (!janela) throw new Error('Abra a app num navegador para autorizar a agenda.');
     const r = await fetch(`${URL.replace(/\/+$/, '')}/api/agenda/ligar`, {
       method: 'POST',
       headers: { Authorization: pb.authStore.token },
-    });
+    }).catch((e) => { try { janela.close(); } catch (x) { /* já fechada */ } throw e; });
     if (!r.ok) {
+      try { janela.close(); } catch (x) { /* já fechada */ }
       const d = await r.json().catch(() => ({}));
       throw new Error(d.message || 'Não foi possível começar a ligação à agenda.');
     }
     const { url } = await r.json();
-    if (typeof window === 'undefined' || !window.open) {
-      throw new Error('Abra a app num navegador para autorizar a agenda.');
-    }
-    const janela = window.open(url, 'nossa-casa-agenda', 'width=520,height=680');
-    if (!janela) throw new Error('O navegador bloqueou a janela. Permita janelas para este sítio.');
+    // A janela já existe desde o gesto; agora é só apontá-la.
+    janela.location.href = url;
 
     // A janela fecha-se sozinha no fim. Enquanto ela viver, pergunta-se ao
     // servidor de dois em dois segundos — o servidor é a única fonte fiável:

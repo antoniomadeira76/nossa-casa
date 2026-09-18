@@ -14,18 +14,6 @@
       "port": 8082
     },
     {
-      "name": "Expo Web (worktree)",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": [
-        "expo",
-        "start",
-        "--web",
-        "--port",
-        "8083"
-      ],
-      "port": 8083
-    },
-    {
       "name": "Simulação (8083 → PocketBase 8096)",
       "runtimeExecutable": "npx",
       "runtimeArgs": [
