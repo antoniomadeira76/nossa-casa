@@ -62,13 +62,21 @@ describe('⚠ o histórico de compras serve para algo', () => {
   });
 
   it('⚠ não duplica o que já está na lista, nem dentro da própria ida', () => {
+    // ⚠ A comparação vive no `artigosDaIda` desde 18/09/2026, que passou a ser
+    // a FONTE ÚNICA: dá todos os artigos da ida com a marca `jaNaLista`, e o
+    // `artigosQueFaltamDaIda` é um filtro dela. A folha precisa dos que já lá
+    // estão para os mostrar trancados — antes desapareciam sem explicação —, e
+    // duas contas do mesmo número é a classe de defeito que já pôs a grelha de
+    // envelopes a mostrar uma lista e a confirmação a aplicar outra.
     const loja = codigoDe('src/store.jsx');
-    const i = loja.indexOf('const artigosQueFaltamDaIda');
+    const i = loja.indexOf('const artigosDaIda');
     expect(i).toBeGreaterThan(0);
     const corpo = loja.slice(i, loja.indexOf('const repetirCompra'));
-    expect(corpo).toMatch(/jaLa\.has\(chave\)/);      // já na lista de hoje
-    expect(corpo).toMatch(/vistos\.has\(chave\)/);    // repetido dentro da ida
-    expect(corpo).toMatch(/if \(!chave/);             // e sem rótulo não entra
+    expect(corpo).toMatch(/jaNaLista: jaLa\.has\(chave\)/);   // já na lista de hoje
+    expect(corpo).toMatch(/vistos\.has\(chave\)/);            // repetido dentro da ida
+    expect(corpo).toMatch(/if \(!chave/);                     // e sem rótulo não entra
+    // E o filtro é um filtro, e não uma segunda cópia da comparação.
+    expect(loja).toMatch(/const artigosQueFaltamDaIda = \(at\) => artigosDaIda\(at\)\.filter\(a => !a\.jaNaLista\);/);
   });
 
   it('o corredor é o que o artigo tinha, se a casa ainda o tiver', () => {
@@ -100,26 +108,53 @@ describe('⚠ o histórico de compras serve para algo', () => {
   it('⚠ o botão só aparece quando há mesmo o que repetir', () => {
     // O defeito original foi um botão com o `onPress` vazio. Um botão que
     // aparece sempre e às vezes não faz nada é o mesmo defeito, mais subtil.
+    //
+    // ⚠ Desde 18/09/2026 o botão vive na FOLHA da ida, e a linha do histórico
+    // abre-a sempre — tem destino mesmo quando não há nada a repetir, porque
+    // ver o que se comprou é uma razão para lá ir. Quem diz o que a folha vai
+    // oferecer, antes de se tocar, é a pastilha «N por repetir».
     const ecra = codigoDe('src/screens/Compras.jsx');
     expect(ecra).toMatch(/const faltam = st\.artigosQueFaltamDaIda\(h\.at\)\.length/);
-    expect(ecra).toMatch(/const podeRepetir = faltam > 0/);
-    expect(ecra).toMatch(/\{podeRepetir \? \(/);
+    // A pastilha existe, e é condicional ao que falta — não aparece numa ida
+    // que não tem nada a repetir.
+    expect(ecra).toMatch(/<Pill label=\{`\$\{faltam\} por repetir`\}/);
+    expect(ecra).toMatch(/\{faltam > 0[\s\S]{0,40}<Pill label=/);
+
+    const folha = codigoDe('src/sheets/IdaAsCompras.jsx');
+    expect(folha).toMatch(/const podeRepetir = artigos\.some\(a => !a\.jaNaLista\);/);
+    expect(folha).toMatch(/action=\{podeRepetir \? \(/);
+    // E sem nada marcado o botão está DESATIVADO, não mudo.
+    expect(folha).toMatch(/disabled=\{quantos === 0\}/);
+
     // E já não há `onPress` vazio em lado nenhum deste ecrã.
     expect(ecra).not.toMatch(/onPress=\{\(\) => \{\}\}/);
   });
 
-  it('e pergunta antes de acrescentar', () => {
+  it('⚠ MOSTRA o que se comprou antes de acrescentar — e não só quantos são', () => {
+    // 18/09/2026, ele a olhar para o botão «Repetir»: «quando clico aqui não
+    // devia ver-se o que foi comprado para validar se quero repetir ou não?».
+    //
+    // O que aqui estava era um `Confirm` a dizer «4 artigos entram na lista de
+    // hoje»: o VOLUME, e não o conteúdo. Com uma ida de trinta artigos era
+    // carregar às cegas, que é o contrário do que uma confirmação serve para
+    // fazer.
     const ecra = codigoDe('src/screens/Compras.jsx');
-    expect(ecra).toMatch(/aRepetir !== null \? \(\(\) => \{/);
-    // O bloco da pergunta, do `<Confirm` até fechar: é aí que o `onConfirm`
-    // tem de chamar o `repetirCompra`, e não em qualquer sítio do ficheiro.
     const i = ecra.indexOf('aRepetir !== null');
+    expect(i).toBeGreaterThan(0);
     const bloco = ecra.slice(i, ecra.indexOf('})() : null}', i));
-    expect(bloco).toMatch(/<Confirm/);
-    expect(bloco).toMatch(/onConfirm=\{\(\) => \{ st\.repetirCompra\(aRepetir, user\); setARepetir\(null\); \}\}/);
-    expect(bloco).toMatch(/onCancel=\{\(\) => setARepetir\(null\)\}/);
-    // A pergunta diz QUANTOS entram — é uma confirmação de volume.
-    expect(ecra).toMatch(/plural\(faltam\.length, 'artigo entra', 'artigos entram'\)/);
+    expect(bloco).toMatch(/<IdaAsCompras t=\{t\} ida=\{ida\} user=\{user\}/);
+    expect(bloco).not.toMatch(/<Confirm/);
+
+    const folha = codigoDe('src/sheets/IdaAsCompras.jsx');
+    // A folha LISTA os artigos, um a um, com o rótulo à vista.
+    expect(folha).toMatch(/artigos\.map\(\(a, i\) => linha\(a, i === artigos\.length - 1\)\)/);
+    expect(folha).toMatch(/\{a\.rotulo\}/);
+    // E os que JÁ estão na lista aparecem, trancados e com a razão à vista —
+    // antes eram filtrados para fora e desapareciam sem explicação.
+    expect(folha).toMatch(/label="já na lista"/);
+    expect(folha).toMatch(/a\.jaNaLista \? corpo : \(/);
+    // O botão leva a ESCOLHA, e não a ida inteira.
+    expect(folha).toMatch(/repetirCompra\(ida\.at, user, \[\.\.\.escolhidos\]\)/);
   });
 
   it('⚠ nenhum botão desta app ficou com o onPress vazio', () => {

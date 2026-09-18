@@ -4,7 +4,7 @@ import { View, Text, Pressable, Modal } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { EUR, dayLabel, parseKey, WD, plural } from '../format';
-import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Empty, Avatar, avatarDe, Pill, Row, MarcaDeEstado, MARCA, BotaoCompacto } from '../ui';
+import { Card, SectionTitle, Linha, Label, AddButton, usePaged, Tap, Empty, Avatar, avatarDe, Pill, Row, MarcaDeEstado, MARCA } from '../ui';
 import PartilharLista from '../sheets/PartilharLista';
 import Icon, { Marca } from '../Icon';
 import Sheet from '../Sheet';
@@ -12,6 +12,7 @@ import Confirm from '../Confirm';
 import ListaArrastavel, { ATRASO_PARA_PEGAR } from '../ListaArrastavel';
 import NovoArtigo from '../sheets/NovoArtigo';
 import GerirArtigo from '../sheets/GerirArtigo';
+import IdaAsCompras from '../sheets/IdaAsCompras';
 
 // A lista partilhada. O modo de loja saiu daqui para ModoCompras.jsx: era um
 // <Modal>, que no react-native-web escapa à raiz da app e tapava o rodapé.
@@ -365,23 +366,17 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
           onCancel={() => setAApagar(null)} />
       ) : null}
 
-      {/* Repetir uma ida às compras: pergunta primeiro, e diz quantos artigos
-          vai acrescentar e quais os que já lá estão. Não é destrutivo — é uma
-          confirmação de VOLUME, que é o que uma lista de trinta artigos pede. */}
+      {/* ⚠ A ida abre a FOLHA dela, e não um diálogo de volume (18/09/2026).
+          O que aqui estava era um `Confirm` a dizer «4 artigos entram na lista
+          de hoje» — quantos, e não quais. Ele, a olhar para o botão: «quando
+          clico aqui não devia ver-se o que foi comprado para validar se quero
+          repetir ou não?». Desenho 2 com os vistos do 4, de
+          `design/ver-antes-de-repetir.dc.html`. */}
       {aRepetir !== null ? (() => {
         const ida = s.shopHistory.find(h => h.at === aRepetir);
-        const faltam = st.artigosQueFaltamDaIda(aRepetir);
-        const jaLa = (ida && ida.items ? ida.items : 0) - faltam.length;
-        return (
-          <Confirm t={t} icon="fileDone"
-            title={`Repetir a ida de ${new Date(aRepetir).toLocaleDateString('pt-PT')}?`}
-            message={`${plural(faltam.length, 'artigo entra', 'artigos entram')} na lista de hoje`
-              + `${jaLa > 0 ? `, e ${plural(jaLa, 'já lá estava', 'já lá estavam')}` : ''}`
-              + `. Os preços ficam por escrever — a app estima-os pelo que a casa já pagou.`}
-            confirmLabel={`Acrescentar ${plural(faltam.length, 'artigo', 'artigos')}`}
-            onConfirm={() => { st.repetirCompra(aRepetir, user); setARepetir(null); }}
-            onCancel={() => setARepetir(null)} />
-        );
+        return ida ? (
+          <IdaAsCompras t={t} ida={ida} user={user} onClose={() => setARepetir(null)} />
+        ) : null;
       })() : null}
 
       {/* Alterar o artigo: o rótulo, o corredor, a estimativa, o habitual — os
@@ -420,11 +415,14 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
           <View style={{ paddingHorizontal: S.xs }}>
             {s.shopHistory.slice(0, 10).map((h, i, arr) => {
               const faltam = st.artigosQueFaltamDaIda(h.at).length;
-              const podeRepetir = faltam > 0;
               return (
-                <View key={h.at}
-                  style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12,
-                    borderBottomWidth: i === Math.min(9, arr.length - 1) ? 0 : 1, borderBottomColor: t.divider }}>
+                <Pressable key={h.at} onPress={() => setARepetir(h.at)} accessibilityRole="button"
+                  accessibilityLabel={`Ida de ${new Date(h.at).toLocaleDateString('pt-PT')}`
+                    + ` a ${h.store || 'compras'} · ${EUR(h.total)}`
+                    + `${faltam > 0 ? ` · ${plural(faltam, 'artigo por repetir', 'artigos por repetir')}` : ''}`}
+                  style={({ pressed }) => ({ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12,
+                    opacity: pressed ? 0.6 : 1,
+                    borderBottomWidth: i === Math.min(9, arr.length - 1) ? 0 : 1, borderBottomColor: t.divider })}>
                   <View style={{ flex: 1, gap: 2 }}>
                     <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{h.store || 'Ida às compras'}</Text>
                     <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
@@ -432,15 +430,16 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
                     </Text>
                   </View>
                   <Text style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600', color: t.text2 }}>{EUR(h.total)}</Text>
-                  {/* ⚠ O botão só aparece quando há mesmo o que repetir. Uma ida
-                      cujos artigos já estão todos na lista de hoje não tem nada
-                      a acrescentar, e um botão que não faz nada foi o defeito
-                      que esta secção já teve uma vez. */}
-                  {podeRepetir ? (
-                    <BotaoCompacto t={t} label="Repetir" etiqueta={`Repetir a ida de ${new Date(h.at).toLocaleDateString('pt-PT')}`}
-                      onPress={() => setARepetir(h.at)} />
-                  ) : null}
-                </View>
+                  {/* ⚠ A pastilha diz o que a folha vai oferecer, ANTES de se
+                      tocar. Uma ida cujos artigos já estão todos na lista de
+                      hoje não tem nada a acrescentar, e antes disto era um
+                      botão que desaparecia sem explicação — agora a linha abre
+                      na mesma, para se ver o que se comprou. */}
+                  {faltam > 0
+                    ? <Pill label={`${faltam} por repetir`} fg={t.actFg} bg={t.actBg} border={t.actBrd} />
+                    : null}
+                  <Icon name="caretRight" size={18} color={t.text3} />
+                </Pressable>
               );
             })}
           </View>

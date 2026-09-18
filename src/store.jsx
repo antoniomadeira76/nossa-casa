@@ -3215,21 +3215,42 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   const semAcentos = (x) => String(x || '').trim().toLowerCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-  const artigosQueFaltamDaIda = (at) => {
+  // TODOS os artigos de uma ida, cada um a dizer se já está na lista de hoje.
+  //
+  // 18/09/2026, o dono da casa, a olhar para o botão «Repetir»: «quando clico
+  // aqui não devia ver-se o que foi comprado para validar se quero repetir ou
+  // não?». Devia — e os artigos já cá estavam: o que faltava era uma função que
+  // os desse TODOS, e não só os que faltam, para a folha poder mostrar os que
+  // já lá estão com a razão à vista em vez de os fazer desaparecer.
+  //
+  // ⚠ Esta é a fonte única. O `artigosQueFaltamDaIda` filtra-a, e não repete a
+  // comparação — duas contas do mesmo número é a classe de defeito que já pôs a
+  // grelha de envelopes a mostrar uma lista e a confirmação a aplicar outra.
+  const artigosDaIda = (at) => {
     const ida = (s.shopHistory || []).find(h => h.at === at);
     if (!ida || !Array.isArray(ida.artigos)) return [];
     const jaLa = new Set(allItems().map(i => semAcentos(i.label)));
     const vistos = new Set();
-    return ida.artigos.filter(a => {
+    const saida = [];
+    for (const a of ida.artigos) {
       const chave = semAcentos(a.rotulo);
-      if (!chave || jaLa.has(chave) || vistos.has(chave)) return false;
+      if (!chave || vistos.has(chave)) continue;
       vistos.add(chave);
-      return true;
-    });
+      saida.push({ ...a, jaNaLista: jaLa.has(chave) });
+    }
+    return saida;
   };
 
-  const repetirCompra = (at, quem) => {
-    const faltam = artigosQueFaltamDaIda(at);
+  const artigosQueFaltamDaIda = (at) => artigosDaIda(at).filter(a => !a.jaNaLista);
+
+  // ⚠ `rotulos` é a ESCOLHA de quem está a ver a folha, e é opcional: sem ela
+  // repete-se tudo o que falta, que é o que a pergunta antiga fazia. Com ela,
+  // repete-se só o que ficou marcado — e compara-se pelo mesmo `semAcentos`,
+  // porque um rótulo que vem do ecrã é texto como qualquer outro.
+  const repetirCompra = (at, quem, rotulos = null) => {
+    const todos = artigosQueFaltamDaIda(at);
+    const escolha = Array.isArray(rotulos) ? new Set(rotulos.map(semAcentos)) : null;
+    const faltam = escolha ? todos.filter(a => escolha.has(semAcentos(a.rotulo))) : todos;
     // ⚠ Pelo `criarArtigo`, um a um, e não por um `set` com a lista inteira: é
     // ele que sabe traduzir o corredor, falar com o servidor e guardar o
     // `idServidor` de cada linha. Escrever aqui uma segunda via era a classe de
@@ -5973,7 +5994,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     partilharLista, desfazerPartilha,
     moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope, registarDespesa,
     criarEvento, alterarEventoDaCasa, eventoNoServidor, escoarFilaGoogle,
-    criarArtigo, alterarArtigo, reordenarArtigos, repetirCompra, artigosQueFaltamDaIda,
+    criarArtigo, alterarArtigo, reordenarArtigos, repetirCompra, artigosQueFaltamDaIda, artigosDaIda,
     definirObjetivo, apagarObjetivo,
     criarPrato, alterarPrato, apagarPrato, marcarJantar, oQueFalta, porOQueFaltaNaLista,
     contasDoMes, contasAVencer, contasNaAgenda, criarContaFixa, alterarContaFixa, apagarContaFixa, pagarContaFixa,

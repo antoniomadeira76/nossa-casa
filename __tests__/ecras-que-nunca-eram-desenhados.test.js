@@ -113,6 +113,9 @@ const ECRAS = [
   ['Novo Contrato',      '../src/sheets/NovoContrato', {}],
   ['Campos do Contrato', '../src/sheets/CamposContrato', { form: { nome: 'Seguro', fornecedor: 'Fidelidade', renovaEm: '', fidelizacaoAte: '', responsavel: null }, onChange: () => {} }],
   ['Ficha do Contrato',  '../src/sheets/FichaContrato', { contrato: { id: 'ct-1', nome: 'Seguro do carro', fornecedor: 'Fidelidade', renovaEm: '12/09/2026', fidelizacaoAte: '', responsavel: null, dias: 23 } }],
+  // A folha de uma ida às compras (18/09/2026): o que se comprou, com um visto
+  // por artigo, e o botão que acrescenta o que ficou marcado à lista de hoje.
+  ['Ida às Compras',     '../src/sheets/IdaAsCompras', { ida: { at: Date.parse('2026-08-31T18:00:00Z'), store: 'Continente de Belém', who: 'António', items: 4, total: 62.4, artigos: [{ rotulo: 'Leite meio-gordo', corredor: 'Laticínios' }, { rotulo: 'Pão de forma', corredor: 'Padaria' }] } }],
 ];
 
 describe('montam com uma casa a sério', () => {

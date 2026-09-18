@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ver antes de repetir</title>
+<style>
+:root{
+  --page:#F6F7F9; --card:#FCFCFD; --surface:#FFFFFF; --subtle:#FAFAFA;
+  --border:#D9D9D9; --divider:#F0F2F5;
+  --t1:#262626; --t2:#434343; --t3:#656C7C; --slate:#606E90;
+  --ac:#078286; --acFg:#056b6e; --acBg:#E6F4F4; --acBrd:#8FC9CB;
+  --ok:#52C41A; --okBorder:#BAE7A3; --okBg:rgba(220,243,209,.35); --okTexto:#237804;
+  --warnBg:#FEFFD0; --warn:#FAAD14; --warnTexto:#8F5600;
+  --rc:8px; --rr:6px; --rp:100px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#EEF0F3;color:var(--t1);padding:26px;
+  font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif}
+h1{font-size:27px;letter-spacing:-.02em;margin:0 0 8px}
+p.intro{color:var(--t2);max-width:84ch;margin:0 0 6px;line-height:1.6}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);
+  margin:34px 0 14px;padding-bottom:7px;border-bottom:1px solid #DADDE2}
+h3{font-size:15.5px;margin:0 0 2px}
+.diz{color:var(--t3);font-size:12.5px;line-height:1.55;margin:0 0 8px;max-width:46ch}
+.bom{color:var(--okTexto);font-weight:600}.mau{color:#A32621;font-weight:600}
+.med{font-size:11px;color:var(--t3);margin-top:6px}
+.aviso{background:var(--warnBg);border-left:3px solid var(--warn);padding:12px 14px;
+  border-radius:0 var(--rc) var(--rc) 0;max-width:84ch;margin:0 0 6px}
+.aviso b{color:var(--warnTexto)}
+.tapete{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.op{width:372px;flex:none}
+.tel{background:var(--page);border-radius:12px;overflow:hidden;
+  box-shadow:0 8px 24px rgba(16,18,29,.13),0 0 0 1px rgba(16,18,29,.07)}
+.cab{background:#0f6c6f;padding:12px 16px}
+.cab h4{margin:0;font-size:17px;font-weight:600;color:#fff}
+.cab p{margin:1px 0 0;font-size:11.5px;color:rgba(255,255,255,.75)}
+.corpo{padding:12px}
+.tit{font-size:13px;font-weight:600;color:var(--acFg);padding-bottom:7px;
+  border-bottom:1px solid var(--border);margin:0 0 2px;display:flex;justify-content:space-between;align-items:baseline}
+.tit span{font-size:11px;font-weight:500;color:var(--t3)}
+.ida{display:flex;align-items:center;gap:12px;min-height:52px;border-bottom:1px solid var(--divider)}
+.ida:last-child{border-bottom:0}
+.ida .q{flex:1;min-width:0}
+.ida .q b{display:block;font-weight:400;font-size:15px;color:var(--t2)}
+.ida .q span{display:block;font-size:11.5px;color:var(--t3);margin-top:2px}
+.ida .v{font-size:13px;font-weight:600;color:var(--t2);white-space:nowrap}
+.bt{min-height:44px;padding:0 14px;border-radius:var(--rr);border:1px solid var(--border);
+  background:var(--surface);display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:600;color:var(--t2);white-space:nowrap}
+.bt.ac{border-color:var(--acBrd);background:var(--acBg);color:var(--acFg)}
+.bt.larga{width:100%}
+.car{background:var(--card);border-radius:var(--rc);padding:10px 14px}
+.art{display:flex;align-items:center;gap:10px;min-height:40px;border-bottom:1px solid var(--divider);font-size:14px;color:var(--t2)}
+.art:last-child{border-bottom:0}
+.art .cor{margin-left:auto;font-size:11px;color:var(--t3);white-space:nowrap}
+.art.ja{color:var(--t3)}
+.art.ja b{font-weight:400;text-decoration:line-through;text-decoration-color:rgba(101,108,124,.5)}
+.mk{width:20px;height:20px;border-radius:50%;flex:none;border:1.75px solid var(--t3);
+  display:grid;place-items:center}
+.mk.on{border:0;background:none}
+.mk svg{width:20px;height:20px}
+.pil{font-size:10px;font-weight:600;padding:2px 8px;border-radius:var(--rp);white-space:nowrap}
+.pil.ok{background:var(--okBg);color:var(--okTexto);border:1px solid var(--okBorder)}
+.pil.n{background:var(--subtle);color:var(--t3);border:1px solid var(--border)}
+.folha{background:var(--surface);border-radius:12px 12px 0 0;padding:18px 16px 14px;
+  box-shadow:0 -2px 14px rgba(16,18,29,.12);margin-top:34px}
+.folha .fc{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}
+.folha .fc b{font-size:20px;font-weight:500}
+.folha .fc span{display:block;font-size:12px;color:var(--t3);margin-top:2px}
+.folha .x{margin-left:auto;font-size:20px;color:var(--t3);line-height:1}
+.dlg{background:var(--surface);border-radius:12px;padding:18px 16px 14px;margin:26px 12px;
+  box-shadow:0 8px 24px rgba(16,18,29,.2)}
+.dlg h5{margin:0 0 6px;font-size:17px;font-weight:600}
+.dlg p{margin:0 0 12px;font-size:13px;color:var(--t3);line-height:1.5}
+.dlg .par{display:flex;gap:10px}
+.dlg .par>*{flex:1}
+.escurece{background:rgba(0,0,0,.35)}
+table.d{border-collapse:collapse;width:100%;max-width:1000px;font-size:13.5px;background:var(--surface);
+  border-radius:var(--rc);overflow:hidden;box-shadow:0 1px 2px rgba(16,18,29,.06)}
+table.d th,table.d td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--divider);vertical-align:top}
+table.d th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);background:var(--subtle)}
+table.d td:first-child{font-weight:600;white-space:nowrap}
+.seta{color:var(--t3);font-size:17px;line-height:1}
+</style>
+</head>
+<body>
+
+<h1>Ver antes de repetir</h1>
+<p class="intro">«Quando clico aqui não devia ver-se o que foi comprado, para validar se quero repetir ou não?»</p>
+
+<div class="aviso">
+<p style="margin:0 0 6px"><b>⚠ Tem razão, e os dados já lá estão todos.</b> Desde 16/09 cada ida do histórico traz os artigos com <b>rótulo</b> e <b>corredor</b> (o <code>shopHistory</code>, em <code>src/sync.js</code>). A função <code>artigosQueFaltamDaIda</code> já sabe quais deles faltam na lista de hoje — compara pelo rótulo, sem maiúsculas nem acentos a contar. Nada de novo a guardar: falta mostrar.</p>
+<p style="margin:0"><b>⚠ Hoje pergunta-se o VOLUME e não o conteúdo.</b> A confirmação diz «4 artigos entram na lista de hoje» e não diz quais. Com uma ida de trinta artigos, é carregar às cegas — e o que se pede a uma confirmação é exactamente o contrário.</p>
+</div>
+
+<h2>As quatro</h2>
+<div class="tapete">
+
+  <div class="op">
+    <div class="tel">
+      <div class="cab"><h4>Compras</h4><p>Lista da casa · 12 artigos</p></div>
+      <div class="corpo">
+        <div class="tit">Histórico de Compras</div>
+        <div class="ida">
+          <div class="q"><b>Continente de Belém</b><span>António · 4 artigos · 31/08/2026</span></div>
+          <div class="v">62,40&nbsp;€</div>
+          <div class="seta">⌄</div>
+        </div>
+        <div class="car" style="margin:2px 0 8px">
+          <div class="art"><b>Leite meio-gordo</b><span class="cor">Laticínios</span></div>
+          <div class="art"><b>Pão de forma</b><span class="cor">Padaria</span></div>
+          <div class="art ja"><b>Ovos</b><span class="cor">já na lista</span></div>
+          <div class="art"><b>Detergente</b><span class="cor">Limpeza</span></div>
+          <div class="bt ac larga" style="margin-top:10px">Acrescentar 3 artigos</div>
+        </div>
+        <div class="ida">
+          <div class="q"><b>Pingo Doce do Restelo</b><span>Rita · 11 artigos · 24/08/2026</span></div>
+          <div class="v">48,15&nbsp;€</div>
+          <div class="seta">›</div>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">1 · A linha abre</h3>
+    <p class="diz">Tocar na linha abre-a no sítio, com os artigos por baixo e o corredor de cada um à direita. O que já está na lista de hoje fica riscado e em cinzento. O botão passa para dentro, e diz o número certo. <span class="bom">É o gesto mais barato — não sai do ecrã</span> e responde à pergunta sem abrir nada. Perde: com trinta artigos empurra o resto da página para muito longe.</p>
+    <p class="med">a linha de 52 · os artigos a 40</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="cab"><h4>Compras</h4><p>Lista da casa · 12 artigos</p></div>
+      <div class="corpo" style="opacity:.45">
+        <div class="tit">Histórico de Compras</div>
+        <div class="ida">
+          <div class="q"><b>Continente de Belém</b><span>António · 4 artigos · 31/08/2026</span></div>
+          <div class="v">62,40&nbsp;€</div>
+        </div>
+      </div>
+      <div class="folha">
+        <div class="fc"><div><b>Continente de Belém</b><span>António · 31/08/2026 · 62,40&nbsp;€</span></div><div class="x">✕</div></div>
+        <div class="tit">O que se comprou <span>4 artigos</span></div>
+        <div class="art"><b>Leite meio-gordo</b><span class="cor">Laticínios</span></div>
+        <div class="art"><b>Pão de forma</b><span class="cor">Padaria</span></div>
+        <div class="art ja"><b>Ovos</b><span class="pil n">já na lista</span></div>
+        <div class="art"><b>Detergente</b><span class="cor">Limpeza</span></div>
+        <div class="bt ac larga" style="margin-top:16px">Acrescentar 3 artigos<br></div>
+        <div style="height:26px"></div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">2 · A folha da ida</h3>
+    <p class="diz">A linha inteira abre a folha daquela ida: a loja, quem foi, o dia, o total, e a lista do que se comprou. O botão é o da folha, fixo em baixo. <span class="bom">É o idioma que a app já tem</span> — o artigo, a meta, a conta fixa e o equipamento abrem todos assim, e uma ida passa a ser uma coisa que se consulta e não só uma linha. Perde: um toque a mais para uma ida de dois artigos.</p>
+    <p class="med">a folha da app · o botão fixo em baixo</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="cab"><h4>Compras</h4><p>Lista da casa · 12 artigos</p></div>
+      <div class="corpo escurece" style="min-height:300px">
+        <div class="dlg">
+          <h5>Repetir a ida de 31/08/2026?</h5>
+          <p>Entram <b>3 artigos</b> na lista de hoje. Os preços ficam por escrever — a app estima-os pelo que a casa já pagou.</p>
+          <div class="car" style="margin:0 0 14px">
+            <div class="art"><b>Leite meio-gordo</b><span class="cor">Laticínios</span></div>
+            <div class="art"><b>Pão de forma</b><span class="cor">Padaria</span></div>
+            <div class="art"><b>Detergente</b><span class="cor">Limpeza</span></div>
+          </div>
+          <p style="font-size:11.5px;margin:-6px 0 12px">Ovos já estava na lista e não entra outra vez.</p>
+          <div class="par"><div class="bt">Cancelar</div><div class="bt ac">Acrescentar 3</div></div>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">3 · A confirmação que mostra</h3>
+    <p class="diz">O caminho fica igual — carrega-se em «Repetir» —, e é a confirmação que passa a dizer <i>quais</i> em vez de só <i>quantos</i>. <span class="bom">É a mudança mais pequena de todas</span>, num componente que a app já tem, e põe a lista exactamente onde a decisão se toma. Perde: não se pode ver uma ida sem estar a decidir sobre ela, e um diálogo com trinta linhas deixa de ser um diálogo.</p>
+    <p class="med">o `Confirm` da app, com uma lista dentro</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="cab"><h4>Compras</h4><p>Lista da casa · 12 artigos</p></div>
+      <div class="corpo" style="opacity:.45">
+        <div class="tit">Histórico de Compras</div>
+        <div class="ida">
+          <div class="q"><b>Continente de Belém</b><span>António · 4 artigos · 31/08/2026</span></div>
+          <div class="v">62,40&nbsp;€</div>
+        </div>
+      </div>
+      <div class="folha">
+        <div class="fc"><div><b>Repetir a ida</b><span>Continente de Belém · 31/08/2026</span></div><div class="x">✕</div></div>
+        <div class="tit">Escolha o que entra <span>3 de 4</span></div>
+        <div class="art">
+          <span class="mk on"><svg viewBox="0 0 24 24" fill="none" stroke="#078286" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg></span>
+          <b>Leite meio-gordo</b><span class="cor">Laticínios</span></div>
+        <div class="art">
+          <span class="mk on"><svg viewBox="0 0 24 24" fill="none" stroke="#078286" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg></span>
+          <b>Pão de forma</b><span class="cor">Padaria</span></div>
+        <div class="art ja"><span class="mk" style="border-style:dashed;opacity:.5"></span>
+          <b>Ovos</b><span class="pil n">já na lista</span></div>
+        <div class="art"><span class="mk"></span>
+          <b>Detergente</b><span class="cor">Limpeza</span></div>
+        <div class="bt ac larga" style="margin-top:16px">Acrescentar 2 artigos</div>
+        <div style="height:26px"></div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">4 · Escolher o que se repete</h3>
+    <p class="diz">A mesma folha, com um visto por artigo — os que faltam já vêm marcados, os que estão na lista de hoje aparecem trancados. <span class="bom">É a única que responde ao «se quero repetir ou não» artigo a artigo</span>: repete-se o leite e o pão e deixa-se o detergente, sem ter de apagar nada depois. Usa o visto que a app já tem nas tarefas e nas compras. Perde: é mais trabalho num gesto que muitas vezes é «tudo outra vez».</p>
+    <p class="med">a `MarcaDeEstado` da app · linhas de 44</p>
+  </div>
+
+</div>
+
+<h2>Como escolher</h2>
+<table class="d">
+  <tr><th>Se o que quer for…</th><th>Opção</th><th>O que custa</th></tr>
+  <tr><td>Espreitar sem sair do ecrã</td><td><b>1 · a linha abre</b></td><td>Uma ida grande empurra a página toda.</td></tr>
+  <tr><td>Consultar a ida como se consulta um artigo</td><td><b>2 · a folha da ida</b></td><td>Um toque a mais nas idas pequenas.</td></tr>
+  <tr><td>Mudar o mínimo</td><td><b>3 · a confirmação mostra</b></td><td>Não se vê sem estar a decidir; não escala.</td></tr>
+  <tr><td>Escolher artigo a artigo</td><td><b>4 · escolher</b></td><td>Mais trabalho quando se quer tudo.</td></tr>
+</table>
+
+<p class="intro" style="margin-top:14px"><b>A minha recomendação: a 2 com os vistos da 4.</b> A linha inteira abre a folha da ida — que é o idioma da app, o mesmo do artigo, da meta e do equipamento —, mostra a loja, quem foi, o dia e o total, e lista o que se comprou com um visto por artigo. Os que faltam vêm marcados: quem quer tudo carrega logo no botão e nem repara nos vistos; quem quer escolher, desmarca. O botão conta o que está marcado, e o que já está na lista de hoje aparece trancado com a razão à vista, em vez de desaparecer sem explicação.</p>
+<p class="intro">Assim a 1 e a 3 deixam de fazer falta: a folha responde às duas perguntas — «o que foi isto?» e «quero mesmo?» — e a linha do histórico passa a ter um destino, que é o que lhe falta desde que o botão morto saiu.</p>
+<p class="intro">Nada implementado. Diga o número.</p>
+</body>
+</html>
