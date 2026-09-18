@@ -104,8 +104,8 @@ const ECRAS = [
   ['Propor Troca',        '../src/sheets/ProporTroca', { kid: 'Léo' }],
   // A lista partilhada com quem não tem a app (12/09/2026): a folha do endereço.
   ['Partilhar Lista',     '../src/sheets/PartilharLista', { user: 'Rita' }],
-  // O retrato do mês (12/09/2026): a folha com as quatro secções e o PDF.
-  ['Retrato do Mês',      '../src/sheets/RetratoDoMes', { retrato: { idServidor: null, inicio: 'd2026-08-01', fechadoEm: null, aberto: true, nome: 'Agosto de 2026', rendimento: 0, envelopes: [{ nome: 'Mercearia', gasto: 12, limite: 100 }], gasto: 12, orcamento: 100, despesas: 1, meias: 0, criancas: [{ nome: 'Léo', feitas: 1, pontos: 2 }], compras: { idas: 0, total: 0 }, acertos: { n: 0, total: 0 } } }],
+  // O extracto do mês (17/09/2026): cada movimento, o arquivo e o PDF.
+  ['Extracto do Mês',     '../src/sheets/ExtractoDoMes', { extractos: [{ idServidor: null, inicio: 'd2026-08-01', fechadoEm: null, aberto: true, nome: 'Agosto de 2026', entrou: 2020, saiu: 12, sobrou: 2008, movimentos: [{ chave: 'despesa:d1', especie: 'despesa', data: '2026-08-05', quem: 'Léo', titulo: 'Continente', detalhe: 'Mercearia', valor: -12, saldo: 2008 }, { chave: 'mes:m8', especie: 'rendimento', data: '2026-08-01', quem: null, titulo: 'Rendimento do mês', detalhe: 'abertura', valor: 2020, saldo: 2020 }] }] }],
   // A medicação a partir da receita (12/09/2026): a folha das tomas.
   ['Tomas da Receita',   '../src/sheets/TomasDaReceita', { record: { id: 'h2', member: 'Léo', day: 'd2026-08-08' }, recipe: { id: 'rx-1', name: 'Ferro 30 mg', frequency: 1, durationDays: 14, boxSize: 20 } }],
   // A pesquisa global (13/09/2026): os resultados no lugar do conteúdo do Início.

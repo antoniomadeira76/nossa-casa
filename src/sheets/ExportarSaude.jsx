@@ -10,7 +10,8 @@ import Icon from '../Icon';
 import {
   AMBITOS, resumoDoAmbito, documentoDeSaude, nomeDoFicheiro, anexosComImagens,
 } from '../exportar-saude';
-import { guardarPDF, enviarPorCorreio } from '../guardar-ficheiro';
+import { enviarPorCorreio } from '../guardar-ficheiro';
+import PreVisualizarPDF from '../PreVisualizarPDF';
 import { lerComoDataURI } from '../ler-imagem';
 
 // A folha do âmbito.
@@ -31,6 +32,8 @@ export default function ExportarSaude({
   const [aGuardar, setAGuardar] = useState(false);
   const [erro, setErro] = useState(null);
   const [feito, setFeito] = useState(null);
+  // O documento a pré-visualizar, ou `null` (17/09/2026).
+  const [aVer, setAVer] = useState(null);
   // Para quem se pode enviar: os outros adultos da casa, e só esses.
   //
   // Não é uma caixa de texto de propósito. Uma ficha clínica de uma criança
@@ -110,12 +113,15 @@ export default function ExportarSaude({
     }
   };
 
+  // ⚠ «Guardar como PDF» MOSTRA a ficha primeiro (17/09/2026). O documento
+  // leva as imagens dos anexos e põe-se de pé com trabalho — o `preparar` é o
+  // mesmo —, e a pré-visualização é a última altura em que ainda se fecha a
+  // folha sem que os dados clínicos de um menor saiam da app.
   const guardar = async () => {
     const doc = await preparar();
+    setAGuardar(false);
     if (!doc) return;
-    const { html, nome } = doc;
-    const r = await correr(() => guardarPDF(nome, html));
-    if (r && !r.cancelado) setFeito(r.onde ? `PDF pronto — ${r.onde}` : 'PDF pronto.');
+    setAVer({ nome: doc.nome, html: doc.html });
   };
 
   const enviar = async () => {
@@ -140,12 +146,13 @@ export default function ExportarSaude({
       onClose={onClose}
       action={
         <View style={{ gap: S.md }}>
-          {/* ⚠ ACENTO, e é o único «Guardar» da app que o leva. Não é dinheiro
-              nem apaga nada — tira dados clínicos de um menor de dentro da app
-              e põe-nos num ficheiro que a app deixa de governar. Não se desfaz.
+          {/* ⚠ `comum`, e o ACENTO mudou-se para dentro da pré-visualização
+              (17/09/2026). Este botão já não tira nada de lado nenhum: prepara
+              a ficha e mostra-a. Quem a tira é o «Exportar em PDF» de lá
+              dentro, e é esse que leva a cor que promete consequências.
               Sem linha por baixo porque a folha já conta o que vai lá dentro,
               consulta a consulta e anexo a anexo, dois blocos acima. */}
-          <Primary t={t} icon="printer"
+          <Primary t={t} comum icon="printer"
             label={aGuardar ? 'A preparar…' : 'Guardar como PDF'}
             disabled={aGuardar || nada}
             onPress={guardar} />
@@ -266,6 +273,12 @@ export default function ExportarSaude({
 
         {erro ? <Tile t={t} kind="warn">{erro}</Tile> : null}
         {feito ? <Tile t={t} kind="info" icon="checkCircle">{feito}</Tile> : null}
+
+        {aVer ? (
+          <PreVisualizarPDF t={t} acento nome={aVer.nome} html={aVer.html}
+            titulo="Ficha de Saúde" sub="É isto que sai da app"
+            onFechar={() => setAVer(null)} />
+        ) : null}
       </View>
     </Sheet>
   );

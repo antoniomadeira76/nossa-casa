@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinco extractos do mês</title>
+<style>
+:root{
+  --page:#F6F7F9; --card:#FCFCFD; --surface:#FFFFFF; --subtle:#FAFAFA;
+  --border:#D9D9D9; --divider:#F0F2F5;
+  --t1:#262626; --t2:#434343; --t3:#656C7C; --slate:#606E90;
+  --ac:#078286; --acFg:#056b6e; --acBg:#E6F4F4; --acBrd:#8FC9CB;
+  --ok:#52C41A; --okBorder:#BAE7A3; --okBg:rgba(220,243,209,.35); --okTexto:#237804;
+  --warn:#FAAD14; --warnBg:#FEFFD0; --warnTexto:#8F5600;
+  --err:#FF4D4F; --errTexto:#A32621; --errBg:#FFF1F0;
+  --info:#1890FF; --infoBg:#E8F4FF; --infoTexto:#0958D9;
+  --rc:8px; --rr:6px; --rp:100px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#EEF0F3;color:var(--t1);padding:26px;
+  font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif}
+h1{font-size:27px;letter-spacing:-.02em;margin:0 0 8px}
+p.intro{color:var(--t2);max-width:84ch;margin:0 0 6px;line-height:1.6}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);
+  margin:34px 0 14px;padding-bottom:7px;border-bottom:1px solid #DADDE2}
+h3{font-size:15.5px;margin:0 0 2px}
+.diz{color:var(--t3);font-size:12.5px;line-height:1.55;margin:0 0 8px;max-width:46ch}
+.bom{color:var(--okTexto);font-weight:600}.mau{color:var(--errTexto);font-weight:600}
+.med{font-size:11px;color:var(--t3);margin-top:6px}
+.aviso{background:var(--warnBg);border-left:3px solid var(--warn);padding:12px 14px;
+  border-radius:0 var(--rc) var(--rc) 0;max-width:84ch;margin:0 0 6px}
+.aviso b{color:var(--warnTexto)}
+.tapete{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.op{width:372px;flex:none}
+.tel{background:var(--page);border-radius:12px;overflow:hidden;
+  box-shadow:0 8px 24px rgba(16,18,29,.13),0 0 0 1px rgba(16,18,29,.07)}
+.cab{background:#0f6c6f;padding:12px 16px}
+.cab h4{margin:0;font-size:17px;font-weight:600;color:#fff}
+.cab p{margin:1px 0 0;font-size:11.5px;color:rgba(255,255,255,.75)}
+.corpo{padding:12px}
+.card{background:var(--card);border-radius:var(--rc);padding:12px 14px;margin-bottom:10px}
+.rot{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--slate)}
+.mesSel{display:flex;gap:6px;overflow:hidden}
+.mesSel div{flex:none;padding:6px 11px;border-radius:var(--rr);font-size:12.5px;
+  border:1px solid var(--border);color:var(--t3);background:var(--surface)}
+.mesSel div.on{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600}
+.mesSel div.ab{border-style:dashed;color:var(--acFg)}
+.ln{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 0;
+  border-bottom:1px solid var(--divider)}
+.ln:last-child{border-bottom:0}
+.dia{width:34px;font-size:11.5px;color:var(--t3);font-variant-numeric:tabular-nums;flex:none}
+.av{width:22px;height:22px;border-radius:50%;flex:none;display:grid;place-items:center;
+  color:#fff;font-size:10px;font-weight:600}
+.tx{flex:1;min-width:0}
+.tx b{display:block;font-weight:400;font-size:14.5px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx span{display:block;font-size:11px;color:var(--t3);margin-top:1px}
+.vl{font-size:14.5px;font-variant-numeric:tabular-nums;color:var(--t2);text-align:right;flex:none}
+.vl.neg{color:var(--t2)}.vl.pos{color:var(--okTexto);font-weight:600}
+.sal{font-size:11px;color:var(--t3);font-variant-numeric:tabular-nums;width:74px;text-align:right;flex:none}
+.pil{font-size:10px;font-weight:600;padding:2px 7px;border-radius:var(--rp);white-space:nowrap}
+.pil.env{background:var(--acBg);color:var(--acFg)}
+.pil.cof{background:var(--infoBg);color:var(--infoTexto)}
+.pil.ace{background:var(--warnBg);color:var(--warnTexto)}
+.pil.tra{background:var(--subtle);color:var(--t3);border:1px solid var(--border)}
+.soma{display:flex;align-items:baseline;gap:10px;border-top:2px solid var(--t1);margin-top:8px;padding-top:8px}
+.soma span{flex:1;font-size:12px;color:var(--t3)}
+.soma b{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+.barra{height:6px;border-radius:var(--rp);background:var(--page);overflow:hidden;margin-top:5px}
+.barra i{display:block;height:100%;border-radius:var(--rp);background:var(--ac)}
+.acc{display:flex;align-items:center;gap:10px;min-height:48px;border-bottom:1px solid var(--divider)}
+.acc:last-child{border-bottom:0}
+.duas{display:flex;gap:10px}
+.duas>div{flex:1}
+.colTit{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding-bottom:5px;border-bottom:1.5px solid var(--border);margin-bottom:4px}
+.colTit.e{color:var(--okTexto)}.colTit.s{color:var(--t3)}
+.mini{display:flex;justify-content:space-between;gap:6px;font-size:12px;padding:5px 0;
+  border-bottom:1px solid var(--divider)}
+.mini b{font-variant-numeric:tabular-nums;font-weight:500}
+.papel{background:#fff;border:1px solid var(--border);border-radius:4px;padding:16px 16px 14px;
+  box-shadow:0 1px 3px rgba(16,18,29,.1)}
+.papel .marca{display:flex;align-items:baseline;gap:8px;border-bottom:2px solid var(--t1);padding-bottom:8px}
+.papel .marca b{font-size:15px}
+.papel .marca span{margin-left:auto;font-size:11px;color:var(--t3)}
+.i{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.bt{height:44px;border-radius:var(--rr);display:flex;align-items:center;justify-content:center;gap:8px;
+  font-size:14px;font-weight:600;border:1px solid var(--acBrd);background:var(--acBg);color:var(--acFg)}
+table.d{border-collapse:collapse;width:100%;max-width:1000px;font-size:13.5px;background:var(--surface);
+  border-radius:var(--rc);overflow:hidden;box-shadow:0 1px 2px rgba(16,18,29,.06)}
+table.d th,table.d td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--divider);vertical-align:top}
+table.d th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);background:var(--subtle)}
+table.d td:first-child{font-weight:600;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<h1>Cinco extractos do mês</h1>
+<p class="intro">Um sítio onde se lê cada movimento de dinheiro da casa — quanto, quando, quem e para quê — mês a mês, e onde um mês fechado se pode consultar mais tarde.</p>
+
+<div class="aviso">
+<p style="margin:0 0 6px"><b>⚠ A casa já regista tudo isto.</b> Cada despesa já guarda o valor, a data, o pagador, o envelope, a descrição e se divide a meias. O mesmo para os movimentos do cofre, os acertos entre os adultos, as transferências entre envelopes e os reforços das metas. Não falta dado nenhum — falta uma VISTA que junte os cinco por ordem do tempo.</p>
+<p style="margin:0"><b>⚠ E não se guarda uma cópia ao fechar o mês.</b> O invariante #2 da casa diz que saldos nunca são campos escritos: são somas de movimentos. Um extracto gravado no fecho seria exactamente isso — um valor derivado, escrito, que a partir daí pode discordar das linhas. O extracto de um mês fechado é estável porque as LINHAS dele não se mexem, que é como o «retrato do mês» já funciona desde 12/09. Corrigir uma despesa é anulá-la e criar outra; as duas ficam no extracto, e é assim que se lê um extracto de banco.</p>
+</div>
+
+<h2>As cinco</h2>
+<div class="tapete">
+
+  <div class="op">
+    <div class="tel">
+      <div class="cab"><h4>Extracto</h4><p>Setembro de 2026 · conta conjunta</p></div>
+      <div class="corpo">
+        <div class="mesSel" style="margin-bottom:10px">
+          <div class="on">Setembro</div><div>Agosto</div><div>Julho</div><div>Junho</div>
+        </div>
+        <div class="card">
+          <div class="ln"><span class="dia">17/09</span>
+            <span class="av" style="background:#7048E8">R</span>
+            <span class="tx"><b>Pingo Doce do Restelo</b><span>Mercearia · 8 artigos</span></span>
+            <span class="vl">−62,40&nbsp;€</span><span class="sal">708,96&nbsp;€</span></div>
+          <div class="ln"><span class="dia">15/09</span>
+            <span class="av" style="background:#3B5BDB">A</span>
+            <span class="tx"><b>Semanada do Léo</b><span>Cofre · 14 pontos</span></span>
+            <span class="vl">−4,20&nbsp;€</span><span class="sal">771,36&nbsp;€</span></div>
+          <div class="ln"><span class="dia">12/09</span>
+            <span class="av" style="background:#3B5BDB">A</span>
+            <span class="tx"><b>Acerto com a Rita</b><span>14 despesas a meias</span></span>
+            <span class="vl pos">+83,67&nbsp;€</span><span class="sal">775,56&nbsp;€</span></div>
+          <div class="ln"><span class="dia">08/09</span>
+            <span class="av" style="background:#7048E8">R</span>
+            <span class="tx"><b>Renda</b><span>Casa &amp; contas · conta fixa</span></span>
+            <span class="vl">−650,00&nbsp;€</span><span class="sal">691,89&nbsp;€</span></div>
+          <div class="soma"><span>29 movimentos em setembro</span><b>1 248,64&nbsp;€</b></div>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">1 · Extracto de banco</h3>
+    <p class="diz">Por ordem do tempo, do mais recente para trás, com o SALDO CORRENTE à direita de cada linha. Os meses fechados escolhem-se na fila de cima. <span class="bom">É a forma que toda a gente já sabe ler</span>, e a única que responde a «quanto havia no dia 8?». Perde: com quarenta linhas, saber para onde foi o dinheiro exige somar de cabeça.</p>
+    <p class="med">linha de 48 · o saldo em algarismos de largura fixa</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="cab"><h4>Extracto</h4><p>Setembro de 2026 · por envelope</p></div>
+      <div class="corpo">
+        <div class="card">
+          <div class="acc"><span class="tx"><b>Mercearia</b><span>9 movimentos</span></span>
+            <span class="vl">546,60&nbsp;€</span>
+            <svg class="i" viewBox="0 0 24 24" style="color:var(--t3)"><path d="M6 9.5l6 6 6-6"/></svg></div>
+          <div style="padding:4px 0 8px 0">
+            <div class="ln" style="min-height:40px"><span class="dia">17/09</span>
+              <span class="av" style="background:#7048E8">R</span>
+              <span class="tx"><b>Pingo Doce do Restelo</b></span><span class="vl">62,40&nbsp;€</span></div>
+            <div class="ln" style="min-height:40px"><span class="dia">10/09</span>
+              <span class="av" style="background:#3B5BDB">A</span>
+              <span class="tx"><b>Continente de Belém</b></span><span class="vl">54,10&nbsp;€</span></div>
+          </div>
+          <div class="acc"><span class="tx"><b>Casa &amp; contas</b><span>4 movimentos</span></span>
+            <span class="vl">357,69&nbsp;€</span>
+            <svg class="i" viewBox="0 0 24 24" style="color:var(--t3)"><path d="M9.5 6l6 6-6 6"/></svg></div>
+          <div class="acc"><span class="tx"><b>Transportes</b><span>3 movimentos</span></span>
+            <span class="vl">178,00&nbsp;€</span>
+            <svg class="i" viewBox="0 0 24 24" style="color:var(--t3)"><path d="M9.5 6l6 6-6 6"/></svg></div>
+          <div class="soma"><span>Gasto em setembro</span><b>1 248,64&nbsp;€</b></div>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">2 · Por envelope, que abre</h3>
+    <p class="diz">A mesma informação arrumada por ONDE foi o dinheiro, cada envelope a abrir para as suas linhas. <span class="bom">Responde à pergunta que se faz ao fim do mês</span> — «em que é que gastámos isto?» — sem contas de cabeça, e casa com o ecrã do Dinheiro, que já é feito de envelopes. Perde: a ordem do tempo desaparece, e com ela o saldo corrente.</p>
+    <p class="med">cabeçalho de 48 · linhas de 40 quando abre</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="cab"><h4>Extracto</h4><p>Setembro de 2026 · dia a dia</p></div>
+      <div class="corpo">
+        <div class="card">
+          <div class="rot" style="margin-bottom:2px">Quinta, 17/09</div>
+          <div class="ln"><span class="dia">14:20</span>
+            <span class="av" style="background:#7048E8">R</span>
+            <span class="tx"><b>Pingo Doce do Restelo</b><span>Rita</span></span>
+            <span class="pil env">Mercearia</span><span class="vl">−62,40&nbsp;€</span></div>
+          <div class="rot" style="margin:10px 0 2px">Segunda, 15/09</div>
+          <div class="ln"><span class="dia">20:05</span>
+            <span class="av" style="background:#3B5BDB">A</span>
+            <span class="tx"><b>Semanada do Léo</b><span>António</span></span>
+            <span class="pil cof">Cofre</span><span class="vl">−4,20&nbsp;€</span></div>
+          <div class="ln"><span class="dia">09:12</span>
+            <span class="av" style="background:#3B5BDB">A</span>
+            <span class="tx"><b>Combustível</b><span>António</span></span>
+            <span class="pil env">Transportes</span><span class="vl">−58,00&nbsp;€</span></div>
+          <div class="rot" style="margin:10px 0 2px">Sexta, 12/09</div>
+          <div class="ln"><span class="dia">21:40</span>
+            <span class="av" style="background:#3B5BDB">A</span>
+            <span class="tx"><b>Acerto com a Rita</b><span>António</span></span>
+            <span class="pil ace">Acerto</span><span class="vl pos">+83,67&nbsp;€</span></div>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">3 · A linha do tempo da casa</h3>
+    <p class="diz">A MESMA linha do «Nesta casa» e da Agenda: hora à esquerda, bola de quem fez, o que foi, a área numa pastilha. Dias como secções. <span class="bom">Nada de novo para aprender</span> — quem sabe ler o registo da casa já sabe ler isto, e as cinco espécies de movimento distinguem-se pela pastilha. Perde: não há saldo corrente, e um mês inteiro são muitas secções.</p>
+    <p class="med">a linha que a app já usa em dois ecrãs</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="cab"><h4>Extracto</h4><p>Setembro de 2026 · entrou e saiu</p></div>
+      <div class="corpo">
+        <div class="card">
+          <div class="duas">
+            <div>
+              <div class="colTit e">Entrou</div>
+              <div class="mini"><span>Rendimento</span><b>2 020,00</b></div>
+              <div class="mini"><span>Acerto da Rita</span><b>83,67</b></div>
+              <div class="mini" style="border-bottom:0"><span>Devolução</span><b>12,40</b></div>
+            </div>
+            <div>
+              <div class="colTit s">Saiu</div>
+              <div class="mini"><span>Mercearia</span><b>546,60</b></div>
+              <div class="mini"><span>Casa &amp; contas</span><b>357,69</b></div>
+              <div class="mini"><span>Transportes</span><b>178,00</b></div>
+              <div class="mini"><span>Cofres</span><b>46,20</b></div>
+              <div class="mini" style="border-bottom:0"><span>Outros</span><b>120,15</b></div>
+            </div>
+          </div>
+          <div class="soma"><span>Sobrou em setembro</span><b style="color:var(--okTexto)">+867,43&nbsp;€</b></div>
+        </div>
+        <div class="card" style="padding:10px 14px">
+          <div style="font-size:12px;color:var(--t3)">Toque numa linha para ver os movimentos que a fazem.</div>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">4 · Entrou e saiu, lado a lado</h3>
+    <p class="diz">Duas colunas, como um livro de contas: o que entrou à esquerda, o que saiu à direita, e o que sobrou em baixo. Tocar numa linha abre os movimentos que a compõem. <span class="bom">É a única que mostra o mês INTEIRO num ecrã</span> e a única que responde a «sobrou ou faltou?» sem rolar. Perde: é um resumo — o movimento individual está sempre a um toque de distância.</p>
+    <p class="med">o mês num ecrã · cada linha abre para as suas</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="cab"><h4>Extracto</h4><p>Setembro de 2026 · fechado a 30/09</p></div>
+      <div class="corpo">
+        <div class="papel">
+          <div class="marca"><b>Casa Madeira</b><span>Setembro de 2026</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--t3);padding:7px 0 3px">
+            <span>Fechado a 30/09/2026 · 29 movimentos</span></div>
+          <div class="mini"><span>Rendimento do mês</span><b>2 020,00&nbsp;€</b></div>
+          <div class="mini"><span>Gasto</span><b>1 248,64&nbsp;€</b></div>
+          <div class="mini"><span>Passou para outubro</span><b>771,36&nbsp;€</b></div>
+          <div class="rot" style="margin:12px 0 4px">Por envelope</div>
+          <div class="mini"><span>Mercearia</span><b>546,60 / 590,00</b></div>
+          <div class="mini"><span>Casa &amp; contas</span><b>357,69 / 780,00</b></div>
+          <div class="mini" style="border-bottom:0"><span>Transportes</span><b>178,00 / 240,00</b></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <div class="bt" style="flex:1"><svg class="i" viewBox="0 0 24 24"><path d="M7 9V4h10v5M7 18H5v-7h14v7h-2M7 14h10v6H7z"/></svg>Imprimir</div>
+          <div class="bt" style="flex:1">Ver movimento a movimento</div>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">5 · A folha que se imprime</h3>
+    <p class="diz">O extracto é uma folha de papel, e o ecrã é a pré-visualização dela. A app já imprime — a ficha do equipamento, a de emergência, o retrato do mês — e esta usa a mesma peça. <span class="bom">Um mês fechado passa a ser uma coisa que se guarda</span>, e não só um ecrã. Perde: por si só é um resumo; o detalhe está no segundo botão.</p>
+    <p class="med">usa o `documento.js` que já existe</p>
+  </div>
+
+</div>
+
+<h2>Como escolher</h2>
+<table class="d">
+  <tr><th>Se a pergunta for…</th><th>Opção</th><th>O que custa</th></tr>
+  <tr><td>«Quanto havia no dia 8?»</td><td><b>1 · extracto de banco</b></td><td>Nada de fundo. É a única com saldo corrente.</td></tr>
+  <tr><td>«Em que é que gastámos isto?»</td><td><b>2 · por envelope</b></td><td>Perde a ordem do tempo e o saldo corrente.</td></tr>
+  <tr><td>«O que aconteceu neste mês?»</td><td><b>3 · linha do tempo</b></td><td>Muitas secções num mês inteiro; sem saldo.</td></tr>
+  <tr><td>«Sobrou ou faltou?»</td><td><b>4 · entrou e saiu</b></td><td>É um resumo; o movimento fica a um toque.</td></tr>
+  <tr><td>«Quero guardar isto»</td><td><b>5 · folha impressa</b></td><td>Resumo por si só; o detalhe é o segundo botão.</td></tr>
+</table>
+
+<p class="intro" style="margin-top:14px"><b>A minha recomendação: a 1, com o cabeçalho da 4.</b> O extracto por ordem do tempo com saldo corrente é o que a palavra «extracto» promete, e é a única forma que responde a perguntas sobre um dia. Por cima dele, as três linhas da 4 — entrou, saiu, sobrou — dão o mês inteiro antes de se rolar uma linha. A 2 e a 3 são vistas da MESMA lista e podem vir depois como um alternador de «ordem: tempo / envelope», sem ecrã novo. A 5 é uma tarde de trabalho em cima de peças que já existem, e é a que faz de um mês fechado uma coisa que se guarda — faria a seguir.</p>
+<p class="intro">Nada implementado. Diga o número, e se quer o cabeçalho da 4 por cima.</p>
+</body>
+</html>

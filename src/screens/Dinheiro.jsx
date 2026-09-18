@@ -13,7 +13,7 @@ import GerirMeta from '../sheets/GerirMeta';
 import Cofre from '../sheets/Cofre';
 import NovaContaFixa from '../sheets/NovaContaFixa';
 import GerirContaFixa from '../sheets/GerirContaFixa';
-import RetratoDoMes from '../sheets/RetratoDoMes';
+import ExtractoDoMes from '../sheets/ExtractoDoMes';
 import { estadoDaConta, totalDasContas } from '../contas-fixas';
 
 // ⚠ O `NumField` mudou-se para o `ui.jsx`, e continua a ser importado daqui
@@ -54,10 +54,11 @@ export default function Dinheiro({ t, user, onEquip }) {
   const st = useStore();
   const { s, set, envelopes, budget, spent, remaining, mesAberto, allEquip, isAdmin, membros: MEMBERS, adultos, criancas, acerto, acertado, pagarAcerto, oNome, aoNome, moverEntreEnvelopes, registarDespesa,
           abrirMes, fecharMes, metas, reforcarMeta, apagarMeta, kidPts, pontosNasTarefas,
-          contasDoMes, pagarContaFixa, apagarContaFixa, retratoDoMesAberto } = st;
+          contasDoMes, pagarContaFixa, apagarContaFixa, extractoDoMesAberto, extractosDaCasa } = st;
   const [sheet, setSheet] = useState(null);
-  // O retrato com a folha aberta — o do mês em curso, ou o do que acabou de fechar.
-  const [retrato, setRetrato] = useState(null);
+  // O extracto com a folha aberta — o do mês em curso, ou o do que acabou de
+  // fechar. A folha traz o arquivo todo lá dentro e abre neste.
+  const [extracto, setExtracto] = useState(null);
   const [cofre, setCofre] = useState(null);      // criança cujo cofre está aberto
   const [meta, setMeta] = useState(null);        // id da meta com a folha aberta
   const [metaAApagar, setMetaAApagar] = useState(null);
@@ -214,16 +215,16 @@ export default function Dinheiro({ t, user, onEquip }) {
   };
 
   const fecharMesLimpando = () => {
-    // O retrato do mês que se está a fechar, tirado ANTES do fecho: sem
+    // O extracto do mês que se está a fechar, tirado ANTES do fecho: sem
     // servidor o `fecharMes` zera as somas de que ele é feito. Abre-se a
     // seguir, já como «mês fechado a hoje» (12/09/2026).
-    const doMesQueFecha = retratoDoMesAberto();
+    const doMesQueFecha = extractoDoMesAberto();
     // ⚠ Pelo `fecharMes` da loja. Isto escrevia `registered: 0` e `envMove: {}`
     // — zero por cima de duas SOMAS. Com as despesas e as transferências no
     // servidor, as linhas ficavam e a leitura seguinte trazia o total de
     // volta: o mês fechado reabria sozinho.
     fecharMes();
-    if (doMesQueFecha) setRetrato({ ...doMesQueFecha, aberto: false, fechadoEm: TODAY_KEY });
+    if (doMesQueFecha) setExtracto({ ...doMesQueFecha, aberto: false, fechadoEm: TODAY_KEY });
     // ⚠ E a escolha volta ao início. Sem isto, o valor escrito para o mês
     // passado ficava sugerido no fecho seguinte — um número de outro mês com
     // ar de sugestão desta.
@@ -256,6 +257,55 @@ export default function Dinheiro({ t, user, onEquip }) {
             {semEnvelope > 0 ? ` Sobram ${EUR(semEnvelope)} sem envelope.` : ''}
           </Text>
         ) : null}
+
+        {/* ── O extracto, dentro deste cartão ───────────────────────────────
+            17/09/2026, onde ele o quis: «logo abaixo dos valores atribuídos e
+            dentro do cabeçalho». Cada movimento de dinheiro da casa, por ordem
+            do tempo, com quem o fez e o saldo a seguir a ele — e todos os meses
+            em arquivo dentro da própria folha. Exporta em PDF.
+
+            ⚠ Substituiu o «Retrato do Mês», que era a SOMA das mesmas linhas e
+            vivia numa secção sua a responder à mesma pergunta com menos
+            detalhe.
+
+            Para qualquer adulto, não só quem administra: é ler, não decidir.
+
+            ⚠ Uma régua por cima, e não um cartão dentro do cartão: o número
+            grande e a barra são o estado de hoje, e isto é a porta para o
+            passado. A divisória diz que muda de assunto sem abrir uma caixa.
+
+            ⚠ E a LINHA APARECE SEMPRE, mesmo sem movimentos — sem servidor não
+            há linhas de despesa e o extracto vem vazio. Estava escrito
+            `{e ? … : null}`, e o resultado foi ele a perguntar «onde está o
+            extracto?» com a app à frente: uma funcionalidade que desaparece
+            sem dizer porquê é pior do que uma que diz que está vazia.
+            É a mesma lição do rodapé e dos botões mortos — o ecrã tem de
+            contar o que se passa, não calar-se. */}
+        {(() => {
+          const e = extractoDoMesAberto();
+          const nome = e ? e.nome : `${s.monthName} de ${TODAY_KEY.slice(1, 5)}`;
+          const quantos = e ? e.movimentos.length : 0;
+          return (
+            <Pressable onPress={() => setExtracto(e)} accessibilityRole="button"
+              accessibilityLabel={`Extracto de ${nome} · ${plural(quantos, 'movimento', 'movimentos')}`}
+              style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: S.md,
+                minHeight: 44, marginTop: S.xs, paddingTop: S.md,
+                borderTopWidth: 1, borderTopColor: t.divider, opacity: pressed ? 0.6 : 1 })}>
+              <Icon name="fileText" size={20} color={t.titulo} />
+              <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
+                <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 14.5, color: t.text2 }}>
+                  {`Extracto de ${nome}`}
+                </Text>
+                <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
+                  {quantos > 0
+                    ? `${plural(quantos, 'movimento', 'movimentos')} · exporta em PDF`
+                    : 'sem movimentos registados neste mês'}
+                </Text>
+              </View>
+              <Icon name="caretRight" size={18} color={t.text3} />
+            </Pressable>
+          );
+        })()}
       </Card>
 
       {/* Registar despesa é a acção mais frequente deste ecrã e estava no fim
@@ -267,15 +317,22 @@ export default function Dinheiro({ t, user, onEquip }) {
           «acrescentar» na mesma app. */}
       <AddButton t={t} label="registar despesa" onPress={() => setSheet('despesa')} />
 
+      {/* ⚠ Aqui estava uma TERCEIRA porta para «Abrir o mês»: uma `Row` com
+          ícone e seta, debaixo do título «Envelopes», a abrir a mesma folha que
+          o botão da Administração deste ecrã — que por sua vez já é o par do
+          cartão da Gestão. Duas formas da mesma decisão no MESMO ecrã, uma
+          delas arrumada numa secção a que não pertence (abrir o mês não é um
+          envelope).
+
+          E não eram iguais por dentro: esta chamava `setSheet('openMonth')` e
+          mais nada, deixando lá a distribuição de uma tentativa anterior; o
+          botão limpa-a com `setOpenMonth({ envelopes: {} })` antes de abrir.
+          Duas portas para a mesma folha, com dois comportamentos.
+
+          Fica a da Administração, que anda em par com «Fechar Setembro»: abrir
+          e fechar o mês são a mesma espécie de decisão e leem-se juntas. */}
       <View>
         <SectionTitle t={t}>Envelopes</SectionTitle>
-        {admin ? (
-          <Linha t={t}>
-            <Row t={t} icon="fileAdd" title={`Abrir ${proximoMes}`}
-              sub="Distribuir o rendimento e reiniciar os envelopes"
-              onPress={() => setSheet('openMonth')} last />
-          </Linha>
-        ) : null}
         {envelopes.length === 0 ? (
           <Empty t={t} icon="wallet" title="Sem envelopes."
             hint="Crie-os na Gestão da Casa e abra o mês para os alimentar." />
@@ -588,27 +645,6 @@ export default function Dinheiro({ t, user, onEquip }) {
         ) : null}
       </View>
 
-      {/* ── O retrato do mês ──────────────────────────────────────────────
-          Uma página por mês — gasto por envelope contra o limite, tarefas e
-          pontos por criança, compras, acertos — somada das linhas do mês e
-          exportável em PDF (12/09/2026, a décima das dez). Para qualquer
-          adulto, não só quem administra: é ler, não decidir. Os meses
-          anteriores vivem em Documentação › Nesta casa. */}
-      {(() => {
-        const r = retratoDoMesAberto();
-        return r ? (
-          <View>
-            <SectionTitle t={t}>Retrato do Mês</SectionTitle>
-            <Linha t={t} last>
-              <Row t={t} icon="fileText" title={`Retrato de ${r.nome}`}
-                sub={`${EUR(r.gasto)} gastos de ${EUR(r.orcamento)} · exporta em PDF`}
-                right={<Icon name="caretRight" size={18} color={t.text3} />}
-                onPress={() => setRetrato(r)} last />
-            </Linha>
-          </View>
-        ) : null;
-      })()}
-
       {admin ? (
         <View>
           <SectionTitle t={t}>Administração</SectionTitle>
@@ -637,7 +673,8 @@ export default function Dinheiro({ t, user, onEquip }) {
         </View>
       ) : null}
 
-      {retrato ? <RetratoDoMes t={t} retrato={retrato} user={user} onClose={() => setRetrato(null)} /> : null}
+      {extracto ? <ExtractoDoMes t={t} extractos={extractosDaCasa()} inicial={extracto} user={user}
+        onClose={() => setExtracto(null)} /> : null}
 
       {/* Settle Accounts Sheet */}
       {cofre ? <Cofre t={t} kid={cofre} onClose={() => setCofre(null)} /> : null}

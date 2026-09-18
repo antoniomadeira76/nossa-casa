@@ -12,8 +12,11 @@
  *
  *   1. Os pontos de uma tarefa trocada são de quem a tem NO DIA: a troca de
  *      hoje não muda o histórico do mês.
- *   2. O limite de um envelope no retrato do mês conta as transferências do
- *      mês, como o Dinheiro.
+ *   2. (saiu em 17/09/2026 — o «retrato do mês» foi substituído pelo extracto,
+ *      e com ele a segunda cópia da aritmética dos limites por envelope. O
+ *      limite com transferências vive agora só no ecrã do Dinheiro, que é
+ *      onde sempre se viu; era a SEGUNDA conta do mesmo número que este ponto
+ *      guardava, e ela deixou de existir.)
  *   3. A folha «Mover Dinheiro» abre numa casa com dois envelopes — e com um.
  *   4. A urgência e o prazo passam pela loja (e sobem); «Sem prazo» liga.
  *   5. A aceitação de uma troca tranca a `casa` e exige a data, nos dois sítios.
@@ -38,7 +41,6 @@ jest.mock('../src/pocketbase', () => ({
 const { StoreProvider, useStore } = require('../src/store');
 const { buildTheme } = require('../src/theme');
 const { TODAY_KEY } = require('../src/format');
-const { retratosDe } = require('../src/retrato-do-mes');
 
 const RAIZ = path.join(__dirname, '..');
 const ler = (p) => fs.readFileSync(path.join(RAIZ, p), 'utf8');
@@ -106,35 +108,6 @@ describe('⚠ 1. os pontos de uma tarefa trocada são de quem a tem no dia', () 
     // ele, e o de hoje passa para a Mia. Nem mais, nem menos.
     expect(semTroca().kidPts.Léo - comTroca().kidPts.Léo).toBe(lixo);
     expect(comTroca().kidPts.Mia - semTroca().kidPts.Mia).toBe(lixo);
-  });
-});
-
-describe('⚠ 2. o retrato do mês conta as transferências entre envelopes', () => {
-  const CASA = {
-    membros: [{ id: 'r', nome: 'Rita', papel: 'admin' }],
-    envelopes: [{ id: 'e1', nome: 'Mercearia', limite_base: 450 }, { id: 'e2', nome: 'Lazer', limite_base: 120 }],
-    meses: [
-      { id: 'm9', mes: '2026-09-01 00:00:00.000Z', rendimento: 3000, limites: { Mercearia: 500 } },
-      { id: 'm8', mes: '2026-08-01 00:00:00.000Z', rendimento: 3000, fechado_em: '2026-08-31 00:00:00.000Z', limites: { Mercearia: 450, Lazer: 120 } },
-    ],
-    despesas: [{ envelope: 'e1', valor: 520, data: '2026-09-10 00:00:00.000Z' }],
-    transferencias: [
-      { de_envelope: 'e2', para_envelope: 'e1', valor: 50, mes: '2026-09-01 00:00:00.000Z' },
-      { de_envelope: 'e1', para_envelope: 'e2', valor: 20, mes: '2026-08-01 00:00:00.000Z' },
-    ],
-  };
-  it('o limite do envelope é o do mês MAIS o que se moveu nesse mês — e o total não muda', () => {
-    const [set, ago] = retratosDe(CASA, { r: 'Rita' });
-    const envSet = Object.fromEntries(set.envelopes.map(e => [e.nome, e]));
-    expect(envSet.Mercearia).toEqual({ nome: 'Mercearia', gasto: 520, limite: 550 });
-    expect(envSet.Lazer).toEqual({ nome: 'Lazer', gasto: 0, limite: 70 });
-    expect(set.orcamento).toBe(620);
-    // Setembro moveu 50 € para a Mercearia: 520 € gastos NÃO estão acima de 550.
-    expect(envSet.Mercearia.gasto > envSet.Mercearia.limite).toBe(false);
-    const envAgo = Object.fromEntries(ago.envelopes.map(e => [e.nome, e]));
-    expect(envAgo.Mercearia.limite).toBe(430);
-    expect(envAgo.Lazer.limite).toBe(140);
-    expect(ago.orcamento).toBe(570);
   });
 });
 

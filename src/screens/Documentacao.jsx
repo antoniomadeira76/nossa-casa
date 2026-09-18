@@ -5,7 +5,7 @@ import { S, R, FONT } from '../theme';
 import FiltroDeMembros from '../FiltroDeMembros';
 import { Card, SectionTitle, Pill, Segmented, Empty, Pager, usePaged, Choice, Label, Row, Linha as LinhaPlana, Avatar, avatarDe } from '../ui';
 import { tituloEDetalhe, detalheDaLinha, dobrarRepeticoes, agruparPorDia, horaDe } from '../registo-da-casa';
-import RetratoDoMes from '../sheets/RetratoDoMes';
+import ExtractoDoMes from '../sheets/ExtractoDoMes';
 import { plural, pad2, EUR } from '../format';
 import Icon from '../Icon';
 import { REGISTO_APP, TIPOS, AREAS, AMBITO } from '../registo-app';
@@ -210,11 +210,11 @@ const DESTINO = {
 };
 
 export default function Documentacao({ t, onIr, podeGerir, user }) {
-  const { s, retratosDaCasa, membros: membrosDaCasa } = useStore();
+  const { s, extractosDaCasa, membros: membrosDaCasa } = useStore();
   const [aba, setAba] = useState('novidades');
-  // O retrato de um mês com a folha aberta (12/09/2026).
-  const [retrato, setRetrato] = useState(null);
-  const retratos = retratosDaCasa();
+  // O extracto de um mês com a folha aberta (17/09/2026).
+  const [extracto, setExtracto] = useState(null);
+  const extractos = extractosDaCasa();
   const [filtroQuem, setFiltroQuem] = useState(null);
   const [filtroArea, setFiltroArea] = useState(null);
 
@@ -440,22 +440,27 @@ export default function Documentacao({ t, onIr, podeGerir, user }) {
                 : 'Tudo o que a família fizer na app fica aqui: tarefas, despesas, compras, agenda e equipamentos.'} />
           )}
 
-          {/* ── Os retratos dos meses ──────────────────────────────────────
-              Uma página por mês, do mais recente para o mais antigo: o gasto
-              por envelope, as tarefas e os pontos por criança, as compras, os
-              acertos — somados das linhas do mês, e exportáveis em PDF
-              (12/09/2026, a décima das dez). Só um adulto chega a este ecrã. */}
-          {retratos.length > 0 ? (
+          {/* ── O arquivo dos meses ────────────────────────────────────────
+              Um extracto por mês, do mais recente para o mais antigo, com cada
+              movimento de dinheiro da casa lá dentro e exportável em PDF
+              (17/09/2026). Só um adulto chega a este ecrã.
+
+              ⚠ Isto eram os «Retratos dos Meses» — a SOMA de cada mês. Ficam os
+              mesmos meses, com as linhas em vez das somas.
+
+              Esta lista é o ÍNDICE do arquivo; o selector lá dentro da folha
+              serve para virar a página sem voltar aqui. */}
+          {extractos.length > 0 ? (
             <View style={{ marginTop: S.xl }}>
               <SectionTitle t={t} right={
-                <Pill label={plural(retratos.length, 'mês', 'meses')} fg={t.text3} bg={t.subtle} border={t.border} />
-              }>Retratos dos Meses</SectionTitle>
-              {retratos.map((r, i) => (
-                <LinhaPlana key={r.idServidor || `${r.inicio}-${i}`} t={t} last={i === retratos.length - 1}>
-                  <Row t={t} icon="fileText" title={r.nome}
-                    sub={`${EUR(r.gasto)} gastos de ${EUR(r.orcamento)} · ${r.aberto ? 'em curso' : 'fechado'}`}
+                <Pill label={plural(extractos.length, 'mês', 'meses')} fg={t.text3} bg={t.subtle} border={t.border} />
+              }>Arquivo dos Meses</SectionTitle>
+              {extractos.map((e, i) => (
+                <LinhaPlana key={e.idServidor || `${e.inicio}-${i}`} t={t} last={i === extractos.length - 1}>
+                  <Row t={t} icon="fileText" title={e.nome}
+                    sub={`${plural(e.movimentos.length, 'movimento', 'movimentos')} · ${EUR(e.saiu)} saíram · ${e.aberto ? 'em curso' : 'fechado'}`}
                     right={<Icon name="caretRight" size={18} color={t.text3} />}
-                    onPress={() => setRetrato(r)} last />
+                    onPress={() => setExtracto(e)} last />
                 </LinhaPlana>
               ))}
             </View>
@@ -494,7 +499,8 @@ export default function Documentacao({ t, onIr, podeGerir, user }) {
         </>
       )}
 
-      {retrato ? <RetratoDoMes t={t} retrato={retrato} user={user} onClose={() => setRetrato(null)} /> : null}
+      {extracto ? <ExtractoDoMes t={t} extractos={extractos} inicial={extracto} user={user}
+        onClose={() => setExtracto(null)} /> : null}
     </>
   );
 }

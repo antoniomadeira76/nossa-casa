@@ -117,8 +117,14 @@ describe('⚠ a leitura da casa corre de ponta a ponta', () => {
     expect(casa.registered).toBe(12.5);
     expect(casa.gastoPorEnvelope).toEqual({ Mercearia: 12.5 });
     expect(casa.paidPts).toEqual({ Léo: 14 });
-    expect(casa.retratos).toHaveLength(1);
-    expect(casa.retratos[0]).toMatchObject({ aberto: true, gasto: 12.5, orcamento: 450 });
+    expect(casa.extractos).toHaveLength(1);
+    // O que SAIU são as três espécies que tiram dinheiro à casa: a despesa de
+    // 12,50, a semanada de 1,40 e os 50,00 juntados à meta. A transferência
+    // entre envelopes (5,00) e o acerto entre os adultos (10,00) aparecem no
+    // extracto e NÃO contam — o dinheiro mudou de gaveta e de mão, e a casa
+    // ficou com o mesmo.
+    expect(casa.extractos[0]).toMatchObject({ aberto: true, entrou: 3000, saiu: 12.5 + 1.4 + 50 });
+    expect(casa.extractos[0].movimentos.filter(m => m.neutro).map(m => m.valor).sort()).toEqual([10, 5]);
     expect(casa.newTasks).toHaveLength(1);
     expect(casa.done).toEqual({ t1: true });
     expect(casa.contratos[0]).toMatchObject({ nome: 'Seguro', responsavel: 'António' });
@@ -139,7 +145,7 @@ describe('⚠ a leitura da casa corre de ponta a ponta', () => {
     expect(api.deDemonstracao).toBe(false);
     expect(api.nomeDaCasa).toBe('Madeira');
     expect(Object.keys(api.membros)).toEqual(['António', 'Rita', 'Léo']);
-    expect(api.retratosDaCasa()[0].nome).toMatch(/de 20\d\d$/);
+    expect(api.extractosDaCasa()[0].nome).toMatch(/de 20\d\d$/);
   });
 
   it('⚠ OUTRA casa no mesmo aparelho começa do zero — a cópia local da anterior não fica a mostrar-se', async () => {

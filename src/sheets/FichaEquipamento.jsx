@@ -11,7 +11,7 @@ import Sheet from '../Sheet';
 import Confirm from '../Confirm';
 import { documentoDaFatura, nomeDoFicheiroDaFatura } from '../exportar-equipamento';
 import { lerComoDataURI } from '../ler-imagem';
-import { guardarPDF } from '../guardar-ficheiro';
+import PreVisualizarPDF from '../PreVisualizarPDF';
 import { CATEGORIAS_DE_EQUIPAMENTO } from '../categorias-de-equipamento';
 
 // Estado da garantia: a mesma regra de três estados da lista, para a ficha e a
@@ -40,6 +40,8 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
   const [manut, setManut] = useState(null);   // rascunho da manutenção
   // A exportação da fatura: `null` parada, `'a preparar'`, ou a frase do fim.
   const [exportacao, setExportacao] = useState(null);
+  // A fatura a pré-visualizar, ou `null` (17/09/2026).
+  const [aVer, setAVer] = useState(null);
   // O que se altera (15/09/2026 — «quando se faz editar, o título não tem
   // opção de alterar»): o nome, a categoria, o preço, a data de compra e o fim
   // da garantia, como a ficha do contrato. Um rascunho, e vai de uma vez no
@@ -75,16 +77,17 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
   // ⚠ Era `onPress={() => {}}`: um botão que prometia e não fazia, com a
   // fatura fotografada mesmo ao lado (13/09/2026). Sai um PDF pelo molde da app,
   // com a imagem dentro — o mesmo caminho da ficha de saúde.
+  // ⚠ E desde 17/09/2026 MOSTRA a fatura antes de a exportar. A imagem
+  // lê-se do disco e o documento monta-se — é o trabalho que o «a preparar…»
+  // conta —, e só depois se vê. O «Exportar em PDF» está lá dentro.
   const exportarFatura = async () => {
     if (!equip.fatura || exportacao === 'a preparar') return;
     setExportacao('a preparar');
     try {
       const imagem = await lerComoDataURI(equip.fatura);
       const html = documentoDaFatura({ equip, estado: e, imagem, casa: nomeDaCasa, hoje: TODAY_KEY, quemImprime: user, t });
-      const r = await guardarPDF(nomeDoFicheiroDaFatura(equip, TODAY_KEY), html);
-      if (!r.ok) setExportacao(r.motivo || 'Não foi possível exportar a fatura.');
-      else if (r.cancelado) setExportacao(null);
-      else setExportacao(r.onde ? `PDF pronto — ${r.onde}` : 'PDF pronto.');
+      setExportacao(null);
+      setAVer({ nome: nomeDoFicheiroDaFatura(equip, TODAY_KEY), html });
     } catch (err) {
       setExportacao('Não foi possível exportar a fatura. Tente outra vez.');
     }
@@ -300,6 +303,12 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
         <View style={{ height: 1, backgroundColor: t.divider }} />
         <Acao perigo label="Remover equipamento" icone="trash" onPress={() => setRemover(true)} />
       </Sheet>
+
+      {/* A fatura, antes de sair: vê-se a página e só depois se exporta. */}
+      {aVer ? (
+        <PreVisualizarPDF t={t} nome={aVer.nome} html={aVer.html}
+          titulo="Fatura" sub={equip.name} onFechar={() => setAVer(null)} />
+      ) : null}
 
       {/* Agendar manutenção */}
       {manut ? (

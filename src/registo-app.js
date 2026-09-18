@@ -6,7 +6,7 @@
 // Não confundir com `s.registo`, que é o histórico de alterações que a
 // FAMÍLIA faz à casa. São duas coisas diferentes, e o ecrã mostrava a segunda
 // onde a referência 17 mostra a primeira.
-export const APP_VERSION = '1.12.1';
+export const APP_VERSION = '1.13.0';
 
 // ── O que a app é, e o que cada área faz ─────────────────────────────────────
 //
@@ -149,6 +149,15 @@ export const AREAS = [
 ];
 
 export const REGISTO_APP = [
+  // ── 1.13.0 ────────────────────────────────────────────────
+  // O extracto do mês (17/09/2026, desenho 1 com o cabeçalho do 4 de
+  // design/cinco-extractos-do-mes.dc.html), a pré-visualização antes de exportar,
+  // e a terceira porta para «Abrir o mês» que saiu do Dinheiro.
+  { v: '1.13.0', d: '17/09/2026', k: 'novo', a: 'Dinheiro', t: 'O extracto do mês: cada movimento de dinheiro da casa por ordem do tempo — despesas, semanadas e bónus dos cofres, o que se juntou a uma meta, os acertos entre os adultos e o dinheiro movido entre envelopes — com o dia, a bola de quem o fez e o saldo a seguir a ele. Por cima, o mês em três números: entrou, saiu, sobrou. Abre-se pela linha «Extracto de Setembro» no cartão do topo, tem os meses anteriores numa fila lá dentro, e exporta em PDF. Nada se grava ao fechar o mês: é feito das linhas que a base de dados já tem, e por isso um mês fechado não muda quando o seguinte abre' },
+  { v: '1.13.0', d: '17/09/2026', k: 'alterado', a: 'Dinheiro', t: 'O «Retrato do Mês» deu lugar ao extracto. Era a SOMA do mesmo mês — gasto por envelope, tarefas e pontos por criança, compras, acertos — e respondia à mesma pergunta com menos detalhe; o extracto tem as mesmas linhas de origem e mostra-as uma a uma. Os meses anteriores continuam em Documentação › Nesta casa, agora como «Arquivo dos Meses»' },
+  { v: '1.13.0', d: '17/09/2026', k: 'alterado', a: 'A App', t: '«Exportar em PDF» passou a MOSTRAR o documento antes de ele sair, nos quatro sítios que exportam: a ficha de saúde, a ficha de emergência, a fatura do equipamento e o extracto do mês. Vê-se a página como vai sair — a faixa do esquema, a marca de água e o carimbo — e só depois se exporta. Ia direto ao diálogo de impressão, e com uma ficha clínica de um menor a última altura de fechar a folha sem consequências era depois de o ficheiro já estar a sair' },
+  { v: '1.13.0', d: '17/09/2026', k: 'corrigido', a: 'Dinheiro', t: 'Havia duas portas para «Abrir o mês» no mesmo ecrã, com dois desenhos: uma linha com ícone e seta debaixo de «Envelopes», e o botão da Administração. E não faziam o mesmo — a linha deixava lá a distribuição de uma tentativa anterior. Ficou a da Administração, que anda em par com «Fechar Setembro»' },
+
   // ── 1.12.1 ────────────────────────────────────────────────────────────────
   // A pesquisa global (13/09/2026, opção A de design/pesquisa-global.dc.html) e a
   // fila de escritas que perdia dinheiro.

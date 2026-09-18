@@ -53,7 +53,12 @@ export const carimboDe = ({ quemImprime, hoje }) => {
 
 // `titulo` e `origem` vão na faixa; `corpo` são as `<section>` de cada
 // documento; `aviso` é a frase do rodapé, à esquerda do carimbo.
-export function paginaDaApp({ titulo, origem, corpo, aviso, quemImprime, hoje, t }) {
+//
+// `estilo` é CSS de UM documento só, acrescentado no fim da folha de estilos —
+// para o extracto, que é a única página com uma tabela de colunas e precisa de
+// larguras fixas para os algarismos ficarem alinhados. Quem não passa nada fica
+// exactamente com o molde de sempre (17/09/2026).
+export function paginaDaApp({ titulo, origem, corpo, aviso, quemImprime, hoje, t, estilo = '' }) {
   const cores = {
     chrome: (t && t.chrome) || CORES_POR_OMISSAO.chrome,
     actFg: (t && t.actFg) || CORES_POR_OMISSAO.actFg,
@@ -124,6 +129,7 @@ export function paginaDaApp({ titulo, origem, corpo, aviso, quemImprime, hoje, t
     .marca, .pe { position: absolute; }
     .pe { left: 18mm; right: 18mm; bottom: 10mm; }
   }
+${estilo}
 </style></head>
 <body>
 <div class="pagina">

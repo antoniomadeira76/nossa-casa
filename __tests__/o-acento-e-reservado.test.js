@@ -61,13 +61,22 @@ const COM_ACENTO = {
     "{aExecutar ? 'A apagar…' : rotuloAcao}":
       'Apaga. Regra sem excepção.',
   },
-  'src/sheets/ExportarSaude.jsx': {
-    "{aGuardar ? 'A preparar…' : 'Guardar como PDF'}":
-      'Tira dados clínicos de um menor de dentro da app e põe-nos num ficheiro que a app deixa de governar. Não se desfaz.',
-  },
-  'src/sheets/FichaEmergencia.jsx': {
-    "{aGuardar ? 'A preparar…' : 'Exportar em PDF para a escola'}":
-      'A mesma porta: a ficha de emergência de uma criança sai da app num PDF para a escola. Não se desfaz.',
+  // ⚠ As duas entradas que aqui estavam — o «Guardar como PDF» do
+  // `ExportarSaude` e o «Exportar em PDF para a escola» da `FichaEmergencia` —
+  // saíram em 17/09/2026, e o acento delas mudou-se para a linha de baixo.
+  //
+  // Os dois botões continuam a existir e passaram a `comum` porque deixaram de
+  // tirar o que quer que seja de lado nenhum: agora MOSTRAM o documento. Quem o
+  // tira é o «Exportar em PDF» de dentro da pré-visualização. Pintar de acento
+  // um passo que se desfaz a fechar uma folha ensina a família a carregar sem
+  // ler — é a mesma razão por que o carrinho das compras não o leva e a folha
+  // que fecha a conta leva.
+  'src/PreVisualizarPDF.jsx': {
+    '{rotulo}':
+      'A porta única por onde um documento sai da app (`__tests__/o-pdf-mostra-se-antes-de-sair`). '
+      + 'Com a ficha de saúde e a de emergência tira dados clínicos de um menor de dentro da app e '
+      + 'põe-nos num ficheiro que a app deixa de governar. Não se desfaz. '
+      + 'O par dele, o mesmo botão em `comum`, serve o extracto e a fatura — dados da casa, não de saúde.',
   },
 };
 

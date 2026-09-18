@@ -156,7 +156,13 @@ describe('⚠ a ficha: os dois botões lado a lado, e nenhum morto', () => {
   it('o ficheiro já não tem o `onPress={() => {}}`, e o Equipamentos passa o `user` para o carimbo', () => {
     const ficha = semComentarios(ler('src/sheets/FichaEquipamento.jsx'));
     expect(ficha).not.toMatch(/onPress=\{\(\) => \{\}\}/);
-    expect(ficha).toMatch(/guardarPDF\(nomeDoFicheiroDaFatura\(equip, TODAY_KEY\), html\)/);
+    // ⚠ Desde 17/09/2026 a fatura MOSTRA-SE antes de sair: o botão monta o
+    // documento e abre a pré-visualização, que é a porta única por onde a app
+    // exporta (`__tests__/o-pdf-mostra-se-antes-de-sair`). O que se prova aqui
+    // continua a ser o mesmo — que o botão faz alguma coisa, e que o nome do
+    // ficheiro e o HTML são os certos.
+    expect(ficha).toMatch(/setAVer\(\{ nome: nomeDoFicheiroDaFatura\(equip, TODAY_KEY\), html \}\)/);
+    expect(ficha).toMatch(/<PreVisualizarPDF t=\{t\} nome=\{aVer\.nome\} html=\{aVer\.html\}/);
     expect(semComentarios(ler('src/screens/Equipamentos.jsx'))).toMatch(/<FichaEquipamento t=\{t\} equip=\{[^}]+\} user=\{user\}/);
   });
 });

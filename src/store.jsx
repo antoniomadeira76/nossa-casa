@@ -284,7 +284,7 @@ const DATA_KEYS = [
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
   'newItems', 'itemGone', 'itemEdits', 'itemOrder', 'feitas', 'listasIds', 'envelopesDaCasa', 'seccoesDaCasa', 'mes',
   'metasDaCasa', 'metaMovs', 'metasProprias', 'objetivosCofre', 'pratos', 'ementa',
-  'contasFixas', 'contasPagas', 'contratos', 'trocas', 'retratos',
+  'contasFixas', 'contasPagas', 'contratos', 'trocas', 'extractos',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
   'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'ementaDesligada', 'pointValue', 'payDay', 'splitHalf',
@@ -660,9 +660,16 @@ export const DEMO = () => ({
   // propostaPor, aceiteEm, aceitePor }`): uma linha por troca, do DIA. A
   // atribuição deriva-se no `allTasks` — nada se escreve na tarefa.
   trocas: [],
-  // Os retratos dos meses que o servidor somou (`retratosDe`): o mais recente
-  // primeiro. Vazio sem servidor — aí a loja calcula o do mês corrente.
-  retratos: [],
+  // Os extractos dos meses que o servidor derivou (`extractosDe`): o mais
+  // recente primeiro, cada um com os seus movimentos por ordem do tempo.
+  //
+  // ⚠ Vazio sem servidor, e sem substituto local. O extracto é uma lista de
+  // LINHAS — cada despesa, cada semanada, cada acerto —, e a app sem servidor
+  // não guarda linhas de despesa: guarda as SOMAS (`registered`, `gastoLocal`).
+  // Fabricar aqui um extracto a partir de somas era escrever uma lista que
+  // ninguém registou, e o cabeçalho deixava de ser a soma do que se mostra.
+  // Sem servidor, a secção não aparece.
+  extractos: [],
   schemeByUser: {}, themeByUser: {},
   notif: { digest: true, hour: '20:00', lead: 1 },
   rotate: {},
@@ -1014,9 +1021,9 @@ export function StoreProvider({ children }) {
         // O que fica de fora é uma proposta deste telemóvel ainda por subir,
         // e essa sobe pela fila e volta na leitura seguinte.
         trocas: casa.trocas || [],
-        // Os retratos dos meses: somas que o servidor fez sobre as linhas
-        // dele. Substituem-se — uma soma não se funde com outra.
-        retratos: casa.retratos || [],
+        // Os extractos dos meses, derivados das linhas do servidor.
+        // Substituem-se — uma derivação não se funde com outra.
+        extractos: casa.extractos || [],
       }));
 
       // ⚠ O acerto de contas entre os adultos, pela mesma razão e com a mesma
@@ -2756,40 +2763,26 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     return a;
   }, {});
 
-  // ── O retrato do mês ────────────────────────────────────────────────────
+  // ── O extracto do mês ───────────────────────────────────────────────────
   //
-  // Uma página por mês: o gasto por envelope contra o limite, as tarefas e os
-  // pontos por criança, as compras, os acertos. Com servidor vem SOMADO das
-  // linhas de cada mês (`retratosDe`, no `puxarCasa`) — um retrato de um mês
-  // fechado não muda quando o seguinte abre. Sem servidor há um só, o do mês
-  // corrente, feito das mesmas somas que o ecrã do Dinheiro já mostra.
-  // (12/09/2026 — a décima das dez funcionalidades.) Só adultos o pedem: é
-  // orçamento, e a app da criança não tem porta para ele.
-  const retratoLocal = () => {
-    const inicio = `${TODAY_KEY.slice(0, 8)}-01`;
-    const idas = (s.shopHistory || []).filter(h => {
-      const d = new Date(h.at || 0);
-      return !Number.isNaN(d.getTime()) && `d${d.toISOString().slice(0, 7)}` === TODAY_KEY.slice(0, 8);
-    });
-    const acertos = s.acertoMovs || [];
-    return {
-      idServidor: null, inicio, fechadoEm: null, aberto: mesAberto,
-      nome: `${s.monthName} de ${TODAY_KEY.slice(1, 5)}`,
-      rendimento: s.rendimento || 0,
-      envelopes: envelopes.map(e => ({ nome: e.name, gasto: e.used, limite: e.limit }))
-        .sort((a, b) => b.gasto - a.gasto || a.nome.localeCompare(b.nome)),
-      gasto: spent, orcamento: budget, despesas: null, meias: s.despesasMeias || 0,
-      criancas: criancas.map(k => ({
-        nome: k,
-        feitas: allTasks().filter(t => t.who === k && s.done[t.id] && !(s.pending || {})[t.id]).length,
-        pontos: kidPts[k] || 0,
-      })),
-      compras: { idas: idas.length, total: idas.reduce((n, h) => n + (h.total || 0), 0) },
-      acertos: { n: acertos.length, total: acertos.reduce((n, a) => n + (a.valor || 0), 0) },
-    };
-  };
-  const retratosDaCasa = () => ((s.retratos || []).length ? s.retratos : [retratoLocal()]);
-  const retratoDoMesAberto = () => retratosDaCasa().find(r => r.aberto) || retratosDaCasa()[0] || null;
+  // Cada movimento de dinheiro da casa, por ordem do tempo, com quem o fez e o
+  // saldo a seguir a ele — despesas, cofres, metas, acertos, transferências.
+  // Todos os meses ficam em arquivo, e um mês fechado não muda quando o
+  // seguinte abre, porque as LINHAS dele não se mexem (`extracto-do-mes.js`).
+  // Só adultos: é dinheiro da casa, e a app da criança não tem porta para isto.
+  //
+  // ⚠ Substituiu o «retrato do mês» em 17/09/2026, por decisão dele. O retrato
+  // era a SOMA do mesmo mês — gasto por envelope, tarefas, compras, acertos —, e
+  // vivia ao lado disto a responder à mesma pergunta com menos detalhe. Duas
+  // portas para a mesma decisão, que é a classe de defeito que
+  // `__tests__/duas-portas-para-a-mesma-decisao.test.js` guarda. O extracto tem
+  // as mesmas linhas de origem, e mostra-as uma a uma em vez de somadas.
+  //
+  // ⚠ Sem servidor devolve VAZIO, e é a resposta honesta: a app local guarda as
+  // somas do mês, não as linhas de despesa. Ver o comentário do `extractos` no
+  // estado.
+  const extractosDaCasa = () => s.extractos || [];
+  const extractoDoMesAberto = () => extractosDaCasa().find(e => e.aberto) || extractosDaCasa()[0] || null;
 
   // Apagar uma tarefa.
   //
@@ -5976,7 +5969,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     tapTask, isAdmin, canChangeRole, setRole, setPin, pinError, isRecurring, definirAvatar, trazerFotografia,
     removerTarefa, criarTarefa, editarTarefa, mudarUrgencia, mudarPrazo, tarefaNoServidor, mudarRegraDaCasa, mudarListaDaCasa,
     trocasDeHoje, trocasDe, tarefasParaTrocar, proporTroca, aceitarTroca, desfazerTroca,
-    retratosDaCasa, retratoDoMesAberto,
+    extractosDaCasa, extractoDoMesAberto,
     partilharLista, desfazerPartilha,
     moverEntreEnvelopes, criarEnvelope, alterarEnvelope, apagarEnvelope, registarDespesa,
     criarEvento, alterarEventoDaCasa, eventoNoServidor, escoarFilaGoogle,

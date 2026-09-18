@@ -69,6 +69,12 @@ const FICAM_REDONDOS = {
     'discos de cor da legenda, 10 px',
   ],
   'src/CampoData.jsx': ['disco do dia escolhido no calendário'],
+  // O extracto do mês (17/09/2026): cada movimento leva a bola de quem o fez, e
+  // o rendimento do mês não tem pessoa — a coleção `meses` não guarda quem o
+  // abriu. No lugar do avatar fica um círculo vazio do mesmo diâmetro, para a
+  // coluna não partir. É a forma do avatar que substitui, e ninguém lhe toca:
+  // quem abre a folha é a linha inteira.
+  'src/sheets/ExtractoDoMes.jsx': ['lugar do avatar quando o movimento não tem pessoa — é a forma do avatar, não um alvo'],
   // E o traço por corredor da contagem decrescente (17/09/2026, desenho 3 de
   // `design/cinco-fora-da-caixa.dc.html`): um por corredor, cheio quando lá não
   // falta nada. É um indicador, não um alvo — ninguém lhe toca.

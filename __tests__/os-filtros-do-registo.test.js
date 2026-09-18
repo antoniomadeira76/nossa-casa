@@ -29,7 +29,7 @@ describe('⚠ os filtros do registo', () => {
     expect(bloco).toMatch(/onEscolher=\{\(n\) => mudarQuem\(n === 'Todos' \? null : n\)\}/);
     expect(bloco).toMatch(/rotuloDe=\{\(n\) => `Mostrar só o que \$\{n\} fez`\}/);
     // Com o quadro da casa, para as bolas terem a cor e a figura de cada um.
-    expect(doc).toMatch(/const \{ s, retratosDaCasa, membros: membrosDaCasa \} = useStore\(\);/);
+    expect(doc).toMatch(/const \{ s, extractosDaCasa, membros: membrosDaCasa \} = useStore\(\);/);
     expect(doc).toMatch(/<Filtros t=\{t\} quemHa=\{quemHa\} areasHa=\{areasHa\} MEMBERS=\{membrosDaCasa\}/);
   });
 

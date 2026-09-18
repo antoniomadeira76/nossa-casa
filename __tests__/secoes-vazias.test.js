@@ -66,8 +66,12 @@ const NUNCA_VAZIAS = {
 // seis esquemas de cor. Não é uma lista de dados e não pode vir vazia.
 const percorreUmaLista = (texto) => /(?<!\])\.map\(/.test(texto);
 
+// ⚠ `length > \d` e não `length > 0`: o extracto do mês só desenha a fila dos
+// outros meses com `lista.length > 1`, porque uma fila de uma pastilha só é uma
+// pastilha que não escolhe nada. Protege MAIS do que `> 0` e a prova recusava-o
+// (17/09/2026).
 const protegido = (texto) =>
-  /<Empty|length === 0|length \?|length &&|length > 0|\.length\)|!\(/.test(texto);
+  /<Empty|length === 0|length \?|length &&|length > \d|\.length\)|!\(/.test(texto);
 
 describe('nenhum título de secção fica com nada por baixo', () => {
   for (const f of ficheiros) {

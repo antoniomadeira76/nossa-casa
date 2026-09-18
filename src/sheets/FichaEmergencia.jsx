@@ -7,7 +7,7 @@ import Icon from '../Icon';
 import Sheet from '../Sheet';
 import { TODAY_KEY, dmyDeChave } from '../format';
 import { GRAVIDADES, documentoDeEmergencia, nomeDoFicheiroDeEmergencia } from '../exportar-saude';
-import { guardarPDF } from '../guardar-ficheiro';
+import PreVisualizarPDF from '../PreVisualizarPDF';
 
 /**
  * A ficha de emergência de uma criança: alergias, medicação em curso, médico,
@@ -27,7 +27,10 @@ export default function FichaEmergencia({ t, member, user, onClose }) {
   const [form, setForm] = useState({ nome: '', gravidade: 'moderada', nota: '' });
   const [erro, setErro] = useState(null);
   const [feito, setFeito] = useState(null);
-  const [aGuardar, setAGuardar] = useState(false);
+  // O documento a pré-visualizar, ou `null` (17/09/2026): «Exportar em PDF»
+  // MOSTRA a ficha antes de a mandar para fora. Com dados clínicos de um menor
+  // é a última altura em que ainda se fecha a folha sem consequências.
+  const [aVer, setAVer] = useState(null);
 
   const ficha = fichaDeEmergencia(member, user);
 
@@ -45,14 +48,10 @@ export default function FichaEmergencia({ t, member, user, onClose }) {
     setForm({ nome: '', gravidade: 'moderada', nota: '' });
   };
 
-  const exportar = async () => {
-    setAGuardar(true); setErro(null); setFeito(null);
-    const html = documentoDeEmergencia({ membro: member, casa: nomeDaCasa, ficha, hoje: TODAY_KEY, quemImprime: user, t });
-    const r = await guardarPDF(nomeDoFicheiroDeEmergencia({ membro: member, dia: TODAY_KEY }), html);
-    setAGuardar(false);
-    if (!r.ok) { setErro(r.motivo); return; }
-    if (!r.cancelado) setFeito(r.onde ? `PDF pronto — ${r.onde}` : 'PDF pronto.');
-  };
+  const preVisualizar = () => { setErro(null); setFeito(null); setAVer({
+    nome: nomeDoFicheiroDeEmergencia({ membro: member, dia: TODAY_KEY }),
+    html: documentoDeEmergencia({ membro: member, casa: nomeDaCasa, ficha, hoje: TODAY_KEY, quemImprime: user, t }),
+  }); };
 
   // `campo`, com os 44 px — o nome que o guarda `todo-campo-tem-44` reconhece.
   const campo = {
@@ -64,13 +63,15 @@ export default function FichaEmergencia({ t, member, user, onClose }) {
     <Sheet t={t} title="Ficha de Emergência" sub={`${deNome(member)} ${member} · casa ${nomeDaCasa}`}
       onClose={onClose}
       action={ficha ? (
-        // ⚠ ACENTO, como o «Guardar como PDF» da ficha de saúde: tira dados
-        // clínicos de um menor de dentro da app e põe-nos num ficheiro que a
-        // app deixa de governar. Não se desfaz.
-        <Primary t={t} icon="printer"
-          label={aGuardar ? 'A preparar…' : 'Exportar em PDF para a escola'}
+        // ⚠ `comum`, e o ACENTO mudou-se para dentro da pré-visualização
+        // (17/09/2026). Este botão já não tira nada de lado nenhum: mostra a
+        // ficha. Quem a tira é o «Exportar em PDF» de lá dentro, e é esse que
+        // leva a cor que promete consequências — pintar de acento um passo que
+        // se desfaz a fechar a folha ensina a família a carregar sem ler.
+        <Primary t={t} comum icon="printer"
+          label="Exportar em PDF para a escola"
           sub="As quatro secções, numa página"
-          disabled={aGuardar} onPress={exportar} />
+          onPress={preVisualizar} />
       ) : null}>
       {!ficha ? (
         <Tile t={t} kind="err" icon="lock">Não pode ver a ficha desta pessoa.</Tile>
@@ -155,6 +156,12 @@ export default function FichaEmergencia({ t, member, user, onClose }) {
 
           {erro ? <Tile t={t} kind="warn">{erro}</Tile> : null}
           {feito ? <Tile t={t} kind="info" icon="checkCircle">{feito}</Tile> : null}
+
+          {aVer ? (
+            <PreVisualizarPDF t={t} acento nome={aVer.nome} html={aVer.html}
+              titulo="Ficha de Emergência" sub="É isto que vai para a escola"
+              onFechar={() => setAVer(null)} />
+          ) : null}
         </View>
       )}
     </Sheet>

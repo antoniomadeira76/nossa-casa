@@ -75,7 +75,7 @@ export const O_QUE_SOBE = {
   monthLimits: ['campo', 'O `limites` da linha do mês aberto, um objeto `envelope → limite` guardado como JSON. Muda com o `mudarLimiteDoMes`.', 'alterarMes'],
   monthZero: ['local', 'Marca uma casa que ainda não abriu mês nenhum, e nessas o gasto dos envelopes-semente não conta. Com servidor, quem responde a isso é o `mes` ser nulo; isto fica para a app correr sem servidor, como sempre correu.'],
   monthName: ['local', 'O nome do mês a mostrar. É uma etiqueta do ecrã, calculada da data.'],
-  retratos: ['local', 'O retrato de cada mês — gasto por envelope, tarefas e pontos por criança, compras, acertos. NÃO é dado: é uma SOMA das linhas do mês (`despesas`, `tarefas_feitas`, `listas_compras`, `acertos`) feita na leitura (`retratosDe`), e refaz-se a cada leitura. Sem servidor, calcula-se o do mês corrente a partir da loja.'],
+  extractos: ['local', 'O extracto de cada mês — cada movimento de dinheiro, por ordem do tempo, com quem o fez e o saldo a seguir a ele. NÃO é dado: é uma DERIVAÇÃO das linhas do mês (`despesas`, `cofre_movimentos`, `meta_movimentos`, `acertos`, `transferencias`) feita na leitura (`extractosDe`), e refaz-se a cada leitura. Nada se grava ao fechar o mês: um extracto gravado seria um saldo escrito, e é o INVARIANTE #2 ao contrário. Sem servidor fica vazio — a app local guarda as somas do mês, não as linhas.'],
 
   // ── Compras ───────────────────────────────────────────────────────────────
   newItems: ['linhas', 'A coleção `artigos`, ligada à `listas_compras` da ida às compras.'],

@@ -22,7 +22,7 @@
 const fs = require('fs');
 const path = require('path');
 const { documentoDeSaude, documentoDeEmergencia } = require('../src/exportar-saude');
-const { documentoDoRetrato } = require('../src/retrato-do-mes');
+const { documentoDoExtracto } = require('../src/extracto-do-mes');
 const { paginaDaApp, carimboDe, logotipo } = require('../src/documento');
 const { buildTheme, SCHEMES } = require('../src/theme');
 
@@ -30,9 +30,14 @@ const RAIZ = path.join(__dirname, '..');
 const ler = (p) => fs.readFileSync(path.join(RAIZ, p), 'utf8');
 const semComentarios = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/[^\n]*/gm, '');
 
-const RETRATO = { nome: 'Agosto de 2026', aberto: false, fechadoEm: 'd2026-08-31', gasto: 120.5, orcamento: 570, meias: 1,
-  envelopes: [{ nome: 'Mercearia', gasto: 100.5, limite: 450 }, { nome: 'Lazer', gasto: 130, limite: 120 }],
-  criancas: [{ nome: 'Léo', feitas: 2, pontos: 6 }], compras: { idas: 1, total: 87.4 }, acertos: { n: 1, total: 40 } };
+const EXTRACTO = { nome: 'Agosto de 2026', aberto: false, fechadoEm: 'd2026-08-31',
+  entrou: 2020, saiu: 120.5, sobrou: 1899.5,
+  movimentos: [
+    { chave: 'despesa:d2', especie: 'despesa', data: '2026-08-14', quem: 'Rita', titulo: 'Lazer do fim-de-semana', detalhe: 'Lazer', valor: -20, saldo: 1899.5 },
+    { chave: 'acerto:a1', especie: 'acerto', data: '2026-08-12', quem: 'Rita', titulo: 'Acerto de contas com Tomás', detalhe: 'Rita pagou Tomás', valor: 40, neutro: true, saldo: 1919.5 },
+    { chave: 'despesa:d1', especie: 'despesa', data: '2026-08-05', quem: 'Tomás', titulo: 'Continente', detalhe: 'Mercearia', valor: -100.5, saldo: 1919.5 },
+    { chave: 'mes:m8', especie: 'rendimento', data: '2026-08-01', quem: null, titulo: 'Rendimento do mês', detalhe: 'abertura', valor: 2020, saldo: 2020 },
+  ] };
 const CONSULTAS = [{ id: 'h1', member: 'Mia', specialty: 'Dentista', day: 'd2026-08-05', time: '10:00', doctor: 'Dr. Cardoso' }];
 
 // Os três, com quem imprime e o tema — como os ecrãs os chamam.
@@ -40,7 +45,7 @@ const OS_TRES = (t) => ({
   saude: documentoDeSaude({ membro: 'Mia', casa: 'Bengui', consultas: CONSULTAS, docs: [], notas: {}, hoje: 'd2026-08-20', quemImprime: 'Rita', t }),
   emergencia: documentoDeEmergencia({ membro: 'Léo', casa: 'Bengui', hoje: 'd2026-08-20', quemImprime: 'Rita', t,
     ficha: { alergias: [], medicacao: [], medicos: [], contactos: [] } }),
-  retrato: documentoDoRetrato({ retrato: RETRATO, casa: 'Bengui', hoje: 'd2026-08-20', quemImprime: 'Rita', t }),
+  extracto: documentoDoExtracto({ extracto: EXTRACTO, casa: 'Bengui', hoje: 'd2026-08-20', quemImprime: 'Rita', t }),
 });
 
 describe('⚠ os três documentos saem do mesmo molde, com a cara da app', () => {
@@ -74,14 +79,14 @@ describe('⚠ os três documentos saem do mesmo molde, com a cara da app', () =>
 
   it('a faixa é a de QUEM imprime: outro esquema, outra cor', () => {
     const cinza = buildTheme(SCHEMES.length - 1, false);
-    const html = documentoDoRetrato({ retrato: RETRATO, casa: 'B', hoje: 'd2026-08-20', quemImprime: 'Tomás', t: cinza });
+    const html = documentoDoExtracto({ extracto: EXTRACTO, casa: 'B', hoje: 'd2026-08-20', quemImprime: 'Tomás', t: cinza });
     expect(html).toContain(`.faixa { background: ${cinza.chrome};`);
     expect(cinza.chrome).not.toBe(buildTheme(1, false).chrome);
     expect(html).toContain('<b>Impresso por Tomás</b>');
   });
 
   it('sem nome nem tema, o carimbo diz que foi a aplicação e a faixa fica com o Cião', () => {
-    const html = documentoDoRetrato({ retrato: RETRATO, casa: 'B', hoje: 'd2026-08-20' });
+    const html = documentoDoExtracto({ extracto: EXTRACTO, casa: 'B', hoje: 'd2026-08-20' });
     expect(html).toContain('<b>Impresso pela aplicação Nossa Casa</b>20/08/2026 · 14:30');
     expect(html).toContain('.faixa { background: #0A5B60;');
     expect(carimboDe({ quemImprime: null, hoje: 'd2026-01-02' })).toEqual({ quem: 'Impresso pela aplicação Nossa Casa', quando: '02/01/2026 · 14:30' });
@@ -106,7 +111,7 @@ describe('⚠ quem gera um documento passa quem imprime e o tema', () => {
         if (e.isDirectory()) percorrer(p);
         else if (/\.jsx$/.test(e.name)) {
           const txt = semComentarios(ler(p));
-          for (const m of txt.matchAll(/documento(DeSaude|DeEmergencia|DoRetrato)\(\{([^}]*)\}/g)) {
+          for (const m of txt.matchAll(/documento(DeSaude|DeEmergencia|DoExtracto)\(\{([^}]*)\}/g)) {
             chamadas.push({ onde: p, args: m[2] });
           }
         }
@@ -119,7 +124,7 @@ describe('⚠ quem gera um documento passa quem imprime e o tema', () => {
   });
 
   it('e os três documentos passam pelo `paginaDaApp` — não há um segundo molde', () => {
-    for (const f of ['src/exportar-saude.js', 'src/retrato-do-mes.js']) {
+    for (const f of ['src/exportar-saude.js', 'src/extracto-do-mes.js']) {
       const txt = semComentarios(ler(f));
       expect(txt).toMatch(/return paginaDaApp\(\{/);
       expect(txt).not.toMatch(/<!doctype html>/);

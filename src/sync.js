@@ -49,7 +49,7 @@ import { eEnderecoDeCasa, PORQUE_NAO_SOBE } from './endereco';
 // isso as provas em Node conseguem carregar este ficheiro. Uma importação que
 // arraste o RN parte todas elas — já aconteceu com o `Platform`.
 import { chaveDeDMY, dmyDeChave } from './format';
-import { retratosDe } from './retrato-do-mes';
+import { extractosDe } from './extracto-do-mes';
 import { paraOServidor, paraALoja } from './compras-estado';
 
 export { eEnderecoDeCasa, PORQUE_NAO_SOBE };
@@ -573,14 +573,20 @@ export async function puxarCasa() {
     aceitePor: nomeDoMembro[tr.aceite_por] || null,
   })).filter(tr => tr.dia && tr.de && tr.para);
 
-  // ── O retrato de cada mês ─────────────────────────────────────────────────
+  // ── O extracto de cada mês ────────────────────────────────────────────────
   //
-  // Uma SOMA por mês — despesas por envelope, tarefas confirmadas por criança,
-  // idas às compras, acertos — feita aqui, sobre as linhas cruas, por
-  // `retratosDe`. Nenhum campo novo: um retrato de um mês fechado não muda
-  // quando o seguinte abre, porque as linhas dele ficam onde estão. A criança
-  // não recebe `meses` nem `despesas`, e por isso recebe isto vazio.
-  const retratos = retratosDe(casa, nomeDoMembro);
+  // Cada movimento de dinheiro da casa, por ordem do tempo, com quem o fez e o
+  // saldo a seguir a ele — despesas, cofres, metas, acertos e transferências
+  // juntos numa lista só, feita aqui sobre as linhas cruas por `extractosDe`.
+  //
+  // ⚠ Nenhum campo novo, e NADA se grava ao fechar o mês: um extracto gravado
+  // seria um saldo escrito, que é o INVARIANTE #2 ao contrário. O extracto de
+  // um mês fechado é estável porque as LINHAS dele não se mexem — a coleção
+  // `despesas` não tem `updateRule` nem `deleteRule`. Todos os meses ficam em
+  // arquivo porque todos os movimentos ficam na base de dados.
+  //
+  // A criança não recebe `meses` nem `despesas`, e por isso recebe isto vazio.
+  const extractos = extractosDe(casa, nomeDoMembro);
 
   // ── As regras da casa ─────────────────────────────────────────────────────
   //
@@ -920,7 +926,7 @@ export async function puxarCasa() {
     pending,
     feitas,
     trocas,
-    retratos,
+    extractos,
     // O servidor manda: se responder, é esta a casa e são estes os membros.
     // Sem servidor, a app fica com a família de demonstração — e diz-o.
     membros: membrosDoServidor(casa.membros),
