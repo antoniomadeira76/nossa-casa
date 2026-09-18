@@ -81,8 +81,28 @@ describe('a autorização da agenda vive no servidor', () => {
   const pb = semComentarios(ler('src/pocketbase.js'));
 
   it('o aparelho não guarda o token em armazenamento nenhum', () => {
-    expect(pb).not.toMatch(/sessionStorage/);
+    // ⚠ A regra é sobre o TOKEN, e passou a dizer isso (18/09/2026).
+    //
+    // Era `not.toMatch(/sessionStorage/)` no ficheiro inteiro, e chumbava uma
+    // coisa que não é um token: o verificador PKCE da entrada pela Google, que
+    // vive o tempo de uma ida e volta à Google e mais nada. Proibir a palavra
+    // em vez de proibir a coisa é um guarda a medir o que sabe medir, e não o
+    // que interessa — e o perigo é afrouxar-se à primeira vez que estorva.
+    //
+    // Agora enumera: `localStorage` continua proibido (isso é disco), e cada
+    // uso de `sessionStorage` tem de ser NA MESMA LINHA da única chave
+    // permitida. Uma segunda chave falha aqui e obriga a escrever porquê.
     expect(pb).not.toMatch(/localStorage/);
+    const linhas = pb.split(/\r?\n/)
+      .filter(l => /sessionStorage/.test(l))
+      .filter(l => !/CHAVE_DO_RETORNO/.test(l));
+    expect(linhas).toEqual([]);
+    // E o que se guarda sob essa chave não tem token nenhum lá dentro.
+    const i = pb.indexOf('sessionStorage.setItem(CHAVE_DO_RETORNO');
+    expect(i).toBeGreaterThan(0);
+    const guardado = pb.slice(i, i + 220);
+    expect(guardado).toMatch(/codeVerifier/);
+    expect(guardado).not.toMatch(/token/i);
   });
 
   it('o token de acesso vem do servidor, e tem validade', () => {

@@ -194,6 +194,46 @@ const abrirNoGesto = (nome) => {
   return janela;
 };
 
+// ── A entrada pela Google SEM JANELA NENHUMA ────────────────────────────────
+//
+// 18/09/2026, decisão dele depois de a janela ter sido bloqueada mesmo com o
+// `abrirNoGesto`: o Chrome tinha guardado o bloqueio para o endereço, das
+// dezenas de vezes em que o defeito antigo a pediu fora do gesto.
+//
+// «Permitir janelas» resolve numa máquina e volta a faltar na seguinte. A
+// entrada na casa é a porta de tudo e não pode depender de uma definição do
+// navegador — por isso deixa de haver janela: a PÁGINA INTEIRA vai à Google e
+// volta. Nenhum bloqueador tem o que travar, e é também o que funciona no
+// telemóvel, onde uma janela por cima da app nunca foi bom desenho.
+//
+// ── Como funciona, em quatro passos ─────────────────────────────────────────
+//
+//   1. pede-se ao servidor os métodos de entrada; a Google vem com um
+//      `authURL`, um `state` e um `codeVerifier` (o PKCE);
+//   2. guarda-se o verificador e o estado no `sessionStorage` — vivem o tempo
+//      do separador e mais nada, que é exactamente a vida desta ida e volta;
+//   3. navega-se a página para a Google;
+//   4. a Google devolve `?code=…&state=…` a este mesmo endereço, e o arranque
+//      da app troca o código pela sessão.
+//
+// ⚠ O `state` COMPARA-SE à volta. É o que impede que alguém nos mande um
+// endereço com um `code` dele lá dentro e nos ponha na conta dele — a única
+// coisa que este fluxo tem a mais para defender do que o da janela.
+//
+// ⚠ E o endereço de retorno tem de estar registado na consola da Google, nos
+// «URIs de redireccionamento autorizados». Se não estiver, a Google responde
+// `redirect_uri_mismatch` — e a app diz QUAL é o endereço a registar, em vez
+// de mostrar o erro cru da Google.
+const CHAVE_DO_RETORNO = 'nossa-casa/entrada-google';
+
+// O endereço a que a Google devolve a pessoa: esta página, sem interrogação
+// nem âncora. É este que se regista na consola, e por isso a app mostra-o
+// quando a Google o recusa.
+export const enderecoDeRetorno = () => {
+  if (typeof window === 'undefined' || !window.location) return null;
+  return `${window.location.origin}${window.location.pathname}`;
+};
+
 // O token de acesso da Google — em memória, e mais nada.
 //
 // ── Onde a autorização vive ─────────────────────────────────────────────────
@@ -298,10 +338,130 @@ export const auth = {
   // um problema que não existe. Custou duas voltas: o segredo estava certo e o
   // redirecionamento também.
   //
+  // ── O caminho SEM JANELA: começar ─────────────────────────────────────────
+  //
+  // Navega a página para a Google e não volta — quem chama não tem o que
+  // esperar. Ver o bloco do `CHAVE_DO_RETORNO` para o porquê.
+  //
+  // Devolve `false` fora do navegador, para o telemóvel continuar no fluxo do
+  // SDK, que lá não tem bloqueador nenhum a atrapalhar.
+  async comecarEntradaGoogle() {
+    if (!estaLigado()) return semLigacao();
+    const retorno = enderecoDeRetorno();
+    if (!retorno) return false;
+
+    const m = await pb.collection('membros').listAuthMethods();
+    const g = (m.oauth2?.providers || []).find(p => p.name === 'google');
+    if (!g) throw new Error('A entrada pela Google não está configurada neste servidor.');
+
+    // ⚠ Os scopes SUBSTITUEM os do PocketBase, como no outro caminho: a
+    // identidade tem de ir toda, senão o `oauth2/v3/userinfo` responde 401 e o
+    // erro que chega ao ecrã manda-nos à consola da Google sem razão.
+    const url = new URL(g.authURL + encodeURIComponent(retorno));
+    url.searchParams.set('scope', [
+      'openid',
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile',
+    ].join(' '));
+
+    // ⚠ `sessionStorage` e não `localStorage`: isto vive o tempo de uma ida e
+    // volta, e um verificador PKCE esquecido num disco é uma credencial a
+    // apanhar pó. O separador fecha, isto desaparece — como deve ser.
+    try {
+      window.sessionStorage.setItem(CHAVE_DO_RETORNO, JSON.stringify({
+        codeVerifier: g.codeVerifier, state: g.state, retorno,
+      }));
+    } catch (e) {
+      throw new Error('O navegador não deixa guardar a entrada. Saia do modo privado e tente outra vez.');
+    }
+
+    window.location.assign(url.toString());
+    return true;
+  },
+
+  // A Google devolveu-nos alguma coisa? Lê-se o endereço, e mais nada.
+  haRetornoDaGoogle() {
+    if (typeof window === 'undefined' || !window.location) return false;
+    const q = new URLSearchParams(window.location.search);
+    return q.has('code') || q.has('error');
+  },
+
+  // ── O caminho SEM JANELA: concluir ────────────────────────────────────────
+  //
+  // Corre no arranque da app, antes de tudo o resto. Devolve
+  // `{ ok, record }` ou `{ ok: false, erro }` — nunca atira, porque quem o
+  // chama é o arranque e um arranque que rebenta é um ecrã branco.
+  //
+  // ⚠ E LIMPA O ENDEREÇO em qualquer dos casos. Um `?code=` que fica na barra
+  // é trocado outra vez a cada recarregamento, e a segunda troca falha sempre
+  // — um código de autorização gasta-se à primeira. A pessoa via «a entrada
+  // falhou» ao recarregar uma app onde já tinha entrado.
+  async concluirEntradaGoogle() {
+    if (typeof window === 'undefined' || !window.location) return { ok: false };
+    const q = new URLSearchParams(window.location.search);
+    const limpar = () => {
+      try {
+        window.sessionStorage.removeItem(CHAVE_DO_RETORNO);
+        window.history.replaceState({}, '', enderecoDeRetorno());
+      } catch (e) { /* sem história nem armazenamento: o endereço fica feio e mais nada */ }
+    };
+
+    const erroDaGoogle = q.get('error');
+    if (erroDaGoogle) {
+      limpar();
+      return { ok: false, erro: erroDaGoogle === 'access_denied'
+        ? 'Entrada cancelada na Google.'
+        : `A Google recusou a entrada (${erroDaGoogle}).` };
+    }
+
+    const code = q.get('code');
+    if (!code) return { ok: false };
+
+    let guardado = null;
+    try { guardado = JSON.parse(window.sessionStorage.getItem(CHAVE_DO_RETORNO) || 'null'); } catch (e) { guardado = null; }
+    if (!guardado || !guardado.codeVerifier) {
+      limpar();
+      return { ok: false, erro: 'A entrada começou noutro separador. Tente outra vez neste.' };
+    }
+    // ⚠ O `state` COMPARA-SE. Sem isto, um endereço com o código de outra
+    // pessoa punha esta casa na conta dela.
+    if (q.get('state') !== guardado.state) {
+      limpar();
+      return { ok: false, erro: 'A resposta da Google não corresponde ao pedido. Tente outra vez.' };
+    }
+
+    try {
+      const r = await pb.collection('membros').authWithOAuth2Code(
+        'google', code, guardado.codeVerifier, guardado.retorno,
+      );
+      limpar();
+      agendaLigada = null;
+      erroDaFotografia = null;
+      // A fotografia da conta, como no outro caminho: falhar aqui não estraga
+      // a entrada, mas o erro também não se perde.
+      const foto = r.meta && (r.meta.avatarURL || r.meta.avatarUrl);
+      if (foto) {
+        try { await auth.guardarAspeto({ avatar: foto }); }
+        catch (e) {
+          erroDaFotografia = e && e.message ? e.message : 'A fotografia não foi guardada.';
+          if (typeof console !== 'undefined') console.warn('[avatar]', erroDaFotografia);
+        }
+      }
+      return { ok: true, record: r.record };
+    } catch (e) {
+      limpar();
+      return { ok: false, erro: (e && e.message) || 'Não foi possível concluir a entrada.' };
+    }
+  },
+
   // A identidade vai SEMPRE. A agenda é que é opcional.
   //
+  // ⚠ Este é o caminho da JANELA, e no navegador deixou de ser o principal
+  // (18/09/2026) — ficou para o telemóvel, onde não há bloqueador. Ver o
+  // `comecarEntradaGoogle`.
+  //
   // ⚠ Ver o `abrirNoGesto` — a janela do consentimento abre-se antes de
-  // qualquer `await`, e é a diferença entre a entrada funcionar e não funcionar.
+  // qualquer `await`, e é a diferença entre ela abrir e não abrir.
   async entrarComGoogle({ calendario = false } = {}) {
     if (!estaLigado()) return semLigacao();
     const IDENTIDADE = [

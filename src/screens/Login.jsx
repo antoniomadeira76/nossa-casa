@@ -22,15 +22,19 @@ import * as sync from '../sync';
 import * as servidor from '../pocketbase';
 import { Pill } from '../ui';
 
-export default function Login({ t, onEnter }) {
+export default function Login({ t, onEnter, erroInicial = null }) {
   const { s, entrarCrianca, temPin, membros: MEMBERS, nomeDaCasa, criancas, adultos } = useStore();
   const insets = useSafeAreaInsets();
-  const [step, setStep] = useState('login');   // login | contas | criancas | pin
+  const [step, setStep] = useState(erroInicial ? 'contas' : 'login');   // login | contas | criancas | pin
   const [kid, setKid] = useState(null);
   const [pin, setPin] = useState('');
   const [tries, setTries] = useState(0);
   const [blocked, setBlocked] = useState(0);
-  const [erroGoogle, setErroGoogle] = useState(null);
+  // ⚠ Começa com o `erroInicial`: quando a volta da Google falha, a app
+  // aterra aqui e a razão vem de lá — a troca do código acontece no arranque,
+  // não neste ecrã. E começa-se no passo das CONTAS, porque quem acabou de
+  // falhar a entrada pela Google precisa do caminho local à vista.
+  const [erroGoogle, setErroGoogle] = useState(erroInicial);
   const [aEntrar, setAEntrar] = useState(false);
   const [erroPin, setErroPin] = useState(null);
 
@@ -70,12 +74,38 @@ export default function Login({ t, onEnter }) {
     if (!sync.ligado()) return setStep('contas');
     setErroGoogle(null);
     try {
-      // A agenda NÃO se pede aqui.
+      // ── DOIS CAMINHOS, E A ORDEM IMPORTA ────────────────────────────────
       //
-      // Pedia-se, e o consentimento que aparecia não produzia autorização de
-      // longa duração: o PocketBase não pede `access_type=offline` à Google.
-      // A agenda liga-se no ecrã de agendar, com o fluxo próprio, e uma vez só.
-      const r = await servidor.auth.entrarComGoogle();
+      // 18/09/2026. Há duas maneiras de entrar pela Google, e cada uma precisa
+      // de uma coisa que a app não controla:
+      //
+      //   · a JANELA precisa que o navegador a deixe abrir;
+      //   · o REDIRECCIONAMENTO precisa que o endereço desta app esteja nos
+      //     «URIs de redireccionamento autorizados» da consola da Google.
+      //
+      // A janela vem primeiro porque não exige configuração nenhuma: com o
+      // `abrirNoGesto` ela abre, e quando um navegador a recusar basta
+      // permiti-la. Pus o redireccionamento à frente durante vinte minutos e
+      // foi um erro meu: quem ainda não tinha registado o endereço ficava na
+      // página de erro da Google, sem volta — pior do que estava.
+      //
+      // O redireccionamento é a RESERVA, e entra exactamente quando é preciso:
+      // quando a janela foi recusada. Aí não há nada a permitir, e a pessoa não
+      // fica sem caminho.
+      //
+      // A agenda NÃO se pede aqui: o consentimento que aparecia não produzia
+      // autorização de longa duração, porque o PocketBase não pede
+      // `access_type=offline` à Google. Liga-se no ecrã de agendar, uma vez só.
+      let r = null;
+      try {
+        r = await servidor.auth.entrarComGoogle();
+      } catch (daJanela) {
+        if (!/bloqueou a janela/i.test(daJanela.message || '')) throw daJanela;
+        // A janela foi recusada. Vai-se pela página inteira, que nenhum
+        // bloqueador trava — e isto navega, não volta.
+        if (await servidor.auth.comecarEntradaGoogle()) return;
+        throw daJanela;
+      }
       onEnter(r.record.nome);
     } catch (e) {
       // Falhar a entrada pela Google não pode fechar a porta: sem provedor

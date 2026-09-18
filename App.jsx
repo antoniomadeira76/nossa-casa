@@ -148,6 +148,10 @@ function Shell() {
   // Os eventos que saíram da agenda da Google e ainda estão nesta casa.
   // Guardam-se para PERGUNTAR — nunca se apagam sem resposta.
   const [saidosDaGoogle, setSaidosDaGoogle] = useState([]);
+  // A razão por que o regresso da Google falhou, para o ecrã de entrada a
+  // dizer. Sem isto a pessoa voltava da Google para o «Bem-vindo» sem uma
+  // palavra sobre o que correu mal.
+  const [erroDoRetorno, setErroDoRetorno] = useState(null);
   // Os eventos da agenda da Google. Vazio até haver token — e havendo, vêm da
   // API a sério, não de uma lista escrita no código.
   const [eventosGoogle, setEventosGoogle] = useState(EVENTOS_DE_DEMONSTRACAO);
@@ -211,6 +215,27 @@ function Shell() {
     if (user) return;
     let vivo = true;
     (async () => {
+      // ⚠ PRIMEIRO: a Google acabou de nos devolver a pessoa?
+      //
+      // 18/09/2026, a entrada passou a ser um REDIRECCIONAMENTO da página
+      // inteira — sem janela, porque o bloqueador do Chrome a recusava. O
+      // regresso chega como `?code=…&state=…` NESTE endereço, e é aqui que se
+      // troca o código pela sessão.
+      //
+      // Vem antes do `sessaoPronta`: quem está a voltar da Google não tem
+      // sessão gravada nenhuma para esperar, e o código gasta-se à primeira.
+      if (servidor.auth.haRetornoDaGoogle()) {
+        const r = await servidor.auth.concluirEntradaGoogle();
+        if (!vivo) return;
+        if (r.ok && r.record) {
+          await lerDoServidor();
+          if (vivo) setUser(r.record.nome);
+          return;
+        }
+        // Falhou: o `Login` mostra a razão, e o endereço já vai limpo.
+        if (r.erro) setErroDoRetorno(r.erro);
+      }
+
       // ESPERAR pela sessão gravada antes de a dar por ausente. Sem isto era
       // uma corrida: o `AsyncAuthStore` carrega o disco de forma assíncrona, e
       // quem perguntasse no instante do arranque recebia «não há sessão» com
@@ -451,7 +476,10 @@ function Shell() {
     );
   }
 
-  if (!user) return <Login t={t} onEnter={entrar} />;
+  // O `erroDoRetorno` é a razão por que a volta da Google falhou, e chega ao
+  // ecrã de entrada para ele a dizer — em vez de a pessoa aterrar no
+  // «Bem-vindo» sem uma palavra sobre o que correu mal.
+  if (!user) return <Login t={t} onEnter={entrar} erroInicial={erroDoRetorno} />;
 
   // Entrou, mas não vive nesta casa.
   //
