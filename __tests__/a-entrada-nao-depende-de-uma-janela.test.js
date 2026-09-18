@@ -49,39 +49,36 @@ describe('a entrada na casa não depende de uma janela', () => {
     expect(pb).toMatch(/export const enderecoDeRetorno = /);
   });
 
-  it('⚠ quando a janela é recusada, a app NAVEGA em vez de ficar sem caminho', () => {
-    // A ordem: a janela primeiro, porque não exige configuração nenhuma; o
-    // redireccionamento como RESERVA, que entra quando ela for recusada.
+  it('⚠ o botão da Google NAVEGA — a janela é a reserva', () => {
+    // 18/09/2026, 20h27: o `http://localhost:8082/` foi registado nos «URIs de
+    // redireccionamento autorizados» da consola da Google, e a partir daí o
+    // redireccionamento passou a poder ser o caminho principal. Sem esse
+    // registo a Google recusa a volta com `redirect_uri_mismatch` e a pessoa
+    // fica numa página de erro dela — foi o que aconteceu de tarde, quando o
+    // pôs à frente antes do registo.
     //
-    // ⚠ Pô-lo à frente foi um erro de 18/09/2026: ele exige o endereço desta
-    // app registado na consola da Google, e quem o não tivesse registado ficava
-    // na página de erro da Google, sem volta — pior do que estava.
+    // A janela fica para o telemóvel e para quem não puder navegar.
     const i = login.indexOf('const entrarComGoogle');
     expect(i).toBeGreaterThan(0);
     const corpo = login.slice(i, login.indexOf('const press', i));
+    const ondeNavega = corpo.indexOf('comecarEntradaGoogle');
     const ondeJanela = corpo.indexOf('servidor.auth.entrarComGoogle');
-    const ondeReserva = corpo.indexOf('comecarEntradaGoogle');
-    expect(ondeJanela).toBeGreaterThan(0);
-    expect(ondeReserva).toBeGreaterThan(ondeJanela);
-    expect(corpo).toContain("if (!/bloqueou a janela/i.test(daJanela.message || '')) throw daJanela;");
+    expect(ondeNavega).toBeGreaterThan(0);
+    expect(ondeJanela).toBeGreaterThan(ondeNavega);
 
-    // E a reserva navega mesmo, sem abrir janela nenhuma.
     const j = pb.indexOf('async comecarEntradaGoogle');
     const dele = pb.slice(j, j + 2600);
     expect(dele).toContain('window.location.assign(');
     expect(dele).not.toMatch(/window\.open|abrirNoGesto/);
   });
 
-  it('⚠ o `redirect_uri` é o DESTA APP — e não há gancho nenhum a desviar a volta', () => {
-    // Tentei poupar ao dono da casa o passo na consola da Google: usar o
-    // endereço do PocketBase (já registado) e pôr um `routerUse` a reencaminhar
-    // a volta para a app. Funcionava — e PARTIA AS REGRAS DE ESCRITA.
-    //
-    // Medido: com o gancho, 46 das 51 provas do `provar-relacoes-ancoradas`
-    // passaram a falhar, e a falha era «PASSOU — a linha foi criada»: uma casa
-    // a escrever dentro de outra. Um `routerUse` a mais desarranja a cadeia do
-    // PocketBase. Nenhuma conveniência de entrada paga isso, e este guarda
-    // existe para ninguém o voltar a tentar sem reler isto.
+  it('⚠ o `redirect_uri` é o DESTA APP, e não há gancho a desviar a volta', () => {
+    // Tentei poupar o passo da consola com um `routerUse` em
+    // `/api/oauth2-redirect` a reencaminhar a volta, usando o `redirect_uri` do
+    // PocketBase. Funcionava — e PARTIA AS REGRAS DE ESCRITA: 46 das 51 provas
+    // do `provar-relacoes-ancoradas` passaram a falhar com «PASSOU — a linha
+    // foi criada», uma casa a escrever dentro de outra. Um `routerUse` a mais
+    // desarranja a cadeia do PocketBase. O gancho foi apagado.
     const j = pb.indexOf('async comecarEntradaGoogle');
     const dele = pb.slice(j, j + 2600);
     expect(dele).toContain('g.authURL + encodeURIComponent(retorno)');

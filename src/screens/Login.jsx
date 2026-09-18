@@ -77,34 +77,33 @@ export default function Login({ t, onEnter, erroInicial = null }) {
     if (!sync.ligado()) return setStep('contas');
     setErroGoogle(null);
     try {
-      // ── DOIS CAMINHOS, E A ORDEM IMPORTA ────────────────────────────────
+      // ── SEM JANELA ─────────────────────────────────────────
       //
-      // Cada um precisa de uma coisa que a app não controla:
+      // A página inteira vai à Google e volta. Nenhum bloqueador tem o que
+      // travar, e não é preciso permitir janelas em cada máquina nova.
       //
-      //   · a JANELA precisa que o navegador a deixe abrir;
-      //   · o REDIRECCIONAMENTO precisa que o endereço desta app esteja nos
-      //     «URIs de redireccionamento autorizados» da consola da Google.
+      // ⚠ Isto só é o caminho principal desde 18/09/2026, às 20h27, porque o
+      // `http://localhost:8082/` passou a estar nos «URIs de redireccionamento
+      // autorizados» da consola da Google — a par do
+      // `127.0.0.1:8095/api/oauth2-redirect` e do `.../api/agenda/retorno`, que
+      // já lá estavam. Sem esse registo, a Google recusa a volta com
+      // `redirect_uri_mismatch` e a pessoa fica numa página de erro dela, sem
+      // caminho: foi o que aconteceu quando pôs isto à frente antes do registo.
       //
-      // A janela vem primeiro porque não exige configuração nenhuma: com o
-      // `abrirNoGesto` ela abre, e quando um navegador a recusar basta
-      // permiti-la, uma vez. O redireccionamento é a RESERVA e entra
-      // exactamente quando é preciso — quando a janela foi recusada.
+      // Um endereço novo (a casa exposta noutro domínio, outra porta de
+      // desenvolvimento) precisa do mesmo registo. É o único passo fora do
+      // código, e está dito no `enderecoDeRetorno`.
       //
-      // ⚠ Tentei tirar o passo da consola com um gancho do servidor, e não dá:
-      // ver o comentário do `redirect_uri` no `comecarEntradaGoogle`. Partia as
-      // regras de escrita do PocketBase.
+      // O `comecarEntradaGoogle` navega e não volta; o que se segue acontece no
+      // arranque da app, no `concluirEntradaGoogle`. Devolve `false` fora do
+      // navegador — e aí segue-se pela JANELA, que é o caminho do telemóvel e
+      // continua a ser a reserva de quem não puder navegar.
       //
       // A agenda NÃO se pede aqui: o consentimento que aparecia não produzia
       // autorização de longa duração, porque o PocketBase não pede
       // `access_type=offline` à Google. Liga-se no ecrã de agendar, uma vez só.
-      let r = null;
-      try {
-        r = await servidor.auth.entrarComGoogle();
-      } catch (daJanela) {
-        if (!/bloqueou a janela/i.test(daJanela.message || '')) throw daJanela;
-        if (await servidor.auth.comecarEntradaGoogle()) return;
-        throw daJanela;
-      }
+      if (await servidor.auth.comecarEntradaGoogle()) return;
+      const r = await servidor.auth.entrarComGoogle();
       onEnter(r.record.nome);
     } catch (e) {
       // Falhar a entrada pela Google não pode fechar a porta: sem provedor
