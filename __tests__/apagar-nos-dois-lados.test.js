@@ -134,6 +134,56 @@ describe('o diálogo pergunta antes e informa', () => {
     expect(bloco).toMatch(/cancelLabel="Manter"/);
   });
 
+  it('⚠ e a app OLHA OUTRA VEZ quando a janela volta a estar à frente', () => {
+    // 18/09/2026: «quando apago algo no calendário da app ele apaga no Google,
+    // o contrário também devia acontecer» — e acontecia. Tudo o que está
+    // provado neste ficheiro já existia: o que faltava era o QUANDO.
+    //
+    // A pergunta vivia num efeito com `[user, MEMBERS, s.googleCalendarImported,
+    // s.clearedSeeds]`, e essas dependências só mudam à entrada ou quando se
+    // importa alguma coisa. Quem apagasse na Google com a app aberta não via
+    // nada até sair e voltar a entrar — e como a app fica aberta, nunca via.
+    // Uma funcionalidade que só corre uma vez por sessão é, na prática, uma
+    // funcionalidade que não existe.
+    const inteiro = semComentarios(app);
+    // Ouve os dois: mudar de separador e voltar à janela.
+    expect(inteiro).toMatch(/addEventListener\('visibilitychange', olhar\)/);
+    expect(inteiro).toMatch(/window\.addEventListener\('focus', olhar\)/);
+    // E larga-os — um ouvinte que fica é uma fuga.
+    expect(inteiro).toMatch(/removeEventListener\('visibilitychange', olhar\)/);
+    expect(inteiro).toMatch(/window\.removeEventListener\('focus', olhar\)/);
+    // Travado: a agenda não muda vinte vezes por minuto, e cada olhada é um
+    // pedido à conta de quem entrou.
+    expect(inteiro).toMatch(/agora - ultimaOlhadela\.current < 60000/);
+    // ⚠ E lê o corpo pelo REF, que é sempre o mais recente. Uma cópia presa
+    // no fecho via o `googleCalendarImported` do render em que nasceu, e
+    // voltava a oferecer eventos já dispensados.
+    expect(inteiro).toMatch(/verAgendaRef\.current = corpo;/);
+    expect(inteiro).toMatch(/if \(verAgendaRef\.current\) verAgendaRef\.current\(\);/);
+    // ⚠ E o ouvinte monta-se UMA vez: com dependências, remontava-se a meio
+    // de um `visibilitychange` e perdia o evento que o motivou.
+    const i = inteiro.indexOf("addEventListener('visibilitychange'");
+    expect(inteiro.slice(i, i + 460)).toMatch(/\}, \[\]\);/);
+  });
+
+  it('⚠ e volta a olhar de cinco em cinco minutos com a app à vista', () => {
+    // O foco apanha quem foi ao calendário apagar e voltou. Não apanha o OUTRO
+    // adulto a apagar no telemóvel dele enquanto esta app está aberta na
+    // cozinha, sem ninguém lhe tocar — e isso só um relógio apanha.
+    //
+    // ⚠ NÃO É A GOOGLE QUE AVISA, e não pode ser: o `watch` da Calendar API
+    // manda o aviso para um endereço HTTPS público, e o servidor desta casa
+    // corre em `127.0.0.1`. Enquanto não estiver exposto à internet, quem
+    // pergunta tem de ser a app.
+    const inteiro = semComentarios(app);
+    expect(inteiro).toMatch(/const relogio = setInterval\(olhar, 5 \* 60 \* 1000\);/);
+    // E pára-o — um relógio que fica a bater depois de a app sair é uma fuga.
+    expect(inteiro).toMatch(/clearInterval\(relogio\);/);
+    // ⚠ Escondida, não pergunta nada: o mesmo `olhar` do foco sai à primeira
+    // linha, e por isso o relógio não gasta quota nem bateria às escuras.
+    expect(inteiro).toMatch(/if \(document\.visibilityState === 'hidden'\) return;/);
+  });
+
   it('e «Manter» não volta a perguntar pelos mesmos', () => {
     // Uma pergunta que se repete a cada entrada ensina a responder sem ler.
     expect(bloco).toMatch(/idGoogle: null/);

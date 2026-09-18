@@ -251,11 +251,27 @@ function Shell() {
   // linha — `!MEMBERS[user]` — e não voltava a correr, porque `MEMBERS` não
   // estava na lista. Resultado: entrar pela Google nunca pesquisava a agenda.
   // Só uma recarga da página o fazia, e aí já havia membros à partida.
+  //
+  // ⚠ E OLHA OUTRA VEZ QUANDO A APP VOLTA A ESTAR À FRENTE (18/09/2026).
+  //
+  // Ele: «quando apago algo no calendário da app ele apaga no Google, o
+  // contrário também devia acontecer». E acontecia — a detecção
+  // (`eventosQueSairamDaGoogle`) e a pergunta existem desde que o apagar
+  // ganhou os dois sentidos. O que faltava era o QUANDO: isto corria uma vez,
+  // à entrada, e as dependências só mudam quando se importa alguma coisa.
+  // Quem apagasse na Google com a app aberta não via nada até sair e voltar a
+  // entrar — e como a app fica aberta, nunca via.
+  //
+  // Agora também se pergunta quando a janela volta a estar à frente, que é
+  // exactamente o gesto de quem foi ao calendário apagar e voltou. Travado a um
+  // minuto: a agenda da Google não muda vinte vezes por minuto, e cada olhada
+  // é um pedido à conta de quem entrou.
+  const verAgendaRef = useRef(null);
   useEffect(() => {
     if (!user || !MEMBERS[user] || MEMBERS[user].kid) return;
 
     let vivo = true;
-    (async () => {
+    const corpo = async () => {
       // Saber se a agenda está ligada NESTA conta, sempre que alguém entra.
       //
       // Antes só se perguntava quando a resposta era desconhecida. Se um
@@ -291,9 +307,51 @@ function Shell() {
       if (s.clearedSeeds) return;
       const novos = EVENTOS_DE_DEMONSTRACAO.filter(e => !jaVistos[e.id]);
       if (vivo && novos.length) { setEventosGoogle(novos); setGoogleImport(true); }
-    })();
+    };
+    // O ref leva sempre a versão mais recente — a que vê o
+    // `googleCalendarImported` de agora, e não o do render em que foi criada.
+    verAgendaRef.current = corpo;
+    corpo();
     return () => { vivo = false; };
   }, [user, MEMBERS, s.googleCalendarImported, s.clearedSeeds]);
+
+  // A segunda porta: a janela voltou a estar à frente, e de cinco em cinco
+  // minutos enquanto lá estiver.
+  //
+  // ⚠ NÃO É A GOOGLE QUE AVISA, E NÃO PODE SER. A Google sabe empurrar — o
+  // `watch` da Calendar API manda um pedido quando o calendário muda —, mas
+  // esse pedido vai para um endereço HTTPS público, e o servidor desta casa
+  // corre em `127.0.0.1`. Enquanto ele não estiver exposto à internet, a Google
+  // não tem para onde mandar nada, e quem pergunta tem de ser a app.
+  //
+  // Por isso são duas ocasiões, e nenhuma delas custa mais do que um pedido:
+  //
+  //   · a janela volta à frente — é o gesto de quem foi ao calendário apagar
+  //     e voltou, e é o caso que ele descreveu;
+  //   · de cinco em cinco minutos com a app à vista — para o outro adulto,
+  //     que apaga no telemóvel dele enquanto este está aberto na cozinha.
+  //
+  // Escondida, a app não pergunta nada: gastar quota e bateria a olhar para
+  // uma agenda que ninguém está a ver não serve a casa.
+  const ultimaOlhadela = useRef(0);
+  useEffect(() => {
+    if (typeof document === 'undefined' || !document.addEventListener) return undefined;
+    const olhar = () => {
+      if (document.visibilityState === 'hidden') return;
+      const agora = Date.now();
+      if (agora - ultimaOlhadela.current < 60000) return;
+      ultimaOlhadela.current = agora;
+      if (verAgendaRef.current) verAgendaRef.current();
+    };
+    const relogio = setInterval(olhar, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', olhar);
+    window.addEventListener('focus', olhar);
+    return () => {
+      clearInterval(relogio);
+      document.removeEventListener('visibilitychange', olhar);
+      window.removeEventListener('focus', olhar);
+    };
+  }, []);
 
   // Quem entrou, tal como o quadro da casa o conhece. Pode ser `undefined`
   // durante um instante: quem entra pela Google chega com um nome que a loja
