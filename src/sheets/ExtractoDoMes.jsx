@@ -90,7 +90,16 @@ export default function ExtractoDoMes({ t, extractos, inicial, user, onClose }) 
     return (
       <Linha key={m.chave} t={t} last={ultimo} style={{ paddingVertical: S.sm }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-          <Text style={{ width: 34, fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
+          {/* ⚠ 42, e não 34. Medido no navegador com a letra da app: «02/09»
+              a 11,5 px ocupa 32,8 px no Inter — um píxel e dois décimos de
+              folga numa coluna de 34, e a data partia em duas linhas («02/0» /
+              «9»), o que desalinhava a linha toda. 42 dá nove píxeis de folga.
+
+              E o `numberOfLines` com o `flexShrink: 0` são o travão: assim a
+              data não parte nem é espremida por um título comprido ao lado,
+              aconteça o que acontecer à largura da folha. */}
+          <Text numberOfLines={1} style={{ width: 42, flexShrink: 0,
+            fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
             {diaCurto(m.data)}
           </Text>
           {m.quem

@@ -107,6 +107,22 @@ await prova('⚠ o dia da ABERTURA já é do mês novo', () => {
   igual(set[0].valor, -30.25);
 });
 
+await prova('⚠ e a abertura vem PRIMEIRO no dia dela — o saldo não mergulha', () => {
+  // Setembro abriu a 01/09 e a casa gastou 30,25 € nesse mesmo dia. O
+  // desempate era só alfabético e `despesa:` vem antes de `mes:`: o rendimento
+  // aparecia a meio do dia 1 e o saldo ia a −30,25 € antes de o dinheiro
+  // entrar. Apanhado em 18/09/2026 numa captura do dono da casa.
+  const st = extractos[0];
+  const noDia1 = st.movimentos.filter(m => m.data === '2026-09-01');
+  igual(noDia1.length, 2);
+  // A lista vem do mais recente para o mais antigo: a abertura é a última.
+  igual(noDia1[noDia1.length - 1].especie, 'rendimento');
+  igual(noDia1[0].especie, 'despesa');
+  igual(noDia1[noDia1.length - 1].saldo, 3000);
+  igual(noDia1[0].saldo, 2969.75);
+  igual(st.movimentos.filter(m => !m.neutro).every(m => m.saldo > 0), true);
+});
+
 console.log('\n── o saldo corrente, e o que não lhe toca ──');
 
 await prova('o saldo desce a cada saída e começa no rendimento do mês', () => {

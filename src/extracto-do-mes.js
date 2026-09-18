@@ -226,10 +226,22 @@ export function extractosDe(casa, nomeDoMembro = {}) {
     // ele, dois movimentos do mesmo dia trocavam de sítio entre leituras e o
     // saldo de cada linha mudava à frente de quem estava a ler.
     //
+    // ⚠ A ABERTURA DO MÊS VEM SEMPRE PRIMEIRO no dia dela, e é por isso que há
+    // um `abre` antes da chave. O desempate era só alfabético, e `despesa:`
+    // vem antes de `mes:`: num mês que abriu a 01/09 com despesas nesse mesmo
+    // dia, o rendimento aparecia A MEIO do dia 1 e o saldo corrente MERGULHAVA
+    // para −165,00 € antes de o dinheiro entrar. A soma final estava certa e o
+    // ecrã dizia que a casa tinha ficado a dever. Apanhado em 18/09/2026 numa
+    // captura do dono da casa, e é a mesma classe do `noMes` que o `sync.js`
+    // documenta: uma ordenação de texto a fazer de ordenação de sentido.
+    //
     // ⚠ As coleções guardam DATA e não hora (`data('data')` é um campo de data).
     // O extracto mostra o dia, não a hora — e é por isso que este desenho ganha
     // ao da linha do tempo, que prometia uma hora que não existe.
-    movs.sort((a, b) => String(a.data).localeCompare(String(b.data)) || a.chave.localeCompare(b.chave));
+    const abre = (m) => (m.especie === 'rendimento' ? 0 : 1);
+    movs.sort((a, b) => String(a.data).localeCompare(String(b.data))
+      || abre(a) - abre(b)
+      || a.chave.localeCompare(b.chave));
 
     let saldo = 0;
     let entrou = 0;

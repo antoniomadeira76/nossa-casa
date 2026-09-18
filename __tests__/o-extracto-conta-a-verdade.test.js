@@ -99,6 +99,30 @@ describe('o extracto do mês', () => {
     expect(saldoDe('meta:g1m')).toBe(1273.4);        // − 30 (meta, dia 20)
   });
 
+  it('⚠ a ABERTURA do mês vem primeiro no dia dela, e o saldo não mergulha', () => {
+    // O defeito de 18/09/2026, numa captura do dono da casa: o mês abriu a
+    // 01/09 e a casa gastou nesse mesmo dia. O desempate era só alfabético e
+    // `despesa:` vem antes de `mes:` — o «Rendimento do mês» aparecia A MEIO
+    // do dia 1, e o saldo corrente ia a −165,00 € antes de o dinheiro entrar.
+    // A soma final estava certa e o ecrã dizia que a casa tinha ficado a dever.
+    const casa = casaDeExemplo();
+    casa.despesas.push(
+      { id: 'dA', envelope: 'e1', valor: 165, descricao: 'Compras do mês', data: '2026-09-01', pagador: 'r' },
+      { id: 'dB', envelope: 'e2', valor: 24.99, descricao: 'Gás', data: '2026-09-01', pagador: 't' },
+    );
+    const movs = setembroDe(casa).movimentos;
+    const noDia1 = movs.filter(m => m.data === '2026-09-01');
+    // A lista vem do mais recente para o mais antigo, por isso a abertura é a
+    // ÚLTIMA das linhas do dia 1 — e no ecrã fica por baixo de todas elas.
+    expect(noDia1[noDia1.length - 1].especie).toBe('rendimento');
+    // E nenhum saldo do mês é negativo: o rendimento entrou antes de se gastar.
+    expect(movs.filter(m => !m.neutro).every(m => m.saldo > 0)).toBe(true);
+    const saldoDe = (chave) => movs.find(m => m.chave === chave).saldo;
+    expect(saldoDe('mes:m9')).toBe(2020);
+    expect(saldoDe('despesa:dA')).toBe(1855);        // − 165
+    expect(saldoDe('despesa:dB')).toBe(1830.01);     // − 24,99
+  });
+
   it('um acerto e uma transferência APARECEM e NÃO mexem no saldo', () => {
     const movs = setembroDe(casaDeExemplo()).movimentos;
     const acerto = movs.find(m => m.chave === 'acerto:a1');
