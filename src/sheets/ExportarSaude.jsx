@@ -3,9 +3,10 @@ import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { plural, dayLabel, TODAY_KEY } from '../format';
-import { Label, Primary, Choice, Opcao, Tile } from '../ui';
+import { Label, Primary, Opcao, Tile } from '../ui';
 import { EscolherPessoa } from '../FiltroDeMembros';
 import Sheet from '../Sheet';
+import CampoDeEscolha from '../CampoDeEscolha';
 import Icon from '../Icon';
 import {
   AMBITOS, resumoDoAmbito, documentoDeSaude, nomeDoFicheiro, anexosComImagens,
@@ -209,16 +210,22 @@ export default function ExportarSaude({
           </View>
         ) : null}
 
+        {/* ⚠ Um CAMPO, e não uma fila de pastilhas (25/09/2026, opção B de
+            `design/escolher-corredor.dc.html`). As especialidades de uma casa
+            crescem com o histórico de saúde, que é o dado que mais cresce nesta
+            app — e esta fila ficava ao lado da folha de MARCAR consulta, que já
+            tinha resolvido o mesmo problema com a mesma forma. Duas respostas
+            diferentes à mesma pergunta, no mesmo módulo. */}
         {ambito === 'especialidade' ? (
-          <View style={{ gap: S.md }}>
-            <Label t={t}>Qual especialidade</Label>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
-              {especialidades.map(e => (
-                <Choice key={e} t={t} label={e} selected={alvo === e}
-                  onPress={() => escolherAlvo('especialidade', e)} />
-              ))}
-            </View>
-          </View>
+          <CampoDeEscolha t={t} rotulo="Qual especialidade" titulo="Qual especialidade"
+            sub="A área a exportar"
+            iconeDoCampo="heartPulse"
+            valor={alvo}
+            opcoes={especialidades.map(e => ({ valor: e, titulo: e }))}
+            aoEscolher={(e) => escolherAlvo('especialidade', e)}
+            porEscolher="Escolher a especialidade"
+            vazio="Sem especialidades nesta ficha."
+            dicaVazia="Aparecem aqui assim que houver uma consulta marcada." />
         ) : null}
 
         {/* O que vai sair, em números, antes de sair. */}

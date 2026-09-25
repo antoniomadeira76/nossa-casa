@@ -411,13 +411,22 @@ describe('Cada âmbito deixa escolher o seu alvo', () => {
     expect(texto).not.toContain('Escolha qual consulta.');
   });
 
+  // ⚠ 25/09/2026: a especialidade deixou de ser pastilhas em fila e passou a
+  // ser o `CampoDeEscolha` (opção B de `design/escolher-corredor.dc.html`) —
+  // as especialidades de uma casa crescem com cada consulta nova, e a fila
+  // crescia com elas. São dois toques: o campo abre a lista, a lista escolhe.
+  const escolherEspecialidade = (r, esp) => {
+    tocar(r, 'Qual especialidade — por escolher');
+    tocar(r, esp);
+  };
+
   test('escolher «por especialidade» mostra as especialidades, sem adivinhar', () => {
     const r = abrir();
     tocar(r, 'Por especialidade');
     const texto = junta(r.toJSON());
     expect(texto).toContain('Qual especialidade');
     expect(texto).toContain('Escolha qual especialidade.');   // não escolhe por si
-    tocar(r, 'Dentista');
+    escolherEspecialidade(r, 'Dentista');
     expect(junta(r.toJSON())).toContain('2 consultas');       // as duas de dentista
   });
 
@@ -427,7 +436,7 @@ describe('Cada âmbito deixa escolher o seu alvo', () => {
     tocar(r, 'Só uma consulta');
     tocar(r, 'Pediatria');
     tocar(r, 'Por especialidade');
-    tocar(r, 'Dentista');
+    escolherEspecialidade(r, 'Dentista');
     tocar(r, 'Só uma consulta');
     expect(junta(r.toJSON())).toContain('1 consulta');    // a Pediatria continua lá
   });

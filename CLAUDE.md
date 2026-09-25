@@ -250,6 +250,16 @@ significado exclusivo: `lock` é privado, `smile` é bónus de criança, `houseG
 casa, `heartPulse` é saúde. **Nunca reutilize um ícone com outro sentido** — é pior do que um
 ícone menos evocativo.
 
+**Uma escolha que cresce com a casa é um CAMPO, não uma fila de pastilhas.**
+`src/CampoDeEscolha.jsx` — uma linha de 44 com o valor e um `caretDown`, que abre uma folha
+com a lista (e um campo de pesquisa acima de doze opções). A altura não depende do número de
+opções: as pastilhas custavam 149 px com quatro corredores e 485 com vinte e sete, e este
+campo custa 83 com os dois. Decisão de 25/09/2026, opção B de `design/escolher-corredor.dc.html`.
+Duas ou três escolhas **fixas** ficam em `Choice` ou `Segmented`, onde se vêem todas de uma vez.
+Quem já está dentro de uma folha usa a `ListaDeEscolha` e não abre uma segunda.
+O guarda `__tests__/uma-escolha-que-cresce-nao-e-uma-fila.test.js` enumera as filas que restam,
+com a razão de cada uma — e as duas que esperam decisão do dono da casa.
+
 **Sem emoji.** É uma app que trata de dinheiro.
 
 ---

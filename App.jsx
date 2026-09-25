@@ -586,7 +586,10 @@ function Shell() {
         return `${contas(eq.length, 'equipamento', 'equipamentos')}`
           + ` · ${contas(contratosDaCasa().length, 'contrato', 'contratos')}`;
       },
-      render: () => <Equipamentos t={t} user={user} onClose={() => setEquip(false)}
+      // ⚠ Sem `onClose` (25/09/2026): o `Equipamentos` nunca o leu. Quem fecha
+      // esta vista é o `fechar` aqui em cima, que é a porta do registo — a prop
+      // prometia que o ecrã se podia fechar a si próprio, e não podia.
+      render: () => <Equipamentos t={t} user={user}
         abrir={typeof equip === 'string' ? equip : null} />,
     },
     gestao: {
@@ -597,7 +600,8 @@ function Shell() {
     doc: {
       icon: 'fileText', titulo: 'Documentação', fechar: () => setDoc(false),
       sub: () => `Versão ${APP_VERSION}`,
-      render: () => <Documentacao t={t} onClose={() => setDoc(false)}
+      // ⚠ Sem `onClose`, pela mesma razão do `Equipamentos` aqui em cima.
+      render: () => <Documentacao t={t}
         onIr={irDoRegisto} podeGerir={isAdmin(user)} user={user} />,
     },
     ida: {
@@ -1153,10 +1157,13 @@ function Shell() {
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center',
           paddingHorizontal: 24, paddingTop: 24, paddingBottom: 90 }}>
+          {/* ⚠ Sem `user` nem `onClose` (25/09/2026): o modal lê `t`, `events`,
+              `onImportar` e `onIgnore`, e mais nada. Quem o dispensa é o «Agora
+              não», que é o `onIgnore` — o `onClose` prometia um X que não
+              existe, e o `user` já vai dentro do `onImportar`. */}
           <GoogleCalendarImportModal
             t={t}
             events={eventosGoogle}
-            user={user}
             onImportar={(events, visibilidade) => {
               importGoogleEvents(events, user, visibilidade);
               setGoogleImport(false);
@@ -1173,7 +1180,6 @@ function Shell() {
               }));
               setGoogleImport(false);
             }}
-            onClose={() => setGoogleImport(false)}
           />
         </View>
       )}

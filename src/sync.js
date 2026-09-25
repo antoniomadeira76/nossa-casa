@@ -609,6 +609,9 @@ export async function puxarCasa() {
     // E a ementa da semana — pela NEGATIVA: um `bool` novo nasce a `false` em
     // todas as linhas, e `false` tem de ser «ligada». `=== true`, sem margem.
     ementaDesligada: aCasa.ementa_desligada === true,
+    // E os ícones dos corredores, pela mesma negativa e pela mesma razão: uma
+    // casa que já escolheu ícones não os pode perder por o campo ter chegado.
+    iconesDesligados: aCasa.icones_desligados === true,
   } : null;
 
   // ── As três listas da casa ────────────────────────────────────────────────
@@ -1788,6 +1791,7 @@ const REGRA_NO_SERVIDOR = {
   splitHalf: 'divide_meias',
   pontosLigados: 'pontos_ligados',
   ementaDesligada: 'ementa_desligada',
+  iconesDesligados: 'icones_desligados',
 };
 
 export async function regrasDaCasa(casaId, campos) {

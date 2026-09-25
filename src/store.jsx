@@ -289,7 +289,7 @@ const DATA_KEYS = [
   'contasFixas', 'contasPagas', 'contratos', 'trocas', 'extractos',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
   'rotate', 'urg', 'due', 'monthName', 'monthLimits', 'monthZero', 'clearedSeeds',
-  'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'ementaDesligada', 'pointValue', 'payDay', 'splitHalf',
+  'eventGone', 'eventEdits', 'roles', 'pins', 'pontosLigados', 'ementaDesligada', 'iconesDesligados', 'pointValue', 'payDay', 'splitHalf',
   'rendimento', 'stores', 'shopPlan', 'shopHistory', 'precos', 'precoPago', 'health', 'specialities', 'equipCats', 'registo',
   'recurringReset', 'healthNotes', 'healthRecipes', 'healthDecisions', 'healthDocs', 'healthGone',
   'healthArchived', 'healthTomas', 'healthAlergias',
@@ -706,6 +706,11 @@ export const DEMO = () => ({
   // A ementa da semana, pela NEGATIVA (12/09/2026): `false` — o valor com que um
   // `bool` nasce no servidor e com que uma chave ausente se lê cá — é «ligada».
   ementaDesligada: false,
+  // Os ícones dos corredores, pela mesma NEGATIVA e pela mesma razão
+  // (25/09/2026): `false` é «com ícones», que é o que a casa tinha antes de o
+  // interruptor existir. Desligar não apaga escolha nenhuma — o
+  // `iconesDeSeccao` fica intacto e voltar a ligar traz tudo de volta.
+  iconesDesligados: false,
   // Mínimo 0, e não 0,01: uma casa pode querer os pontos como contagem e não
   // como dinheiro — «cinco pontos» sem euros por trás.
   pointValue: 0.10, payDay: 0, splitHalf: true,
@@ -3667,7 +3672,22 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   // garante que não há dois iguais («não repitas icons nas secções»). Ver o
   // `iconesDosCorredores`.
   const iconesDeTodosOsCorredores = () => iconesDosCorredores(seccoes, s.iconesDeSeccao || {});
-  const iconeDaSeccao = (nome) => iconesDeTodosOsCorredores()[nome] || ICONE_POR_ESCOLHER;
+
+  // ⚠ O interruptor «sem ícones» (25/09/2026, «deve haver uma opção slider a
+  // dizer sem ícones»). Pela POSITIVA aqui e pela negativa no dado, como o
+  // `ementaNaCasa`: quem lê pergunta «há ícones?» e não «não estão desligados?».
+  const iconesNosCorredores = s.iconesDesligados !== true;
+
+  // ⚠ Desligado, isto devolve `null` — e é de propósito. O sítio onde a
+  // decisão se toma é UM, e nenhum ecrã pode mostrar um ícone que a casa
+  // desligou por se ter esquecido de perguntar. Quem desenhar o resultado tem
+  // de o tratar: um `null` no `<Icon name>` dá um SVG VAZIO do tamanho pedido
+  // — um buraco de 19 px, sem erro nenhum —, e o guarda
+  // `__tests__/a-casa-pode-ficar-sem-icones.test.js` enumera os ecrãs e chumba
+  // quem o deixe passar. O `SectionTitle` já trata do `icone` ausente.
+  const iconeDaSeccao = (nome) => (iconesNosCorredores
+    ? (iconesDeTodosOsCorredores()[nome] || ICONE_POR_ESCOLHER)
+    : null);
   // Os corredores que ainda ninguém marcou — o ecrã de administração di-lo em
   // vez de deixar a pessoa contar as caixas.
   const corredoresSemIcone = () => corredoresPorEscolher(seccoes, s.iconesDeSeccao || {});
@@ -6049,6 +6069,9 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     marcarArtigo, artigoNoServidor, mudarPlanoDeCompras, fecharIdaAsCompras,
     seccoes, criarSeccao, alterarSeccao, apagarSeccao, reordenarSeccoes,
     iconeDaSeccao, escolherIconeDaSeccao, donoDosIcones, corredoresSemIcone,
+    // Pela positiva, como o `ementaNaCasa`. A grelha de escolher e os títulos
+    // dos corredores leem isto; o dado é que está pela negativa.
+    iconesNosCorredores,
     criarEquipamento, equipNoServidor, mudarPreferencia,
     abrirMes, fecharMes, mudarLimiteDoMes,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,

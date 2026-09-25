@@ -4,9 +4,10 @@ import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { Label, Choice, Toggle, Primary, NumField, SectionTitle } from '../ui';
 import { useAcaoDaFolha } from '../Sheet';
+import CampoDeEscolha from '../CampoDeEscolha';
 
 export default function NovoArtigo({ t, user, onClose }) {
-  const { criarArtigo, seccoes } = useStore();
+  const { criarArtigo, seccoes, iconeDaSeccao } = useStore();
   const [form, setForm] = useState({
     label: '',
     // ⚠ O primeiro corredor já ESCOLHIDO, como no protótipo (`itemDraft.s: 0`).
@@ -66,28 +67,27 @@ export default function NovoArtigo({ t, user, onClose }) {
         />
       </View>
 
-      <View style={{ gap: S.sm }}>
-        {/* ⚠ «Corredor», como na folha de gerir e como em todo o resto da app
-            (16/09/2026). O mesmo campo do mesmo artigo chamava-se «Secção» a
-            criar e «Corredor» a editar — e o modo de loja, a lista e o «Como
-            fazemos compras» dizem todos corredor. A palavra interna
-            (`seccoes`, `section`) fica como está: essa não se lê. */}
-        <Label t={t}>Corredor</Label>
-        <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-          {/* ⚠ As secções da CASA. E a escolha guarda o NOME — o formulário
-              guardava o índice, e a partir do momento em que a casa pode
-              reordenar as secções um índice deixa de apontar para a mesma. */}
-          {seccoes.map((sec) => (
-            <Choice
-              key={sec}
-              t={t}
-              label={sec}
-              selected={form.section === sec}
-              onPress={() => setForm(f => ({ ...f, section: sec }))}
-            />
-          ))}
-        </View>
-      </View>
+      {/* ⚠ «Corredor», como na folha de gerir e como em todo o resto da app
+          (16/09/2026). O mesmo campo do mesmo artigo chamava-se «Secção» a
+          criar e «Corredor» a editar — e o modo de loja, a lista e o «Como
+          fazemos compras» dizem todos corredor. A palavra interna
+          (`seccoes`, `section`) fica como está: essa não se lê.
+
+          ⚠ Um CAMPO, e não uma fila de pastilhas (25/09/2026, opção B de
+          `design/escolher-corredor.dc.html`). As pastilhas custavam 149 px com
+          quatro corredores e 485 com vinte e sete — passavam a ser o maior
+          campo da folha e empurravam o «Guardar artigo» para fora do ecrã. O
+          campo mede o mesmo com quatro e com vinte e sete.
+
+          ⚠ E a escolha guarda o NOME. O formulário guardava o índice, e a
+          partir do momento em que a casa pode reordenar os corredores um índice
+          deixa de apontar para o mesmo. */}
+      <CampoDeEscolha t={t} rotulo="Corredor" titulo="Corredor"
+        sub="Onde este artigo se apanha na loja"
+        valor={form.section}
+        opcoes={seccoes.map(sec => ({ valor: sec, titulo: sec, icone: iconeDaSeccao(sec) }))}
+        aoEscolher={(sec) => setForm(f => ({ ...f, section: sec }))}
+        vazio="Esta casa ainda não tem corredores." />
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Preço estimado</Label>

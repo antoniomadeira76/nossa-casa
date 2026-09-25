@@ -288,6 +288,15 @@ const CAMPOS_DA_CASA = [
     // ter de «ler ausente como ligado». Desligar não apaga pratos nem jantares.
     // Nasce também na tabela `CAMPOS` do `acrescentar-campos.mjs`.
     bool('ementa_desligada'),
+    // O interruptor dos ícones dos corredores (25/09/2026, a pedido do dono da
+    // casa: «deve haver uma opção slider a dizer sem ícones»). ⚠ Pela NEGATIVA,
+    // pela MESMA razão do `ementa_desligada` logo acima — e aqui custava ainda
+    // mais caro: `icones_ligados` nasceria a `false` e todas as casas que já
+    // tinham escolhido ícones perdiam-nos do ecrã no instante em que o campo
+    // chegasse ao servidor, sem ninguém ter mexido em nada. Desligar não apaga
+    // escolha nenhuma: o `seccoes.icone` fica, e voltar a ligar traz tudo.
+    // Nasce também na tabela `CAMPOS` do `acrescentar-campos.mjs`.
+    bool('icones_desligados'),
 ];
 
 if (casaHabitada) await aplicarCampos('casas', CAMPOS_DA_CASA);

@@ -99,17 +99,41 @@ describe('⚠ a marca de estado tem dois tamanhos, e só dois', () => {
     expect(maus).toEqual([]);
   });
 
+  // ⚠ Os componentes que servem AS DUAS APPS (25/09/2026). O `CampoDeEscolha`
+  // é usado pelas folhas dos adultos e pela folha «Pedir um Artigo» e «Propor
+  // uma Troca» da criança, e por isso não pode escolher um tamanho fixo: pede o
+  // `grande` a quem o monta, e é quem o monta que sabe em que app está.
+  //
+  // Esta lista é FECHADA de propósito. Um ficheiro que entre aqui está a dizer
+  // «sirvo as duas apps», e isso é uma decisão — não uma saída para não escolher.
+  const PARTILHADOS = {
+    'src/CampoDeEscolha.jsx': 'grande ? MARCA_DA_CRIANCA : MARCA',
+  };
+
   it('⚠ a app da criança usa a SUA, e a dos adultos usa a deles', () => {
     const maus = [];
     for (const u of usos) {
       if (u.size === null) continue;                  // fica o valor por omissão
-      const daCrianca = u.rel === 'src/KidApp.jsx';
-      const esperado = daCrianca ? 'MARCA_DA_CRIANCA' : 'MARCA';
+      const esperado = PARTILHADOS[u.rel]
+        || (u.rel === 'src/KidApp.jsx' ? 'MARCA_DA_CRIANCA' : 'MARCA');
       if (u.size !== esperado) {
         maus.push(`${u.rel}:${u.linha} → size={${u.size}}, esperava ${esperado}`);
       }
     }
     expect(maus).toEqual([]);
+  });
+
+  it('⚠ e um componente partilhado é mesmo montado nas duas apps', () => {
+    // Senão a excepção era uma porta aberta: bastava declarar-se partilhado
+    // para poder escolher o tamanho que quisesse.
+    for (const rel of Object.keys(PARTILHADOS)) {
+      const nome = path.basename(rel, '.jsx');
+      const quemMonta = jsx.filter(f => f !== rel
+        && new RegExp(`<${nome}\\b`).test(semComentarios(fs.readFileSync(path.join(RAIZ, f), 'utf8'))));
+      // Pelo menos um ecrã dos adultos e a app da criança.
+      expect(quemMonta.some(f => f === 'src/KidApp.jsx' || /ProporTroca/.test(f))).toBe(true);
+      expect(quemMonta.some(f => /screens|sheets/.test(f) && !/ProporTroca/.test(f))).toBe(true);
+    }
   });
 
   it('e o valor por omissão da própria marca é o dos adultos', () => {

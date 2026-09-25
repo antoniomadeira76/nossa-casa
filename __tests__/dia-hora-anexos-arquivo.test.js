@@ -68,8 +68,10 @@ const consultaAberta = (membro) => {
   tocar(r, 'marcar consulta');
   tocar(r, quem);
   // ⚠ Dois toques: a especialidade deixou de ser pastilhas em fila e passou a
-  // ser uma linha que abre.
-  tocar(r, 'Escolher a especialidade');
+  // ser um campo que abre a lista. Em 25/09/2026 passou a ser o
+  // `CampoDeEscolha` de toda a app, e o nome em voz alta passou a dizer o
+  // valor — «Especialidade: Dentista» — em vez de «Escolher a especialidade».
+  tocar(r, 'Especialidade — por escolher');
   tocar(r, 'Dentista');
   TestRenderer.act(() => { campoData(r).props.onChange('d2026-09-20'); });
   tocar(r, 'Marcar e pôr na agenda');

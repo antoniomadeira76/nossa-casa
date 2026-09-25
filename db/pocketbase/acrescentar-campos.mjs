@@ -82,6 +82,10 @@ const CAMPOS = [
   // NEGATIVA: um `bool` novo nasce a `false` em todas as linhas que já existem,
   // e `false` tem de ser «ligada». Ver o comentário no `criar-colecoes.mjs`.
   ['casas', 'ementa_desligada', { type: 'bool' }],
+  // O interruptor dos ícones dos corredores (25/09/2026): regra da casa, e
+  // também pela NEGATIVA — uma casa que já escolheu ícones não os pode perder
+  // por o campo ter chegado. Ver o comentário no `criar-colecoes.mjs`.
+  ['casas', 'icones_desligados', { type: 'bool' }],
 ];
 
 // As coleções que nasceram depois da base. A definição é a MESMA do

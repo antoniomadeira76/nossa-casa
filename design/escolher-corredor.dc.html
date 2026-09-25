@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escolher o corredor</title>
+<style>
+:root{
+  --page:#F6F7F9; --card:#FCFCFD; --surface:#FFFFFF; --subtle:#FAFAFA;
+  --border:#D9D9D9; --divider:#F0F2F5;
+  --t1:#262626; --t2:#434343; --t3:#656C7C; --slate:#606E90;
+  --ac:#078286; --acFg:#056b6e; --acBg:#E6F4F4; --acBrd:#8FC9CB;
+  --ok:#52C41A; --okBorder:#BAE7A3; --okBg:rgba(220,243,209,.35); --okTexto:#237804;
+  --warnBg:#FEFFD0; --warn:#FAAD14; --warnTexto:#8F5600;
+  --errBg:#FFF1F0; --err:#FF4D4F; --errTexto:#A32621;
+  --rc:8px; --rr:6px; --rp:100px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#EEF0F3;color:var(--t1);padding:26px;
+  font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif}
+h1{font-size:27px;letter-spacing:-.02em;margin:0 0 8px}
+p.intro{color:var(--t2);max-width:88ch;margin:0 0 6px;line-height:1.6}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);
+  margin:34px 0 14px;padding-bottom:7px;border-bottom:1px solid #DADDE2}
+h3{font-size:15.5px;margin:0 0 2px}
+.diz{color:var(--t3);font-size:12.5px;line-height:1.55;margin:0 0 10px;max-width:44ch}
+.bom{color:var(--okTexto);font-weight:600}.mau{color:#A32621;font-weight:600}
+.aviso{background:var(--warnBg);border-left:3px solid var(--warn);padding:12px 14px;
+  border-radius:0 var(--rc) var(--rc) 0;max-width:88ch;margin:14px 0 6px}
+.aviso b{color:var(--warnTexto)}
+code{background:#E9ECF1;border-radius:4px;padding:1px 5px;font-size:12.5px}
+
+/* ── O comando do simulador ───────────────────────────────────────────────── */
+.comando{position:sticky;top:0;z-index:9;background:#EEF0F3;padding:14px 0 12px;
+  margin:18px 0 6px;border-bottom:1px solid #DADDE2;display:flex;align-items:center;
+  gap:14px;flex-wrap:wrap}
+.comando b{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--t3)}
+.comando button{min-height:36px;padding:0 15px;border-radius:var(--rp);cursor:pointer;
+  border:1px solid var(--border);background:var(--surface);color:var(--t2);
+  font:600 13.5px/1 inherit}
+.comando button[aria-pressed="true"]{background:var(--acBg);border-color:var(--acBrd);color:var(--acFg)}
+
+/* ── O tapete das opções ──────────────────────────────────────────────────── */
+.tapete{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.op{width:372px;flex:none}
+.tel{background:var(--surface);border-radius:12px;overflow:hidden;padding:16px;
+  box-shadow:0 8px 24px rgba(16,18,29,.13),0 0 0 1px rgba(16,18,29,.07)}
+.medida{font-size:11.5px;color:var(--t3);margin-top:9px;display:flex;gap:8px;align-items:center}
+.medida b{font-variant-numeric:tabular-nums;color:var(--t2);font-weight:700}
+.barra{height:6px;border-radius:var(--rp);background:var(--divider);flex:1;overflow:hidden}
+.barra i{display:block;height:100%;background:var(--acBrd)}
+.barra i.gordo{background:#F2A6A6}
+
+/* ── As peças da app ──────────────────────────────────────────────────────── */
+.rot{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--slate);margin:0 0 8px}
+.i{stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+
+/* a pastilha `Choice` da app */
+.past{display:flex;flex-wrap:wrap;gap:4px}
+.past button{min-height:44px;padding:0 14px;border-radius:var(--rp);cursor:pointer;
+  border:1px solid var(--border);background:var(--surface);color:var(--t2);
+  font:400 14px/1 inherit;white-space:nowrap}
+.past button[aria-pressed="true"]{background:var(--acBg);border-color:var(--acBrd);
+  color:var(--acFg);font-weight:600}
+
+/* a `Row` da app: uma linha, um destino */
+.linha{display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 8px;
+  border-radius:var(--rr);border:1px solid var(--border);background:var(--surface);
+  cursor:pointer;width:100%;text-align:left;font:inherit;color:inherit}
+.linha .q{flex:1;min-width:0}
+.linha .q b{display:block;font-weight:400;font-size:15px;color:var(--t2)}
+.linha .q span{display:block;font-size:11.5px;color:var(--t3);margin-top:1px}
+.linha .seta{color:var(--t3);flex:none}
+
+/* a fila que rola */
+.fila{display:flex;gap:4px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+.fila button{flex:none}
+.sombra{position:relative}
+.sombra::after{content:"";position:absolute;right:0;top:0;bottom:6px;width:34px;
+  pointer-events:none;background:linear-gradient(90deg,rgba(255,255,255,0),var(--surface))}
+
+/* a lista com pesquisa */
+.busca{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 13px;
+  border:1px solid var(--border);border-radius:var(--rr);background:var(--card);
+  color:var(--t3);font-size:14.5px}
+.rolo{max-height:180px;overflow-y:auto;margin-top:8px;border:1px solid var(--border);
+  border-radius:var(--rr);background:var(--surface)}
+.rolo .it{display:flex;align-items:center;gap:11px;min-height:44px;padding:0 12px;
+  border-bottom:1px solid var(--divider);font-size:14.5px;color:var(--t2);cursor:pointer}
+.rolo .it:last-child{border-bottom:0}
+.rolo .it[aria-selected="true"]{background:var(--acBg);color:var(--acFg);font-weight:600}
+.rolo .it .ic{color:var(--ac);flex:none;opacity:.85}
+
+/* a folha que abre por cima */
+.folha{margin-top:10px;border:1px dashed var(--acBrd);border-radius:var(--rc);
+  padding:12px;background:var(--acBg);font-size:12px;color:var(--acFg);line-height:1.5}
+
+.mais{min-height:44px;padding:0 14px;border-radius:var(--rp);cursor:pointer;
+  border:1px dashed var(--acBrd);background:transparent;color:var(--acFg);
+  font:600 13.5px/1 inherit;white-space:nowrap}
+
+table{border-collapse:collapse;margin-top:12px;font-size:13px}
+th,td{text-align:left;padding:7px 14px 7px 0;border-bottom:1px solid #DFE2E7;vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);font-weight:700}
+td b{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+
+<h1>Escolher o corredor, com a casa que for</h1>
+
+<div class="aviso" style="border-left-color:var(--ok);background:rgba(220,243,209,.35)">
+  <b style="color:var(--okTexto)">DECIDIDO (25/09/2026): a B, e em todos os sítios com a mesma situação.</b>
+  Está em <code>src/CampoDeEscolha.jsx</code>. Foi para: o corredor nas três folhas
+  (criar artigo, editar artigo, «Pedir um artigo» da criança), a especialidade da folha de
+  marcar consulta — que tinha uma B própria escrita à mão, sem tecto —, a especialidade da
+  exportação de saúde, as duas tarefas da folha de trocas, e a loja da ida (essa pela
+  <code>ListaDeEscolha</code>, porque a linha que abre já existia lá).
+  <br><br>
+  <b style="color:var(--okTexto)">Por decidir:</b> o envelope (tem três formas diferentes, e
+  a grelha mostra o «livre&nbsp;138,00&nbsp;€» que o campo esconde), a meta do fecho do mês
+  (a escolha é opcional e desliga-se tocando outra vez), as abas do Modo Compras (são
+  navegação, e a cor de cada aba diz o que já está despachado). O guarda
+  <code>uma-escolha-que-cresce-nao-e-uma-fila</code> nomeia-as e chumba qualquer fila nova.
+</div>
+<p class="intro">
+  A folha do artigo escolhe o corredor com uma fila de pastilhas que quebra de linha. Com
+  quatro corredores cabe; com quinze, o campo passa a ser o maior da folha e empurra o
+  «Guardar artigo» para fora do ecrã. <b>Carregue nos números aqui em baixo</b> — cada opção
+  redesenha-se e diz quantos píxeis passa a ocupar.
+</p>
+
+<div class="aviso">
+  <b>São quatro sítios, não um.</b> O mesmo campo existe na folha de criar artigo, na de
+  editar, no «Pedir um artigo» da app da criança e — noutra forma — nas abas do Modo Compras,
+  que já corta os nomes no primeiro espaço (<code>n.split(' ')[0]</code>) para caberem:
+  «Frutas&nbsp;&amp;&nbsp;Legumes» e «Frutas do dia» ficam ambos «Frutas». O que se escolher
+  aqui passa a ser <i>um</i> componente para os quatro.
+</div>
+
+<div class="comando">
+  <b>A casa tem</b>
+  <button data-n="4"  aria-pressed="true">4 corredores</button>
+  <button data-n="8"  aria-pressed="false">8</button>
+  <button data-n="15" aria-pressed="false">15</button>
+  <button data-n="27" aria-pressed="false">27</button>
+  <span style="font-size:12.5px;color:var(--t3)">a altura mede-se a sério, no navegador</span>
+</div>
+
+<h2>As cinco</h2>
+<div class="tapete" id="tapete"></div>
+
+<h2>O que cada uma custa</h2>
+<table>
+  <tr><th>Opção</th><th>4</th><th>8</th><th>15</th><th>27</th><th>Toques para escolher</th><th>Vê tudo de uma vez</th></tr>
+  <tr><td><b>A</b> — como está</td><td id="a4"></td><td id="a8"></td><td id="a15"></td><td id="a27"></td><td>1</td><td>sim</td></tr>
+  <tr><td><b>B</b> — linha que abre</td><td id="b4"></td><td id="b8"></td><td id="b15"></td><td id="b27"></td><td>2 (abre, escolhe)</td><td>na folha</td></tr>
+  <tr><td><b>C</b> — fila que rola</td><td id="c4"></td><td id="c8"></td><td id="c15"></td><td id="c27"></td><td>1 + arrastar</td><td>não</td></tr>
+  <tr><td><b>D</b> — as primeiras e «mais»</td><td id="d4"></td><td id="d8"></td><td id="d15"></td><td id="d27"></td><td>1, ou 2</td><td>depois de abrir</td></tr>
+  <tr><td><b>E</b> — lista com pesquisa</td><td id="e4"></td><td id="e8"></td><td id="e15"></td><td id="e27"></td><td>1, ou escrever</td><td>rolando</td></tr>
+</table>
+
+<div class="aviso" style="border-left-color:var(--ac);background:var(--acBg)">
+  <b style="color:var(--acFg)">O que eu recomendo: a B.</b> É a única cuja altura <i>não depende</i>
+  do número de corredores — a linha tem 52&nbsp;px e o campo inteiro 111, com quatro corredores e
+  com vinte e sete, enquanto o de hoje vai de 149 a 485 —, e é a única
+  que mostra o ícone do corredor escolhido, que é a decisão que a casa acabou de tomar. Custa um
+  toque a mais, e esse toque só se paga quando se quer mudar de corredor: a folha de criar
+  artigo já chega com o corredor certo escolhido.
+  <br><br>
+  <b style="color:var(--acFg)">Com uma condição:</b> acima de doze corredores, a folha que abre
+  leva o campo de pesquisa da opção E. É a mesma folha, com mais uma linha — não é uma sexta opção.
+</div>
+
+<script>
+// ── Os corredores da simulação ───────────────────────────────────────────────
+// Nomes que uma casa portuguesa inventa mesmo, e com comprimentos a sério: o
+// «Frutas & Legumes» é o que já parte a fila de hoje.
+const CORREDORES = [
+  ['Frutas & Legumes','hortalica'], ['Frescos','fruta'], ['Casa','limpeza'], ['Mercearia','mercearia'],
+  ['Talho','talho'], ['Peixaria','peixaria'], ['Padaria','padaria'], ['Laticínios','laticinios'],
+  ['Congelados','congelados'], ['Bebidas','bebidas'], ['Enchidos','charcutaria'], ['Conservas','conservas'],
+  ['Cereais e papas','cereais'], ['Massa e arroz','massa'], ['Higiene','higiene'],
+  ['Papel e cozinha','papel'], ['Bebé','bebe'], ['Animais','animais'], ['Jardim','jardim'],
+  ['Doces e bolachas','doces'], ['Snacks','snacks'], ['Café e chá','cafe'], ['Queijos','queijo'],
+  ['Ovos','ovos'], ['Pastelaria','pastelaria'], ['Utensílios','cozinha'], ['Corredor 27','caixa'],
+];
+
+// Os desenhos, no traço da app: 24 de grelha, 1,75 de espessura.
+const D = {
+  hortalica:'M12 20c0-6 3-10 8-12-1 8-4 12-8 12zM12 20c0-5-2-8-6-9 .6 6 2.6 9 6 9',
+  fruta:'M12 8c-4 0-6 3-6 6.5S8.5 21 12 21s6-2.5 6-6.5S16 8 12 8zM12 8V4M12 5c2 0 3-1 3-2',
+  limpeza:'M9 3h4v4H9zM8 7h6l1.5 5v9h-9v-9zM17 6h3v4M18.5 10v3',
+  mercearia:'M3 5h2l2.2 9.5h9.6L19 8H6M9 19.5a1 1 0 1 0 0-.1M17 19.5a1 1 0 1 0 0-.1',
+  talho:'M6 9a5 5 0 0 1 10 0v10H6zM16 9h3v6h-3',
+  peixaria:'M3 12c3-4 7-5 10-5s6 2 8 5c-2 3-5 5-8 5s-7-1-10-5zM17 10.5h.01',
+  padaria:'M4 10c0-2.5 2-4 4-4h8c2 0 4 1.5 4 4l-1.5 8h-13zM9 7l-1 11M15 7l1 11',
+  laticinios:'M8 3h8l-1 4v14H9V7zM8 11h8',
+  congelados:'M12 3v18M4.5 7.5l15 9M19.5 7.5l-15 9',
+  bebidas:'M8 3h8l-1 7-2 2v9h-2v-9l-2-2zM8 7h8',
+  charcutaria:'M5 12a7 4 0 0 0 14 0 7 4 0 0 0-14 0zM5 12v3a7 4 0 0 0 14 0v-3M9.5 11.5h.01M14 13h.01',
+  conservas:'M6 6h12v13H6zM6 6a6 2 0 0 0 12 0 6 2 0 0 0-12 0M9 11h6',
+  cereais:'M12 21V9M12 9c0-3 2-5 5-5 0 3-2 5-5 5zM12 12c0-3-2-5-5-5 0 3 2 5 5 5z',
+  massa:'M5 6h14M5 10h14M5 14h14M5 18h14',
+  higiene:'M9 3h6v3H9zM8 6h8v15H8zM11 10h2M12 9v4',
+  papel:'M6 4h12v16H6zM6 8h12M6 12h12M6 16h12',
+  bebe:'M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM5 21c0-4 3-6 7-6s7 2 7 6M10 8h.01M14 8h.01',
+  animais:'M7 9a2 2 0 1 0 0-.1M17 9a2 2 0 1 0 0-.1M5 14a2 2 0 1 0 0-.1M19 14a2 2 0 1 0 0-.1M12 12c3 0 5 3 5 5s-2 3-5 3-5-1-5-3 2-5 5-5z',
+  jardim:'M12 21V11M12 11c0-3 2-5 5-5 0 3-2 5-5 5zM12 13c0-3-2-5-5-5 0 3 2 5 5 5z',
+  doces:'M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM4 9l4 2.5-4 2.5zM20 9l-4 2.5 4 2.5z',
+  snacks:'M5 8h14l-1.5 12h-11zM8 8V5h8v3M9 12v4M15 12v4',
+  cafe:'M5 8h12v6a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4zM17 9h2a2 2 0 0 1 0 4h-2M5 21h12',
+  queijo:'M4 13l8-5h8v8H4zM8 14.5h.01M13 14h.01M17 15h.01',
+  ovos:'M9 21a4 5 0 0 0 0-10 4 5 0 0 0 0 10zM16 16a3 4 0 0 0 0-8 3 4 0 0 0 0 8z',
+  pastelaria:'M5 20h14l-1-7H6zM8 13c0-3 2-4 4-4s4 1 4 4M12 9V5',
+  cozinha:'M7 3v8a2 2 0 0 0 4 0V3M9 11v10M17 3c-1.5 2-2 4-2 6h4c0-2-.5-4-2-6zM17 9v12',
+  caixa:'M3.5 7.5L12 4l8.5 3.5v9L12 20l-8.5-3.5zM3.5 7.5L12 11l8.5-3.5M12 11v9',
+};
+const svg = (n, s=19) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true">`
+  + (D[n]||D.caixa).split('M').filter(Boolean).map(p=>`<path class="i" d="M${p}"/>`).join('') + '</svg>';
+const seta = `<svg width="16" height="16" viewBox="0 0 24 24" class="seta" aria-hidden="true"><path class="i" d="M9 5l7 7-7 7"/></svg>`;
+const lupa = `<svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><circle class="i" cx="11" cy="11" r="6"/><path class="i" d="M15.5 15.5L21 21"/></svg>`;
+const visto = `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path class="i" d="M5 12.5l4.5 4.5L19 7"/></svg>`;
+
+let N = 4, escolhido = 0, abertoD = false, abertoB = false;
+const lista = () => CORREDORES.slice(0, N);
+
+// ── As cinco opções ──────────────────────────────────────────────────────────
+const OPCOES = [
+  {
+    id:'a', nome:'A — como está hoje',
+    diz:'Uma pastilha por corredor, e a fila quebra de linha. Vê-se tudo de uma vez e escolhe-se num toque. O preço é a altura, e a altura cresce com a casa.',
+    html(){
+      return `<div class="rot">Corredor</div><div class="past">` + lista().map(([n],i)=>
+        `<button aria-pressed="${i===escolhido}" data-i="${i}">${n}</button>`).join('') + `</div>`;
+    },
+  },
+  {
+    id:'b', nome:'B — uma linha, que abre',
+    diz:'O corredor escolhido numa linha, com o ícone que a casa lhe deu. Tocar abre a folha com todos. Cinquenta e dois píxeis com quatro corredores e cinquenta e dois com vinte e sete.',
+    html(){
+      const [n,ic] = lista()[escolhido] || lista()[0];
+      return `<div class="rot">Corredor</div>
+        <button class="linha" data-abrirb="1">${svg(ic,21)}
+          <span class="q"><b>${n}</b><span>${N} corredores nesta casa</span></span>${seta}</button>`
+        + (abertoB ? `<div class="folha"><b>Abre uma folha por cima</b> — a lista toda, uma linha
+             por corredor, com o ícone e um visto no que está escolhido. Acima de doze leva
+             também o campo de pesquisa da opção E. Escolher fecha a folha.</div>` : '');
+    },
+  },
+  {
+    id:'c', nome:'C — uma fila que rola',
+    diz:'As mesmas pastilhas, numa linha só, que se arrasta para o lado. Altura constante e um toque para escolher — mas o que não cabe deixa de se ver, e há quem nunca arraste.',
+    html(){
+      return `<div class="rot">Corredor</div><div class="sombra"><div class="fila">` + lista().map(([n],i)=>
+        `<button aria-pressed="${i===escolhido}" data-i="${i}">${n}</button>`).join('') + `</div></div>`;
+    },
+  },
+  {
+    id:'d', nome:'D — as primeiras, e «mais»',
+    diz:'As seis primeiras do percurso mais a escolhida, e um botão que abre o resto no sítio. Duas linhas até alguém precisar de mais; com poucos corredores é exactamente a A.',
+    html(){
+      const L = lista(), lim = 6;
+      const mostra = (abertoD || L.length <= lim + 1) ? L
+        : L.slice(0, lim).concat(escolhido >= lim ? [L[escolhido]] : []);
+      const faltam = L.length - mostra.length;
+      return `<div class="rot">Corredor</div><div class="past">` + mostra.map((c)=> {
+        const i = L.indexOf(c);
+        return `<button aria-pressed="${i===escolhido}" data-i="${i}">${c[0]}</button>`;
+      }).join('') + (faltam > 0 ? `<button class="mais" data-abrird="1">+ mais ${faltam}</button>` : '')
+        + `</div>`;
+    },
+  },
+  {
+    id:'e', nome:'E — lista com pesquisa',
+    diz:'Um campo que filtra e uma lista por baixo com altura travada, que rola. A altura é sempre a mesma e vê-se sempre mais do que um — mas ocupa sempre esses píxeis, mesmo numa casa com quatro corredores.',
+    html(){
+      return `<div class="rot">Corredor</div>
+        <div class="busca">${lupa}<span>Procurar corredor…</span></div>
+        <div class="rolo">` + lista().map(([n,ic],i)=>
+          `<div class="it" role="option" aria-selected="${i===escolhido}" data-i="${i}">
+             <span class="ic">${svg(ic,18)}</span><span style="flex:1">${n}</span>
+             ${i===escolhido ? visto : ''}</div>`).join('') + `</div>`;
+    },
+  },
+];
+
+// ── Desenhar, e MEDIR ────────────────────────────────────────────────────────
+const tapete = document.getElementById('tapete');
+function desenhar(){
+  tapete.innerHTML = OPCOES.map(o => `<div class="op">
+      <h3>${o.nome}</h3><p class="diz">${o.diz}</p>
+      <div class="tel" id="tel-${o.id}">${o.html()}</div>
+      <div class="medida" id="med-${o.id}"></div>
+    </div>`).join('');
+  medir();
+}
+function medir(){
+  const alturas = OPCOES.map(o => document.getElementById('tel-'+o.id).offsetHeight);
+  const maior = Math.max(...alturas);
+  OPCOES.forEach((o,k) => {
+    const h = alturas[k], gordo = h > 160;
+    document.getElementById('med-'+o.id).innerHTML =
+      `<b>${h} px</b><span class="barra"><i class="${gordo?'gordo':''}" style="width:${Math.round(h/maior*100)}%"></i></span>`;
+    const c = document.getElementById(o.id + N);
+    if (c) c.innerHTML = `<b>${h}</b> px`;
+  });
+}
+// A tabela quer as quatro medidas, e não só a que está no ecrã: mede-se cada
+// uma às escondidas antes de desenhar a que ele está a ver.
+function medirTodas(){
+  const guardado = { N, abertoD, abertoB };
+  for (const n of [4,8,15,27]) { N = n; abertoD = false; abertoB = false; desenhar(); }
+  Object.assign(window, {});
+  N = guardado.N; abertoD = guardado.abertoD; abertoB = guardado.abertoB;
+  desenhar();
+}
+
+document.querySelector('.comando').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-n]');
+  if (!b) return;
+  N = Number(b.dataset.n);
+  if (escolhido >= N) escolhido = 0;
+  abertoD = false; abertoB = false;
+  document.querySelectorAll('.comando button').forEach(x =>
+    x.setAttribute('aria-pressed', String(Number(x.dataset.n) === N)));
+  desenhar();
+});
+tapete.addEventListener('click', (e) => {
+  const alvo = e.target.closest('[data-i],[data-abrird],[data-abrirb]');
+  if (!alvo) return;
+  if (alvo.dataset.abrird) abertoD = !abertoD;
+  else if (alvo.dataset.abrirb) abertoB = !abertoB;
+  else escolhido = Number(alvo.dataset.i);
+  desenhar();
+});
+window.addEventListener('resize', medir);
+medirTodas();
+</script>
+</body>
+</html>

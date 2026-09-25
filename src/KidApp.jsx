@@ -6,8 +6,9 @@ import { buildTheme, onChrome, S, R, FONT, SCHEMES, corDoMembro, chromeDaCrianca
 import { EUR, parseKey, pad2, plural, legendaDaTarefa, TODAY_KEY } from './format';
 import Icon from './Icon';
 import { MarcaDeAgua } from './ui';
-import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe, Linha, Choice, BotaoCompacto, NumField, MarcaDeEstado, MARCA_DA_CRIANCA } from './ui';
+import { Card, SectionTitle, Pill, Empty, Label, Primary, Tile, Row, Avatar, avatarDe, Linha, BotaoCompacto, NumField, MarcaDeEstado, MARCA_DA_CRIANCA } from './ui';
 import Sheet from './Sheet';
+import CampoDeEscolha from './CampoDeEscolha';
 import EscolherAvatar from './sheets/EscolherAvatar';
 import ProporTroca from './sheets/ProporTroca';
 import EscolhaDeEsquema from './EsquemaDeCor';
@@ -441,7 +442,7 @@ function KidTasksView({ t, kid, tasks }) {
 // servidor). O filtro daqui é para a demonstração sem servidor e para o que já
 // estivesse gravado neste aparelho.
 function FolhaPedirArtigo({ t, kid, onClose }) {
-  const { criarArtigo, seccoes } = useStore();
+  const { criarArtigo, seccoes, iconeDaSeccao } = useStore();
   const [rotulo, setRotulo] = useState('');
   const [seccao, setSeccao] = useState(seccoes[0] || null);
   const pronto = !!rotulo.trim();
@@ -465,14 +466,17 @@ function FolhaPedirArtigo({ t, kid, onClose }) {
             style={{ minHeight: 44, paddingHorizontal: S.md, fontFamily: FONT.body, fontSize: 16,
               color: t.text1, borderRadius: R.row, borderWidth: 1, borderColor: t.border, backgroundColor: t.card }} />
         </View>
-        <View style={{ gap: S.sm }}>
-          <Label t={t}>Corredor</Label>
-          <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-            {seccoes.map(sec => (
-              <Choice key={sec} t={t} label={sec} selected={seccao === sec} onPress={() => setSeccao(sec)} />
-            ))}
-          </View>
-        </View>
+        {/* ⚠ O mesmo campo das folhas dos adultos (25/09/2026, opção B de
+            `design/escolher-corredor.dc.html`), com o `grande` ligado: a app da
+            criança tem a letra e as linhas maiores por decisão, como a
+            `MARCA_DA_CRIANCA`. Aqui a fila de pastilhas doía mais do que lá —
+            a folha dela tem dois campos, e um deles ocupava-a toda. */}
+        <CampoDeEscolha t={t} grande rotulo="Corredor" titulo="Corredor"
+          sub="Onde este artigo se apanha na loja"
+          valor={seccao}
+          opcoes={seccoes.map(sec => ({ valor: sec, titulo: sec, icone: iconeDaSeccao(sec) }))}
+          aoEscolher={setSeccao}
+          vazio="Esta casa ainda não tem corredores." />
       </View>
     </Sheet>
   );

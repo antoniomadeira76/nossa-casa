@@ -122,6 +122,37 @@ await prova('⚠ a ementa da semana desliga-se para os DOIS — e uma casa que n
   igual((await sync.puxarCasa()).regras.ementaDesligada, false);
 });
 
+await prova('⚠ os ícones dos corredores desligam-se para os DOIS — e uma casa que nunca mexeu no campo TEM-NOS', async () => {
+  // A regra nova de 25/09/2026, «deve haver uma opção slider a dizer sem
+  // ícones». ⚠ Mesma armadilha da ementa, e aqui ainda mais cara: a casa desta
+  // prova nasceu sem escrever o campo e o PocketBase dá-lhe `false`. Um
+  // `icones_ligados` apagava os ícones a TODA a casa que já os tinha escolhido,
+  // no instante em que o campo chegasse. Pela negativa, o `false` de nascença é
+  // «com ícones».
+  igual((await sync.puxarCasa()).regras.iconesDesligados, false);
+  await sync.regrasDaCasa(daRita.casa, { iconesDesligados: true });
+  // ⚠ Lê-se pelo OUTRO adulto: é uma regra da casa, não deste telefone. Se
+  // ficasse só no dispositivo de quem mexeu, um via ícones e o outro não.
+  igual((await doTomas.collection('casas').getFullList())[0].icones_desligados, true);
+  igual((await sync.puxarCasa()).regras.iconesDesligados, true);
+  await sync.regrasDaCasa(daRita.casa, { iconesDesligados: false });
+  igual((await sync.puxarCasa()).regras.iconesDesligados, false);
+});
+
+await prova('⚠ e desligar NÃO apaga o ícone que cada corredor tem', async () => {
+  // A promessa que a frase por baixo do interruptor faz: «as escolhas não se
+  // perdem — voltam todas se ligar outra vez». Aqui prova-se contra o servidor,
+  // que é onde o `seccoes.icone` vive.
+  const corredor = await admin.collection('seccoes').create({
+    casa: daRita.casa, nome: PREFIXO + 'Talho', posto: 99, icone: 'talho',
+  });
+  await sync.regrasDaCasa(daRita.casa, { iconesDesligados: true });
+  igual((await admin.collection('seccoes').getOne(corredor.id)).icone, 'talho');
+  await sync.regrasDaCasa(daRita.casa, { iconesDesligados: false });
+  igual((await admin.collection('seccoes').getOne(corredor.id)).icone, 'talho');
+  await admin.collection('seccoes').delete(corredor.id);
+});
+
 console.log('\n── e quem as pode mudar ──');
 
 await prova('⚠ o Tomás, que é adulto e não administra, NÃO muda as regras', () =>

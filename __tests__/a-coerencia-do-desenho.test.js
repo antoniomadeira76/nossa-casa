@@ -239,9 +239,22 @@ describe('⚠ a coerência do desenho — segunda revisão', () => {
   it('11. o vazio de uma lista é o `Empty` (ícone, título, dica), não um aviso de uma linha', () => {
     const compras = semComentarios(ler('src/screens/Compras.jsx'));
     expect(compras).toMatch(/items\.length === 0 \? \(\s*<Empty t=\{t\} icon="fileDone"/);
+
+    // ⚠ 25/09/2026: as duas listas da folha de trocas passaram a ser
+    // `CampoDeEscolha` (opção B de `design/escolher-corredor.dc.html`), e com
+    // elas o vazio mudou de sítio — mas não de forma. Cada campo diz o TÍTULO
+    // e a DICA, e o componente desenha o `Empty` com eles. A regra é a mesma;
+    // o que mudou foi quem a cumpre.
     const troca = semComentarios(ler('src/sheets/ProporTroca.jsx'));
-    expect((troca.match(/<Empty t=\{t\} icon="checkSquare"/g) || []).length).toBe(2);
+    expect((troca.match(/vazio="/g) || []).length).toBe(2);
+    expect((troca.match(/dicaVazia="/g) || []).length).toBe(2);
     expect(troca).not.toMatch(/<Tile t=\{t\} kind="info">/);
+
+    // E o componente cumpre-a mesmo: ícone, título e dica, e não uma linha de
+    // texto solta.
+    const campo = semComentarios(ler('src/CampoDeEscolha.jsx'));
+    expect(campo).toMatch(/<Empty t=\{t\} icon=\{iconeDoCampo \|\| 'closeCircle'\}/);
+    expect(campo).toMatch(/title=\{vazio \|\| 'Nada para escolher\.'\} hint=\{dicaVazia\}/);
   });
 
   it('12. nenhum ecrã lê as cores do estado fora do tema (`STATE.` fixo não segue o aspeto escuro)', () => {

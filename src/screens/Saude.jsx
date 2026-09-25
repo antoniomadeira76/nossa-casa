@@ -13,6 +13,7 @@ import { plural, dayLabel, daysUntil, chaveDeDMY, dmyDeChave, listaEmPortugues, 
 import { planoDaReceita, tomasDoDia } from '../medicacao';
 import TomasDaReceita from '../sheets/TomasDaReceita';
 import FiltroDeMembros, { EscolherPessoa } from '../FiltroDeMembros';
+import CampoDeEscolha from '../CampoDeEscolha';
 
 export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMarcado }) {
   const st = useStore();
@@ -1134,9 +1135,9 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
   const st = useStore();
   const { s, set, addHealthRecord, membros: MEMBERS, oNome } = st;
 
-  // A lista da especialidade está aberta? Só isto vive dentro da folha: é
-  // estado de interface e não faz falta nenhuma à volta das especialidades.
-  const [escolhendoEsp, setEscolhendoEsp] = useState(false);
+  // (O `escolhendoEsp` viveu aqui até 25/09/2026 — dizia se a lista das
+  // especialidades estava aberta. O `CampoDeEscolha` passou a ser dono desse
+  // estado, que é dele e de mais ninguém.)
 
   // Marcar uma consulta cria DUAS coisas, e é o «nenhum exame órfão» do
   // TAREFAS.md: o episódio na ficha e o evento na agenda, ligados.
@@ -1260,72 +1261,33 @@ function MarcarConsulta({ t, user, form, setForm, marcaveis, onGerirEspecialidad
             {/* ── A especialidade: uma linha que abre ──────────────────────
                 Eram pastilhas em fila, com quebra de linha. Com quatro
                 especialidades cabiam; com dez ocupavam meia folha e empurravam
-                o botão de marcar para fora do ecrã. O protótipo tem UMA linha
-                com o valor escolhido e um chevron, que abre a lista por baixo.
+                o botão de marcar para fora do ecrã.
 
-                ⚠ A linha tem 44 e não os 52 do protótipo, e a etiqueta vive
-                FORA da caixa. É a forma dos dois campos que se seguem — médico
-                e nota — nesta mesma folha. Lá a etiqueta é interna, e daí os
-                52; copiar só este ficava a destoar dos vizinhos, que é pior do
-                que divergir por inteiro. */}
-            <View style={{ gap: S.sm }}>
-              <Label t={t}>Especialidade</Label>
-              {!(s.specialities || []).length ? (
-                <Empty t={t} icon="heartPulse" title="Sem especialidades."
-                  hint={st.isAdmin(user)
-                    ? 'Toque em Gerir para criar a primeira.'
-                    : 'Peça a quem administra a casa para criar a primeira.'} />
-              ) : (
-                <View style={{ borderWidth: 1, borderColor: t.border,
-                  borderRadius: R.row, backgroundColor: t.card, overflow: 'hidden' }}>
-                  <Pressable accessibilityRole="button"
-                    accessibilityLabel="Escolher a especialidade"
-                    accessibilityState={{ expanded: escolhendoEsp }} aria-expanded={escolhendoEsp}
-                    onPress={() => setEscolhendoEsp(v => !v)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
-                      minHeight: 44, paddingHorizontal: S.md }}>
-                    <Icon name="heartPulse" size={19} color={t.text3} />
-                    <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15,
-                      color: form.specialty ? t.text2 : t.text3 }}>
-                      {form.specialty || 'Escolher a especialidade'}
-                    </Text>
-                    <Icon name={escolhendoEsp ? 'caretUp' : 'caretDown'} size={18} color={t.text3} />
-                  </Pressable>
+                ⚠ 25/09/2026: isto era a MESMA ideia escrita à mão aqui dentro —
+                uma caixa de 44 que abria a lista POR BAIXO, em acordeão. Passou
+                a ser o `CampoDeEscolha`, que é a opção B de
+                `design/escolher-corredor.dc.html` e é agora o campo de toda a
+                app. Duas Bs diferentes eram o defeito de origem outra vez.
 
-                  {escolhendoEsp ? (
-                    <View>
-                      {(s.specialities || []).map(spec => (
-                        // Uma linha, um destino (erro #6): tocar escolhe e
-                        // fecha. Sem nada mais tocável lá dentro.
-                        <Pressable accessibilityRole="button"
-                          key={spec}
-                          accessibilityLabel={spec}
-                          accessibilityState={{ selected: form.specialty === spec }} aria-pressed={form.specialty === spec}
-                          onPress={() => { setForm(f => ({ ...f, specialty: spec })); setEscolhendoEsp(false); }}
-                          // ⚠ `divider` e não `subtle`. Medido no navegador:
-                          // o `subtle` é #FAFAFA sobre uma caixa #FCFCFD —
-                          // contraste 1,02, ou seja linha nenhuma. O
-                          // `divider` é #F0F2F5, que é o cinza que o
-                          // protótipo usa aqui, e no modo escuro iguala a
-                          // borda. Escolhi a ficha uma casa acima da certa.
-                          style={{ flexDirection: 'row', alignItems: 'center', gap: S.md,
-                            minHeight: 44, paddingHorizontal: S.md,
-                            borderTopWidth: 1, borderTopColor: t.divider,
-                            backgroundColor: form.specialty === spec ? t.subtle : 'transparent' }}>
-                          <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13,
-                            color: form.specialty === spec ? t.actFg : t.text2 }}>
-                            {spec}
-                          </Text>
-                          {form.specialty === spec ? (
-                            <Icon name="check" size={16} color={t.titulo} />
-                          ) : null}
-                        </Pressable>
-                      ))}
-                    </View>
-                  ) : null}
-                </View>
-              )}
-            </View>
+                E a lista deixou de abrir por baixo para abrir numa FOLHA, que
+                era a meia-correcção que faltava: o acordeão não tinha tecto, e
+                com trinta especialidades voltava a empurrar o botão de marcar
+                para fora do ecrã — o problema que ele veio resolver, adiado.
+
+                As duas medidas que este campo tinha e que se mantêm: 44 de
+                altura e a etiqueta FORA da caixa, para acompanhar o médico e a
+                nota aqui abaixo. Vivem agora dentro do componente. */}
+            <CampoDeEscolha t={t} rotulo="Especialidade" titulo="Especialidade"
+              sub="A área desta consulta"
+              iconeDoCampo="heartPulse"
+              valor={form.specialty}
+              opcoes={(s.specialities || []).map(spec => ({ valor: spec, titulo: spec }))}
+              aoEscolher={(spec) => setForm(f => ({ ...f, specialty: spec }))}
+              porEscolher="Escolher a especialidade"
+              vazio="Sem especialidades."
+              dicaVazia={st.isAdmin(user)
+                ? 'Toque em Gerir para criar a primeira.'
+                : 'Peça a quem administra a casa para criar a primeira.'} />
 
             {/* ── Médico ou clínica ────────────────────────────────────────
                 ⚠ O campo que faltava e que a app já lia. O `h.doctor` aparece

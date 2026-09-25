@@ -4,7 +4,8 @@ import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { dayLabel, parseKey, chaveDeDMY, dmyDeChave } from '../format';
 import { Card, SectionTitle, Label, Row, Tap, Avatar, avatarDe, Tile, Empty,
-         BotaoCompacto, AddButton, Choice, Linha } from '../ui';
+         BotaoCompacto, AddButton, Linha, Toggle } from '../ui';
+import { ListaDeEscolha } from '../CampoDeEscolha';
 import { EscolherPessoa } from '../FiltroDeMembros';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
@@ -34,7 +35,8 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
   const {
     s, membros: MEMBERS, adultos, mudarPlanoDeCompras, mudarListaDaCasa,
     lojaDoPlano, diaDoPlano, seccoes, criarSeccao, alterarSeccao, apagarSeccao,
-    reordenarSeccoes, allItems, escolherIconeDaSeccao,
+    reordenarSeccoes, allItems, escolherIconeDaSeccao, iconesNosCorredores,
+    mudarRegraDaCasa,
   } = st;
 
   const [folha, setFolha] = useState(null);      // 'quem' | 'quando' | 'onde' | 'loja' | 'seccao'
@@ -142,6 +144,34 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
           color: t.text3, marginTop: -S.md, marginBottom: S.md }}>
           É por esta ordem que o Modo Compras leva a lista. Mantenha premido para mudar.
         </Text>
+
+        {/* ── Sem ícones ──────────────────────────────────────────────────────
+            25/09/2026: «deve haver uma opção slider a dizer sem ícones».
+
+            ⚠ Desligar NÃO apaga nada, e é a mesma promessa do interruptor dos
+            pontos: as escolhas ficam no `iconesDeSeccao` e no `seccoes.icone`
+            do servidor, e voltar a ligar traz cada corredor com o ícone que
+            tinha. É isso que a frase por baixo do interruptor promete.
+
+            ⚠ E é uma regra da CASA, não deste telefone: os ícones são uma
+            decisão de quem administra — cada um é único e escolhido à mão — e
+            uma casa onde um adulto vê ícones e o outro não tinha duas leituras
+            do mesmo corredor. Sobe pelo `mudarRegraDaCasa`. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: t.subtle,
+          borderWidth: 1, borderColor: t.border, borderRadius: R.card, padding: 14,
+          marginBottom: S.md }}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text1 }}>Sem ícones</Text>
+            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+              {iconesNosCorredores
+                ? 'Cada corredor mostra o ícone que lhe escolheram, aqui e nos títulos da lista de compras.'
+                : 'Os corredores ficam só com o nome. As escolhas não se perdem — voltam todas se ligar outra vez.'}
+            </Text>
+          </View>
+          <Toggle t={t} on={!iconesNosCorredores} label="Sem ícones"
+            onPress={() => mudarRegraDaCasa({ iconesDesligados: iconesNosCorredores })} />
+        </View>
+
         <ListaArrastavel
           itens={seccoes.map(n => ({ id: n }))}
           grupoDe={() => 'corredores'}
@@ -169,7 +199,14 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
                         troca. NÃO se fez um segundo ecrã só para os ícones — seria
                         outra porta para a mesma decisão, que é a classe de defeito
                         que o `duas-portas-para-a-mesma-decisao` guarda. */}
-                    <Icon name={st.iconeDaSeccao(x.id)} size={19} color={t.titulo} />
+                    {/* ⚠ E o `null` do «sem ícones» NÃO se desenha. Um nome
+                        que o `Icon.jsx` não conhece devolve um SVG VAZIO do
+                        tamanho pedido, sem erro nenhum: a linha ficava com um
+                        buraco de 19 px à esquerda do nome, e com o nome
+                        desalinhado do resto da app. */}
+                    {st.iconeDaSeccao(x.id)
+                      ? <Icon name={st.iconeDaSeccao(x.id)} size={19} color={t.titulo} />
+                      : null}
                     <View style={{ flex: 1, gap: 2 }}>
                       <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{x.id}</Text>
                       <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
@@ -222,12 +259,20 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
               Esta casa ainda não tem lojas. Acrescente uma primeiro.
             </Tile>
           ) : (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
-              {lojas.map((nome, i) => (
-                <Choice key={nome} t={t} label={nome} selected={nome === loja}
-                  onPress={() => { mudarPlanoDeCompras({ store: nome }); fechar(); }} />
-              ))}
-            </View>
+            // ⚠ A LISTA, e não pastilhas em fila (25/09/2026, opção B de
+            // `design/escolher-corredor.dc.html`). Os nomes das lojas são
+            // longos — «Pingo Doce da Ajuda», «Mercado de Alcântara» — e
+            // partiam a fila mais depressa do que os corredores.
+            //
+            // ⚠ E é a `ListaDeEscolha` e não o `CampoDeEscolha`: a linha que
+            // abre JÁ existe, é a «onde» do plano da ida, lá em cima. Um campo
+            // aqui dentro era abrir uma folha a partir de uma folha para
+            // escolher a mesma coisa. O que se unifica é o desenho da escolha,
+            // não o número de camadas.
+            <ListaDeEscolha t={t} nomeDaLista="lojas"
+              valor={loja}
+              opcoes={lojas.map(nome => ({ valor: nome, titulo: nome, icone: 'storefront' }))}
+              aoEscolher={(nome) => { mudarPlanoDeCompras({ store: nome }); fechar(); }} />
           )}
         </Sheet>
       ) : null}
@@ -306,7 +351,13 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
                 não se grava escolha nenhuma, e o ícone continua a vir do nome.
                 É a diferença entre «ainda não escolhi» e «escolhi isto» — e é
                 o que faz mudar o nome de «Zona B» para «Padaria» passar a
-                mostrar o pão, em vez de ficar preso à caixa de antes. */}
+                mostrar o pão, em vez de ficar preso à caixa de antes.
+
+                ⚠ E com a casa «sem ícones» a grelha SAI (25/09/2026). Deixá-la
+                aqui era oferecer uma escolha que não se vê em lado nenhum — e
+                pior, uma escolha que se guardava em silêncio: a pessoa
+                escolhia o pão, guardava, e o corredor continuava sem nada. */}
+            {iconesNosCorredores ? (
             <View style={{ gap: S.sm }}>
               <Label t={t}>Ícone</Label>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
@@ -358,6 +409,12 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
                 corredor — liberte-o lá primeiro se o quiser aqui.
               </Text>
             </View>
+            ) : (
+              <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+                Esta casa está sem ícones nos corredores. O interruptor está em
+                «Corredores da Loja», e as escolhas que já fez continuam lá.
+              </Text>
+            )}
           </View>
         </Sheet>
       ) : null}

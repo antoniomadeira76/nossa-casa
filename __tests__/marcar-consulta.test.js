@@ -88,11 +88,23 @@ const escreverCampo = (r, rot, texto) => {
 };
 
 // ⚠ Escolher a especialidade são DOIS toques desde que deixou de ser pastilhas
-// em fila: a linha abre, e a lista aparece por baixo. Eram pastilhas todas
-// visíveis — cabiam quatro, e com dez ocupavam meia folha e empurravam o botão
-// de marcar para fora do ecrã.
+// em fila: o campo abre, e a lista aparece. Eram pastilhas todas visíveis —
+// cabiam quatro, e com dez ocupavam meia folha e empurravam o botão de marcar
+// para fora do ecrã.
+//
+// ⚠ 25/09/2026: a lista deixou de abrir POR BAIXO (um acordeão escrito à mão
+// nesta folha) e passou a abrir numa FOLHA, pelo `CampoDeEscolha` — o campo que
+// toda a app usa desde a opção B de `design/escolher-corredor.dc.html`. O
+// acordeão não tinha tecto: com trinta especialidades voltava a empurrar o
+// botão para fora do ecrã, que é o problema que ele veio resolver.
+//
+// O nome em voz alta mudou com ele, e mudou para melhor: era «Escolher a
+// especialidade» e agora diz o valor — «Especialidade: Dentista» —, que é o que
+// um leitor de ecrã tem de dizer sem obrigar a abrir nada para saber o que lá
+// está. Por escolher, diz «Especialidade — por escolher».
+const CAMPO_DA_ESPECIALIDADE = 'Especialidade — por escolher';
 const escolherEspecialidade = (r, esp) => {
-  tocar(r, 'Escolher a especialidade');
+  tocar(r, CAMPO_DA_ESPECIALIDADE);
   tocar(r, esp);
 };
 
@@ -571,18 +583,18 @@ describe('o botão e o «Gerir», como no protótipo', () => {
     expect(junta(r.toJSON())).toContain('Nova especialidade');
   });
 
-  // ── A especialidade: uma linha que abre, não pastilhas em fila ────────────
+  // ── A especialidade: um campo que abre, não pastilhas em fila ─────────────
   it('⚠ a lista nasce FECHADA, e mostra o que está escolhido', () => {
     // Eram pastilhas todas visíveis. Cabiam quatro; com dez ocupavam meia
     // folha e empurravam o botão de marcar para fora do ecrã.
     const { r } = abrir('Rita');
     tocar(r, 'marcar consulta');
-    expect(alvos(r, 'Escolher a especialidade')).toHaveLength(1);
+    expect(alvos(r, CAMPO_DA_ESPECIALIDADE)).toHaveLength(1);
     // Fechada: nenhuma especialidade é alvo enquanto não se abrir.
     expect(alvos(r, 'Dentista')).toHaveLength(0);
     expect(junta(r.toJSON())).toContain('Escolher a especialidade');
 
-    tocar(r, 'Escolher a especialidade');
+    tocar(r, CAMPO_DA_ESPECIALIDADE);
     expect(alvos(r, 'Dentista')).toHaveLength(1);
     expect(alvos(r, 'Pediatria')).toHaveLength(1);
   });
@@ -592,19 +604,21 @@ describe('o botão e o «Gerir», como no protótipo', () => {
     // havia sinal nenhum de que a escolha tinha pegado.
     const { r } = abrir('Rita');
     tocar(r, 'marcar consulta');
-    tocar(r, 'Escolher a especialidade');
+    tocar(r, CAMPO_DA_ESPECIALIDADE);
     tocar(r, 'Dentista');
 
     expect(alvos(r, 'Pediatria')).toHaveLength(0);   // fechou
-    const linha = alvos(r, 'Escolher a especialidade')[0];
-    expect(junta(linha.props.children)).toContain('Dentista');
+    // E o campo passou a dizer o que lá está — no ecrã e em voz alta.
+    const campo = alvos(r, 'Especialidade: Dentista')[0];
+    expect(campo).toBeTruthy();
+    expect(junta(campo.props.children)).toContain('Dentista');
   });
 
   it('⚠ e a linha da escolha tem 44 — é o alvo mais usado desta folha', () => {
     const { r } = abrir('Rita');
     tocar(r, 'marcar consulta');
-    tocar(r, 'Escolher a especialidade');
-    for (const rot of ['Escolher a especialidade', 'Dentista']) {
+    tocar(r, CAMPO_DA_ESPECIALIDADE);
+    for (const rot of [CAMPO_DA_ESPECIALIDADE, 'Dentista']) {
       const n = alvos(r, rot)[0];
       const estilo = typeof n.props.style === 'function'
         ? [].concat(n.props.style({ pressed: false })).filter(Boolean)

@@ -717,7 +717,13 @@ export default function ModoCompras({ t, user, onClose }) {
       {novoArtigo ? (
         <Sheet t={t} title="Novo Artigo" sub="Acrescentar à lista de compras"
           onClose={() => setNovoArtigo(false)}>
-          <NovoArtigo t={t} user={user} onDone={() => setNovoArtigo(false)} />
+          {/* ⚠ `onClose`, e não `onDone` (25/09/2026). Isto dizia `onDone`, e o
+              `NovoArtigo` chama `onClose()` sem rede: guardar um artigo pelo
+              «+» daqui atirava «onClose is not a function» — com o carrinho na
+              mão, no meio da loja. O mesmo componente montado no Compras
+              (`Compras.jsx`) sempre teve o nome certo, e por isso nunca se viu.
+              O guarda é `__tests__/uma-folha-recebe-o-que-chama.test.js`. */}
+          <NovoArtigo t={t} user={user} onClose={() => setNovoArtigo(false)} />
         </Sheet>
       ) : null}
 

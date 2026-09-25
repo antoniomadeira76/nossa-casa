@@ -4,6 +4,7 @@ import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { Label, Choice, Toggle, Primary, NumField, SectionTitle } from '../ui';
 import { useAcaoDaFolha } from '../Sheet';
+import CampoDeEscolha from '../CampoDeEscolha';
 import Icon from '../Icon';
 import { EUR } from '../format';
 
@@ -30,7 +31,7 @@ import { EUR } from '../format';
  * tecla era uma escrita no servidor por cada letra do nome.
  */
 export default function GerirArtigo({ t, artigo, onApagar, onClose }) {
-  const { alterarArtigo, seccoes } = useStore();
+  const { alterarArtigo, seccoes, iconeDaSeccao } = useStore();
   const [form, setForm] = useState({
     label: artigo.label || '',
     s: artigo.s,
@@ -86,18 +87,19 @@ export default function GerirArtigo({ t, artigo, onApagar, onClose }) {
         />
       </View>
 
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Corredor</Label>
-        {/* ⚠ Os corredores da CASA, e a escolha guarda o NOME. Um índice
-            apontava para outro corredor a cada reordenação. */}
-        <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-          {seccoes.map((sec) => (
-            <Choice key={sec} t={t} label={sec}
-              selected={form.s === sec}
-              onPress={() => { setErro(null); setForm(f => ({ ...f, s: sec })); }} />
-          ))}
-        </View>
-      </View>
+      {/* ⚠ Os corredores da CASA, e a escolha guarda o NOME. Um índice
+          apontava para outro corredor a cada reordenação.
+
+          ⚠ Um CAMPO, e não uma fila de pastilhas (25/09/2026, opção B de
+          `design/escolher-corredor.dc.html`) — ver o comentário mais longo na
+          folha de criar. A consequência de mudar de corredor continua dita
+          dentro do botão, que é onde ela tem de estar. */}
+      <CampoDeEscolha t={t} rotulo="Corredor" titulo="Corredor"
+        sub="Onde este artigo se apanha na loja"
+        valor={form.s}
+        opcoes={seccoes.map(sec => ({ valor: sec, titulo: sec, icone: iconeDaSeccao(sec) }))}
+        aoEscolher={(sec) => { setErro(null); setForm(f => ({ ...f, s: sec })); }}
+        vazio="Esta casa ainda não tem corredores." />
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Preço estimado</Label>
