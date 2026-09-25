@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>As abas dos corredores</title>
+<style>
+:root{
+  --page:#F6F7F9; --card:#FCFCFD; --surface:#FFFFFF; --subtle:#FAFAFA;
+  --border:#D9D9D9; --divider:#F0F2F5;
+  --t1:#262626; --t2:#434343; --t3:#656C7C; --slate:#606E90;
+  --ac:#078286; --acFg:#056b6e; --acBg:#E6F4F4; --acBrd:#8FC9CB;
+  --ok:#52C41A; --okTexto:#237804;
+  --warnBg:#FEFFD0; --warn:#FAAD14; --warnTexto:#8F5600;
+  --errBg:#FFF1F0; --err:#FF4D4F; --errTexto:#A32621;
+  --rc:8px; --rr:6px; --rp:100px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#EEF0F3;color:var(--t1);padding:26px;
+  font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif}
+h1{font-size:27px;letter-spacing:-.02em;margin:0 0 8px}
+p.intro{color:var(--t2);max-width:88ch;margin:0 0 6px;line-height:1.6}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);
+  margin:34px 0 14px;padding-bottom:7px;border-bottom:1px solid #DADDE2}
+h3{font-size:15.5px;margin:0 0 2px}
+.diz{color:var(--t3);font-size:12.5px;line-height:1.55;margin:0 0 10px;max-width:54ch}
+code{background:#E9ECF1;border-radius:4px;padding:1px 5px;font-size:12.5px}
+.aviso{background:var(--warnBg);border-left:3px solid var(--warn);padding:12px 14px;
+  border-radius:0 var(--rc) var(--rc) 0;max-width:88ch;margin:14px 0 6px}
+.aviso b{color:var(--warnTexto)}
+.mau{background:var(--errBg);border-left-color:var(--err)}
+.mau b{color:var(--errTexto)}
+.bom{background:rgba(220,243,209,.35);border-left-color:var(--ok)}
+.bom b{color:var(--okTexto)}
+
+.comando{position:sticky;top:0;z-index:9;background:#EEF0F3;padding:14px 0 12px;
+  margin:18px 0 6px;border-bottom:1px solid #DADDE2;display:flex;align-items:center;
+  gap:12px;flex-wrap:wrap}
+.comando b{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--t3)}
+.comando button{min-height:36px;padding:0 15px;border-radius:var(--rp);cursor:pointer;
+  border:1px solid var(--border);background:var(--surface);color:var(--t2);
+  font:600 13.5px/1 inherit}
+.comando button[aria-pressed="true"]{background:var(--acBg);border-color:var(--acBrd);color:var(--acFg)}
+
+.op{margin-bottom:26px;max-width:760px}
+/* O telefone: 402 de largura, que é o que o CLAUDE.md diz. */
+.tel{width:402px;background:var(--surface);border-radius:12px;overflow:hidden;
+  box-shadow:0 8px 24px rgba(16,18,29,.13),0 0 0 1px rgba(16,18,29,.07)}
+.loja{display:flex;align-items:center;gap:8px;padding:12px 16px 0;
+  font-size:12.5px;color:var(--t2)}
+/* A barra das abas: o mesmo enchimento de 16 e o gap de 8 do ecrã. */
+/* Sem barra de rolar, como no ecrã (`showsHorizontalScrollIndicator={false}`):
+   com ela, a medida da altura vinha 10 px acima da verdadeira. */
+.abas{display:flex;gap:8px;padding:14px 16px;overflow-x:auto;scrollbar-width:none}
+.abas::-webkit-scrollbar{display:none}
+.abas.reparte{overflow-x:visible}
+.abas.reparte .aba{flex:1;min-width:0}
+.aba{flex:none;min-width:72px;min-height:44px;display:flex;flex-direction:column;
+  justify-content:center;gap:6px;position:relative;cursor:pointer;padding:0 2px}
+.aba .barra{height:4px;border-radius:var(--rp);background:var(--t3)}
+.aba .nome{font-size:11px;text-align:center;color:var(--t3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aba.duas .nome{white-space:normal;line-height:1.25}
+.aba[aria-selected="true"] .barra{background:var(--ac)}
+.aba[aria-selected="true"] .nome{color:var(--acFg);font-weight:600}
+.aba.limpo .barra{background:var(--okTexto)}
+.aba.limpo .nome{color:var(--okTexto);font-weight:600}
+.aba .visto{position:absolute;top:10px;right:2px;color:var(--okTexto)}
+.aba .ic{display:flex;justify-content:center;color:inherit}
+.aba[aria-selected="true"] .ic{color:var(--ac)}
+.aba.limpo .ic{color:var(--okTexto)}
+.aba:not([aria-selected="true"]):not(.limpo) .ic{color:var(--t3)}
+.i{stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+/* O título da secção, por baixo das abas — já existe no ecrã. */
+.tit{display:flex;align-items:center;gap:9px;margin:4px 16px 0;padding-bottom:7px;
+  border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--acFg);
+  letter-spacing:.02em}
+.tit .dir{margin-left:auto;font-size:11.5px;font-weight:400;color:var(--t3)}
+.talao{padding:10px 16px 16px}
+.linha{display:flex;align-items:center;gap:11px;min-height:48px;
+  border-bottom:1px solid var(--divider);font-size:15px;color:var(--t2)}
+.linha .p{margin-left:auto;font-size:13px;font-weight:600;color:var(--t3)}
+
+.medida{font-size:11.5px;color:var(--t3);margin-top:9px;max-width:402px}
+.medida b{font-variant-numeric:tabular-nums;color:var(--t2)}
+table{border-collapse:collapse;margin-top:12px;font-size:13px}
+th,td{text-align:left;padding:7px 16px 7px 0;border-bottom:1px solid #DFE2E7;vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);font-weight:700}
+td b{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+
+<h1>As abas dos corredores, com o nome inteiro</h1>
+
+<div class="aviso bom">
+  <b>FEITO (25/09/2026): a C — ícone e nome inteiro, e a fila só rola quando tem de rolar.</b>
+  Medido no navegador, na app a sério, com abas postiças no DOM para ver as três casas:
+  <table style="margin:8px 0 0">
+    <tr><th>corredores</th><th>a fila rola?</th><th>nomes cortados</th></tr>
+    <tr><td>4 (esta casa)</td><td>não — 428 de conteúdo em 428 de largura</td><td><b>0</b></td></tr>
+    <tr><td>8</td><td>sim — 713 em 428</td><td><b>0</b></td></tr>
+    <tr><td>15</td><td>sim — 1345 em 428</td><td><b>0</b></td></tr>
+  </table>
+  <br>
+  Os dois modos de 13/09 (repartir até cinco, rolar a partir daí) acabaram: agora é sempre a
+  mesma célula — <code>flexBasis:'auto'</code> com <code>flexShrink:0</code> para o nome nunca
+  ser apertado, e <code>flexGrow:1</code> para repartir o que sobra quando já cabem todas.
+  <br><br>
+  <b style="color:var(--okTexto)">⚠ E a caixa do «por escolher» NÃO entra na aba.</b> Numa casa
+  acabada de criar ninguém escolheu ícone nenhum e todos os corredores dão a mesma caixa — a fila
+  ficava com cinco desenhos iguais a roubar espaço ao nome. Na lista da gestão a caixa convida a
+  escolher; numa aba de navegação é ruído.
+</div>
+<p class="intro">
+  O Modo Compras corta o nome de cada corredor <b>no dado</b>, e não no desenho:
+  <code>n.split(' ')[0]</code>. «Frutas&nbsp;&amp;&nbsp;Legumes» fica «Frutas» — e numa casa que
+  também tenha «Frutas do dia», ficam <b>duas abas com o mesmo rótulo</b>, indistinguíveis. O
+  rótulo cortado vai também para o leitor de ecrã.
+</p>
+
+<div class="aviso mau">
+  <b>Um corte no dado não é um problema de largura.</b> Uma reticência diz «há mais texto»; um
+  <code>split</code> não diz nada — inventa um nome mais curto e apresenta-o como se fosse o
+  nome. Corrigir a largura sem tirar o <code>split</code> deixa o defeito lá.
+</div>
+
+<div class="comando">
+  <b>A casa tem</b>
+  <button data-casa="esta"  aria-pressed="true">os 4 desta casa</button>
+  <button data-casa="ambigua" aria-pressed="false">4, com dois «Frutas»</button>
+  <button data-casa="oito"  aria-pressed="false">8</button>
+  <button data-casa="muitos" aria-pressed="false">15</button>
+  <span style="font-size:12.5px;color:var(--t3)">402 px de telefone, medido no navegador</span>
+</div>
+
+<h2>As cinco</h2>
+<div id="tapete"></div>
+
+<h2>Quantas abas se veem de uma vez, e sem cortar</h2>
+<table id="tabela">
+  <tr><th>Opção</th><th>4 desta casa</th><th>8</th><th>15</th><th>Nomes cortados</th><th>Dois iguais</th></tr>
+</table>
+
+<div class="aviso bom">
+  <b>O que eu recomendo: a C — ícone e nome inteiro, a fila rola.</b>
+  O <code>split</code> sai, e com ele a ambiguidade. O ícone faz o reconhecimento à distância que
+  o nome cortado tentava fazer — e é o ícone que a família escolheu para aquele corredor, o mesmo
+  que está no título da secção da lista de compras. A fila rola, como já rola acima de cinco.
+  <br><br>
+  <b style="color:var(--okTexto)">Com a saída pelo lado:</b> uma casa com o interruptor «Sem
+  ícones» ligado, ou com corredores por marcar, cai na <b>B</b> sem nada a mais — o ícone
+  simplesmente não se desenha e a aba fica só com o nome inteiro. É a mesma célula.
+  <br><br>
+  <b style="color:var(--okTexto)">Porque não a D (só o ícone):</b> é o precedente da
+  Documentação, e lá funciona porque as áreas são oito e fixas, com ícones que a app escolheu.
+  Aqui os ícones são escolhidos pela família e podem não existir — e obrigar a reconhecer
+  vinte e sete desenhos para navegar na loja, com o carrinho na mão, é pedir de mais.
+  <br><br>
+  <b style="color:var(--okTexto)">Porque não a E (duas linhas):</b> ele já a recusou uma vez, no
+  filtro da Documentação — «não gosto de estar em 2 linhas».
+</div>
+
+<script>
+// ── As casas da simulação ────────────────────────────────────────────────────
+const CASAS = {
+  esta:    [['Frutas & Legumes','hortalica'],['Frescos','fruta'],['Casa','limpeza'],['Mercearia','mercearia']],
+  ambigua: [['Frutas & Legumes','hortalica'],['Frutas do dia','fruta'],['Frescos','peixaria'],['Mercearia','mercearia']],
+  oito:    [['Frutas & Legumes','hortalica'],['Frescos','fruta'],['Talho','talho'],['Peixaria','peixaria'],
+            ['Padaria','padaria'],['Congelados','congelados'],['Casa','limpeza'],['Mercearia','mercearia']],
+  muitos:  [['Frutas & Legumes','hortalica'],['Frescos','fruta'],['Talho','talho'],['Peixaria','peixaria'],
+            ['Padaria','padaria'],['Laticínios','laticinios'],['Congelados','congelados'],['Bebidas','bebidas'],
+            ['Enchidos','charcutaria'],['Conservas','conservas'],['Cereais e papas','cereais'],
+            ['Massa e arroz','massa'],['Higiene','higiene'],['Casa','limpeza'],['Mercearia','mercearia']],
+};
+
+const D = {
+  hortalica:'M12 20c0-6 3-10 8-12-1 8-4 12-8 12zM12 20c0-5-2-8-6-9 .6 6 2.6 9 6 9',
+  fruta:'M12 8c-4 0-6 3-6 6.5S8.5 21 12 21s6-2.5 6-6.5S16 8 12 8zM12 8V4M12 5c2 0 3-1 3-2',
+  limpeza:'M9 3h4v4H9zM8 7h6l1.5 5v9h-9v-9zM17 6h3v4M18.5 10v3',
+  mercearia:'M3 5h2l2.2 9.5h9.6L19 8H6M9 19.5a1 1 0 1 0 0-.1M17 19.5a1 1 0 1 0 0-.1',
+  talho:'M6 9a5 5 0 0 1 10 0v10H6zM16 9h3v6h-3',
+  peixaria:'M3 12c3-4 7-5 10-5s6 2 8 5c-2 3-5 5-8 5s-7-1-10-5zM17 10.5h.01',
+  padaria:'M4 10c0-2.5 2-4 4-4h8c2 0 4 1.5 4 4l-1.5 8h-13zM9 7l-1 11M15 7l1 11',
+  laticinios:'M8 3h8l-1 4v14H9V7zM8 11h8',
+  congelados:'M12 3v18M4.5 7.5l15 9M19.5 7.5l-15 9',
+  bebidas:'M8 3h8l-1 7-2 2v9h-2v-9l-2-2zM8 7h8',
+  charcutaria:'M5 12a7 4 0 0 0 14 0 7 4 0 0 0-14 0zM5 12v3a7 4 0 0 0 14 0v-3M9.5 11.5h.01M14 13h.01',
+  conservas:'M6 6h12v13H6zM6 6a6 2 0 0 0 12 0 6 2 0 0 0-12 0M9 11h6',
+  cereais:'M12 21V9M12 9c0-3 2-5 5-5 0 3-2 5-5 5zM12 12c0-3-2-5-5-5 0 3 2 5 5 5z',
+  massa:'M5 6h14M5 10h14M5 14h14M5 18h14',
+  higiene:'M9 3h6v3H9zM8 6h8v15H8zM11 10h2M12 9v4',
+};
+const svg = (n, s=18) => '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true">'
+  + (D[n]||'').split('M').filter(Boolean).map(p => '<path class="i" d="M'+p+'"/>').join('') + '</svg>';
+const visto = '<svg width="11" height="11" viewBox="0 0 24 24"><path class="i" d="M5 12.5l4.5 4.5L19 7"/></svg>';
+
+let casa = 'esta', aberto = 0;
+const lista = () => CASAS[casa];
+
+// ── As cinco formas ─────────────────────────────────────────────────────────
+const OPCOES = [
+  {
+    id:'a', nome:'A — como está hoje',
+    diz:'O nome cortado no primeiro espaço. Cabem todas, e a barra reparte a largura — mas «Frutas & Legumes» é «Frutas», e o que se lê não é o nome do corredor.',
+    aba: ([n,ic], i) => ({ texto: n.split(' ')[0], icone: null }),
+    reparte: (L) => L.length + 1 <= 5,
+  },
+  {
+    id:'b', nome:'B — o nome inteiro, a fila rola',
+    diz:'Sai o corte. Cada aba tem a largura do seu nome, com 72 de mínimo, e a fila rola sempre que não couber. Nada se inventa e nada se esconde — mas veem-se menos abas de uma vez.',
+    aba: ([n,ic]) => ({ texto: n, icone: null }),
+    reparte: () => false,
+  },
+  {
+    id:'c', nome:'C — ícone e nome inteiro, a fila rola',
+    diz:'O ícone que a família escolheu para aquele corredor, por cima do nome inteiro. O ícone faz o reconhecimento à distância; o nome tira a dúvida. Sem ícones escolhidos, é exactamente a B.',
+    aba: ([n,ic]) => ({ texto: n, icone: ic }),
+    reparte: () => false,
+  },
+  {
+    id:'d', nome:'D — só o ícone, o nome no título',
+    diz:'O precedente da Documentação: ícones numa linha só, e o nome do que está aberto vai para o título da secção, logo por baixo. Cabem todas — mas obriga a reconhecer o desenho, e uma casa sem ícones fica sem abas.',
+    aba: ([n,ic]) => ({ texto: null, icone: ic }),
+    reparte: (L) => L.length + 1 <= 8,
+  },
+  {
+    id:'e', nome:'E — o nome inteiro em duas linhas',
+    diz:'Cabem todas e nada se corta. Mas a barra passa de 44 para 56 px e ele já recusou duas linhas uma vez, no filtro da Documentação.',
+    aba: ([n,ic]) => ({ texto: n, icone: null }),
+    reparte: () => true, duasLinhas: true,
+  },
+];
+
+const tapete = document.getElementById('tapete');
+
+function desenhar(){
+  const L = lista();
+  tapete.innerHTML = OPCOES.map(o => {
+    const reparte = o.reparte(L);
+    const abas = [{ i:-1, nome:'Todos', ic:null }].concat(L.map(([n,ic],k)=>({ i:k, nome:n, ic })))
+      .map((x,k) => {
+        const conf = x.i === -1 ? { texto:'Todos', icone:null } : o.aba(L[x.i], x.i);
+        const on = x.i === aberto;
+        const limpo = x.i >= 0 && x.i < aberto;   // os corredores já percorridos
+        return '<div class="aba' + (limpo?' limpo':'') + (o.duasLinhas?' duas':'') + '"'
+          + ' aria-selected="' + on + '" data-i="' + x.i + '"'
+          + ' title="' + x.nome + '">'
+          + '<div class="barra"></div>'
+          + (limpo && !on ? '<div class="visto">'+visto+'</div>' : '')
+          + (conf.icone ? '<div class="ic">'+svg(conf.icone)+'</div>' : '')
+          + (conf.texto !== null ? '<div class="nome">'+conf.texto+'</div>' : '')
+          + '</div>';
+      }).join('');
+    const nomeAberto = aberto === -1 ? 'Toda a lista' : L[aberto][0];
+    return '<div class="op"><h3>' + o.nome + '</h3><p class="diz">' + o.diz + '</p>'
+      + '<div class="tel">'
+      +   '<div class="loja">Pingo Doce do Restelo · ordem do corredor</div>'
+      +   '<div class="abas' + (reparte?' reparte':'') + '" id="abas-'+o.id+'">' + abas + '</div>'
+      +   '<div class="tit">' + nomeAberto + '<span class="dir">3 artigos</span></div>'
+      +   '<div class="talao">'
+      +     '<div class="linha">Leite meio-gordo<span class="p">1,29 €</span></div>'
+      +     '<div class="linha" style="border-bottom:0">Ovos M · 12<span class="p">2,49 €</span></div>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="medida" id="med-'+o.id+'"></div></div>';
+  }).join('');
+  medir();
+}
+
+function medir(){
+  const L = lista();
+  const linhas = [];
+  for (const o of OPCOES) {
+    const fila = document.getElementById('abas-' + o.id);
+    const abas = [...fila.querySelectorAll('.aba')];
+    // Quantas cabem inteiras nos 402 do telefone (menos os 32 de enchimento)?
+    let usado = 0, cabem = 0;
+    for (const a of abas) {
+      const w = a.getBoundingClientRect().width;
+      usado += w + (cabem ? 8 : 0);
+      if (usado <= 402 - 32) cabem++;
+    }
+    // E quantos nomes ficam com reticências?
+    const cortados = abas.filter(a => {
+      const n = a.querySelector('.nome');
+      return n && n.scrollWidth > n.clientWidth + 1;
+    }).length;
+    const rotulos = abas.map(a => (a.querySelector('.nome') || {}).textContent || a.title);
+    const iguais = rotulos.length !== new Set(rotulos).size;
+    document.getElementById('med-' + o.id).innerHTML =
+      '<b>' + cabem + ' de ' + abas.length + '</b> abas à vista · '
+      + (cortados ? '<b style="color:var(--errTexto)">' + cortados + ' com reticências</b>' : 'nenhuma cortada')
+      + (iguais ? ' · <b style="color:var(--errTexto)">dois rótulos iguais</b>' : '')
+      + ' · altura da barra <b>' + Math.round(fila.getBoundingClientRect().height) + ' px</b>';
+    linhas.push({ id: o.id, nome: o.nome, cabem, total: abas.length, cortados, iguais });
+  }
+  window.__medidas = window.__medidas || {};
+  window.__medidas[casa] = linhas;
+  tabela();
+}
+
+function tabela(){
+  const t = document.getElementById('tabela');
+  const m = window.__medidas || {};
+  t.innerHTML = '<tr><th>Opção</th><th>4 desta casa</th><th>8</th><th>15</th>'
+    + '<th>Nomes cortados</th><th>Dois iguais</th></tr>'
+    + OPCOES.map((o,k) => {
+      const cel = (c) => (m[c] && m[c][k]) ? ('<b>' + m[c][k].cabem + '</b> de ' + m[c][k].total) : '—';
+      const agora = m[casa] && m[casa][k];
+      return '<tr><td>' + o.nome + '</td><td>' + cel('esta') + '</td><td>' + cel('oito')
+        + '</td><td>' + cel('muitos') + '</td>'
+        + '<td>' + (agora ? (agora.cortados || 'nenhum') : '—') + '</td>'
+        + '<td>' + (agora && agora.iguais ? '<b style="color:var(--errTexto)">sim</b>' : 'não') + '</td></tr>';
+    }).join('');
+}
+
+document.querySelector('.comando').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-casa]');
+  if (!b) return;
+  casa = b.dataset.casa;
+  if (aberto >= lista().length) aberto = 0;
+  document.querySelectorAll('.comando button').forEach(x =>
+    x.setAttribute('aria-pressed', String(x.dataset.casa === casa)));
+  desenhar();
+});
+tapete.addEventListener('click', (e) => {
+  const a = e.target.closest('.aba');
+  if (!a) return;
+  aberto = Number(a.dataset.i);
+  desenhar();
+});
+
+// Mede as três casas às escondidas, para a tabela ficar cheia logo.
+(function(){
+  const guardado = casa;
+  for (const c of ['esta','oito','muitos']) { casa = c; desenhar(); }
+  casa = guardado; desenhar();
+})();
+</script>
+</body>
+</html>

@@ -109,8 +109,19 @@ export default function Inicio({ t, user, go, onSaude, onEquip, onFicha, onAbrir
         go: () => go('dinheiro') });
     }
   });
+  // ⚠ O NOME INTEIRO (25/09/2026). Isto dizia
+  // `String(e.name).split(' ').slice(0, 2).join(' ')` — as duas primeiras
+  // palavras — e «Máquina de lavar roupa» e «Máquina de lavar loiça» ficavam
+  // as DUAS «Garantia a expirar · Máquina de»: duas linhas idênticas no mesmo
+  // cartão, cada uma a abrir a ficha de um equipamento diferente. E o corte ia
+  // também para o leitor de ecrã, porque a `Row` usa o `title` como rótulo.
+  //
+  // Não havia problema de largura para resolver: a `Row` não tem
+  // `numberOfLines`, portanto um nome comprido parte para a segunda linha — que
+  // é o que a conta fixa aqui em cima e o contrato aqui em baixo já fazem, com
+  // o nome inteiro. Era só este que abreviava.
   garantiasAExpirar().forEach(e => needs.push({ icon: 'idcard', color: t.state.warnTexto, line: t.state.warn,
-    title: `Garantia a expirar · ${String(e.name).split(' ').slice(0, 2).join(' ')}`,
+    title: `Garantia a expirar · ${e.name}`,
     sub: e.dias === 0 ? 'termina hoje' : `${e.dias === 1 ? 'Falta' : 'Faltam'} ${plural(e.dias, 'dia', 'dias')}`,
     // A ficha DESTE equipamento, e não a lista onde é preciso voltar a
     // procurá-lo. Uma linha que diz «Frigorífico» e abre uma lista de doze

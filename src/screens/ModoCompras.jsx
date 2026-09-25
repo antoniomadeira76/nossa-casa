@@ -9,6 +9,7 @@ import Sheet from '../Sheet';
 import NovoArtigo from '../sheets/NovoArtigo';
 import Carrinho from '../sheets/Carrinho';
 import { ATRASO_PARA_PEGAR } from '../ListaArrastavel';
+import { ICONE_POR_ESCOLHER } from '../icone-do-corredor';
 
 // Modo de loja. Vivia dentro do Compras.jsx e num `<Modal>` — que no
 // react-native-web sai da raiz da app e tapava o rodapé: `elementFromPoint`
@@ -26,7 +27,8 @@ const ENVELOPE_DAS_COMPRAS = 'Mercearia';
 
 export default function ModoCompras({ t, user, onClose }) {
   const { s, set, allItems, envelopes, precoDe, definirPrecoPago, registarPrecos,
-          lojaDoPlano, marcarArtigo, registarDespesa, fecharIdaAsCompras, seccoes } = useStore();
+          lojaDoPlano, marcarArtigo, registarDespesa, fecharIdaAsCompras, seccoes,
+          iconeDaSeccao } = useStore();
   const [step, setStep] = useState(null);          // null = Todos
   const [novoArtigo, setNovoArtigo] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -148,7 +150,37 @@ export default function ModoCompras({ t, user, onClose }) {
   // outro — o esquema da coleção `artigos` já avisava.
   const marcar = (id, estado) => marcarArtigo(id, estado);
 
-  const tabs = [{ i: null, label: 'Todos' }, ...seccoes.map(n => ({ i: n, label: n.split(' ')[0] }))];
+  // ── As abas por corredor ──────────────────────────────────────────────────
+  //
+  // ⚠ O NOME INTEIRO (25/09/2026, opção C de `design/abas-dos-corredores.dc.html`).
+  //
+  // Isto dizia `n.split(' ')[0]`, e o corte era no DADO e não no desenho: a aba
+  // de «Frutas & Legumes» lia-se «Frutas», e uma casa que também tivesse
+  // «Frutas do dia» ficava com DUAS ABAS COM O MESMO RÓTULO — o mesmo em voz
+  // alta também, porque o rótulo cortado ia para o `accessibilityLabel`.
+  //
+  // Uma reticência diz «há mais texto»; um `split` não diz nada — inventa um
+  // nome mais curto e apresenta-o como se fosse o nome do corredor. Por isso
+  // não chegava alargar a célula: o corte tinha de sair daqui.
+  //
+  // O ícone é o que a família ESCOLHEU para aquele corredor, o mesmo que está
+  // no título da secção da lista de compras. Faz o reconhecimento à distância
+  // que o nome cortado tentava fazer.
+  //
+  // ⚠ E SÓ o escolhido. A `caixa` — o «por escolher» — não entra aqui, e é uma
+  // diferença que conta: numa casa acabada de criar NINGUÉM escolheu ícone
+  // nenhum, e o `iconeDaSeccao` devolve `caixa` para todos. A fila ficava com
+  // cinco caixas iguais a roubar espaço ao nome, cada uma a dizer o mesmo
+  // nada. Na lista de corredores da gestão a caixa tem sentido — convida a
+  // escolher; numa aba de navegação é ruído. Fora daqui, e com o interruptor
+  // «Sem ícones» ligado o `iconeDaSeccao` devolve `null` e cai no mesmo sítio:
+  // a aba fica só com o nome, que é o que ela precisa de ter.
+  const iconeDaAba = (nome) => {
+    const ic = iconeDaSeccao(nome);
+    return ic && ic !== ICONE_POR_ESCOLHER ? ic : null;
+  };
+  const tabs = [{ i: null, label: 'Todos', icone: null },
+    ...seccoes.map(n => ({ i: n, label: n, icone: iconeDaAba(n) }))];
   const pctCart = merc > 0 ? (cart / merc) * 100 : 0;
 
   // ── Os preços que a app já conhece deste artigo ───────────────────────────
@@ -397,17 +429,23 @@ export default function ModoCompras({ t, user, onClose }) {
       {/* separadores por corredor
           ⚠ Eram `flex: 1` num `View`: com quatro corredores davam 80 px cada,
           com oito da casa simulada davam 40 — abaixo dos 44 do INVARIANTE #5 e
-          com os nomes cortados a «Fresc…». Até cinco separadores repartem a
-          largura; a partir daí a fila ROLA, cada um com 72 de mínimo
-          (13/09/2026). */}
-      {(() => {
-        const rolam = tabs.length > 5;
-        const Fila = rolam ? ScrollView : View;
-        const propsDaFila = rolam
-          ? { horizontal: true, showsHorizontalScrollIndicator: false, contentContainerStyle: { flexDirection: 'row', gap: S.md } }
-          : { style: { flexDirection: 'row', gap: S.md } };
-        return (
-      <Fila {...propsDaFila}>
+          com os nomes cortados a «Fresc…». Até cinco separadores repartiam a
+          largura; a partir daí a fila rolava, cada um com 72 de mínimo
+          (13/09/2026).
+
+          ⚠ E os dois modos acabaram (25/09/2026), com o corte dos nomes. A
+          fila ROLA SEMPRE, e cada aba tem a largura do seu nome: é o
+          `flexBasis: 'auto'` com `flexShrink: 0` que garante que o texto nunca
+          é apertado abaixo do que precisa — sem estimar larguras de letra, que
+          é onde este género de conta se engana. O `flexGrow: 1` só reparte o
+          que SOBRA quando as abas já cabem todas, para uma casa de quatro
+          corredores não ficar com a fila encostada à esquerda e meio ecrã
+          vazio à direita.
+
+          Resultado: nunca há reticências, e quando não cabem arrasta-se —
+          que era o que a fila já fazia acima de cinco. */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ flexDirection: 'row', gap: S.md, flexGrow: 1 }}>
         {tabs.map(x => {
           const on = step === x.i;
           // ⚠ Uma secção VAZIA não está «despachada».
@@ -426,9 +464,9 @@ export default function ModoCompras({ t, user, onClose }) {
               // rótulo, que era só o nome do corredor.
               accessibilityLabel={limpo ? `${x.label} · despachado` : x.label}
               accessibilityState={{ selected: on }} aria-selected={on}
-              style={rolam
-                ? { minWidth: 72, paddingHorizontal: S.xs, minHeight: 44, gap: 6, justifyContent: 'center' }
-                : { flex: 1, minHeight: 44, gap: 6, justifyContent: 'center' }}>
+              style={{ flexGrow: 1, flexShrink: 0, flexBasis: 'auto',
+                minWidth: 72, paddingHorizontal: S.sm,
+                minHeight: 44, gap: 6, justifyContent: 'center' }}>
               {/* ⚠ A BARRA NÃO PODE SER O ÚNICO SINAL (16/09/2026 — ele
                   perguntou «porque é que umas linhas estão a verde e outras a
                   cinza?», e a app não tinha como lhe responder).
@@ -451,15 +489,30 @@ export default function ModoCompras({ t, user, onClose }) {
                   <Icon name="check" size={11} color={t.state.okTexto} />
                 </View>
               ) : null}
+              {/* ⚠ O ícone do corredor, e SÓ se ele existir. Um nome que o
+                  `Icon.jsx` não conhece — e o nulo é um deles — devolve um SVG
+                  VAZIO do tamanho pedido, sem erro nenhum: a aba ficava 18 px
+                  mais alta do que as vizinhas, com um buraco lá dentro. É a
+                  classe que o `a-casa-pode-ficar-sem-icones` guarda. */}
+              {x.icone ? (
+                <View style={{ alignItems: 'center' }}>
+                  <Icon name={x.icone} size={17}
+                    color={on ? t.titulo : limpo ? t.state.okTexto : t.text3} />
+                </View>
+              ) : null}
+              {/* ⚠ O `numberOfLines={1}` FICA, e agora não corta nada: ele põe
+                  o texto numa linha só, e é dessa linha que a aba tira a
+                  largura (`flexBasis: 'auto'`, `flexShrink: 0`). Sem ele, um
+                  nome comprido podia QUEBRAR em duas linhas e deixar aquela aba
+                  mais alta do que as vizinhas. As reticências só aparecem
+                  quando a caixa é mais estreita do que o texto, e aqui nunca é. */}
               <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11, textAlign: 'center',
                 fontWeight: on || limpo ? '600' : '400',
                 color: on ? t.actFg : limpo ? t.state.okTexto : t.text3 }}>{x.label}</Text>
             </Pressable>
           );
         })}
-      </Fila>
-        );
-      })()}
+      </ScrollView>
       </View>
 
       {/* ── O que rola: o carrinho, os artigos, o paginador e o botão ───────

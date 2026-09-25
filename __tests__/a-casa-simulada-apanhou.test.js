@@ -133,26 +133,66 @@ describe('⚠ 3. o Modo Compras com muitos corredores', () => {
   const OITO = ['Frutas & Legumes', 'Frescos', 'Talho e peixaria', 'Mercearia', 'Congelados', 'Higiene e limpeza', 'Outros', 'constructor'];
   const modo = (seccoes) => montar(ModoCompras, { t: T, user: 'Rita', onClose: nada }, { seccoesDaCasa: seccoes });
 
-  it('com oito corredores a fila dos separadores é um ScrollView horizontal e cada um tem 72 de mínimo', () => {
-    const { r } = modo(OITO);
-    const horizontais = r.root.findAllByType(ScrollView).filter(n => n.props.horizontal);
-    expect(horizontais).toHaveLength(1);
-    // Só os nós HOSPEDEIROS: o `Pressable` composto e o `View` que ele desenha
-    // repetem as mesmas props, e contavam-se três por separador.
-    const separadores = r.root.findAll(n => typeof n.type === 'string' && n.props && n.props.accessibilityRole === 'tab');
-    expect(separadores).toHaveLength(9);
-    for (const sep of separadores) {
-      const e = estiloDe(sep);
-      expect(e.minWidth).toBeGreaterThanOrEqual(72);
-      expect(e.minHeight).toBeGreaterThanOrEqual(44);
+  // ⚠ ESTA SECÇÃO MUDOU EM 25/09/2026, e mudou por decisão e não por remendo.
+  //
+  // O que aqui estava exigia DOIS MODOS: com quatro corredores nenhuma fila
+  // horizontal e `flex: 1` exacto em cada aba; com oito, um `ScrollView` e
+  // `minWidth: 72`. Foi a resposta de 13/09 ao esmagamento das abas.
+  //
+  // Corrigiu-se o esmagamento e deixou-se ficar o defeito verdadeiro, uma linha
+  // acima: o `n.split(' ')[0]` que amputava o nome do corredor no primeiro
+  // espaço. O registo de 13/09 chegou a dizer «cada um com o seu nome inteiro»,
+  // e era falso para todo o nome com espaço.
+  //
+  // Agora a fila é SEMPRE um `ScrollView` horizontal, e as abas medem-se pelo
+  // nome: `flexBasis: 'auto'` com `flexShrink: 0` é o que garante que o texto
+  // nunca é apertado abaixo do que precisa, e o `flexGrow: 1` reparte o que
+  // SOBRA quando elas já cabem todas. Com quatro corredores não há nada para
+  // rolar — o conteúdo cabe e as abas repartem a largura, como antes.
+  //
+  // ⚠ E por isso a propriedade que se prova aqui também mudou. «Não há
+  // ScrollView com quatro» era um atalho ESTRUTURAL para dizer «nada fica
+  // escondido»; a propriedade a sério é «uma aba nunca é mais estreita do que o
+  // seu nome, e o que sobra reparte-se», e essa vale com quatro e com vinte e
+  // sete. O `react-test-renderer` não mede geometria — o que se prova é a
+  // regra de flex que produz a geometria, e a medida fez-se no navegador.
+  const abas = (r) => r.root.findAll(n => typeof n.type === 'string'
+    && n.props && n.props.accessibilityRole === 'tab');
+
+  it('a fila dos separadores rola, com quatro corredores e com oito', () => {
+    for (const seccoes of [[], OITO]) {
+      const { r } = modo(seccoes);
+      expect(r.root.findAllByType(ScrollView).filter(n => n.props.horizontal)).toHaveLength(1);
     }
   });
 
-  it('com quatro, como na demonstração, repartem a largura sem rolar', () => {
-    const { r } = modo([]);
-    expect(r.root.findAllByType(ScrollView).filter(n => n.props.horizontal)).toHaveLength(0);
-    for (const sep of r.root.findAll(n => typeof n.type === 'string' && n.props && n.props.accessibilityRole === 'tab')) {
-      expect(estiloDe(sep).flex).toBe(1);
+  it('⚠ e uma aba NUNCA é apertada abaixo do seu nome — reparte o que sobra', () => {
+    for (const seccoes of [[], OITO]) {
+      const { r } = modo(seccoes);
+      // Só os nós HOSPEDEIROS: o `Pressable` composto e o `View` que ele
+      // desenha repetem as mesmas props, e contavam-se três por separador.
+      const separadores = abas(r);
+      expect(separadores.length).toBe((seccoes.length || 4) + 1);
+      for (const sep of separadores) {
+        const e = estiloDe(sep);
+        // `flexShrink: 0` é a linha que impede as reticências: sem ela, oito
+        // abas numa largura de cinco encolhem e o nome volta a cortar-se.
+        expect(e.flexShrink).toBe(0);
+        expect(e.flexBasis).toBe('auto');
+        expect(e.flexGrow).toBe(1);
+        expect(e.minWidth).toBeGreaterThanOrEqual(72);
+        expect(e.minHeight).toBeGreaterThanOrEqual(44);
+      }
+    }
+  });
+
+  it('⚠ e o nome do corredor vai INTEIRO para a aba e para o leitor de ecrã', () => {
+    // O defeito que deu origem a esta reescrita. «Talho e peixaria» e «Higiene
+    // e limpeza» liam-se «Talho» e «Higiene», no ecrã e em voz alta.
+    const { r } = modo(OITO);
+    const rotulos = abas(r).map(n => n.props.accessibilityLabel);
+    for (const nome of OITO) {
+      expect(rotulos.some(x => String(x).startsWith(nome))).toBe(true);
     }
   });
 });
