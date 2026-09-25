@@ -27,19 +27,94 @@
 // A `caixa` é a única que se repete, e só porque não é uma escolha: é o
 // lugar vazio à espera de uma.
 
-// Os doze. A `caixa` é a última porque é o «por escolher», e não uma categoria.
+// Vinte e seis, por famílias, e a `caixa` no fim porque é o «por escolher» e
+// não uma categoria. «Cobertura completa» quer dizer que uma casa portuguesa
+// há-de encontrar aqui o corredor que inventou — charcutaria, conservas,
+// cereais, higiene — sem ter de aceitar um ícone que quer dizer outra coisa.
+//
+// ⚠ A ORDEM é a da grelha de escolher, e está agrupada de propósito: a 44 px
+// por célula, vinte e sete pictogramas seguidos obrigam a PROCURAR. Por
+// famílias, reconhece-se.
 //
 // ⚠ Os nomes dizem o CORREDOR e não o desenho — `hortalica` e não `folha`,
 // `peixaria` e não `peixe`. É de propósito: `folha` e `peixe` já são FIGURAS de
 // avatar (uma criança pode ter um peixe), e o guarda `escolher-avatar` chumba
 // um nome que sirva as duas coisas. Um nome, uma coisa.
 export const ICONES_DE_CORREDOR = [
-  'hortalica', 'peixaria', 'talho', 'padaria', 'laticinios', 'bebidas',
-  'congelados', 'conservas', 'limpeza', 'bebe', 'animais', 'caixa',
+  // Comida fresca
+  'hortalica', 'fruta', 'peixaria', 'talho', 'charcutaria',
+  // Padaria e laticínios
+  'padaria', 'pastelaria', 'laticinios', 'queijo', 'ovos',
+  // Bebidas
+  'bebidas', 'cafe',
+  // Despensa
+  'congelados', 'conservas', 'cereais', 'massa', 'mercearia', 'snacks', 'doces',
+  // Casa
+  'limpeza', 'higiene', 'papel', 'bebe', 'animais', 'cozinha', 'jardim',
+  // E a rede
+  'caixa',
 ];
 
 // O que um corredor mostra enquanto ninguém lhe escolher nada.
 export const ICONE_POR_ESCOLHER = 'caixa';
+
+// ── O que cada ícone quer dizer, por escrito ────────────────────────────────
+//
+// 25/09/2026: «cada icon deve ter uma label (frutas, enchidos, limpeza, etc)
+// encontra a melhor correspondência».
+//
+// ⚠ Sem isto, a grelha eram vinte e sete desenhos mudos, e escolher passava
+// por adivinhar o que cada um queria dizer — que é exactamente o problema que
+// os ícones vieram resolver, devolvido ao contrário. Um pictograma a 21 px
+// diz «qualquer coisa de carne»; a palavra diz «enchidos».
+//
+// ⚠ E os rótulos são o NOME DO CORREDOR como uma casa portuguesa o escreve —
+// «Enchidos» e não «Charcutaria fatiada», «Papel» e não «Papel higiénico e de
+// cozinha». São para se ler de relance debaixo de um quadrado de 44, não para
+// serem exactos.
+//
+// ⚠ O rótulo NÃO baptiza o corredor. Quem lhe dá o nome é a família; isto diz
+// só o que o desenho representa, para a escolha ser informada. Um corredor
+// chamado «Zona B» pode muito bem levar o ícone dos «Enchidos».
+const ROTULOS = {
+  hortalica: 'Legumes',
+  fruta: 'Fruta',
+  peixaria: 'Peixaria',
+  talho: 'Talho',
+  charcutaria: 'Enchidos',
+  padaria: 'Padaria',
+  pastelaria: 'Pastelaria',
+  laticinios: 'Laticínios',
+  queijo: 'Queijo',
+  ovos: 'Ovos',
+  bebidas: 'Bebidas',
+  cafe: 'Café e chá',
+  congelados: 'Congelados',
+  conservas: 'Conservas',
+  cereais: 'Cereais',
+  // ⚠ «Massa» e não «Massa e arroz»: a célula da grelha tem 66 px e o
+  // segundo corta-se em «Massa e a…», que não diz nada. Um rótulo que não
+  // cabe é pior do que um rótulo menos exacto.
+  massa: 'Massa',
+  mercearia: 'Mercearia',
+  snacks: 'Snacks',
+  doces: 'Doces',
+  limpeza: 'Limpeza',
+  higiene: 'Higiene',
+  papel: 'Papel',
+  bebe: 'Bebé',
+  animais: 'Animais',
+  cozinha: 'Cozinha',
+  jardim: 'Jardim',
+  caixa: 'Por escolher',
+};
+
+/**
+ * O que um ícone quer dizer, em palavras. Nunca devolve vazio.
+ */
+export function rotuloDoIcone(icone) {
+  return ROTULOS[icone] || ROTULOS[ICONE_POR_ESCOLHER];
+}
 
 // Sem acentos, sem maiúsculas, sem espaços nas pontas — a mesma normalização
 // que a loja usa para comparar rótulos de artigos.

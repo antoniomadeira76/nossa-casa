@@ -30,7 +30,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   iconeDoCorredor, iconesDosCorredores, donoDeCadaIcone, corredoresPorEscolher,
-  ICONES_DE_CORREDOR, ICONE_POR_ESCOLHER, semAcentos,
+  rotuloDoIcone, ICONES_DE_CORREDOR, ICONE_POR_ESCOLHER, semAcentos,
 } = require('../src/icone-do-corredor');
 
 const RAIZ = path.join(__dirname, '..');
@@ -40,13 +40,42 @@ describe('o corredor tem um ícone', () => {
   const icones = nomesDe(path.join('src', 'Icon.jsx'), /^ {2}([a-zA-Z][a-zA-Z0-9]*):\s*'/gm);
   const figuras = nomesDe(path.join('src', 'Avatares.jsx'), /^ {2}([a-zA-Z][a-zA-Z0-9]*):/gm);
 
-  it('⚠ os doze existem mesmo no `Icon.jsx`', () => {
+  it('⚠ todos existem mesmo no `Icon.jsx`', () => {
     // Um nome que o `Icon.jsx` não conhece devolve um SVG VAZIO, sem erro: o
     // título do corredor ficava com um buraco. Foi o que aconteceu ao
     // `storefront` na Gestão.
-    expect(ICONES_DE_CORREDOR).toHaveLength(12);
     expect(ICONES_DE_CORREDOR.filter(n => !icones.has(n))).toEqual([]);
     expect(ICONES_DE_CORREDOR).toContain(ICONE_POR_ESCOLHER);
+  });
+
+  it('⚠ a cobertura é completa — os corredores que uma casa inventa mesmo', () => {
+    // 25/09/2026: «implementa o 3 com cobertura completa dos corredores». Com
+    // doze, metade das casas ficava com caixas: faltavam a charcutaria, as
+    // conservas, os cereais, a higiene. Esta lista é o CHÃO, e prende-se aqui
+    // para ninguém a encurtar sem reparar.
+    const temDeHaver = [
+      'hortalica', 'fruta', 'peixaria', 'talho', 'charcutaria',
+      'padaria', 'pastelaria', 'laticinios', 'queijo', 'ovos',
+      'bebidas', 'cafe', 'congelados', 'conservas', 'cereais',
+      'massa', 'mercearia', 'snacks', 'doces',
+      'limpeza', 'higiene', 'papel', 'bebe', 'animais', 'cozinha', 'jardim',
+    ];
+    expect(temDeHaver.filter(n => !ICONES_DE_CORREDOR.includes(n))).toEqual([]);
+    expect(ICONES_DE_CORREDOR.length).toBeGreaterThanOrEqual(temDeHaver.length + 1);
+    // E não há nomes repetidos na lista.
+    expect(new Set(ICONES_DE_CORREDOR).size).toBe(ICONES_DE_CORREDOR.length);
+  });
+
+  it('⚠ e cada desenho tem mesmo caminhos — nenhum vem vazio', () => {
+    // Um `nome: ''` passa em todas as outras provas e desenha um buraco.
+    const src = fs.readFileSync(path.join(RAIZ, 'src', 'Icon.jsx'), 'utf8');
+    const vazios = [];
+    for (const nome of ICONES_DE_CORREDOR) {
+      const m = new RegExp(`^ {2}${nome}:[ ]*'([^']*)'`, 'm').exec(src);
+      const caminhos = ((m && m[1]) || '').split('|').filter(x => x.trim());
+      if (!caminhos.length) vazios.push(nome);
+    }
+    expect(vazios).toEqual([]);
   });
 
   it('⚠ e nenhum tem o nome de uma FIGURA de avatar', () => {
@@ -120,6 +149,43 @@ describe('o corredor tem um ícone', () => {
     const faltam = corredoresPorEscolher(['Padaria', 'Talho', 'Bebidas'], { Padaria: 'padaria' });
     expect(faltam).toEqual(['Bebidas', 'Talho']);
     expect(corredoresPorEscolher(['Padaria'], { Padaria: 'padaria' })).toEqual([]);
+  });
+
+  it('⚠ cada ícone diz por escrito o que quer dizer', () => {
+    // 25/09/2026: «cada icon deve ter uma label». Sem isto a grelha eram
+    // vinte e sete desenhos mudos, e escolher passava por adivinhar o que cada
+    // um queria dizer — o problema que os ícones vieram resolver, devolvido ao
+    // contrário.
+    const semRotulo = ICONES_DE_CORREDOR
+      .filter(i => i !== ICONE_POR_ESCOLHER)
+      .filter(i => rotuloDoIcone(i) === rotuloDoIcone(ICONE_POR_ESCOLHER));
+    expect(semRotulo).toEqual([]);
+  });
+
+  it('⚠ e nenhum rótulo se repete', () => {
+    // Dois desenhos com a mesma palavra por baixo não se distinguem, e a
+    // unicidade dos ícones deixava de servir para alguma coisa.
+    const rotulos = ICONES_DE_CORREDOR.map(rotuloDoIcone);
+    expect(new Set(rotulos).size).toBe(rotulos.length);
+  });
+
+  it('os rótulos são os que uma casa portuguesa escreve', () => {
+    expect(rotuloDoIcone('charcutaria')).toBe('Enchidos');
+    expect(rotuloDoIcone('hortalica')).toBe('Legumes');
+    expect(rotuloDoIcone('limpeza')).toBe('Limpeza');
+    expect(rotuloDoIcone('caixa')).toBe('Por escolher');
+    // E um nome que não existe não dá vazio.
+    expect(rotuloDoIcone('inventado')).toBe('Por escolher');
+  });
+
+  it('⚠ e nenhum rótulo é comprido de mais para a célula', () => {
+    // A célula da grelha tem 66 px e o rótulo vai a 11 px numa linha só. Um
+    // que não caiba corta-se em «Massa e a…», que não diz nada — aconteceu, e
+    // é pior do que um rótulo menos exacto.
+    const compridos = ICONES_DE_CORREDOR
+      .map(i => rotuloDoIcone(i))
+      .filter(r => r.length > 12);
+    expect(compridos).toEqual([]);
   });
 
   it('a normalização continua a servir quem a use', () => {

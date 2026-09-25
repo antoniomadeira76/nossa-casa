@@ -10,7 +10,7 @@ import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
 import CampoData from '../CampoData';
-import { ICONES_DE_CORREDOR, ICONE_POR_ESCOLHER } from '../icone-do-corredor';
+import { ICONES_DE_CORREDOR, ICONE_POR_ESCOLHER, rotuloDoIcone } from '../icone-do-corredor';
 import ListaArrastavel from '../ListaArrastavel';
 
 // ── Como esta casa faz compras ───────────────────────────────────────────────
@@ -323,13 +323,27 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
                       disabled={deOutro}
                       accessibilityRole="button" accessibilityState={{ selected: on, disabled: deOutro }}
                       aria-pressed={on} aria-disabled={deOutro}
-                      accessibilityLabel={`Ícone ${nome}${deOutro ? ` · agora é de ${dono}` : ''}`}
-                      style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1,
+                      accessibilityLabel={`${rotuloDoIcone(nome)}${deOutro ? ` · agora é de ${dono}` : ''}`}
+                      style={{ width: 66, alignItems: 'center', gap: 3,
+                        opacity: deOutro && !on ? 0.4 : 1 }}>
+                      {/* ⚠ O alvo continua a ser 44 × 44 — o INVARIANTE #5 não
+                          tem excepções. O rótulo vai POR BAIXO, fora do
+                          quadrado: enfiá-lo lá dentro deixava o ícone a 12 px,
+                          que é menos do que um pictograma precisa para se ler. */}
+                      <View style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1,
                         alignItems: 'center', justifyContent: 'center',
                         borderColor: on ? t.actBrd : t.border,
-                        opacity: deOutro && !on ? 0.4 : 1,
                         backgroundColor: on ? t.actBg : t.subtle }}>
-                      <Icon name={nome} size={21} color={on ? t.actFg : t.text3} />
+                        <Icon name={nome} size={21} color={on ? t.actFg : t.text3} />
+                      </View>
+                      {/* 11 e não 10: a escala `LETRA` do tema começa nos 11, e
+                          o guarda `a-coerencia-do-desenho` chumba um tamanho
+                          inventado. Se 11 não coubesse, o que mudava era a
+                          largura da célula, não a escala. */}
+                      <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11,
+                        color: on ? t.actFg : t.text3 }}>
+                        {rotuloDoIcone(nome)}
+                      </Text>
                     </Pressable>
                   );
                 })}
@@ -337,7 +351,7 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
               <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
                 {iconeActual === ICONE_POR_ESCOLHER
                   ? 'Este corredor ainda não tem ícone. Escolha um — a app não escolhe por si.'
-                  : 'Escolhido por si. Fica assim mesmo que mude o nome do corredor.'}
+                  : `«${rotuloDoIcone(iconeActual)}», escolhido por si. Fica assim mesmo que mude o nome do corredor.`}
               </Text>
               <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
                 Cada corredor tem um ícone diferente. Os esbatidos já são de outro

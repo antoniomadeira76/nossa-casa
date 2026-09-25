@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinco conjuntos de ícones</title>
+<style>
+:root{
+  --page:#F6F7F9; --card:#FCFCFD; --surface:#FFFFFF; --subtle:#FAFAFA;
+  --border:#D9D9D9; --divider:#F0F2F5;
+  --t1:#262626; --t2:#434343; --t3:#656C7C; --slate:#606E90;
+  --ac:#078286; --acFg:#056b6e; --acBg:#E6F4F4; --acBrd:#8FC9CB;
+  --ok:#52C41A; --okBorder:#BAE7A3; --okTexto:#237804;
+  --warnBg:#FEFFD0; --warn:#FAAD14; --warnTexto:#8F5600;
+  --rc:8px; --rr:6px; --rp:100px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#EEF0F3;color:var(--t1);padding:26px;
+  font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif}
+h1{font-size:27px;letter-spacing:-.02em;margin:0 0 8px}
+p.intro{color:var(--t2);max-width:88ch;margin:0 0 6px;line-height:1.6}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);
+  margin:32px 0 14px;padding-bottom:7px;border-bottom:1px solid #DADDE2}
+h3{font-size:16px;margin:0 0 2px;display:flex;align-items:baseline;gap:9px}
+h3 em{font-style:normal;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--okTexto);background:rgba(220,243,209,.6);border:1px solid var(--okBorder);
+  border-radius:var(--rp);padding:1px 8px}
+.diz{color:var(--t3);font-size:12.5px;line-height:1.55;margin:6px 0 0;max-width:62ch}
+.bom{color:var(--okTexto);font-weight:600}.mau{color:#A32621;font-weight:600}
+.aviso{background:var(--warnBg);border-left:3px solid var(--warn);padding:12px 14px;
+  border-radius:0 var(--rc) var(--rc) 0;max-width:88ch;margin:0 0 6px}
+.aviso b{color:var(--warnTexto)}
+
+.pack{background:var(--surface);border-radius:var(--rc);padding:16px 18px;margin:0 0 16px;
+  box-shadow:0 1px 3px rgba(16,18,29,.08);max-width:1040px}
+.ficha{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 14px;
+  font-size:11.5px;color:var(--t3)}
+.ficha b{color:var(--t2);font-weight:600}
+
+/* A tira dos dez corredores, no tamanho a que se vê na app. */
+.tira{display:flex;flex-wrap:wrap;gap:10px}
+.cel{width:86px;text-align:center}
+.cel .cx{height:40px;display:grid;place-items:center;background:var(--subtle);
+  border:1px solid var(--divider);border-radius:var(--rr)}
+.cel span{display:block;font-size:10px;color:var(--t3);margin-top:4px;line-height:1.3}
+svg{display:block}
+.i{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+.casa .i{stroke-width:1.75}
+.luc .i{stroke-width:2}
+.tab .i{stroke-width:2}
+.pho .i{stroke-width:1.8;stroke-linecap:butt;stroke-linejoin:miter}
+.ico .i{stroke-width:1.5}
+
+/* Como se vê a sério: no título do corredor, a 17 px. */
+.demo{margin-top:14px;background:var(--page);border-radius:var(--rr);padding:11px 13px}
+.cab{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;
+  color:var(--acFg);padding-bottom:7px;border-bottom:1px solid var(--border);margin-bottom:7px}
+.cab .dir{margin-left:auto;font-size:11px;font-weight:500;color:var(--t3)}
+.cab svg{color:var(--ac)}
+.art{background:var(--surface);border-radius:var(--rr);padding:7px 11px;margin:5px 0;
+  font-size:14px;color:var(--t2);border-left:3px solid var(--okBorder)}
+
+table.d{border-collapse:collapse;width:100%;max-width:1040px;font-size:13px;background:var(--surface);
+  border-radius:var(--rc);overflow:hidden;box-shadow:0 1px 2px rgba(16,18,29,.06)}
+table.d th,table.d td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--divider);vertical-align:top}
+table.d th{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);background:var(--subtle)}
+table.d td:first-child{font-weight:600;white-space:nowrap}
+code{background:var(--subtle);border:1px solid var(--divider);border-radius:4px;padding:0 4px;font-size:12px}
+</style>
+</head>
+<body>
+
+<h1>Cinco conjuntos de ícones</h1>
+<p class="intro">Os mesmos dez corredores, desenhados no idioma de cinco conjuntos abertos. A diferença entre eles, ao tamanho a que isto se vê — 17 px, dentro do título de um corredor —, é quase toda <b>espessura de traço</b> e <b>quantidade de pormenor</b>.</p>
+
+<div class="aviso">
+<p style="margin:0 0 6px"><b>⚠ Isto são desenhos meus no ESTILO de cada conjunto, não os ficheiros deles.</b> Servem para comparar a <i>aparência</i> e decidir o rumo. Escolhido o rumo, os ícones entram no <code>src/Icon.jsx</code> como o resto: uma tabela de caminhos, à mão, na grelha de 24.</p>
+<p style="margin:0"><b>⚠ E não se acrescenta uma biblioteca.</b> O <code>CLAUDE.md</code> põe «introduzir uma biblioteca de componentes visuais» no que não se faz sem perguntar — o sistema é próprio e vive no <code>theme.js</code>. Todos estes conjuntos são MIT/ISC/Apache, portanto <i>copiar caminhos</i> é legítimo desde que o aviso de licença acompanhe; o que não é preciso é uma dependência nova só para doze desenhos.</p>
+</div>
+
+<h2>Os cinco</h2>
+
+<!-- ─────────────────────────── 1 · A CASA ─────────────────────────── -->
+<div class="pack casa">
+  <h3>1 · O que a app já tem <em>a usar hoje</em></h3>
+  <div class="ficha"><span><b>Traço</b> 1,75</span><span><b>Grelha</b> 24</span><span><b>Pontas</b> redondas</span><span><b>Quantos</b> 55, dos quais 12 de corredor</span><span><b>Licença</b> nossa</span></div>
+  <div class="tira">
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M12 20c0-5 3-9 8-10-1 6-4 9-8 10z"/><path d="M12 20c0-4-2.5-7.5-7-8.5.8 5 3.5 7.8 7 8.5z"/><path d="M12 20v-3"/></g></svg></div><span>hortaliça</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M3 12c3-4 7-6 11-6 3 0 5 1.6 6.5 3.4L22 12l-1.5 2.6C19 16.4 17 18 14 18c-4 0-8-2-11-6z"/><path d="M20.5 9.4l2.5-2.4v10l-2.5-2.4"/><path d="M16.5 11h.01"/></g></svg></div><span>peixaria</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M7.5 4a3.5 3.5 0 0 1 3 5.3l5.2 5.2A3.5 3.5 0 1 1 14.7 20l-5.2-5.2A3.5 3.5 0 1 1 7.5 4z"/></g></svg></div><span>talho</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M4 13c0-3.3 3.6-6 8-6s8 2.7 8 6-3.6 4-8 4-8-.7-8-4z"/><path d="M7.5 11.5h9"/></g></svg></div><span>padaria</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M8 9h8v11H8z"/><path d="M8 9l1.5-4h5L16 9"/><path d="M10.5 13h3"/></g></svg></div><span>laticínios</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M10 3h4v3l2 3v11a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V9l2-3z"/><path d="M8 13h8"/></g></svg></div><span>bebidas</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5L4.2 16.5"/><path d="M9.5 5L12 7.5 14.5 5M9.5 19L12 16.5l2.5 2.5"/></g></svg></div><span>congelados</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M4 8h16l-1.3 11.2a1 1 0 0 1-1 .8H6.3a1 1 0 0 1-1-.8z"/><path d="M8.5 8V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V8"/></g></svg></div><span>limpeza</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M9 9h6v10a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z"/><path d="M10 6h4v3h-4z"/><path d="M11 3.5h2"/><path d="M9 13h6"/></g></svg></div><span>bebé</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M12 14.5c2.2 0 4 1.5 4 3.2S14.2 20 12 20s-4-.6-4-2.3 1.8-3.2 4-3.2z"/><path d="M7.5 9.5h.01M11 7.5h.01M15 8h.01M18 11h.01"/></g></svg></div><span>animais</span></div>
+  </div>
+  <div class="demo">
+    <div class="cab"><svg width="17" height="17" viewBox="0 0 24 24"><g class="i"><path d="M4 13c0-3.3 3.6-6 8-6s8 2.7 8 6-3.6 4-8 4-8-.7-8-4z"/><path d="M7.5 11.5h9"/></g></svg>Padaria<span class="dir">3 artigos</span></div>
+    <div class="art">Pão de forma</div>
+  </div>
+  <p class="diz"><span class="bom">É o idioma da app</span> — mesmo traço, mesma grelha, mesma mão dos outros 43 ícones. Perde: os doze foram desenhados hoje e nota-se onde o pormenor é mais difícil (o talho, os animais).</p>
+</div>
+
+<!-- ─────────────────────────── 2 · LUCIDE ─────────────────────────── -->
+<div class="pack luc">
+  <h3>2 · No estilo do Lucide</h3>
+  <div class="ficha"><span><b>Traço</b> 2</span><span><b>Grelha</b> 24</span><span><b>Pontas</b> redondas</span><span><b>Quantos</b> ~1850</span><span><b>Licença</b> ISC + MIT</span></div>
+  <div class="tira">
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></g></svg></div><span>hortaliça</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.47-3.44 6-7 6s-7.56-2.53-8.5-6z"/><path d="M18 12v.5"/><path d="M6.5 12c-1.5 0-3 .5-4.5 2 .5-2 .5-2.5 0-4 1.5 1.5 3 2 4.5 2z"/></g></svg></div><span>peixaria</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><circle cx="12.5" cy="8.5" r="2.5"/><path d="M12.5 2a6.5 6.5 0 0 0-6.22 4.6c-1.1 3.13-1.28 6.4 1.72 7.4V21h6v-3h1a2 2 0 0 0 2-2v-2h.5a2 2 0 0 0 1.5-3.3L17 8a6.5 6.5 0 0 0-4.5-6z"/></g></svg></div><span>talho</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M12 7c-2.5 0-8 .5-8 4.5 0 3 2.5 3.5 4 3.5h8c1.5 0 4-.5 4-3.5C20 7.5 14.5 7 12 7z"/><path d="M8 15v4M12 15v4M16 15v4"/></g></svg></div><span>padaria</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M8 2h8"/><path d="M9 2v2.8a2 2 0 0 1-.4 1.2L5.4 10.2A2 2 0 0 0 5 11.4V20a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8.6a2 2 0 0 0-.4-1.2l-3.2-4.2a2 2 0 0 1-.4-1.2V2"/><path d="M5.4 13h13.2"/></g></svg></div><span>laticínios</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M9 2h6v3l2.5 3.5A3 3 0 0 1 18 10v9a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-9a3 3 0 0 1 .5-1.5L9 5z"/><path d="M6 14h12"/></g></svg></div><span>bebidas</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M12 2v20M4.9 7l14.2 10M19.1 7L4.9 17"/><path d="M10 4.5L12 6.5l2-2M10 19.5l2-2 2 2M6.2 9.6l.3 2.7-2.6.8M17.8 14.4l-.3-2.7 2.6-.8M6.2 14.4l-2.6-.8 2.6-.8M17.8 9.6l2.6.8-2.6.8"/></g></svg></div><span>congelados</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M3 6h18l-1.6 13.2a2 2 0 0 1-2 1.8H6.6a2 2 0 0 1-2-1.8z"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v5M14 11v5"/></g></svg></div><span>limpeza</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M10 2h4v2a3 3 0 0 1-.6 1.8L12.8 7H15a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3h2.2l-.6-1.2A3 3 0 0 1 10 4z"/><path d="M6 13h12"/></g></svg></div><span>bebé</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><circle cx="11" cy="4.5" r="2"/><circle cx="17.5" cy="7.5" r="2"/><circle cx="5" cy="9" r="2"/><circle cx="18.5" cy="14" r="2"/><path d="M11.5 12.5c-2.3 0-4.5 2.2-4.5 4.5 0 2 1.5 3 3.5 3h2c2 0 3.5-1 3.5-3 0-2.3-2.2-4.5-4.5-4.5z"/></g></svg></div><span>animais</span></div>
+  </div>
+  <div class="demo">
+    <div class="cab"><svg width="17" height="17" viewBox="0 0 24 24"><g class="i"><path d="M12 7c-2.5 0-8 .5-8 4.5 0 3 2.5 3.5 4 3.5h8c1.5 0 4-.5 4-3.5C20 7.5 14.5 7 12 7z"/><path d="M8 15v4M12 15v4M16 15v4"/></g></svg>Padaria<span class="dir">3 artigos</span></div>
+    <div class="art">Pão de forma</div>
+  </div>
+  <p class="diz"><span class="bom">É o vizinho mais próximo do que a app já faz</span> — traço 2 contra 1,75, mesmas pontas redondas, mesma sobriedade. Desenhos maduros, discutidos por muita gente. Perde: a 17 px, o traço de 2 fica um pouco mais carregado do que os 43 ícones que já lá estão, e notar-se-ia numa lista onde convivem.</p>
+</div>
+
+<!-- ─────────────────────────── 3 · TABLER ─────────────────────────── -->
+<div class="pack tab">
+  <h3>3 · No estilo do Tabler <em>o mais completo</em></h3>
+  <div class="ficha"><span><b>Traço</b> 2</span><span><b>Grelha</b> 24</span><span><b>Pontas</b> redondas</span><span><b>Quantos</b> ~6200</span><span><b>Licença</b> MIT</span></div>
+  <div class="tira">
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M5 21c.5-4.5 2.5-8 7-10"/><path d="M9 21c-2-2.5-2-6 0-8.5C11.5 9.5 16 9 19 10c-.5 4.5-3.5 8-7 9-1 .3-2 .3-3 0z"/><path d="M11.5 10c0-2.5 1-4.5 3-6"/></g></svg></div><span>hortaliça</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M16.7 8.3a1 1 0 1 0 .01 0"/><path d="M2 9.5c3.5-4 7.5-5 11-4.5 3 .4 5.6 2.4 7.5 5.5-1.9 3.1-4.5 5.1-7.5 5.5-3.5.5-7.5-.5-11-4.5z"/><path d="M6 12.3c-1.5 2.7-1.9 4.7-1.5 6.7 2-.4 3.6-1.6 5-3.5"/></g></svg></div><span>peixaria</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M6.5 3.5a3 3 0 0 1 2.9 3.7l5.4 5.4a3 3 0 1 1-2.2 2.2L7.2 9.4A3 3 0 1 1 6.5 3.5z"/><path d="M4.5 6.5a3 3 0 0 0 3 3M16.5 16.5a3 3 0 0 0 3 3"/></g></svg></div><span>talho</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M3 12c0-3 4-5.5 9-5.5s9 2.5 9 5.5c0 2-1.5 2.8-3 3v2.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V15c-1.5-.2-3-1-3-3z"/><path d="M7 10.5c1-1 2-1 3 0M14 10.5c1-1 2-1 3 0"/></g></svg></div><span>padaria</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M7.5 3h9v2.2a2 2 0 0 1-.3 1.1l-1.4 2.2a2 2 0 0 0-.3 1.1V20a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V9.6a2 2 0 0 0-.3-1.1L6.8 6.3a2 2 0 0 1-.3-1.1z"/><path d="M6.5 12h11M9.5 15h5"/></g></svg></div><span>laticínios</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M10 2h4v2.5l1.8 2.8A4 4 0 0 1 16.5 10v9a2 2 0 0 1-2 2h-5a2 2 0 0 1-2-2v-9a4 4 0 0 1 .7-2.7L10 4.5z"/><path d="M7.5 12.5h9"/><path d="M11 16h2"/></g></svg></div><span>bebidas</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M12 2.5v19M4.2 7l15.6 9M19.8 7L4.2 16"/><path d="M9.8 4.3L12 6.5l2.2-2.2M9.8 19.7L12 17.5l2.2 2.2"/><path d="M5.6 9.1l.3 3-2.9.8M18.4 14.9l-.3-3 2.9-.8M5.6 14.9l-2.9-.8 2.9-.8M18.4 9.1l2.9.8-2.9.8"/></g></svg></div><span>congelados</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M4 7h16l-1.4 12.2a2 2 0 0 1-2 1.8H7.4a2 2 0 0 1-2-1.8z"/><path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"/><path d="M4 11h16"/><path d="M10 15v3M14 15v3"/></g></svg></div><span>limpeza</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M9.5 2h5v1.8a2 2 0 0 1-.5 1.3L13 6.5h1.5A3.5 3.5 0 0 1 18 10v8.5a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 6 18.5V10a3.5 3.5 0 0 1 3.5-3.5H11L9.9 5.1a2 2 0 0 1-.4-1.3z"/><path d="M6 11.5h12M6 15h12"/></g></svg></div><span>bebé</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M8.5 5.5a1.8 2.4 0 1 0 .01 0M15.5 5.5a1.8 2.4 0 1 0 .01 0M4 11a1.8 2.2 0 1 0 .01 0M20 11a1.8 2.2 0 1 0 .01 0"/><path d="M12 12.5c-2.6 0-5 2.4-5 5 0 2 1.6 3 3.5 3h3c1.9 0 3.5-1 3.5-3 0-2.6-2.4-5-5-5z"/></g></svg></div><span>animais</span></div>
+  </div>
+  <div class="demo">
+    <div class="cab"><svg width="17" height="17" viewBox="0 0 24 24"><g class="i"><path d="M3 12c0-3 4-5.5 9-5.5s9 2.5 9 5.5c0 2-1.5 2.8-3 3v2.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V15c-1.5-.2-3-1-3-3z"/><path d="M7 10.5c1-1 2-1 3 0M14 10.5c1-1 2-1 3 0"/></g></svg>Padaria<span class="dir">3 artigos</span></div>
+    <div class="art">Pão de forma</div>
+  </div>
+  <p class="diz"><span class="bom">É de longe o mais completo em comida</span> — 6200 ícones, com corredores que os outros não têm (conservas, cereais, snacks, higiene, papelaria). Se um dia a casa criar «Charcutaria» ou «Take-away», há lá um. Perde: <span class="mau">mais pormenor por ícone</span>, e a 17 px alguns fecham-se — veja as ondas do pão, que a esse tamanho viram uma mancha.</p>
+</div>
+
+<!-- ─────────────────────────── 4 · PHOSPHOR ─────────────────────────── -->
+<div class="pack pho">
+  <h3>4 · No estilo do Phosphor</h3>
+  <div class="ficha"><span><b>Traço</b> ~1,8 (seis pesos)</span><span><b>Grelha</b> 256</span><span><b>Pontas</b> rectas</span><span><b>Quantos</b> ~1530 conceitos × 6</span><span><b>Licença</b> MIT</span></div>
+  <div class="tira">
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M4 20C4 12 9 6 20 4c0 11-6 16-14 16H4z"/><path d="M4 20c4-6 8-9 12-10.5"/></g></svg></div><span>hortaliça</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M2 12c3.5-4.5 7.5-6 11-6s6.5 2 8 6c-1.5 4-4.5 6-8 6s-7.5-1.5-11-6z"/><path d="M16.5 10.5h.01"/><path d="M21 8.5l2-1.5v10l-2-1.5"/></g></svg></div><span>peixaria</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M7 4a3 3 0 0 1 3 3v1l6 6h1a3 3 0 1 1-3 3v-1l-6-6H7a3 3 0 1 1 0-6z"/></g></svg></div><span>talho</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M3.5 11.5C3.5 8.5 7.3 6.5 12 6.5s8.5 2 8.5 5c0 1.8-1.3 2.7-2.5 3v3a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-3c-1.2-.3-2.5-1.2-2.5-3z"/><path d="M6 14.5h12"/></g></svg></div><span>padaria</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M8 3h8v3l-2 3v11H10V9L8 6z"/><path d="M10 12h4"/></g></svg></div><span>laticínios</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M10 2h4v4l2 3v12H8V9l2-3z"/><path d="M8 13h8"/></g></svg></div><span>bebidas</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M12 2v20M3.5 7.2l17 9.6M20.5 7.2l-17 9.6"/></g></svg></div><span>congelados</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M4 7h16l-2 14H6z"/><path d="M9 7V4h6v3"/></g></svg></div><span>limpeza</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M10 2h4v3l-1 2h2v14H9V7h2l-1-2z"/><path d="M9 12h6"/></g></svg></div><span>bebé</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M9 3h1.6v3H9zM14 3h1.6v3H14zM4 9h1.6v3H4zM18.4 9H20v3h-1.6z"/><path d="M12 13c-2.5 0-4.5 2-4.5 4.5S9 21 12 21s4.5-1 4.5-3.5S14.5 13 12 13z"/></g></svg></div><span>animais</span></div>
+  </div>
+  <div class="demo">
+    <div class="cab"><svg width="17" height="17" viewBox="0 0 24 24"><g class="i"><path d="M3.5 11.5C3.5 8.5 7.3 6.5 12 6.5s8.5 2 8.5 5c0 1.8-1.3 2.7-2.5 3v3a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-3c-1.2-.3-2.5-1.2-2.5-3z"/><path d="M6 14.5h12"/></g></svg>Padaria<span class="dir">3 artigos</span></div>
+    <div class="art">Pão de forma</div>
+  </div>
+  <p class="diz">Pontas <b>rectas</b> e formas geométricas, com seis pesos por ícone — o peso passa a ser uma peça do desenho, como a grossura da letra. <span class="bom">Lê-se muito bem em pequeno</span>, porque tem menos pormenor. Perde: <span class="mau">as pontas rectas discordam dos 43 ícones da app</span>, que são todos redondos — e essa é a diferença que mais se nota quando dois ícones ficam lado a lado.</p>
+</div>
+
+<!-- ─────────────────────────── 5 · ICONOIR ─────────────────────────── -->
+<div class="pack ico">
+  <h3>5 · No estilo do Iconoir <em>o mais leve</em></h3>
+  <div class="ficha"><span><b>Traço</b> 1,5</span><span><b>Grelha</b> 24</span><span><b>Pontas</b> redondas</span><span><b>Quantos</b> ~1600</span><span><b>Licença</b> MIT</span></div>
+  <div class="tira">
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M12 21c0-6 3.5-11 9-12-.5 7-4.5 12-9 12z"/><path d="M12 21c0-4.5-3-8.5-8-9.5.5 5.5 3.5 9 8 9.5z"/></g></svg></div><span>hortaliça</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M2.5 12c3.5-4.5 7-6 10.5-6s6 2 7.5 6c-1.5 4-4 6-7.5 6s-7-1.5-10.5-6z"/><circle cx="16.5" cy="10.5" r=".6"/><path d="M20.5 9l2.5-2v10l-2.5-2"/></g></svg></div><span>peixaria</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M7 4.5a2.8 2.8 0 0 1 2.7 3.5l5.3 5.3a2.8 2.8 0 1 1-1.7 1.7L8 9.7A2.8 2.8 0 1 1 7 4.5z"/></g></svg></div><span>talho</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M4 12.5c0-3 3.6-5.5 8-5.5s8 2.5 8 5.5-3.6 4-8 4-8-1-8-4z"/><path d="M8 11.5h8"/></g></svg></div><span>padaria</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M8.5 9.5h7V20h-7z"/><path d="M8.5 9.5L10 5.5h4l1.5 4"/><path d="M10.5 13.5h3"/></g></svg></div><span>laticínios</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M10.2 3.5h3.6v3l1.7 2.6V20a.8.8 0 0 1-.8.8H9.3a.8.8 0 0 1-.8-.8V9.1l1.7-2.6z"/><path d="M8.5 13.5h7"/></g></svg></div><span>bebidas</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M12 3v18M4.6 7.7l14.8 8.6M19.4 7.7L4.6 16.3"/><path d="M10.2 5.2L12 7l1.8-1.8M10.2 18.8L12 17l1.8 1.8"/></g></svg></div><span>congelados</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M4.5 8h15l-1.2 10.8a1.5 1.5 0 0 1-1.5 1.2H7.2a1.5 1.5 0 0 1-1.5-1.2z"/><path d="M9 8V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V8"/></g></svg></div><span>limpeza</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><path d="M9.5 9.5h5V20a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1z"/><path d="M10.5 6.5h3v3h-3z"/><path d="M11.2 4h1.6"/><path d="M9.5 13.5h5"/></g></svg></div><span>bebé</span></div>
+    <div class="cel"><div class="cx"><svg width="26" height="26" viewBox="0 0 24 24"><g class="i"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="5" cy="10.5" r="1.5"/><circle cx="19" cy="10.5" r="1.5"/><path d="M12 13c-2.4 0-4.4 2-4.4 4.4 0 1.9 1.5 2.9 3.4 2.9h2c1.9 0 3.4-1 3.4-2.9C16.4 15 14.4 13 12 13z"/></g></svg></div><span>animais</span></div>
+  </div>
+  <div class="demo">
+    <div class="cab"><svg width="17" height="17" viewBox="0 0 24 24"><g class="i"><path d="M4 12.5c0-3 3.6-5.5 8-5.5s8 2.5 8 5.5-3.6 4-8 4-8-1-8-4z"/><path d="M8 11.5h8"/></g></svg>Padaria<span class="dir">3 artigos</span></div>
+    <div class="art">Pão de forma</div>
+  </div>
+  <p class="diz">Traço de 1,5 — <span class="bom">o mais leve e o mais elegante em grande</span>. Perde: <span class="mau">a 17 px o traço fino começa a desaparecer</span>, e o guarda dos doze temas desta casa pede 3:1 para um objecto gráfico. Um traço mais fino chega lá com mais dificuldade nos temas claros.</p>
+</div>
+
+<h2>Lado a lado</h2>
+<table class="d">
+  <tr><th>Conjunto</th><th>Traço</th><th>Pontas</th><th>Comida</th><th>Licença</th><th>A 17 px</th></tr>
+  <tr><td>1 · A casa</td><td>1,75</td><td>redondas</td><td>12, feitos por medida</td><td>nossa</td><td>igual ao resto da app</td></tr>
+  <tr><td>2 · Lucide</td><td>2</td><td>redondas</td><td>razoável</td><td>ISC + MIT</td><td>um pouco mais carregado</td></tr>
+  <tr><td>3 · Tabler</td><td>2</td><td>redondas</td><td><b>o mais completo</b></td><td>MIT</td><td>alguns fecham-se</td></tr>
+  <tr><td>4 · Phosphor</td><td>1,8</td><td><b>rectas</b></td><td>boa</td><td>MIT</td><td>lê-se muito bem</td></tr>
+  <tr><td>5 · Iconoir</td><td>1,5</td><td>redondas</td><td>fraca em comida</td><td>MIT</td><td>fino de mais</td></tr>
+</table>
+
+<p class="intro" style="margin-top:14px"><b>A minha recomendação: o 3 — o Tabler — com os desenhos passados para o traço de 1,75 da casa.</b> A razão é a cobertura: é o único com corredores que uma casa portuguesa inventa mesmo — charcutaria, conservas, cereais, higiene, papelaria, take-away — e o problema que ele tem a 17 px (pormenor a mais) resolve-se a desenhar, tirando as ondas e os risquinhos que a esse tamanho não se lêem. Os outros resolvem-se pior: no Lucide falta-lhe metade dos corredores, e no Iconoir falta-lhe quase tudo.</p>
+<p class="intro">Se preferir não mexer no que já lá está, o <b>1</b> fica e eu acrescento doze a vinte desenhos novos na mesma mão — é mais trabalho meu e menos risco de a lista deixar de parecer a mesma app.</p>
+<p class="intro"><b>Em nenhum caso entra uma dependência nova.</b> Todos são MIT/ISC e os caminhos copiam-se para o <code>Icon.jsx</code> com o aviso de licença junto, como o `CLAUDE.md` manda — o sistema visual continua a ser desta casa.</p>
+
+<p class="intro" style="margin-top:14px;font-size:13px;color:var(--t3)">Fontes: <a href="https://lucide.dev/">lucide.dev</a> · <a href="https://tabler.io/icons">tabler.io/icons</a> · <a href="https://iconoop.com/icon-sets.html">iconoop.com — comparação</a> · <a href="https://svgicons.com/articles/lucide-vs-tabler-vs-phosphor-icons">svgicons.com — Lucide vs Tabler vs Phosphor</a></p>
+</body>
+</html>
