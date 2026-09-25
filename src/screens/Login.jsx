@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, Pressable, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { S, R, FONT, elev, corDoMembro, chromeDaCrianca, LARGURA_APP, buildTheme } from '../theme';
@@ -38,6 +38,23 @@ export default function Login({ t, onEnter, erroInicial = null }) {
   // A razão crua, por baixo da frase. É o que uma captura tem de trazer
   // para se saber o que correu mal sem adivinhar.
   const [detalheDoErro, setDetalheDoErro] = useState(null);
+  // ⚠ `aAbrirGoogle` e não `aEntrar`: esse já existe neste ecrã e quer dizer
+  // «a criança está a submeter o PIN». Dois estados com o mesmo nome punham o
+  // botão da Google desactivado enquanto uma criança escreve o PIN, e ao
+  // contrário — duas coisas diferentes com um nome só é como começam os
+  // defeitos que ninguém consegue ler.
+  const [aAbrirGoogle, setAAbrirGoogle] = useState(false);
+  const relogioDoSilencio = useRef(null);
+  const pararOSilencio = () => {
+    if (relogioDoSilencio.current) clearTimeout(relogioDoSilencio.current);
+    relogioDoSilencio.current = null;
+    setAAbrirGoogle(false);
+  };
+  // ⚠ E pára-se ao sair do ecrã: um relógio que dispara depois de a app
+  // entrar punha uma mensagem de erro por cima de uma casa aberta.
+  useEffect(() => () => {
+    if (relogioDoSilencio.current) clearTimeout(relogioDoSilencio.current);
+  }, []);
   const [aEntrar, setAEntrar] = useState(false);
   const [erroPin, setErroPin] = useState(null);
 
@@ -76,6 +93,28 @@ export default function Login({ t, onEnter, erroInicial = null }) {
   const entrarComGoogle = async () => {
     if (!sync.ligado()) return setStep('contas');
     setErroGoogle(null);
+    setDetalheDoErro(null);
+    // ── UM CLIQUE TEM SEMPRE UMA CONSEQUÊNCIA ──────────────────────────
+    //
+    // ⚠ «Não acontece nada quando clico» foi dito TRÊS vezes, com três causas
+    // diferentes: a janela que o navegador recusava em silêncio, a excepção do
+    // `new URL` engolida por uma frase amigável, e o separador a correr código
+    // antigo depois de eu mexer nos ficheiros. Para quem carrega, as três são
+    // indistinguíveis — e essa é a doença, não os sintomas.
+    //
+    // A partir daqui o botão muda de estado à PRIMEIRA, e um relógio garante
+    // que o silêncio se transforma em palavras. Uma causa que eu ainda não
+    // conheça passa a dar uma frase em vez de nada.
+    setAAbrirGoogle(true);
+    if (relogioDoSilencio.current) clearTimeout(relogioDoSilencio.current);
+    relogioDoSilencio.current = setTimeout(() => {
+      setAAbrirGoogle(false);
+      setErroGoogle('Nada aconteceu ao entrar pela Google. Não é a sua conta.');
+      setDetalheDoErro('Tente: recarregar a página (Ctrl+Shift+R), e ver se o '
+        + 'navegador bloqueou a janela — o ícone na barra de endereço. '
+        + 'A lista de contas desta casa fica aqui em baixo.');
+      setStep('contas');
+    }, 6000);
     try {
       // ── SEM JANELA ─────────────────────────────────────────
       //
@@ -102,8 +141,12 @@ export default function Login({ t, onEnter, erroInicial = null }) {
       // A agenda NÃO se pede aqui: o consentimento que aparecia não produzia
       // autorização de longa duração, porque o PocketBase não pede
       // `access_type=offline` à Google. Liga-se no ecrã de agendar, uma vez só.
+      // ⚠ O relógio NÃO se pára aqui quando isto devolve `true`: a página
+      // está a navegar para a Google e vai desaparecer com ele. Se a
+      // navegação falhar por alguma razão, o relógio dispara e diz.
       if (await servidor.auth.comecarEntradaGoogle()) return;
       const r = await servidor.auth.entrarComGoogle();
+      pararOSilencio();
       onEnter(r.record.nome);
     } catch (e) {
       // Falhar a entrada pela Google não pode fechar a porta: sem provedor
@@ -119,6 +162,7 @@ export default function Login({ t, onEnter, erroInicial = null }) {
       // user» tem lá «OAuth»: com tudo configurado, o ecrã afirmava que a
       // Google não estava configurada. Mandou-nos à consola da Google duas
       // vezes à procura de um problema que estava aqui.
+      pararOSilencio();
       const p = await servidor.auth.provedores();
       const cancelado = /cancel|closed|aborted/i.test(e.message || '');
       // ⚠ A RAZÃO CRUA NÃO SE DEITA FORA (18/09/2026).
@@ -231,11 +275,24 @@ export default function Login({ t, onEnter, erroInicial = null }) {
                   de desenho onde o protótipo ganha. */}
               Entre com a sua Conta Google para aceder à casa partilhada.
             </Text>
-            <Pressable onPress={entrarComGoogle} accessibilityRole="button" accessibilityLabel="Continuar com Google"
-              style={({ pressed }) => ({ minHeight: 56, borderRadius: R.row, backgroundColor: pressed ? CLARO.subtle : '#FFFFFF',
+            {/* ⚠ O botão MUDA À PRIMEIRA. «Não acontece nada quando clico» foi
+                dito três vezes, com três causas diferentes, e em todas o botão
+                ficou igual a si próprio enquanto nada acontecia. Um botão que
+                não reage não deixa distinguir «está a trabalhar» de «partiu», e
+                a pessoa carrega outra vez — o que, numa entrada por
+                redireccionamento, começa tudo de novo e perde o primeiro pedido. */}
+            <Pressable onPress={entrarComGoogle} disabled={aAbrirGoogle}
+              accessibilityRole="button" accessibilityState={{ disabled: aAbrirGoogle, busy: aAbrirGoogle }}
+              aria-disabled={aAbrirGoogle} aria-busy={aAbrirGoogle}
+              accessibilityLabel={aAbrirGoogle ? 'A abrir a Google' : 'Continuar com Google'}
+              style={({ pressed }) => ({ minHeight: 56, borderRadius: R.row,
+                backgroundColor: pressed ? CLARO.subtle : '#FFFFFF',
+                opacity: aAbrirGoogle ? 0.72 : 1,
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, ...elev(3) })}>
               <G />
-              <Text style={{ fontFamily: FONT.display, fontSize: 16, fontWeight: '700', color: CLARO.text1, letterSpacing: 0.4 }}>Continuar com Google</Text>
+              <Text style={{ fontFamily: FONT.display, fontSize: 16, fontWeight: '700', color: CLARO.text1, letterSpacing: 0.4 }}>
+                {aAbrirGoogle ? 'A abrir a Google…' : 'Continuar com Google'}
+              </Text>
             </Pressable>
             {erroGoogle ? (
               <View style={{ gap: 4 }}>

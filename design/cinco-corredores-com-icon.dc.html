@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinco corredores com ícone</title>
+<style>
+:root{
+  --page:#F6F7F9; --card:#FCFCFD; --surface:#FFFFFF; --subtle:#FAFAFA;
+  --border:#D9D9D9; --divider:#F0F2F5;
+  --t1:#262626; --t2:#434343; --t3:#656C7C; --slate:#606E90;
+  --ac:#078286; --acFg:#056b6e; --acBg:#E6F4F4; --acBrd:#8FC9CB;
+  --ok:#52C41A; --okBorder:#BAE7A3; --okBg:rgba(220,243,209,.35); --okTexto:#237804;
+  --warnBg:#FEFFD0; --warn:#FAAD14; --warnTexto:#8F5600;
+  --rc:8px; --rr:6px; --rp:100px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#EEF0F3;color:var(--t1);padding:26px;
+  font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif}
+h1{font-size:27px;letter-spacing:-.02em;margin:0 0 8px}
+p.intro{color:var(--t2);max-width:86ch;margin:0 0 6px;line-height:1.6}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);
+  margin:34px 0 14px;padding-bottom:7px;border-bottom:1px solid #DADDE2}
+h3{font-size:15.5px;margin:0 0 2px}
+.diz{color:var(--t3);font-size:12.5px;line-height:1.55;margin:0 0 8px;max-width:46ch}
+.bom{color:var(--okTexto);font-weight:600}.mau{color:#A32621;font-weight:600}
+.med{font-size:11px;color:var(--t3);margin-top:6px}
+.aviso{background:var(--warnBg);border-left:3px solid var(--warn);padding:12px 14px;
+  border-radius:0 var(--rc) var(--rc) 0;max-width:86ch;margin:0 0 6px}
+.aviso b{color:var(--warnTexto)}
+.tapete{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.op{width:360px;flex:none}
+.tel{background:var(--page);border-radius:12px;overflow:hidden;padding:14px 12px;
+  box-shadow:0 8px 24px rgba(16,18,29,.13),0 0 0 1px rgba(16,18,29,.07)}
+
+/* O título de corredor tal como está hoje: 13 px, actFg, com régua. */
+.cab{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;
+  color:var(--acFg);padding-bottom:7px;border-bottom:1px solid var(--border);margin:0 0 2px}
+.cab .dir{margin-left:auto;font-size:11px;font-weight:500;color:var(--t3)}
+.cab.solto{border-bottom:0;padding-bottom:0}
+
+/* O artigo, como no ecrã: cartão branco, faixa verde à esquerda, visto. */
+.art{position:relative;background:var(--surface);border-radius:var(--rr);
+  margin:6px 0;padding:9px 12px 9px 15px;display:flex;align-items:center;gap:11px;
+  box-shadow:0 1px 2px rgba(16,18,29,.05)}
+.art::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--okBorder);border-radius:var(--rr) 0 0 var(--rr)}
+.art .q b{display:block;font-weight:400;font-size:15px;color:var(--t2)}
+.art .q span{display:block;font-size:11.5px;color:var(--t3);margin-top:1px}
+.i{stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.visto{color:var(--ac);flex:none}
+
+/* 1 — a inicial no disco */
+.inicial{width:22px;height:22px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:11px;font-weight:700;color:#fff;letter-spacing:.02em}
+
+/* 4 — a cor como código */
+.tira{width:4px;height:17px;border-radius:var(--rp);flex:none}
+
+/* 5 — o número do percurso */
+.num{width:21px;height:21px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:11px;font-weight:700;border:1.75px solid currentColor}
+
+/* 2 — a grelha de escolher o ícone */
+.escolher{background:var(--surface);border-radius:var(--rc);padding:12px 14px;margin-top:10px;
+  box-shadow:0 1px 2px rgba(16,18,29,.05)}
+.escolher .r{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--slate);margin-bottom:8px}
+.grelha{display:flex;flex-wrap:wrap;gap:8px}
+.grelha div{width:44px;height:44px;border-radius:var(--rr);border:1px solid var(--border);
+  display:grid;place-items:center;color:var(--t3);background:var(--subtle)}
+.grelha div.on{border-color:var(--ac);background:var(--acBg);color:var(--acFg)}
+
+table.d{border-collapse:collapse;width:100%;max-width:1020px;font-size:13.5px;background:var(--surface);
+  border-radius:var(--rc);overflow:hidden;box-shadow:0 1px 2px rgba(16,18,29,.06)}
+table.d th,table.d td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--divider);vertical-align:top}
+table.d th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);background:var(--subtle)}
+table.d td:first-child{font-weight:600;white-space:nowrap}
+code{background:var(--subtle);border:1px solid var(--divider);border-radius:4px;padding:0 4px;font-size:12.5px}
+</style>
+</head>
+<body>
+
+<h1>Cinco corredores com ícone</h1>
+<p class="intro">Cinco maneiras de dar uma marca aos títulos dos corredores na lista de compras — «Frutas &amp; Legumes», «Frescos», «Casa».</p>
+
+<div class="aviso">
+<p style="margin:0 0 6px"><b>⚠ Os corredores são inventados pela família.</b> Não são uma lista fechada da app: criam-se em «Como fazemos compras», e cada casa escreve os seus. Uma casa tem «Frescos», outra tem «Talho» e «Peixaria», outra tem «Corredor 3». Qualquer desenho que precise de um ícone POR NOME tem de responder à pergunta «e quando ele não conhecer o nome?».</p>
+<p style="margin:0"><b>⚠ E o <code>CLAUDE.md</code> diz que cada ícone tem um significado exclusivo.</b> São 43, e nenhum serve comida — <code>storefront</code> é a loja, <code>wallet</code> é o dinheiro, <code>home</code> é o Início. Dar pictogramas aos corredores quer dizer <b>acrescentar vocabulário novo</b> à app, e esse é o custo real de três destas cinco. A 1 e a 5 não acrescentam nenhum.</p>
+</div>
+
+<h2>As cinco</h2>
+<div class="tapete">
+
+  <div class="op">
+    <div class="tel">
+      <div class="cab">
+        <span class="inicial" style="background:#2E9E63">F</span>
+        Frutas &amp; Legumes <span class="dir">3 artigos</span>
+      </div>
+      <div class="art"><svg class="i visto" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg><div class="q"><b>Leite</b><span>Artigo habitual</span></div></div>
+      <div class="art"><svg class="i visto" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg><div class="q"><b>Massa</b><span>Artigo habitual</span></div></div>
+      <div style="height:14px"></div>
+      <div class="cab">
+        <span class="inicial" style="background:#3B7DD8">F</span>
+        Frescos <span class="dir">3 artigos</span>
+      </div>
+      <div class="art"><svg class="i visto" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg><div class="q"><b>Alface</b><span>Adicionado por Rita</span></div></div>
+      <div style="height:14px"></div>
+      <div class="cab">
+        <span class="inicial" style="background:#8B5CD6">C</span>
+        Casa <span class="dir">1 artigo</span>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">1 · A inicial no disco</h3>
+    <p class="diz">A mesma bola dos avatares, com a letra do corredor e uma cor estável tirada do nome. <span class="bom">Não acrescenta um único ícone à app</span> e funciona para qualquer nome que a família invente, hoje e daqui a um ano — «Corredor 3» tem marca como «Talho». A forma já é conhecida: é a bola das pessoas, aplicada a lugares. Perde: duas iniciais iguais («Frutas» e «Frescos») distinguem-se pela cor e não pela letra.</p>
+    <p class="med">bola de 22 · a cor deriva do nome, e não muda</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="cab">
+        <svg class="i" width="19" height="19" viewBox="0 0 24 24"><path d="M12 20c0-5 3-9 8-10-1 6-4 9-8 10z"/><path d="M12 20c0-4-2.5-7.5-7-8.5.8 5 3.5 7.8 7 8.5z"/><path d="M12 20v-3"/></svg>
+        Frutas &amp; Legumes <span class="dir">3 artigos</span>
+      </div>
+      <div class="art"><svg class="i visto" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg><div class="q"><b>Leite</b><span>Artigo habitual</span></div></div>
+      <div class="art"><svg class="i visto" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg><div class="q"><b>Massa</b><span>Artigo habitual</span></div></div>
+      <div class="escolher">
+        <div class="r">O ícone deste corredor</div>
+        <div class="grelha">
+          <div class="on"><svg class="i" width="21" height="21" viewBox="0 0 24 24"><path d="M12 20c0-5 3-9 8-10-1 6-4 9-8 10z"/><path d="M12 20c0-4-2.5-7.5-7-8.5.8 5 3.5 7.8 7 8.5z"/><path d="M12 20v-3"/></svg></div>
+          <div><svg class="i" width="21" height="21" viewBox="0 0 24 24"><path d="M3 12c3-4 7-6 11-6 3 0 5 1.6 6.5 3.4L22 12l-1.5 2.6C19 16.4 17 18 14 18c-4 0-8-2-11-6z"/><circle cx="16.5" cy="11" r=".9" fill="currentColor" stroke="none"/></svg></div>
+          <div><svg class="i" width="21" height="21" viewBox="0 0 24 24"><path d="M4 13c0-3.3 3.6-6 8-6s8 2.7 8 6-3.6 4-8 4-8-.7-8-4z"/><path d="M7.5 11.5h9"/></svg></div>
+          <div><svg class="i" width="21" height="21" viewBox="0 0 24 24"><path d="M10 3h4v3l2 3v11a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V9l2-3z"/><path d="M8 13h8"/></svg></div>
+          <div><svg class="i" width="21" height="21" viewBox="0 0 24 24"><path d="M4 8h16l-1.3 11.2a1 1 0 0 1-1 .8H6.3a1 1 0 0 1-1-.8z"/><path d="M8.5 8V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V8"/></svg></div>
+          <div><svg class="i" width="21" height="21" viewBox="0 0 24 24"><path d="M5 5h14v5a7 7 0 0 1-14 0z"/><path d="M9 19h6"/><path d="M12 17v2"/></svg></div>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">2 · A família escolhe</h3>
+    <p class="diz">Um punhado de ícones novos — folha, peixe, pão, garrafa, caixa, copo — e a folha de criar o corredor pede um. <span class="bom">É a única que nunca adivinha mal</span>, porque quem sabe o que é o «Corredor 3» é quem o escreveu. E é honesta: a app não finge conhecer a mercearia da família. Perde: um passo a mais ao criar, e ícones novos numa app cuja regra é «um ícone, um sentido» — o que obriga a decidir o que cada um significa fora das compras.</p>
+    <p class="med">alvos de 44 · seis ícones novos</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="cab">
+        <svg class="i" width="19" height="19" viewBox="0 0 24 24"><path d="M12 20c0-5 3-9 8-10-1 6-4 9-8 10z"/><path d="M12 20c0-4-2.5-7.5-7-8.5.8 5 3.5 7.8 7 8.5z"/><path d="M12 20v-3"/></svg>
+        Frutas &amp; Legumes <span class="dir">3 artigos</span>
+      </div>
+      <div class="art"><svg class="i visto" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg><div class="q"><b>Leite</b><span>Artigo habitual</span></div></div>
+      <div style="height:14px"></div>
+      <div class="cab">
+        <svg class="i" width="19" height="19" viewBox="0 0 24 24"><path d="M3 12c3-4 7-6 11-6 3 0 5 1.6 6.5 3.4L22 12l-1.5 2.6C19 16.4 17 18 14 18c-4 0-8-2-11-6z"/><circle cx="16.5" cy="11" r=".9" fill="currentColor" stroke="none"/></svg>
+        Frescos <span class="dir">3 artigos</span>
+      </div>
+      <div class="art"><svg class="i visto" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg><div class="q"><b>Alface</b><span>Adicionado por Rita</span></div></div>
+      <div style="height:14px"></div>
+      <div class="cab">
+        <svg class="i" width="19" height="19" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16"/></svg>
+        Corredor 3 <span class="dir">2 artigos</span>
+      </div>
+      <p style="font-size:11px;color:var(--t3);margin:8px 2px 0;line-height:1.5">
+        Sem nome reconhecido, fica a caixa — nunca um espaço vazio.</p>
+    </div>
+    <h3 style="margin-top:12px">3 · O nome dá o ícone</h3>
+    <p class="diz">Uma tabela de palavras: «frut», «legum» dão a folha; «fresc», «peixe», «talho» dão o peixe; «padar», «pão» dão o pão. O que não se reconhece fica com a caixa. <span class="bom">Zero trabalho para a família</span> — a lista ganha ícones sozinha, e a maioria acerta. Perde: <span class="mau">às vezes engana</span>, e um ícone errado é pior do que nenhum — «Frescos» com um peixe numa casa vegetariana. E a tabela é portuguesa: uma casa que escreva em inglês fica toda com caixas.</p>
+    <p class="med">sem passo novo · a caixa é a rede</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="cab">
+        <span class="tira" style="background:#2E9E63"></span>
+        Frutas &amp; Legumes <span class="dir">3 artigos</span>
+      </div>
+      <div class="art" style="--f:#2E9E63"><svg class="i visto" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg><div class="q"><b>Leite</b><span>Artigo habitual</span></div></div>
+      <div class="art"><svg class="i visto" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg><div class="q"><b>Massa</b><span>Artigo habitual</span></div></div>
+      <div style="height:14px"></div>
+      <div class="cab">
+        <span class="tira" style="background:#3B7DD8"></span>
+        Frescos <span class="dir">3 artigos</span>
+      </div>
+      <div class="art"><svg class="i visto" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg><div class="q"><b>Alface</b><span>Adicionado por Rita</span></div></div>
+      <div style="height:14px"></div>
+      <div class="cab">
+        <span class="tira" style="background:#8B5CD6"></span>
+        Casa <span class="dir">1 artigo</span>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">4 · A cor, sem ícone</h3>
+    <p class="diz">Um traço de cor antes do nome, um por corredor, derivado do nome. <span class="bom">É o mais discreto e não inventa vocabulário nenhum</span>: o corredor reconhece-se pela cor, como as áreas já se reconhecem nas pastilhas do registo. Perde: não é um ícone — se o que quer é uma <i>figura</i>, isto não é. E a faixa dos artigos já é verde por «apanhado»; duas cores na mesma coluna vertical pedem cuidado para não se lerem como a mesma coisa.</p>
+    <p class="med">traço de 4 × 17 · a cor deriva do nome</p>
+  </div>
+
+  <div class="op">
+    <div class="tel">
+      <div class="cab" style="color:var(--acFg)">
+        <span class="num">1</span>
+        Frutas &amp; Legumes <span class="dir">3 artigos</span>
+      </div>
+      <div class="art"><svg class="i visto" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg><div class="q"><b>Leite</b><span>Artigo habitual</span></div></div>
+      <div class="art"><svg class="i visto" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg><div class="q"><b>Massa</b><span>Artigo habitual</span></div></div>
+      <div style="height:14px"></div>
+      <div class="cab">
+        <span class="num">2</span>
+        Frescos <span class="dir">3 artigos</span>
+      </div>
+      <div class="art"><svg class="i visto" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.2l2.8 2.8L16 9.6"/></svg><div class="q"><b>Alface</b><span>Adicionado por Rita</span></div></div>
+      <div style="height:14px"></div>
+      <div class="cab">
+        <span class="num">3</span>
+        Casa <span class="dir">1 artigo</span>
+      </div>
+      <p style="font-size:11px;color:var(--t3);margin:8px 2px 0;line-height:1.5">
+        A mesma ordem por que se anda a loja, no modo compras.</p>
+    </div>
+    <h3 style="margin-top:12px">5 · O número do percurso</h3>
+    <p class="diz">Em vez de dizer <i>o que</i> o corredor é, diz <i>onde</i> ele fica no caminho — 1, 2, 3, pela ordem por que se anda a loja. <span class="bom">É a informação que serve com o carrinho na mão</span>, e é a mesma ordem que o modo compras já usa nos segmentos do fundo. Não acrescenta ícone nenhum. Perde: não ajuda a encontrar um corredor numa lista longa fora da loja, e os números mudam quando se reordenam os corredores.</p>
+    <p class="med">anel de 21 · a ordem é a do percurso</p>
+  </div>
+
+</div>
+
+<h2>O que cada uma custa</h2>
+<table class="d">
+  <tr><th>Opção</th><th>Ícones novos</th><th>Trabalho da família</th><th>Falha quando…</th></tr>
+  <tr><td>1 · inicial no disco</td><td>nenhum</td><td>nenhum</td><td>dois corredores começam pela mesma letra</td></tr>
+  <tr><td>2 · a família escolhe</td><td>seis</td><td>um toque ao criar</td><td>nunca — mas há um passo a mais</td></tr>
+  <tr><td>3 · o nome dá o ícone</td><td>seis</td><td>nenhum</td><td>o nome é invulgar, ou não é português</td></tr>
+  <tr><td>4 · a cor</td><td>nenhum</td><td>nenhum</td><td>se o que se queria era mesmo uma figura</td></tr>
+  <tr><td>5 · o número</td><td>nenhum</td><td>nenhum</td><td>fora da loja, não diz o que lá está</td></tr>
+</table>
+
+<p class="intro" style="margin-top:14px"><b>A minha recomendação: a 3 com a 2 por trás.</b> O corredor nasce com o ícone que o nome sugere — «Frutas &amp; Legumes» ganha a folha sem ninguém fazer nada — e a folha de o criar mostra esse ícone já escolhido, com os outros ao lado para trocar num toque. Quem escrever «Corredor 3» vê a caixa e troca-a se quiser; quem escrever «Talho» não tem de fazer nada. Assim a 3 nunca fica presa a um palpite errado, e a 2 nunca obriga a decidir.</p>
+<p class="intro">Se preferir não acrescentar vocabulário novo à app — e é uma escolha defensável, porque são seis ícones a governar para sempre —, então a <b>1</b>: a bola com a inicial resolve o problema hoje, para qualquer nome, e não deixa dívida nenhuma.</p>
+<p class="intro">Nada implementado. Diga o número.</p>
+</body>
+</html>

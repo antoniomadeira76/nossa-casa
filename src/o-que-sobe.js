@@ -79,6 +79,7 @@ export const O_QUE_SOBE = {
 
   // ── Compras ───────────────────────────────────────────────────────────────
   newItems: ['linhas', 'A coleção `artigos`, ligada à `listas_compras` da ida às compras.'],
+  iconesDeSeccao: ['campo', 'O ícone que a família ESCOLHEU para cada corredor — o campo `icone` da coleção `seccoes`, lido como um mapa `nome → ícone`. Só as escolhas entram: um corredor que não esteja aqui ganha o ícone que o nome sugere, e a sugestão corre no cliente (`src/icone-do-corredor.js`) porque é desenho e não dado. Guardar o palpite no servidor era escrever uma escolha que ninguém fez.', 'iconeDaSeccao'],
   status: ['linhas', 'O `estado` de cada artigo vive NA LINHA — por comprar, confirmado, sem stock. Era um mapa que cada telefone reescrevia, e o esquema já avisava: «se fosse uma lista de identificadores confirmados, dois telefones na mesma loja anulavam-se».'],
   shopPlan: ['campo', 'A `listas_compras` aberta: a loja, quem vai, e para quando.'],
   itemGone: ['local', 'Lápides de artigos-semente. Um artigo do servidor apaga-se lá.'],

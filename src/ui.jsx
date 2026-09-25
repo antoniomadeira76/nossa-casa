@@ -148,10 +148,23 @@ export const Card = ({ t, children, style, pad = true }) => (
 // O `titulo` (o acento no claro) falha isso em cinco dos seis esquemas no
 // escuro; o `actFg` é o acento levado aos 4,5 nos doze temas — a regra do
 // CLAUDE.md para texto em cor de ação.
-export const SectionTitle = ({ t, children, right }) => (
-  <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: S.md,
+// ⚠ `icone` é OPCIONAL, e por omissão não há nenhum (25/09/2026). Só os
+// corredores da lista de compras o levam — pô-lo em todos os títulos da app
+// obrigava a inventar um pictograma para «Envelopes», «Administração» e
+// «Contas entre Nós», e um ícone inventado por obrigação diz menos do que
+// título nenhum.
+//
+// ⚠ O alinhamento passa a `center` quando há ícone, e continua `baseline` sem
+// ele. Um ícone alinhado pela linha de base do texto fica a flutuar meio
+// píxel acima, e nota-se numa lista com cinco corredores seguidos.
+export const SectionTitle = ({ t, children, right, icone }) => (
+  <View style={{ flexDirection: 'row', alignItems: icone ? 'center' : 'baseline', gap: S.md,
     paddingBottom: S.md, paddingHorizontal: S.xs,
     borderBottomWidth: 1, borderBottomColor: t.border }}>
+    {/* ⚠ `t.titulo` e não `t.actFg`: um ícone é um objeto gráfico e pede 3:1,
+        e é o `titulo` que os doze temas garantem nessa medida (CLAUDE.md). O
+        texto ao lado fica no `actFg`, que é o que 13 px pedem. */}
+    {icone ? <Icon name={icone} size={17} color={t.titulo} /> : null}
     <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
       color: t.actFg, letterSpacing: 0.2 }}>{children}</Text>
     {right}

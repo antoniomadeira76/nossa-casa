@@ -57,6 +57,10 @@ const CAMPOS = [
   ['membros', 'figura', { type: 'text', max: 24 }],
   ['artigos', 'corredor', { type: 'relation', alvo: 'seccoes', maxSelect: 1, cascadeDelete: false }],
   ['artigos', 'posto', { type: 'number', min: 0, onlyInt: true }],
+  // O ícone que a família escolheu para o corredor. A oitava vez que um
+  // campo precisou destes dois sítios, e a primeira em que nasceu nos dois
+  // ao mesmo tempo sem ninguém ter de o descobrir a correr. (25/09/2026)
+  ['seccoes', 'icone', { type: 'text', max: 24 }],
   // Se a criança já tem PIN — posto pelo hook e pela rota, lido pela entrada
   // e pela Gestão. A quarta vez que um campo precisou destes dois sítios.
   ['membros', 'pin_definido', { type: 'bool' }],

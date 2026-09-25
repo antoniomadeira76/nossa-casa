@@ -41,6 +41,56 @@ const P = {
   // porta.
   storefront: 'M3.5 4.5h17l1.5 5H2z|M5 9.5V20h14V9.5|M10 20v-6h4v6',
   idcard: 'M3 6h18v12H3z|M7 10h3M7 14h6M14 10h3',
+
+  // ── Os doze corredores ─────────────────────────────────────────────────────
+  //
+  // 25/09/2026, desenho 3 com a 2 por trás de `design/cinco-corredores-com-icon
+  // .dc.html`: os títulos dos corredores da lista de compras ganham uma marca.
+  //
+  // ⚠ Estes seis têm um sentido exclusivo como os outros (CLAUDE.md), e o
+  // sentido deles é ESTE: são a marca de um corredor de uma loja, e mais nada.
+  // Não se usa a `hortalica` para «ecológico», nem as `bebidas` para
+  // «reciclagem», nem a `caixa` para «arquivo» — há 43 ícones nesta app e a regra que os
+  // mantém legíveis é nunca um deles querer dizer duas coisas.
+  //
+  // São doze e não trinta porque uma casa tem cinco a oito corredores, e porque
+  // uma grelha de vinte pictogramas parecidos obriga a procurar em vez de
+  // reconhecer. A `caixa` é a rede: o corredor que não se parecer com nenhum
+  // dos outros onze fica com ela, e nunca com um espaço vazio.
+  //
+  // Mesma grelha de 24 e mesmo traço de 1,75 do resto do ficheiro.
+
+  // ⚠ Os nomes dizem o CORREDOR e não o desenho — `hortalica` e não `folha`,
+  // `peixaria` e não `peixe`. É de propósito: `folha` e `peixe` já são FIGURAS
+  // de avatar (uma criança pode ter um peixe), e o guarda
+  // `escolher-avatar` chumba um nome que sirva as duas coisas. Um nome, uma
+  // coisa — é a mesma regra dos ícones, vista do lado dos avatares.
+
+  // Fruta e legumes. Duas folhas e o pé.
+  hortalica: 'M12 20c0-5 3-9 8-10-1 6-4 9-8 10z|M12 20c0-4-2.5-7.5-7-8.5.8 5 3.5 7.8 7 8.5z|M12 20v-3',
+  // Frescos: peixe, talho, peixaria. Corpo, cauda e olho.
+  peixaria: 'M3 12c3-4 7-6 11-6 3 0 5 1.6 6.5 3.4L22 12l-1.5 2.6C19 16.4 17 18 14 18c-4 0-8-2-11-6z|M20.5 9.4l2.5-2.4v10l-2.5-2.4|M16.5 11h.01',
+  // Padaria. A côdea e o golpe de cima.
+  padaria: 'M4 13c0-3.3 3.6-6 8-6s8 2.7 8 6-3.6 4-8 4-8-.7-8-4z|M7.5 11.5h9',
+  // Bebidas. Gargalo, corpo e rótulo.
+  bebidas: 'M10 3h4v3l2 3v11a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V9l2-3z|M8 13h8',
+  // Limpeza e casa. Balde com asa.
+  limpeza: 'M4 8h16l-1.3 11.2a1 1 0 0 1-1 .8H6.3a1 1 0 0 1-1-.8z|M8.5 8V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V8',
+  // Talho. O osso.
+  talho: 'M7.5 4a3.5 3.5 0 0 1 3 5.3l5.2 5.2A3.5 3.5 0 1 1 14.7 20l-5.2-5.2A3.5 3.5 0 1 1 7.5 4z',
+  // Laticínios. O pacote de leite, com a aba.
+  laticinios: 'M8 9h8v11H8z|M8 9l1.5-4h5L16 9|M10.5 13h3',
+  // Congelados. O floco.
+  congelados: 'M12 3v18M4.2 7.5l15.6 9M19.8 7.5L4.2 16.5|M9.5 5L12 7.5 14.5 5M9.5 19L12 16.5l2.5 2.5',
+  // Bebé. O biberão.
+  bebe: 'M9 9h6v10a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z|M10 6h4v3h-4z|M11 3.5h2|M9 13h6',
+  // Animais. A patinha.
+  animais: 'M12 14.5c2.2 0 4 1.5 4 3.2S14.2 20 12 20s-4-.6-4-2.3 1.8-3.2 4-3.2z|M7.5 9.5h.01M11 7.5h.01M15 8h.01M18 11h.01',
+  // Conservas e enlatados. A lata.
+  conservas: 'M6 7.5c0-1.4 2.7-2.5 6-2.5s6 1.1 6 2.5v9c0 1.4-2.7 2.5-6 2.5s-6-1.1-6-2.5z|M6 7.5c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5',
+  // ⚠ A REDE: o corredor que não se reconhece, e o último a ser dado. Uma
+  // caixa fechada, que é o que um corredor é antes de se saber o que lá está.
+  caixa: 'M4 7.5l8-3.5 8 3.5v9L12 20l-8-3.5z|M4 7.5l8 3.5 8-3.5M12 11v9',
   // ⚠ `grip` quer dizer «isto arrasta-se», e só isso — os ícones desta app têm
   // um sentido exclusivo cada um (CLAUDE.md). Seis pontos em duas colunas, que
   // é o desenho que toda a gente já leu noutro sítio como uma pega.

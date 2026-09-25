@@ -858,6 +858,12 @@ await criar({
     rel('casa', ids.casas, { required: true, cascadeDelete: true }),
     txt('nome', { required: true }),
     num('posto', { min: 0, onlyInt: true }),
+    // O ícone do corredor, ESCOLHIDO pela família (25/09/2026). Vazio quer
+    // dizer «nenhum escolhido», e aí o cliente adivinha pelo nome — ver
+    // `src/icone-do-corredor.js`. Guarda-se o NOME do ícone e não um número:
+    // um número obrigava as duas pontas a concordar numa ordem, e a lista dos
+    // seis há-de mudar.
+    txt('icone', { max: 24 }),
   ],
   listRule: DA_CASA, viewRule: DA_CASA,
   createRule: `${DA_CASA} && ${ADULTO}`, updateRule: `${DA_CASA} && ${ADULTO}`, deleteRule: `${DA_CASA} && ${ADULTO}`,

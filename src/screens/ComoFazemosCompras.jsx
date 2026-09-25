@@ -10,6 +10,7 @@ import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
 import CampoData from '../CampoData';
+import { ICONES_DE_CORREDOR, ICONE_POR_ESCOLHER } from '../icone-do-corredor';
 import ListaArrastavel from '../ListaArrastavel';
 
 // ── Como esta casa faz compras ───────────────────────────────────────────────
@@ -33,12 +34,16 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
   const {
     s, membros: MEMBERS, adultos, mudarPlanoDeCompras, mudarListaDaCasa,
     lojaDoPlano, diaDoPlano, seccoes, criarSeccao, alterarSeccao, apagarSeccao,
-    reordenarSeccoes, allItems,
+    reordenarSeccoes, allItems, escolherIconeDaSeccao,
   } = st;
 
   const [folha, setFolha] = useState(null);      // 'quem' | 'quando' | 'onde' | 'loja' | 'seccao'
   const [texto, setTexto] = useState('');
   const [aEditar, setAEditar] = useState(null);  // o nome que se está a renomear
+  // O ícone que a pessoa tocou nesta folha, ou `null` enquanto não tocar em
+  // nenhum — e `null` quer dizer «deixa o nome sugerir», que não é o mesmo
+  // que escolher o que ele sugeriria.
+  const [escolhaDoIcone, setEscolhaDoIcone] = useState(null);
   const [erro, setErro] = useState(null);
   const [aApagar, setAApagar] = useState(null);  // { tipo, nome }
 
@@ -53,11 +58,29 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
   const artigos = allItems();
   const quantos = (nome) => artigos.filter(a => a.s === nome).length;
 
-  const fechar = () => { setFolha(null); setTexto(''); setAEditar(null); setErro(null); };
+  // ⚠ O `escolhaDoIcone` limpa-se aqui com o resto. Sem isto, abrir o
+  // corredor seguinte trazia o ícone tocado no anterior já marcado — e
+  // guardava-o sem ninguém ter escolhido nada.
+  const fechar = () => { setFolha(null); setTexto(''); setAEditar(null); setErro(null); setEscolhaDoIcone(null); };
+
+  // O ícone que a folha está a mostrar, e de quem é cada um dos doze.
+  // ⚠ O `donos` é calculado com a casa COMO ESTÁ — sem o corredor que se
+  // está a criar, que ainda não existe. É o que faz o aviso dizer a verdade.
+  const donos = st.donoDosIcones();
+  const iconeActual = escolhaDoIcone
+    || (aEditar ? st.iconeDaSeccao(aEditar) : ICONE_POR_ESCOLHER);
 
   const guardarSeccao = () => {
     const msg = aEditar ? alterarSeccao(aEditar, texto) : criarSeccao(texto);
     if (msg) { setErro(msg); return; }
+    // ⚠ O ícone grava-se DEPOIS e com o nome NOVO — o `alterarSeccao` pode ter
+    // acabado de renomear o corredor, e uma escolha guardada contra o nome
+    // antigo ficava órfã no mapa: o corredor voltava à adivinha e o mapa
+    // guardava para sempre uma entrada de um corredor que já não existe.
+    //
+    // E só se grava se a pessoa TOCOU na grelha. Sem toque, o corredor fica à
+    // solta e o nome continua a mandar.
+    if (escolhaDoIcone) escolherIconeDaSeccao(String(texto || '').trim(), escolhaDoIcone);
     fechar();
   };
 
@@ -140,6 +163,13 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
                     style={{ flex: 1, minHeight: 56, flexDirection: 'row',
                       alignItems: 'center', gap: 12 }}>
                     <Icon name="grip" size={18} color={t.text3} />
+                    {/* ⚠ O ícone do corredor, aqui e no título da lista de compras
+                        (25/09/2026). É esta lista a «secção com todos os ícones»: cada
+                        corredor mostra o seu, e tocar na linha abre a folha onde se
+                        troca. NÃO se fez um segundo ecrã só para os ícones — seria
+                        outra porta para a mesma decisão, que é a classe de defeito
+                        que o `duas-portas-para-a-mesma-decisao` guarda. */}
+                    <Icon name={st.iconeDaSeccao(x.id)} size={19} color={t.titulo} />
                     <View style={{ flex: 1, gap: 2 }}>
                       <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>{x.id}</Text>
                       <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
@@ -265,6 +295,55 @@ export default function ComoFazemosCompras({ t, user, onClose }) {
                 Mudar o nome leva os {quantos(aEditar)} artigos deste corredor com ele.
               </Text>
             ) : null}
+
+            {/* ── O ícone ────────────────────────────────────────────────────
+                25/09/2026, desenho 3 com a 2 por trás. O nome SUGERE — quem
+                escreve «Padaria» vê o pão já marcado, sem fazer nada — e quem
+                discordar troca num toque. A sugestão acompanha o que se vai
+                escrevendo, para a escolha se ver antes de guardar.
+
+                ⚠ Enquanto ninguém tocar na grelha, o corredor fica À SOLTA:
+                não se grava escolha nenhuma, e o ícone continua a vir do nome.
+                É a diferença entre «ainda não escolhi» e «escolhi isto» — e é
+                o que faz mudar o nome de «Zona B» para «Padaria» passar a
+                mostrar o pão, em vez de ficar preso à caixa de antes. */}
+            <View style={{ gap: S.sm }}>
+              <Label t={t}>Ícone</Label>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
+                {ICONES_DE_CORREDOR.map((nome) => {
+                  const on = nome === iconeActual;
+                  // ⚠ De quem é este ícone, se não for deste corredor. Escolher
+                  // um que já é de outro TIRA-LHO — e isso diz-se antes, não
+                  // depois: o outro corredor recebe o primeiro livre e a marca
+                  // dele muda sem ninguém ter pedido.
+                  const dono = donos[nome];
+                  const deOutro = !!dono && dono !== (aEditar || texto.trim());
+                  return (
+                    <Pressable key={nome} onPress={() => { if (!deOutro) setEscolhaDoIcone(nome); }}
+                      disabled={deOutro}
+                      accessibilityRole="button" accessibilityState={{ selected: on, disabled: deOutro }}
+                      aria-pressed={on} aria-disabled={deOutro}
+                      accessibilityLabel={`Ícone ${nome}${deOutro ? ` · agora é de ${dono}` : ''}`}
+                      style={{ width: 44, height: 44, borderRadius: R.row, borderWidth: 1,
+                        alignItems: 'center', justifyContent: 'center',
+                        borderColor: on ? t.actBrd : t.border,
+                        opacity: deOutro && !on ? 0.4 : 1,
+                        backgroundColor: on ? t.actBg : t.subtle }}>
+                      <Icon name={nome} size={21} color={on ? t.actFg : t.text3} />
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+                {iconeActual === ICONE_POR_ESCOLHER
+                  ? 'Este corredor ainda não tem ícone. Escolha um — a app não escolhe por si.'
+                  : 'Escolhido por si. Fica assim mesmo que mude o nome do corredor.'}
+              </Text>
+              <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
+                Cada corredor tem um ícone diferente. Os esbatidos já são de outro
+                corredor — liberte-o lá primeiro se o quiser aqui.
+              </Text>
+            </View>
           </View>
         </Sheet>
       ) : null}

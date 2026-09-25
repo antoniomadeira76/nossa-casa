@@ -641,6 +641,16 @@ export async function puxarCasa() {
   const linhasDeSeccao = [...(casa.seccoes || [])]
     .sort((a, b) => (Number(a.posto) || 0) - (Number(b.posto) || 0));
   const seccoesDaCasa = linhasDeSeccao.map(l => l.nome);
+  // O ícone que a família escolheu para cada corredor (25/09/2026).
+  //
+  // ⚠ SÓ os escolhidos entram no mapa. Um corredor sem escolha não fica com
+  // uma entrada vazia: fica FORA, e o cliente adivinha pelo nome
+  // (`src/icone-do-corredor.js`). Guardar `''` aqui era uma escolha escrita a
+  // dizer «nenhuma», e a partir daí a adivinha deixava de correr para corredores
+  // que nunca foram tocados.
+  const iconesDeSeccao = Object.fromEntries(linhasDeSeccao
+    .filter(l => l.icone)
+    .map(l => [l.nome, l.icone]));
   if (linhasDeSeccao.length) {
     listasIds.seccoes = Object.fromEntries(linhasDeSeccao.map(l => [l.nome, l.id]));
   }
@@ -894,6 +904,7 @@ export async function puxarCasa() {
     despesasMeias,
     gastoPorEnvelope,
     seccoesDaCasa,
+    iconesDeSeccao,
     registered,
     newEquip,
     preferencias,
@@ -1410,6 +1421,12 @@ export async function criarSeccao({ casa, nome, posto }) {
 export async function renomearSeccao(id, nome) {
   if (!ligado() || !id) return { pendente: true };
   return servidor.pb.collection('seccoes').update(id, { nome });
+}
+
+// O ícone escolhido para um corredor. Vazio quer dizer «volta a adivinhar».
+export async function iconeDaSeccao(id, icone) {
+  if (!ligado() || !id) return { pendente: true };
+  return servidor.pb.collection('seccoes').update(id, { icone: icone || '' });
 }
 
 export async function apagarSeccao(id) {

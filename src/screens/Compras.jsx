@@ -258,7 +258,9 @@ export default function Compras({ t, user, onModoCompras, onIda }) {
         if (!rows.length) return null;
         return (
           <View key={sec}>
-            <SectionTitle t={t} right={
+            {/* O ícone do corredor (25/09/2026): o nome sugere-o, a família
+                troca-o em «Como fazemos compras». Ver `icone-do-corredor.js`. */}
+            <SectionTitle t={t} icone={st.iconeDaSeccao(sec)} right={
               <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>{plural(rows.length, 'artigo', 'artigos')}</Text>
             }>{sec}</SectionTitle>
             {/* ⚠ A ordem dentro do corredor é a que a mão dá. A pressão longa

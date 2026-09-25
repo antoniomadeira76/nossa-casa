@@ -5,6 +5,8 @@ import { TASKS, ITEMS, EVENTS, EQUIP, ENV_BASE, SECTIONS, MEMBERS, ROLES, HEALTH
 import { TODAY_KEY, TODAY, MONTHS, dueInfo, daysUntil, warrantyDaysLeft, chaveDeDMY,
          chaveRelativa, plural, EUR, parseKey, dkey, pad2, agoraNaApp } from './format';
 import { chaveDaReceita, planoDaReceita } from './medicacao';
+import { iconesDosCorredores, donoDeCadaIcone, corredoresPorEscolher,
+         ICONE_POR_ESCOLHER } from './icone-do-corredor';
 import { observacao, precosDe, estimativaDe, compararLojas } from './precos';
 // As decisões sobre o que vai para a agenda da Google — puras, e num ficheiro
 // à parte porque o `pocketbase.js` traz um SDK que o Jest não importa.
@@ -282,7 +284,7 @@ const BACKUPS_ANTIGOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(n => `${KEY}.ant
 const DATA_KEYS = [
   'done', 'pending', 'status', 'registered', 'gastoLocal', 'acertoMovs', 'partilhasPagas', 'despesasMeias', 'gastoPorEnvelope', 'vaultMoves', 'paidPts',
   'envMove', 'added', 'newTasks', 'taskEdits', 'taskGone', 'taskOrder', 'pontosDeTarefasApagadas',
-  'newItems', 'itemGone', 'itemEdits', 'itemOrder', 'feitas', 'listasIds', 'envelopesDaCasa', 'seccoesDaCasa', 'mes',
+  'newItems', 'itemGone', 'itemEdits', 'itemOrder', 'feitas', 'listasIds', 'envelopesDaCasa', 'seccoesDaCasa', 'iconesDeSeccao', 'mes',
   'metasDaCasa', 'metaMovs', 'metasProprias', 'objetivosCofre', 'pratos', 'ementa',
   'contasFixas', 'contasPagas', 'contratos', 'trocas', 'extractos',
   'newEquip', 'equipGone', 'equipEdits', 'schemeByUser', 'themeByUser', 'notif',
@@ -619,6 +621,10 @@ export const DEMO = () => ({
   envMove: {}, added: [], newTasks: [], taskEdits: {}, taskGone: {}, taskOrder: {},
   // Vazio quer dizer «ainda são as sementes» — materializa-se ao primeiro toque.
   seccoesDaCasa: [],
+  // O ícone que a família ESCOLHEU para cada corredor: `nome → ícone`
+  // (25/09/2026). Só os escolhidos entram — um corredor que não esteja aqui
+  // ganha o ícone que o nome sugere (`src/icone-do-corredor.js`).
+  iconesDeSeccao: {},
   // `nome → id` das três listas da casa, por lista. É o que permite renomear e
   // apagar do lado do servidor sem mudar a forma que os ecrãs leem.
   listasIds: {},
@@ -1049,6 +1055,10 @@ export function StoreProvider({ children }) {
       // mês somado e nunca usado.
       if (casa.seccoesDaCasa && casa.seccoesDaCasa.length) {
         set({ seccoesDaCasa: casa.seccoesDaCasa });
+        // ⚠ SUBSTITUI, e mesmo quando vem vazio: tirar o ícone escolhido a um
+        // corredor é uma decisão, e fundir com o mapa local ressuscitava-o. O
+        // par disto é o `envMove`, pela mesma razão.
+        set({ iconesDeSeccao: casa.iconesDeSeccao || {} });
       }
       if (typeof casa.despesasMeias === 'number') set({ despesasMeias: casa.despesasMeias });
 
@@ -3649,6 +3659,43 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
 
   const seccaoNoServidor = (nome) => ((s.listasIds || {}).seccoes || {})[nome] || null;
 
+  // ── O ícone de um corredor ────────────────────────────────────────
+  //
+  // 25/09/2026, desenho 3 com a 2 por trás: o nome sugere, a família decide.
+  // A decisão é que manda, e não se perde quando o corredor muda de nome.
+  // ⚠ Calcula-se para a LISTA INTEIRA, e não corredor a corredor: é isso que
+  // garante que não há dois iguais («não repitas icons nas secções»). Ver o
+  // `iconesDosCorredores`.
+  const iconesDeTodosOsCorredores = () => iconesDosCorredores(seccoes, s.iconesDeSeccao || {});
+  const iconeDaSeccao = (nome) => iconesDeTodosOsCorredores()[nome] || ICONE_POR_ESCOLHER;
+  // Os corredores que ainda ninguém marcou — o ecrã de administração di-lo em
+  // vez de deixar a pessoa contar as caixas.
+  const corredoresSemIcone = () => corredoresPorEscolher(seccoes, s.iconesDeSeccao || {});
+  // De quem é cada ícone — a grelha de escolher precisa disto para dizer «este
+  // já é do Talho» em vez de o tirar a outro sem avisar.
+  const donoDosIcones = () => donoDeCadaIcone(seccoes, s.iconesDeSeccao || {});
+
+  // ⚠ `null` (ou o mesmo que a adivinha daria) volta a pôr o corredor à solta:
+  // a entrada SAI do mapa em vez de ficar lá a repetir o palpite. Uma escolha
+  // que diz o mesmo que a sugestão não é uma escolha — e se um dia a tabela
+  // melhorar, esse corredor acompanha-a em vez de ficar preso ao que dizia hoje.
+  const escolherIconeDaSeccao = (nome, icone) => {
+    const n = String(nome || '').trim();
+    if (!n) return;
+    // ⚠ A `caixa` é desistir de escolher, e por isso SAI do mapa em vez de
+    // ficar lá escrita. Guardar «escolhi a caixa» e «ainda não escolhi» como
+    // coisas diferentes dava dois estados que se desenham igual — e um deles
+    // ficava para sempre, sem maneira de o distinguir do outro.
+    const solto = !icone || icone === ICONE_POR_ESCOLHER;
+    set(x => {
+      const mapa = { ...(x.iconesDeSeccao || {}) };
+      if (solto) delete mapa[n]; else mapa[n] = icone;
+      return { iconesDeSeccao: mapa };
+    });
+    const id = seccaoNoServidor(n);
+    if (sync && id) sync.iconeDaSeccao(id, solto ? '' : icone).catch(() => {});
+  };
+
   const criarSeccao = (nome) => {
     const n = String(nome || '').trim();
     if (!n) return 'A secção precisa de um nome.';
@@ -6001,6 +6048,7 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     contratosDaCasa, contratosARenovar, criarContrato, alterarContrato, apagarContrato,
     marcarArtigo, artigoNoServidor, mudarPlanoDeCompras, fecharIdaAsCompras,
     seccoes, criarSeccao, alterarSeccao, apagarSeccao, reordenarSeccoes,
+    iconeDaSeccao, escolherIconeDaSeccao, donoDosIcones, corredoresSemIcone,
     criarEquipamento, equipNoServidor, mudarPreferencia,
     abrirMes, fecharMes, mudarLimiteDoMes,
     podeGerirCasa, renomearCasa, acrescentarMembro, editarMembro, renomearMembro, removerMembro,
