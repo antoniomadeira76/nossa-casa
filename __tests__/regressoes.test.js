@@ -1044,7 +1044,25 @@ describe('Camada de ligação ao servidor — PocketBase', () => {
     // Um valor que não bate certo RECUSA e sai — como o `simular-casa.mjs`
     // recusa a porta 8095 —, sem apagar nada.
     expect(colecoes).toMatch(/RECUSADO: PB_RECRIAR/);
-    expect(colecoes).toMatch(/process\.exit\(2\)/);
+    // ⚠ E sai pelo `exitCode`, NÃO por um `process.exit(2)`.
+    //
+    // Esta linha dizia `toMatch(/process\.exit\(2\)/)` e passava com a recusa
+    // avariada. Corrida a sério contra um servidor — um PocketBase de deitar
+    // fora, com uma casa dentro —, a recusa imprimia o texto todo e depois
+    // rebentava: «Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file
+    // src\win\async.c, line 76», código de saída 127. O `simular-casa.mjs`
+    // recusa ANTES de falar com o servidor e pode sair com `process.exit(2)`;
+    // esta recusa só se sabe DEPOIS do `authWithPassword` e dos dois
+    // `getFullList`, e sair com ligações do `fetch` abertas rebenta no Windows.
+    //
+    // Um guião que anuncia o código 2 em três sítios e devolve 127 com um
+    // despejo do libuv parece ter ido abaixo em vez de ter recusado.
+    //
+    // ⚠ E a busca do `process.exit(2)` corre SEM COMENTÁRIOS: a explicação aqui
+    // em cima nomeia o defeito, e a primeira versão desta linha apanhou-se a si
+    // própria — o guarda ficou vermelho a apontar para o texto que o explica.
+    expect(colecoes).toMatch(/process\.exitCode = 2;\s*\n\s*await new Promise\(\(\) => \{\}\);/);
+    expect(semComentarios(colecoes)).not.toMatch(/process\.exit\(2\)/);
     // E nenhuma linha do ficheiro volta a ensinar o «1», nem em comentário nem
     // na instrução que se imprime a quem corre isto numa casa habitada.
     expect(colecoes).not.toMatch(/PB_RECRIAR\s*=\s*1\b/);

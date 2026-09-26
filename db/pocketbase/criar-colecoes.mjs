@@ -143,7 +143,21 @@ if (pedido !== '' && nomesVivos.length > 0 && !nomeBateCerto) {
   console.error('nome exacto da casa a destruir:');
   console.error(`  PB_RECRIAR="${nomesVivos[0]}" npm run db:colecoes`);
   console.error('Nada foi apagado.');
-  process.exit(2);
+  // ⚠ E a saída NÃO é um `process.exit(2)`, por mais natural que pareça.
+  //
+  // O `simular-casa.mjs` recusa ANTES de falar com o servidor e o `exit(2)`
+  // dele sai limpo. Aqui a recusa só se sabe DEPOIS do `authWithPassword` e
+  // dos dois `getFullList` — e um `process.exit()` com as ligações do `fetch`
+  // ainda abertas rebenta no Windows, medido e repetível: «Assertion failed:
+  // !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 76», e o
+  // código de saída que chega à consola é 127, não 2. Um guião que anuncia o
+  // código 2 em três sítios e devolve 127 com um despejo do libuv parece ter
+  // ido abaixo em vez de ter recusado.
+  //
+  // `exitCode` + uma promessa que nunca resolve: nada mais deste ficheiro
+  // corre, o ciclo de eventos esvazia-se sozinho e o processo sai com 2.
+  process.exitCode = 2;
+  await new Promise(() => {});
 }
 
 const casaHabitada = !nomeBateCerto && casasVivas.length > 0 && membrosVivos.length > 0;
