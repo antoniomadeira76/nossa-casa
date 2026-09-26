@@ -435,9 +435,30 @@ export default function Dinheiro({ t, user, onEquip }) {
                     <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>
                       {c.nome}
                     </Text>
-                    {/* O subtítulo FICA numa linha: é composto pela app a partir
-                        de pedaços curtos, e cortá-lo não confunde duas contas. */}
-                    <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
+                    {/* ⚠ E O SUBTÍTULO TAMBÉM (26/09/2026). Ontem escrevi aqui
+                        que ele «fica numa linha: é composto pela app a partir de
+                        pedaços curtos, e cortá-lo não confunde duas contas». A
+                        segunda metade é verdade — o nome, que é o que distingue
+                        duas contas, vai inteiro por cima. A primeira não era:
+                        fui medir.
+
+                        O bloco de texto tem 233 px na web e 163 num telefone de
+                        375 — é o que sobra da linha depois da pastilha do estado
+                        (68), do valor (55), da seta (16) e dos vãos. E o
+                        subtítulo mede, com o tipo de letra da app:
+
+                          «dia 15 · Mercearia · Tomás paga»            174 px
+                          «dia 15 · Crianças & escola · Tomás paga»    217 px
+
+                        Ou seja: no telefone corta SEMPRE que há quem paga, mesmo
+                        com o envelope de nome mais curto da casa. E o que se
+                        perde é a cauda — exactamente o «Tomás paga», que é a
+                        única coisa desta linha que diz de quem é a conta.
+
+                        Quebra, como o nome por cima. Uma conta fixa é uma linha
+                        de lista, e nesta app uma linha de lista não aperta o que
+                        tem para dizer. */}
+                    <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
                       {[`dia ${c.dia}`, c.envelope, c.quemPaga ? `${c.quemPaga} paga` : null].filter(Boolean).join(' · ')}
                     </Text>
                   </View>

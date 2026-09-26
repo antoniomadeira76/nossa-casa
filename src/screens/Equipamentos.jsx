@@ -226,7 +226,14 @@ export default function Equipamentos({ t, user = null, abrir }) {
                       <Text style={{ fontFamily: FONT.body, fontSize: 15, fontWeight: '600', color: t.text2 }}>
                         {c.nome}
                       </Text>
-                      <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
+                      {/* ⚠ E sem `numberOfLines` (26/09/2026). Fui eu que ontem
+                          pus aqui o fornecedor — que é escrito pela família — e
+                          deixei-lhe o corte de uma linha por cima. Medido: o
+                          bloco tem 297 px na web e 227 num telefone de 375, e
+                          «MEO Satélite · fidelização até 03/2027 · Tomás» mede
+                          270. Tinha tirado o fornecedor da frente do corte e
+                          metido-o dentro de outro. */}
+                      <Text style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
                         {[c.fornecedor, linhaDoContrato(c) || 'Sem datas'].filter(Boolean).join(' · ')}
                       </Text>
                     </View>
