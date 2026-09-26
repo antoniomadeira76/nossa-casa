@@ -206,10 +206,18 @@ describe('⚠ as contas fixas: a loja', () => {
     expect(daRita.find(e => e.contaFixa === 'cf-edp').owner).toBe(null);
     // A Internet tem: é dele, e é dele para os dois.
     expect(daRita.find(e => e.contaFixa === 'cf-net').owner).toBe('Tomás');
-    // ⚠ E o que a bola não pode dizer, diz-se por palavras na linha ao lado —
-    // cor e palavra, nunca só cor.
-    expect(daRita.find(e => e.contaFixa === 'cf-edp').who).toContain('quem marcar');
-    expect(daRita.find(e => e.contaFixa === 'cf-net').who).toContain('Tomás paga');
+    // ⚠ E o que a bola NÃO consegue dizer, diz-se por palavras na linha ao
+    // lado — cor e palavra, nunca só cor. São DUAS partes e não três: medido
+    // na Agenda, a linha tem 167 px num telefone de 375 e «Conta fixa ·
+    // Casa & contas · paga» mede 183. Sem pagador vai o «quem marcar», que é o
+    // que explica o «?»; com pagador vai o envelope, porque o avatar já diz
+    // quem. O envelope por extenso vive na lista do Dinheiro.
+    const semPagador = daRita.find(e => e.contaFixa === 'cf-edp');
+    const comPagador = daRita.find(e => e.contaFixa === 'cf-net');
+    expect(semPagador.who).toBe('Conta fixa · quem marcar');
+    expect(comPagador.who).toBe(`Conta fixa · ${ENV}`);
+    // Nunca três pedaços: é o que não cabe.
+    for (const e of daRita) expect(e.who.split(' · ')).toHaveLength(2);
   });
 
   it('o que vence em dois dias — ou já venceu — entra no «Precisa de Si»; o que está pago não', () => {
@@ -301,7 +309,10 @@ describe('⚠ as contas fixas: os ecrãs', () => {
   it('a Agenda mostra a conta no dia em que vence, sem a deixar editar', () => {
     const { r, texto } = montar(Agenda, { t: T, user: 'Rita' }, { contasFixas: [EDP], contasPagas: [] });
     expect(texto()).toContain(`EDP · ${EUR(62.4)}`);
-    expect(texto()).toContain(`Conta fixa · ${ENV}`);
+    // ⚠ A EDP não tem pagador, e por isso a linha diz o que o avatar não
+    // consegue: «quem marcar». Com pagador diria o envelope — ver «a MESMA
+    // conta tem o mesmo dono nos dois telemóveis».
+    expect(texto()).toContain('Conta fixa · quem marcar');
     expect(hospedeiro(r, `Editar EDP · ${EUR(62.4)}`)).toBeFalsy();
   });
 

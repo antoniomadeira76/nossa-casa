@@ -2429,7 +2429,21 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         // quem marcar» (ver `CamposContaFixa`). O `avatarDe` desenha isso como
         // a bola cinzenta com «?», e a linha ao lado di-lo por palavras — cor e
         // palavra, nunca só cor.
-        who: `Conta fixa · ${c.envelope} · ${paga ? 'paga' : (c.quemPaga ? `${c.quemPaga} paga` : 'quem marcar')}`,
+        //
+        // ⚠ DUAS PARTES, e a segunda é o que o AVATAR NÃO consegue dizer.
+        // Medido na Agenda, num telefone de 375: a linha tem 167 px e cabem
+        // dois pedaços, nunca três. «Conta fixa · Casa & contas · paga» mede
+        // 183 — ou seja, a linha JÁ CORTAVA antes de aqui se mexer, e o que
+        // caía era o «paga». Escrevi primeiro três pedaços e o corte comeu
+        // exactamente a palavra que eu lá tinha posto para explicar o «?».
+        //
+        //   sem pagador   →  «quem marcar»   (o «?» precisa de explicação)
+        //   com pagador   →  o envelope      (o avatar já diz quem)
+        //   paga          →  «paga»          (é essa a notícia)
+        //
+        // O envelope não se perde: está por extenso na lista do Dinheiro, que
+        // é onde o orçamento se lê.
+        who: `Conta fixa · ${paga ? 'paga' : (c.quemPaga ? c.envelope : 'quem marcar')}`,
         owner: c.quemPaga || null,
         visibilidade: 'adultos',
         contaFixa: c.id,
