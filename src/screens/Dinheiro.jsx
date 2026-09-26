@@ -1031,7 +1031,20 @@ export default function Dinheiro({ t, user, onEquip }) {
                       sub: `${EUR(g.at)} de ${EUR(g.of)}` })),
                   ]}
                   aoEscolher={(id) => setFecho(f => ({ ...f, meta: id }))} />
-                {fecho.meta ? (
+                {/* ⚠ `metaDoFecho`, e NÃO `fecho.meta` (26/09/2026). A condição
+                    era o id guardado, e a linha de baixo lê `metaDoFecho.name`:
+                    se a meta escolhida sair da lista com a folha aberta — o
+                    outro telemóvel a apagá-la —, o id continua lá, o
+                    `metas.find` devolve nulo, e o ecrã rebenta a ler `.name` de
+                    um nulo. Estava latente antes de eu mexer aqui; custa um
+                    símbolo a fechar.
+
+                    ⚠ E o ramo do «senão» SAIU. Dizia «Sem meta escolhida, o
+                    saldo de X fica na conta» — e com a linha «Nenhuma» dentro do
+                    campo passou a ser a TERCEIRA cópia do mesmo facto no mesmo
+                    ecrã: o campo di-lo, o botão diz «o saldo fica», e o
+                    parágrafo do topo diz «o saldo restante não é movido». */}
+                {metaDoFecho ? (
                   <>
                     <NumField t={t} value={paraMeta} step={50} min={0} max={Math.max(0, remaining)}
                       onChange={(v) => setFecho(f => ({ ...f, valor: v }))} />
@@ -1040,11 +1053,7 @@ export default function Dinheiro({ t, user, onEquip }) {
                         + `${EUR(metaDoFecho.at + paraMeta)}, de ${EUR(metaDoFecho.of)}.`}
                     </Text>
                   </>
-                ) : (
-                  <Text style={{ fontFamily: FONT.ui, fontSize: 11.5, lineHeight: 18, color: t.text3 }}>
-                    Sem meta escolhida, o saldo de {EUR(remaining)} fica na conta.
-                  </Text>
-                )}
+                ) : null}
               </View>
             ) : null}
           </View>

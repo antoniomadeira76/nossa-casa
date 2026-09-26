@@ -189,6 +189,29 @@ describe('⚠ as contas fixas: a loja', () => {
     expect(loja().contasNaAgenda('Léo')).toEqual([]);
   });
 
+  it('⚠ a MESMA conta tem o mesmo dono nos dois telemóveis', () => {
+    // 26/09/2026. O `owner` era `c.quemPaga || viewer`: uma conta fixa SEM
+    // pagador aparecia na Agenda com a cara de QUEM ESTIVESSE A VER. A Rita
+    // via-a dela, o Tomás via-a dele, e era a mesma conta — um dado da casa que
+    // se lê de maneira diferente conforme quem abre a app.
+    //
+    // Sem pagador, o dono é NINGUÉM: o campo é opcional e quer dizer «de quem
+    // marcar». A prova é sobre a propriedade, não sobre o desenho: os dois
+    // telemóveis têm de ler o mesmo.
+    const { loja } = dinheiro({ contasFixas: [EDP, NET], contasPagas: [] });
+    const daRita = loja().contasNaAgenda('Rita');
+    const doTomas = loja().contasNaAgenda('Tomás');
+    expect(daRita.map(e => e.owner)).toEqual(doTomas.map(e => e.owner));
+    // A EDP não tem pagador (nasce a `null`): ninguém é o dono.
+    expect(daRita.find(e => e.contaFixa === 'cf-edp').owner).toBe(null);
+    // A Internet tem: é dele, e é dele para os dois.
+    expect(daRita.find(e => e.contaFixa === 'cf-net').owner).toBe('Tomás');
+    // ⚠ E o que a bola não pode dizer, diz-se por palavras na linha ao lado —
+    // cor e palavra, nunca só cor.
+    expect(daRita.find(e => e.contaFixa === 'cf-edp').who).toContain('quem marcar');
+    expect(daRita.find(e => e.contaFixa === 'cf-net').who).toContain('Tomás paga');
+  });
+
   it('o que vence em dois dias — ou já venceu — entra no «Precisa de Si»; o que está pago não', () => {
     const mes = `${TODAY.y}-${String(TODAY.m + 1).padStart(2, '0')}`;
     const tarde = conta('cf-tarde', 'Água', 15, TODAY.d + 3);

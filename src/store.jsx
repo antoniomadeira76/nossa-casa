@@ -2418,8 +2418,19 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
         day: vencimentoNoMes(c.dia, y, m),
         time: '',
         title: `${c.nome} · ${EUR(c.valor)}`,
-        who: `Conta fixa · ${c.envelope}${paga ? ' · paga' : ''}`,
-        owner: c.quemPaga || viewer,
+        // ⚠ Quem paga, e não quem olha (26/09/2026). O `owner` era
+        // `c.quemPaga || viewer`: uma conta fixa SEM pagador aparecia com a
+        // cara de quem estivesse a ver, e por isso a MESMA conta tinha dono
+        // diferente nos dois telemóveis — a Rita via-a dela e o Tomás via-a
+        // dele. Um dado da casa que se lê de maneira diferente conforme quem
+        // abre a app é a definição de ambíguo.
+        //
+        // Sem pagador, o dono é NINGUÉM: o campo é opcional e quer dizer «de
+        // quem marcar» (ver `CamposContaFixa`). O `avatarDe` desenha isso como
+        // a bola cinzenta com «?», e a linha ao lado di-lo por palavras — cor e
+        // palavra, nunca só cor.
+        who: `Conta fixa · ${c.envelope} · ${paga ? 'paga' : (c.quemPaga ? `${c.quemPaga} paga` : 'quem marcar')}`,
+        owner: c.quemPaga || null,
         visibilidade: 'adultos',
         contaFixa: c.id,
         paga,

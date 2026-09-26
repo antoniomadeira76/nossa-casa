@@ -331,9 +331,18 @@ describe('⚠ o fecho do mês leva um VALOR para a meta, e não uma percentagem'
   it('⚠ e não se pode levar mais do que o saldo', () => {
     // Um valor acima do disponível era prometer a uma meta dinheiro que a casa
     // não tem.
+    // ⚠ A janela era de 1200 caracteres a contar do rótulo, e a escolha da
+    // meta passou a ser um `CampoDeEscolha` (26/09/2026) — mais comprido do que
+    // a fila de pastilhas que ali estava. A prova falhou por não ALCANÇAR o
+    // `NumField`, não por ele ter mudado. Agora vai do rótulo até ao fim do
+    // bloco, que é o que a propriedade quer dizer.
     const i = dinheiro.indexOf('Levar para uma meta');
     expect(i).toBeGreaterThan(0);
-    const bloco = dinheiro.slice(i, i + 1200);
+    // ⚠ A âncora do fim tem de ser CÓDIGO: o `soCodigo` deita fora os
+    // comentários, e o título da secção seguinte vive dentro de um.
+    const fim = dinheiro.indexOf("sheet === 'novaMeta'", i);
+    expect(fim).toBeGreaterThan(i);
+    const bloco = dinheiro.slice(i, fim);
     expect(bloco).toMatch(/max=\{Math\.max\(0, remaining\)\}/);
   });
 });
