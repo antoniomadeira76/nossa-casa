@@ -113,14 +113,48 @@ const NOSSAS = [
 // só se recria o resto. As REGRAS aplicam-se de qualquer modo, que é a razão
 // pela qual alguém corre isto depois do primeiro dia.
 //
-// Para uma reconstrução total e deliberada: PB_RECRIAR=1.
+// Para uma reconstrução total e deliberada, o `PB_RECRIAR` leva o NOME da casa
+// a destruir — ver o travão aqui em baixo.
 const casasVivas = await pb.collection('casas').getFullList().catch(() => []);
 const membrosVivos = await pb.collection('membros').getFullList().catch(() => []);
-const casaHabitada = !process.env.PB_RECRIAR && casasVivas.length > 0 && membrosVivos.length > 0;
+
+// ── O travão: uma reconstrução total pede-se pelo NOME da casa ───────────────
+//
+// ⚠ Isto pedia-se com um «1», que é uma resposta de uma tecla a uma pergunta
+// que apaga uma casa inteira. O «1» escreve-se igual para a casa de simulação
+// e para a casa a sério — não prova que se sabe QUAL está do outro lado —, e a
+// linha fica no histórico da consola à espera da seta para cima. É o mesmo
+// risco do `PB_URL=` esquecido que o `db/README.md` descreve, com a diferença
+// de que aqui o valor pode carregar a prova.
+//
+// Agora o valor É o nome da casa a destruir e tem de bater certo com uma das
+// que estão neste servidor. Quem escreve `PB_RECRIAR="Madeira"` está a olhar
+// para o nome da casa que vai perder. O `simular-casa.mjs` recusa pela porta;
+// este recusa pelo nome, e sai com o mesmo código 2.
+const pedido = (process.env.PB_RECRIAR || '').trim();
+const nomesVivos = casasVivas.map(c => c.nome);
+const nomeBateCerto = pedido !== '' && nomesVivos.some(n => String(n).trim() === pedido);
+if (pedido !== '' && nomesVivos.length > 0 && !nomeBateCerto) {
+  console.error(`RECUSADO: PB_RECRIAR=«${pedido}» não é o nome de nenhuma casa deste servidor.`);
+  console.error(`Servidor: ${URL_DO_SERVIDOR}`);
+  console.error(`Casa(s) lá dentro: ${nomesVivos.map(n => `«${n}»`).join(', ')}.`);
+  console.error('Uma reconstrução total apaga a casa, os membros e a autorização da agenda');
+  console.error('da Google — que não se recupera de cópia nenhuma. Para a pedir, escreva o');
+  console.error('nome exacto da casa a destruir:');
+  console.error(`  PB_RECRIAR="${nomesVivos[0]}" npm run db:colecoes`);
+  console.error('Nada foi apagado.');
+  process.exit(2);
+}
+
+const casaHabitada = !nomeBateCerto && casasVivas.length > 0 && membrosVivos.length > 0;
+if (nomeBateCerto) {
+  console.log(`RECONSTRUÇÃO TOTAL pedida pelo nome: «${pedido}».`);
+  console.log('Apago as coleções todas, `casas`, `membros` e `credenciais_agenda` incluídas.\n');
+}
 if (casaHabitada) {
   console.log(`Casa habitada: «${casasVivas[0].nome}», ${membrosVivos.length} membro(s).`);
   console.log('Reaproveito `casas` e `membros`; recrio o resto e aplico as regras.');
-  console.log('Para apagar tudo mesmo: PB_RECRIAR=1 npm run db:colecoes\n');
+  console.log(`Para apagar tudo mesmo, pelo nome: PB_RECRIAR="${casasVivas[0].nome}" npm run db:colecoes\n`);
 }
 // ⚠ `credenciais_agenda` também se preserva, e custou aprendê-lo. Pu-la na
 // lista de limpeza para a ordem de apagamento funcionar, e na primeira
@@ -149,7 +183,7 @@ if (casaHabitada) {
 // `update`, como já acontecia com o `casas` e o `membros` — que é a razão pela
 // qual alguém corre isto depois do primeiro dia.
 //
-// Para uma reconstrução total e deliberada: PB_RECRIAR=1.
+// Para uma reconstrução total e deliberada: `PB_RECRIAR` com o NOME da casa.
 const existentes = await pb.collections.getFullList();
 
 const temLinhas = async (nome) => {

@@ -1034,6 +1034,22 @@ describe('Camada de ligação ao servidor — PocketBase', () => {
     expect(colecoes).toMatch(/process\.env\.PB_RECRIAR/);
   });
 
+  test('⚠ e a reconstrução total pede-se pelo NOME da casa, nunca por um «1»', () => {
+    // O «1» escreve-se igual para a casa de simulação e para a casa a sério:
+    // não prova que se sabe QUAL está do outro lado, e fica no histórico da
+    // consola à espera da seta para cima. O valor passou a ser o nome da casa
+    // a destruir, conferido contra as casas que o servidor tem.
+    expect(colecoes).toMatch(/const nomeBateCerto =/);
+    expect(colecoes).toMatch(/casaHabitada = !nomeBateCerto/);
+    // Um valor que não bate certo RECUSA e sai — como o `simular-casa.mjs`
+    // recusa a porta 8095 —, sem apagar nada.
+    expect(colecoes).toMatch(/RECUSADO: PB_RECRIAR/);
+    expect(colecoes).toMatch(/process\.exit\(2\)/);
+    // E nenhuma linha do ficheiro volta a ensinar o «1», nem em comentário nem
+    // na instrução que se imprime a quem corre isto numa casa habitada.
+    expect(colecoes).not.toMatch(/PB_RECRIAR\s*=\s*1\b/);
+  });
+
   test('⚠ e uma coleção COM LINHAS também não se apaga', () => {
     // Os três nomes acima eram escolhidos à mão, e chegavam enquanto as outras
     // coleções estavam vazias — até esta semana o cliente escrevia em 10 de 31.
