@@ -5,14 +5,15 @@ import * as ImagePicker from 'expo-image-picker';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { plural, warrantyDaysLeft, chaveDeDMY, dmyDeChave, TODAY_KEY } from '../format';
-import { Label, Primary, Choice, NumField } from '../ui';
+import { Label, Primary, NumField } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
 import { documentoDaFatura, nomeDoFicheiroDaFatura } from '../exportar-equipamento';
 import { lerComoDataURI } from '../ler-imagem';
 import PreVisualizarPDF from '../PreVisualizarPDF';
-import { CATEGORIAS_DE_EQUIPAMENTO } from '../categorias-de-equipamento';
+import { CATEGORIAS_DE_EQUIPAMENTO, categoriasDaCasa } from '../categorias-de-equipamento';
+import CampoDeEscolha from '../CampoDeEscolha';
 
 // Estado da garantia: a mesma regra de três estados da lista, para a ficha e a
 // lista nunca discordarem.
@@ -35,7 +36,9 @@ const ANEXOS = [
 ];
 
 export default function FichaEquipamento({ t, equip, user = null, onClose }) {
-  const { editEquip, removeEquip, nomeDaCasa } = useStore();
+  const { s: daCasa, editEquip, removeEquip, nomeDaCasa } = useStore();
+  // A lista da CASA, com recuo para as sementes — ver `categoriasDaCasa`.
+  const categorias = categoriasDaCasa(daCasa.equipCats);
   const [remover, setRemover] = useState(false);
   const [manut, setManut] = useState(null);   // rascunho da manutenção
   // A exportação da fatura: `null` parada, `'a preparar'`, ou a frase do fim.
@@ -244,15 +247,15 @@ export default function FichaEquipamento({ t, equip, user = null, onClose }) {
               backgroundColor: t.card }} />
         </View>
 
-        <View style={{ gap: S.sm }}>
-          <Label t={t}>Categoria</Label>
-          <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-            {CATEGORIAS_DE_EQUIPAMENTO.map(c => (
-              <Choice key={c} t={t} label={c} selected={form.cat === c}
-                onPress={() => setForm(f => ({ ...f, cat: c }))} />
-            ))}
-          </View>
-        </View>
+        {/* ⚠ A lista da CASA e um CAMPO (26/09/2026) — ver o comentário mais
+            longo no ecrã dos Equipamentos, que é a outra metade deste campo. */}
+        <CampoDeEscolha t={t} rotulo="Categoria" titulo="Categoria"
+          sub="Para agrupar os equipamentos da casa"
+          iconeDoCampo="houseGear"
+          valor={form.cat}
+          opcoes={categorias.map(c => ({ valor: c, titulo: c }))}
+          aoEscolher={(c) => setForm(f => ({ ...f, cat: c }))}
+          vazio="Esta casa ainda não tem categorias." />
 
         {/* O preço e a data de compra, lado a lado — e por baixo o fim da
             garantia, que é o que se lê na caixa lá em cima (15/09/2026, opção E

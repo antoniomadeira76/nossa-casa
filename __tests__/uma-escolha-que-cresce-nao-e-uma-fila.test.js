@@ -144,40 +144,15 @@ const FICAM = {
     : 'A urgência — três valores, e são o INVARIANTE #6. Nunca vai ter um quarto.',
   'src/sheets/FichaEmergencia.jsx · GRAVIDADES'
     : 'A gravidade de uma alergia — escala clínica fechada, não é lista da casa.',
-  'src/screens/Equipamentos.jsx · CATS'
-    : '⚠ As categorias de equipamento — quatro, numa CONSTANTE. Está a meio caminho: '
-      + 'a loja tem `equipCats` como uma das três listas da casa e o servidor tem a coleção '
-      + '`categorias_equip`, mas NENHUM ecrã as lê. As outras duas da mesma trindade (lojas, '
-      + 'especialidades) já crescem com a casa. No dia em que a interface for ligada ao '
-      + '`equipCats`, isto passa a crescer e tem de levar o campo.',
-  'src/sheets/FichaEquipamento.jsx · CATEGORIAS_DE_EQUIPAMENTO'
-    : '⚠ A segunda metade do caso acima — o mesmo campo na folha de editar.',
 
-  // ── POR DECIDIR ──────────────────────────────────────────────────────────
-  // Estas DUAS crescem com a casa, e por isso são a classe do corredor. Não
-  // levaram o campo porque converter custa alguma coisa que está no ecrã, e
-  // essa troca é dele: «avisa-me quando encontrares para eu decidir».
-  // Enquanto não decidir, ficam aqui nomeadas — e a prova
-  // «as que estão por decidir são exactamente estas» falha no dia em que
-  // alguém acrescentar uma terceira sem passar por ele.
-  'src/sheets/CamposContaFixa.jsx · envelopes'
-    : '⚠ POR DECIDIR — o envelope de uma conta fixa. CRESCE com a casa, e os nomes são '
-      + 'compridos («Crianças & escola»). Não se converteu sozinho porque o envelope tem TRÊS '
-      + 'formas diferentes nesta app: esta fila, a grelha de dois do «Mover» e a pilha vertical '
-      + 'da despesa nova — e a grelha mostra o «livre 138,00 €» de cada um, que o campo esconde '
-      + 'até se abrir. Ou entram as três, ou não entra nenhuma.',
-  'src/screens/Dinheiro.jsx · metas'
-    : '⚠ POR DECIDIR — a meta que recebe o saldo ao fechar o mês. CRESCE com a casa. Aqui a '
-      + 'escolha é OPCIONAL e desliga-se tocando outra vez na escolhida, que é a saída para '
-      + 'quem se enganou; um campo que abre precisa de uma linha «nenhuma» para não a perder.',
 };
 
-// As que crescem com a casa e ainda esperam decisão. Estão no inventário para
-// o guarda não chumbar, e aqui para não se esquecerem.
-const POR_DECIDIR = [
-  'src/sheets/CamposContaFixa.jsx · envelopes',
-  'src/screens/Dinheiro.jsx · metas',
-];
+// (Aqui estiveram, de 25 a 26/09/2026, as duas que CRESCIAM e esperavam
+// decisão dele: o envelope da conta fixa e a meta do fecho do mês. Ele disse
+// «corrige tudo» e as duas passaram ao `CampoDeEscolha`, com as outras duas
+// formas de escolher um envelope. A lista está vazia de propósito: quando
+// voltar a haver uma por decidir, escreve-se aqui com a razão.)
+const POR_DECIDIR = [];
 
 describe('uma escolha que cresce com a casa não é uma fila que quebra', () => {
   it('o varrimento funciona — encontra filas de pastilhas onde elas estão', () => {
@@ -236,6 +211,41 @@ describe('⚠ os sítios que a opção B levou já não têm pastilhas', () => {
   it('as duas tarefas da troca — o pior caso, por causa dos títulos', () => {
     semFilaSobre('src/sheets/ProporTroca.jsx', 'minhas');
     semFilaSobre('src/sheets/ProporTroca.jsx', 'deles');
+  });
+
+  it('⚠ o envelope — e as TRÊS formas passaram a ser uma', () => {
+    // 26/09/2026. O envelope tinha três desenhos para a mesma escolha: fila de
+    // pastilhas na conta fixa, grelha de dois no «Mover» (duas vezes na mesma
+    // folha) e pilha vertical na despesa nova. Só a grelha tinha razão escrita
+    // — «eram oito linhas de largura total: a folha não cabia» —, e essa razão
+    // é exactamente o que o campo resolve.
+    semFilaSobre('src/sheets/CamposContaFixa.jsx', 'envelopes');
+    const dinheiro = fs.readFileSync(path.join(RAIZ, 'src/screens/Dinheiro.jsx'), 'utf8');
+    // A grelha foi-se, e não ficou nem a definição.
+    expect(dinheiro).not.toMatch(/function GrelhaEnvelopes/);
+    expect(dinheiro).not.toMatch(/<GrelhaEnvelopes/);
+  });
+
+  it('⚠ a meta do fecho do mês — com uma linha «Nenhuma» em vez de um gesto escondido', () => {
+    semFilaSobre('src/screens/Dinheiro.jsx', 'metas');
+    const dinheiro = fs.readFileSync(path.join(RAIZ, 'src/screens/Dinheiro.jsx'), 'utf8');
+    // ⚠ A saída tem de continuar a existir, e agora com nome: tocar outra vez
+    // na escolhida desligava o reforço e ninguém o dizia a ninguém.
+    expect(dinheiro).toMatch(/valor: null, titulo: 'Nenhuma'/);
+    expect(dinheiro).not.toMatch(/meta: f\.meta === g\.id \? null : g\.id/);
+  });
+
+  it('⚠ a categoria de um equipamento — e a lista deixou de ser uma constante', () => {
+    // 26/09/2026. Estas duas estavam no inventário como «fixo para sempre», com
+    // um aviso a dizer que no dia em que a interface fosse ligada ao `equipCats`
+    // passavam a ser a classe do corredor. Foi esse dia: os dois ecrãs leem a
+    // lista da CASA, com recuo para as sementes.
+    semFilaSobre('src/screens/Equipamentos.jsx', 'CATS');
+    semFilaSobre('src/sheets/FichaEquipamento.jsx', 'CATEGORIAS_DE_EQUIPAMENTO');
+    // E leem-na mesmo — senão isto era só trocar o desenho e deixar o defeito.
+    const lerFicheiro = (p) => fs.readFileSync(path.join(RAIZ, p), 'utf8');
+    expect(lerFicheiro('src/screens/Equipamentos.jsx')).toMatch(/categoriasDaCasa\(s\.equipCats\)/);
+    expect(lerFicheiro('src/sheets/FichaEquipamento.jsx')).toMatch(/categoriasDaCasa\(daCasa\.equipCats\)/);
   });
 });
 

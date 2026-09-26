@@ -2,7 +2,8 @@ import React from 'react';
 import { View, TextInput } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
-import { Label, NumField, Choice } from '../ui';
+import { Label, NumField } from '../ui';
+import CampoDeEscolha from '../CampoDeEscolha';
 import { EscolherPessoa } from '../FiltroDeMembros';
 
 /**
@@ -59,16 +60,17 @@ export default function CamposContaFixa({ t, form, onChange }) {
         </View>
       </View>
 
-      <View style={{ gap: S.sm }}>
-        <Label t={t}>Envelope</Label>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.sm }}>
-          {envelopes.map(e => (
-            <Choice key={e.name} t={t} label={e.name}
-              selected={form.envelope === e.name}
-              onPress={() => campo('envelope')(e.name)} />
-          ))}
-        </View>
-      </View>
+      {/* ⚠ Um CAMPO (26/09/2026). Era a terceira forma de escolher um envelope
+          nesta app — fila de pastilhas aqui, grelha de dois no «Mover», pilha
+          vertical na despesa nova —, e a única das três que não mostrava sequer
+          o «livre X €». Era também a única sem uma linha de justificação
+          escrita. As três passaram ao mesmo campo. */}
+      <CampoDeEscolha t={t} rotulo="Envelope" titulo="Envelope"
+        sub="Onde esta conta entra todos os meses"
+        valor={form.envelope}
+        opcoes={envelopes.map(e => ({ valor: e.name, titulo: e.name }))}
+        aoEscolher={(n) => campo('envelope')(n)}
+        vazio="Esta casa ainda não tem envelopes." />
 
       <View style={{ gap: S.sm }}>
         <Label t={t}>Quem paga</Label>

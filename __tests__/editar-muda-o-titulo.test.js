@@ -116,7 +116,9 @@ describe('o equipamento: a ficha altera o que a folha de registar pede', () => {
 
   it('nome, categoria, preço, data de compra e fim da garantia', () => {
     expect(ficha).toMatch(/accessibilityLabel="Nome do equipamento"/);
-    expect(ficha).toMatch(/CATEGORIAS_DE_EQUIPAMENTO\.map\(c => \([\s\S]*?<Choice/);
+    // ⚠ 26/09/2026: a categoria passou a ser um `CampoDeEscolha`, porque
+    // deixou de ser uma constante e passou a ler a lista da CASA.
+    expect(ficha).toMatch(/<CampoDeEscolha t=\{t\} rotulo="Categoria"/);
     // O `(\{\}\s*)?` é o que fica de um comentário JSX depois de os tirar.
     expect(ficha).toMatch(/<Label t=\{t\}>Preço<\/Label>\s*(\{\}\s*)?<NumField/);
     // «Comprado a» desde que o preço e a data passaram a partilhar a linha
@@ -127,10 +129,20 @@ describe('o equipamento: a ficha altera o que a folha de registar pede', () => {
   });
 
   it('⚠ as categorias são as MESMAS ao registar e ao alterar — um módulo, dois leitores', () => {
+    // ⚠ E desde 26/09/2026 a lista é a da CASA, não a constante: o `equipCats`
+    // existia na loja e no servidor, o `puxarCasa` descia-o, e NENHUM ecrã o
+    // lia — uma categoria escrita no servidor nunca aparecia na app. A
+    // constante ficou como SEMENTE, para quem corre sem servidor.
     const modulo = ler('src/categorias-de-equipamento.js');
     expect(modulo).toMatch(/export const CATEGORIAS_DE_EQUIPAMENTO = \[/);
-    expect(semComentarios(ler('src/screens/Equipamentos.jsx'))).toMatch(/const CATS = CATEGORIAS_DE_EQUIPAMENTO;/);
-    expect(ficha).toMatch(/import \{ CATEGORIAS_DE_EQUIPAMENTO \} from '\.\.\/categorias-de-equipamento'/);
+    expect(modulo).toMatch(/export const categoriasDaCasa = \(lista\) =>/);
+    const ecra = semComentarios(ler('src/screens/Equipamentos.jsx'));
+    expect(ecra).toMatch(/categoriasDaCasa\(s\.equipCats\)/);
+    expect(ficha).toMatch(/categoriasDaCasa\(daCasa\.equipCats\)/);
+    // Um módulo, dois leitores — continua a ser a propriedade.
+    for (const f of [ecra, ficha]) {
+      expect(f).toMatch(/from '\.\.?\/categorias-de-equipamento'/);
+    }
   });
 
   it('vai tudo de uma vez pelo `editEquip`, no «Guardar alterações», e desligado sem mudança', () => {

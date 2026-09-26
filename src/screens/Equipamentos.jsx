@@ -4,14 +4,15 @@ import CampoData from '../CampoData';
 import { useStore } from '../store';
 import { S, R, FONT } from '../theme';
 import { TODAY, pad2, plural, warrantyDaysLeft, daysUntil, EUR, chaveDeDMY, dmyDeChave, TODAY_KEY } from '../format';
-import { Card, SectionTitle, Linha, Empty, AddButton, Label, Choice, Primary, Pill, NumField } from '../ui';
+import { Card, SectionTitle, Linha, Empty, AddButton, Label, Primary, Pill, NumField } from '../ui';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import FichaEquipamento from '../sheets/FichaEquipamento';
 import FichaContrato from '../sheets/FichaContrato';
 import NovoContrato from '../sheets/NovoContrato';
 import { estadoDoContrato, linhaDoContrato } from '../contratos';
-import { CATEGORIAS_DE_EQUIPAMENTO } from '../categorias-de-equipamento';
+import { CATEGORIAS_DE_EQUIPAMENTO, categoriasDaCasa } from '../categorias-de-equipamento';
+import CampoDeEscolha from '../CampoDeEscolha';
 
 // dd/mm/aaaa → milissegundos UTC. É o formato em que as datas são guardadas.
 const parseDMY = (s) => {
@@ -25,6 +26,8 @@ const fmtDMY = (ms) => {
 
 // As categorias vivem num módulo próprio desde 15/09/2026: a ficha também as
 // lê, para se poder mudar a categoria depois de registar.
+// ⚠ A semente, para o estado inicial do formulário antes de a loja estar à
+// mão. A lista que os campos mostram é a da CASA — ver `categorias` lá dentro.
 const CATS = CATEGORIAS_DE_EQUIPAMENTO;
 
 // Um número negativo de «dias de garantia» não se lê. Diga-se o que aconteceu.
@@ -39,7 +42,12 @@ const warrantyLabel = (days) => {
 // E `contrato:<id>` abre a ficha de um contrato — é o que o aviso «Seguro do
 // carro · renova em 23 dias» do Início faz.
 export default function Equipamentos({ t, user = null, abrir }) {
-  const { allEquip, criarEquipamento, contratosDaCasa } = useStore();
+  const { s, allEquip, criarEquipamento, contratosDaCasa } = useStore();
+  // ⚠ A lista da CASA (26/09/2026). Os dois ecrãs que escolhem categoria liam a
+  // constante de quatro, e o `equipCats` — que o servidor enche e o `puxarCasa`
+  // desce — não era lido por ecrã nenhum. Uma categoria escrita no servidor
+  // nunca aparecia. Ver `categoriasDaCasa`.
+  const categorias = categoriasDaCasa(s.equipCats);
   const [sheet, setSheet] = useState(null);
   const abreContrato = typeof abrir === 'string' && abrir.startsWith('contrato:');
   const [ficha, setFicha] = useState(abrir && !abreContrato ? abrir : null);   // equipamento cuja ficha está aberta
@@ -286,15 +294,19 @@ export default function Equipamentos({ t, user = null, abrir }) {
               />
             </View>
 
-            <View style={{ gap: S.sm }}>
-              <Label t={t}>Categoria</Label>
-              <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-                {CATS.map(c => (
-                  <Choice key={c} t={t} label={c} selected={form.cat === c}
-                    onPress={() => setForm(f => ({ ...f, cat: c }))} />
-                ))}
-              </View>
-            </View>
+            {/* ⚠ Um CAMPO, e não uma fila de pastilhas (26/09/2026). A partir
+                do momento em que lê a lista da CASA, esta escolha CRESCE com a
+                casa — e o guarda `uma-escolha-que-cresce-nao-e-uma-fila` tinha-a
+                no inventário como «fixo para sempre», com um aviso a dizer
+                exactamente que no dia em que a interface fosse ligada ao
+                `equipCats` isto passava a ser a classe do corredor. Foi hoje. */}
+            <CampoDeEscolha t={t} rotulo="Categoria" titulo="Categoria"
+              sub="Para agrupar os equipamentos da casa"
+              iconeDoCampo="houseGear"
+              valor={form.cat}
+              opcoes={categorias.map(c => ({ valor: c, titulo: c }))}
+              aoEscolher={(c) => setForm(f => ({ ...f, cat: c }))}
+              vazio="Esta casa ainda não tem categorias." />
 
             <View style={{ gap: S.sm }}>
               <Label t={t}>Data de compra</Label>

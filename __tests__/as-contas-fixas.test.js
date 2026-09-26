@@ -253,7 +253,10 @@ describe('⚠ as contas fixas: os ecrãs', () => {
 
   it('a linha abre a folha da conta, com «Marcar como paga», os campos e «Apagar conta»', () => {
     const { r, texto } = dinheiro({ contasFixas: [EDP], contasPagas: [] });
-    tocar(r, `EDP · dia ${EDP.dia} · ${EUR(62.4)}`);
+    // ⚠ 26/09/2026: o rótulo em voz alta passou a dizer TUDO o que a linha
+    // mostra. Dizia «nome · dia · valor» e calava o envelope e quem paga —
+    // para quem ouve o ecrã, o pagador nunca existiu.
+    tocar(r, `EDP · dia ${EDP.dia} · ${ENV} · ${EUR(62.4)}`);
     const tx = texto();
     expect(tx).toContain('Marcar como paga');
     expect(tx).toContain('Este mês');

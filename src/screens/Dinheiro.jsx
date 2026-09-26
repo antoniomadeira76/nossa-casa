@@ -3,8 +3,9 @@ import { View, Text, Pressable } from 'react-native';
 import { useStore } from '../store';
 import { S, R, FONT, onChrome } from '../theme';
 import { EUR, warrantyDaysLeft, plural, mesSeguinte, TODAY_KEY } from '../format';
-import { Card, SectionTitle, Linha, Label, Pill, Row, Bar, Primary, AddButton, Toggle, Choice, Empty, usePaged, Pager, Opcao, NumField, BotaoCompacto, Avatar, avatarDe } from '../ui';
+import { Card, SectionTitle, Linha, Label, Pill, Row, Bar, Primary, AddButton, Toggle, Empty, usePaged, Pager, Opcao, NumField, BotaoCompacto, Avatar, avatarDe } from '../ui';
 import { EscolherPessoa } from '../FiltroDeMembros';
+import CampoDeEscolha from '../CampoDeEscolha';
 import Icon from '../Icon';
 import Sheet from '../Sheet';
 import Confirm from '../Confirm';
@@ -22,33 +23,12 @@ import { estadoDaConta, totalDasContas } from '../contas-fixas';
 // ecrã, escrevesse a sua própria versão sem campo de texto.
 export { NumField } from '../ui';
 
-// Envelopes em grelha de dois, com o valor livre por baixo do nome — é assim
-// nas duas listas da referência 19. Eram oito linhas de largura total, 48 px
-// cada: a folha não cabia e o campo do valor ficava cortado a meio pelo botão.
-// A lista de reforçar também não dizia quanto havia livre em cada um.
-function GrelhaEnvelopes({ t, envelopes, livre, escolhido, onEscolher }) {
-  return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S.md }}>
-      {envelopes.map((e, i) => {
-        const on = escolhido === i;
-        return (
-          <Pressable key={e.name} onPress={() => onEscolher(i)}
-            accessibilityRole="button" accessibilityLabel={`${e.name} · livre ${EUR(livre(i))}`}
-            accessibilityState={{ selected: on }} aria-pressed={on}
-            style={{ width: '47%', minHeight: 56, borderRadius: R.row, borderWidth: 1,
-              paddingHorizontal: 12, justifyContent: 'center', gap: 2,
-              borderColor: on ? t.accent : t.border,
-              backgroundColor: on ? t.accent : t.subtle }}>
-            <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
-              color: on ? '#FFFFFF' : t.text2 }}>{e.name}</Text>
-            <Text style={{ fontFamily: FONT.ui, fontSize: 11.5,
-              color: on ? onChrome(t.accent) : t.text3 }}>livre {EUR(livre(i))}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
+// (A `GrelhaEnvelopes` viveu aqui até 26/09/2026 — grelha de dois a 47 %, com o
+// «livre X €» por baixo do nome. Nasceu porque «eram oito linhas de largura
+// total, 48 px cada: a folha não cabia e o campo do valor ficava cortado a meio
+// pelo botão» — e essa razão é exactamente o que o `CampoDeEscolha` resolve.
+// Saiu com as outras duas formas de escolher um envelope.)
+
 
 export default function Dinheiro({ t, user, onEquip }) {
   const st = useStore();
@@ -67,8 +47,19 @@ export default function Dinheiro({ t, user, onEquip }) {
   const [erroConta, setErroConta] = useState(null);
   // O que vai para uma meta ao fechar o mês. Em EUROS, e nunca uma fracção.
   const [fecho, setFecho] = useState({ meta: null, valor: null });
-  const [mv, setMv] = useState({ from: 0, to: 3, amount: 0 });
-  const [exp, setExp] = useState({ amount: 0, env: 0, payer: user, split: true });
+  // ⚠ NOMES, e não índices (26/09/2026). Isto era `{ from: 0, to: 3 }` — os
+  // quatro envelopes da demonstração — e uma casa com dois não tem
+  // `envelopes[3]`: a frase de baixo lia `.name` de `undefined`. Corrigiu-se
+  // em 13/09 a PRENDER os índices à lista da casa, que é um remendo sobre a
+  // causa: um índice guardado numa lista que a casa reordena aponta para
+  // outra coisa a cada mudança (a classe 41 desta casa). Um nome ou existe
+  // ou não existe, e a verificação é uma linha.
+  const [mv, setMv] = useState({ de: null, para: null, amount: 0 });
+  // ⚠ O envelope da despesa guarda-se pelo NOME, como o do «Mover»
+  // (26/09/2026). Era um índice, e um índice numa lista que a casa reordena
+  // aponta para outra coisa a cada mudança — a classe 41 desta casa. Nulo
+  // quer dizer «o primeiro da casa», que é o que o índice 0 queria dizer.
+  const [exp, setExp] = useState({ amount: 0, env: null, payer: user, split: true });
   const [settle, setSettle] = useState({ mode: 'all', customAmount: 0 });
   const [openMonth, setOpenMonth] = useState({ envelopes: {} });
 
@@ -371,10 +362,11 @@ export default function Dinheiro({ t, user, onEquip }) {
                         mais livre (13/09/2026). `i` é o índice NA PÁGINA — o
                         índice da lista inteira procura-se pelo nome. */}
                     <Pressable onPress={() => {
-                        const para = envelopes.findIndex(x => x.name === e.name);
-                        let de = -1;
-                        envelopes.forEach((x, j) => { if (j !== para && (de < 0 || freeOf(j) > freeOf(de))) de = j; });
-                        setMv(m => ({ ...m, to: para, from: de < 0 ? para : de }));
+                        let de = null;
+                        envelopes.forEach((x, j) => {
+                          if (x.name !== e.name && (de === null || freeOf(j) > freeOf(envelopes.findIndex(y => y.name === de)))) de = x.name;
+                        });
+                        setMv(m => ({ ...m, para: e.name, de: de || e.name }));
                         setSheet('mover');
                       }} accessibilityRole="button"
                       accessibilityLabel={`Reforçar o envelope ${e.name}`}
@@ -420,7 +412,15 @@ export default function Dinheiro({ t, user, onEquip }) {
               <Linha key={c.id} t={t} last={i === contas.length - 1}
                 tinta={c.paga ? t.state.okBg : undefined}>
                 <Pressable onPress={() => setConta(c.id)} accessibilityRole="button"
-                  accessibilityLabel={`${c.nome} · dia ${c.dia} · ${EUR(c.valor)}`}
+                  // ⚠ O rótulo diz TUDO o que a linha mostra (26/09/2026).
+                  // Dizia «nome · dia · valor» e mais nada: nem o envelope, nem
+                  // o estado, nem quem paga. Para quem ouve o ecrã, o pagador
+                  // nunca existiu — com corte ou sem ele, e é pior do que o
+                  // corte. Quebrar o subtítulo resolve o que se vê; isto é o
+                  // que se ouve, e custa uma cadeia de texto.
+                  accessibilityLabel={[c.nome, `dia ${c.dia}`, c.envelope,
+                    c.quemPaga ? `${c.quemPaga} paga` : null,
+                    EUR(c.valor), c.paga ? 'paga' : null].filter(Boolean).join(' · ')}
                   accessibilityHint="Marcar como paga, alterar ou apagar a conta"
                   style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: S.md,
                     minHeight: 44, opacity: pressed ? 0.7 : 1 })}>
@@ -442,17 +442,26 @@ export default function Dinheiro({ t, user, onEquip }) {
                         duas contas, vai inteiro por cima. A primeira não era:
                         fui medir.
 
-                        O bloco de texto tem 233 px na web e 163 num telefone de
-                        375 — é o que sobra da linha depois da pastilha do estado
-                        (68), do valor (55), da seta (16) e dos vãos. E o
-                        subtítulo mede, com o tipo de letra da app:
+                        O que sobra para o texto depende do ESTADO da conta, e é
+                        isso que torna o defeito traiçoeiro: a pastilha «atrasada
+                        12 dias» mede 107 px e a «paga» mede 48. Num telefone de
+                        402, o bloco tem 271 px sem pastilha, 215 com «paga» e
+                        155 com «atrasada 12 dias». E o subtítulo mede:
 
-                          «dia 15 · Mercearia · Tomás paga»            174 px
-                          «dia 15 · Crianças & escola · Tomás paga»    217 px
+                          «dia 15 · Mercearia · Rita paga»             158 px
+                          «dia 15 · Casa & contas · Tomás paga»        198 px
+                          «dia 15 · Crianças & escola · Tomás paga»    218 px
 
-                        Ou seja: no telefone corta SEMPRE que há quem paga, mesmo
-                        com o envelope de nome mais curto da casa. E o que se
-                        perde é a cauda — exactamente o «Tomás paga», que é a
+                        ⚠ Corrijo-me: escrevi primeiro que «corta sempre», e era
+                        exagero. Corta onde DÓI — nas atrasadas e nas que vencem,
+                        porque são essas que têm a pastilha larga. Na casa cheia
+                        do `npm run simular:casa`, com cinco contas todas com
+                        pagador, cortam TRÊS das cinco a 402 px e QUATRO a 375;
+                        já pagas, não corta nenhuma. Ou seja: a app cala de quem
+                        é a conta exactamente na lista que se lê para decidir o
+                        que pagar.
+
+                        E o que se perde é a cauda — o «Tomás paga», que é a
                         única coisa desta linha que diz de quem é a conta.
 
                         Quebra, como o nome por cima. Uma conta fixa é uma linha
@@ -762,17 +771,19 @@ export default function Dinheiro({ t, user, onEquip }) {
 
       {/* Move Money Sheet */}
       {sheet === 'mover' ? (() => {
-        // ⚠ `mv` nasce `{ from: 0, to: 3 }` — quatro envelopes, os da
-        // demonstração. Uma casa com dois ou três não tem `envelopes[3]`, e a
-        // frase de baixo lia `.name` de `undefined` (revisão de 13/09/2026).
-        // Os índices prendem-se à lista da CASA antes de se usarem.
-        const ultimo = Math.max(0, envelopes.length - 1);
-        const de = Math.min(mv.from, ultimo);
-        const para = mv.to <= ultimo && mv.to !== de ? mv.to : (de === 0 ? Math.min(1, ultimo) : 0);
-        const free = freeOf(de);
+        // ⚠ Os dois nomes prendem-se à lista da CASA antes de se usarem — um
+        // envelope pode ter sido apagado ou renomeado desde que a folha fechou.
+        // Com nomes, prender é um `includes`; com índices eram três linhas de
+        // aritmética sobre o comprimento da lista.
+        const nomes = envelopes.map(e => e.name);
+        const de = nomes.includes(mv.de) ? mv.de : (nomes[0] || null);
+        const para = (nomes.includes(mv.para) && mv.para !== de)
+          ? mv.para : (nomes.find(n => n !== de) || null);
+        const free = freeOf(Math.max(0, nomes.indexOf(de)));
         const over = mv.amount > free;
-        const origem = envelopes[de] || { name: '', limit: 0 };
-        const destino = envelopes[para] || { name: '', limit: 0 };
+        const origem = envelopes.find(e => e.name === de) || { name: '', limit: 0 };
+        const destino = envelopes.find(e => e.name === para) || { name: '', limit: 0 };
+        const livreDe = (nome) => freeOf(Math.max(0, nomes.indexOf(nome)));
         // ⚠ O botão é COMUM, e é a decisão que mais custa a tomar aqui: isto
         // mexe em dinheiro, mas não entre PESSOAS — muda o limite de dois
         // envelopes da mesma casa, e desfaz-se movendo ao contrário. A própria
@@ -800,14 +811,32 @@ export default function Dinheiro({ t, user, onEquip }) {
                   Aqui, com seis envelopes na casa e quatro na demonstração,
                   tocar no primeiro da grelha («Mercearia») movia dinheiro de
                   «Transportes». */}
-              <Label t={t}>Retirar de</Label>
-              <GrelhaEnvelopes t={t} envelopes={envelopes} livre={freeOf} escolhido={de}
-                onEscolher={(i) => setMv(m => ({ ...m, from: i, to: para === i ? de : para }))} />
-            </View>
-            <View style={{ gap: S.md }}>
-              <Label t={t}>Reforçar</Label>
-              <GrelhaEnvelopes t={t} envelopes={envelopes} livre={freeOf} escolhido={para}
-                onEscolher={(i) => setMv(m => ({ ...m, to: i, from: de === i ? para : de }))} />
+              {/* ⚠ DOIS CAMPOS, e não duas grelhas (26/09/2026). A grelha tinha
+                  razão escrita — «eram oito linhas de largura total, 48 px cada: a
+                  folha não cabia e o campo do valor ficava cortado a meio pelo
+                  botão» — e essa razão é EXACTAMENTE o problema que o campo
+                  resolve: 44 px com quatro envelopes e 44 com vinte. Duas
+                  grelhas de oito ocupavam 448 px desta folha; dois campos
+                  ocupam 88.
+
+                  O «livre X €» não se perde — vai no `sub` de cada linha da lista,
+                  que é onde se escolhe. Adia-se até abrir; não desaparece.
+
+                  ⚠ E escolher o mesmo envelope dos dois lados TROCA-OS, como
+                  antes: era o que a grelha fazia, e a folha nunca pode ficar com
+                  a mesma origem e destino — o `moverEntreEnvelopes` recusa. */}
+              <CampoDeEscolha t={t} rotulo="Retirar de" titulo="Retirar de"
+                sub="De onde sai o limite"
+                valor={de}
+                opcoes={envelopes.map(e => ({ valor: e.name, titulo: e.name,
+                  sub: `livre ${EUR(livreDe(e.name))}` }))}
+                aoEscolher={(n) => setMv(m => ({ ...m, de: n, para: para === n ? de : para }))} />
+              <CampoDeEscolha t={t} rotulo="Reforçar" titulo="Reforçar"
+                sub="Para onde vai o limite"
+                valor={para}
+                opcoes={envelopes.map(e => ({ valor: e.name, titulo: e.name,
+                  sub: `livre ${EUR(livreDe(e.name))}` }))}
+                aoEscolher={(n) => setMv(m => ({ ...m, para: n, de: de === n ? para : de }))} />
             </View>
             <View style={{ gap: S.md }}>
               <Label t={t}>Valor a mover</Label>
@@ -830,7 +859,16 @@ export default function Dinheiro({ t, user, onEquip }) {
 
       {/* Register Expense Sheet */}
       {/* O botão é comum: acrescenta uma linha, não fecha nem apaga nada. */}
-      {sheet === 'despesa' ? (
+      {sheet === 'despesa' ? (() => {
+        // ⚠ O nome prende-se à lista da CASA antes de se usar: um envelope
+        // pode ter sido apagado ou renomeado desde que a folha fechou, e nulo
+        // quer dizer «ainda não escolheu». Sem isto, escolher e aplicar podiam
+        // discordar — foi assim que a grelha mostrava uma lista e a
+        // confirmação aplicava outra.
+        const nomesDosEnvelopes = envelopes.map(e => e.name);
+        const envelopeDaDespesa = nomesDosEnvelopes.includes(exp.env)
+          ? exp.env : (nomesDosEnvelopes[0] || null);
+        return (
         <Sheet t={t} title="Registar Despesa" sub="Entra no envelope e na conta entre os dois"
           onClose={() => setSheet(null)}
           action={<Primary t={t} comum disabled={exp.amount <= 0} label="Registar despesa"
@@ -840,7 +878,7 @@ export default function Dinheiro({ t, user, onEquip }) {
               // chegavam ao servidor, e cada telefone contava só o que ele
               // próprio tinha gasto.
               registarDespesa({
-                envelope: envelopes[exp.env].name,
+                envelope: envelopeDaDespesa,
                 valor: exp.amount,
                 pagador: exp.payer,
                 divideMeias: exp.split,
@@ -854,24 +892,25 @@ export default function Dinheiro({ t, user, onEquip }) {
           </View>
           <View style={{ gap: S.md }}>
             {/* ⚠ A lista da CASA. Era o `ENV_BASE`, e o `registarDespesa`
-                logo acima usa `envelopes[exp.env].name` — a lista da casa,
-                pelo mesmo índice. Escolhia-se «Casa & contas» na lista da
-                demonstração e a despesa era lançada no que estivesse nesse
-                lugar na casa. Dinheiro a sério no envelope errado, sem erro. */}
-            <Label t={t}>Envelope</Label>
-            {envelopes.map((e, i) => (
-              <Pressable key={e.name} onPress={() => setExp(x => ({ ...x, env: i }))}
-                accessibilityRole="button" accessibilityLabel={e.name} accessibilityState={{ selected: exp.env === i }} aria-pressed={exp.env === i}
-                style={{ minHeight: 48, borderRadius: R.row, borderWidth: 1, paddingHorizontal: 14,
-                  borderColor: exp.env === i ? t.accent : t.border,
-                  backgroundColor: exp.env === i ? t.accent : t.subtle,
-                  flexDirection: 'row', alignItems: 'center', gap: S.md }}>
-                <Text style={{ flex: 1, fontFamily: FONT.ui, fontSize: 13, fontWeight: '600',
-                  color: exp.env === i ? '#FFFFFF' : t.text2 }}>{e.name}</Text>
-                <Text style={{ fontFamily: FONT.ui, fontSize: 11.5,
-                  color: exp.env === i ? onChrome(t.accent) : t.text3 }}>livre {EUR(freeOf(i))}</Text>
-              </Pressable>
-            ))}
+                logo acima aplicava a lista da casa pelo mesmo índice.
+                Escolhia-se «Casa & contas» na lista da demonstração e a despesa
+                era lançada no que estivesse nesse lugar na casa. Dinheiro a
+                sério no envelope errado, sem erro. Hoje a escolha e a aplicação
+                são o mesmo NOME, e não há índice nenhum pelo meio. */}
+            {/* ⚠ UM CAMPO, e não uma pilha de linhas (26/09/2026). Eram
+                `envelopes.length` linhas de 48 px, de largura inteira: com os
+                seis envelopes de uma casa a sério são 288 px — a folha inteira,
+                por um campo. Ao contrário da grelha do «Mover», esta forma não
+                tinha uma única linha de justificação escrita: nasceu assim e
+                ficou.
+
+                O «livre X €» mantém-se, no `sub` de cada linha da lista. */}
+            <CampoDeEscolha t={t} rotulo="Envelope" titulo="Envelope"
+              sub="Onde esta despesa entra"
+              valor={envelopeDaDespesa}
+              opcoes={envelopes.map((e, i) => ({ valor: e.name, titulo: e.name,
+                sub: `livre ${EUR(freeOf(i))}` }))}
+              aoEscolher={(n) => setExp(x => ({ ...x, env: n }))} />
           </View>
           <View style={{ gap: S.md }}>
             <Label t={t}>Quem pagou</Label>
@@ -892,7 +931,8 @@ export default function Dinheiro({ t, user, onEquip }) {
               onPress={() => setExp(x => ({ ...x, split: !x.split }))} />
           </View>
         </Sheet>
-      ) : null}
+        );
+      })() : null}
 
       {/* Open Month Sheet — o botão fecha um período: o mês anterior deixa de
           ser o aberto, e os totais passam a contar noutra soma. Leva o acento. */}
@@ -967,18 +1007,30 @@ export default function Dinheiro({ t, user, onEquip }) {
                 menos baixa o número, e assim a app não escolhe por ninguém. */}
             {metas.length && remaining > 0 ? (
               <View style={{ gap: S.md }}>
-                <Label t={t}>Levar para uma meta (opcional)</Label>
-                <View style={{ flexDirection: 'row', gap: S.sm, flexWrap: 'wrap' }}>
-                  {metas.map(g => (
-                    <Choice key={g.id} t={t} label={g.name}
-                      selected={fecho.meta === g.id}
-                      onPress={() => setFecho(f => ({
-                        // Voltar a tocar na meta escolhida desliga o reforço:
-                        // é a saída para quem se enganou, sem um botão «nada».
-                        ...f, meta: f.meta === g.id ? null : g.id,
-                      }))} />
-                  ))}
-                </View>
+                {/* ⚠ UMA OPÇÃO «NENHUMA», e não um gesto escondido (26/09/2026).
+                    Isto era uma fila de pastilhas em que tocar na escolhida
+                    DESLIGAVA o reforço — «a saída para quem se enganou, sem um
+                    botão nada», dizia o comentário. O código fazia-o; ninguém o
+                    dizia a ninguém. Não havia frase no ecrã, não havia rótulo em
+                    voz alta, e o `Choice` nem sequer aceita um
+                    `accessibilityHint`. Pela regra escrita desta casa — «um
+                    gesto que não se anuncia não existe» —, era um defeito, e não
+                    uma decisão por tomar.
+
+                    Agora a saída é uma LINHA da lista, que se lê e se toca como
+                    as outras. E de caminho a escolha deixa de crescer numa fila
+                    que quebra: as metas são da família e não têm número máximo. */}
+                <CampoDeEscolha t={t} rotulo="Levar para uma meta (opcional)"
+                  titulo="Levar para uma meta"
+                  sub="O que sobrar do mês passa para ela"
+                  valor={fecho.meta}
+                  opcoes={[
+                    { valor: null, titulo: 'Nenhuma',
+                      sub: `O saldo de ${EUR(remaining)} fica na conta` },
+                    ...metas.map(g => ({ valor: g.id, titulo: g.name,
+                      sub: `${EUR(g.at)} de ${EUR(g.of)}` })),
+                  ]}
+                  aoEscolher={(id) => setFecho(f => ({ ...f, meta: id }))} />
                 {fecho.meta ? (
                   <>
                     <NumField t={t} value={paraMeta} step={50} min={0} max={Math.max(0, remaining)}

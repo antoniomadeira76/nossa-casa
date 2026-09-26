@@ -258,7 +258,11 @@ campo custa 83 com os dois. Decisão de 25/09/2026, opção B de `design/escolhe
 Duas ou três escolhas **fixas** ficam em `Choice` ou `Segmented`, onde se vêem todas de uma vez.
 Quem já está dentro de uma folha usa a `ListaDeEscolha` e não abre uma segunda.
 O guarda `__tests__/uma-escolha-que-cresce-nao-e-uma-fila.test.js` enumera as filas que restam,
-com a razão de cada uma — e as duas que esperam decisão do dono da casa.
+com a razão escrita de cada uma. Em 26/09/2026 ele disse «corrige tudo» e entraram as últimas:
+o envelope (que tinha **três** desenhos para a mesma escolha — fila, grelha de dois e pilha
+vertical), a meta do fecho do mês (onde a saída «nenhuma» era um toque repetido que ninguém
+anunciava) e a categoria de um equipamento. Nessa ronda o envelope passou também a guardar-se
+pelo **nome** e não por um índice, que era a classe 41 por resolver.
 
 **Sem emoji.** É uma app que trata de dinheiro.
 

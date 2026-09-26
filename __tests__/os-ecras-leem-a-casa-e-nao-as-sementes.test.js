@@ -107,18 +107,37 @@ describe('e o Dinheiro em particular, que era onde doía', () => {
   const ecra = semComentarios(conteudo('src/screens/Dinheiro.jsx'));
 
   it('⚠ a lista que se ESCOLHE e a que se APLICA são a mesma', () => {
-    // O que se aplica: `envelopes[exp.env].name` e, na folha de mover, a
-    // `origem`/`destino` lidos de `envelopes[de]`/`envelopes[para]` — os índices
-    // do `mv` presos à lista da casa (13/09/2026: `mv.to` nascia 3 e uma casa
-    // com dois envelopes rebentava).
-    expect(ecra).toMatch(/envelopes\[exp\.env\]\.name/);
-    expect(ecra).toMatch(/const origem = envelopes\[de\]/);
-    expect(ecra).toMatch(/const destino = envelopes\[para\]/);
+    // ⚠ ESTA PROVA MUDOU EM 26/09/2026, e mudou por decisão e não por remendo.
+    //
+    // O que aqui estava exigia a estrutura por ÍNDICES: `envelopes[exp.env]`,
+    // `envelopes[de]`, `envelopes[para]`, e as duas `GrelhaEnvelopes` com o
+    // índice escolhido. Era o remendo de 13/09 — prender os índices à lista da
+    // casa — sobre uma causa que ficou de pé: um índice guardado numa lista que
+    // a casa reordena aponta para outra coisa a cada mudança.
+    //
+    // Agora os três escolhedores de envelope guardam o NOME, e a propriedade a
+    // provar é a mesma de sempre, mais forte: o que se escolhe e o que se
+    // aplica são a MESMA CADEIA, sem um índice pelo meio para as desalinhar.
+    //
+    // O que se aplica:
+    expect(ecra).toMatch(/envelope: envelopeDaDespesa,/);
     expect(ecra).toMatch(/moverEntreEnvelopes\(origem\.name, destino\.name, mv\.amount\)/);
-    // E o que se escolhe tem de vir do mesmo sítio, com o MESMO índice.
-    expect(ecra).toMatch(/\{envelopes\.map\(\(e, i\) =>/);
-    expect(ecra).toMatch(/<GrelhaEnvelopes t=\{t\} envelopes=\{envelopes\} livre=\{freeOf\} escolhido=\{de\}/);
-    expect(ecra).toMatch(/<GrelhaEnvelopes t=\{t\} envelopes=\{envelopes\} livre=\{freeOf\} escolhido=\{para\}/);
+    // E vem de um nome procurado NA LISTA DA CASA, nunca de uma posição:
+    expect(ecra).toMatch(/const origem = envelopes\.find\(e => e\.name === de\)/);
+    expect(ecra).toMatch(/const destino = envelopes\.find\(e => e\.name === para\)/);
+    // ⚠ E o nome prende-se à lista antes de se usar — um envelope pode ter sido
+    // apagado ou renomeado desde que a folha fechou. É o `Math.min(…, ultimo)`
+    // de antes, escrito de uma maneira que não mente.
+    expect(ecra).toMatch(/nomes\.includes\(mv\.de\)/);
+    expect(ecra).toMatch(/nomes\.includes\(mv\.para\)/);
+    expect(ecra).toMatch(/nomesDosEnvelopes\.includes\(exp\.env\)/);
+    // E o que se escolhe vem da mesma lista, pelo mesmo nome.
+    expect(ecra).toMatch(/opcoes=\{envelopes\.map\(\(e, i\) => \(\{ valor: e\.name/);
+    // ⚠ E já não há índice nenhum guardado: nasciam `{ from: 0, to: 3 }` e
+    // `env: 0`, e uma casa com dois envelopes lia `envelopes[3]` de `undefined`.
+    expect(ecra).not.toMatch(/useState\(\{ from: 0, to: 3/);
+    expect(ecra).toMatch(/useState\(\{ de: null, para: null/);
+    expect(ecra).toMatch(/useState\(\{ amount: 0, env: null/);
   });
 
   it('e abrir o mês distribui pelos envelopes da casa', () => {
