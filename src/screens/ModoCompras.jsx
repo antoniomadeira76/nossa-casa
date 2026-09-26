@@ -327,21 +327,52 @@ export default function ModoCompras({ t, user, onClose }) {
 
           {/* O PREÇO, encostado à direita, com os algarismos de largura fixa
               para a coluna se ler de cima a baixo. Cinzento com «~» é o que a
-              app estima; escuro e a negrito é o que se pagou; «—» é o que ela
-              não sabe, porque «0,00 €» seria uma afirmação. */}
+              app estima; escuro e a negrito é o que se pagou; o lápis é o que
+              ela não sabe, porque «0,00 €» seria uma afirmação.
+
+              ⚠ LARGURA FIXA, e não um mínimo (25/09/2026). Era `minWidth: 86`
+              com 8 de enchimento — 78 px de conteúdo — e «~ 1 250,00 €» mede
+              82,3 px. Um preço de quatro algarismos esticava a coluna para ~90
+              e roubava esses píxeis AO NOME, calado e só naquela linha: o talão
+              ficava com a coluna dos euros a mexer-se de linha para linha, que
+              é precisamente o que esta coluna existe para não fazer.
+
+              96 e não 86: dá 88 px de conteúdo, e o maior valor que a app
+              consegue formatar mede 82,3 — medido no navegador com o tipo de
+              letra da app. É «~ 9 999,00 €» (o campo do preço tem máximo 9999)
+              e mede o mesmo que «~ 1 250,00 €», porque os algarismos da Roboto
+              têm todos 8,54 px. Sobram 5,7 px de folga.
+
+              Custa 10 px ao nome — que desde hoje quebra para a segunda linha
+              em vez de se cortar, e por isso não perde nada com eles. */}
           <Pressable onPress={() => setPrecoAberto(x => (x === i.id ? null : i.id))}
             accessibilityRole="button"
             accessibilityLabel={escrito
               ? `Alterar o preço de ${i.label}, ${EUR(s.precoPago[i.id])}`
               : `Escrever o preço pago por ${i.label}`}
             accessibilityState={{ expanded: aEditar }} aria-expanded={aEditar}
-            style={{ minHeight: 48, minWidth: 86, paddingLeft: S.md,
+            style={{ minHeight: 48, width: 96, paddingLeft: S.md,
               alignItems: 'flex-end', justifyContent: 'center' }}>
             {sem ? (
               <Text style={{ fontFamily: FONT.ui, fontSize: 12, fontWeight: '600', color: t.state.warnTexto }}>
                 sem stock
               </Text>
             ) : escrito || estimado ? (
+              // ⚠ SEM `fontVariant: ['tabular-nums']`, e é uma decisão medida.
+              //
+              // Escrevi-o aqui a 25/09/2026 a dizer que os algarismos da Roboto
+              // eram proporcionais e que o comentário acima — «algarismos de
+              // largura fixa» — era uma promessa por cumprir. Fui medi-lo no
+              // navegador com o tipo de letra da própria app, e era eu que
+              // estava errado: os dez algarismos da Roboto medem 8,54 px cada,
+              // com `tabular-nums` e sem ele. A propriedade já existe por
+              // natureza do tipo de letra, e a declaração não muda um pixel.
+              //
+              // Ficou de fora porque um estilo que não faz nada é andaime sem
+              // obra — e pior, um guarda a exigi-lo passava a defender um
+              // no-op para sempre. Fica a medição escrita, que é o que faltava:
+              // se um dia o tipo de letra mudar, é esta linha que diz o que
+              // conferir.
               <Text style={{ fontFamily: FONT.display, fontSize: 15,
                 fontWeight: escrito ? '600' : '400',
                 color: escrito ? t.text2 : t.text3 }}>

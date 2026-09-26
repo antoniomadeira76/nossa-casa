@@ -221,6 +221,60 @@ describe('⚠ 3. o Modo Compras com muitos corredores', () => {
     expect([...new Set(contas)].length).toBe(1);
   });
 
+  // ── A coluna dos euros do talão ──────────────────────────────────────────
+  //
+  // 25/09/2026. A coluna era `minWidth: 86` com 8 de enchimento — 78 px de
+  // conteúdo — e «~ 1 250,00 €» mede 83,3 px, medidos na app a correr. Um preço
+  // de quatro algarismos esticava a coluna e roubava esses píxeis AO NOME,
+  // calado e só naquela linha: num talão de vinte artigos, a coluna que existe
+  // para se ler de cima a baixo mexia-se de linha para linha.
+  //
+  // A casa de demonstração nunca o mostrou — os preços dela têm três
+  // algarismos. É o mesmo padrão desta secção: o defeito só aparece com dados a
+  // sério.
+  const precos = (r) => r.root.findAll(n => typeof n.type === 'string' && n.props
+    && /^(Escrever o preço pago por|Alterar o preço de)/.test(n.props.accessibilityLabel || ''));
+
+  it('⚠ a coluna dos euros tem LARGURA FIXA — um preço grande não a estica', () => {
+    // Um artigo barato e um caro na mesma lista: as duas colunas têm de medir
+    // o mesmo. Com `minWidth` mediam o que o texto pedisse.
+    const { r } = modo([], {
+      newItems: [
+        { id: 'a1', s: 'Frutas & Legumes', label: 'Bananas', est: 1.29 },
+        { id: 'a2', s: 'Frutas & Legumes', label: 'Máquina de café', est: 1250 },
+      ],
+    });
+    const colunas = precos(r);
+    expect(colunas.length).toBeGreaterThanOrEqual(2);
+    for (const c of colunas) {
+      const e = estiloDe(c);
+      expect(e.width).toBe(96);
+      // ⚠ E NÃO um mínimo: é o mínimo que deixa a coluna crescer.
+      expect(e.minWidth).toBeUndefined();
+    }
+  });
+
+  it('⚠ e o maior preço que a app consegue formatar CABE na coluna', () => {
+    // A propriedade que faz a largura fixa valer alguma coisa: 96 menos os 8 de
+    // enchimento são 88 px, e «~ 9 999,00 €» mede 82,3 — medido no navegador
+    // com o tipo de letra da app. Não se mede tipografia no Jest; o que aqui se
+    // prende é a CONTA, para o dia em que alguém suba o máximo do campo do
+    // preço ou meta um prefixo novo.
+    //
+    // ⚠ E o «~ 9 999,00 €» mede o mesmo que o «~ 1 250,00 €» porque os dez
+    // algarismos da Roboto têm 8,54 px cada — medido, e ao contrário do que eu
+    // tinha escrito aqui à primeira. É por isso que a coluna não leva
+    // `tabular-nums`: a propriedade já existe por natureza do tipo de letra, e
+    // um estilo que não muda um pixel é andaime sem obra.
+    const LARGURA = 96, ENCHIMENTO = 8, MEDIDO = 82.3, ALGARISMO = 8.54;
+    expect(LARGURA - ENCHIMENTO).toBeGreaterThan(MEDIDO);
+    // O máximo do campo do preço, que é de onde sai o «9 999,00 €».
+    expect(semComentarios(ler('src/sheets/NovoArtigo.jsx'))).toMatch(/max=\{9999\}/);
+    // E a coluna não pede ao tipo de letra o que ele já faz.
+    expect(semComentarios(ler('src/screens/ModoCompras.jsx'))).not.toMatch(/tabular-nums/);
+    expect(ALGARISMO * 4).toBeLessThan(LARGURA - ENCHIMENTO);
+  });
+
   it('⚠ e o nome do corredor vai INTEIRO para a aba e para o leitor de ecrã', () => {
     // O defeito que deu origem a esta reescrita. «Talho e peixaria» e «Higiene
     // e limpeza» liam-se «Talho» e «Higiene», no ecrã e em voz alta.
