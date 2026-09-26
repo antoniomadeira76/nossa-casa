@@ -84,6 +84,21 @@ function BolaDeMembro({ t, nome, MEMBERS, on, varios, rotulo, onPress }) {
           </View>
         ) : null}
       </View>
+      {/* ⚠ ESTE CORTE FICA, e foi decidido (25/09/2026, perguntado a ele).
+          «Maria João» e «Maria José» ficam as duas «Maria Jo…» — 11 px numa
+          célula de 52 dão nove caracteres, e o campo do nome aceita trinta.
+
+          Não se corrige dentro destas medidas, e a razão é que duas decisões
+          dele puxam em sentidos contrários: o protótipo que ele aprovou
+          (`design/nome-no-filtro.dc.html`, opção B) especificava 9,5 px, e a
+          esse tamanho os dois nomes cabem inteiros; o código ficou nos 11
+          porque a escala `LETRA` tem 11 como chão e há guarda que o impõe.
+
+          Perguntado, ele escolheu deixar como está. Fica registado porque é
+          compensado e não esquecido: os avatares distinguem-se pela cor e pela
+          figura, o nome inteiro vai para o título da secção assim que se toca,
+          e o `accessibilityLabel` da bola di-lo sempre por extenso. Quem vier
+          a seguir não tem de voltar a descobrir isto. */}
       <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11, lineHeight: 12, marginTop: -2,
         maxWidth: 52, color: on ? t.actFg : t.text3, fontWeight: on ? '600' : '400' }}>{nome}</Text>
     </Pressable>

@@ -210,11 +210,24 @@ export default function Equipamentos({ t, user = null, abrir }) {
                     style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: S.md,
                       minHeight: 44, opacity: pressed ? 0.7 : 1 })}>
                     <View style={{ flex: 1, gap: 3 }}>
-                      <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 15, fontWeight: '600', color: t.text2 }}>
-                        {`${c.nome}${c.fornecedor ? ` · ${c.fornecedor}` : ''}`}
+                      {/* ⚠ O nome e o FORNECEDOR deixaram de ser colados numa
+                          linha só (25/09/2026). Estavam unidos por « · » e a
+                          seguir cortados a ~28 caracteres — e o corte caía
+                          sempre no fornecedor, que é justamente o que distingue
+                          dois contratos com o mesmo nome: «Internet e televisão
+                          · MEO Fibra» e «Internet e televisão · MEO Satélite»
+                          ficavam os dois «Internet e televisão · MEO…».
+
+                          O fornecedor passou para o SUBTÍTULO, que já existia e
+                          estava a mostrar só as datas. Assim o nome tem a linha
+                          inteira (e quebra, como a `Row` do `ui.jsx`), e o
+                          fornecedor é a primeira coisa do subtítulo em vez de
+                          ser a primeira a desaparecer. */}
+                      <Text style={{ fontFamily: FONT.body, fontSize: 15, fontWeight: '600', color: t.text2 }}>
+                        {c.nome}
                       </Text>
                       <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 12, color: t.text3 }}>
-                        {linhaDoContrato(c) || 'Sem datas'}
+                        {[c.fornecedor, linhaDoContrato(c) || 'Sem datas'].filter(Boolean).join(' · ')}
                       </Text>
                     </View>
                     {pastilhaDoContrato(c)}

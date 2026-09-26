@@ -131,7 +131,8 @@ describe('⚠ 1. e 2. a base do zero e a lista de apagamento', () => {
 
 describe('⚠ 3. o Modo Compras com muitos corredores', () => {
   const OITO = ['Frutas & Legumes', 'Frescos', 'Talho e peixaria', 'Mercearia', 'Congelados', 'Higiene e limpeza', 'Outros', 'constructor'];
-  const modo = (seccoes) => montar(ModoCompras, { t: T, user: 'Rita', onClose: nada }, { seccoesDaCasa: seccoes });
+  const modo = (seccoes, mais) => montar(ModoCompras, { t: T, user: 'Rita', onClose: nada },
+    { seccoesDaCasa: seccoes, ...(mais || {}) });
 
   // ⚠ ESTA SECÇÃO MUDOU EM 25/09/2026, e mudou por decisão e não por remendo.
   //
@@ -184,6 +185,40 @@ describe('⚠ 3. o Modo Compras com muitos corredores', () => {
         expect(e.minHeight).toBeGreaterThanOrEqual(44);
       }
     }
+  });
+
+  it('⚠ a ranhura do ícone existe em TODAS as abas, ou em nenhuma', () => {
+    // 25/09/2026, ele: «o texto "Todos" deve alinhar com o texto e a linha com
+    // a linha quando há ícons nos corredores».
+    //
+    // O «Todos» nunca tem ícone. Como o conteúdo da aba é CENTRADO, ele ficava
+    // com menos 23 px de altura do que as vizinhas: a barra descia e o nome
+    // subia. Duas réguas na mesma fila. É a classe 60 outra vez — uma peça que
+    // só existe em algumas linhas põe a coluna aos degraus.
+    //
+    // A propriedade: todas as abas têm o MESMO número de peças. Mede-se pelos
+    // filhos directos do alvo, que é o que decide a altura.
+    //
+    // ⚠ E a casa desta prova tem de ter ÍCONES ESCOLHIDOS. A primeira versão
+    // corria com o `modo(OITO)` seco — e numa casa sem escolhas o
+    // `iconeDaSeccao` devolve a `caixa`, que não entra na aba: nenhuma tinha
+    // ícone, a ranhura nunca se desenhava, e o guarda passava COM o defeito de
+    // volta. Provei-o a falhar antes de o dar por bom, e foi assim que se viu.
+    const { r } = modo(OITO, {
+      iconesDeSeccao: { [OITO[0]]: 'hortalica', [OITO[1]]: 'fruta', [OITO[2]]: 'talho' },
+    });
+    const contas = abas(r).map((sep) => {
+      const filhos = [];
+      const ver = (n) => {
+        if (!n || typeof n !== 'object') return;
+        if (Array.isArray(n)) { n.forEach(ver); return; }
+        filhos.push(n);
+      };
+      ver(sep.props.children);
+      // O visto do «despachado» é absoluto e não conta para a altura.
+      return filhos.filter(Boolean).length;
+    });
+    expect([...new Set(contas)].length).toBe(1);
   });
 
   it('⚠ e o nome do corredor vai INTEIRO para a aba e para o leitor de ecrã', () => {

@@ -425,9 +425,18 @@ export default function Dinheiro({ t, user, onEquip }) {
                   style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: S.md,
                     minHeight: 44, opacity: pressed ? 0.7 : 1 })}>
                   <View style={{ flex: 1, gap: 2 }}>
-                    <Text numberOfLines={1} style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>
+                    {/* ⚠ O NOME INTEIRO, sem `numberOfLines` (25/09/2026). Tinha
+                        uma linha só num espaço de ~180 px — ~24 caracteres a
+                        15 px, contra os 60 que o campo aceita —, e «Mensalidade
+                        da natação do Léo» e «Mensalidade da natação da Mia»
+                        ficavam ambas «Mensalidade da natação d…», com valores e
+                        dias diferentes ao lado. É dinheiro a ser marcado como
+                        pago na conta errada. */}
+                    <Text style={{ fontFamily: FONT.body, fontSize: 15, color: t.text2 }}>
                       {c.nome}
                     </Text>
+                    {/* O subtítulo FICA numa linha: é composto pela app a partir
+                        de pedaços curtos, e cortá-lo não confunde duas contas. */}
                     <Text numberOfLines={1} style={{ fontFamily: FONT.ui, fontSize: 11.5, color: t.text3 }}>
                       {[`dia ${c.dia}`, c.envelope, c.quemPaga ? `${c.quemPaga} paga` : null].filter(Boolean).join(' · ')}
                     </Text>

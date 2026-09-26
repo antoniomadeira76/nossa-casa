@@ -173,10 +173,30 @@ describe('⚠ os contratos: os ecrãs', () => {
 
     const { texto } = equipamentos({ contratos: [NET, SEGURO, INSPECAO] });
     const tx = texto();
-    expect(tx).toContain('Seguro do carro · Fidelidade');
+    // ⚠ 25/09/2026: o nome e o fornecedor deixaram de ser COLADOS numa linha só.
+    // Estavam unidos por « · » e cortados a ~28 caracteres, e o corte caía
+    // sempre no fornecedor — «Internet e televisão · MEO Fibra» e
+    // «Internet e televisão · MEO Satélite» liam-se os dois «Internet e
+    // televisão · MEO…». O fornecedor passou para o subtítulo, que já existia.
+    expect(tx).toContain('Seguro do carro');
+    expect(tx).toContain('Fidelidade · renova a');
     expect(tx).toContain('renova em 23 dias');
     expect(tx).toContain('passou há 4 dias');
     expect(tx).toContain('fidelização até 03/2027 · Tomás');
+  });
+
+  it('⚠ e o fornecedor é a PRIMEIRA coisa do subtítulo, não a primeira a cair', () => {
+    // A propriedade, e não a frase: o fornecedor tem de aparecer inteiro, e
+    // separado do nome — é ele que distingue dois contratos com o mesmo nome.
+    const { texto } = equipamentos({ contratos: [
+      { ...SEGURO, id: 'ct-a', nome: 'Internet e televisão', fornecedor: 'MEO Fibra' },
+      { ...SEGURO, id: 'ct-b', nome: 'Internet e televisão', fornecedor: 'MEO Satélite' },
+    ] });
+    const tx = texto();
+    expect(tx).toContain('MEO Fibra');
+    expect(tx).toContain('MEO Satélite');
+    // E o nome já não traz o fornecedor colado.
+    expect(tx).not.toContain('Internet e televisão · MEO');
   });
 
   it('a linha abre a ficha, com a renovação, o documento, os campos e «Remover Contrato»', () => {

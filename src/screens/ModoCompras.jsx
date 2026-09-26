@@ -181,6 +181,9 @@ export default function ModoCompras({ t, user, onClose }) {
   };
   const tabs = [{ i: null, label: 'Todos', icone: null },
     ...seccoes.map(n => ({ i: n, label: n, icone: iconeDaAba(n) }))];
+  // Se ALGUMA aba tem ícone, TODAS reservam a ranhura dele — senão o «Todos»,
+  // que nunca tem, fica com a barra e o nome a outra altura. Ver a ranhura.
+  const algumIcone = tabs.some(x => !!x.icone);
   const pctCart = merc > 0 ? (cart / merc) * 100 : 0;
 
   // ── Os preços que a app já conhece deste artigo ───────────────────────────
@@ -300,7 +303,23 @@ export default function ModoCompras({ t, user, onClose }) {
                 blocos vinha daí. */}
             <MarcaDeEstado t={t} size={MARCA}
               estado={feito ? 'marcado' : sem ? 'sem' : 'por-marcar'} />
-            <Text numberOfLines={1} style={{ flex: 1, fontFamily: FONT.body, fontSize: 15,
+            {/* ⚠ O NOME INTEIRO, e por isso sem `numberOfLines` (25/09/2026).
+                Tinha `numberOfLines={1}` num espaço de ~211 px: ~28 caracteres a
+                15 px, quando o campo aceita 60. «Massa esparguete integral n.º 3»
+                e «…n.º 5» — trinta e um caracteres cada, DIFERENTES NO ÚLTIMO —
+                liam-se as duas «Massa esparguete integral n…». Na loja, com o
+                carrinho na mão, é marcar o errado.
+
+                Aqui o nome não é um pormenor da linha: é a coisa que se está a
+                marcar. Quebra para a segunda linha, que é o que a `Row` do
+                `ui.jsx` já faz em toda a app — uma maneira só de mostrar um nome
+                comprido numa lista.
+
+                ⚠ Isto NÃO contraria o «fica numa linha só» do comentário aqui em
+                cima: essa decisão é sobre não trazer um SEGUNDO campo para a
+                linha (o «António · feita» das tarefas), não sobre apertar o nome
+                que já lá está. */}
+            <Text style={{ flex: 1, fontFamily: FONT.body, fontSize: 15,
               color: sem ? t.state.warnTexto : feito ? t.text2 : t.text3 }}>
               {i.label}
             </Text>
@@ -494,10 +513,27 @@ export default function ModoCompras({ t, user, onClose }) {
                   VAZIO do tamanho pedido, sem erro nenhum: a aba ficava 18 px
                   mais alta do que as vizinhas, com um buraco lá dentro. É a
                   classe que o `a-casa-pode-ficar-sem-icones` guarda. */}
-              {x.icone ? (
-                <View style={{ alignItems: 'center' }}>
-                  <Icon name={x.icone} size={17}
-                    color={on ? t.titulo : limpo ? t.state.okTexto : t.text3} />
+              {/* ⚠ A RANHURA DO ÍCONE EXISTE EM TODAS AS ABAS, quando alguma
+                  tem ícone (25/09/2026, ele: «o texto "Todos" deve alinhar com
+                  o texto e a linha com a linha quando há ícons nos corredores»).
+
+                  O «Todos» não tem ícone, e como o conteúdo da aba é CENTRADO,
+                  ele ficava com menos 23 px de altura do que as outras: a barra
+                  dele descia e o nome subia. Duas réguas na mesma fila, e o olho
+                  vê logo. É o mesmo defeito da faixa da `Linha` que empurrava o
+                  conteúdo 11 px — uma coluna aos degraus porque uma peça só
+                  existe em algumas linhas.
+
+                  Com a ranhura vazia lá dentro, todas as abas medem o mesmo, e
+                  o centrar alinha-as sozinho: as barras em cima e os nomes em
+                  baixo, à mesma altura. Numa casa sem ícones nenhuns a ranhura
+                  não se desenha — aí as abas já são todas iguais entre si. */}
+              {algumIcone ? (
+                <View style={{ height: 17, alignItems: 'center', justifyContent: 'center' }}>
+                  {x.icone ? (
+                    <Icon name={x.icone} size={17}
+                      color={on ? t.titulo : limpo ? t.state.okTexto : t.text3} />
+                  ) : null}
                 </View>
               ) : null}
               {/* ⚠ O `numberOfLines={1}` FICA, e agora não corta nada: ele põe
