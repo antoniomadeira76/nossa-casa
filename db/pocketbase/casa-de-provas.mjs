@@ -97,11 +97,27 @@ export async function comecar() {
     arrumado = true;
     try { await limparCasasDeProvas(pb); } catch { /* o servidor caiu; fica para a próxima */ }
   };
-  // `beforeExit` não corre depois de um `process.exit()`, que é como as provas
-  // acabam para devolver o código de saída. `exit` corre, mas é síncrono e não
-  // espera por promessas — por isso a limpeza entra no `process.exit`, antes.
-  const sairOriginal = process.exit.bind(process);
-  process.exit = (codigo) => { arrumar().finally(() => sairOriginal(codigo)); };
+  // ⚠ Aqui vivia um remendo ao `process.exit`.
+  //
+  // Dizia: «`beforeExit` não corre depois de um `process.exit()`, que é como as
+  // provas acabam para devolver o código de saída» — e era verdade. O remendo
+  // metia a limpeza antes da saída, com `arrumar().finally(() => sairOriginal(…))`.
+  //
+  // Sem saber, era ele que segurava a cadeia do `db:provar` de pé. Um
+  // `process.exit` depois de falar com o servidor devolve 3221226505 no Windows
+  // (ver `sair.mjs`), e o que salvava as 43 corridas era o ADIAMENTO: enquanto a
+  // limpeza assíncrona corria, as ligações fechavam-se, e a saída verdadeira já
+  // apanhava tudo arrumado. Não era o `.finally()` a proteger — foi medido, um
+  // `.finally()` com uma limpeza curta rebenta na mesma. Era o tempo.
+  //
+  // Quem chamasse o `resumo()` sem passar por aqui não tinha rede nenhuma, e
+  // havia um assim: o `provar-a-recusa-sai-com-2.mjs`, o último elo da cadeia.
+  //
+  // Desde 27/09/2026 o `resumo()` põe o `process.exitCode` e não desliga nada, e
+  // então o `beforeExit` volta a ser o caminho normal — corre quando o ciclo de
+  // eventos se esvazia, que é exactamente quando as provas acabam. O remendo
+  // ficou sem nada para apanhar, e um remendo morto que transforma uma chamada
+  // proibida num rebentamento é pior do que remendo nenhum.
   process.on('beforeExit', arrumar);
   return { pb, limpo, arrumar };
 }

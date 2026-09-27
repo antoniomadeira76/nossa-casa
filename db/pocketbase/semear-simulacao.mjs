@@ -28,6 +28,7 @@
 // os três níveis de visibilidade.
 import PocketBase from 'pocketbase';
 import { SUPERUTILIZADOR, SUPER_PALAVRA, URL_DO_SERVIDOR } from './ambiente.mjs';
+import { sair } from './sair.mjs';
 
 const pb = new PocketBase(URL_DO_SERVIDOR);
 pb.autoCancellation(false);
@@ -49,7 +50,7 @@ const dia = (n) => {
 const iso = (n) => `${dia(n)} 00:00:00.000Z`;
 
 const casa = (await pb.collection('casas').getFullList())[0];
-if (!casa) { console.error('Não há casa nenhuma. Entre na app uma vez primeiro.'); process.exit(1); }
+if (!casa) { console.error('Não há casa nenhuma. Entre na app uma vez primeiro.'); await sair(1); }
 console.log(`Casa: «${casa.nome}»`);
 
 // As regras da casa, para o orçamento e a semanada fazerem sentido.

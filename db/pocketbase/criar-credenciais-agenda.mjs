@@ -33,6 +33,7 @@
 // poder ser acrescentado a um servidor que já está a andar.
 import PocketBase from 'pocketbase';
 import { SUPERUTILIZADOR, SUPER_PALAVRA, URL_DO_SERVIDOR } from './ambiente.mjs';
+import { sair } from './sair.mjs';
 
 // ⚠ As credenciais e o endereço vêm do `ambiente.mjs`, como no
 // `criar-colecoes.mjs` — do ambiente OU do `.env.local`. Este ficheiro lia só
@@ -84,7 +85,7 @@ const depois = await pb.collections.getOne('credenciais_agenda');
 for (const r of ['listRule', 'viewRule', 'createRule', 'updateRule', 'deleteRule']) {
   if (depois[r] !== null) {
     console.error(`✗ ${r} devia ser nula e é ${JSON.stringify(depois[r])}`);
-    process.exit(1);
+    await sair(1);
   }
 }
 console.log('✓ as cinco regras são nulas — só os hooks lhe chegam');

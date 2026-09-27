@@ -41,6 +41,7 @@
  */
 import PocketBase from 'pocketbase';
 import { SUPERUTILIZADOR, SUPER_PALAVRA, URL_DO_SERVIDOR } from './ambiente.mjs';
+import { sair } from './sair.mjs';
 
 const pb = new PocketBase(URL_DO_SERVIDOR);
 pb.autoCancellation(false);
@@ -460,7 +461,7 @@ for (const [nome, campo, porque] of CAMPOS_A_TIRAR) {
     console.error(`\n✕ ${nome}.${campo} devia sair (${porque})`);
     console.error(`  mas a coleção tem ${plural(linhas, 'linha', 'linhas')}.`
       + ' Trate delas primeiro — este script não apaga dados.');
-    process.exit(1);
+    await sair(1);
   }
   await pb.collections.update(c.id, { fields: c.fields.filter(f => f.name !== campo) });
   tirados++;
@@ -527,7 +528,7 @@ for (const [nome, regras] of REGRAS) {
 }
 if (faltam.length) {
   console.error('\n✕ ' + faltam.join('\n✕ '));
-  process.exit(1);
+  await sair(1);
 }
 console.log(`✓ ${plural(CAMPOS.length, 'campo existe', 'campos existem')} com o tipo que a tabela diz,`
   + ` ${plural(COLECOES.length, 'coleção existe', 'coleções existem')},`

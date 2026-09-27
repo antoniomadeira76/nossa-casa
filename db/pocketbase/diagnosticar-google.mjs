@@ -21,6 +21,7 @@
 //   node db/pocketbase/diagnosticar-google.mjs
 import fs from 'node:fs';
 import path from 'node:path';
+import { sair } from './sair.mjs';
 
 const raiz = path.join(import.meta.dirname, '..', '..');
 const lerEnv = () => {
@@ -47,7 +48,7 @@ console.log('  segredo:       ' + (clientSecret
 
 if (!clientId || !clientSecret) {
   console.log('\n✕ Sem os dois não há nada a diagnosticar.\n');
-  process.exit(1);
+  await sair(1);
 }
 
 // A forma do segredo da Google é conhecida. Um espaço a mais, aspas coladas ou

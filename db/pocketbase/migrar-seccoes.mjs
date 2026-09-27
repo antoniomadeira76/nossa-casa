@@ -32,6 +32,7 @@
  */
 import PocketBase from 'pocketbase';
 import { SUPERUTILIZADOR, SUPER_PALAVRA, URL_DO_SERVIDOR } from './ambiente.mjs';
+import { sair } from './sair.mjs';
 
 // Os quatro nomes que estavam no `data.js`, pela ordem em que lá estavam — que
 // é a ordem do corredor, e o que os índices 0..3 significavam.
@@ -95,7 +96,7 @@ const semCorredor = todos.filter(a => !a.corredor);
 if (semCorredor.length) {
   console.error(`\n✕ ${semCorredor.length} artigo(s) ficaram sem corredor:`,
     semCorredor.map(a => a.rotulo).join(', '));
-  process.exit(1);
+  await sair(1);
 }
 
 // E que o corredor de cada um é o que o índice dizia.
@@ -110,6 +111,6 @@ for (const a of todos) {
     trocados++;
   }
 }
-if (trocados) { console.error(`\n✕ ${trocados} artigo(s) no corredor errado.`); process.exit(1); }
+if (trocados) { console.error(`\n✕ ${trocados} artigo(s) no corredor errado.`); await sair(1); }
 
 console.log(`✓ ${todos.length} artigos, todos no corredor que o índice dizia.`);

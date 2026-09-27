@@ -43,11 +43,28 @@ export const prova = async (nome, fn) => {
   catch (e) { console.log(`  ✕ ${nome}\n      ${e.message}`); mau++; }
 };
 
-// O fim de cada ficheiro. Devolve o código de saída, que é o que o
-// `provar-tudo.mjs` lê para saber se a corrida passou.
+// O fim de cada ficheiro. Devolve o código de saída, que é o que a cadeia de
+// `&&` do `npm run db:provar` lê para saber se a corrida passou.
+//
+// ⚠ Isto era `process.exit(mau ? 1 : 0)` e é a linha mais perigosa do defeito
+// de 27/09/2026 (ver `sair.mjs`): um `process.exit` depois de falar com o
+// servidor devolve 3221226505, e aqui isso partiria a cadeia a meio com as
+// provas todas verdes por cima — o pior dos dois mundos, um guião que diz que
+// passou e um `&&` que pára.
+//
+// Passava por sorte. O `casa-de-provas.mjs` substitui o `process.exit` por um
+// que corre a limpeza assíncrona primeiro, e é esse adiamento — não o
+// `.finally()` — que dava tempo às ligações para fecharem. Quem chamasse o
+// `resumo()` sem passar pelo `comecar()` não tinha essa rede: era o caso do
+// `provar-a-recusa-sai-com-2.mjs`, o último elo da cadeia.
+//
+// Agora não desliga nada. Põe o código e deixa o módulo acabar: o `resumo()` é
+// sempre a última linha de um ficheiro de provas, o ciclo de eventos esvazia-se,
+// o `beforeExit` do `casa-de-provas.mjs` faz a limpeza, e o processo sai com o
+// código pedido.
 export const resumo = () => {
   console.log(`\n${mau ? '✕' : '✓'} ${ok} provas passaram, ${mau} falharam.`);
-  process.exit(mau ? 1 : 0);
+  process.exitCode = mau ? 1 : 0;
 };
 
 // ─── Afirmar ─────────────────────────────────────────────────────────────────

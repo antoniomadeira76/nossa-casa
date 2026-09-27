@@ -1,6 +1,13 @@
 // A recusa do `criar-colecoes.mjs` sai com o código 2 — medido, não afirmado.
 //
-//   node db/pocketbase/provar-a-recusa-sai-com-2.mjs
+//   npm run db:provar-a-recusa
+//
+// ⚠ Corre-se À MÃO, e não está na cadeia do `db:provar`. Levanta um PocketBase
+// só dela, numa pasta temporária, e um servidor que aparece sozinho no meio de
+// uma bateria é uma surpresa em cima de quem está a usar a máquina — ainda por
+// cima porque o PocketBase abre o navegador quando nasce sem administrador.
+// Corra-a quando mexer numa saída de um guião. Decisão do dono da casa,
+// 27/09/2026.
 //
 // ── O defeito ────────────────────────────────────────────────────────────────
 //
@@ -41,14 +48,40 @@
 // o nome dela, o `criar-colecoes.mjs` sai com 2, sem despejo nenhum, e não apaga
 // coleção nenhuma. Com o nome certo, segue em frente.
 import fs from 'node:fs';
+import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import PocketBase from 'pocketbase';
 import { prova, igual, resumo } from './provas.mjs';
+import { sair } from './sair.mjs';
 
 const RAIZ = path.resolve(import.meta.dirname, '..', '..');
-const PORTA = 8097;
+// ⚠ A porta PEDE-SE ao sistema; não se escolhe, nem à mão nem à sorte.
+//
+// Isto era a 8097 — vizinha das que se usam à mão (8095 a casa, 8096 a
+// simulação) —, e o dono da casa apanhou um separador do navegador aberto nela:
+// de cada vez que a bateria corria, aparecia-lhe à frente um PocketBase vazio a
+// pedir para criar o primeiro administrador. Um servidor de deitar fora não
+// deve ir bater a portas onde alguém possa estar a olhar, e menos ainda a
+// escrever.
+//
+// ⚠ E sortear um número alto também não serve: no Windows os serviços do
+// sistema ocupam a gama efémera logo a partir da 49664 — estavam quatro
+// ocupadas nesta máquina no dia em que isto se escreveu. Sortear dava um teste
+// que falha de vez em quando sem razão nenhuma, que é a pior espécie.
+//
+// Ligar ao porto 0 faz o sistema entregar um que está mesmo livre.
+const portaEmprestada = () => new Promise((resolver, rejeitar) => {
+  const s = net.createServer();
+  s.once('error', rejeitar);
+  s.listen(0, '127.0.0.1', () => {
+    const { port } = s.address();
+    s.close(() => resolver(port));
+  });
+});
+
+const PORTA = await portaEmprestada();
 const URL_TEMP = `http://127.0.0.1:${PORTA}`;
 const SUPER = 'admin@nossacasa.local';
 const SENHA = 'so-para-medir-123';
@@ -63,7 +96,7 @@ const binario = ['pocketbase.exe', 'pocketbase']
 if (!binario) {
   console.error('Não encontrei o `pocketbase` na raiz do projeto. Sem ele esta prova');
   console.error('não pode medir nada — e o `db:servir` também não arrancaria.');
-  process.exit(1);
+  await sair(1);
 }
 
 const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'nossa-casa-recusa-'));
@@ -95,6 +128,40 @@ process.on('exit', arrumar);
 const semNada = path.join(pasta, 'sem-migracoes');
 fs.mkdirSync(semNada);
 
+// ⚠ A porta tem de estar LIVRE, e confirma-se a tentar ocupá-la — não a
+// perguntar ao que lá estiver.
+//
+// Esta prova pedia `/api/health` e aceitava qualquer 200. Com um
+// `http.createServer` de brincadeira à escuta na 8097 — vinte linhas que
+// respondem «nao» a tudo — ela dava o servidor por bom, corria as seis provas
+// contra ele e declarava o travão avariado, com o `criar-colecoes.mjs` a
+// rebentar num `TypeError`. Uma prova que acusa o código por causa de quem lhe
+// ocupou a porta é pior do que não haver prova. Medido em 27/09/2026.
+const portaLivre = () => new Promise((resolver) => {
+  const s = net.createServer();
+  s.once('error', () => resolver(false));
+  s.once('listening', () => s.close(() => resolver(true)));
+  s.listen(PORTA, '127.0.0.1');
+});
+
+if (!await portaLivre()) {
+  console.error(`A porta ${PORTA} já está ocupada. Esta prova precisa dela para o seu`);
+  console.error('PocketBase de deitar fora, e não sabe medir nada contra o que lá estiver.');
+  await sair(1);
+}
+
+// ⚠ O superutilizador cria-se ANTES de o servidor arrancar. Não é arrumação.
+//
+// Um PocketBase que arranca com a pasta de dados vazia e sem administrador
+// **abre o navegador do utilizador** na página «Setup your PocketBase
+// instance». Esta prova criava-o depois de arrancar, e por isso cada corrida da
+// bateria atirava um separador à cara de quem estivesse a usar o computador —
+// um formulário a pedir uma palavra-passe, vindo do nada, sem explicação.
+//
+// Com o administrador já lá, o servidor não tem motivo para abrir coisa
+// nenhuma. Reclamado em 27/09/2026, e com razão.
+spawnSync(binario, ['superuser', 'upsert', SUPER, SENHA, `--dir=${pasta}`], { cwd: RAIZ });
+
 let queixas = '';
 servidor = spawn(binario, [
   'serve',
@@ -110,7 +177,8 @@ const esperarPorEle = async () => {
   for (let i = 0; i < 60; i++) {
     try {
       const r = await fetch(`${URL_TEMP}/api/health`);
-      if (r.ok) return true;
+      // ⚠ E tem de ser o formato do PocketBase, não um 200 qualquer.
+      if (r.ok && (await r.json())?.code === 200) return true;
     } catch { /* ainda não abriu a porta */ }
     await new Promise(r => setTimeout(r, 250));
   }
@@ -120,10 +188,16 @@ const esperarPorEle = async () => {
 if (!await esperarPorEle()) {
   console.error(`O PocketBase de medição não respondeu em ${URL_TEMP} ao fim de 15 segundos.`);
   console.error(queixas.trim() || '(e não se queixou de nada — provavelmente a porta está ocupada)');
-  process.exit(1);
+  // ⚠ O `arrumar()` ANTES do `sair()`, e não só no `process.on('exit')`.
+  //
+  // O `sair()` põe o código e espera que o ciclo de eventos se esvazie. Com o
+  // PocketBase filho ainda vivo, o ciclo NUNCA se esvazia: o processo fica
+  // pendurado para sempre em vez de falhar. Aconteceu, e travou uma corrida
+  // inteira — dez minutos sem uma linha impressa. Quem tem um filho aberto
+  // fecha-o antes de sair.
+  arrumar();
+  await sair(1);
 }
-
-spawnSync(binario, ['superuser', 'upsert', SUPER, SENHA, `--dir=${pasta}`], { cwd: RAIZ });
 
 const pb = new PocketBase(URL_TEMP);
 pb.autoCancellation(false);

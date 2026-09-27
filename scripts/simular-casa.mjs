@@ -31,6 +31,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { sair } from '../db/pocketbase/sair.mjs';
 
 const raiz = path.resolve(import.meta.dirname, '..');
 const modulo = (p) => import(pathToFileURL(path.join(raiz, p)).href);
@@ -46,14 +47,14 @@ if (/:8095(\/|$)/.test(URL)) {
   console.error(`RECUSADO: ${URL} é o servidor da casa a sério (porta 8095).`);
   console.error('Este guião apaga e recria uma casa inteira. Aponte-o ao servidor de simulação:');
   console.error('  PB_URL=http://127.0.0.1:8096 node scripts/simular-casa.mjs');
-  process.exit(2);
+  await sair(2);
 }
 try {
   const r = await fetch(`${URL.replace(/\/$/, '')}/api/health`);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
 } catch (e) {
   console.error(`O servidor em ${URL} não responde (${e.message}). Nada foi escrito.`);
-  process.exit(1);
+  await sair(1);
 }
 
 const admin = await ligarComoAdmin();

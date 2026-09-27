@@ -7,6 +7,7 @@
 // Idempotente. Não vive no `criar-colecoes.mjs` porque esse APAGA e recria a
 // base toda, e isto tem de poder ser acrescentado a um servidor a andar.
 import PocketBase from 'pocketbase';
+import { sair } from './sair.mjs';
 
 const pb = new PocketBase(process.env.PB_URL || 'http://127.0.0.1:8095');
 pb.autoCancellation(false);
@@ -28,6 +29,6 @@ if (!FALTA.length) {
 const depois = await pb.collections.getOne('membros');
 const campo = depois.fields.find(f => f.name === 'avatar');
 const fig = depois.fields.find(f => f.name === 'figura');
-if (!fig) { console.error('✗ figura não ficou lá'); process.exit(1); }
-if (!campo) { console.error('✗ não ficou lá'); process.exit(1); }
+if (!fig) { console.error('✗ figura não ficou lá'); await sair(1); }
+if (!campo) { console.error('✗ não ficou lá'); await sair(1); }
 console.log('✓ membros.avatar e membros.figura existem');

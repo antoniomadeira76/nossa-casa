@@ -30,6 +30,7 @@
 //      Google por causa do scope do Calendar, e isso demora semanas.
 import PocketBase from 'pocketbase';
 import fs from 'node:fs';
+import { sair } from './sair.mjs';
 
 // Lê o .env.local se existir, para o segredo poder viver num ficheiro do
 // disco de quem o tem em vez de ser escrito num comando — que fica no
@@ -58,7 +59,7 @@ if (!ID || !SEGREDO) {
     + '  GOOGLE_CLIENT_ID     ' + (ID ? '✓' : '— em falta')
     + '\n  GOOGLE_CLIENT_SECRET ' + (SEGREDO ? '✓' : '— em falta')
     + '\n\nVer o cabeçalho deste ficheiro, ou docs/GOOGLE_CALENDAR_SETUP.md.');
-  process.exit(1);
+  await sair(1);
 }
 
 // As credenciais do superutilizador vêm do ambiente. Os valores por omissão
@@ -75,7 +76,7 @@ await pb.collection('_superusers').authWithPassword(ADMIN, ADMIN_PASS);
 const membros = (await pb.collections.getFullList()).find(c => c.name === 'membros');
 if (!membros) {
   console.error('A coleção `membros` não existe. Corra primeiro: npm run db:colecoes');
-  process.exit(1);
+  await sair(1);
 }
 
 await pb.collections.update(membros.id, {
@@ -99,7 +100,7 @@ console.log(`Redirecionamento a autorizar na Google: ${URL}/api/oauth2-redirect`
 
 if (!provedores.includes('google')) {
   console.error('\nO servidor não ficou com o provedor. Verifique as credenciais.');
-  process.exit(1);
+  await sair(1);
 }
 
 // ⚠ `membros` não tem regra de criação: entrar com Google NÃO cria conta.
