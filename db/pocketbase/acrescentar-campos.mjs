@@ -339,6 +339,38 @@ const COLECOES = [
       listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
     },
   },
+  // As credenciais da skill (27/09/2026). Coleção própria e não dois campos nas
+  // `casas`, que qualquer membro lê. A mesma definição do `criar-colecoes.mjs`.
+  {
+    nome: 'credenciais_alexa',
+    campos: [
+      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'client_id', type: 'text', required: true, max: 80 },
+      { name: 'client_secret', type: 'text', required: true, max: 120 },
+    ],
+    indexes: ['CREATE UNIQUE INDEX idx_credenciais_alexa_casa ON credenciais_alexa (casa)'],
+    regras: {
+      listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
+    },
+  },
+  // As ligações de conta (27/09/2026). ⚠ O `refresh` é `required` de propósito:
+  // nasce com o código, para o índice único nunca ver dois vazios iguais.
+  {
+    nome: 'alexa_ligacoes',
+    campos: [
+      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'membro', type: 'relation', alvo: 'membros', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'codigo', type: 'text', max: 80 },
+      { name: 'codigo_expira', type: 'date' },
+      { name: 'redirect_uri', type: 'text', max: 500 },
+      { name: 'refresh', type: 'text', required: true, max: 80 },
+      { name: 'criado_em', type: 'date' },
+    ],
+    indexes: ['CREATE UNIQUE INDEX idx_alexa_ligacao_refresh ON alexa_ligacoes (casa, refresh)'],
+    regras: {
+      listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
+    },
+  },
 ];
 
 // ⚠ O que uma coleção NÃO pode ter. `[coleção, campo, porquê]`.

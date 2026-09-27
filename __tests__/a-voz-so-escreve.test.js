@@ -57,12 +57,24 @@ const rotasDe = (rel) => {
   return saida;
 };
 
-// A lista fechada. Três escritas, e a razão de cada uma está no `docs/alexa.md`.
-const AS_TRES = [
-  'POST /api/alexa/artigo',
-  'POST /api/alexa/evento',
-  'POST /api/alexa/tarefa',
-];
+// A lista fechada, com a razão de cada uma. As três primeiras são a VOZ; as
+// três últimas são o Account Linking, e entraram em 27/09/2026 — este guarda
+// ficou vermelho a exigi-lo, que é exactamente para o que serve.
+const AS_ROTAS = {
+  'POST /api/alexa/artigo': 'A voz acrescenta um artigo à lista de compras.',
+  'POST /api/alexa/evento': 'A voz marca um evento, sempre com visibilidade `familia`.',
+  'POST /api/alexa/tarefa': 'A voz acrescenta uma tarefa, sem responsável e sem pontos.',
+
+  'GET /api/alexa/autorizar': 'A PÁGINA onde um adulto se identifica para ligar um '
+    + 'altifalante. É o único GET, e não é uma leitura de dados: não devolve nada da casa '
+    + '— devolve um formulário. Sem sessão, sem cookie, sem JavaScript.',
+  'POST /api/alexa/autorizar': 'Recebe esse formulário, confere a palavra-passe e o papel, '
+    + 'e devolve um código à Amazon. Não escreve nada da casa: só uma linha em '
+    + '`alexa_ligacoes`, que tem as cinco regras a `null`.',
+  'POST /api/alexa/token': 'Troca o código (ou o refresh) por um token. É pública por '
+    + 'obrigação do protocolo — o `client_secret` é que faz de tranca.',
+};
+const AS_TRES = Object.keys(AS_ROTAS);
 
 describe('a voz só escreve', () => {
   it('o varrimento funciona — encontra os ficheiros da voz e as rotas deles', () => {
@@ -72,7 +84,7 @@ describe('a voz só escreve', () => {
     expect(fich.flatMap(rotasDe).length).toBeGreaterThan(0);
   });
 
-  it('⚠ os hooks da Alexa registam EXACTAMENTE três rotas, e são estas', () => {
+  it('⚠ os hooks da Alexa registam EXACTAMENTE estas rotas, e mais nenhuma', () => {
     // Quando isto falhar: ou a rota nova escreve algo que já é público dentro
     // de casa e entra nesta lista com a razão escrita no `docs/alexa.md`; ou
     // ela LÊ, e então a pergunta não é técnica — é se se quer que um
@@ -81,9 +93,39 @@ describe('a voz só escreve', () => {
     expect(achadas).toEqual([...AS_TRES].sort());
   });
 
-  it('⚠ e nenhuma delas é um GET — por voz não se lê', () => {
-    const lerem = ficheirosDaVoz().flatMap(rotasDe).filter(r => !r.startsWith('POST '));
-    expect(lerem).toEqual([]);
+  it('⚠ e nenhuma rota da VOZ é um GET — por voz não se lê', () => {
+    // ⚠ Há um GET, e é uma excepção com nome: a página de autorização.
+    //
+    // Ela não devolve nada da casa — devolve um formulário. A propriedade que
+    // aqui interessa é que nenhuma rota `/api/alexa/<coisa>` que a Alexa CHAME
+    // responda a um GET com dados; a página é chamada pelo navegador de quem
+    // está a ligar a conta, e é o único GET que existe.
+    const gets = ficheirosDaVoz().flatMap(rotasDe).filter(r => r.startsWith('GET '));
+    expect(gets).toEqual(['GET /api/alexa/autorizar']);
+  });
+
+  it('⚠ e cada rota tem a razão escrita', () => {
+    const curtas = Object.entries(AS_ROTAS)
+      .filter(([, razao]) => razao.trim().length < 40)
+      .map(([k]) => k);
+    expect(curtas).toEqual([]);
+  });
+
+  it('⚠ e a página de autorização não guarda nem devolve nada da casa', () => {
+    // Uma página de identificação que devolvesse o nome dos membros, ou que
+    // dissesse «esse endereço não existe», seria uma leitura por outro nome.
+    // A mesma mensagem para «não existe» e para «palavra-passe errada» — duas
+    // mensagens diferentes dizem a quem tentar QUAIS os endereços desta casa,
+    // um de cada vez.
+    const rota = semComentarios(ler(`${HOOKS}/alexa-conta.pb.js`));
+    expect(rota).toMatch(/Não reconheço esse endereço ou essa palavra-passe/);
+    // E a página não mostra nada da casa: o formulário não interpola membro
+    // nenhum, só o que veio no pedido da Amazon.
+    const comum = semComentarios(ler(`${HOOKS}/alexa-conta-comum.js`));
+    expect(comum).not.toMatch(/membro.get('nome')/);
+    // E nada de cache nem de indexação num formulário de identificação.
+    expect(comum).toMatch(/Cache-Control.*no-store/);
+    expect(comum).toMatch(/X-Robots-Tag.*noindex/);
   });
 
   it('⚠ e a frase dita não se guarda em lado nenhum', () => {
@@ -156,6 +198,35 @@ describe('a voz só escreve', () => {
       });
     }
     expect(soltas).toEqual([]);
+  });
+
+  it('⚠ o endereço de retorno da Amazon distingue os treze casos', () => {
+    // ⚠ É o buraco clássico do OAuth de quem DÁ a autorização: o `client_id`
+    // não é segredo, e quem o conheça manda a autorização para um sítio dele e
+    // fica com o código. A defesa é a lista de anfitriões da Amazon — e uma
+    // lista dessas engana-se de dez maneiras, que é o que esta prova enumera.
+    //
+    // A função é pura: corre aqui sem servidor nenhum.
+    const { retornoAceite } = require('../db/pocketbase/pb_hooks/alexa-conta-comum.js');
+    const CASOS = [
+      ['https://pitangui.amazon.com/api/skill/link/X', true, 'o retorno verdadeiro (EUA)'],
+      ['https://layla.amazon.com/api/skill/link/X', true, 'o da Europa'],
+      ['https://alexa.amazon.co.jp/api/skill/link/X', true, 'o do Japão'],
+      ['https://PITANGUI.AMAZON.COM/x', true, 'maiúsculas — é o mesmo anfitrião'],
+      ['http://pitangui.amazon.com/api/skill/link/X', false, 'sem TLS'],
+      ['https://pitangui.amazon.com.exemplo.pt/x', false, 'sufixo colado ao anfitrião'],
+      ['https://exemplo.pt/pitangui.amazon.com', false, 'o nome no CAMINHO'],
+      ['https://evil.com/?x=pitangui.amazon.com', false, 'o nome na consulta'],
+      ['https://amazon.com/api/skill/link/X', false, 'anfitrião parecido'],
+      ['https://pitangui.amazon.com@evil.com/x', false, 'o truque do arroba'],
+      ['//pitangui.amazon.com/x', false, 'sem esquema'],
+      ['', false, 'vazio'],
+      [`https://pitangui.amazon.com/${'a'.repeat(600)}`, false, 'longo de mais'],
+    ];
+    const errados = CASOS
+      .filter(([uri, esperado]) => retornoAceite(uri) !== esperado)
+      .map(([uri, esperado, porque]) => `${porque}: esperava ${esperado} — ${uri.slice(0, 60)}`);
+    expect(errados).toEqual([]);
   });
 
   it('⚠ e o «Começar de Zero» apaga os pedidos por voz', () => {

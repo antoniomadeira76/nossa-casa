@@ -59,6 +59,16 @@ routerAdd('POST', '/api/casa/limpar', (e) => {
     // que disse ao altifalante. E ninguém repararia: a coleção tem as cinco
     // regras a `null`, portanto nem o dono da casa a consegue ver pela app.
     'alexa_pedidos',
+    // ⚠ E as LIGAÇÕES de conta: quem autorizou um altifalante é dado da casa, e
+    // quem pede para apagar tudo não está a excluir isso. Depois disto o
+    // altifalante leva 401 e tem de ser ligado outra vez — que é o que se quer.
+    //
+    // ⚠ As `credenciais_alexa` NÃO entram, e é deliberado: são configuração da
+    // skill, não dado da casa — como a `credenciais_agenda`, que também está
+    // fora desta lista. Apagá-las obrigaria a voltar à consola da Amazon para
+    // repor o `client_id` e o `client_secret`, que é trabalho que ninguém pediu
+    // ao carregar em «Começar de Zero».
+    'alexa_ligacoes',
   ];
 
   const apagadas = {};

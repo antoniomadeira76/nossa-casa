@@ -76,8 +76,9 @@ const NOSSAS = [
   'meta_movimentos', 'metas',
   // As partilhas apontam à lista de compras e a quem partilhou: antes das duas.
   'partilhas_lista',
-  // Os pedidos por voz apontam à casa e ao membro: antes dos dois.
-  'alexa_pedidos',
+  // Os pedidos por voz apontam à casa e ao membro: antes dos dois. As ligações
+  // de conta e as credenciais da skill, idem.
+  'alexa_pedidos', 'alexa_ligacoes', 'credenciais_alexa',
   // ⚠ Três coleções criadas em 11/09/2026 e nunca postas AQUI: a `ementa`
   // (aponta ao prato), os `pratos` e os `objetivos_cofre` (aponta ao membro).
   // Sem estarem na lista não eram apagadas nem preservadas, e a segunda corrida
@@ -1494,6 +1495,55 @@ await criar({
     data('criado_em'),
   ],
   indexes: ['CREATE UNIQUE INDEX idx_alexa_pedido ON alexa_pedidos (casa, request_id)'],
+  listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
+});
+
+// ── As credenciais da skill da Alexa ─────────────────────────────────────────
+//
+// O `client_id` e o `client_secret` que a Amazon usa para trocar um código por
+// um token. Uma linha por casa, geradas pelo `criar-credenciais-alexa.mjs`.
+//
+// ⚠ Coleção própria, e não dois campos nas `casas`: a `casas` é legível por
+// qualquer membro da casa (é a regra dela), e um segredo do lado do servidor
+// não pode estar onde a criança o lê. Aqui as cinco regras são nulas — só os
+// hooks e o superutilizador lhe chegam, como na `credenciais_agenda`.
+await criar({
+  name: 'credenciais_alexa', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    txt('client_id', { required: true, max: 80 }),
+    txt('client_secret', { required: true, max: 120 }),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_credenciais_alexa_casa ON credenciais_alexa (casa)'],
+  listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
+});
+
+// ── As ligações de conta da Alexa ────────────────────────────────────────────
+//
+// Uma linha por altifalante ligado: quem autorizou, e os dois segredos do
+// fluxo OAuth — o código (curto, de uso único) e o token de renovação (longo).
+//
+// ⚠ O `refresh` nasce JUNTO com o código, e não na troca.
+//
+// Se nascesse na troca, ficaria vazio entre a autorização e ela — e um índice
+// único do PocketBase **não é parcial**: duas autorizações a meio colidiriam em
+// `("", "")`. É a mesma armadilha que tirou o `idem_key` dos artigos. Nascendo
+// cedo, o campo nunca está vazio e o índice diz o que se quer.
+//
+// O código, esse, é apagado depois de usado — por isso NÃO leva índice único:
+// dois códigos gastos seriam dois vazios iguais.
+await criar({
+  name: 'alexa_ligacoes', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('membro', ids.membros, { required: true, cascadeDelete: true }),
+    txt('codigo', { max: 80 }),
+    data('codigo_expira'),
+    txt('redirect_uri', { max: 500 }),
+    txt('refresh', { required: true, max: 80 }),
+    data('criado_em'),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_alexa_ligacao_refresh ON alexa_ligacoes (casa, refresh)'],
   listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
 });
 
