@@ -326,22 +326,33 @@ await prova('⚠ uma sessão de outra coleção de autenticação é recusada', 
   // dizia a coleção) E o travão da criança, porque um registo de `users` não
   // tem campo `papel`. O que o travava era o `if (!casa)`: um acaso do esquema,
   // não uma decisão. Agora as rotas dizem `requireAuth('membros')`.
+  const email = `intruso.alexa.${Date.now()}@exemplo.pt`;
+
+  // ⚠ PRIMEIRA tranca: ninguém se inscreve na `users`. Fechada em 27/09/2026,
+  // nos dois sítios — a tabela `REGRAS` do `acrescentar-campos.mjs` e o fim do
+  // `criar-colecoes.mjs`, para uma base nova não voltar a nascer aberta.
+  const deFora = new PocketBase(URL);
+  deFora.autoCancellation(false);
+  let inscreveu = false;
+  try {
+    await deFora.collection('users').create({
+      email: `publico.${Date.now()}@exemplo.pt`,
+      password: 'palavra-longa-9', passwordConfirm: 'palavra-longa-9',
+    });
+    inscreveu = true;
+  } catch (e) { /* é o que se quer */ }
+  if (inscreveu) throw new Error('a coleção `users` continua a aceitar inscrição pública');
+
+  // ⚠ SEGUNDA tranca, e é a que interessa provar: mesmo que uma conta exista
+  // — criada pelo superutilizador, ou vinda de uma base antiga que nasceu com
+  // a `users` aberta —, o token dela não entra nas rotas da casa.
   const estranho = new PocketBase(URL);
   estranho.autoCancellation(false);
-  const email = `intruso.alexa.${Date.now()}@exemplo.pt`;
-  let token = '';
-  try {
-    await estranho.collection('users').create({
-      email, password: 'palavra-longa-9', passwordConfirm: 'palavra-longa-9',
-    });
-    await estranho.collection('users').authWithPassword(email, 'palavra-longa-9');
-    token = estranho.authStore.token;
-  } catch (e) {
-    // Se a inscrição pública já tiver sido fechada, melhor ainda — mas então
-    // não há token para provar o resto, e diz-se.
-    console.log('      (a coleção `users` não deixou inscrever: ' + String(e.message).slice(0, 60) + ')');
-    return;
-  }
+  await admin.collection('users').create({
+    email, password: 'palavra-longa-9', passwordConfirm: 'palavra-longa-9', verified: true,
+  });
+  await estranho.collection('users').authWithPassword(email, 'palavra-longa-9');
+  const token = estranho.authStore.token;
   const antes = await contar('artigos', casaA);
   for (const rota of ROTAS) {
     const r = await chamar(rota, token, CORPO[rota]);

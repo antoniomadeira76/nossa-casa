@@ -1744,3 +1744,34 @@ await vista('v_pontos_por_pagar',
   "SELECT m.id AS id, m.id AS membro, m.casa AS casa, (COALESCE((SELECT SUM(t.pontos) FROM tarefas_feitas tf JOIN tarefas t ON t.id = tf.tarefa WHERE tf.marcada_por = m.id AND tf.confirmada_em IS NOT NULL), 0) - COALESCE((SELECT SUM(cm.pontos) FROM cofre_movimentos cm WHERE cm.membro = m.id), 0)) AS pontos FROM membros m WHERE m.papel = 'crianca'",
   `${DA_CASA} && (${ADULTO} || membro = @request.auth.id)`);
 console.log('vistas:', ['v_cofre_saldo','v_envelope_gasto','v_acerto_saldo','v_pontos_por_pagar'].join(', '));
+
+// ── E a `users` fecha-se ─────────────────────────────────────────────────────
+//
+// ⚠ Esta coleção não é deste ficheiro — o PocketBase cria-a sozinho em qualquer
+// base nova. E cria-a com `createRule: ''`, que quer dizer «toda a gente, sem
+// sessão nenhuma»: inscrição pública, numa coleção de autenticação que esta
+// casa nunca usa. Quem entra na app entra pelos `membros`.
+//
+// Até 27/09/2026 as rotas dos hooks diziam `$apis.requireAuth()` sem nome de
+// coleção, e o token de quem se inscrevesse ali passava — e passava também o
+// travão da criança, porque um registo de `users` não tem campo `papel`. O que
+// travava um estranho era o `if (!casa)` lá adiante: um acaso do esquema, não
+// uma decisão de autorização.
+//
+// As rotas já dizem `requireAuth('membros')`. Isto é a outra ponta: uma base
+// construída do zero não volta a nascer com um ponto de registo aberto.
+//
+// Fecha-se, não se apaga — `null` é «só superutilizadores», e desfaz-se numa
+// linha se algum dia fizer falta. O par desta linha vive na tabela `REGRAS` do
+// `acrescentar-campos.mjs`, para as bases que já existem.
+try {
+  const users = (await pb.collections.getFullList()).find(c => c.name === 'users');
+  if (users) {
+    await pb.collections.update(users.id, {
+      listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
+    });
+    console.log('users: fechada (as cinco regras a null) — esta casa entra pelos `membros`');
+  }
+} catch (e) {
+  console.error('⚠ não consegui fechar a `users`:', e.message);
+}

@@ -370,6 +370,25 @@ const CAMPOS_A_TIRAR = [
 const DA_CASA = 'casa = @request.auth.casa';
 const ADULTO = '@request.auth.papel != "crianca"';
 const REGRAS = [
+  // ⚠ A `users` fecha-se. É a coleção de autenticação que o PocketBase traz de
+  // origem e que esta casa NUNCA usa — quem entra na app entra pelos `membros`.
+  //
+  // Vinha com `createRule: ''`, que no PocketBase quer dizer «toda a gente, sem
+  // sessão nenhuma»: inscrição pública. E até 27/09/2026 as rotas dos hooks
+  // diziam `$apis.requireAuth()` sem nome de coleção, portanto aceitavam o
+  // token de quem se inscrevesse ali. Passava também o travão da criança, que
+  // pergunta `papel !== 'crianca'` — e um registo de `users` não tem `papel`
+  // nenhum. O que travava um estranho era o `if (!casa)`: um acaso do esquema.
+  //
+  // As rotas já dizem `requireAuth('membros')`, mas deixar um ponto de registo
+  // aberto numa casa que o não usa é dívida à espera do dia em que o servidor
+  // for exposto — que é a decisão pendente do `docs/alexa.md`.
+  //
+  // Fecha-se, não se apaga: zero linhas, `system: false`, e um `null` desfaz-se
+  // numa linha se algum dia fizer falta. `null` é «só superutilizadores».
+  ['users', {
+    listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
+  }],
   ['tarefas_feitas', {
     deleteRule: `${DA_CASA} && tarefa.casa = @request.auth.casa`
       + ` && (${ADULTO} || (marcada_por = @request.auth.id && confirmada_em = ""))`,
