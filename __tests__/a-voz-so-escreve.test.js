@@ -229,6 +229,29 @@ describe('a voz só escreve', () => {
     expect(errados).toEqual([]);
   });
 
+  it('⚠ o base64 escrito à mão descodifica os quatro restos, e o Basic recusa o malformado', () => {
+    // ⚠ Escrito à mão porque o JSVM do PocketBase não traz `atob` nem ajudante
+    // nenhum — e uma dependência que não existe só se descobre a correr, com a
+    // rota já publicada. As funções são puras: correm aqui.
+    //
+    // Os quatro restos (0, 1, 2 e 3 bytes a mais) são onde um descodificador
+    // escrito à pressa se engana, e é por isso que estão todos aqui.
+    const { deBase64, doCabecalhoBasic } = require('../db/pocketbase/pb_hooks/alexa-conta-comum.js');
+
+    const errados = ['', 'a', 'ab', 'abc', 'abcd', 'abcde', 'cliente:segredo', 'x:y:z']
+      .filter(s => deBase64(Buffer.from(s, 'binary').toString('base64')) !== s);
+    expect(errados).toEqual([]);
+
+    const bom = doCabecalhoBasic('Basic ' + Buffer.from('meu-id:meu-segredo', 'binary').toString('base64'));
+    expect(bom).toEqual({ id: 'meu-id', segredo: 'meu-segredo' });
+
+    // E o que não é um Basic bem formado não dá credenciais nenhumas.
+    const aceitou = ['', 'Bearer xyz', 'Basic', 'Basic !!!',
+      'Basic ' + Buffer.from('semdoispontos', 'binary').toString('base64')]
+      .filter(h => doCabecalhoBasic(h) !== null);
+    expect(aceitou).toEqual([]);
+  });
+
   it('⚠ e o «Começar de Zero» apaga os pedidos por voz', () => {
     // Quem pede para apagar tudo não está a excluir o que disse ao altifalante.
     // E ninguém repararia na falta: a coleção tem as cinco regras a `null`,

@@ -219,6 +219,40 @@ await prova('⚠ o mesmo código NÃO serve duas vezes', async () => {
   igual(r.d.error, 'invalid_grant', `disse «${r.d.error}»`);
 });
 
+await prova('⚠ as credenciais também servem no cabeçalho Basic', async () => {
+  // ⚠ A consola da Amazon tem um campo «Client Authentication Scheme» com duas
+  // opções. A primeira versão só lia o corpo, e escolher a outra dava um
+  // `invalid_client` — que parece um segredo mal copiado e manda quem o vê
+  // procurar no sítio errado. Servem as duas, como o RFC 6749 manda.
+  const par = Buffer.from(`${credA.client_id}:${credA.client_secret}`, 'binary').toString('base64');
+  const r = await fetch(`${raiz}/api/alexa/token`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${par}`,
+    },
+    body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(renovar)}`,
+  });
+  const d = await r.json().catch(() => ({}));
+  igual(r.status, 200, `devolveu ${r.status} · ${JSON.stringify(d).slice(0, 100)}`);
+  if (!d.access_token) throw new Error('não veio token');
+});
+
+await prova('⚠ e um Basic com o segredo errado é recusado na mesma', async () => {
+  const par = Buffer.from(`${credA.client_id}:errado`, 'binary').toString('base64');
+  const r = await fetch(`${raiz}/api/alexa/token`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${par}`,
+    },
+    body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(renovar)}`,
+  });
+  const d = await r.json().catch(() => ({}));
+  igual(r.status, 401, `devolveu ${r.status}`);
+  igual(d.error, 'invalid_client', `disse «${d.error}»`);
+});
+
 await prova('o token de renovação dá um token de acesso novo', async () => {
   const r = await token({
     grant_type: 'refresh_token', refresh_token: renovar,

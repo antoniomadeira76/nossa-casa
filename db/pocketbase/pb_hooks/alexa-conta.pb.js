@@ -106,8 +106,15 @@ routerAdd('POST', '/api/alexa/token', (e) => {
   // ⚠ Os erros desta rota vão em JSON com os nomes do OAuth (`invalid_grant`,
   // `invalid_client`), e não como os erros do PocketBase: quem os lê é a
   // Amazon, e ela sabe o que fazer com estes e não com os outros.
-  const cred = A.credenciaisDaCasa(String(corpo.client_id || ''));
-  if (!cred || String(cred.get('client_secret')) !== String(corpo.client_secret || '')) {
+  // As credenciais vêm do corpo OU do cabeçalho Basic — a consola da Amazon
+  // deixa escolher, e escolher a errada dava um `invalid_client` que parece um
+  // segredo mal copiado. Aceitam-se as duas, como o RFC 6749 manda.
+  const basic = A.doCabecalhoBasic(e.request.header.get('Authorization'));
+  const idDado = basic ? basic.id : String(corpo.client_id || '');
+  const segredoDado = basic ? basic.segredo : String(corpo.client_secret || '');
+
+  const cred = A.credenciaisDaCasa(idDado);
+  if (!cred || String(cred.get('client_secret')) !== segredoDado) {
     e.response.header().set('Cache-Control', 'no-store');
     return e.json(401, { error: 'invalid_client' });
   }

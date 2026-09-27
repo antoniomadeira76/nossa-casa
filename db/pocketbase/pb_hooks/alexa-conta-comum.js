@@ -29,6 +29,46 @@ const retornoAceite = (uri) => {
   return false;
 };
 
+// ── As credenciais podem vir de dois sítios ──────────────────────────────────
+//
+// ⚠ A consola da Amazon tem um campo chamado «Client Authentication Scheme»
+// com duas opções: `Credentials in request body` e `HTTP Basic`. Escolher a
+// errada não dá um erro que se perceba — dá `invalid_client`, que parece um
+// segredo mal copiado, e manda quem o vê procurar no sítio errado.
+//
+// Aceitam-se as duas. É o que o RFC 6749 manda, e tira uma armadilha de uma
+// consola onde se carrega uma vez e não se volta lá.
+//
+// O base64 é à mão de propósito: o JSVM do PocketBase não traz `atob` nem
+// ajudante nenhum, e uma dependência que não existe só se descobre a correr.
+const deBase64 = (s) => {
+  const abc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const t = String(s || '').replace(/[^A-Za-z0-9+/]/g, '');
+  let saida = '';
+  for (let i = 0; i < t.length; i += 4) {
+    const n = (abc.indexOf(t[i]) << 18) | (abc.indexOf(t[i + 1]) << 12)
+      | ((abc.indexOf(t[i + 2]) & 63) << 6) | (abc.indexOf(t[i + 3]) & 63);
+    saida += String.fromCharCode((n >> 16) & 255);
+    if (t[i + 2] !== undefined) saida += String.fromCharCode((n >> 8) & 255);
+    if (t[i + 3] !== undefined) saida += String.fromCharCode(n & 255);
+  }
+  return saida;
+};
+
+// Devolve `{ id, segredo }` do cabeçalho Basic, ou null se não houver.
+const doCabecalhoBasic = (cabecalho) => {
+  const h = String(cabecalho || '');
+  const m = h.match(/^Basic\s+([A-Za-z0-9+/=]+)$/i);
+  if (!m) return null;
+  const par = deBase64(m[1]);
+  const i = par.indexOf(':');
+  if (i < 0) return null;
+  // O RFC manda-os codificados como no formulário; a Amazon não os codifica,
+  // mas descodificar o que já está descodificado é inofensivo.
+  const decodificar = (x) => { try { return decodeURIComponent(x); } catch (e) { return x; } };
+  return { id: decodificar(par.slice(0, i)), segredo: decodificar(par.slice(i + 1)) };
+};
+
 const credenciaisDaCasa = (clientId) => {
   const id = String(clientId || '').trim();
   if (!id) return null;
@@ -205,4 +245,5 @@ const responderComToken = (e, ligacao) => {
 module.exports = {
   escapar, retornoAceite, credenciaisDaCasa, lerPedido, pagina,
   novaLigacao, pelaCodigo, peloRefresh, responderComToken,
+  deBase64, doCabecalhoBasic,
 };

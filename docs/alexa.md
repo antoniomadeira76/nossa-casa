@@ -50,6 +50,71 @@ haver porta nenhuma. Foi decisão do dono da casa, tomada com isto à frente.
 interface nenhuma — dá o servidor. A app continua a viver no Expo, e é ela que
 fala com aquele endereço.
 
+## O que falta, e é na consola da Amazon
+
+Tudo o que é da casa está feito e provado — incluindo **pela internet**, com o
+`npm run simular:amazon`, que faz de Amazon contra o endereço público: abre a
+página, identifica-se, troca o código por um token, acrescenta um artigo, repete
+o pedido para provar que não duplica, marca um evento, e confirma que as seis
+coleções de saúde não devolvem nada a esse token.
+
+O que falta é do outro lado, e **tem de ser feito por quem tem a conta Amazon**:
+criar a skill é entrar numa conta, e o `client_secret` é um segredo que se
+escreve num formulário deles. Nenhuma das duas coisas se delega.
+
+Por ordem, na consola em `developer.amazon.com/alexa/console/ask`:
+
+**1. Criar a skill.** Modelo *Custom*, alojamento *Provision your own*. Idioma
+**Português (BR)** — não há pt-PT, ver acima.
+
+**2. O modelo de interação.** Em *Build → JSON Editor*, colar o conteúdo de
+`alexa/modelo-de-interacao.pt-BR.json`. Depois *Save* e *Build Model*.
+
+**3. O endpoint.** Em *Build → Endpoint*, escolher **HTTPS** e pôr:
+
+```
+https://casa.anossacasa.app
+```
+
+No certificado, escolher *«My development endpoint is a sub-domain of a domain
+that has a wildcard certificate from a certificate authority»* — o certificado é
+da Cloudflare e é válido.
+
+**4. O Account Linking.** Em *Build → Account Linking*, ligar *Do you allow
+users to create an account…* e preencher:
+
+| Campo da consola | Valor |
+|---|---|
+| Authorization Grant Type | `Auth Code Grant` |
+| Authorization URI | `https://casa.anossacasa.app/api/alexa/autorizar` |
+| Access Token URI | `https://casa.anossacasa.app/api/alexa/token` |
+| Client ID | `nossacasa-ynYoXLVQfQ2pe8iw` |
+| Client Secret | o que o `criar-credenciais-alexa.mjs` imprimiu |
+| Client Authentication Scheme | qualquer uma — servem as duas |
+| Scope | `casa.escrever` |
+
+⚠ O **Client Authentication Scheme** tem duas opções na consola, e a rota
+aceita **as duas**: as credenciais no corpo do pedido ou no cabeçalho
+`Authorization` em Basic. A primeira versão só lia o corpo, e escolher a outra
+opção dava um `invalid_client` — que parece um segredo mal copiado e manda quem
+o vê procurar no sítio errado. Aceitar as duas é o que o RFC 6749 manda, e tira
+uma armadilha de uma consola onde se carrega uma vez e não se volta lá.
+
+**5. Trocar o segredo.** Depois de o copiar para a consola:
+
+```
+node db/pocketbase/criar-credenciais-alexa.mjs --novo
+```
+
+O que está lá agora foi impresso numa conversa. Trocá-lo obriga a voltar ao
+passo 4 uma vez — e é barato fazê-lo agora, caro fazê-lo depois.
+
+**6. Ligar a conta** na aplicação da Alexa, no telemóvel: *Skills → As suas
+skills → Nossa Casa → Settings → Link Account*. É aí que a página do passo 4
+aparece, e é aí que um adulto se identifica.
+
+E então: *«Alexa, diz à Nossa Casa para acrescentar leite.»*
+
 ## ⚠ Três coisas que esta página dizia mal
 
 Descobertas ao construir, em 27/09/2026. Ficam aqui em cima porque duas delas
