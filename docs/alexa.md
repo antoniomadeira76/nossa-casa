@@ -1,10 +1,35 @@
 # Alexa — especificação da fase 1
 
-> **Estado: por decidir.** Nada disto está implementado. Este documento existe
-> para a decisão ser tomada com o desenho à frente, e não a meio da construção.
+> **Estado: o lado da casa está construído** (27/09/2026) — as rotas, o modelo
+> de interação e as provas. O que falta é a decisão de expor o servidor, sem a
+> qual a Amazon não consegue chamar cá. Ver «A decisão que vem primeiro».
 >
-> Depende de **uma decisão que não é técnica** — expor o servidor da casa à
-> Internet. Ver «A decisão que vem primeiro».
+> O alcance é o desta página e não mais: três escritas, nada de leituras, nada
+> de dinheiro nem de saúde. Confirmado pelo dono da casa em 27/09/2026, com as
+> alternativas à frente.
+
+## ⚠ Três coisas que esta página dizia mal
+
+Descobertas ao construir, em 27/09/2026. Ficam aqui em cima porque duas delas
+só apareceriam na consola da Amazon, com a skill já escrita.
+
+1. **O pt-PT não existe na Alexa.** Os idiomas de uma skill são uma lista
+   fechada da Amazon, e o único português nela é o `pt-BR`. Não há pt-PT, e não
+   há planos anunciados. A skill tem de ser declarada em `pt-BR` — é o idioma em
+   que a Alexa **ouve**. As frases que ela **diz** são as que o servidor
+   devolve, e essas continuam em português europeu. O altifalante tem de estar
+   configurado em português do Brasil.
+2. **O `MarcarEvento` desta página não compila.** Punha `{titulo}` como
+   `AMAZON.SearchQuery` na mesma frase que `{data}` e `{hora}`, e a regra da
+   Amazon é que o `SearchQuery` «cannot be combined with another intent slot in
+   sample utterances». O título passou a um tipo próprio, `TituloDeEvento`.
+   E os `SearchQuery` que restam ficam no **fim** da frase: são gulosos, e num
+   «acrescentar {artigo} à lista» o slot apanharia «leite à lista».
+3. **O `/api/casa/limpar` não verifica «não é criança».** Verifica
+   `papel !== 'admin'` — um adulto que não administre também é recusado. Esta
+   página descrevia-o mal na secção «As rotas». As rotas da Alexa seguem o que
+   esta página **queria** dizer (não é criança), porque o token de voz
+   representa um adulto da casa e não necessariamente quem administra.
 
 ---
 
@@ -216,14 +241,45 @@ Há três caminhos, por ordem de exposição:
 
 ---
 
+## O que já está construído (27/09/2026)
+
+Tudo o que não depende da exposição. Corre e está provado contra o servidor
+local; falta só a Amazon conseguir chegar cá.
+
+| | |
+|---|---|
+| `alexa/modelo-de-interacao.pt-BR.json` | o modelo da skill — três intenções, o tipo próprio `TituloDeEvento`, e os `SearchQuery` no fim da frase |
+| `db/pocketbase/pb_hooks/alexa.pb.js` | as três rotas |
+| `db/pocketbase/pb_hooks/alexa-comum.js` | as auxiliares — as três verificações, o reenvio, e a validação das datas e horas vagas do `AMAZON.DATE`/`AMAZON.TIME` |
+| coleção `alexa_pedidos` | a chave de idempotência, numa coleção à parte |
+| `db/pocketbase/provar-alexa.mjs` | **15 provas**, na cadeia do `npm run db:provar` |
+
+**A idempotência não é um campo `idem_key`, como esta página pedia.** As cinco
+coleções de dinheiro têm esse campo com índice único `(casa, idem_key)`, e
+funciona porque a fila do cliente escreve sempre uma chave nelas. Os `artigos`,
+os `eventos` e as `tarefas` escrevem-se sem chave — e um índice único do
+PocketBase **não é parcial**, ao contrário do `db/postgres/04-idempotencia.sql`.
+Um campo de texto por preencher grava `""`, e `""` colide com `""`: o segundo
+artigo de uma casa colidia com o primeiro. A app partia-se ao segundo «leite»
+por causa de uma funcionalidade de voz que ela nem usa. Numa coleção própria o
+problema não existe, e ganha-se um reenvio que devolve a MESMA frase que a
+Alexa já disse em voz alta — em vez de um erro depois de um «acrescentei».
+
+As 15 provas, e o controlo negativo que as valida: com a verificação da criança,
+a escrita da visibilidade e o travão do reenvio retiradas num servidor de deitar
+fora, a criança passa a receber 200, o evento sai com visibilidade **vazia** (que
+na regra do servidor quer dizer «só o autor vê») e o reenvio escreve duas linhas.
+
 ## O que fazer a seguir, e por que ordem
 
 1. **Passar a semana com a app no telemóvel**, como combinado. A Alexa
    acrescenta uma porta; convém saber primeiro se a casa que ela abre é a que
    se quer.
-2. **Decidir sobre a exposição** (A, B ou C acima). Sem isto, nada do resto
-   avança.
-3. Só então: a skill, as três rotas, e as provas.
+2. **Decidir sobre a exposição** (A, B ou C acima). Sem isto o altifalante não
+   fala com a casa — mas note-se que o que falta é só isso: as rotas já existem
+   e estão provadas.
+3. **Decidir sobre o `pt-BR`**, que é a única forma de a Alexa ouvir português.
+4. Só então: publicar a skill e ligar a conta.
 
 A fase 1 é honestamente pequena — três intenções, três rotas, e o Account
 Linking em cima do OAuth que já existe. O que a torna séria não é o tamanho: é

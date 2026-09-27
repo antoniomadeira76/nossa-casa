@@ -308,6 +308,24 @@ const COLECOES = [
         + ' && (@request.auth.papel != "crianca" || aceite_em = "" && (proposta_por = @request.auth.id || tarefa_para.atribuido_a = @request.auth.id))',
     },
   },
+  // Os pedidos que chegaram por voz (27/09/2026), para a Alexa não escrever o
+  // mesmo duas vezes quando reenvia. A mesma definição do `criar-colecoes.mjs`,
+  // letra a letra. As quatro regras são nulas: só as rotas lhe chegam.
+  {
+    nome: 'alexa_pedidos',
+    campos: [
+      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'membro', type: 'relation', alvo: 'membros', maxSelect: 1, required: true, cascadeDelete: false },
+      { name: 'request_id', type: 'text', required: true, max: 200 },
+      { name: 'intencao', type: 'text', max: 40 },
+      { name: 'linha', type: 'text', max: 40 },
+      { name: 'resposta', type: 'text', max: 500 },
+    ],
+    indexes: ['CREATE UNIQUE INDEX idx_alexa_pedido ON alexa_pedidos (casa, request_id)'],
+    regras: {
+      listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
+    },
+  },
 ];
 
 // ⚠ O que uma coleção NÃO pode ter. `[coleção, campo, porquê]`.

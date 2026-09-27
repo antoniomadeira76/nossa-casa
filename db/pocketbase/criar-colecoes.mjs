@@ -76,6 +76,8 @@ const NOSSAS = [
   'meta_movimentos', 'metas',
   // As partilhas apontam à lista de compras e a quem partilhou: antes das duas.
   'partilhas_lista',
+  // Os pedidos por voz apontam à casa e ao membro: antes dos dois.
+  'alexa_pedidos',
   // ⚠ Três coleções criadas em 11/09/2026 e nunca postas AQUI: a `ementa`
   // (aponta ao prato), os `pratos` e os `objetivos_cofre` (aponta ao membro).
   // Sem estarem na lista não eram apagadas nem preservadas, e a segunda corrida
@@ -1444,6 +1446,44 @@ await criar({
   // Não se altera: uma partilha desfaz-se apagando-a, e o hook é que escreve o sinal.
   updateRule: null,
   deleteRule: `${DA_CASA} && ${ADULTO}`,
+});
+
+// ── Os pedidos que chegaram por voz ──────────────────────────────────────────
+//
+// Uma linha por pedido da Alexa, e serve só para não escrever o mesmo duas
+// vezes. A Alexa reenvia quando a resposta demora — e duas linhas de «leite»
+// na lista são um defeito que se vê.
+//
+// ⚠ Porque é que isto é uma COLEÇÃO e não um campo `idem_key` nos `artigos`,
+// nos `eventos` e nas `tarefas`, como o `docs/alexa.md` pedia:
+//
+// As cinco coleções de dinheiro têm `idem_key` com índice único `(casa,
+// idem_key)`, e funciona porque a fila do cliente (`COM_IDEM`, em
+// `src/pocketbase.js`) escreve SEMPRE uma chave nelas. Os artigos, os eventos
+// e as tarefas escrevem-se sem chave nenhuma — e um índice único do PocketBase
+// **não é parcial**, ao contrário do `db/postgres/04-idempotencia.sql`. Um
+// campo de texto por preencher grava `""`, e `""` é igual a `""`: o segundo
+// artigo de uma casa colidia com o primeiro. A app partia-se ao segundo
+// «leite», por causa de uma funcionalidade de voz que ela nem usa.
+//
+// Numa coleção à parte o problema não existe — a rota escreve sempre o
+// `request_id` —, e ganha-se uma coisa que o campo não dava: um reenvio
+// devolve a MESMA resposta que a Alexa já disse em voz alta, em vez de um erro.
+//
+// Ninguém lê isto pela app: as quatro regras são nulas, como na
+// `credenciais_agenda`. Só as rotas lhe chegam.
+await criar({
+  name: 'alexa_pedidos', type: 'base',
+  fields: [
+    rel('casa', ids.casas, { required: true, cascadeDelete: true }),
+    rel('membro', ids.membros, { required: true }),
+    txt('request_id', { required: true, max: 200 }),
+    txt('intencao', { max: 40 }),
+    txt('linha', { max: 40 }),
+    txt('resposta', { max: 500 }),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_alexa_pedido ON alexa_pedidos (casa, request_id)'],
+  listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
 });
 
 // ── A agenda aprende a saúde ─────────────────────────────────────────────────

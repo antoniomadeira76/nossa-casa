@@ -1,0 +1,99 @@
+{
+  "_leia-me": [
+    "Modelo de interação da skill «Nossa Casa» — fase 1 do docs/alexa.md.",
+    "",
+    "PORQUE É pt-BR E NÃO pt-PT: a Alexa não tem português europeu. Os idiomas",
+    "de uma skill são uma lista fechada da Amazon e o único português nela é o",
+    "pt-BR (confirmado em 27/09/2026, sem planos anunciados). O idioma aqui é o",
+    "que a Alexa OUVE; o que ela diz são as frases que o servidor devolve, e",
+    "essas continuam escritas em português europeu. O altifalante tem de estar",
+    "configurado em português do Brasil para a skill ser invocável.",
+    "",
+    "PORQUE É QUE O TÍTULO DO EVENTO NÃO É AMAZON.SearchQuery: a regra da Amazon",
+    "é que o SearchQuery «cannot be combined with another intent slot in sample",
+    "utterances». O docs/alexa.md pedia {titulo} SearchQuery com {data} e {hora}",
+    "na mesma frase, e a compilação da skill recusaria. O título passa a tipo",
+    "próprio, TituloDeEvento, que se combina com os outros.",
+    "",
+    "E PORQUE É QUE OS SearchQuery ESTÃO NO FIM DA FRASE: o SearchQuery é guloso",
+    "— apanha tudo o que vier a seguir. Num «acrescentar {artigo} à lista» o",
+    "slot fica com «leite à lista». No fim da frase não há nada para ele comer."
+  ],
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "nossa casa",
+      "types": [
+        {
+          "name": "TituloDeEvento",
+          "values": [
+            { "name": { "value": "almoço com a avó" } },
+            { "name": { "value": "jantar de família" } },
+            { "name": { "value": "consulta no dentista" } },
+            { "name": { "value": "consulta médica" } },
+            { "name": { "value": "reunião de pais" } },
+            { "name": { "value": "aniversário" } },
+            { "name": { "value": "treino de futebol" } },
+            { "name": { "value": "aula de música" } },
+            { "name": { "value": "ida às compras" } },
+            { "name": { "value": "passeio" } },
+            { "name": { "value": "revisão do carro" } },
+            { "name": { "value": "entrega da encomenda" } }
+          ]
+        }
+      ],
+      "intents": [
+        {
+          "name": "AcrescentarArtigo",
+          "slots": [
+            { "name": "artigo", "type": "AMAZON.SearchQuery" }
+          ],
+          "samples": [
+            "acrescentar {artigo}",
+            "acrescentar à lista {artigo}",
+            "pôr na lista {artigo}",
+            "pôr nas compras {artigo}",
+            "juntar às compras {artigo}",
+            "comprar {artigo}",
+            "falta {artigo}",
+            "precisamos de {artigo}"
+          ]
+        },
+        {
+          "name": "AcrescentarTarefa",
+          "slots": [
+            { "name": "titulo", "type": "AMAZON.SearchQuery" }
+          ],
+          "samples": [
+            "acrescentar a tarefa {titulo}",
+            "criar a tarefa {titulo}",
+            "nova tarefa {titulo}",
+            "apontar a tarefa {titulo}",
+            "há que {titulo}"
+          ]
+        },
+        {
+          "name": "MarcarEvento",
+          "slots": [
+            { "name": "titulo", "type": "TituloDeEvento" },
+            { "name": "data", "type": "AMAZON.DATE" },
+            { "name": "hora", "type": "AMAZON.TIME" }
+          ],
+          "samples": [
+            "marcar {titulo} {data} às {hora}",
+            "marcar {titulo} para {data} às {hora}",
+            "marcar {titulo} {data}",
+            "marcar {titulo} para {data}",
+            "agendar {titulo} {data} às {hora}",
+            "agendar {titulo} para {data}",
+            "pôr na agenda {titulo} {data} às {hora}"
+          ]
+        },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.NavigateHomeIntent", "samples": [] },
+        { "name": "AMAZON.FallbackIntent", "samples": [] }
+      ]
+    }
+  }
+}
