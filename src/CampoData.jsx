@@ -13,10 +13,15 @@ import Icon from './Icon';
 // primeiro ir a um calendário noutro sítio.
 //
 // Antes disto havia os dois males: campos de texto sozinhos na Saúde e nos
-// Equipamentos, e no «Agendar Evento» um botão que abria um calendário que não
-// existia — `onPress={() => {/* será implementado com date picker */}}`. Um
-// controlo que parece tocável e não faz nada é o defeito que o CLAUDE.md manda
-// não repetir, e estava no meio do caminho de marcar um evento.
+// Equipamentos, e no «Agendar Evento» um botão cujo `onPress` era um corpo
+// vazio com um comentário lá dentro a dizer «será implementado com date
+// picker». Um controlo que parece tocável e não faz nada é o defeito que o
+// CLAUDE.md manda não repetir, e estava no meio do caminho de marcar um evento.
+//
+// ⚠ Esse comentário estava aqui CITADO, com as barras e os asteriscos, e era
+// uma armadilha: um comentário de linha que contém a abertura de um bloco
+// engana todos os guardas desta casa que leem código como texto. Ver
+// `__tests__/um-comentario-nao-abre-um-bloco.test.js`.
 //
 // O valor entra e sai em chave (`d2026-08-20`), que é como a app guarda datas.
 // O que se escreve é dd/mm/aaaa, que é como se lê em português.

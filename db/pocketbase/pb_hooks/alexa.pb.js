@@ -74,7 +74,7 @@ routerAdd('POST', '/api/alexa/artigo', (e) => {
   A.guardar(reserva, r, 'Não consegui acrescentar isso à lista.');
 
   return e.json(200, { id: r.id, rotulo, frase: `Acrescentei ${rotulo} à lista.` });
-}, $apis.requireAuth('membros'));
+}, $apis.requireAuth('alexa_vozes'));
 
 // ── Marcar um evento na agenda ───────────────────────────────────────────────
 //
@@ -125,7 +125,7 @@ routerAdd('POST', '/api/alexa/evento', (e) => {
     id: r.id, titulo, dia, hora, visibilidade: 'familia',
     frase: `Marquei ${titulo} para ${quando}, visível para a família.`,
   });
-}, $apis.requireAuth('membros'));
+}, $apis.requireAuth('alexa_vozes'));
 
 // ── Acrescentar uma tarefa ───────────────────────────────────────────────────
 //
@@ -158,4 +158,4 @@ routerAdd('POST', '/api/alexa/tarefa', (e) => {
   return e.json(200, {
     id: r.id, titulo, frase: `Acrescentei a tarefa ${titulo}. Fica por atribuir.`,
   });
-}, $apis.requireAuth('membros'));
+}, $apis.requireAuth('alexa_vozes'));

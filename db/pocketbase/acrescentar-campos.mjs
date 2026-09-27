@@ -371,6 +371,31 @@ const COLECOES = [
       listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
     },
   },
+  // A identidade da VOZ (27/09/2026). A mesma definição do `criar-colecoes.mjs`,
+  // letra a letra — e o cabeçalho de lá explica porque é que ela existe.
+  //
+  // ⚠ Em duas palavras: o token da Alexa era `membro.newAuthToken()`, uma sessão
+  // de adulto boa em todo o `/api/collections/…`, que está na internet. Medido
+  // numa casa de simulação, lia a consulta de uma criança com as notas clínicas
+  // e renomeava-a — com a página de consentimento a prometer o contrário.
+  //
+  // ⚠ E o que a torna segura é o que ela NÃO TEM: nem `casa` nem `papel`. As
+  // regras desta casa são quase todas `casa = @request.auth.casa && ...`, e uma
+  // identidade sem `casa` não casa com casa nenhuma.
+  {
+    nome: 'alexa_vozes',
+    tipo: 'auth',
+    passwordAuth: { enabled: false, identityFields: [] },
+    authToken: { duration: 30 * 24 * 60 * 60 },
+    campos: [
+      { name: 'membro', type: 'relation', alvo: 'membros', maxSelect: 1, required: true, cascadeDelete: true },
+      { name: 'ligacao', type: 'relation', alvo: 'alexa_ligacoes', maxSelect: 1, required: true, cascadeDelete: true },
+    ],
+    indexes: ['CREATE UNIQUE INDEX idx_alexa_voz_ligacao ON alexa_vozes (ligacao)'],
+    regras: {
+      listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
+    },
+  },
 ];
 
 // ⚠ O que uma coleção NÃO pode ter. `[coleção, campo, porquê]`.
@@ -498,11 +523,18 @@ for (const c of COLECOES) {
   for (const { alvo, ...f } of c.campos) {
     campos.push({ ...f, ...(alvo ? { collectionId: await idDaColecao(alvo) } : {}) });
   }
+  // ⚠ O `type` era `'base'` escrito à mão, e a `alexa_vozes` é de AUTENTICAÇÃO
+  // (27/09/2026). Criada como base, nascia sem `tokenKey` e sem `password`, o
+  // `newAuthToken()` do hook rebentava, e a Alexa deixava de poder falar — numa
+  // casa habitada, que é a única onde este ficheiro corre.
   await pb.collections.create({
-    name: c.nome, type: 'base', fields: campos, indexes: c.indexes || [], ...c.regras,
+    name: c.nome, type: c.tipo || 'base', fields: campos, indexes: c.indexes || [],
+    ...(c.passwordAuth ? { passwordAuth: c.passwordAuth } : {}),
+    ...(c.authToken ? { authToken: c.authToken } : {}),
+    ...c.regras,
   });
   colecoesCriadas++;
-  console.log(`${c.nome}: coleção criada, com ${campos.length} campos.`);
+  console.log(`${c.nome}: coleção ${c.tipo === 'auth' ? 'de autenticação ' : ''}criada, com ${campos.length} campos.`);
 }
 
 let criados = 0;

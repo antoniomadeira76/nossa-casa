@@ -293,17 +293,48 @@ await prova('o token acrescenta um artigo à lista — que é para o que serve',
   igual(String(linha.casa), casaA.id, 'entrou na casa errada');
 });
 
-await prova('⚠ e NÃO lê a saúde — nem um episódio, nem uma nota, nem um anexo', async () => {
-  // A prova que justifica o desenho todo. O token de voz é um token de membro,
-  // portanto as regras do servidor valem para ele tal como para a app: a saúde
-  // de um adulto não é da criança, e a de uma criança não é dela própria. Mas o
-  // que aqui se afirma é mais simples e mais importante: por este caminho não
-  // sai nada.
+await prova('⚠ e NÃO lê a saúde — com um episódio LÁ DENTRO, que é o que faltava', async () => {
+  // ⚠ ESTA PROVA PASSOU EM VAZIO DURANTE TODO O TEMPO EM QUE O BURACO ESTEVE
+  // ABERTO, e é a lição mais cara deste ficheiro.
+  //
+  // Ela era isto:
+  //
+  //     for (const c of ['episodios_saude', ...]) {
+  //       const r = await comOToken(`/api/collections/${c}/records`, null, 'GET');
+  //       if (r.d.totalItems) throw new Error(...);        // 0 linhas → passa
+  //     }
+  //
+  // A casa destas provas NUNCA criava um episódio de saúde: a palavra só
+  // aparecia nesta linha. `totalItems` era 0 por não haver nada lá, não por a
+  // regra recusar. E o token era `membro.newAuthToken()` — uma sessão de adulto
+  // que lia a saúde toda da casa. Medido a 27/09/2026 numa casa de simulação
+  // com dados: devolvia a consulta da criança com as notas clínicas.
+  //
+  // Um guarda que não lê nada passa sempre. Agora põe-se lá um episódio, e
+  // confere-se primeiro que ele SE VÊ com uma sessão de adulto — senão esta
+  // prova volta a medir o vazio calada.
+  const episodio = await admin.collection('episodios_saude').create({
+    casa: casaA.id, membro: leo.id, especialidade: 'Pediatria',
+    medico: 'Dra. Provas', dia: '2026-09-20 10:00:00', notas: 'NOTAS CLINICAS',
+  });
+
+  const comARita = new PocketBase(URL);
+  comARita.autoCancellation(false);
+  await comARita.collection('membros').authWithPassword('rita.conta@exemplo.pt', 'palavra-de-provas-1');
+  const daRita = await fetch(`${raiz}/api/collections/episodios_saude/records`, {
+    headers: { Authorization: comARita.authStore.token },
+  }).then((r) => r.json());
+  if (!daRita.totalItems) {
+    throw new Error('a Rita não vê o episódio que acabei de criar — sem isto, o resto não mede nada');
+  }
+
   for (const c of ['episodios_saude', 'notas_saude', 'receitas_saude', 'anexos', 'alergias_saude', 'tomas_saude']) {
     const r = await comOToken(`/api/collections/${c}/records`, null, 'GET');
     const n = r.d && r.d.totalItems;
     if (n) throw new Error(`${c} devolveu ${n} linhas ao token de voz`);
   }
+
+  await admin.collection('episodios_saude').delete(episodio.id);
 });
 
 await prova('⚠ e não escreve dinheiro — não há rota nenhuma por onde', async () => {

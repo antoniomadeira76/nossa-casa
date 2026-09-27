@@ -78,6 +78,10 @@ const NOSSAS = [
   'partilhas_lista',
   // Os pedidos por voz apontam à casa e ao membro: antes dos dois. As ligações
   // de conta e as credenciais da skill, idem.
+  // ⚠ E a `alexa_vozes` ANTES da `alexa_ligacoes`: a voz aponta para a ligação
+  // (e para o membro), e uma coleção não se apaga enquanto outra a referir. É a
+  // mesma lição da `credenciais_agenda`, dos `eventos` e das `seccoes`.
+  'alexa_vozes',
   'alexa_pedidos', 'alexa_ligacoes', 'credenciais_alexa',
   // ⚠ Três coleções criadas em 11/09/2026 e nunca postas AQUI: a `ementa`
   // (aponta ao prato), os `pratos` e os `objetivos_cofre` (aponta ao membro).
@@ -1544,6 +1548,50 @@ await criar({
     data('criado_em'),
   ],
   indexes: ['CREATE UNIQUE INDEX idx_alexa_ligacao_refresh ON alexa_ligacoes (casa, refresh)'],
+  listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
+});
+
+// ── A identidade da VOZ ──────────────────────────────────────────────────────
+//
+// ⚠ Isto existe por causa de um defeito, e o defeito era grave. Em 27/09/2026 o
+// token que a Amazon recebia era `membro.newAuthToken()` — uma sessão de adulto
+// a sério, boa em TODO o `/api/collections/…`, que está na internet. A página
+// de consentimento prometia, em letras, «Não lê nada, e não toca em dinheiro
+// nem em saúde», e medido numa casa de simulação com um episódio lá dentro o
+// token lia a consulta do Léo com as notas clínicas e renomeava-o.
+//
+// O `scope: 'casa.escrever'` que ia na resposta era uma etiqueta que ninguém
+// lia. E a prova que dizia cobrir isto media a AUSÊNCIA DE DADOS: a casa dela
+// nunca criava um episódio, portanto `totalItems` era 0 por não haver linhas.
+//
+// A correcção é dar à voz uma IDENTIDADE PRÓPRIA, e não emprestar-lhe a do
+// adulto. Uma linha por ligação; o token sai daqui.
+//
+// ⚠ O que torna isto seguro é o que esta coleção NÃO TEM: não tem `casa` e não
+// tem `papel`. As regras desta casa são quase todas da forma
+// `casa = @request.auth.casa && ...`, e um token cuja identidade não tem `casa`
+// não casa com casa nenhuma. É uma lista de permissões por construção — não há
+// caminho novo do PocketBase (`/api/files/`, `/api/realtime`, `/api/batch`, o
+// que a próxima versão trouxer) que precise de ser lembrado e tapado.
+//
+// O membro fica numa RELAÇÃO, que os hooks seguem. Quem fala continua a ser um
+// adulto; o que muda é que a credencial que anda pela nuvem da Amazon já não é
+// a dele.
+//
+// ⚠ E `passwordAuth` desligado: não se entra aqui por palavra-passe nenhuma. A
+// única forma de haver um token desta coleção é um hook cunhá-lo depois de o
+// adulto se ter identificado na página de autorização.
+//
+// As cinco regras a `null`: nem a própria voz se lê a si mesma.
+await criar({
+  name: 'alexa_vozes', type: 'auth',
+  passwordAuth: { enabled: false, identityFields: [] },
+  authToken: { duration: DURACAO_TOKEN },
+  fields: [
+    rel('membro', ids.membros, { required: true, cascadeDelete: true }),
+    rel('ligacao', ids.alexa_ligacoes, { required: true, cascadeDelete: true }),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_alexa_voz_ligacao ON alexa_vozes (ligacao)'],
   listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
 });
 

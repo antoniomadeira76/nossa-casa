@@ -10,18 +10,47 @@
 // `ReferenceError: ... is not defined` a correr, e não se vê em leitura
 // nenhuma do código. Foi a lição do `agenda-google-comum.js`, e é a mesma aqui.
 
-// ── As três verificações, as mesmas do `/api/casa/limpar` ────────────────────
+// ── Quem fala, e com que identidade ──────────────────────────────────────────
 //
-// ⚠ Com uma diferença deliberada: o `limpar` exige `admin`, este exige apenas
-// que não seja criança. O `docs/alexa.md` descrevia o `limpar` como «não é
-// criança» e enganava-se — mas é esta a regra que a voz quer: o token de um
-// altifalante representa um adulto da casa, não necessariamente quem administra.
+// ⚠ Quem se autentica aqui é a VOZ, e não o membro. Mudou em 27/09/2026, e
+// mudou por causa de um defeito grave.
 //
-// A terceira é a que importa contra o ataque de sempre: a casa vem do MEMBRO
-// autenticado e nunca do corpo do pedido.
+// O token que a Amazon recebia era `membro.newAuthToken()` — uma sessão de
+// adulto a sério, boa em TODO o `/api/collections/…`, que está na internet.
+// Medido numa casa de simulação com um episódio lá dentro: lia a consulta da
+// criança com as notas clínicas, e renomeava-a. A página de consentimento
+// prometia, em letras, «Não lê nada, e não toca em dinheiro nem em saúde».
+//
+// Agora o token é da coleção `alexa_vozes`, que não tem `casa` nem `papel` — e
+// por isso não satisfaz regra nenhuma desta casa. O membro está numa relação, e
+// é aqui que se segue.
+//
+// As três verificações continuam a ser sobre o MEMBRO, não sobre a voz:
+//
+//   1. há identidade
+//   2. o membro existe e não é criança — o token de um altifalante representa
+//      um adulto da casa, não necessariamente quem administra
+//   3. a casa vem do MEMBRO e nunca do corpo do pedido
+//
+// ⚠ E a segunda é revogação a sério: se o adulto passar a criança, ou mudar de
+// casa, a voz deixa de falar na hora — mesmo com o token ainda válido, porque o
+// papel lê-se agora e não no dia em que a conta foi ligada.
 const quemFala = (e) => {
-  const membro = e.auth;
-  if (!membro) throw new UnauthorizedError('Entre primeiro.');
+  const voz = e.auth;
+  if (!voz) throw new UnauthorizedError('Entre primeiro.');
+
+  // ⚠ Cinto e suspensórios: a rota já exige `alexa_vozes`, mas se alguém um dia
+  // mudar o `requireAuth` de volta para `membros`, isto rebenta aqui em vez de
+  // voltar a emprestar a sessão do adulto em silêncio.
+  let deOnde = '';
+  try { deOnde = String(voz.collection().name); } catch (err) { deOnde = ''; }
+  if (deOnde !== 'alexa_vozes') {
+    throw new ForbiddenError('Esta rota é da voz da casa.');
+  }
+
+  let membro = null;
+  try { membro = $app.findRecordById('membros', String(voz.get('membro'))); } catch (err) { membro = null; }
+  if (!membro) throw new UnauthorizedError('Esta ligação já não serve.');
 
   if (membro.get('papel') === 'crianca') {
     throw new ForbiddenError('A voz da casa é dos adultos.');

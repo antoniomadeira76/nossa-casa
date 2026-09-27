@@ -35,12 +35,34 @@ const adulto = await admin.collection('membros').create({
   email: `rita.sim.${Date.now()}@exemplo.pt`, verified: true,
   password: 'palavra-de-simulacao-1', passwordConfirm: 'palavra-de-simulacao-1',
 });
+// ⚠ Uma criança, e uma consulta dela. Não é enfeite: sem isto, a secção «o que
+// o altifalante NÃO consegue» lá em baixo afirma que a voz não lê a saúde
+// PERGUNTANDO A UMA CASA QUE NÃO TEM SAÚDE NENHUMA.
+//
+// Foi exactamente assim que o pior defeito desta casa ficou escondido: a prova
+// media a ausência de dados e chamava-lhe ausência de acesso, enquanto o token
+// da Alexa — que era uma sessão de adulto — lia as fichas clínicas das crianças
+// e as alterava. Uma casa de simulação sem dados simula mal.
+const crianca = await admin.collection('membros').create({
+  nome: 'Leo', login: `${casa.id}_leo`, casa: casa.id, papel: 'crianca',
+  password: '4731', passwordConfirm: '4731',
+});
+await admin.collection('episodios_saude').create({
+  casa: casa.id, membro: crianca.id, especialidade: 'Pediatria',
+  medico: 'Dra. Simulacao', dia: '2026-09-20 10:00:00', notas: 'NOTAS CLINICAS DE SIMULACAO',
+});
+
 const cred = await admin.collection('credenciais_alexa').create({
   casa: casa.id, client_id: `sim-${Date.now()}`, client_secret: 'segredo-de-simulacao-0000',
 });
 
 const arrumar = async () => {
-  for (const c of ['alexa_ligacoes', 'alexa_pedidos', 'artigos', 'listas_compras', 'credenciais_alexa', 'membros']) {
+  // ⚠ A ordem é a inversa das relações, e a `alexa_vozes` vem PRIMEIRO: ela
+  // aponta para a ligação e para o membro, e uma linha não se apaga enquanto
+  // outra a referir. O `episodios_saude` entra por a simulação passar a criar
+  // um — cai por arrasto com o membro, mas escrito é escrito.
+  for (const c of ['alexa_vozes', 'alexa_ligacoes', 'alexa_pedidos', 'artigos', 'listas_compras',
+    'episodios_saude', 'credenciais_alexa', 'membros']) {
     try {
       for (const l of await admin.collection(c).getFullList({ filter: `casa = "${casa.id}"` })) {
         await admin.collection(c).delete(l.id);
@@ -118,11 +140,30 @@ try {
   ver('e diz que é visível para a família', /visível para a família/.test(String(evD.frase)));
 
   console.log('\n── e o que o altifalante NÃO consegue ──');
+
+  // ⚠ Primeiro prova-se que HÁ o que ler, e só depois que a voz não o lê.
+  // Ao contrário, isto é uma pergunta a uma casa vazia com a resposta escrita.
+  const comOAdulto = new PocketBase(LOCAL);
+  comOAdulto.autoCancellation(false);
+  await comOAdulto.collection('membros').authWithPassword(adulto.email, 'palavra-de-simulacao-1');
+  const visto = await comOAdulto.collection('episodios_saude').getList(1, 1);
+  ver('há um episódio de saúde nesta casa, e um adulto vê-o', visto.totalItems === 1, `${visto.totalItems}`);
+
   for (const c of ['episodios_saude', 'notas_saude', 'receitas_saude', 'anexos', 'alergias_saude', 'tomas_saude']) {
     const r = await fetch(`${CASA}/api/collections/${c}/records`, { headers: { Authorization: tok.access_token } });
     const d = await r.json().catch(() => ({}));
     ver(`não lê ${c}`, !d.totalItems, d.totalItems ? `devolveu ${d.totalItems}` : '');
   }
+
+  // E a outra metade do buraco: a voz escrevia. Um PATCH ao nome da criança.
+  const antesDoNome = (await admin.collection('membros').getOne(crianca.id)).nome;
+  await fetch(`${CASA}/api/collections/membros/records/${crianca.id}`, {
+    method: 'PATCH',
+    headers: { Authorization: tok.access_token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nome: 'Leo ALTERADO PELA VOZ' }),
+  }).catch(() => null);
+  const depoisDoNome = (await admin.collection('membros').getOne(crianca.id)).nome;
+  ver('nem renomeia a criança', depoisDoNome === antesDoNome, `ficou «${depoisDoNome}»`);
 
   console.log('\n── a renovação, como a Amazon a faz ──');
   const rn = await fetch(`${CASA}/api/alexa/token`, {

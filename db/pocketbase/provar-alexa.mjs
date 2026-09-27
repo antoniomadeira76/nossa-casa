@@ -46,6 +46,73 @@ const doTomas = await telemovel('tomas.alexa@exemplo.pt', 'palavra-de-provas-2')
 const doLeo = await telemovel(leo.login, '4731');
 const daBeatriz = await telemovel('beatriz.alexa@exemplo.pt', 'palavra-de-provas-3');
 
+// ── A credencial da VOZ ──────────────────────────────────────────────────────
+//
+// ⚠ Esta prova autenticava-se com o token do telemóvel — `authWithPassword` na
+// coleção `membros` — e isso deixou de servir em 27/09/2026, por uma boa razão.
+//
+// Até esse dia, o token que a Amazon recebia ERA o token do telemóvel: uma
+// sessão de adulto, boa em todo o `/api/collections/…`, que lia a saúde das
+// crianças e a mudava. As rotas passaram a exigir a coleção `alexa_vozes`, e
+// com isso esta prova ficou a bater numa porta que já não é a dela: 21 vermelhos
+// com 403, todos a dizerem a mesma coisa.
+//
+// Podia ter-se mudado o `requireAuth` de volta e ficava tudo verde. Seria
+// exactamente o erro: a prova tem de usar a credencial que o altifalante USA, e
+// essa vem do fluxo do Account Linking, que é o que este ajudante percorre.
+const RETORNO_AMAZON = 'https://pitangui.amazon.com/api/skill/link/PROVAS';
+const emForm = (o) => Object.entries(o).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+const raizDoServidor = URL.replace(/\/+$/, '');
+
+const credenciaisDe = async (casa) => admin.collection('credenciais_alexa').create({
+  casa: casa.id,
+  client_id: `provas-alexa-${casa.id}`,
+  client_secret: `segredo-de-provas-${casa.id}`,
+});
+const credA = await credenciaisDe(casaA);
+const credB = await credenciaisDe(casaB);
+
+// Devolve o `access_token` da voz, ou o ESTADO da recusa — que é o que interessa
+// quando quem tenta é uma criança.
+const vozDe = async (cred, email, palavra) => {
+  const r1 = await fetch(`${raizDoServidor}/api/alexa/autorizar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: emForm({
+      client_id: cred.client_id, redirect_uri: RETORNO_AMAZON, state: 'xyz',
+      response_type: 'code', email, palavra,
+    }),
+    redirect: 'manual',
+  });
+  const codigo = ((r1.headers.get('location') || '').match(/[?&]code=([^&]+)/) || [])[1];
+  if (!codigo) return { token: '', estado: r1.status, corpo: await r1.text() };
+
+  const r2 = await fetch(`${raizDoServidor}/api/alexa/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: emForm({
+      grant_type: 'authorization_code', code: codigo, redirect_uri: RETORNO_AMAZON,
+      client_id: cred.client_id, client_secret: cred.client_secret,
+    }),
+  });
+  const d = await r2.json().catch(() => ({}));
+  return { token: d.access_token || '', estado: r2.status, corpo: JSON.stringify(d) };
+};
+
+const vozDaRita = await vozDe(credA, 'rita.alexa@exemplo.pt', 'palavra-de-provas-1');
+const vozDoTomas = await vozDe(credA, 'tomas.alexa@exemplo.pt', 'palavra-de-provas-2');
+const vozDaBeatriz = await vozDe(credB, 'beatriz.alexa@exemplo.pt', 'palavra-de-provas-3');
+
+// ⚠ Sem isto, as provas que afirmam um «não» passam com um token vazio — que é
+// a mesma armadilha que deixou o buraco aberto: medir a ausência de meios e
+// chamar-lhe ausência de poder.
+for (const [quem, v] of [['Rita', vozDaRita], ['Tomás', vozDoTomas], ['Beatriz', vozDaBeatriz]]) {
+  if (!v.token) {
+    console.error(`Não consegui um token da voz para a ${quem}: ${v.estado} · ${String(v.corpo).slice(0, 200)}`);
+    process.exitCode = 1;
+  }
+}
+
 // ⚠ `fetch` directo, e não o cliente: uma rota recusada devolve um `status`,
 // não atira. O ajudante `recusado()` não serve aqui — passaria sempre.
 //
@@ -84,7 +151,23 @@ await prova('⚠ sem sessão, as três rotas recusam com 401', async () => {
   }
 });
 
-await prova('⚠ uma criança é recusada nas três rotas, e nada é escrito', async () => {
+await prova('⚠ uma criança não consegue sequer uma credencial da voz', async () => {
+  // ⚠ Esta prova mudou de sítio em 27/09/2026, e a mudança é o ponto.
+  //
+  // Antes, mandava o token do TELEMÓVEL do Léo às três rotas e exigia 403. Hoje
+  // isso continua a dar 403 — mas por ser um token da coleção errada, e não por
+  // ser de uma criança. Ficaria verde para sempre, e deixaria de medir o que diz.
+  //
+  // A pergunta certa é a de cima: uma criança consegue ligar um altifalante a
+  // esta casa? Não — e a recusa é na porta, não lá dentro.
+  const tentativa = await vozDe(credA, leo.login, '4731');
+  if (tentativa.token) throw new Error('o Léo conseguiu uma credencial da voz');
+});
+
+await prova('⚠ nem o token do telemóvel da criança entra nas rotas', async () => {
+  // A outra ponta, que continua a valer: uma sessão de `membros` não serve nas
+  // rotas da voz, seja de quem for. 403 e não 401 — a sessão é válida, só não é
+  // da coleção que estas rotas reconhecem.
   const antes = {
     artigos: await contar('artigos', casaA),
     eventos: await contar('eventos', casaA),
@@ -99,11 +182,45 @@ await prova('⚠ uma criança é recusada nas três rotas, e nada é escrito', a
   igual(await contar('tarefas', casaA), antes.tarefas, 'a criança escreveu uma tarefa');
 });
 
+await prova('⚠ e quem SAI da casa deixa de falar na hora, com o token já emitido', async () => {
+  // A revogação que só a identidade separada torna possível de provar, e que é
+  // a que pode mesmo acontecer.
+  //
+  // ⚠ Tentei primeiro pelo papel — pôr um adulto a criança com o token vivo — e
+  // a casa recusou duas vezes, com razão nas duas: «Um perfil de criança não
+  // leva e-mail» e depois «Um adulto não passa a criança». Essa transição não
+  // existe aqui, portanto uma prova sobre ela estaria a medir um caminho
+  // imaginário. O que existe é alguém deixar de ser membro.
+  //
+  // Sem identidade separada isto não se conseguia provar: o token era do
+  // membro, e apagá-lo levava a sessão do telemóvel com ele — a prova não
+  // distinguia a revogação da voz da revogação de tudo.
+  const sai = await criarMembro(admin, casaA, 'Sai', 'adulto', {
+    email: 'sai.alexa@exemplo.pt', password: 'palavra-de-provas-9',
+    passwordConfirm: 'palavra-de-provas-9', verified: true,
+  });
+  const voz = await vozDe(credA, 'sai.alexa@exemplo.pt', 'palavra-de-provas-9');
+  if (!voz.token) throw new Error(`não consegui a credencial: ${voz.estado} · ${String(voz.corpo).slice(0, 160)}`);
+
+  const antes = await chamar('artigo', voz.token, { artigo: 'enquanto ca estava' });
+  igual(antes.estado, 200, `antes de sair devolveu ${antes.estado}`);
+
+  await admin.collection('membros').delete(sai.id);
+
+  // A identidade da voz cai com o membro, por `cascadeDelete`.
+  const sobrou = await admin.collection('alexa_vozes')
+    .getFirstListItem(`membro = "${sai.id}"`).catch(() => null);
+  if (sobrou) throw new Error('a identidade da voz sobreviveu ao membro apagado');
+
+  const depois = await chamar('artigo', voz.token, { artigo: 'depois de sair' });
+  igual(depois.estado, 401, `depois de sair devolveu ${depois.estado}`);
+});
+
 await prova('um adulto que não administra a casa pode falar', async () => {
   // ⚠ Isto é de propósito, e diverge do `/api/casa/limpar`, que exige `admin`.
   // O token de um altifalante representa um adulto da casa; obrigar a ser
   // administrador queria dizer que o Tomás não podia pôr leite na lista.
-  const r = await chamar('artigo', doTomas.authStore.token, { artigo: 'pão de forma' });
+  const r = await chamar('artigo', vozDoTomas.token, { artigo: 'pão de forma' });
   igual(r.estado, 200, `devolveu ${r.estado}`);
 });
 
@@ -118,7 +235,7 @@ await prova('⚠ um token da casa B não escreve na casa A', async () => {
     tarefas: await contar('tarefas', casaA),
   };
   for (const rota of ROTAS) {
-    const r = await chamar(rota, daBeatriz.authStore.token, { ...CORPO[rota], casa: casaA.id });
+    const r = await chamar(rota, vozDaBeatriz.token, { ...CORPO[rota], casa: casaA.id });
     igual(r.estado, 200, `${rota} devolveu ${r.estado} — a Beatriz devia poder escrever na SUA casa`);
   }
   igual(await contar('artigos', casaA), antesA.artigos, 'a casa A ganhou um artigo da casa B');
@@ -130,7 +247,7 @@ await prova('⚠ um token da casa B não escreve na casa A', async () => {
 console.log('\n── o que a voz escreve ──');
 
 await prova('⚠ um evento por voz sai SEMPRE visível para a família', async () => {
-  const r = await chamar('evento', daRita.authStore.token,
+  const r = await chamar('evento', vozDaRita.token,
     { titulo: 'jantar de família', dia: '2026-09-29', visibilidade: 'so-eu' });
   igual(r.estado, 200, `devolveu ${r.estado}`);
   // ⚠ Mesmo pedindo `so-eu` no corpo: a rota não lê visibilidade nenhuma do
@@ -141,7 +258,7 @@ await prova('⚠ um evento por voz sai SEMPRE visível para a família', async (
 });
 
 await prova('⚠ e a resposta DIZ a visibilidade, para ninguém supor que é privada', async () => {
-  const r = await chamar('evento', daRita.authStore.token,
+  const r = await chamar('evento', vozDaRita.token,
     { titulo: 'consulta no dentista', dia: '2026-09-30', hora: '09:30' });
   if (!/visível para a família/.test(String(r.d.frase))) {
     throw new Error(`a frase não diz a visibilidade: «${r.d.frase}»`);
@@ -153,7 +270,7 @@ await prova('⚠ uma data com o prefixo `d` da loja local é RECUSADA', async ()
   // `d2026-09-06` e que era essa «a chave certa». O `d` é da LOJA LOCAL, e o
   // campo `eventos.dia` é uma data do PocketBase: `d2026-09-06` lá dentro é
   // uma data inválida. O `AMAZON.DATE` dá exactamente o que se escreve.
-  const r = await chamar('evento', daRita.authStore.token,
+  const r = await chamar('evento', vozDaRita.token,
     { titulo: 'passeio', dia: 'd2026-10-01' });
   igual(r.estado, 400, `devolveu ${r.estado} — aceitou uma data inválida`);
 });
@@ -161,7 +278,7 @@ await prova('⚠ uma data com o prefixo `d` da loja local é RECUSADA', async ()
 await prova('⚠ e uma data vaga do AMAZON.DATE também', async () => {
   // «esta semana» dá `2026-W40`, «em outubro» dá `2026-10`. Nada disso é um dia.
   for (const dia of ['2026-W40', '2026-10', '2026-W40-WE', 'amanhã']) {
-    const r = await chamar('evento', daRita.authStore.token, { titulo: 'passeio', dia });
+    const r = await chamar('evento', vozDaRita.token, { titulo: 'passeio', dia });
     igual(r.estado, 400, `«${dia}» devolveu ${r.estado}`);
   }
 });
@@ -169,7 +286,7 @@ await prova('⚠ e uma data vaga do AMAZON.DATE também', async () => {
 await prova('uma hora vaga do AMAZON.TIME dá um evento de dia inteiro', async () => {
   // `MO`, `AF`, `EV`, `NI` — manhã, tarde, noite, madrugada. Melhor sem hora do
   // que com uma hora inventada.
-  const r = await chamar('evento', daRita.authStore.token,
+  const r = await chamar('evento', vozDaRita.token,
     { titulo: 'arrumar a garagem', dia: '2026-10-02', hora: 'AF' });
   igual(r.estado, 200, `devolveu ${r.estado}`);
   const linha = await admin.collection('eventos').getOne(r.d.id);
@@ -177,7 +294,7 @@ await prova('uma hora vaga do AMAZON.TIME dá um evento de dia inteiro', async (
 });
 
 await prova('uma tarefa por voz não leva pontos nem responsável', async () => {
-  const r = await chamar('tarefa', daRita.authStore.token, { titulo: 'marcar a revisão' });
+  const r = await chamar('tarefa', vozDaRita.token, { titulo: 'marcar a revisão' });
   igual(r.estado, 200, `devolveu ${r.estado}`);
   const linha = await admin.collection('tarefas').getOne(r.d.id);
   igual(linha.pontos, 0, 'a tarefa nasceu com pontos');
@@ -185,7 +302,7 @@ await prova('uma tarefa por voz não leva pontos nem responsável', async () => 
 });
 
 await prova('um artigo por voz entra na lista aberta, sem posto', async () => {
-  const r = await chamar('artigo', daRita.authStore.token, { artigo: 'ovos' });
+  const r = await chamar('artigo', vozDaRita.token, { artigo: 'ovos' });
   igual(r.estado, 200, `devolveu ${r.estado}`);
   const linha = await admin.collection('artigos').getOne(r.d.id);
   igual(linha.rotulo, 'ovos', 'o rótulo não é o que se disse');
@@ -201,8 +318,8 @@ console.log('\n── o reenvio ──');
 await prova('o mesmo requestId duas vezes, em sequência, escreve UMA linha', async () => {
   const pedido = { artigo: 'arroz agulha', requestId: 'amzn1.echo-api.request.provas-1' };
   const antes = await contar('artigos', casaA);
-  const um = await chamar('artigo', daRita.authStore.token, pedido);
-  const dois = await chamar('artigo', daRita.authStore.token, pedido);
+  const um = await chamar('artigo', vozDaRita.token, pedido);
+  const dois = await chamar('artigo', vozDaRita.token, pedido);
   igual(um.estado, 200, `o primeiro devolveu ${um.estado}`);
   igual(dois.estado, 200, `o reenvio devolveu ${dois.estado}`);
   igual(await contar('artigos', casaA), antes + 1, 'o reenvio escreveu outra linha');
@@ -226,8 +343,8 @@ await prova('⚠ e AO MESMO TEMPO também — que é como a Alexa reenvia', asyn
     const pedido = { artigo: `bacalhau ${volta}`, requestId: `amzn1.echo-api.request.par-${volta}` };
     const antes = await contar('artigos', casaA);
     const [um, dois] = await Promise.all([
-      chamar('artigo', daRita.authStore.token, pedido),
-      chamar('artigo', daRita.authStore.token, pedido),
+      chamar('artigo', vozDaRita.token, pedido),
+      chamar('artigo', vozDaRita.token, pedido),
     ]);
     igual(um.estado, 200, `volta ${volta}: o primeiro devolveu ${um.estado}`);
     igual(dois.estado, 200, `volta ${volta}: o segundo devolveu ${dois.estado}`);
@@ -240,7 +357,7 @@ await prova('⚠ e doze ao mesmo tempo continuam a escrever UMA', async () => {
   const pedido = { artigo: 'grão-de-bico', requestId: 'amzn1.echo-api.request.doze' };
   const antes = await contar('artigos', casaA);
   const rs = await Promise.all(Array.from({ length: 12 },
-    () => chamar('artigo', daRita.authStore.token, pedido)));
+    () => chamar('artigo', vozDaRita.token, pedido)));
   for (const r of rs) igual(r.estado, 200, `um dos doze devolveu ${r.estado}`);
   igual(await contar('artigos', casaA), antes + 1,
     `doze pedidos simultâneos escreveram ${await contar('artigos', casaA) - antes} linhas`);
@@ -253,9 +370,9 @@ await prova('⚠ o mesmo requestId noutra INTENÇÃO é recusado, não confundid
   // nunca existia. Quem está na cozinha ouvia a confirmação de outra coisa.
   const chave = 'amzn1.echo-api.request.trocada';
   const antesEventos = await contar('eventos', casaA);
-  const a = await chamar('artigo', daRita.authStore.token, { artigo: 'detergente', requestId: chave });
+  const a = await chamar('artigo', vozDaRita.token, { artigo: 'detergente', requestId: chave });
   igual(a.estado, 200, `o artigo devolveu ${a.estado}`);
-  const b = await chamar('evento', daRita.authStore.token,
+  const b = await chamar('evento', vozDaRita.token,
     { titulo: 'consulta', dia: '2026-10-07', requestId: chave });
   igual(b.estado, 400, `o evento com a chave gasta devolveu ${b.estado}`);
   igual(await contar('eventos', casaA), antesEventos, 'escreveu um evento que não devia');
@@ -267,7 +384,7 @@ await prova('⚠ uma chave demasiado longa é recusada, não cortada', async () 
   // descartada em silêncio, com confirmação falada por cima.
   const base = 'Z'.repeat(200);
   const antes = await contar('artigos', casaA);
-  const cafe = await chamar('artigo', daRita.authStore.token, { artigo: 'café', requestId: base + 'aaa' });
+  const cafe = await chamar('artigo', vozDaRita.token, { artigo: 'café', requestId: base + 'aaa' });
   igual(cafe.estado, 400, `a chave de 203 devolveu ${cafe.estado}`);
   igual(await contar('artigos', casaA), antes, 'escreveu apesar de recusar a chave');
 });
@@ -275,7 +392,7 @@ await prova('⚠ uma chave demasiado longa é recusada, não cortada', async () 
 await prova('e o mesmo requestId noutra casa não colide', async () => {
   // O índice é `(casa, request_id)`: duas casas podem receber o mesmo pedido.
   const pedido = { artigo: 'arroz agulha', requestId: 'amzn1.echo-api.request.provas-1' };
-  const r = await chamar('artigo', daBeatriz.authStore.token, pedido);
+  const r = await chamar('artigo', vozDaBeatriz.token, pedido);
   igual(r.estado, 200, `devolveu ${r.estado}`);
   igual(r.d.repetido, undefined, 'tomou o pedido da casa A por seu');
 });
@@ -293,14 +410,14 @@ await prova('⚠ uma escrita falhada NÃO deixa a chave presa', async () => {
   const chave = 'amzn1.echo-api.request.envenenada';
   const antes = await contar('eventos', casaA);
 
-  const mau = await chamar('evento', daRita.authStore.token,
+  const mau = await chamar('evento', vozDaRita.token,
     { titulo: 'consulta', dia: '2026-02-31', requestId: chave });
   igual(mau.estado, 400, `o 31 de Fevereiro devolveu ${mau.estado}`);
   igual(await contar('eventos', casaA), antes, 'escreveu com uma data impossível');
 
   // E a mesma chave, com um dia que existe, tem de PASSAR — se a reserva
   // tivesse ficado presa, isto devolvia 200 sem escrever nada.
-  const bom = await chamar('evento', daRita.authStore.token,
+  const bom = await chamar('evento', vozDaRita.token,
     { titulo: 'consulta', dia: '2026-03-02', requestId: chave });
   igual(bom.estado, 200, `a segunda tentativa devolveu ${bom.estado}`);
   igual(await contar('eventos', casaA), antes + 1, 'a chave ficou presa: não escreveu nada');
@@ -309,11 +426,11 @@ await prova('⚠ uma escrita falhada NÃO deixa a chave presa', async () => {
 
 await prova('⚠ e as outras datas impossíveis também', async () => {
   for (const dia of ['2026-13-01', '2026-00-10', '2026-04-31', '2025-02-29', '2026-11-00']) {
-    const r = await chamar('evento', daRita.authStore.token, { titulo: 'x', dia });
+    const r = await chamar('evento', vozDaRita.token, { titulo: 'x', dia });
     igual(r.estado, 400, `«${dia}» devolveu ${r.estado}`);
   }
   // E um dia que existe mesmo num ano bissexto passa.
-  const r = await chamar('evento', daRita.authStore.token, { titulo: 'bissexto', dia: '2028-02-29' });
+  const r = await chamar('evento', vozDaRita.token, { titulo: 'bissexto', dia: '2028-02-29' });
   igual(r.estado, 200, `o 29 de Fevereiro de 2028 devolveu ${r.estado}`);
 });
 
@@ -384,7 +501,7 @@ await prova('⚠ quebras de linha e caracteres de controlo não entram no rótul
   // e qual, e a linha do Modo Compras desenha o nome INTEIRO, sem
   // `numberOfLines`, por decisão escrita — uma linha de 48 px passava a 33.
   const sujo = 'leite\n\n\nmeio\tgordo\r\n\u0000\u001B[31mvermelho‮odagro';
-  const r = await chamar('artigo', daRita.authStore.token, { artigo: sujo });
+  const r = await chamar('artigo', vozDaRita.token, { artigo: sujo });
   igual(r.estado, 200, `devolveu ${r.estado}`);
   const linha = await admin.collection('artigos').getOne(r.d.id);
   if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\n\r\t]/.test(linha.rotulo)) {
@@ -403,7 +520,7 @@ await prova('⚠ quebras de linha e caracteres de controlo não entram no rótul
 await prova('⚠ e um rótulo longo corta-se por LETRAS, sem partir um emoji ao meio', async () => {
   // ⚠ O corte era por unidade UTF-16 e partia pares substitutos: «a»×59 mais
   // um emoji ficava com um U+FFFD no fim — e era isso que a Alexa dizia.
-  const r = await chamar('artigo', daRita.authStore.token, { artigo: 'a'.repeat(59) + '🥛' });
+  const r = await chamar('artigo', vozDaRita.token, { artigo: 'a'.repeat(59) + '🥛' });
   igual(r.estado, 200, `devolveu ${r.estado}`);
   const linha = await admin.collection('artigos').getOne(r.d.id);
   if (/�/.test(linha.rotulo)) throw new Error('partiu o emoji ao meio (U+FFFD)');
@@ -464,7 +581,7 @@ const CHAVES = {
 
 await prova('⚠ cada rota devolve exactamente os campos dela, e mais nenhum', async () => {
   for (const rota of ROTAS) {
-    const r = await chamar(rota, daRita.authStore.token, CORPO[rota]);
+    const r = await chamar(rota, vozDaRita.token, CORPO[rota]);
     igual(r.estado, 200, `${rota} devolveu ${r.estado}`);
     const veio = Object.keys(r.d).sort().join(',');
     const esperado = [...CHAVES[rota]].sort().join(',');
@@ -474,7 +591,7 @@ await prova('⚠ cada rota devolve exactamente os campos dela, e mais nenhum', a
 
 await prova('⚠ e um campo injectado no pedido não entra na linha escrita', async () => {
   // Se o `bindBody` alguma vez passar a aceitar campos livres, é aqui que se vê.
-  const r = await chamar('artigo', daRita.authStore.token, {
+  const r = await chamar('artigo', vozDaRita.token, {
     artigo: 'açúcar', envelope: 'Mercearia', valor: 10, estimativa: 999,
     visibilidade: 'adultos', posto: 5, casa: casaB.id, lista: 'inventada',
   });

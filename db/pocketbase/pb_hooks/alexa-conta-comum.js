@@ -224,11 +224,64 @@ const responderComToken = (e, ligacao) => {
     return e.json(400, { error: 'invalid_grant' });
   }
 
-  const token = membro.newAuthToken();
+  // ── A identidade da VOZ ────────────────────────────────────────────────────
+  //
+  // ⚠ Isto era `membro.newAuthToken()`, e era um buraco grande. O token que ia
+  // para a nuvem da Amazon era uma SESSÃO DE ADULTO a sério, boa em todo o
+  // `/api/collections/…` — que está na internet. Medido em 27/09/2026 numa casa
+  // de simulação com um episódio de saúde lá dentro: lia a consulta da criança
+  // com as notas clínicas, e renomeava-a com um PATCH. E a página de
+  // consentimento prometia, em letras, «Não lê nada, e não toca em dinheiro nem
+  // em saúde». O `scope: 'casa.escrever'` aqui em baixo era uma etiqueta que
+  // ninguém lia — e continua a ser, mas agora é verdade por construção.
+  //
+  // A voz passa a ter identidade própria: uma linha em `alexa_vozes` por
+  // ligação. Essa coleção não tem `casa` nem `papel`, e as regras desta casa são
+  // quase todas `casa = @request.auth.casa && ...` — por isso o token não
+  // satisfaz nenhuma. Não é uma lista de proibições que é preciso manter: é uma
+  // identidade que não chega a lado nenhum.
+  //
+  // Uma por ligação, e reaproveitada: o refresh não deve deixar um rasto de
+  // identidades por cada renovação.
+  let voz = null;
+  try {
+    voz = $app.findFirstRecordByFilter('alexa_vozes', 'ligacao = {:l}', { l: ligacao.id });
+  } catch (err) { voz = null; }
+
+  if (!voz) {
+    const colVoz = $app.findCollectionByNameOrId('alexa_vozes');
+    voz = new Record(colVoz);
+    voz.set('ligacao', ligacao.id);
+    voz.set('membro', membro.id);
+    // ⚠ Uma coleção de autenticação do PocketBase exige `email`, mesmo com o
+    // `passwordAuth` desligado — sem ele o `save` devolve «email: cannot be
+    // blank» e a rota do token responde 400 sem dizer porquê. Medido a
+    // 27/09/2026, e o registo do servidor foi o único sítio onde se viu.
+    //
+    // O endereço é sintético e é `.invalid` de propósito: a norma reserva esse
+    // domínio para nunca existir, portanto isto não é endereço de ninguém e não
+    // pode ser entregue. O `id` da ligação torna-o único, que é o que o índice
+    // da coleção pede. Ninguém o lê e ninguém entra por ele.
+    voz.set('email', 'voz-' + ligacao.id + '@alexa.invalid');
+    // ⚠ Uma palavra-passe que ninguém sabe, nem precisa de saber: a coleção tem
+    // `passwordAuth` desligado e não se entra nela por palavra-passe nenhuma.
+    // Fica escrita na mesma porque um registo de autenticação sem ela não se
+    // grava — e um valor ao acaso é melhor do que um vazio que um dia alguém
+    // active sem reparar.
+    voz.setPassword($security.randomString(50));
+    $app.save(voz);
+  } else if (String(voz.get('membro')) !== String(membro.id)) {
+    // A ligação mudou de dono. Acontece se a linha for editada à mão; a
+    // identidade segue o membro da ligação, que é quem o `quemFala` vai ler.
+    voz.set('membro', membro.id);
+    $app.save(voz);
+  }
+
+  const token = voz.newAuthToken();
 
   let duracao = 604800;   // o que o PocketBase usa por omissão: sete dias
   try {
-    const col = $app.findCollectionByNameOrId('membros');
+    const col = $app.findCollectionByNameOrId('alexa_vozes');
     if (col.authToken && col.authToken.duration) duracao = Number(col.authToken.duration);
   } catch (err) { /* fica o valor por omissão */ }
 

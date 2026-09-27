@@ -200,6 +200,73 @@ describe('a voz só escreve', () => {
     expect(soltas).toEqual([]);
   });
 
+  it('⚠ e as três rotas da voz exigem `alexa_vozes`, nunca `membros`', () => {
+    // ⚠ Foi aqui o pior defeito desta casa, e durou de 27/09/2026 de manhã até
+    // à noite do mesmo dia. As rotas exigiam `$apis.requireAuth('membros')`, e
+    // por coerência o `responderComToken` entregava à Amazon um
+    // `membro.newAuthToken()` — uma SESSÃO DE ADULTO a sério, boa em todo o
+    // `/api/collections/…`, que está na internet desde que o servidor foi
+    // exposto. Medido numa casa de simulação com um episódio lá dentro: lia a
+    // consulta da criança com as notas clínicas, e renomeava-a com um PATCH.
+    //
+    // A página de consentimento prometia, em letras, «Não lê nada, e não toca
+    // em dinheiro nem em saúde». É o INVARIANTE #3 ao contrário, e é a mesma
+    // forma do defeito da ficha que a criança lia: o ecrã a prometer o que o
+    // servidor não impõe.
+    //
+    // O que decide isto a correr é `db/pocketbase/provar-a-voz-nao-chega-a-casa.mjs`,
+    // que enumera as coleções DO SERVIDOR com dados lá dentro. Este guarda é a
+    // outra ponta: pega em cada `routerAdd` do ficheiro da voz e exige o nome
+    // da coleção certa, para que a troca de volta não passe numa leitura.
+    const t = semComentarios(ler(`${HOOKS}/alexa.pb.js`));
+    const rotas = [...t.matchAll(/routerAdd\(\s*'(\w+)'\s*,\s*'([^']+)'[\s\S]*?\}\s*,\s*([^)]*\))\s*\)/g)]
+      .map((m) => ({ metodo: m[1], caminho: m[2], guarda: m[3].trim() }));
+
+    // Um guarda que não lê nada passa sempre.
+    expect(rotas.length).toBe(3);
+
+    const erradas = rotas
+      .filter((r) => r.guarda !== "$apis.requireAuth('alexa_vozes')")
+      .map((r) => `${r.metodo} ${r.caminho} → ${r.guarda}`);
+    expect(erradas).toEqual([]);
+
+    // E o token que se entrega à Amazon sai da voz, não do membro.
+    const conta = semComentarios(ler(`${HOOKS}/alexa-conta-comum.js`));
+    expect(conta).toContain('voz.newAuthToken()');
+    expect(conta).not.toContain('membro.newAuthToken()');
+  });
+
+  it('⚠ a identidade da voz não tem `casa` nem `papel` — é o que a torna inofensiva', () => {
+    // As regras desta casa são quase todas `casa = @request.auth.casa && ...`.
+    // Uma identidade sem `casa` não casa com casa nenhuma, e é isso — e não uma
+    // lista de caminhos proibidos — que impede o token de chegar às coleções.
+    // Acrescentar aqui um campo `casa` reabriria o buraco inteiro em silêncio.
+    // A lista de campos de cada declaração, recortada entre `fields:`/`campos:`
+    // e o fecho dela. Sem heurísticas: os dois ficheiros escrevem-na em lista.
+    const camposDe = (texto, marca, chave) => {
+      const i = texto.indexOf(marca);
+      expect(`${marca} existe: ${i > -1}`).toBe(`${marca} existe: true`);
+      const j = texto.indexOf(`${chave}: [`, i);
+      expect(`${chave} de ${marca}: ${j > -1}`).toBe(`${chave} de ${marca}: true`);
+      const fim = texto.indexOf('],', j);
+      return texto.slice(j, fim);
+    };
+
+    const blocos = [
+      ['criar-colecoes', camposDe(ler('db/pocketbase/criar-colecoes.mjs'), "name: 'alexa_vozes'", 'fields')],
+      ['acrescentar-campos', camposDe(ler('db/pocketbase/acrescentar-campos.mjs'), "nome: 'alexa_vozes'", 'campos')],
+    ];
+
+    for (const [onde, bloco] of blocos) {
+      // O `membro` tem de estar: é por ele que o `quemFala` chega ao adulto.
+      expect(`${onde} tem membro: ${bloco.includes("'membro'")}`).toBe(`${onde} tem membro: true`);
+      // A `casa` e o `papel` NÃO podem estar. É a ausência deles que impede o
+      // token de satisfazer `casa = @request.auth.casa` e companhia.
+      expect(`${onde} tem casa: ${bloco.includes("'casa'")}`).toBe(`${onde} tem casa: false`);
+      expect(`${onde} tem papel: ${bloco.includes("'papel'")}`).toBe(`${onde} tem papel: false`);
+    }
+  });
+
   it('⚠ o endereço de retorno da Amazon distingue os treze casos', () => {
     // ⚠ É o buraco clássico do OAuth de quem DÁ a autorização: o `client_id`
     // não é segredo, e quem o conheça manda a autorização para um sítio dele e

@@ -61,6 +61,75 @@ haver porta nenhuma. Foi decisão do dono da casa, tomada com isto à frente.
 interface nenhuma — dá o servidor. A app continua a viver no Expo, e é ela que
 fala com aquele endereço.
 
+## ⚠ O token da voz — o pior defeito desta casa, e como se fechou
+
+Até à noite de 27/09/2026, o token que a Amazon recebia era
+`membro.newAuthToken()`: **uma sessão de adulto a sério**, válida 30 dias, aceite
+por todo o `/api/collections/…` — que está na internet desde que o servidor foi
+exposto, nesse mesmo dia. O `scope: 'casa.escrever'` que ia na resposta era uma
+etiqueta que nenhuma linha de código lia.
+
+E a página de consentimento prometia, em letras:
+
+> *«Não lê nada, e não toca em dinheiro nem em saúde.»*
+
+Medido numa casa de simulação com um episódio clínico lá dentro:
+
+```
+  episodios_saude    estado 200   linhas: 1
+      >>> Pediatria | Dra. Simulacao | notas: SEGREDO CLINICO DE SIMULACAO
+  membros            estado 200   linhas: 2
+  PATCH membros/<leo>.nome  ->  200
+```
+
+Lia a consulta da criança com as notas clínicas, e renomeava-a. É o INVARIANTE #3
+ao contrário, e a mesma forma do defeito da ficha que a criança lia: o ecrã a
+prometer o que o servidor não impõe.
+
+**Nenhuma ligação chegou a ser feita** — apanhou-se com `alexa_ligacoes` a zero,
+antes de a conta ser ligada no telemóvel.
+
+### Porque é que 605 provas não deram por isto
+
+Porque a prova que dizia cobri-lo media a **ausência de dados** e chamava-lhe
+ausência de acesso:
+
+```js
+for (const c of ['episodios_saude', ...]) {
+  const r = await comOToken(`/api/collections/${c}/records`, null, 'GET');
+  if (r.d.totalItems) throw new Error(...);   // 0 linhas → passa
+}
+```
+
+A casa dessa prova nunca criava um episódio de saúde. `totalItems` era 0 por não
+haver nada lá. Um guarda que não lê nada passa sempre.
+
+### A correcção: a voz tem identidade própria
+
+A coleção `alexa_vozes`, de autenticação, uma linha por ligação. O token sai
+dela, e **não** do membro.
+
+⚠ **O que a torna inofensiva é o que ela não tem: `casa` e `papel`.** As regras
+desta casa são quase todas da forma `casa = @request.auth.casa && …`, e uma
+identidade sem `casa` não casa com casa nenhuma. É uma lista de permissões por
+construção — não há caminho do PocketBase (`/api/files/`, `/api/realtime`,
+`/api/batch`, o que a próxima versão trouxer) que precise de ser lembrado e
+tapado, ao contrário do que seria uma lista de proibições.
+
+O adulto fica numa relação, que o `quemFala()` segue. Quem fala continua a ser
+um adulto da casa; o que mudou é que a credencial que anda pela nuvem da Amazon
+já não é a dele. E a revogação passou a ser real: apagar a ligação, ou o membro
+sair da casa, leva a identidade com ela por `cascadeDelete` — medido.
+
+O guarda é `db/pocketbase/provar-a-voz-nao-chega-a-casa.mjs`, e faz três coisas
+que a prova antiga não fazia:
+
+1. **enumera as coleções do servidor** — 43 hoje, e uma nova entra sozinha;
+2. **recusa-se a passar em vazio** — se um adulto também não vir nada, falha a
+   dizer que não tem dados para medir;
+3. **conta a escrita por linhas** antes e depois, porque um 400 tanto pode ser a
+   regra a recusar como um campo em falta.
+
 ## O endpoint da skill é um processo à parte — e porquê
 
 ⚠ **Esta página chegou a dizer que o endpoint da Alexa era `casa.anossacasa.app`.
