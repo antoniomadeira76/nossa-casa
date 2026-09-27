@@ -108,7 +108,13 @@ describe('⚠ as contas fixas: o servidor', () => {
     const i = cria.indexOf("name: 'contas_fixas'");
     expect(cria.slice(i, i + 1200)).toMatch(/listRule: `\$\{DA_CASA\} && \$\{ADULTO\}`/);
     expect(ler('src/pocketbase.js')).toMatch(/'contas_fixas',/);
-    expect(JSON.parse(ler('package.json')).scripts['db:provar']).toMatch(/provar-contas-fixas\.mjs/);
+    // ⚠ Desde 27/09/2026 o `db:provar` é um CORREDOR (`provar-tudo.mjs`) que
+    // enumera as provas do DISCO. Estar em `db/pocketbase/provar-*.mjs` É estar
+    // na bateria — mais forte do que estar numa lista que alguém tem de se
+    // lembrar de actualizar, e havia um ficheiro que nunca lá estava. O
+    // `existsSync` acima é que garante a pertença; aqui confere-se que a
+    // bateria continua a ser o corredor.
+    expect(JSON.parse(ler('package.json')).scripts['db:provar']).toMatch(/provar-tudo\.mjs/);
     expect(fs.existsSync(path.join(RAIZ, 'db/pocketbase/provar-contas-fixas.mjs'))).toBe(true);
   });
 

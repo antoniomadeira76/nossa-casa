@@ -77,7 +77,13 @@ describe('⚠ a ementa: o servidor', () => {
     expect(cria).toMatch(/json\('ingredientes'\)/);
     expect(acresc).toMatch(/\{ name: 'ingredientes', type: 'json', maxSize: 20000 \}/);
     expect(ler('src/pocketbase.js')).toMatch(/'pratos', 'ementa'\]/);
-    expect(JSON.parse(ler('package.json')).scripts['db:provar']).toMatch(/provar-ementa\.mjs/);
+    // ⚠ Desde 27/09/2026 o `db:provar` é um CORREDOR (`provar-tudo.mjs`) que
+    // enumera as provas do DISCO. Estar em `db/pocketbase/provar-*.mjs` É estar
+    // na bateria — mais forte do que estar numa lista que alguém tem de se
+    // lembrar de actualizar, e havia um ficheiro que nunca lá estava. O
+    // `existsSync` acima é que garante a pertença; aqui confere-se que a
+    // bateria continua a ser o corredor.
+    expect(JSON.parse(ler('package.json')).scripts['db:provar']).toMatch(/provar-tudo\.mjs/);
     expect(fs.existsSync(path.join(RAIZ, 'db/pocketbase/provar-ementa.mjs'))).toBe(true);
   });
 

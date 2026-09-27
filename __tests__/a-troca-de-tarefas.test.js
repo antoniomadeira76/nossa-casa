@@ -106,7 +106,13 @@ describe('⚠ a troca de tarefas: o servidor', () => {
     expect(sync).toMatch(/casa\.trocas_tarefas/);
     expect(semComentarios(ler('src/pocketbase.js'))).toMatch(/'trocas_tarefas'/);
     expect(ler('src/o-que-sobe.js')).toMatch(/trocas: \['linhas',[^\n]*'trocaDeTarefas'\]/);
-    expect(JSON.parse(ler('package.json')).scripts['db:provar']).toMatch(/provar-trocas\.mjs/);
+    // ⚠ Desde 27/09/2026 o `db:provar` é um CORREDOR (`provar-tudo.mjs`) que
+    // enumera as provas do DISCO. Estar em `db/pocketbase/provar-*.mjs` É estar
+    // na bateria — mais forte do que estar numa lista que alguém tem de se
+    // lembrar de actualizar, e havia um ficheiro que nunca lá estava. O
+    // `existsSync` acima é que garante a pertença; aqui confere-se que a
+    // bateria continua a ser o corredor.
+    expect(JSON.parse(ler('package.json')).scripts['db:provar']).toMatch(/provar-tudo\.mjs/);
     expect(fs.existsSync(path.join(RAIZ, 'db/pocketbase/provar-trocas.mjs'))).toBe(true);
   });
 });

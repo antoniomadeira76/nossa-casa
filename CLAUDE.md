@@ -61,7 +61,17 @@ npm run db:servir     # o servidor. Sem ele a app corre local, e o ecrã de
                       # E depois de o servidor cair, a sessão vai-se: a app
                       # volta ao «Continuar com Google», e só o dono da casa a
                       # pode reabrir. Ver [[servidor-em-baixo-expulsa-o-utilizador]].
-npm run db:provar     # as regras, coleção a coleção — 32 ficheiros, 565 provas (13/09/2026)
+npm run db:provar     # as regras, coleção a coleção — 34 ficheiros, 605 provas (27/09/2026)
+                      # ⚠ Desde 27/09 isto é um CORREDOR (`provar-tudo.mjs`) e
+                      # não uma cadeia de `&&` no package.json. Três razões, as
+                      # três medidas: a cadeia parava ao primeiro erro e escondia
+                      # o resto; parou uma vez aos 30 ficheiros com o código 127
+                      # e TODAS as linhas a verde, e só se deu por ela somando à
+                      # mão; e havia um ficheiro no disco — o
+                      # `provar-limpar-casa.mjs` — que nunca estava na cadeia e
+                      # nunca tinha corrido. O corredor enumera do DISCO, conta
+                      # os ficheiros, e repete UMA vez quem rebentar sem falhar
+                      # prova nenhuma — dizendo-o no fim, com o nome.
 npm run aceitacao     # as HISTÓRIAS, de ponta a ponta pela camada da app — 10 histórias,
                       # 70 passos «Dado / Quando / Então», em db/pocketbase/aceitacao/
 ```

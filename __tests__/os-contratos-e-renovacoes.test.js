@@ -96,7 +96,13 @@ describe('⚠ os contratos: o servidor', () => {
     expect(acresc).toMatch(/nome: 'contratos'/);
     expect(acresc).toMatch(/\{ name: 'ficheiro', type: 'file', maxSelect: 1, maxSize: 8388608 \}/);
     expect(ler('src/pocketbase.js')).toMatch(/'contratos',/);
-    expect(JSON.parse(ler('package.json')).scripts['db:provar']).toMatch(/provar-contratos\.mjs/);
+    // ⚠ Desde 27/09/2026 o `db:provar` é um CORREDOR (`provar-tudo.mjs`) que
+    // enumera as provas do DISCO. Estar em `db/pocketbase/provar-*.mjs` É estar
+    // na bateria — mais forte do que estar numa lista que alguém tem de se
+    // lembrar de actualizar, e havia um ficheiro que nunca lá estava. O
+    // `existsSync` acima é que garante a pertença; aqui confere-se que a
+    // bateria continua a ser o corredor.
+    expect(JSON.parse(ler('package.json')).scripts['db:provar']).toMatch(/provar-tudo\.mjs/);
     expect(fs.existsSync(path.join(RAIZ, 'db/pocketbase/provar-contratos.mjs'))).toBe(true);
   });
 
