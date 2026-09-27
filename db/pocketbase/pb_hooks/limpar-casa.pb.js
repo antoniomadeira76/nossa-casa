@@ -84,4 +84,4 @@ routerAdd('POST', '/api/casa/limpar', (e) => {
     'casa', casa, 'por', membro.get('nome'), 'linhas', total);
 
   return e.json(200, { casa, total, apagadas });
-}, $apis.requireAuth());
+}, $apis.requireAuth('membros'));

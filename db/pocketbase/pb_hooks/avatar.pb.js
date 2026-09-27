@@ -67,4 +67,4 @@ routerAdd('POST', '/api/membro/aspeto', (e) => {
   return e.json(200, {
     avatar: membro.get('avatar'), cor: membro.get('cor'), figura: membro.get('figura'),
   });
-}, $apis.requireAuth());
+}, $apis.requireAuth('membros'));

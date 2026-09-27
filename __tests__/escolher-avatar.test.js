@@ -359,7 +359,18 @@ describe('o servidor', () => {
   it('escreve no membro AUTENTICADO, nunca num id que venha no pedido', () => {
     const h = semComentarios('db/pocketbase/pb_hooks/avatar.pb.js');
     expect(h).toMatch(/const membro = e\.auth/);
-    expect(h).toMatch(/\$apis\.requireAuth\(\)/);
+    // ⚠ Com a COLEÇÃO dita, e não o `requireAuth()` pelado que aqui estava.
+    //
+    // Um `requireAuth()` sem nome aceita qualquer coleção de autenticação — e o
+    // PocketBase traz uma `users` por omissão, que este projeto nunca usa e que
+    // tem `createRule: ""`, ou seja inscrição pública. O token de um estranho
+    // passava por aqui; o que o travava a seguir era um acaso do esquema, não
+    // uma decisão. Apanhado na revisão de 27/09/2026, e corrigido nas oito
+    // rotas do projeto ao mesmo tempo.
+    //
+    // Esta linha estava a prender a forma FRACA: escrita assim, um guarda
+    // impede que se corrija o que ele devia defender.
+    expect(h).toMatch(/\$apis\.requireAuth\('membros'\)/);
     expect(h).not.toMatch(/corpo\.(membro|id)\b/);
   });
 

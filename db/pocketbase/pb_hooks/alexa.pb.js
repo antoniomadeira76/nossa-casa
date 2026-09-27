@@ -48,7 +48,7 @@ routerAdd('POST', '/api/alexa/artigo', (e) => {
   const corpo = new DynamicModel({ artigo: '', requestId: '' });
   e.bindBody(corpo);
 
-  const rotulo = A.texto(corpo.artigo, 120);
+  const rotulo = A.texto(corpo.artigo, 60);
   if (!rotulo) throw new BadRequestError('Não percebi o que acrescentar.');
 
   const requestId = A.chaveDePedido(corpo.requestId);
@@ -71,11 +71,10 @@ routerAdd('POST', '/api/alexa/artigo', (e) => {
   // ⚠ E NÃO se escreve `posto`. Os postos contam de 1 e zero quer dizer «nunca
   // arrastado» — que é o que um artigo novo é. Pôr `posto: 0` a fingir primeiro
   // lugar empatava a lista toda.
-  $app.save(r);
-  A.apontar(reserva.registo, r.id);
+  A.guardar(reserva, r, 'Não consegui acrescentar isso à lista.');
 
   return e.json(200, { id: r.id, rotulo, frase: `Acrescentei ${rotulo} à lista.` });
-}, $apis.requireAuth());
+}, $apis.requireAuth('membros'));
 
 // ── Marcar um evento na agenda ───────────────────────────────────────────────
 //
@@ -87,7 +86,7 @@ routerAdd('POST', '/api/alexa/evento', (e) => {
   const corpo = new DynamicModel({ titulo: '', dia: '', hora: '', requestId: '' });
   e.bindBody(corpo);
 
-  const titulo = A.texto(corpo.titulo, 120);
+  const titulo = A.texto(corpo.titulo, 60);
   if (!titulo) throw new BadRequestError('Não percebi o que marcar.');
 
   const dia = A.diaValido(corpo.dia);
@@ -118,8 +117,7 @@ routerAdd('POST', '/api/alexa/evento', (e) => {
   // quando falta. Por voz, só se marcam eventos que toda a casa vê — quem
   // pedir um privado a um altifalante está a pedir uma contradição.
   r.set('visibilidade', 'familia');
-  $app.save(r);
-  A.apontar(reserva.registo, r.id);
+  A.guardar(reserva, r, 'Não consegui marcar isso na agenda.');
 
   const quando = hora ? `${dia} às ${hora}` : dia;
   // A visibilidade DIZ-SE, para ninguém supor que ficou privado.
@@ -127,7 +125,7 @@ routerAdd('POST', '/api/alexa/evento', (e) => {
     id: r.id, titulo, dia, hora, visibilidade: 'familia',
     frase: `Marquei ${titulo} para ${quando}, visível para a família.`,
   });
-}, $apis.requireAuth());
+}, $apis.requireAuth('membros'));
 
 // ── Acrescentar uma tarefa ───────────────────────────────────────────────────
 //
@@ -139,7 +137,7 @@ routerAdd('POST', '/api/alexa/tarefa', (e) => {
   const corpo = new DynamicModel({ titulo: '', requestId: '' });
   e.bindBody(corpo);
 
-  const titulo = A.texto(corpo.titulo, 120);
+  const titulo = A.texto(corpo.titulo, 60);
   if (!titulo) throw new BadRequestError('Não percebi a tarefa.');
 
   const requestId = A.chaveDePedido(corpo.requestId);
@@ -155,10 +153,9 @@ routerAdd('POST', '/api/alexa/tarefa', (e) => {
   // Pontos são dinheiro — a semanada sai deles. Atribuir por voz numa casa onde
   // a Alexa não distingue o Léo da Rita seria dar pontos a quem falasse mais
   // alto. Atribui-se e pontua-se na app, onde se vê quem é quem.
-  $app.save(r);
-  A.apontar(reserva.registo, r.id);
+  A.guardar(reserva, r, 'Não consegui acrescentar essa tarefa.');
 
   return e.json(200, {
     id: r.id, titulo, frase: `Acrescentei a tarefa ${titulo}. Fica por atribuir.`,
   });
-}, $apis.requireAuth());
+}, $apis.requireAuth('membros'));

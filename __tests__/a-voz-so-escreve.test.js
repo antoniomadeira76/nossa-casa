@@ -98,6 +98,66 @@ describe('a voz só escreve', () => {
     expect(bloco).not.toMatch(/txt\('resposta'/);
   });
 
+  it('⚠ a coleção dos pedidos nasce nos DOIS sítios, e diz o mesmo nos dois', () => {
+    // A regra do CLAUDE.md: o `criar-colecoes.mjs` é a verdade de como a base
+    // se constrói do zero, e o `acrescentar-campos.mjs` é como ela chega a uma
+    // base que já tem dados. Cada coleção nova desde 11/09 ganhou um guarda
+    // escrito à mão; esta foi a primeira a nascer sem nenhum, e nada prendia
+    // as duas declarações uma à outra.
+    const cria = semComentarios(ler('db/pocketbase/criar-colecoes.mjs'));
+    const acresc = semComentarios(ler('db/pocketbase/acrescentar-campos.mjs'));
+
+    // Está nos dois sítios, e na lista de apagamento do `criar-colecoes.mjs`.
+    expect(cria).toMatch(/name: 'alexa_pedidos'/);
+    expect(cria).toMatch(/'alexa_pedidos',/);          // a lista NOSSAS
+    expect(acresc).toMatch(/nome: 'alexa_pedidos'/);
+
+    // Os mesmos campos nos dois. ⚠ E `resposta` não está em nenhum.
+    for (const campo of ['casa', 'membro', 'request_id', 'intencao', 'linha', 'criado_em']) {
+      expect(cria).toMatch(new RegExp(`'${campo}'`));
+      expect(acresc).toMatch(new RegExp(`name: '${campo}'`));
+    }
+
+    // O mesmo índice único, letra a letra — é ele que decide quem escreve
+    // quando dois pedidos iguais chegam ao mesmo tempo.
+    const indice = 'CREATE UNIQUE INDEX idx_alexa_pedido ON alexa_pedidos (casa, request_id)';
+    expect(cria).toContain(indice);
+    expect(acresc).toContain(indice);
+
+    // ⚠ E as cinco regras a `null` nos dois. No PocketBase, `null` é «só
+    // superutilizadores» e `''` é «toda a gente, sem sessão nenhuma» — a
+    // diferença entre as duas é uma tecla.
+    // ⚠ A janela vai até ao FIM da declaração e não a um número de caracteres:
+    // o comentário lá dentro continua a ocupar espaço depois de apagado, e uma
+    // janela curta parava antes das regras — dando o guarda por falhado sem o
+    // código ter nada.
+    const daColecao = (texto, marca) => {
+      const i = texto.indexOf(marca);
+      const fim = texto.indexOf('});', i);
+      return texto.slice(i, fim > i ? fim : i + 3000);
+    };
+    const bloco = daColecao(cria, "name: 'alexa_pedidos'");
+    expect(bloco).toMatch(/listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null/);
+    const blocoA = daColecao(acresc, "nome: 'alexa_pedidos'");
+    expect(blocoA).toMatch(/listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null/);
+  });
+
+  it('⚠ e nenhuma rota do servidor aceita sessão de outra coleção', () => {
+    // O `users` é a coleção por omissão do PocketBase, que este projeto nunca
+    // usa — e tem inscrição pública. Um `requireAuth()` sem nome de coleção
+    // aceitava o token de um estranho, que passava também o travão da criança
+    // (um registo de `users` não tem `papel`). O que o travava era o
+    // `if (!casa)`: um acaso do esquema, não uma decisão.
+    const hooks = fs.readdirSync(path.join(RAIZ, HOOKS)).filter(f => f.endsWith('.pb.js'));
+    const soltas = [];
+    for (const f of hooks) {
+      semComentarios(ler(`${HOOKS}/${f}`)).split('\n').forEach((linha, i) => {
+        if (/\$apis\.requireAuth\(\s*\)/.test(linha)) soltas.push(`${HOOKS}/${f}:${i + 1}`);
+      });
+    }
+    expect(soltas).toEqual([]);
+  });
+
   it('⚠ e o «Começar de Zero» apaga os pedidos por voz', () => {
     // Quem pede para apagar tudo não está a excluir o que disse ao altifalante.
     // E ninguém repararia na falta: a coleção tem as cinco regras a `null`,

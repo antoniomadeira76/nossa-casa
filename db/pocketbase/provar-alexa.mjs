@@ -280,6 +280,92 @@ await prova('e o mesmo requestId noutra casa não colide', async () => {
   igual(r.d.repetido, undefined, 'tomou o pedido da casa A por seu');
 });
 
+await prova('⚠ uma escrita falhada NÃO deixa a chave presa', async () => {
+  // ⚠ Este é o defeito que a inversão da ordem introduziu, e é o mais feio de
+  // todos: reservar antes de escrever torna isto idempotente sob concorrência,
+  // mas se a escrita rebentar a reserva fica lá com a `linha` vazia — e todos
+  // os reenvios passam a responder 200 com «Estou a tratar disso.», sem nunca
+  // escreverem nada. Medido em 27/09/2026 com um dia de `2026-02-31`.
+  //
+  // Duas defesas, e esta prova exige as duas: a data impossível é recusada à
+  // entrada (o `2026-02-31` volta como 3 de Março e não volta igual), e uma
+  // escrita que falhe apaga a reserva para o reenvio poder tentar outra vez.
+  const chave = 'amzn1.echo-api.request.envenenada';
+  const antes = await contar('eventos', casaA);
+
+  const mau = await chamar('evento', daRita.authStore.token,
+    { titulo: 'consulta', dia: '2026-02-31', requestId: chave });
+  igual(mau.estado, 400, `o 31 de Fevereiro devolveu ${mau.estado}`);
+  igual(await contar('eventos', casaA), antes, 'escreveu com uma data impossível');
+
+  // E a mesma chave, com um dia que existe, tem de PASSAR — se a reserva
+  // tivesse ficado presa, isto devolvia 200 sem escrever nada.
+  const bom = await chamar('evento', daRita.authStore.token,
+    { titulo: 'consulta', dia: '2026-03-02', requestId: chave });
+  igual(bom.estado, 200, `a segunda tentativa devolveu ${bom.estado}`);
+  igual(await contar('eventos', casaA), antes + 1, 'a chave ficou presa: não escreveu nada');
+  if (bom.d.repetido) throw new Error('respondeu como reenvio a um pedido que nunca foi escrito');
+});
+
+await prova('⚠ e as outras datas impossíveis também', async () => {
+  for (const dia of ['2026-13-01', '2026-00-10', '2026-04-31', '2025-02-29', '2026-11-00']) {
+    const r = await chamar('evento', daRita.authStore.token, { titulo: 'x', dia });
+    igual(r.estado, 400, `«${dia}» devolveu ${r.estado}`);
+  }
+  // E um dia que existe mesmo num ano bissexto passa.
+  const r = await chamar('evento', daRita.authStore.token, { titulo: 'bissexto', dia: '2028-02-29' });
+  igual(r.estado, 200, `o 29 de Fevereiro de 2028 devolveu ${r.estado}`);
+});
+
+console.log('\n── quem NÃO é desta casa ──');
+
+await prova('⚠ uma sessão de outra coleção de autenticação é recusada', async () => {
+  // ⚠ O `users` é a coleção por omissão do PocketBase, que este projeto nunca
+  // usa — e tem `createRule: ""`, ou seja, inscrição pública. Um estranho
+  // registava-se, autenticava-se, e o token passava o `requireAuth()` (que não
+  // dizia a coleção) E o travão da criança, porque um registo de `users` não
+  // tem campo `papel`. O que o travava era o `if (!casa)`: um acaso do esquema,
+  // não uma decisão. Agora as rotas dizem `requireAuth('membros')`.
+  const estranho = new PocketBase(URL);
+  estranho.autoCancellation(false);
+  const email = `intruso.alexa.${Date.now()}@exemplo.pt`;
+  let token = '';
+  try {
+    await estranho.collection('users').create({
+      email, password: 'palavra-longa-9', passwordConfirm: 'palavra-longa-9',
+    });
+    await estranho.collection('users').authWithPassword(email, 'palavra-longa-9');
+    token = estranho.authStore.token;
+  } catch (e) {
+    // Se a inscrição pública já tiver sido fechada, melhor ainda — mas então
+    // não há token para provar o resto, e diz-se.
+    console.log('      (a coleção `users` não deixou inscrever: ' + String(e.message).slice(0, 60) + ')');
+    return;
+  }
+  const antes = await contar('artigos', casaA);
+  for (const rota of ROTAS) {
+    const r = await chamar(rota, token, CORPO[rota]);
+    // ⚠ 403 e não 401, e a diferença diz a coisa certa: a sessão É válida — o
+    // estranho autenticou-se mesmo —, só não é da coleção que esta casa
+    // reconhece. Não é «não sei quem és», é «sei quem és e não entras».
+    igual(r.estado, 403, `${rota} devolveu ${r.estado} a um token de outra coleção`);
+  }
+  igual(await contar('artigos', casaA), antes, 'o estranho escreveu');
+  // ⚠ A limpeza procura a conta pelo E-MAIL, e não pelo `authStore.record.id`.
+  //
+  // A primeira versão usava o id do `authStore` e falhava em silêncio: ficou
+  // uma conta de intruso na casa a sério, e só se viu ao contar as linhas
+  // depois da bateria. Uma prova que deixa resíduo na casa é pior do que uma
+  // prova que não corre — e o `casa-de-provas.mjs` não a apanha, porque a
+  // `users` não pertence a casa nenhuma e não está na limpeza do prefixo.
+  try {
+    const conta = await admin.collection('users').getFirstListItem(`email = "${email}"`);
+    await admin.collection('users').delete(conta.id);
+  } catch (e) {
+    throw new Error(`não consegui apagar a conta de intruso ${email}: ${e.message}`);
+  }
+});
+
 console.log('\n── o que a voz ouve mal ──');
 
 await prova('⚠ quebras de linha e caracteres de controlo não entram no rótulo', async () => {
@@ -304,13 +390,44 @@ await prova('⚠ quebras de linha e caracteres de controlo não entram no rótul
 });
 
 await prova('⚠ e um rótulo longo corta-se por LETRAS, sem partir um emoji ao meio', async () => {
-  // ⚠ O corte era por unidade UTF-16 e partia pares substitutos: «a»×119 mais
+  // ⚠ O corte era por unidade UTF-16 e partia pares substitutos: «a»×59 mais
   // um emoji ficava com um U+FFFD no fim — e era isso que a Alexa dizia.
-  const r = await chamar('artigo', daRita.authStore.token, { artigo: 'a'.repeat(119) + '🥛' });
+  const r = await chamar('artigo', daRita.authStore.token, { artigo: 'a'.repeat(59) + '🥛' });
   igual(r.estado, 200, `devolveu ${r.estado}`);
   const linha = await admin.collection('artigos').getOne(r.d.id);
   if (/�/.test(linha.rotulo)) throw new Error('partiu o emoji ao meio (U+FFFD)');
-  igual(Array.from(linha.rotulo).length, 120, `ficou com ${Array.from(linha.rotulo).length} letras`);
+  igual(Array.from(linha.rotulo).length, 60, `ficou com ${Array.from(linha.rotulo).length} letras`);
+});
+
+console.log('\n── a coleção dos pedidos está fechada ──');
+
+await prova('⚠ nem um administrador da casa lê os pedidos por voz pela API', async () => {
+  // ⚠ As cinco regras estão a `null`, que no PocketBase quer dizer «só
+  // superutilizadores» — e `""` quer dizer «toda a gente, sem sessão nenhuma».
+  // A diferença entre as duas é uma tecla, e nenhuma prova a vigiava: trocar um
+  // pelo outro numa corrida do `db:campos` deixava tudo verde.
+  //
+  // É o mesmo cuidado que a `credenciais_agenda` já tem, e pela mesma razão.
+  for (const [nome, fn] of [
+    ['list', () => daRita.collection('alexa_pedidos').getFullList()],
+    ['view', () => daRita.collection('alexa_pedidos').getList(1, 1)],
+    ['create', () => daRita.collection('alexa_pedidos').create({ casa: casaA.id, membro: rita.id, request_id: 'x' })],
+  ]) {
+    let passou = false;
+    try { await fn(); passou = true; } catch (e) { /* é o que se quer */ }
+    if (passou) throw new Error(`um adulto conseguiu ${nome} na alexa_pedidos`);
+  }
+});
+
+await prova('⚠ e nem por adivinha, um caractere de cada vez', async () => {
+  // O canal que o `provar-agenda-google.mjs` já defende: um filtro que responda
+  // «encontrei» ou «não encontrei» é uma leitura, letra a letra.
+  let passou = false;
+  try {
+    await daRita.collection('alexa_pedidos').getList(1, 1, { filter: 'request_id ~ "a%"' });
+    passou = true;
+  } catch (e) { /* é o que se quer */ }
+  if (passou) throw new Error('o filtro respondeu — dá para adivinhar o conteúdo');
 });
 
 console.log('\n── o que a voz NUNCA faz ──');

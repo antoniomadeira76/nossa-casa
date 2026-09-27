@@ -77,7 +77,7 @@ routerAdd('POST', '/api/agenda/ligar', (e) => {
   // depois abre a janela. O retorno não precisa de sessão nenhuma: quem o
   // autoriza é o `state`, que já ficou preso a este membro.
   return e.json(200, { url: `${C.GOOGLE_AUTH}?${q}` });
-}, $apis.requireAuth());
+}, $apis.requireAuth('membros'));
 
 // ── 2. Voltar ────────────────────────────────────────────────────────────────
 //
@@ -199,7 +199,7 @@ routerAdd('POST', '/api/agenda/token', (e) => {
     access_token: r.json.access_token,
     expires_in: r.json.expires_in || 3600,
   });
-}, $apis.requireAuth());
+}, $apis.requireAuth('membros'));
 
 // ── 4. Saber se está ligada, sem pedir nada à Google ────────────────────────
 routerAdd('GET', '/api/agenda/estado', (e) => {
@@ -211,4 +211,4 @@ routerAdd('GET', '/api/agenda/estado', (e) => {
     ligada = Boolean(linha.get('refresh_token'));
   } catch (err) { /* sem linha: não está ligada */ }
   return e.json(200, { ligada });
-}, $apis.requireAuth());
+}, $apis.requireAuth('membros'));

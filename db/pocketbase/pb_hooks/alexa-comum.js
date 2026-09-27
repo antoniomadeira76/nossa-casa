@@ -72,9 +72,25 @@ const texto = (v, quanto) => {
 // a direcção trocada: o `d2026-09-06` é a chave da LOJA LOCAL (o `store.jsx`),
 // traduzida num sítio só (`chaveDeISO`/`isoDeChave`, em `src/sync.js`). Escrito
 // na coleção, `d2026-09-06` é uma data inválida.
+//
+// ⚠ E a forma não chega: isto tem de ser uma DATA.
+//
+// A primeira versão era só a expressão regular, e `2026-02-31` passava. O campo
+// `eventos.dia` é um `date` do PocketBase com `required`: uma data impossível
+// não se analisa, fica vazia, e o `required` recusa-a — mas só na escrita, já
+// depois de a chave do pedido estar reservada. O resultado medido era o pior
+// possível: zero eventos escritos, uma reserva órfã, e todos os reenvios
+// seguintes respondidos com 200 e «Estou a tratar disso.», para sempre.
+//
+// Constrói-se a data e confere-se que o ano, o mês e o dia voltam iguais. O 31
+// de Fevereiro volta como 3 de Março, e não volta igual.
 const diaValido = (v) => {
   const d = texto(v, 10);
-  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
+  const [ano, mes, dia] = d.split('-').map(Number);
+  const q = new Date(Date.UTC(ano, mes - 1, dia));
+  if (q.getUTCFullYear() !== ano || q.getUTCMonth() + 1 !== mes || q.getUTCDate() !== dia) return null;
+  return d;
 };
 
 // ⚠ O `AMAZON.TIME` também responde coisas que não são horas: `MO` (manhã),
@@ -162,10 +178,44 @@ const jaFeito = (casa, requestId) => {
   }
 };
 
-// Depois de escrever, aponta-se a reserva à linha criada.
-const apontar = (registo, linhaId) => {
-  if (!registo) return;
-  try { registo.set('linha', linhaId); $app.save(registo); } catch (err) { /* o registo é um extra */ }
+// ── Escrever, e desfazer a reserva se a escrita falhar ───────────────────────
+//
+// ⚠ Sem isto, uma chave fica PRESA PARA SEMPRE.
+//
+// Reservar antes de escrever é o que torna isto idempotente sob concorrência —
+// mas abre um buraco na outra ponta: se a escrita rebentar, a reserva fica lá,
+// com a `linha` vazia. A partir daí todos os reenvios da mesma chave caem no
+// «já está reservado» e respondem 200 com uma frase tranquilizadora, sem nunca
+// escreverem nada. Medido em 27/09/2026 com um `dia` de `2026-02-31`: zero
+// eventos, uma reserva órfã, e a Alexa a dizer «estou a tratar disso» sempre.
+//
+// A inversão da ordem que corrigiu a escrita duplicada transformava uma escrita
+// falhada num silêncio permanente. Uma reserva só vale enquanto a escrita valer.
+const guardar = (reserva, registo, aviso) => {
+  try {
+    $app.save(registo);
+  } catch (err) {
+    // A reserva morre com a escrita: a chave fica livre para o reenvio tentar
+    // outra vez, que é o que a Alexa vai fazer.
+    if (reserva && reserva.registo) {
+      try { $app.delete(reserva.registo); } catch (e2) { /* o melhor que se podia */ }
+    }
+    $app.logger().error('Alexa: a escrita falhou', 'erro', String(err));
+    // ⚠ E a mensagem é em português, não o erro cru do PocketBase: quem a ouve
+    // é uma pessoa na cozinha, pela voz de um altifalante.
+    throw new BadRequestError(aviso);
+  }
+  // Aponta-se a reserva à linha criada. ⚠ Se ISTO falhar, a chave fica presa do
+  // mesmo modo — por isso a reserva também se desfaz, e um reenvio escreve de
+  // novo. Duas linhas iguais vêem-se e apagam-se; um silêncio não.
+  if (reserva && reserva.registo) {
+    try {
+      reserva.registo.set('linha', registo.id);
+      $app.save(reserva.registo);
+    } catch (err) {
+      try { $app.delete(reserva.registo); } catch (e2) { /* idem */ }
+    }
+  }
 };
 
 // ⚠ A frase dita NÃO se guarda — refaz-se.
@@ -203,17 +253,54 @@ const fraseDe = (intencao, linhaId) => {
 // Quando não há, esta abre uma. Quem fala é um adulto — que é quem pode abrir
 // listas —, e recusar um «acrescenta leite» porque a casa está entre compras
 // seria uma resposta que ninguém percebe de pé na cozinha.
+//
+// ⚠ E abre UMA, não cinco.
+//
+// A primeira versão era «procura; se falhar, cria», e entre as duas não havia
+// índice nem transacção. Medido em 27/09/2026: quinze pedidos simultâneos com
+// chaves distintas, numa casa sem lista, deixaram **cinco listas abertas**. Os
+// artigos espalhavam-se por listas que a app não mostra — o `src/sync.js`
+// escolhe UMA (`.find(l => !l.fechada_em)`) — e sumiam sem erro nenhum.
+//
+// Não há como travar isto no esquema: o `acrescentar-campos.mjs` sabe pôr
+// índices em coleções NOVAS, e a `listas_compras` é antiga. Trava-se aqui, e a
+// função cura o que encontrar: se a corrida abriu mais do que uma, fica a
+// primeira por `id` — ordem estável, igual para todos os pedidos — e as outras
+// desaparecem, desde que estejam vazias. Vazias estão: nasceram há
+// milissegundos, na mesma corrida.
 function listaAberta(casa) {
-  try {
-    return $app.findFirstRecordByFilter('listas_compras',
-      'casa = {:c} && fechada_em = ""', { c: casa });
-  } catch (err) {
+  const abertas = () => {
+    try {
+      return $app.findRecordsByFilter('listas_compras',
+        'casa = {:c} && fechada_em = ""', 'id', 0, 0, { c: casa });
+    } catch (err) {
+      return [];
+    }
+  };
+
+  let lista = abertas();
+  if (!lista.length) {
     const col = $app.findCollectionByNameOrId('listas_compras');
     const r = new Record(col);
     r.set('casa', casa);
     $app.save(r);
-    return r;
+    lista = abertas();
+    if (!lista.length) return r;     // não se releu: fica a que se acabou de criar
   }
+
+  for (let i = 1; i < lista.length; i++) {
+    const extra = lista[i];
+    try {
+      // ⚠ Só se apaga uma lista VAZIA e sem nada escolhido. Uma lista com um
+      // artigo, uma loja ou um dia marcado é trabalho de alguém.
+      const artigos = $app.findRecordsByFilter('artigos', 'lista = {:l}', '', 1, 0, { l: extra.id });
+      const tocada = artigos.length || extra.get('loja') || extra.get('comprador')
+        || extra.getString('planeada_para') || extra.get('total');
+      if (!tocada) $app.delete(extra);
+    } catch (err) { /* fica: mais vale uma lista a mais do que apagar trabalho */ }
+  }
+
+  return lista[0];
 }
 
 // A resposta a quem chegou depois.
@@ -258,6 +345,6 @@ const jaRespondido = (reserva, intencao, ecos) => {
 };
 
 module.exports = {
-  quemFala, jaFeito, reservar, apontar, fraseDe, jaRespondido,
+  quemFala, jaFeito, reservar, guardar, fraseDe, jaRespondido,
   chaveDePedido, texto, diaValido, horaValida, listaAberta,
 };
