@@ -1,12 +1,54 @@
 # Alexa — especificação da fase 1
 
-> **Estado: o lado da casa está construído** (27/09/2026) — as rotas, o modelo
-> de interação e as provas. O que falta é a decisão de expor o servidor, sem a
-> qual a Amazon não consegue chamar cá. Ver «A decisão que vem primeiro».
+> **Estado: falta a skill, e mais nada** (27/09/2026).
+>
+> O lado da casa está construído e provado — as três rotas, a coleção dos
+> pedidos, 26 provas. E **o servidor está exposto**: `casa.anossacasa.app`,
+> por um túnel da Cloudflare, com os dois serviços a arrancar sozinhos e
+> verificados a sobreviver a um reinício da máquina.
+>
+> O que falta é do lado da Amazon: publicar a skill e ligar a conta. E aceitar
+> o `pt-BR`, que é o único português que a Alexa tem.
 >
 > O alcance é o desta página e não mais: três escritas, nada de leituras, nada
 > de dinheiro nem de saúde. Confirmado pelo dono da casa em 27/09/2026, com as
 > alternativas à frente.
+
+## O servidor está exposto — o que isso mudou
+
+`https://casa.anossacasa.app` → túnel da Cloudflare → `127.0.0.1:8095`.
+
+Dois serviços do Windows, ambos de arranque automático, ambos verificados **de
+fora** depois de um reinício a sério da máquina:
+
+| | |
+|---|---|
+| `Cloudflared` | o túnel |
+| `NossaCasaPocketBase` | o servidor (NSSM, com reinício automático se cair) |
+
+**Duas trancas no túnel**, e não no servidor — localmente tudo continua a
+funcionar como sempre:
+
+```
+/_/                            → 404   o painel de administração não existe de fora
+/api/collections/_superusers/  → 404   nem o caminho de tentar a palavra-passe
+tudo o resto                   → passa
+```
+
+O que se mede de fora, sem sessão, e é o que o `verificar-a-casa.ps1` confere:
+`/api/health` 200; o painel 404; o superutilizador 404; `POST /api/alexa/artigo`
+401; e as seis coleções de saúde a devolverem `totalItems: 0`.
+
+⚠ **E o que isto custa, dito claramente.** A casa tinha duas trancas — as regras
+do servidor **e** a máquina não ser alcançável. Ficou uma. As regras aguentam
+(605 provas, e vistas a aguentar de fora), mas os cinco pontos de conformidade
+do `db/postgres/README.md` voltam todos: a base contém fichas clínicas de
+menores e passou a estar atrás de uma porta na Internet, em vez de atrás de não
+haver porta nenhuma. Foi decisão do dono da casa, tomada com isto à frente.
+
+⚠ **O `casa.anossacasa.app` serve a API, não a app.** Abrir esse endereço não dá
+interface nenhuma — dá o servidor. A app continua a viver no Expo, e é ela que
+fala com aquele endereço.
 
 ## ⚠ Três coisas que esta página dizia mal
 
@@ -239,26 +281,25 @@ O padrão da casa: as regras não se afirmam, provam-se a correr
 
 ---
 
-## A decisão que vem primeiro
+## A decisão que vinha primeiro — já foi tomada
 
-**A Alexa precisa de um endereço público com HTTPS válido.** O servidor corre
-hoje em `127.0.0.1:8095` e não é alcançável de fora. Isto obriga a expor a casa
-à Internet, e é a decisão de segurança maior deste projecto — maior do que
-qualquer coisa feita até aqui, porque é a única que não se desfaz sozinha.
+**Esta secção dizia que a Alexa precisa de um endereço público com HTTPS válido,
+que o servidor corria em `127.0.0.1` e não era alcançável, e que expor a casa
+era a decisão de segurança maior deste projecto — a única que não se desfaz
+sozinha.** Continua tudo verdade, menos o tempo do verbo: foi tomada em
+27/09/2026, pelo caminho **A** dos três que estavam listados, um túnel com nome
+próprio da Cloudflare. Ver «O servidor está exposto» no topo.
 
-O que muda no dia em que se expõe:
+Fica escrito o que ela custou, que era a parte que interessava:
 
-- as regras de API deixam de ter a rede local como segunda tranca;
-- os hooks passam a ser superfície pública;
-- as provas de `db/pocketbase/` passam de «boa prática» a **única** defesa.
+- as regras de API deixaram de ter a rede local como segunda tranca;
+- os hooks passaram a ser superfície pública;
+- as provas de `db/pocketbase/` passaram de «boa prática» a **única** defesa.
 
-Há três caminhos, por ordem de exposição:
-
-| | O quê | Custo |
-|---|---|---|
-| **A** | Túnel com nome próprio (Cloudflare Tunnel, Tailscale Funnel) | Baixo. Sem porta aberta no router; o túnel autentica-se para fora. |
-| **B** | Servidor alugado, com a casa a sincronizar para lá | Médio. É onde isto acaba se a casa crescer. |
-| **C** | Porta aberta no router com certificado | **Não recomendo.** |
+Os outros dois caminhos ficam aqui porque continuam a ser as alternativas, se um
+dia isto crescer: **B**, um servidor alugado com a casa a sincronizar para lá —
+médio, e é onde acaba se a casa crescer; **C**, uma porta aberta no router com
+certificado — que continuo a não recomendar.
 
 ---
 
@@ -293,15 +334,29 @@ na regra do servidor quer dizer «só o autor vê») e o reenvio escreve duas li
 
 ## O que fazer a seguir, e por que ordem
 
-1. **Passar a semana com a app no telemóvel**, como combinado. A Alexa
-   acrescenta uma porta; convém saber primeiro se a casa que ela abre é a que
-   se quer.
-2. **Decidir sobre a exposição** (A, B ou C acima). Sem isto o altifalante não
-   fala com a casa — mas note-se que o que falta é só isso: as rotas já existem
-   e estão provadas.
-3. **Decidir sobre o `pt-BR`**, que é a única forma de a Alexa ouvir português.
-4. Só então: publicar a skill e ligar a conta.
+Os dois primeiros passos desta lista estavam feitos ao fim do dia 27/09/2026 —
+a exposição decidida e montada. Ficam os outros, por esta ordem:
+
+1. **Decidir sobre o `pt-BR`.** É a única forma de a Alexa ouvir português, e
+   choca com a regra número um do `CLAUDE.md` — português europeu em toda a
+   interface. O `pt-BR` é o idioma em que ela **ouve**; as frases que **diz** são
+   as que o servidor devolve, e essas continuam em português europeu. Mas quem
+   as diz é uma voz brasileira, e o altifalante tem de estar configurado assim.
+2. **O Account Linking**, que esta página descreve e que ainda não existe: as
+   rotas `/api/alexa/autorizar` e `/api/alexa/token` não estão escritas. Sem
+   elas o altifalante não tem sessão, e sem sessão as três rotas devolvem 401 —
+   que é exactamente o que se quer, mas também quer dizer que a skill não
+   funciona até isto estar feito.
+3. **Publicar a skill** com o `alexa/modelo-de-interacao.pt-BR.json`, e apontar
+   o endpoint a `https://casa.anossacasa.app`.
+4. **Passar a semana com a app no telemóvel**, como estava combinado. A Alexa
+   acrescenta uma porta; convém saber se a casa que ela abre é a que se quer —
+   e isso continua por saber, porque a app ainda só correu no computador.
 
 A fase 1 é honestamente pequena — três intenções, três rotas, e o Account
 Linking em cima do OAuth que já existe. O que a torna séria não é o tamanho: é
 que ela é a primeira coisa nesta app que fala com o mundo de fora.
+
+⚠ E hoje isso deixou de ser uma frase sobre o futuro: **o servidor já fala com
+o mundo de fora**, com ou sem skill. O que a voz acrescentar daqui para a frente
+é só mais uma porta na casa que já está na rua.
