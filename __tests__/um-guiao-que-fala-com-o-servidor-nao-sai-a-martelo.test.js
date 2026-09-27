@@ -41,15 +41,14 @@
  * — não há `process.exit(...)`. Há `await sair(n)` do `db/pocketbase/sair.mjs`,
  * que põe o `process.exitCode` e não desliga nada.
  *
- * O que isto NÃO prova: que a saída funciona. Isso mede-se a correr, e quem o
- * faz é `db/pocketbase/provar-a-recusa-sai-com-2.mjs` — que se corre À MÃO, com
- * `npm run db:provar-a-recusa`, porque levanta um PocketBase só dele e um
- * servidor a aparecer no meio de uma bateria é uma surpresa em cima de quem
- * está a trabalhar na máquina.
+ * O que isto NÃO prova: que a saída funciona. Isso mediu-se a correr, uma vez,
+ * contra um PocketBase de deitar fora — e as medições ficaram escritas no
+ * `db/pocketbase/sair.mjs`, ao lado do código que elas justificam.
  *
- * Ou seja: este guarda é o que corre todos os dias, e só ele. Garante a FORMA —
- * que ninguém volta a escrever `process.exit` num guião que fala com o
- * servidor. O EFEITO mede-se quando se mexer numa saída.
+ * ⚠ A prova que as fazia foi APAGADA em 27/09/2026, e é uma decisão, não um
+ * esquecimento: ela levantava um servidor na máquina de quem está a trabalhar,
+ * e o que impede o defeito de voltar não é medir outra vez — é proibir a forma
+ * errada, que é o que este guarda faz, todos os dias, sem servidor nenhum.
  */
 const fs = require('fs');
 const path = require('path');

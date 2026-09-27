@@ -111,7 +111,7 @@ export async function comecar() {
   // `.finally()` com uma limpeza curta rebenta na mesma. Era o tempo.
   //
   // Quem chamasse o `resumo()` sem passar por aqui não tinha rede nenhuma, e
-  // havia um assim: o `provar-a-recusa-sai-com-2.mjs`, o último elo da cadeia.
+  // havia um assim, apagado em 27/09/2026 com o defeito já corrigido.
   //
   // Desde 27/09/2026 o `resumo()` põe o `process.exitCode` e não desliga nada, e
   // então o `beforeExit` volta a ser o caminho normal — corre quando o ciclo de

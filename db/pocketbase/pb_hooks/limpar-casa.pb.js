@@ -52,6 +52,13 @@ routerAdd('POST', '/api/casa/limpar', (e) => {
     'manutencoes', 'eventos', 'tarefas', 'equipamentos',
     'envelopes', 'metas', 'meses',
     'lojas', 'categorias_equip', 'especialidades', 'preferencias',
+    // ⚠ Os pedidos que chegaram por voz contam como dados da casa.
+    //
+    // Ficaram de fora na primeira versão (27/09/2026) e o «Começar de Zero»
+    // deixava-os para trás — quem pede para apagar tudo não está a excluir o
+    // que disse ao altifalante. E ninguém repararia: a coleção tem as cinco
+    // regras a `null`, portanto nem o dono da casa a consegue ver pela app.
+    'alexa_pedidos',
   ];
 
   const apagadas = {};

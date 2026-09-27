@@ -4,9 +4,9 @@
 //
 // Três escritas, e nada mais:
 //
-//   POST /api/alexa/artigo   { artigo, requestId }          → acrescenta à lista
-//   POST /api/alexa/evento   { titulo, dia, hora?, requestId } → marca na agenda
-//   POST /api/alexa/tarefa   { titulo, requestId }          → acrescenta tarefa
+//   POST /api/alexa/artigo   { artigo, requestId }              → acrescenta à lista
+//   POST /api/alexa/evento   { titulo, dia, hora?, requestId }  → marca na agenda
+//   POST /api/alexa/tarefa   { titulo, requestId }              → acrescenta tarefa
 //
 // ⚠ Não há rota de LEITURA, e é a decisão central desta fase.
 //
@@ -17,6 +17,11 @@
 // se desfaz. Nada de dinheiro, nada de saúde, nada de confirmar tarefas de
 // crianças, e nenhum evento que não seja de família.
 //
+// O guarda que impede uma rota nova de aparecer aqui é
+// `__tests__/a-voz-so-escreve.test.js`, que ENUMERA os `routerAdd` deste
+// ficheiro. Não se prova de fora: um GET a uma rota POST devolve o mesmo 404
+// que um caminho que não existe.
+//
 // ⚠ Um hook escreve com $app.save, que NÃO passa pelas regras da coleção. As
 // regras continuam a valer para a app; aqui dentro a defesa é o `quemFala()`,
 // e é por isso que ele é a primeira coisa de cada rota.
@@ -25,6 +30,13 @@
 // contexto isolado e não vê o âmbito deste ficheiro: uma auxiliar escrita aqui
 // fora dá `ReferenceError` a correr, que não se vê em leitura nenhuma. Fora dos
 // handlers só há comentários e os `routerAdd`.
+//
+// ── A ordem das operações, que é o que torna isto idempotente ────────────────
+//
+// RESERVAR primeiro, escrever depois. A primeira versão fazia ao contrário —
+// lia, escrevia, e só depois registava — e não era idempotente de todo: dois
+// pedidos iguais em voo ao mesmo tempo escreviam os dois, medido cinco vezes em
+// cinco. O índice único protegia o registo, não a lista.
 
 // ── Acrescentar um artigo à lista de compras ─────────────────────────────────
 //
@@ -39,11 +51,9 @@ routerAdd('POST', '/api/alexa/artigo', (e) => {
   const rotulo = A.texto(corpo.artigo, 120);
   if (!rotulo) throw new BadRequestError('Não percebi o que acrescentar.');
 
-  const requestId = A.texto(corpo.requestId);
-  const repetido = A.jaFeito(casa, requestId);
-  if (repetido) {
-    return e.json(200, { id: repetido.get('linha'), rotulo, frase: repetido.get('resposta'), repetido: true });
-  }
+  const requestId = A.chaveDePedido(corpo.requestId);
+  const reserva = A.reservar(casa, membro.id, requestId, 'artigo');
+  if (!reserva.reservado) return e.json(200, A.jaRespondido(reserva, 'artigo', { rotulo }));
 
   const lista = A.listaAberta(casa);
 
@@ -62,11 +72,9 @@ routerAdd('POST', '/api/alexa/artigo', (e) => {
   // arrastado» — que é o que um artigo novo é. Pôr `posto: 0` a fingir primeiro
   // lugar empatava a lista toda.
   $app.save(r);
+  A.apontar(reserva.registo, r.id);
 
-  const frase = `Acrescentei ${rotulo} à lista.`;
-  A.registar(casa, membro.id, requestId, 'artigo', r.id, frase);
-
-  return e.json(200, { id: r.id, rotulo, frase });
+  return e.json(200, { id: r.id, rotulo, frase: `Acrescentei ${rotulo} à lista.` });
 }, $apis.requireAuth());
 
 // ── Marcar um evento na agenda ───────────────────────────────────────────────
@@ -87,10 +95,10 @@ routerAdd('POST', '/api/alexa/evento', (e) => {
 
   const hora = A.horaValida(corpo.hora);
 
-  const requestId = A.texto(corpo.requestId);
-  const repetido = A.jaFeito(casa, requestId);
-  if (repetido) {
-    return e.json(200, { id: repetido.get('linha'), titulo, dia, hora, visibilidade: 'familia', frase: repetido.get('resposta'), repetido: true });
+  const requestId = A.chaveDePedido(corpo.requestId);
+  const reserva = A.reservar(casa, membro.id, requestId, 'evento');
+  if (!reserva.reservado) {
+    return e.json(200, A.jaRespondido(reserva, 'evento', { titulo, dia, hora, visibilidade: 'familia' }));
   }
 
   const col = $app.findCollectionByNameOrId('eventos');
@@ -111,13 +119,14 @@ routerAdd('POST', '/api/alexa/evento', (e) => {
   // pedir um privado a um altifalante está a pedir uma contradição.
   r.set('visibilidade', 'familia');
   $app.save(r);
+  A.apontar(reserva.registo, r.id);
 
   const quando = hora ? `${dia} às ${hora}` : dia;
   // A visibilidade DIZ-SE, para ninguém supor que ficou privado.
-  const frase = `Marquei ${titulo} para ${quando}, visível para a família.`;
-  A.registar(casa, membro.id, requestId, 'evento', r.id, frase);
-
-  return e.json(200, { id: r.id, titulo, dia, hora, visibilidade: 'familia', frase });
+  return e.json(200, {
+    id: r.id, titulo, dia, hora, visibilidade: 'familia',
+    frase: `Marquei ${titulo} para ${quando}, visível para a família.`,
+  });
 }, $apis.requireAuth());
 
 // ── Acrescentar uma tarefa ───────────────────────────────────────────────────
@@ -133,11 +142,9 @@ routerAdd('POST', '/api/alexa/tarefa', (e) => {
   const titulo = A.texto(corpo.titulo, 120);
   if (!titulo) throw new BadRequestError('Não percebi a tarefa.');
 
-  const requestId = A.texto(corpo.requestId);
-  const repetido = A.jaFeito(casa, requestId);
-  if (repetido) {
-    return e.json(200, { id: repetido.get('linha'), titulo, frase: repetido.get('resposta'), repetido: true });
-  }
+  const requestId = A.chaveDePedido(corpo.requestId);
+  const reserva = A.reservar(casa, membro.id, requestId, 'tarefa');
+  if (!reserva.reservado) return e.json(200, A.jaRespondido(reserva, 'tarefa', { titulo }));
 
   const col = $app.findCollectionByNameOrId('tarefas');
   const r = new Record(col);
@@ -149,9 +156,9 @@ routerAdd('POST', '/api/alexa/tarefa', (e) => {
   // a Alexa não distingue o Léo da Rita seria dar pontos a quem falasse mais
   // alto. Atribui-se e pontua-se na app, onde se vê quem é quem.
   $app.save(r);
+  A.apontar(reserva.registo, r.id);
 
-  const frase = `Acrescentei a tarefa ${titulo}. Fica por atribuir.`;
-  A.registar(casa, membro.id, requestId, 'tarefa', r.id, frase);
-
-  return e.json(200, { id: r.id, titulo, frase });
+  return e.json(200, {
+    id: r.id, titulo, frase: `Acrescentei a tarefa ${titulo}. Fica por atribuir.`,
+  });
 }, $apis.requireAuth());

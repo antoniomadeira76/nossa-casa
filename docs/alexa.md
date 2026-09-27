@@ -181,9 +181,30 @@ O invariante #2 ajuda aqui: tudo são movimentos aditivos, portanto uma ordem
 repetida **duplica** em vez de corromper. Mas a Alexa reenvia pedidos quando a
 resposta demora, e duas linhas de «leite» são um defeito visível.
 
-Cada rota aceita a `requestId` da Alexa como **chave de idempotência**, como as
-escritas de dinheiro já fazem: um reenvio colide no índice único em vez de
-escrever outra vez.
+Cada rota aceita a `requestId` da Alexa como **chave de idempotência**.
+
+⚠ **Mas não da maneira que esta página dizia.** Dizia «um reenvio colide no
+índice único em vez de escrever outra vez», e isso descreve uma coisa que não
+acontece: o índice protege o REGISTO do pedido, não a linha que se escreve. A
+primeira implementação seguiu a página ao pé da letra — lia, escrevia o artigo,
+e só depois registava — e **não era idempotente de todo**. Medido em
+27/09/2026: dois pedidos iguais em voo ao mesmo tempo escreveram dois artigos,
+cinco vezes em cinco; doze em paralelo escreveram doze.
+
+E a prova que devia apanhá-lo fazia os dois pedidos **em sequência**, que é
+precisamente o caso que a Alexa não produz — ela reenvia porque a primeira
+resposta ainda não chegou.
+
+A ordem certa é a inversa: **reservar primeiro, escrever depois.** A rota
+insere a chave em `alexa_pedidos`, e é o índice único `(casa, request_id)` que
+decide quem chegou primeiro; só quem ganhou escreve, e quem perdeu lê a reserva
+do outro e responde o mesmo. Fica também escrito na reserva **qual foi a
+intenção**: a mesma chave usada noutra intenção é recusada, em vez de devolver
+a frase da ordem anterior e o `id` de uma linha de outra coleção.
+
+⚠ E a chave **não se corta**. Cortá-la ao tamanho do campo fazia duas chaves
+diferentes colapsarem numa, com a segunda escrita descartada em silêncio e a
+Alexa a confirmar a primeira. Uma chave ou serve inteira ou é recusada.
 
 ---
 

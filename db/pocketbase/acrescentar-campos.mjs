@@ -54,6 +54,16 @@ await pb.collection('_superusers').authWithPassword(SUPERUTILIZADOR, SUPER_PALAV
 // A relação precisa do ID da coleção alvo, e esse resolve-se pelo nome, senão
 // era um identificador opaco escrito à mão que muda em cada base nova.
 const CAMPOS = [
+  // A data de um pedido por voz, para a retenção ser exprimível — sem ela não
+  // se consegue escrever «apagar o que tem mais de trinta dias» e a tabela
+  // cresce para sempre.
+  //
+  // ⚠ E é uma FORMA NOVA da lição dos dois sítios, apanhada em 27/09/2026: o
+  // campo estava na entrada da coleção em `COLECOES`, mas essa tabela só CRIA
+  // a coleção quando ela falta. Numa coleção que já existe, um campo novo
+  // precisa de uma linha AQUI — e foi o próprio script a dizê-lo, com o
+  // «✕ alexa_pedidos.criado_em não ficou lá» da conferência final.
+  ['alexa_pedidos', 'criado_em', { type: 'date' }],
   ['membros', 'avatar', { type: 'text', max: 500 }],
   ['membros', 'figura', { type: 'text', max: 24 }],
   ['artigos', 'corredor', { type: 'relation', alvo: 'seccoes', maxSelect: 1, cascadeDelete: false }],
@@ -319,7 +329,10 @@ const COLECOES = [
       { name: 'request_id', type: 'text', required: true, max: 200 },
       { name: 'intencao', type: 'text', max: 40 },
       { name: 'linha', type: 'text', max: 40 },
-      { name: 'resposta', type: 'text', max: 500 },
+      // ⚠ Sem campo para a frase dita: punha títulos de eventos e nomes de
+      // artigos numa segunda cópia, fora do travão da saúde. Ver a razão longa
+      // no `criar-colecoes.mjs`.
+      { name: 'criado_em', type: 'date' },
     ],
     indexes: ['CREATE UNIQUE INDEX idx_alexa_pedido ON alexa_pedidos (casa, request_id)'],
     regras: {
@@ -330,6 +343,13 @@ const COLECOES = [
 
 // ⚠ O que uma coleção NÃO pode ter. `[coleção, campo, porquê]`.
 const CAMPOS_A_TIRAR = [
+  ['alexa_pedidos', 'resposta',
+    'guardava a frase que a Alexa disse em voz alta — «Marquei consulta no '
+    + 'dentista para 2026-09-30 às 09:30» —, e com ela títulos de eventos e '
+    + 'nomes de artigos numa SEGUNDA cópia, numa coleção que não é de saúde. '
+    + 'Um título de consulta médica acabava fora do `recusaSaude()` e de tudo '
+    + 'o que o travão da saúde defende, sem ninguém decidir isso. No reenvio a '
+    + 'frase refaz-se da linha criada: o texto vive num sítio só.'],
   ['metas', 'atual',
     'era um saldo ESCRITO (INVARIANTE #2). O que está juntado numa meta é a '
     + 'SOMA dos `meta_movimentos` — dois telefones a reforçar a mesma meta '

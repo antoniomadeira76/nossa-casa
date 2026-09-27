@@ -198,9 +198,7 @@ await prova('um artigo por voz entra na lista aberta, sem posto', async () => {
 
 console.log('\n── o reenvio ──');
 
-await prova('⚠ o mesmo requestId duas vezes escreve UMA linha', async () => {
-  // A Alexa reenvia quando a resposta demora, e duas linhas de «leite» na lista
-  // são um defeito que se vê.
+await prova('o mesmo requestId duas vezes, em sequência, escreve UMA linha', async () => {
   const pedido = { artigo: 'arroz agulha', requestId: 'amzn1.echo-api.request.provas-1' };
   const antes = await contar('artigos', casaA);
   const um = await chamar('artigo', daRita.authStore.token, pedido);
@@ -209,10 +207,69 @@ await prova('⚠ o mesmo requestId duas vezes escreve UMA linha', async () => {
   igual(dois.estado, 200, `o reenvio devolveu ${dois.estado}`);
   igual(await contar('artigos', casaA), antes + 1, 'o reenvio escreveu outra linha');
   igual(dois.d.id, um.d.id, 'o reenvio devolveu outra linha');
-  // ⚠ E devolve a MESMA frase que a Alexa já disse em voz alta. Um erro fazia
-  // quem está na cozinha ouvir «não consegui» depois de ouvir «acrescentei».
   igual(dois.d.frase, um.d.frase, 'o reenvio disse outra coisa');
   igual(dois.d.repetido, true, 'o reenvio não se declarou repetido');
+});
+
+await prova('⚠ e AO MESMO TEMPO também — que é como a Alexa reenvia', async () => {
+  // ⚠ Esta é a prova que faltava, e a falta dela escondeu um defeito a sério.
+  //
+  // A versão sequencial acima passava com a idempotência avariada: a primeira
+  // implementação lia, escrevia o artigo e só depois registava o pedido, e a
+  // janela entre a leitura e o registo nunca estava fechada. Medido em
+  // 27/09/2026: dois pedidos em voo ao mesmo tempo escreviam DOIS artigos,
+  // cinco vezes em cinco; doze em paralelo escreviam doze.
+  //
+  // E a Alexa reenvia precisamente porque a primeira resposta ainda não chegou
+  // — ou seja, o caso concorrente é o NORMAL, não o excepcional.
+  for (const volta of [1, 2, 3]) {
+    const pedido = { artigo: `bacalhau ${volta}`, requestId: `amzn1.echo-api.request.par-${volta}` };
+    const antes = await contar('artigos', casaA);
+    const [um, dois] = await Promise.all([
+      chamar('artigo', daRita.authStore.token, pedido),
+      chamar('artigo', daRita.authStore.token, pedido),
+    ]);
+    igual(um.estado, 200, `volta ${volta}: o primeiro devolveu ${um.estado}`);
+    igual(dois.estado, 200, `volta ${volta}: o segundo devolveu ${dois.estado}`);
+    igual(await contar('artigos', casaA), antes + 1,
+      `volta ${volta}: os dois pedidos simultâneos escreveram duas linhas`);
+  }
+});
+
+await prova('⚠ e doze ao mesmo tempo continuam a escrever UMA', async () => {
+  const pedido = { artigo: 'grão-de-bico', requestId: 'amzn1.echo-api.request.doze' };
+  const antes = await contar('artigos', casaA);
+  const rs = await Promise.all(Array.from({ length: 12 },
+    () => chamar('artigo', daRita.authStore.token, pedido)));
+  for (const r of rs) igual(r.estado, 200, `um dos doze devolveu ${r.estado}`);
+  igual(await contar('artigos', casaA), antes + 1,
+    `doze pedidos simultâneos escreveram ${await contar('artigos', casaA) - antes} linhas`);
+});
+
+await prova('⚠ o mesmo requestId noutra INTENÇÃO é recusado, não confundido', async () => {
+  // ⚠ A chave é `(casa, request_id)` e não inclui a intenção. Sem esta recusa,
+  // pedir «marca a consulta» com um `requestId` já gasto devolvia 200 com a
+  // frase da ordem ANTERIOR e o `id` de uma linha de outra coleção — e o evento
+  // nunca existia. Quem está na cozinha ouvia a confirmação de outra coisa.
+  const chave = 'amzn1.echo-api.request.trocada';
+  const antesEventos = await contar('eventos', casaA);
+  const a = await chamar('artigo', daRita.authStore.token, { artigo: 'detergente', requestId: chave });
+  igual(a.estado, 200, `o artigo devolveu ${a.estado}`);
+  const b = await chamar('evento', daRita.authStore.token,
+    { titulo: 'consulta', dia: '2026-10-07', requestId: chave });
+  igual(b.estado, 400, `o evento com a chave gasta devolveu ${b.estado}`);
+  igual(await contar('eventos', casaA), antesEventos, 'escreveu um evento que não devia');
+});
+
+await prova('⚠ uma chave demasiado longa é recusada, não cortada', async () => {
+  // ⚠ Cortá-la aos 200 fazia duas chaves diferentes colapsarem numa: o segundo
+  // artigo nunca entrava e a Alexa confirmava o primeiro. Uma escrita
+  // descartada em silêncio, com confirmação falada por cima.
+  const base = 'Z'.repeat(200);
+  const antes = await contar('artigos', casaA);
+  const cafe = await chamar('artigo', daRita.authStore.token, { artigo: 'café', requestId: base + 'aaa' });
+  igual(cafe.estado, 400, `a chave de 203 devolveu ${cafe.estado}`);
+  igual(await contar('artigos', casaA), antes, 'escreveu apesar de recusar a chave');
 });
 
 await prova('e o mesmo requestId noutra casa não colide', async () => {
@@ -223,27 +280,95 @@ await prova('e o mesmo requestId noutra casa não colide', async () => {
   igual(r.d.repetido, undefined, 'tomou o pedido da casa A por seu');
 });
 
+console.log('\n── o que a voz ouve mal ──');
+
+await prova('⚠ quebras de linha e caracteres de controlo não entram no rótulo', async () => {
+  // ⚠ Entravam intactos: um rótulo com 32 quebras em 120 caracteres ficava tal
+  // e qual, e a linha do Modo Compras desenha o nome INTEIRO, sem
+  // `numberOfLines`, por decisão escrita — uma linha de 48 px passava a 33.
+  const sujo = 'leite\n\n\nmeio\tgordo\r\n\u0000\u001B[31mvermelho‮odagro';
+  const r = await chamar('artigo', daRita.authStore.token, { artigo: sujo });
+  igual(r.estado, 200, `devolveu ${r.estado}`);
+  const linha = await admin.collection('artigos').getOne(r.d.id);
+  if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\n\r\t]/.test(linha.rotulo)) {
+    throw new Error(`guardou controlos: ${JSON.stringify(linha.rotulo)}`);
+  }
+  // ⚠ O U+202E inverte o sentido de leitura, e o rótulo vai parar a uma página
+  // que se partilha por endereço público.
+  if (/[​-‏‪-‮⁦-⁩﻿]/.test(linha.rotulo)) {
+    throw new Error(`guardou marcas invisíveis: ${JSON.stringify(linha.rotulo)}`);
+  }
+  // E o que se disse continua lá, legível, sem espaços em catadupa.
+  if (!/^leite meio gordo\b/.test(linha.rotulo)) throw new Error(`ficou «${linha.rotulo}»`);
+  if (/ {2}/.test(linha.rotulo)) throw new Error(`ficou com espaços a dobrar: «${linha.rotulo}»`);
+});
+
+await prova('⚠ e um rótulo longo corta-se por LETRAS, sem partir um emoji ao meio', async () => {
+  // ⚠ O corte era por unidade UTF-16 e partia pares substitutos: «a»×119 mais
+  // um emoji ficava com um U+FFFD no fim — e era isso que a Alexa dizia.
+  const r = await chamar('artigo', daRita.authStore.token, { artigo: 'a'.repeat(119) + '🥛' });
+  igual(r.estado, 200, `devolveu ${r.estado}`);
+  const linha = await admin.collection('artigos').getOne(r.d.id);
+  if (/�/.test(linha.rotulo)) throw new Error('partiu o emoji ao meio (U+FFFD)');
+  igual(Array.from(linha.rotulo).length, 120, `ficou com ${Array.from(linha.rotulo).length} letras`);
+});
+
 console.log('\n── o que a voz NUNCA faz ──');
 
-await prova('⚠ nenhuma rota devolve dinheiro nem saúde, por mais que se peça', async () => {
-  const proibido = /despesa|envelope|cofre|saldo|acerto|orcament|orçament|saude|saúde|episodio|receita|alergia|medicac/i;
+// ⚠ Isto era uma lista NEGRA de palavras («despesa|envelope|cofre|saude|…»)
+// procurada no JSON da resposta, e era VAZIA por construção: as três rotas
+// devolvem literais de forma fixa, e os campos hostis que se injectavam nem
+// sequer eram lidos — o `e.bindBody` recebe um `DynamicModel` com os campos
+// declarados e mais nenhum. Apagava-se a defesa toda dos hooks e ela continuava
+// verde.
+//
+// E era frágil ao contrário: o rótulo do artigo entra na frase, e a frase entra
+// na resposta. Um «acrescentar creme para a alergia» punha esta prova de
+// segurança vermelha por causa da lista de compras.
+//
+// Uma lista BRANCA de chaves diz a mesma coisa e não se engana nos dois
+// sentidos: a resposta é exactamente este conjunto de campos, e nada mais sai.
+const CHAVES = {
+  artigo: ['id', 'rotulo', 'frase'],
+  evento: ['id', 'titulo', 'dia', 'hora', 'visibilidade', 'frase'],
+  tarefa: ['id', 'titulo', 'frase'],
+};
+
+await prova('⚠ cada rota devolve exactamente os campos dela, e mais nenhum', async () => {
   for (const rota of ROTAS) {
-    const r = await chamar(rota, daRita.authStore.token,
-      { ...CORPO[rota], envelope: 'Mercearia', valor: 10, saude: true });
-    const texto = JSON.stringify(r.d);
-    if (proibido.test(texto)) throw new Error(`${rota} devolveu algo proibido: ${texto.slice(0, 200)}`);
+    const r = await chamar(rota, daRita.authStore.token, CORPO[rota]);
+    igual(r.estado, 200, `${rota} devolveu ${r.estado}`);
+    const veio = Object.keys(r.d).sort().join(',');
+    const esperado = [...CHAVES[rota]].sort().join(',');
+    igual(veio, esperado, `${rota} devolveu «${veio}»`);
   }
 });
 
-await prova('⚠ e não existe rota de leitura nenhuma', async () => {
-  // Uma leitura por altifalante não sabe filtrar por quem ouve. Se alguém
-  // acrescentar uma, esta prova fica vermelha e obriga a decidir outra vez.
-  for (const rota of ['lista', 'agenda', 'tarefas', 'compras', 'ler', 'dinheiro', 'saude']) {
-    const r = await fetch(`${URL.replace(/\/+$/, '')}/api/alexa/${rota}`, {
-      method: 'GET', headers: { Authorization: daRita.authStore.token },
-    });
-    igual(r.status, 404, `/api/alexa/${rota} respondeu ${r.status}`);
-  }
+await prova('⚠ e um campo injectado no pedido não entra na linha escrita', async () => {
+  // Se o `bindBody` alguma vez passar a aceitar campos livres, é aqui que se vê.
+  const r = await chamar('artigo', daRita.authStore.token, {
+    artigo: 'açúcar', envelope: 'Mercearia', valor: 10, estimativa: 999,
+    visibilidade: 'adultos', posto: 5, casa: casaB.id, lista: 'inventada',
+  });
+  igual(r.estado, 200, `devolveu ${r.estado}`);
+  const linha = await admin.collection('artigos').getOne(r.d.id);
+  igual(String(linha.casa), casaA.id, 'a casa veio do corpo');
+  igual(linha.estimativa, 0, `a estimativa injectada pegou: ${linha.estimativa}`);
+  igual(linha.visibilidade, 'familia', `a visibilidade injectada pegou: ${linha.visibilidade}`);
+  igual(linha.posto, 0, `o posto injectado pegou: ${linha.posto}`);
 });
+
+// ⚠ «Não existe rota de leitura nenhuma» SAIU daqui, e não por deixar de
+// importar — por ser impossível de provar deste lado.
+//
+// Ela pedia GET a `/api/alexa/lista`, `/agenda`, `/tarefas`… à espera de 404.
+// Medido: um GET a um caminho registado como POST devolve exactamente o mesmo
+// 404 `{"message":"File not found."}` que um caminho que não existe de todo.
+// Não há 405. A prova não distinguia «não existe» de «existe e é POST», e um
+// `routerAdd('POST', '/api/alexa/lista', …)` que devolvesse a lista inteira
+// deixava-a verde. Sondava ainda `tarefas`, quando a rota se chama `tarefa`.
+//
+// Passou a ser um guarda que ENUMERA as rotas a partir do código:
+// `__tests__/a-voz-so-escreve.test.js`. O que se vê de fora não chega.
 
 resumo();

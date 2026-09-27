@@ -50,24 +50,29 @@
 // ⚠ E isto espera que o ciclo de eventos se ESVAZIE. Um processo filho vivo, um
 // servidor à escuta ou um `setInterval` por limpar seguram-no abertos, e aí o
 // guião não sai — fica pendurado para sempre, que é pior do que sair com o
-// código errado. Aconteceu no próprio dia em que isto se escreveu, no
-// `provar-a-recusa-sai-com-2.mjs`: a saída ficou depois do `spawn` do PocketBase
-// e a corrida parou dez minutos sem imprimir uma linha. Quem tem um recurso
-// aberto fecha-o na linha antes do `await sair(n)`.
+// código errado. Aconteceu no próprio dia em que isto se escreveu, num guião
+// que tinha posto a saída depois de um `spawn`: a corrida parou dez minutos sem
+// imprimir uma linha, com o trabalho todo já feito. Quem tem um recurso aberto
+// fecha-o na linha antes do `await sair(n)`.
 //
 // O guarda que impõe isto é
-// `__tests__/um-guiao-que-fala-com-o-servidor-nao-sai-a-martelo.test.js`, e
-// quem MEDE uma saída destas a correr é `provar-a-recusa-sai-com-2.mjs`.
+// `__tests__/um-guiao-que-fala-com-o-servidor-nao-sai-a-martelo.test.js`: varre
+// os guiões, fecha o grafo de quem fala com o servidor, e exige que nenhum
+// deles chame `process.exit`. Não precisa de servidor nenhum e corre em cada
+// `npx jest`.
 //
-// ⚠ Essa prova NÃO está na cadeia do `db:provar`, e é de propósito: ela levanta
-// um PocketBase só dela, e um servidor que aparece sozinho no meio de uma
-// bateria é uma surpresa na máquina de quem está a trabalhar. Corre-se à mão,
-// quando se mexer numa saída:
+// ⚠ Houve uma prova que MEDIA isto a correr — levantava um PocketBase de deitar
+// fora e lia o código de saída do processo. Foi ela que apanhou o defeito, e as
+// medições que ficaram escritas aqui em cima são dela. Foi apagada em
+// 27/09/2026, por decisão do dono da casa e com a razão verificada: o que
+// impede o defeito de voltar é o guarda estático, que proíbe a FORMA errada.
+// A prova só acrescentava uma medição que já está feita — e custava um servidor
+// a aparecer na máquina de quem está a trabalhar.
 //
-//   npm run db:provar-a-recusa
-//
-// O guarda garante a FORMA todos os dias; a prova garante o EFEITO quando se
-// lhe pega. Decisão do dono da casa, 27/09/2026.
+// Se um dia for preciso medir outra vez, mede-se à mão e deita-se fora: um
+// PocketBase numa pasta temporária, com o superutilizador criado ANTES do
+// `serve` (senão ele abre o navegador de quem lá está) e a porta pedida ao
+// sistema com `listen(0)`.
 export const sair = (codigo) => {
   process.exitCode = codigo;
   return new Promise(() => {});

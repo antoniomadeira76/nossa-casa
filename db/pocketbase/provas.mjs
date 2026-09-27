@@ -56,7 +56,7 @@ export const prova = async (nome, fn) => {
 // que corre a limpeza assíncrona primeiro, e é esse adiamento — não o
 // `.finally()` — que dava tempo às ligações para fecharem. Quem chamasse o
 // `resumo()` sem passar pelo `comecar()` não tinha essa rede: era o caso do
-// `provar-a-recusa-sai-com-2.mjs`, o último elo da cadeia.
+// havia um assim, e foi apagado em 27/09/2026 com o defeito já corrigido.
 //
 // Agora não desliga nada. Põe o código e deixa o módulo acabar: o `resumo()` é
 // sempre a última linha de um ficheiro de provas, o ciclo de eventos esvazia-se,

@@ -1480,7 +1480,18 @@ await criar({
     txt('request_id', { required: true, max: 200 }),
     txt('intencao', { max: 40 }),
     txt('linha', { max: 40 }),
-    txt('resposta', { max: 500 }),
+    // ⚠ NÃO se guarda aqui a frase que a Alexa disse.
+    //
+    // A primeira versão tinha um campo `resposta` com o texto todo — «Marquei
+    // consulta no dentista para 2026-09-30 às 09:30, visível para a família.» —
+    // para o reenvio repetir a mesma coisa. Isso punha títulos de eventos e
+    // nomes de artigos numa SEGUNDA cópia, numa coleção que não é de saúde,
+    // fora do `recusaSaude()` e de tudo o que o travão da saúde defende. Um
+    // título de consulta médica acabava fora da saúde sem ninguém decidir isso.
+    //
+    // A `intencao` e a `linha` chegam: no reenvio relê-se a linha criada e
+    // refaz-se a frase a partir dela. O texto vive num sítio só.
+    data('criado_em'),
   ],
   indexes: ['CREATE UNIQUE INDEX idx_alexa_pedido ON alexa_pedidos (casa, request_id)'],
   listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
