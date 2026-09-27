@@ -257,6 +257,7 @@ await prova('e não apagou coleção nenhuma', async () => {
 
 console.log('\n── e o caminho de quem escreve o nome certo ──');
 
+const antesDaReconstrucao = await quantasColecoes();
 const total = await correr(CASA);
 
 await prova('o nome exacto passa o travão e reconstrói', async () => {
@@ -266,4 +267,40 @@ await prova('o nome exacto passa o travão e reconstrói', async () => {
   igual(total.codigo, 0, `saiu com ${total.codigo}`);
 });
 
+// ⚠ E a reconstrução TEM de se ver na base, não só na consola.
+//
+// A prova acima procura a palavra «RECONSTRUÇÃO TOTAL» no que o guião imprimiu
+// e confere o código 0. Isso passaria na mesma se o guião anunciasse e depois
+// não fizesse nada — que é exactamente o feitio de defeito que deu origem a
+// este ficheiro. A corrida inteira leva menos de três segundos, e três segundos
+// para construir a casa toda merece ser confirmado em vez de aceite.
+await prova('⚠ e a casa fica mesmo construída — contada, não anunciada', async () => {
+  const depois = await quantasColecoes();
+  if (depois <= antesDaReconstrucao + 20) {
+    throw new Error(`o servidor tinha ${antesDaReconstrucao} coleções e ficou com ${depois}`
+      + ' — a reconstrução anunciou-se e não se vê na base');
+  }
+  const nomes = (await pb.collections.getFullList()).map(c => c.name);
+  for (const precisa of ['casas', 'membros', 'despesas', 'tarefas', 'envelopes', 'v_cofre_saldo']) {
+    if (!nomes.includes(precisa)) throw new Error(`falta a coleção \`${precisa}\``);
+  }
+});
+
+// ⚠ O `arrumar()` ANTES do `resumo()`, e o `process.on('exit')` não chega.
+//
+// O `resumo()` deixou de chamar `process.exit` em 27/09/2026 — põe o
+// `process.exitCode` e deixa o módulo acabar. Isso é o certo para as outras 32
+// provas, que não têm nada aberto. Esta tem: o PocketBase que ela própria
+// arrancou, vivo, a segurar o ciclo de eventos. O processo nunca acaba, o
+// `process.on('exit', arrumar)` nunca dispara — porque depende da saída que
+// está à espera dele —, e a prova fica pendurada para sempre com o trabalho
+// todo já feito e as seis provas já verdes.
+//
+// Medido: ficou dez minutos assim, com as 47 coleções já reconstruídas no
+// servidor de deitar fora. O `process.exit` de antes tapava isto por matar tudo
+// à força.
+//
+// Quem abre um processo filho fecha-o à mão antes de acabar. Está escrito no
+// `sair.mjs`, e escrevi-o eu antes de cair nele aqui.
+arrumar();
 resumo();
