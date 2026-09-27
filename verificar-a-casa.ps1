@@ -61,5 +61,22 @@ try {
   Ver "o servidor local responde" $h.message "API is healthy."
 } catch { Ver "o servidor local responde" "sem resposta" "API is healthy." }
 
+# A linha acima NAO prova que a base e a certa - so que ha um servidor. Um
+# PocketBase acabado de nascer noutra pasta responde exactamente o mesmo, e foi
+# esse o risco real: o NSSM comeu as aspas dos argumentos e os caminhos desta
+# casa tem um espaco ("Nossa Casa"). Estas duas confirmam a PASTA e o FICHEIRO.
+$raiz = "C:\Users\amadeira\Claude\Projects\Nossa Casa"
+try {
+  $ap = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\NossaCasaPocketBase\Parameters").AppParameters
+  Ver "o servico aponta ao pb_data desta casa" $($ap -match [regex]::Escape("--dir `"$raiz\pb_data`"")) "True"
+} catch { Ver "o servico aponta ao pb_data desta casa" "nao li o registo" "True" }
+
+$db = "$raiz\pb_data\data.db"
+if (Test-Path $db) {
+  $kb = [int]((Get-Item $db).Length / 1024)
+  # Uma base vazia do PocketBase anda pelos 300 KB; esta casa tem dados.
+  Ver "pb_data\data.db existe e tem a casa dentro ($kb KB)" $($kb -gt 500) "True"
+} else { Ver "pb_data\data.db existe" "NAO EXISTE" "True" }
+
 "`n" + $(if ($falhas) { "FALHAS: $falhas" } else { "TUDO BEM - a casa sobreviveu ao reinicio" })
 exit $(if ($falhas) { 1 } else { 0 })
