@@ -145,7 +145,26 @@ Tem de responder `400 {"erro":"faltam os cabeçalhos da assinatura"}`. Um `401` 
 o PocketBase a atender — o caminho está errado. Um `404` é a regra do túnel em
 falta. Um `502` é o serviço `NossaCasaAlexa` em baixo.
 
-**4. O Account Linking.** Em *Build → Account Linking*, ligar *Do you allow
+**4. Renovar as credenciais — ANTES de as escrever, e não depois.**
+
+```
+node db/pocketbase/criar-credenciais-alexa.mjs --novo
+```
+
+⚠ **Corra-o na sua consola, e não me mostre o que ele imprime.** O segredo que
+lá estava antes foi impresso numa conversa, e é por isso que se troca. Repetir a
+conversa com o segredo novo seria desfazer o motivo.
+
+⚠ E faz-se **antes** do passo 5, não depois. O `--novo` troca o `client_id` **e**
+o `client_secret`, e a consola da Amazon é um sítio onde se preenche uma vez e
+não se volta lá. Esta página chegou a mandar preencher primeiro e renovar
+depois — dava o mesmo trabalho a dobrar, com uma janela pelo meio em que a
+ligação está feita com um segredo queimado.
+
+O que ele imprime — `Client ID` e `Client secret` — é o que vai para o passo 5, e
+**não se volta a ver em lado nenhum** sem ser ali ou na base.
+
+**5. O Account Linking.** Em *Build → Account Linking*, ligar *Do you allow
 users to create an account…* e preencher:
 
 | Campo da consola | Valor |
@@ -153,8 +172,8 @@ users to create an account…* e preencher:
 | Authorization Grant Type | `Auth Code Grant` |
 | Authorization URI | `https://casa.anossacasa.app/api/alexa/autorizar` |
 | Access Token URI | `https://casa.anossacasa.app/api/alexa/token` |
-| Client ID | `nossacasa-ynYoXLVQfQ2pe8iw` |
-| Client Secret | o que o `criar-credenciais-alexa.mjs` imprimiu |
+| Client ID | o que o `criar-credenciais-alexa.mjs` imprimiu |
+| Client Secret | idem — e **só se vê ali** |
 | Client Authentication Scheme | qualquer uma — servem as duas |
 | Scope | `casa.escrever` |
 
@@ -165,18 +184,22 @@ opção dava um `invalid_client` — que parece um segredo mal copiado e manda q
 o vê procurar no sítio errado. Aceitar as duas é o que o RFC 6749 manda, e tira
 uma armadilha de uma consola onde se carrega uma vez e não se volta lá.
 
-**5. Trocar o segredo.** Depois de o copiar para a consola:
+**6. Fixar o `ALEXA_SKILL_ID`** no `.env.local`, com o identificador que a
+consola mostra (`amzn1.ask.skill.…`), e reiniciar o serviço `NossaCasaAlexa`:
 
 ```
-node db/pocketbase/criar-credenciais-alexa.mjs --novo
+Restart-Service NossaCasaAlexa
 ```
 
-O que está lá agora foi impresso numa conversa. Trocá-lo obriga a voltar ao
-passo 4 uma vez — e é barato fazê-lo agora, caro fazê-lo depois.
+Sem ele o serviço aceita qualquer skill que acerte no endereço, e diz-o em cada
+arranque. A tranca a sério continua a ser o token — um envelope sem token válido
+leva 401 —, mas esta é barata e fecha uma porta que não precisa de estar aberta.
 
-**6. Ligar a conta** na aplicação da Alexa, no telemóvel: *Skills → As suas
-skills → Nossa Casa → Settings → Link Account*. É aí que a página do passo 4
+**7. Ligar a conta** na aplicação da Alexa, no telemóvel: *Skills → As suas
+skills → Nossa Casa → Settings → Link Account*. É aí que a página do passo 5
 aparece, e é aí que um adulto se identifica.
+
+Do lado da casa confirma-se com uma linha nova em `alexa_ligacoes`.
 
 E então: *«Alexa, diz à Nossa Casa para acrescentar leite.»*
 
@@ -468,15 +491,13 @@ Ao fim do dia 27/09/2026 estava feito tudo o que é da casa: a exposição, o
 Account Linking, o endpoint da skill, e o `pt-BR` aceite. Fica o que é da
 Amazon, por esta ordem:
 
-1. **Criar a skill** na consola e colar o `alexa/modelo-de-interacao.pt-BR.json`.
-2. **Apontar o endpoint** a `https://casa.anossacasa.app/alexa/skill` — com o
-   caminho, e conferindo com o `curl` do passo 3 acima.
-3. **Preencher o Account Linking** com a tabela do passo 4 acima.
-4. **Trocar o segredo** com o `--novo`, e voltar ao Account Linking uma vez. O
-   que está lá agora foi impresso numa conversa.
-5. **Fixar o `ALEXA_SKILL_ID`** no `.env.local` assim que a skill existir. Sem
-   ele o serviço aceita qualquer skill que acerte no endereço — e diz-o em cada
-   arranque. A tranca a sério continua a ser o token, mas esta é barata.
+1. ~~**Criar a skill**~~ — feito a 27/09, com o modelo colado e o *build* passado.
+2. ~~**Apontar o endpoint**~~ a `https://casa.anossacasa.app/alexa/skill` —
+   feito a 27/09, e conferido com o `curl` do passo 3 acima.
+3. **Renovar as credenciais** com o `--novo`, na consola dele, **antes** de as
+   escrever na Amazon. O que lá estava foi impresso numa conversa.
+4. **Preencher o Account Linking** com a tabela do passo 5 acima, de uma vez.
+5. **Fixar o `ALEXA_SKILL_ID`** no `.env.local` e reiniciar o `NossaCasaAlexa`.
 6. **Ligar a conta** na aplicação da Alexa, no telemóvel. Do lado da casa
    confirma-se com uma linha nova em `alexa_ligacoes`.
 7. **Passar a semana com a app no telemóvel**, como estava combinado. A Alexa
