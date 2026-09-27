@@ -1068,6 +1068,30 @@ describe('Camada de ligação ao servidor — PocketBase', () => {
     expect(colecoes).not.toMatch(/PB_RECRIAR\s*=\s*1\b/);
   });
 
+  test('⚠ e semear a casa pede-se pelo NOME dela, com o mesmo travão', () => {
+    // O `semear-simulacao.mjs` escreve na casa A SÉRIO de propósito — sem isso
+    // não se passeia pela app inteira. Mas pega na PRIMEIRA casa que encontra,
+    // sem perguntar qual, e faz duas coisas que NÃO se desfazem: reescreve as
+    // regras do orçamento (rendimento, valor do ponto, dia de pagamento) e
+    // fecha o mês que estiver aberto. O caminho de volta era um comentário a
+    // dizer «copie o pb_data antes», e um comentário não é um travão.
+    //
+    // Medido em 27/09/2026 contra um servidor de mentira, cinco casos: sem
+    // SEMEAR, com «1», com o nome errado e com o nome em minúsculas, sai com 2
+    // e não faz UMA escrita; com o nome exacto, passa — e a primeira escrita
+    // que sai é o PATCH às regras do orçamento.
+    const semear = read('db/pocketbase/semear-simulacao.mjs');
+    expect(semear).toMatch(/process\.env\.SEMEAR/);
+    expect(semear).toMatch(/RECUSADO: SEMEAR/);
+    // A comparação é contra o nome da casa que está NO SERVIDOR, não contra um
+    // literal escrito no ficheiro — senão mudava de casa e o travão ficava a
+    // guardar a errada.
+    expect(semear).toMatch(/pedido !== String\(casa\.nome\)\.trim\(\)/);
+    // E sai pelo `sair()`, como todos os guiões que falam com o servidor.
+    expect(semear).toMatch(/await sair\(2\)/);
+    expect(semComentarios(semear)).not.toMatch(/process\.exit\(/);
+  });
+
   test('⚠ e uma coleção COM LINHAS também não se apaga', () => {
     // Os três nomes acima eram escolhidos à mão, e chegavam enquanto as outras
     // coleções estavam vazias — até esta semana o cliente escrevia em 10 de 31.

@@ -1,6 +1,11 @@
 // Enche a casa com dados variados, para se poder experimentar a app inteira.
 //
-//   node db/pocketbase/semear-simulacao.mjs
+//   SEMEAR="<nome da casa>" node db/pocketbase/semear-simulacao.mjs
+//
+// ⚠ O nome da casa não é enfeite: é o travão. Sem ele — ou com um nome que não
+// bata certo — o guião imprime o servidor a que está ligado, a casa que lá
+// está, o que ia reescrever, e sai com o código 2 sem tocar em nada. Ver «O
+// travão» mais abaixo.
 //
 // ── O que isto é, e o que NÃO é ──────────────────────────────────────────────
 //
@@ -51,6 +56,44 @@ const iso = (n) => `${dia(n)} 00:00:00.000Z`;
 
 const casa = (await pb.collection('casas').getFullList())[0];
 if (!casa) { console.error('Não há casa nenhuma. Entre na app uma vez primeiro.'); await sair(1); }
+
+// ── O travão: encher uma casa pede-se pelo NOME dela ─────────────────────────
+//
+// ⚠ Este guião escreve na casa A SÉRIO, e é essa a intenção — sem isso não se
+// passeia pela app inteira. O que ele não pode é fazê-lo sem que quem o mandou
+// correr esteja a olhar para o nome da casa que vai mexer.
+//
+// Não apaga nada: não há uma única chamada de apagar no ficheiro. Mas faz duas
+// coisas que NÃO SE DESFAZEM, e é por isso que o travão existe:
+//
+//   1. reescreve as regras do orçamento da casa — rendimento, valor do ponto,
+//      dia de pagamento, dividir a meias, pontos ligados;
+//   2. fecha o mês que estiver ABERTO, com data de há 31 dias, e abre outro.
+//
+// O resto são dezenas de linhas acrescentadas às de quem lá vive, para separar
+// à mão semanas depois. E ele pega na PRIMEIRA casa que encontra, sem perguntar
+// qual — o que num servidor com uma casa só quer dizer: a sua.
+//
+// O caminho de volta está num comentário lá em cima — parar o servidor e copiar
+// o `pb_data` — e depende de alguém se lembrar. Um comentário não é um travão.
+//
+// É a mesma forma do `PB_RECRIAR` do `criar-colecoes.mjs`: o valor é o nome
+// exacto da casa, e nada mais serve.
+const pedido = (process.env.SEMEAR || '').trim();
+if (pedido !== String(casa.nome).trim()) {
+  console.error(pedido === ''
+    ? 'RECUSADO: falta dizer em que casa se semeia.'
+    : `RECUSADO: SEMEAR=«${pedido}» não é o nome da casa deste servidor.`);
+  console.error(`Servidor: ${URL_DO_SERVIDOR}`);
+  console.error(`Casa lá dentro: «${casa.nome}».`);
+  console.error('Semear REESCREVE as regras do orçamento dessa casa e FECHA o mês aberto —');
+  console.error('duas coisas que não se desfazem —, e acrescenta-lhe dezenas de linhas.');
+  console.error('Faça uma cópia do `pb_data` primeiro, e depois escreva o nome da casa:');
+  console.error(`  SEMEAR="${casa.nome}" node db/pocketbase/semear-simulacao.mjs`);
+  console.error('Nada foi escrito.');
+  await sair(2);
+}
+
 console.log(`Casa: «${casa.nome}»`);
 
 // As regras da casa, para o orçamento e a semanada fazerem sentido.
