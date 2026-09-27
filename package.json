@@ -10,6 +10,7 @@
     "test:smoke": "jest __tests__/smoke.test.js",
     "referencias": "node scripts/recapturar-referencias.mjs docs/referencia && node scripts/folha-de-contacto.mjs docs/referencia docs/referencia/todos-os-ecras.png",
     "simular:saude": "node scripts/simular-exportacao-saude.mjs",
+    "alexa:servir": "node alexa/servidor-da-skill.mjs",
     "simular:amazon": "node db/pocketbase/simular-amazon.mjs",
     "simular:casa": "node scripts/simular-casa.mjs",
     "aceitacao": "node db/pocketbase/aceitacao/correr.mjs",

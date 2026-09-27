@@ -2,13 +2,14 @@
 
 > **Estado: falta a skill, e mais nada** (27/09/2026).
 >
-> O lado da casa está construído e provado — as três rotas, a coleção dos
-> pedidos, 26 provas. E **o servidor está exposto**: `casa.anossacasa.app`,
-> por um túnel da Cloudflare, com os dois serviços a arrancar sozinhos e
-> verificados a sobreviver a um reinício da máquina.
+> O lado da casa está construído e provado — as três rotas, o Account Linking,
+> o endpoint que a Amazon vai chamar, e a assinatura verificada contra a cadeia
+> verdadeira dela. E **o servidor está exposto**: `casa.anossacasa.app`, por um
+> túnel da Cloudflare, com os três serviços a arrancar sozinhos.
 >
-> O que falta é do lado da Amazon: publicar a skill e ligar a conta. E aceitar
-> o `pt-BR`, que é o único português que a Alexa tem.
+> O que falta é do lado da Amazon: criar a skill na consola, colar o modelo,
+> apontar o endpoint e ligar a conta. E aceitar o `pt-BR`, que é o único
+> português que a Alexa tem.
 >
 > O alcance é o desta página e não mais: três escritas, nada de leituras, nada
 > de dinheiro nem de saúde. Confirmado pelo dono da casa em 27/09/2026, com as
@@ -18,26 +19,36 @@
 
 `https://casa.anossacasa.app` → túnel da Cloudflare → `127.0.0.1:8095`.
 
-Dois serviços do Windows, ambos de arranque automático, ambos verificados **de
-fora** depois de um reinício a sério da máquina:
+Três serviços do Windows, todos de arranque automático:
 
 | | |
 |---|---|
 | `Cloudflared` | o túnel |
 | `NossaCasaPocketBase` | o servidor (NSSM, com reinício automático se cair) |
+| `NossaCasaAlexa` | o endpoint da skill (NSSM, idem) — ver a secção a seguir |
 
-**Duas trancas no túnel**, e não no servidor — localmente tudo continua a
-funcionar como sempre:
+Os dois primeiros foram verificados **de fora** depois de um reinício a sério da
+máquina; o terceiro nasceu depois disso, a 27/09, e está na mesma lista do
+verificador.
+
+**As trancas estão no túnel**, e não no servidor — localmente tudo continua a
+funcionar como sempre. A ordem importa: o `cloudflared` usa a **primeira** regra
+que casar, por isso os desvios e os bloqueios vêm antes do encaminhamento geral.
 
 ```
+/alexa/skill                   → 8094  o endpoint da skill, que não é o PocketBase
 /_/                            → 404   o painel de administração não existe de fora
 /api/collections/_superusers/  → 404   nem o caminho de tentar a palavra-passe
-tudo o resto                   → passa
+/api/admins/                   → 404   o nome antigo do painel, tapado por precaução
+tudo o resto                   → 8095  passa ao servidor
 ```
 
-O que se mede de fora, sem sessão, e é o que o `verificar-a-casa.ps1` confere:
-`/api/health` 200; o painel 404; o superutilizador 404; `POST /api/alexa/artigo`
-401; e as seis coleções de saúde a devolverem `totalItems: 0`.
+O que se mede de fora, sem sessão, e é o que o `verificar-a-casa.ps1` confere em
+21 linhas: `/api/health` 200; o painel 404; o superutilizador 404; `POST
+/api/alexa/artigo` 401; `POST /alexa/skill` sem assinatura 400 e `GET` 405; as
+seis coleções de saúde a devolverem `totalItems: 0`; e — o que nenhum código de
+estado diz — que os dois serviços apontam para os ficheiros **desta** casa, lido
+do registo, porque o NSSM come as aspas e o caminho tem um espaço.
 
 ⚠ **E o que isto custa, dito claramente.** A casa tinha duas trancas — as regras
 do servidor **e** a máquina não ser alcançável. Ficou uma. As regras aguentam
@@ -49,6 +60,45 @@ haver porta nenhuma. Foi decisão do dono da casa, tomada com isto à frente.
 ⚠ **O `casa.anossacasa.app` serve a API, não a app.** Abrir esse endereço não dá
 interface nenhuma — dá o servidor. A app continua a viver no Expo, e é ela que
 fala com aquele endereço.
+
+## O endpoint da skill é um processo à parte — e porquê
+
+⚠ **Esta página chegou a dizer que o endpoint da Alexa era `casa.anossacasa.app`.
+Era falso**, e teria sido descoberto com a skill publicada e o altifalante calado.
+
+A Amazon não chama as rotas da casa. Ela manda **um** pedido, para **um**
+endereço, num envelope dela — com a intenção, os slots e o token de quem ligou a
+conta — e espera uma resposta no formato dela, com a frase que o altifalante vai
+dizer. As rotas `/api/alexa/artigo` e companhia falam outra língua.
+
+E há mais, que é o que decide a questão: um endpoint HTTPS **tem de verificar a
+assinatura** de cada pedido. A Amazon exige a cadeia de certificados descarregada
+de `s3.amazonaws.com/echo.api/`, o nome alternativo `echo-api.amazon.com`, a
+validade, 150 segundos de tolerância no relógio, e a assinatura SHA-256 sobre o
+corpo **em bytes**. O JSVM do PocketBase não faz nada disso — não tem X.509, não
+tem RSA, não tem cadeia de confiança. Escrevê-lo à mão em Goja seria criptografia
+caseira no sítio errado.
+
+Por isso: `alexa/servidor-da-skill.mjs`, um processo Node na `8094` que só traduz
+e verifica, e chama as rotas da casa como qualquer outro cliente. As rotas não
+mudaram, e as provas que as defendem continuam a valer.
+
+```
+Alexa → casa.anossacasa.app/alexa/skill → 8094 (verifica e traduz) → 8095 (escreve)
+```
+
+⚠ **A cadeia verifica-se até ao PRIMEIRO âncora, e não até ao topo.** A primeira
+versão subia até ao fim da cadeia antes de procurar a raiz, e com a cadeia
+verdadeira da Amazon isso **recusa tudo**: o topo dela é um *cross-sign* do
+Starfield Services Root G2 que não está no arquivo do sistema, e o âncora — o
+Amazon Root CA 1 — está um elo antes. O que vem depois de um âncora é história,
+não prova. Só se descobriu porque o guarda corre contra o certificado verdadeiro,
+guardado em `alexa/amostras/` — é público, e está expirado de propósito, para
+provar também que a validade é conferida.
+
+As funções que decidem quem entra vivem em `alexa/verificacao.cjs`, em CommonJS,
+para que o guarda (`__tests__/a-assinatura-da-alexa.test.js`, 8 provas) leia
+exactamente o mesmo ficheiro que corre.
 
 ## O que falta, e é na consola da Amazon
 
@@ -70,15 +120,30 @@ Por ordem, na consola em `developer.amazon.com/alexa/console/ask`:
 **2. O modelo de interação.** Em *Build → JSON Editor*, colar o conteúdo de
 `alexa/modelo-de-interacao.pt-BR.json`. Depois *Save* e *Build Model*.
 
-**3. O endpoint.** Em *Build → Endpoint*, escolher **HTTPS** e pôr:
+**3. O endpoint.** Em *Build → Endpoint*, escolher **HTTPS** e pôr, **com o
+caminho**:
 
 ```
-https://casa.anossacasa.app
+https://casa.anossacasa.app/alexa/skill
 ```
+
+⚠ **Sem o `/alexa/skill` isto não funciona.** O endereço sem caminho vai dar ao
+PocketBase, que não sabe responder a um envelope da Alexa — ver a secção «O
+endpoint da skill é um processo à parte».
 
 No certificado, escolher *«My development endpoint is a sub-domain of a domain
 that has a wildcard certificate from a certificate authority»* — o certificado é
 da Cloudflare e é válido.
+
+Para conferir antes de gravar, de qualquer máquina:
+
+```
+curl -X POST https://casa.anossacasa.app/alexa/skill
+```
+
+Tem de responder `400 {"erro":"faltam os cabeçalhos da assinatura"}`. Um `401` é
+o PocketBase a atender — o caminho está errado. Um `404` é a regra do túnel em
+falta. Um `502` é o serviço `NossaCasaAlexa` em baixo.
 
 **4. O Account Linking.** Em *Build → Account Linking*, ligar *Do you allow
 users to create an account…* e preencher:
@@ -399,22 +464,22 @@ na regra do servidor quer dizer «só o autor vê») e o reenvio escreve duas li
 
 ## O que fazer a seguir, e por que ordem
 
-Os dois primeiros passos desta lista estavam feitos ao fim do dia 27/09/2026 —
-a exposição decidida e montada. Ficam os outros, por esta ordem:
+Ao fim do dia 27/09/2026 estava feito tudo o que é da casa: a exposição, o
+Account Linking, o endpoint da skill, e o `pt-BR` aceite. Fica o que é da
+Amazon, por esta ordem:
 
-1. **Decidir sobre o `pt-BR`.** É a única forma de a Alexa ouvir português, e
-   choca com a regra número um do `CLAUDE.md` — português europeu em toda a
-   interface. O `pt-BR` é o idioma em que ela **ouve**; as frases que **diz** são
-   as que o servidor devolve, e essas continuam em português europeu. Mas quem
-   as diz é uma voz brasileira, e o altifalante tem de estar configurado assim.
-2. **O Account Linking**, que esta página descreve e que ainda não existe: as
-   rotas `/api/alexa/autorizar` e `/api/alexa/token` não estão escritas. Sem
-   elas o altifalante não tem sessão, e sem sessão as três rotas devolvem 401 —
-   que é exactamente o que se quer, mas também quer dizer que a skill não
-   funciona até isto estar feito.
-3. **Publicar a skill** com o `alexa/modelo-de-interacao.pt-BR.json`, e apontar
-   o endpoint a `https://casa.anossacasa.app`.
-4. **Passar a semana com a app no telemóvel**, como estava combinado. A Alexa
+1. **Criar a skill** na consola e colar o `alexa/modelo-de-interacao.pt-BR.json`.
+2. **Apontar o endpoint** a `https://casa.anossacasa.app/alexa/skill` — com o
+   caminho, e conferindo com o `curl` do passo 3 acima.
+3. **Preencher o Account Linking** com a tabela do passo 4 acima.
+4. **Trocar o segredo** com o `--novo`, e voltar ao Account Linking uma vez. O
+   que está lá agora foi impresso numa conversa.
+5. **Fixar o `ALEXA_SKILL_ID`** no `.env.local` assim que a skill existir. Sem
+   ele o serviço aceita qualquer skill que acerte no endereço — e diz-o em cada
+   arranque. A tranca a sério continua a ser o token, mas esta é barata.
+6. **Ligar a conta** na aplicação da Alexa, no telemóvel. Do lado da casa
+   confirma-se com uma linha nova em `alexa_ligacoes`.
+7. **Passar a semana com a app no telemóvel**, como estava combinado. A Alexa
    acrescenta uma porta; convém saber se a casa que ela abre é a que se quer —
    e isso continua por saber, porque a app ainda só correu no computador.
 
