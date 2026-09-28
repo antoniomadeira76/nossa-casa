@@ -135,6 +135,44 @@ describe('a assinatura da Alexa', () => {
     expect(crypto.verify('RSA-SHA256', corpo, outra.publicKey, assinatura)).toBe(false);
   });
 
+  it('⚠ a tranca da skill não se desliga quando lhe tiram o campo', async () => {
+    // ⚠ Esta prova existe por causa de um buraco encontrado a 28/09/2026, no dia
+    // em que o identificador da skill foi fixado. A tranca era:
+    //
+    //     if (SKILL && sistema.application && sistema.application.applicationId !== SKILL)
+    //
+    // e o `&& sistema.application &&` fazia a condição inteira ser FALSA quando o
+    // campo não vinha. Um envelope sem `context.System.application` passava.
+    // Uma verificação que se desliga sozinha quando lhe tiram o dado é pior do
+    // que não a ter: dá a sensação de estar fechada.
+    const { daNossaSkill } = await carregar();
+    const NOSSA = 'amzn1.ask.skill.aaaaaaaa-0000-0000-0000-000000000000';
+    const OUTRA = 'amzn1.ask.skill.bbbbbbbb-1111-1111-1111-111111111111';
+    const contexto = (id) => ({ context: { System: { application: { applicationId: id } } } });
+    const sessao = (id) => ({ session: { application: { applicationId: id } } });
+
+    const CASOS = [
+      [contexto(NOSSA), NOSSA, true, 'a nossa, pelo contexto'],
+      [sessao(NOSSA), NOSSA, true, 'a nossa, pela sessão'],
+      [{ ...contexto(NOSSA), ...sessao(NOSSA) }, NOSSA, true, 'a nossa nos dois sítios'],
+      [contexto(OUTRA), NOSSA, false, 'outra skill'],
+      [sessao(OUTRA), NOSSA, false, 'outra skill, pela sessão'],
+      [{ ...contexto(NOSSA), ...sessao(OUTRA) }, NOSSA, false, 'a nossa num sítio e outra no outro'],
+      [{ ...contexto(OUTRA), ...sessao(NOSSA) }, NOSSA, false, 'e ao contrário'],
+      [{}, NOSSA, false, '⚠ SEM CAMPO NENHUM — era este que passava'],
+      [{ context: {} }, NOSSA, false, 'contexto vazio'],
+      [{ context: { System: {} } }, NOSSA, false, 'sistema sem aplicação'],
+      [contexto(''), NOSSA, false, 'identificador vazio'],
+      [null, NOSSA, false, 'envelope nenhum'],
+      [contexto(OUTRA), '', true, 'sem skill fixada, aceita — e o serviço di-lo em cada arranque'],
+      [{}, '', true, 'sem skill fixada e sem campo, idem'],
+    ];
+    const errados = CASOS
+      .filter(([env, skill, esperado]) => daNossaSkill(env, skill) !== esperado)
+      .map(([, , esperado, porque]) => `${porque}: esperava ${esperado}`);
+    expect(errados).toEqual([]);
+  });
+
   it('⚠ e o mapa de intenções é o que está no modelo, e mais nada', async () => {
     const { ROTAS } = await carregar();
     const modelo = JSON.parse(fs.readFileSync(path.join(RAIZ, 'alexa/modelo-de-interacao.pt-BR.json'), 'utf8'));

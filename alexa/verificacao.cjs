@@ -102,6 +102,42 @@ const cadeiaDeConfianca = (certs, agora) => {
   return 'a cadeia não chega a uma raiz de confiança';
 };
 
+// ── É esta a nossa skill? ────────────────────────────────────────────────────
+//
+// Impede que OUTRA skill use este endereço. Vive aqui, com as outras funções que
+// decidem quem entra, e pela mesma razão: é o sítio que o guarda lê.
+//
+// ⚠ A primeira versão estava no servidor e tinha um buraco:
+//
+//     if (SKILL && sistema.application && sistema.application.applicationId !== SKILL)
+//
+// O `&& sistema.application &&` faz a condição inteira ser falsa quando o campo
+// NÃO VEM — e um envelope sem `context.System.application` saltava a tranca toda.
+// Uma verificação que se desliga sozinha quando lhe tiram o dado é pior do que
+// não a ter: dá a sensação de estar fechada.
+//
+// E olhava só para um dos dois sítios onde a Amazon põe o identificador. O outro
+// é o `session.application`. Agora:
+//
+//   sem skill fixada  → passa (é o estado antes de a skill existir, e diz-se)
+//   com skill fixada  → TEM de vir pelo menos um identificador, e TODOS os que
+//                       vierem têm de ser o nosso
+const daNossaSkill = (envelope, skill) => {
+  if (!skill) return true;
+  const e = envelope || {};
+  const sistema = (e.context && e.context.System) || {};
+  const ids = [
+    sistema.application && sistema.application.applicationId,
+    e.session && e.session.application && e.session.application.applicationId,
+  ].filter((x) => x !== undefined && x !== null && x !== '').map(String);
+
+  if (!ids.length) return false;
+  // ⚠ `every` e não `some`: se vierem os dois e discordarem, é recusa. Um
+  // envelope com o nosso identificador num sítio e outro no outro é exactamente
+  // o que alguém tentaria.
+  return ids.every((id) => id === skill);
+};
+
 // ── O mapa das intenções ─────────────────────────────────────────────────────
 //
 // Uma intenção, uma rota. É o mapa inteiro, e é de propósito que cabe aqui: o
@@ -119,4 +155,6 @@ const ROTAS = {
   MarcarEvento: (p) => ['evento', { titulo: slot(p, 'titulo'), dia: slot(p, 'data'), hora: slot(p, 'hora') }],
 };
 
-module.exports = { enderecoDaCadeiaValido, relogioAceite, cadeiaDeConfianca, slot, ROTAS, RAIZES };
+module.exports = {
+  enderecoDaCadeiaValido, relogioAceite, cadeiaDeConfianca, daNossaSkill, slot, ROTAS, RAIZES,
+};

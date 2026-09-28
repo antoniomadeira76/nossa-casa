@@ -37,7 +37,7 @@ import { createRequire } from 'node:module';
 // são justamente as funções que mais precisam de ser postas à prova.
 const exigir = createRequire(import.meta.url);
 const V = exigir('./verificacao.cjs');
-export const { enderecoDaCadeiaValido, relogioAceite, cadeiaDeConfianca, ROTAS } = V;
+export const { enderecoDaCadeiaValido, relogioAceite, cadeiaDeConfianca, daNossaSkill, ROTAS } = V;
 const slot = V.slot;
 
 const PORTA = Number(process.env.ALEXA_PORTA || 8094);
@@ -141,7 +141,10 @@ export const responderA = async (envelope) => {
   const pedido = envelope.request || {};
   const sistema = (envelope.context && envelope.context.System) || {};
 
-  if (SKILL && sistema.application && sistema.application.applicationId !== SKILL) {
+  // ⚠ A decisão vive no `verificacao.cjs`, com as outras que decidem quem entra
+  // — e o cabeçalho de lá explica o buraco que a versão escrita aqui tinha: um
+  // envelope sem `context.System.application` saltava a tranca inteira.
+  if (!daNossaSkill(envelope, SKILL)) {
     return { codigo: 403, corpo: fala('Esta skill não é desta casa.') };
   }
 
