@@ -120,6 +120,12 @@ const pagina = (e, pedido, aviso) => {
   return e.html(aviso ? 401 : 200, '<!doctype html><html lang="pt-PT"><head><meta charset="utf-8">'
     + '<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">'
     + '<title>Ligar a Alexa — Nossa Casa</title><style>'
+    // ⚠ O `color-scheme` não é decoração: é o que faz o navegador desenhar o
+    // cursor, a barra de deslocamento e sobretudo o PREENCHIMENTO AUTOMÁTICO
+    // do gestor de palavras-passe com as cores certas. Sem ele, o campo do
+    // e-mail preenchido automaticamente aparece com um fundo claro forçado por
+    // cima do escuro, e o texto branco lá dentro fica ilegível.
+    + ':root{color-scheme:light dark}'
     + 'body{margin:0;background:#F0F2F5;color:#262626;font:16px/1.5 Inter,Roboto,"Segoe UI",system-ui,sans-serif}'
     + '.faixa{background:#0A5B60;color:#fff;padding:16px 18px;display:flex;align-items:center;gap:12px}'
     + 'h1{font-size:18px;font-weight:600;margin:0}.sub{margin:2px 0 0;font-size:12.5px;color:rgba(255,255,255,.82)}'
@@ -132,6 +138,40 @@ const pagina = (e, pedido, aviso) => {
     + 'border:1px solid #0A5B60;border-radius:10px;background:#E6F2F2;color:#075055}'
     + '.erro{background:#FDECEC;border:1px solid #E8A0A0;color:#8C2F2F;border-radius:10px;padding:10px 12px;margin:14px 0 0;font-size:14px}'
     + '.pe{font-size:12px;color:#656C7C;margin-top:24px}'
+    // ── O aspeto escuro ──────────────────────────────────────────────────────
+    //
+    // Quem abre isto abre-o no telemóvel, e um telemóvel em modo escuro levava
+    // com uma página branca na cara.
+    //
+    // ⚠ Os valores NÃO são escolhidos aqui: são os do esquema Cião escuro,
+    // lidos do `buildTheme(1, true)` do `src/theme.js` — o Cião é o esquema
+    // cujo cabeçalho é este `#0A5B60`. Esta página não sabe de quem é o
+    // telemóvel (ninguém se identificou ainda), por isso não pode seguir o
+    // esquema do membro como o resto da app; o que pode é não inventar cores.
+    //
+    //   page #051011 · card #142F31 · borda #2F5153 · text1 #F0F2F5
+    //   slate #ADCBCD · text3 #9CB3B4 · actBg #114042 · actBrd #138186
+    //   actFg #0AB6BB · erro rgba(255,77,79,.08) / #FF4D4F / #FF7875
+    //
+    // Medidos antes de escritos, e todos passam: texto 17,2 · título 7,7 ·
+    // etiqueta 11,2 · rodapé 8,8 · texto do botão 4,6 · borda do botão 4,1 ·
+    // texto do erro 7,1.
+    //
+    // ⚠ A faixa NÃO muda: o `chrome` do esquema é o mesmo nos dois aspetos.
+    //
+    // ⚠ E a borda do campo fica nos 2,23 contra a página, abaixo dos 3:1 que a
+    // norma pede para o contorno de um controlo. Fica escrito porque é real —
+    // mas no aspeto CLARO, que já cá estava, são 1,26. O escuro melhora-a; não
+    // a resolve. Resolvê-la é mexer no desenho dos dois, e isso não é daqui.
+    + '@media (prefers-color-scheme: dark){'
+    + 'body{background:#051011;color:#F0F2F5}'
+    + 'h2{color:#0AB6BB;border-bottom-color:#2F5153}'
+    + 'label{color:#ADCBCD}'
+    + 'input{background:#142F31;border-color:#2F5153;color:#F0F2F5}'
+    + 'button{background:#114042;border-color:#138186;color:#0AB6BB}'
+    + '.erro{background:rgba(255,77,79,.08);border-color:#FF4D4F;color:#FF7875}'
+    + '.pe{color:#9CB3B4}'
+    + '}'
     + '</style></head><body><header class="faixa">' + logo + '<div><h1>Ligar a Alexa</h1>'
     + '<p class="sub">Nossa Casa</p></div></header><main>'
     + '<h2>Identifique-se para autorizar</h2>'

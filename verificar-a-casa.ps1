@@ -42,6 +42,43 @@ Ver "127.0.0.1:8095/api/health" (Codigo "http://127.0.0.1:8095/api/health") 200
 Ver "127.0.0.1:8095/_/ (painel local, tem de funcionar)" (Codigo "http://127.0.0.1:8095/_/") 200
 Ver "127.0.0.1:8094/saude (o endpoint da skill)" (Codigo "http://127.0.0.1:8094/saude") 200
 
+# !! O TUNEL CONFERE-SE AQUI, e nao la fora.
+#
+# Em 28/09/2026 a rede da empresa comecou a interceptar o TLS e a devolver uma
+# pagina de bloqueio do FortiGuard ("Newly Registered Domain"). Tudo o que esta
+# maquina pedisse ao endereco publico passava a falhar - e este verificador
+# dizia "sem resposta" a cinco linhas seguidas, o que se le como "o tunel caiu".
+# Nao tinha caido: o cloudflared tinha quatro ligacoes ao bordo da Cloudflare.
+#
+# A metrica local do cloudflared responde na maquina e nao atravessa filtro
+# nenhum. E a unica medicao honesta do tunel a partir daqui.
+"`n=== o tunel, medido na maquina (sem atravessar a rede) ==="
+$ligacoes = 0
+try {
+  $m = Invoke-RestMethod -Uri "http://127.0.0.1:20241/ready" -TimeoutSec 10
+  $ligacoes = [int]$m.readyConnections
+} catch { }
+Ver "cloudflared com ligacoes ao bordo ($ligacoes)" ($ligacoes -gt 0) "True"
+
+# Ha filtro de rede pelo meio? Distingue-se pelo erro de CONFIANCA no
+# certificado - uma casa em baixo da erro de ligacao, nao de certificado.
+$filtro = $false
+try {
+  Invoke-WebRequest -Uri "https://casa.anossacasa.app/api/health" -TimeoutSec 20 -UseBasicParsing -ErrorAction Stop | Out-Null
+} catch {
+  $m = "$($_.Exception.Message) $($_.Exception.InnerException.Message)"
+  if ($m -match "SSL|TLS|trust|certificate|certificado|secure channel") { $filtro = $true }
+}
+
+if ($filtro) {
+  "`n=== de fora, pela internet: NAO MEDIDO ==="
+  "     A rede desta maquina esta a interceptar o TLS de casa.anossacasa.app."
+  "     Nao e o tunel nem a casa: o cloudflared tem $ligacoes ligacao(oes) ao bordo."
+  "     Para ver a pagina do filtro:  curl -k https://casa.anossacasa.app/api/health"
+  "     Para medir a serio, correr isto de fora da rede da empresa."
+  if ($ligacoes -le 0) { "     (mas o tunel TAMBEM esta em baixo - ver a linha acima)" }
+} else {
+
 "`n=== de fora, pela internet ==="
 Ver "casa.anossacasa.app/api/health" (Codigo "https://casa.anossacasa.app/api/health") 200
 Ver "casa.anossacasa.app/_/ (tem de ser 404)" (Codigo "https://casa.anossacasa.app/_/") 404
@@ -63,6 +100,8 @@ foreach ($c in "episodios_saude", "notas_saude", "receitas_saude", "anexos", "al
     Ver $c $r.totalItems 0
   } catch { Ver $c "recusado" 0 }
 }
+
+}   # fim do bloco que so corre quando NAO ha filtro de rede pelo meio
 
 "`n=== a casa e a verdadeira, e nao uma base vazia ==="
 try {

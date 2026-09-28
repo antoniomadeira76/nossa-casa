@@ -177,6 +177,37 @@ try {
   const rnD = await rn.json();
   ver('o refresh dá um token novo', rn.status === 200 && !!rnD.access_token, `${rn.status}`);
 
+// ⚠ ISTO ERA UM `try/finally` SEM `catch`, e mentia.
+//
+// Em 28/09/2026 o primeiro `fetch` ao endereço público rebentou — e o `finally`
+// imprimiu **«✓ o fluxo inteiro funciona pela internet»** com `falhas` a zero,
+// porque nada tinha chegado a correr. A excepção só apareceu DEPOIS da linha
+// verde, como um despejo do Node por baixo dela. Quem lesse o fim da saída via
+// o visto.
+//
+// Uma linha de resumo tem de contar o que NÃO correu, e não só o que correu e
+// falhou. É a mesma família do 127 com tudo a verde.
+} catch (erro) {
+  falhas++;
+  console.log(`\n✕ REBENTOU a meio: ${erro && erro.message}`);
+
+  // E dizer PORQUÊ, quando dá para saber. O que se apanhou naquele dia não era
+  // do túnel nem da casa: era o filtro da rede da empresa a interceptar o TLS e
+  // a devolver uma página de bloqueio — «Newly Registered Domain», do FortiGuard.
+  // Um instrumento que diz «sem resposta» a isto manda procurar no sítio errado,
+  // e foi por isso que se perdeu tempo com o servidor, que estava bom.
+  const causa = erro && erro.cause;
+  const codigo = String((causa && causa.code) || '');
+  if (/UNABLE_TO_VERIFY_LEAF_SIGNATURE|SELF_SIGNED_CERT|CERT_ALTNAME|DEPTH_ZERO/.test(codigo)) {
+    console.log(`  O certificado de ${CASA} não se verifica (${codigo}).`);
+    console.log('  Isto quase nunca é o túnel: é a REDE onde esta máquina está a');
+    console.log('  interceptar o TLS — um filtro da empresa, uma VPN, um antivírus.');
+    console.log('  Para confirmar, de fora desta rede:');
+    console.log(`    curl -k ${CASA}/api/health`);
+    console.log('  Se vier uma página de bloqueio, o problema é da rede e a casa está bem.');
+    console.log('  E o cloudflared diz se o túnel está de pé, sem depender disto:');
+    console.log('    curl http://127.0.0.1:20241/ready     (readyConnections > 0)');
+  }
 } finally {
   await arrumar();
   const sobrou = (await admin.collection('casas').getFullList()).filter(c => String(c.nome).startsWith('[provas] amazon')).length;
