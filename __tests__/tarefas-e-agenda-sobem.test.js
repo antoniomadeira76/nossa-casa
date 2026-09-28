@@ -36,10 +36,28 @@ describe('⚠ os nomes são os das COLEÇÕES, não os da loja', () => {
   // O PocketBase ignora campos que não conhece EM SILÊNCIO: a escrita passa,
   // responde 200, e o dado cai. Já aconteceu duas vezes neste projeto — com o
   // `medico` e as `notas` de uma consulta, e com as despesas.
+  // ⚠ SEM os comentários, e recortado pelo FECHO da função — não por 900
+  // caracteres a contar do início.
+  //
+  // A versão de 900 caracteres partiu-se em 28/09/2026, quando o `eventoDaCasa`
+  // ganhou a explicação do título neutro: o comentário empurrou o `etiqueta:`
+  // para fora da janela e o guarda jurou que o campo tinha desaparecido. Não
+  // tinha — estava na linha a seguir.
+  //
+  // Um guarda que lê código como texto não pode depender de quanto se escreve
+  // à volta dele. É a mesma família do comentário de linha que abre um bloco,
+  // em `__tests__/um-comentario-nao-abre-um-bloco.test.js`.
+  const semComentarios = (s) => s
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+    .replace(/(^|[^:])\/\/[^\n]*/g, (m, antes) => antes + ' '.repeat(m.length - antes.length));
+
   const bloco = (nome) => {
     const i = sync.indexOf(`export async function ${nome}(`);
     expect(i).toBeGreaterThan(0);
-    return sync.slice(i, i + 900);
+    // Até ao `\n}` que fecha a função, que é uma marca do estilo desta casa.
+    const fim = sync.indexOf('\n}', i);
+    expect(fim).toBeGreaterThan(i);
+    return semComentarios(sync.slice(i, fim));
   };
 
   it('uma tarefa sobe com `titulo`, `atribuido_a` e `recorrencia`', () => {

@@ -45,6 +45,9 @@
 // prova é que se adapta.» As provas resolvem-no com um `registerHooks`.
 import * as servidor from './pocketbase';
 import { eEnderecoDeCasa, PORQUE_NAO_SOBE } from './endereco';
+// A regra do titulo neutro de um evento de saude, partilhada com a agenda da
+// Google. Puro, sem `react-native` nem SDK: as provas carregam-no em Node.
+import { tituloLaFora } from './evento-de-saude';
 // ⚠ O `format` é seguro de importar aqui: não importa `react-native`, e por
 // isso as provas em Node conseguem carregar este ficheiro. Uma importação que
 // arraste o RN parte todas elas — já aconteceu com o `Platform`.
@@ -1198,7 +1201,21 @@ export async function eventoDaCasa({ casa, dia, hora, titulo, responsavel, autor
     casa,
     dia: isoDeChave(dia),
     hora: hora || '',
-    titulo,
+    // ⚠ O título de um evento de SAÚDE vai neutro — «Consulta» — e a razão está
+    // em `src/evento-de-saude.js`.
+    //
+    // Esta linha era `titulo` a seco, e foi a terceira porta: uma consulta
+    // marcada na Saúde subia para `eventos` como «Consulta Pediatria», com a
+    // criança no `responsavel`. A coleção `eventos` não é de saúde, portanto o
+    // `recusaSaude` nunca a viu — e desde 27/09/2026 o servidor atende na
+    // internet. As tomas eram piores: um evento por dia do plano, catorze ou
+    // vinte e um, cada um com o NOME DO MEDICAMENTO no título.
+    //
+    // A regra já existia e já estava decidida — só estava aplicada a um dos
+    // destinos. O `agenda-google.js` até escrevia, desde 06/09, que mandar
+    // «Consulta Dentista · Mia» para fora «é exactamente o que esse travão
+    // existe para impedir, por outra porta». Havia três portas.
+    titulo: tituloLaFora({ titulo, etiqueta, episodio }),
     responsavel: responsavel || null,
     autor,
     // O servidor tem um `select` com os três; sem valor, o mais restritivo.
@@ -1213,7 +1230,20 @@ export async function alterarEvento(idNoServidor, campos) {
   const linha = {};
   if ('dia' in campos) linha.dia = isoDeChave(campos.dia);
   if ('hora' in campos) linha.hora = campos.hora || '';
-  if ('titulo' in campos) linha.titulo = campos.titulo;
+  // ⚠ O mesmo neutro da criação. Corrigir a hora de uma consulta reescrevia o
+  // título inteiro para o servidor — e isso desfazia, numa alteração, o que a
+  // criação tinha acabado de calar.
+  //
+  // A etiqueta e o episódio entram na decisão mesmo quando não vêm nos campos:
+  // quem altera só a hora manda `{ hora }`, e sem eles o `tituloLaFora` não
+  // saberia que aquele evento é de saúde.
+  if ('titulo' in campos) {
+    linha.titulo = tituloLaFora({
+      titulo: campos.titulo,
+      etiqueta: 'etiqueta' in campos ? campos.etiqueta : campos.etiquetaAtual,
+      episodio: campos.episodio !== undefined ? campos.episodio : campos.episodioAtual,
+    });
+  }
   if ('visibilidade' in campos) linha.visibilidade = campos.visibilidade;
   if ('responsavel' in campos) linha.responsavel = campos.responsavel || null;
   // ⚠ A etiqueta faltava, e o `eventoDaCasa` manda-a na criação. Mudar a

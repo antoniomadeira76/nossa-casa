@@ -33,19 +33,17 @@
 // que é ESM, e o Jest não o consegue importar. Uma regra que só se verifica a
 // olho, no ecrã, não é uma regra. Aqui é pura, e tem provas.
 
-// Um evento é de saúde se pertence a um episódio ou traz a etiqueta.
+// ⚠ A regra mudou de casa em 28/09/2026, e o `evento-de-saude.js` explica
+// porquê: ela nunca foi sobre a Google. É sobre o que sai deste dispositivo, e
+// havia uma TERCEIRA porta aberta — o servidor da casa, que recebia o título
+// inteiro em `eventos`, uma coleção que o `recusaSaude` não conhece.
 //
-// ⚠ As duas condições, e não só o `healthId`: o `Saude.jsx` manda os dois, mas
-// um evento pode ganhar a etiqueta «Saúde» na folha de agendar sem episódio
-// nenhum atrás — e esse leva a mesma discrição.
-export const eDeSaude = (ev) => Boolean(ev && (ev.healthId || ev.tag === 'Saúde'));
+// Aqui ficam os nomes que este ficheiro sempre exportou, para não partir quem
+// os importa. A regra é uma só, e vive num sítio só.
+export { eDeSaude, TITULO_NEUTRO } from './evento-de-saude';
+import { eDeSaude, tituloLaFora } from './evento-de-saude';
 
-// O título neutro, e a razão dele está em cima.
-export const TITULO_NEUTRO = 'Consulta';
-
-export const tituloParaGoogle = (ev) => (eDeSaude(ev)
-  ? TITULO_NEUTRO
-  : String((ev && (ev.title || ev.titulo)) || '').trim());
+export const tituloParaGoogle = (ev) => tituloLaFora(ev);
 
 // ⚠ A descrição também não vai. «Criado na Nossa Casa por Rita» numa consulta
 // da Mia diz de quem é a casa e quem marcou — menos do que o título completo,
