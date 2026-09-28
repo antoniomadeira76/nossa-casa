@@ -27,6 +27,12 @@ const { pb: admin } = await comecar();
 const raiz = URL.replace(/\/+$/, '');
 const marca = `google-${Date.now()}`;
 
+// O endereço público da casa, o mesmo que o hook lê. Vem de `CASA_URL_PUBLICA`
+// para a prova continuar a valer quando a casa mudar de máquina — e a reserva
+// é a mesma que está no `alexa-conta-comum.js`, de propósito: se as duas
+// divergirem, esta prova fica vermelha, que é o que se quer.
+const BASE_PUBLICA = String(process.env.CASA_URL_PUBLICA || 'https://casa.anossacasa.app').replace(/\/+$/, '');
+
 const casaA = await criarCasa(admin, `${marca}-A`, { valor_ponto: 0.1 });
 const casaB = await criarCasa(admin, `${marca}-B`, { valor_ponto: 0.1 });
 
@@ -101,7 +107,7 @@ await prova('⚠ a ida à Google guarda o pedido e manda uma chave OPACA', async
     throw new Error('o pedido da Amazon vai dentro do state da Google');
   }
   igual(String(u.searchParams.get('redirect_uri')),
-    'https://casa.anossacasa.app/api/alexa/retorno-google',
+    BASE_PUBLICA + '/api/alexa/retorno-google',
     'o retorno pedido à Google não é o que está registado na consola');
 });
 

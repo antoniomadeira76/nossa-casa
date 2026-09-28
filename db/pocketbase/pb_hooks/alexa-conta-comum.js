@@ -318,11 +318,54 @@ const peloRefresh = (casa, refresh) => {
 
 // ── O caminho da Google ──────────────────────────────────────────────────────
 //
-// ⚠ O endereço de retorno é FIXO, escrito aqui, e tem de ser igual, letra por
-// letra, ao que está nos «URIs de redirecionamento autorizados» da consola da
-// Google. Não se deriva do cabeçalho `Host` do pedido — esse vem de fora e
-// escolhe-se; derivá-lo seria deixar quem chama apontar a Google a outro sítio.
-const RETORNO_GOOGLE = 'https://casa.anossacasa.app/api/alexa/retorno-google';
+// ── O endereço público desta casa ────────────────────────────────────────────
+//
+// ⚠ NÃO se deriva do cabeçalho `Host` do pedido. Esse vem de fora e escolhe-se:
+// derivá-lo seria deixar quem chama apontar a Google a outro sítio.
+//
+// Vem de `CASA_URL_PUBLICA`, uma variável do ambiente do SERVIÇO — é
+// configuração da máquina, não dado da casa, e é o que permite mudar de
+// servidor sem mexer em código. A casa vai passar para uma máquina alugada
+// (decidido em 28/09/2026) e este era um dos quatro sítios com o endereço
+// escrito à mão.
+//
+// ⚠ O valor a seguir é uma RESERVA, não a verdade. Está aqui para a casa não
+// parar no dia em que a variável faltar — e diz-se no registo quando isso
+// acontece, porque uma reserva silenciosa é como se descobre, meses depois, que
+// a configuração nunca chegou a ser lida.
+// ⚠ PREGUIÇOSO, e não uma constante calculada ao carregar o módulo.
+//
+// A primeira versão era um IIFE, e rebentou dois guardas de uma vez com
+// `ReferenceError: $app is not defined`. A razão é boa: o
+// `__tests__/a-voz-so-escreve.test.js` faz `require` DESTE ficheiro para provar
+// o `retornoAceite` e o base64 — lê o código que corre, em vez de o imitar. E
+// em Jest não há `$app` nem `$os`.
+//
+// Um módulo de hooks não pode tocar no servidor enquanto é carregado. Quem o
+// fizer fica de fora das provas, e ficar de fora das provas é como o defeito
+// entra.
+const DE_RESERVA = 'https://casa.anossacasa.app';
+let baseEmCache = null;
+
+const basePublica = () => {
+  if (baseEmCache !== null) return baseEmCache;
+  let v = '';
+  try { v = String($os.getenv('CASA_URL_PUBLICA') || '').trim(); } catch (err) { v = ''; }
+  if (v) { baseEmCache = v.replace(/\/+$/, ''); return baseEmCache; }
+  try {
+    $app.logger().warn('CASA_URL_PUBLICA não está definida — a usar o endereço de reserva',
+      'reserva', DE_RESERVA);
+  } catch (err) { /* fora do servidor não há registo, e não faz mal */ }
+  baseEmCache = DE_RESERVA;
+  return baseEmCache;
+};
+
+// Tem de ser igual, letra por letra, ao que está nos «URIs de redirecionamento
+// autorizados» da consola da Google. Mudar o endereço público obriga a
+// acrescentar lá a linha nova ANTES de mudar aqui, senão a Google responde
+// `redirect_uri_mismatch` — e esse erro aparece do lado dela, não nos nossos
+// registos.
+const retornoGoogle = () => basePublica() + '/api/alexa/retorno-google';
 
 const provedorGoogle = () => {
   const col = $app.findCollectionByNameOrId('membros');
@@ -332,7 +375,7 @@ const provedorGoogle = () => {
   // `clientSecret` guardados na coleção. É por isto que o segredo da Google não
   // aparece em ficheiro nenhum deste projeto, nem no `.env.local`.
   const p = config.initProvider();
-  p.setRedirectURL(RETORNO_GOOGLE);
+  p.setRedirectURL(retornoGoogle());
   return p;
 };
 
@@ -566,5 +609,5 @@ module.exports = {
   escapar, retornoAceite, credenciaisDaCasa, lerPedido, pagina, paginaSimples,
   novaLigacao, pelaCodigo, peloRefresh, responderComToken, limparOQueFicouAMeio,
   deBase64, doCabecalhoBasic,
-  RETORNO_GOOGLE, provedorGoogle, guardarEspera, gastarEspera, membroPelaGoogle,
+  retornoGoogle, basePublica, provedorGoogle, guardarEspera, gastarEspera, membroPelaGoogle,
 };

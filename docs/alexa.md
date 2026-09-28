@@ -1,5 +1,45 @@
 # Alexa — especificação da fase 1
 
+> ## ⏸ EM ESPERA desde 28/09/2026
+>
+> Decisão do dono da casa: **a Alexa fica para desenvolvimentos futuros.** Nada
+> aqui foi desfeito — o que está construído está provado e a passar. Isto é uma
+> pausa, não um recuo.
+>
+> **Onde ficou, exactamente:**
+>
+> | | |
+> |---|---|
+> | A conta | **ligada**. O servidor da Amazon trocou o código por um token (200) e nasceu a identidade em `alexa_vozes`. |
+> | O endpoint | de pé, a verificar assinaturas, com registo em `registos/alexa.log`. |
+> | As rotas da casa | as três da voz e as cinco do Account Linking, com 60 provas. |
+> | O que **não** funciona | **a invocação por voz**. A Alexa nunca chamou o endpoint — zero pedidos, em todo o histórico. |
+>
+> ⚠ **O que falta é do lado da Amazon, e é uma só coisa por descobrir.** Ao dizer
+> «abra nossa casa» ela respondeu que *não encontrou a música* — a resposta de
+> quem não conhece skill nenhuma com aquele nome de invocação. E «acrescentar
+> leite» foi para a lista de compras **dela**, não para a nossa, o que explica o
+> «acrescentei» seguido de nada aparecer na app.
+>
+> O selector do separador *Test* já está em **Development**. Ficaram por
+> confirmar duas coisas, e a primeira é a mais provável:
+>
+> 1. **O idioma do dispositivo tem de ser Português (Brasil).** Não há pt-PT na
+>    Alexa, e uma skill pt-BR não existe para um dispositivo noutro idioma.
+> 2. **Em que idiomas é que a skill foi criada.** Se nasceu em inglês e o modelo
+>    pt-BR nunca foi colado *nesse* idioma, nada disto responde em português.
+>
+> **Como retomar:** o simulador do separador *Test*, com o idioma em Português
+> (BR), escrevendo `abra nossa casa`. Ele mostra o JSON que envia e o que recebe,
+> e o pedido aparece em `registos/alexa.log` no mesmo instante. É o caminho mais
+> curto, e é o que não chegámos a fazer.
+>
+> ⚠ **Duas coisas ficaram a correr**, e é deliberado: o serviço `NossaCasaAlexa`
+> e a ligação de conta (com um `refresh` vivo). Se a pausa for longa, vale a pena
+> pará-las — um endpoint na internet e uma credencial de longa duração ao serviço
+> de uma funcionalidade que ninguém usa não se justificam sozinhos.
+
+
 > **Estado: falta a skill, e mais nada** (27/09/2026).
 >
 > O lado da casa está construído e provado — as três rotas, o Account Linking,
