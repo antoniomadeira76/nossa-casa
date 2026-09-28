@@ -48,3 +48,6 @@ db/pocketbase/pb_migrations/*_updated_*.js
 
 # A simulação da exportação da saúde (scripts/simular-exportacao-saude.mjs)
 .simulacao/
+
+# Os registos dos servicos do Windows (a saida do servico da skill).
+registos/

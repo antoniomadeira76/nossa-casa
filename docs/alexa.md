@@ -130,6 +130,82 @@ que a prova antiga não fazia:
 3. **conta a escrita por linhas** antes e depois, porque um 400 tanto pode ser a
    regra a recusar como um campo em falta.
 
+## ⚠ Duas coisas que impediram a conta de ligar, e o que ficou no lugar delas
+
+### 1. O `state` da Amazon tem 1095 caracteres, e eu cortava-o aos 500
+
+```js
+state: String(state || '').slice(0, 500),
+```
+
+Do lado da casa corria tudo bem: a página abria, o adulto identificava-se, a
+ligação nascia, o código era devolvido. E a Amazon respondia **«Não foi possível
+vincular a sua conta»** sem nunca vir buscar o token — portanto **sem deixar um
+único registo** no servidor a explicar porquê.
+
+O `state` é um blob dela, em base64, que ela valida à chegada. Mutilado, não o
+reconhece e desiste em silêncio.
+
+⚠ **E a razão de nunca ter sido apanhado é a lição, não o defeito:** todas as
+provas usavam `'abc123'`, `'xyz'`, `'sim-abc'`. Três caracteres contra mil e
+noventa e cinco. Uma prova com um valor de brincar não prova o caminho
+verdadeiro — mede outra coisa e diz que mediu esta.
+
+Agora devolve-se inteiro, e o que for absurdo é **recusado com mensagem**, nunca
+encolhido. Os guardas são `__tests__/o-state-da-amazon-nao-se-corta.test.js` (que
+exige que alguma prova use um `state` do tamanho verdadeiro) e as 12 provas de
+`db/pocketbase/provar-alexa-google.mjs`.
+
+### 2. Os adultos desta casa entram pela Google, e nunca tiveram palavra-passe
+
+A página só sabia pedir e-mail e palavra-passe. Quem entra pela Google tem no
+registo uma palavra-passe ao acaso, criada pelo OAuth, que ninguém sabe — e
+levava sempre «Não reconheço esse endereço ou essa palavra-passe». Com razão, e
+sem serventia nenhuma.
+
+A página ganhou um **«Continuar com Google»**, por baixo de um «ou». O caminho da
+palavra-passe fica: há contas nesta casa que a usam.
+
+```
+GET /api/alexa/google          valida o pedido OUTRA VEZ, guarda-o, vai à Google
+GET /api/alexa/retorno-google   onde a Google devolve o navegador
+```
+
+Quatro decisões que sustentam isto:
+
+- **O segredo da Google não passa por código nosso.**
+  `colecao.oauth2.getProviderConfig('google').initProvider()` devolve o
+  fornecedor já carregado com o `clientId` e o `clientSecret` guardados na
+  coleção. Não está no `.env.local` nem em ficheiro nenhum.
+- **Não se usa o `auth-with-oauth2` do PocketBase**, que seria o caminho curto:
+  esse **cria um membro novo** quando o e-mail não casa com nenhum. Um estranho
+  nascia membro da casa por carregar num botão. Procura-se à mão, pelo e-mail
+  que a Google **verificou**, filtrando já pela casa das credenciais da skill.
+- **O pedido da Amazon não viaja dentro do `state` da Google.** O que volta da
+  Google vem pela barra de endereços — por mãos de quem se está a autenticar —,
+  e bastaria começar o fluxo com um `redirect_uri` e voltar com outro. Viaja uma
+  chave ao acaso de 40 caracteres; o pedido fica numa linha de `alexa_esperas`,
+  de **uso único** e com **cinco minutos** de prazo.
+- **As mesmas três recusas** do caminho da palavra-passe: não é membro desta
+  casa, é criança, ou a casa não é a das credenciais usadas. Um caminho novo que
+  salte uma delas é uma porta das traseiras.
+
+O endereço de retorno é **fixo** — `https://casa.anossacasa.app/api/alexa/retorno-google`
+— e tem de estar, letra por letra, nos URIs de redirecionamento autorizados da
+consola da Google, **a mais** do `http://localhost:8082/` que faz a app entrar.
+Não se deriva do cabeçalho `Host`: esse vem de fora e escolhe-se.
+
+### E o que fica a meio agora limpa-se
+
+Três tentativas falhadas deixaram duas linhas em `alexa_ligacoes` com o código
+por gastar — cada uma com um `refresh` válido, que é uma credencial de longa
+duração para uma ligação que nunca existiu. E as `alexa_esperas` guardam o
+`state` da Amazon. Nenhuma das duas se limpava.
+
+Limpam-se no início de cada tentativa. O filtro distingue-as pelo que não é
+ambíguo: `codigo != ""` é uma ligação **a meio**; uma ligação **feita** tem o
+código apagado pela troca, e não entra no filtro por mais velha que seja.
+
 ## O endpoint da skill é um processo à parte — e porquê
 
 ⚠ **Esta página chegou a dizer que o endpoint da Alexa era `casa.anossacasa.app`.

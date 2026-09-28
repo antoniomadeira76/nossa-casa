@@ -73,6 +73,19 @@ const AS_ROTAS = {
     + '`alexa_ligacoes`, que tem as cinco regras a `null`.',
   'POST /api/alexa/token': 'Troca o código (ou o refresh) por um token. É pública por '
     + 'obrigação do protocolo — o `client_secret` é que faz de tranca.',
+
+  // As duas do caminho da Google entraram em 28/09/2026, e entraram porque sem
+  // elas o dono desta casa NÃO CONSEGUIA ligar a Alexa: os adultos daqui entram
+  // pela Google e nunca definiram palavra-passe, e a página só sabia pedir isso.
+  'GET /api/alexa/google': 'Manda o navegador à Google. Guarda o pedido da Amazon numa '
+    + 'linha de `alexa_esperas` e envia só uma chave ao acaso — o pedido não viaja dentro '
+    + 'do `state` da Google, que volta por mãos de quem se está a autenticar. Não devolve '
+    + 'nada da casa: devolve um 302.',
+  'GET /api/alexa/retorno-google': 'Onde a Google devolve o navegador. Gasta a espera (uso '
+    + 'único), troca o código com a Google, e procura à mão o membro pelo e-mail VERIFICADO '
+    + '— nunca pelo `auth-with-oauth2` do PocketBase, que criaria um membro novo se o '
+    + 'e-mail não casasse. Faz as mesmas três verificações do caminho da palavra-passe. '
+    + 'Não devolve nada da casa: ou um 302 para a Amazon, ou uma página de recado.',
 };
 const AS_TRES = Object.keys(AS_ROTAS);
 
@@ -94,14 +107,28 @@ describe('a voz só escreve', () => {
   });
 
   it('⚠ e nenhuma rota da VOZ é um GET — por voz não se lê', () => {
-    // ⚠ Há um GET, e é uma excepção com nome: a página de autorização.
+    // ⚠ Há TRÊS GET, e os três são do NAVEGADOR de quem liga a conta, nunca da
+    // Alexa. Nenhum devolve dados da casa:
     //
-    // Ela não devolve nada da casa — devolve um formulário. A propriedade que
-    // aqui interessa é que nenhuma rota `/api/alexa/<coisa>` que a Alexa CHAME
-    // responda a um GET com dados; a página é chamada pelo navegador de quem
-    // está a ligar a conta, e é o único GET que existe.
+    //   /api/alexa/autorizar       devolve um formulário
+    //   /api/alexa/google          devolve um 302 para a Google
+    //   /api/alexa/retorno-google  devolve um 302 para a Amazon, ou um recado
+    //
+    // A propriedade que aqui interessa continua inteira: nenhuma rota que a
+    // ALEXA chame responde a um GET, e nenhum destes GET lê a casa. As três
+    // rotas da voz — artigo, evento, tarefa — são todas POST.
     const gets = ficheirosDaVoz().flatMap(rotasDe).filter(r => r.startsWith('GET '));
-    expect(gets).toEqual(['GET /api/alexa/autorizar']);
+    expect(gets.sort()).toEqual([
+      'GET /api/alexa/autorizar',
+      'GET /api/alexa/google',
+      'GET /api/alexa/retorno-google',
+    ]);
+
+    // E o que a Alexa chama continua a ser só POST.
+    const daVoz = ['/api/alexa/artigo', '/api/alexa/evento', '/api/alexa/tarefa'];
+    const enganos = ficheirosDaVoz().flatMap(rotasDe)
+      .filter(r => daVoz.some(v => r.endsWith(' ' + v)) && !r.startsWith('POST '));
+    expect(enganos).toEqual([]);
   });
 
   it('⚠ e cada rota tem a razão escrita', () => {

@@ -92,10 +92,31 @@ const lerPedido = (clientId, redirectUri, state, responseType) => {
   const tipo = String(responseType || 'code');
   if (tipo !== 'code') throw new BadRequestError('Só sei responder com um código.');
 
+  // ⚠ O `state` NÃO SE CORTA. Esta linha era `.slice(0, 500)` e foi o que
+  // impediu a conta de ligar durante meio dia (28/09/2026).
+  //
+  // O `state` da Amazon tem **1095 caracteres** — é um blob dela, em base64,
+  // que ela própria valida à chegada. Cortado aos 500, a casa fazia tudo bem,
+  // criava a ligação, devolvia o código à Amazon… e a Amazon comparava o
+  // `state`, não batia, e recusava-se a vir buscar o token. Do lado dela:
+  // «Não foi possível vincular a sua conta». Do nosso: silêncio, porque o
+  // pedido ao `/api/alexa/token` nunca chegava a acontecer.
+  //
+  // ⚠ E a razão de nunca ter sido apanhado é a lição do dia: as provas todas
+  // usavam `'abc123'`, `'xyz'`, `'sim-abc'` — três caracteres contra mil e
+  // noventa e cinco. Uma prova com um valor de brincar não prova o caminho
+  // verdadeiro. O guarda agora manda um `state` do tamanho do da Amazon e
+  // exige que volte IGUAL.
+  //
+  // Cortar em silêncio é o pior dos três caminhos. Devolve-se inteiro, e o que
+  // for absurdamente grande é RECUSADO com uma mensagem — não mutilado.
+  const s = String(state || '');
+  if (s.length > 4096) throw new BadRequestError('O `state` é grande de mais.');
+
   return {
     client_id: String(clientId),
     redirect_uri: String(redirectUri),
-    state: String(state || '').slice(0, 500),
+    state: s,
     casa: String(cred.get('casa')),
   };
 };
@@ -105,7 +126,23 @@ const lerPedido = (clientId, redirectUri, state, responseType) => {
 // A mesma cara dos documentos da app — faixa com o logótipo, uma coluna
 // estreita, sem um byte de JavaScript. Quem a abre é um adulto da casa, no
 // telemóvel, no meio de ligar um altifalante.
+// Os parâmetros do pedido da Amazon, para os pendurar numa ligação. Voltam a ser
+// validados do outro lado — isto é só transporte.
+const paraEndereco = (pedido) => 'client_id=' + encodeURIComponent(pedido.client_id)
+  + '&redirect_uri=' + encodeURIComponent(pedido.redirect_uri)
+  + '&state=' + encodeURIComponent(pedido.state || '')
+  + '&response_type=code';
+
 const pagina = (e, pedido, aviso) => {
+  // O G da Google, nas quatro cores. É a marca deles e desenha-se como eles
+  // mandam — não leva a cor do esquema da casa.
+  const logoGoogle = '<svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true">'
+    + '<path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-2.7-.4-3.9H24v7.1h12.1c-.2 1.8-1.6 4.5-4.5 6.3l6.9 5.4c4.1-3.8 6.6-9.4 6.6-15z"/>'
+    + '<path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.9-5.4c-1.8 1.3-4.3 2.2-7.6 2.2-5.8 0-10.7-3.8-12.5-9.1l-7.1 5.5C8 41.1 15.4 46 24 46z"/>'
+    + '<path fill="#FBBC05" d="M11.5 28.4c-.5-1.4-.7-2.9-.7-4.4s.3-3 .7-4.4l-7.1-5.5C2.9 17 2 20.4 2 24s.9 7 2.4 9.9l7.1-5.5z"/>'
+    + '<path fill="#EA4335" d="M24 10.5c4.1 0 6.9 1.8 8.5 3.3l6.1-6C34.9 4.4 29.9 2 24 2 15.4 2 8 6.9 4.4 14.1l7.1 5.5C13.3 14.3 18.2 10.5 24 10.5z"/>'
+    + '</svg>';
+
   const logo = '<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">'
     + '<path d="M3.6 10.9L12 4.1l8.4 6.8" stroke="#FFFFFF" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
     + '<circle cx="9.1" cy="14.9" r="1.62" fill="#8B4EE0"/><circle cx="14.9" cy="14.9" r="1.62" fill="#13ADB3"/>'
@@ -138,6 +175,13 @@ const pagina = (e, pedido, aviso) => {
     + 'border:1px solid #0A5B60;border-radius:10px;background:#E6F2F2;color:#075055}'
     + '.erro{background:#FDECEC;border:1px solid #E8A0A0;color:#8C2F2F;border-radius:10px;padding:10px 12px;margin:14px 0 0;font-size:14px}'
     + '.pe{font-size:12px;color:#656C7C;margin-top:24px}'
+    // ⚠ O botão da Google é NEUTRO de propósito: quem dá cor é o G deles. Pintá-lo
+    // com o acento da casa punha duas marcas a discutir no mesmo alvo. E 48 de
+    // altura, como o «Autorizar» — o mínimo desta casa é 44, sem excepção.
+    + '.ou{text-align:center;font-size:12px;color:#656C7C;margin:18px 0 0}'
+    + '.google{display:flex;align-items:center;justify-content:center;gap:10px;'
+    + 'min-height:48px;margin-top:10px;font-weight:600;text-decoration:none;'
+    + 'border:1px solid #D9D9D9;border-radius:10px;background:#fff;color:#262626}'
     // ── O aspeto escuro ──────────────────────────────────────────────────────
     //
     // Quem abre isto abre-o no telemóvel, e um telemóvel em modo escuro levava
@@ -171,6 +215,8 @@ const pagina = (e, pedido, aviso) => {
     + 'button{background:#114042;border-color:#138186;color:#0AB6BB}'
     + '.erro{background:rgba(255,77,79,.08);border-color:#FF4D4F;color:#FF7875}'
     + '.pe{color:#9CB3B4}'
+    + '.ou{color:#9CB3B4}'
+    + '.google{background:#142F31;border-color:#2F5153;color:#F0F2F5}'
     + '}'
     + '</style></head><body><header class="faixa">' + logo + '<div><h1>Ligar a Alexa</h1>'
     + '<p class="sub">Nossa Casa</p></div></header><main>'
@@ -189,6 +235,24 @@ const pagina = (e, pedido, aviso) => {
     + '<label for="palavra">Palavra-passe</label>'
     + '<input id="palavra" name="palavra" type="password" autocomplete="current-password" required>'
     + '<button type="submit">Autorizar</button></form>'
+    // ── O caminho da Google ──────────────────────────────────────────────────
+    //
+    // ⚠ Isto faltava, e sem isto o dono desta casa NÃO CONSEGUIA ligar a Alexa.
+    //
+    // Os adultos daqui entram pela Google, e quem entra por lá nunca definiu
+    // palavra-passe: o registo nasce do OAuth com uma ao acaso, que ninguém
+    // sabe. A página só sabia pedir e-mail e palavra-passe, e respondia-lhe
+    // sempre «Não reconheço esse endereço ou essa palavra-passe» — com razão, e
+    // sem serventia. Medido a 28/09/2026, com ele à espera do outro lado.
+    //
+    // A palavra-passe fica: há contas nesta casa que a usam.
+    //
+    // ⚠ E é uma LIGAÇÃO, não um segundo formulário. O pedido da Amazon vai nos
+    // parâmetros porque a rota `/api/alexa/google` os volta a validar do zero —
+    // não se confia neles por virem daqui.
+    + '<p class="ou">ou</p>'
+    + '<a class="google" href="/api/alexa/google?' + paraEndereco(pedido) + '">'
+    + logoGoogle + 'Continuar com Google</a>'
     + '<p class="pe">Só um adulto desta casa pode autorizar. Para desfazer, apague a ligação '
     + 'na aplicação da Alexa.</p>'
     + '</main></body></html>');
@@ -250,6 +314,169 @@ const peloRefresh = (casa, refresh) => {
   } catch (err) {
     return null;
   }
+};
+
+// ── O caminho da Google ──────────────────────────────────────────────────────
+//
+// ⚠ O endereço de retorno é FIXO, escrito aqui, e tem de ser igual, letra por
+// letra, ao que está nos «URIs de redirecionamento autorizados» da consola da
+// Google. Não se deriva do cabeçalho `Host` do pedido — esse vem de fora e
+// escolhe-se; derivá-lo seria deixar quem chama apontar a Google a outro sítio.
+const RETORNO_GOOGLE = 'https://casa.anossacasa.app/api/alexa/retorno-google';
+
+const provedorGoogle = () => {
+  const col = $app.findCollectionByNameOrId('membros');
+  const [config, existe] = col.oauth2.getProviderConfig('google');
+  if (!existe) throw new BadRequestError('Esta casa não entra pela Google.');
+  // ⚠ `initProvider()` devolve o fornecedor JÁ CARREGADO com o `clientId` e o
+  // `clientSecret` guardados na coleção. É por isto que o segredo da Google não
+  // aparece em ficheiro nenhum deste projeto, nem no `.env.local`.
+  const p = config.initProvider();
+  p.setRedirectURL(RETORNO_GOOGLE);
+  return p;
+};
+
+// ── O que fica a meio ────────────────────────────────────────────────────────
+//
+// ⚠ Uma autorização começada e nunca acabada deixa lixo VIVO, e foi medido em
+// 28/09/2026: três tentativas de ligar a conta deixaram duas linhas em
+// `alexa_ligacoes` com o código por gastar — e cada uma com um `refresh`
+// válido, que é uma credencial de longa duração para uma ligação que nunca
+// existiu. O mesmo para as `alexa_esperas`, que guardam o `state` da Amazon.
+//
+// Nenhuma das duas coleções se limpava. Uma tabela que só cresce, com segredos
+// lá dentro, é uma fuga lenta.
+//
+// Limpa-se no início de cada tentativa: é quando alguém está a pagar a espera
+// de qualquer maneira, e não precisa de tarefa periódica nenhuma. Nunca rebenta
+// o pedido — o `try` engole, porque arrumar não pode impedir de entrar.
+const limparOQueFicouAMeio = () => {
+  const agora = new Date().toISOString().replace('T', ' ');
+  try {
+    const velhas = $app.findRecordsByFilter('alexa_esperas', 'expira < {:agora}', '', 200, 0, { agora });
+    for (let i = 0; i < velhas.length; i++) {
+      try { $app.delete(velhas[i]); } catch (err) { /* segue */ }
+    }
+  } catch (err) { /* segue */ }
+
+  try {
+    // ⚠ `codigo != ""` é o que distingue uma ligação A MEIO de uma ligação
+    // FEITA: o código apaga-se quando a Amazon o troca. Uma ligação boa nunca
+    // entra neste filtro, por mais velha que seja.
+    const mortas = $app.findRecordsByFilter('alexa_ligacoes',
+      'codigo != "" && codigo_expira < {:agora}', '', 200, 0, { agora });
+    for (let i = 0; i < mortas.length; i++) {
+      try { $app.delete(mortas[i]); } catch (err) { /* segue */ }
+    }
+  } catch (err) { /* segue */ }
+};
+
+// A espera: o pedido da Amazon fica cá enquanto o navegador vai à Google.
+const guardarEspera = (pedido) => {
+  limparOQueFicouAMeio();
+
+  const col = $app.findCollectionByNameOrId('alexa_esperas');
+  const r = new Record(col);
+  r.set('chave', $security.randomString(40));
+  r.set('client_id', pedido.client_id);
+  r.set('redirect_uri', pedido.redirect_uri);
+  r.set('estado', pedido.state || '');
+  // Cinco minutos: chega para escolher uma conta da Google, e é pouco para
+  // alguém aproveitar uma chave apanhada pelo caminho.
+  r.set('expira', new Date(Date.now() + 5 * 60 * 1000).toISOString().replace('T', ' ').replace('Z', 'Z'));
+  $app.save(r);
+  return r;
+};
+
+// ⚠ GASTA-a: lê e apaga na mesma passagem. Uma chave que sobrevivesse ao uso
+// era um código de autorização reutilizável, que é o defeito clássico deste
+// protocolo. Devolve um objeto simples, porque a linha já não existe.
+const gastarEspera = (chave) => {
+  const c = String(chave || '');
+  if (!c || c.length > 80) return null;
+  let r = null;
+  try {
+    r = $app.findFirstRecordByFilter('alexa_esperas', 'chave = {:c}', { c });
+  } catch (err) { return null; }
+  if (!r) return null;
+
+  const copia = {
+    client_id: String(r.get('client_id')),
+    redirect_uri: String(r.get('redirect_uri')),
+    estado: String(r.get('estado') || ''),
+  };
+  const expira = new Date(String(r.get('expira')).replace(' ', 'T'));
+  try { $app.delete(r); } catch (err) { /* já não estava lá */ }
+
+  if (!(expira.getTime() > Date.now())) return null;
+  return copia;
+};
+
+// O membro desta casa a quem pertence a conta Google que acabou de entrar.
+//
+// ⚠ NÃO se usa o `/api/collections/membros/auth-with-oauth2` do PocketBase, que
+// seria o caminho curto: esse CRIA um registo novo quando o e-mail não casa com
+// nenhum. Aqui isso seria um estranho a nascer membro da casa por ter carregado
+// num botão. Procura-se à mão, e quem não existe é recusado.
+//
+// ⚠ E o e-mail é o `email` do `AuthUser`, que a documentação do PocketBase
+// descreve como «The VERIFIED OAuth2 account email» — vazio quando o
+// fornecedor não consegue provar que a conta é de quem diz. Vazio é recusa.
+const membroPelaGoogle = (codigo, casa) => {
+  const p = provedorGoogle();
+
+  let utilizador = null;
+  try {
+    const token = p.fetchToken(String(codigo));
+    utilizador = p.fetchAuthUser(token);
+  } catch (err) {
+    $app.logger().warn('Alexa: a Google recusou a troca', 'erro', String(err));
+    return null;
+  }
+
+  const email = String((utilizador && utilizador.email) || '').trim().toLowerCase();
+  if (!email) {
+    $app.logger().warn('Alexa: a Google não confirmou o endereço');
+    return null;
+  }
+
+  // ⚠ A CASA entra no filtro, e não só na verificação a seguir.
+  //
+  // O e-mail é único em toda a coleção `membros`, portanto o resultado seria o
+  // mesmo — hoje. Mas a propriedade de que isto depende («um e-mail, uma casa»)
+  // vive numa restrição do PocketBase que ninguém aqui escreveu nem prova, e a
+  // verificação que a defende está três linhas abaixo, noutro ficheiro. Pedir a
+  // casa à consulta faz a intenção ficar onde se lê, e deixa de haver um
+  // instante em que temos nas mãos o membro de outra casa.
+  try {
+    return $app.findFirstRecordByFilter('membros', 'email = {:e} && casa = {:c}',
+      { e: email, c: String(casa) });
+  } catch (err) {
+    return null;
+  }
+};
+
+// ── Uma página de recado, sem formulário ─────────────────────────────────────
+//
+// Para o que corre mal depois da Google: não há nada a preencher outra vez, e um
+// formulário vazio só convidaria a tentar às cegas.
+const paginaSimples = (e, codigo, titulo, explicacao) => {
+  e.response.header().set('Cache-Control', 'no-store');
+  e.response.header().set('X-Robots-Tag', 'noindex');
+  return e.html(codigo, '<!doctype html><html lang="pt-PT"><head><meta charset="utf-8">'
+    + '<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">'
+    + '<title>Ligar a Alexa — Nossa Casa</title><style>'
+    + ':root{color-scheme:light dark}'
+    + 'body{margin:0;background:#F0F2F5;color:#262626;font:16px/1.5 Inter,Roboto,"Segoe UI",system-ui,sans-serif}'
+    + '.faixa{background:#0A5B60;color:#fff;padding:16px 18px}'
+    + 'h1{font-size:18px;font-weight:600;margin:0}'
+    + 'main{max-width:460px;margin:0 auto;padding:24px 16px 40px}'
+    + 'h2{font-size:17px;margin:0 0 10px}p{margin:0;font-size:14px}'
+    + '@media (prefers-color-scheme: dark){'
+    + 'body{background:#051011;color:#F0F2F5}'
+    + '}'
+    + '</style></head><body><header class="faixa"><h1>Ligar a Alexa</h1></header>'
+    + '<main><h2>' + escapar(titulo) + '</h2><p>' + escapar(explicacao) + '</p></main></body></html>');
 };
 
 // ── O token ──────────────────────────────────────────────────────────────────
@@ -336,7 +563,8 @@ const responderComToken = (e, ligacao) => {
 };
 
 module.exports = {
-  escapar, retornoAceite, credenciaisDaCasa, lerPedido, pagina,
-  novaLigacao, pelaCodigo, peloRefresh, responderComToken,
+  escapar, retornoAceite, credenciaisDaCasa, lerPedido, pagina, paginaSimples,
+  novaLigacao, pelaCodigo, peloRefresh, responderComToken, limparOQueFicouAMeio,
   deBase64, doCabecalhoBasic,
+  RETORNO_GOOGLE, provedorGoogle, guardarEspera, gastarEspera, membroPelaGoogle,
 };

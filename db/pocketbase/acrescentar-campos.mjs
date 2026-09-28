@@ -396,6 +396,29 @@ const COLECOES = [
       listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
     },
   },
+  // A espera enquanto se vai à Google e se volta (28/09/2026). A mesma definição
+  // do `criar-colecoes.mjs`, letra a letra — e o cabeçalho de lá explica porquê.
+  //
+  // ⚠ Em duas linhas: a página ganhou um «Continuar com Google» porque os
+  // adultos desta casa entram por lá e nunca tiveram palavra-passe. Isso põe
+  // dois OAuth encadeados, e o pedido da Amazon não pode viajar dentro do
+  // `state` da Google — volta por mãos de quem se está a autenticar. Viaja uma
+  // chave ao acaso; o pedido fica aqui.
+  {
+    nome: 'alexa_esperas',
+    campos: [
+      { name: 'chave', type: 'text', required: true, max: 80 },
+      { name: 'client_id', type: 'text', required: true, max: 80 },
+      { name: 'redirect_uri', type: 'text', required: true, max: 500 },
+      // ⚠ 4096 e nao 500: o `state` da Amazon tem 1095 caracteres.
+      { name: 'estado', type: 'text', max: 4096 },
+      { name: 'expira', type: 'date', required: true },
+    ],
+    indexes: ['CREATE UNIQUE INDEX idx_alexa_espera_chave ON alexa_esperas (chave)'],
+    regras: {
+      listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
+    },
+  },
 ];
 
 // ⚠ O que uma coleção NÃO pode ter. `[coleção, campo, porquê]`.

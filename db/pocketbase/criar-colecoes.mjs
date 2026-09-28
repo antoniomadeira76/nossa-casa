@@ -82,6 +82,9 @@ const NOSSAS = [
   // (e para o membro), e uma coleção não se apaga enquanto outra a referir. É a
   // mesma lição da `credenciais_agenda`, dos `eventos` e das `seccoes`.
   'alexa_vozes',
+  // A espera não aponta para nada — nem casa, nem membro —, por isso a ordem
+  // dela é livre. Fica aqui, ao pé das outras da voz, para se ler junto.
+  'alexa_esperas',
   'alexa_pedidos', 'alexa_ligacoes', 'credenciais_alexa',
   // ⚠ Três coleções criadas em 11/09/2026 e nunca postas AQUI: a `ementa`
   // (aponta ao prato), os `pratos` e os `objetivos_cofre` (aponta ao membro).
@@ -1592,6 +1595,46 @@ await criar({
     rel('ligacao', ids.alexa_ligacoes, { required: true, cascadeDelete: true }),
   ],
   indexes: ['CREATE UNIQUE INDEX idx_alexa_voz_ligacao ON alexa_vozes (ligacao)'],
+  listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
+});
+
+// ── A espera, enquanto se vai à Google e se volta ────────────────────────────
+//
+// A página de autorização ganhou um «Continuar com Google» (28/09/2026), porque
+// os adultos desta casa entram por lá e NUNCA definiram palavra-passe: o registo
+// nasce do OAuth com uma ao acaso, que ninguém sabe. A página só sabia pedir
+// e-mail e palavra-passe, e ao dono da casa respondia sempre «Não reconheço
+// esse endereço ou essa palavra-passe» — correctamente, e inutilmente.
+//
+// Isso põe DOIS OAuth encadeados: a Amazon manda-nos o navegador, e nós
+// mandamo-lo à Google. O pedido da Amazon — `client_id`, `redirect_uri`, `state`
+// — tem de sobreviver à viagem.
+//
+// ⚠ E NÃO pode viajar dentro do `state` da Google.
+//
+// O que volta da Google vem pela barra de endereço, ou seja, por mãos de quem
+// estamos a autenticar. Se o pedido da Amazon viajasse lá dentro, bastava
+// mudá-lo à chegada: começava-se o fluxo com um `redirect_uri` nosso e
+// voltava-se com o de outra pessoa. O que viaja é uma CHAVE ao acaso, e o
+// pedido fica aqui, no servidor.
+//
+// Uso único e com prazo: a linha apaga-se ao ser trocada. Cinco minutos chegam
+// para escolher uma conta da Google, e são poucos para alguém aproveitar uma
+// chave apanhada.
+//
+// As cinco regras a `null`: só os hooks lhe chegam.
+await criar({
+  name: 'alexa_esperas', type: 'base',
+  fields: [
+    txt('chave', { required: true, max: 80 }),
+    txt('client_id', { required: true, max: 80 }),
+    txt('redirect_uri', { required: true, max: 500 }),
+    // ⚠ 4096 e nao 500: o `state` da Amazon tem 1095 caracteres. Com 500, a
+    // linha nem se gravava depois de o `lerPedido` deixar de cortar.
+    txt('estado', { max: 4096 }),
+    data('expira', { required: true }),
+  ],
+  indexes: ['CREATE UNIQUE INDEX idx_alexa_espera_chave ON alexa_esperas (chave)'],
   listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
 });
 
