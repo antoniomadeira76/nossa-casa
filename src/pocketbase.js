@@ -32,6 +32,11 @@ import PocketBase, { AsyncAuthStore } from 'pocketbase';
 // que o acrescenta, a do cliente não. Escrevê-la aqui serve os três: Metro,
 // Jest e Node.
 import { terminaSessao } from './sessao.js';
+// ⚠ Com extensão, pela mesma razão de cima. Os dois são PUROS — não importam o
+// `react-native` nem o SDK —, e é isso que permite ao travão da saúde viver dos
+// dois lados da fila: aqui, no envio, e no `sync.js`, na entrada.
+import { eEnderecoDeCasa, PORQUE_NAO_SOBE } from './endereco.js';
+import { eColecaoDeSaude } from './colecoes-de-saude.js';
 
 // O armazenamento é injetável para este módulo poder ser exercitado fora do
 // React Native — é assim que db/pocketbase/provar-cliente.mjs o testa a sério,
@@ -950,6 +955,25 @@ export const ler = {
   // assim que tem de ser: não escondido, ausente.
   async saude(membroId) {
     if (!estaLigado()) return semLigacao();
+
+    // ── ⚠ E o travão também DESCE ────────────────────────────────────────────
+    //
+    // A condição vivia só em quem chama — o `puxarSaude` do `sync.js`. Quem
+    // chamasse esta função directamente trazia a ficha inteira de um servidor
+    // que não é de casa: episódios, anexos com as fotografias dos exames,
+    // notas, receitas, decisões, tomas e alergias.
+    //
+    // Uma regra que vive em quem chama não é uma regra — é um hábito. Fica aqui
+    // também, e é barato: são dados clínicos de menores, e a dúvida resolve-se
+    // sempre para o lado de NÃO trazer.
+    //
+    // ⚠ O mesmo vazio do resto da função, e não uma excepção: «não escondido,
+    // ausente» é o que a §5 pede, e uma excepção aqui mudaria a forma da
+    // resposta só neste caso.
+    if (!eEnderecoDeCasa(URL)) {
+      return { episodios: [], anexos: [], notas: [], receitas: [], decisoes: [], tomas: [], alergias: [] };
+    }
+
     const filtro = pb.filter('membro = {:m}', { m: membroId });
     // As alergias são do MEMBRO, não de uma consulta: leem-se ao lado dos
     // episódios, e uma ficha sem consultas pode ter alergias (12/09/2026).
@@ -1334,6 +1358,32 @@ export const escrever = {
     let presa = null;
     while (fila.length) {
       const w = fila[0];
+
+      // ── ⚠ O travão da saúde, perguntado À SAÍDA ──────────────────────────
+      //
+      // Era perguntado só à ENTRADA, no `recusaSaude` do `sync.js`, e isto
+      // enviava o que estivesse na fila sem consultar ninguém. A fila vive no
+      // `AsyncStorage`, sobrevive ao reinício da app e à MUDANÇA DE ENDEREÇO do
+      // servidor — e qualquer escrita seguinte, uma despesa que seja, drena-a
+      // inteira para o endereço que estiver configurado nesse momento.
+      //
+      // Uma consulta enfileirada enquanto o servidor era de casa subia assim
+      // para o servidor da internet. Medido em 28/09/2026.
+      //
+      // Sai da fila para as `recusadas`, e não fica: com o travão fechado esta
+      // escrita não vai passar por muitas vezes que se tente, que é exactamente
+      // o critério das `recusadas` escrito em cima. A consulta continua no
+      // dispositivo — o que se abandona é a subida, e quem chamou fica a saber
+      // porquê em vez de ver um número de pendentes a subir.
+      if (eColecaoDeSaude(w.colecao) && !eEnderecoDeCasa(URL)) {
+        recusadas.push({
+          op: w.op, colecao: w.colecao, estado: 0, mensagem: PORQUE_NAO_SOBE, campos: null,
+        });
+        fila.shift();
+        await gravarFila(fila);
+        continue;
+      }
+
       try {
         if (w.op === 'criar') await pb.collection(w.colecao).create(w.dados);
         else await pb.collection(w.colecao).update(w.id, w.dados);

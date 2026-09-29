@@ -50,6 +50,24 @@ const semear = async (casa, dono) => {
   await tenta('envelopes', { nome: 'Mercearia', limite: 550 });
   await tenta('lojas', { nome: 'Continente' });
   await tenta('especialidades', { nome: 'Dentista' });
+
+  // ⚠ E SAÚDE, que faltava. Esta prova semeava cinco coleções e nenhuma delas
+  // era de saúde — portanto media «a casa esvazia-se» olhando só para onde já
+  // sabia que ia olhar. Foi assim que as ALERGIAS ficaram para trás no
+  // «Começar de Zero» até 29/09/2026, sem ninguém dar por isso: as notas, as
+  // receitas, as decisões e os anexos cascateiam do episódio, e as tomas da
+  // receita, mas as alergias apontam para a `casa` e para o `membro` — e o
+  // «Começar de Zero» não apaga nenhum dos dois.
+  await tenta('episodios_saude', {
+    membro: dono.id, especialidade: 'Pediatria', medico: 'Dra. Prova',
+    dia: '2026-09-20 10:00:00', notas: 'NOTAS CLINICAS',
+  });
+  if (feitos.episodios_saude) {
+    await tenta('notas_saude', { episodio: feitos.episodios_saude, autor: dono.id, texto: 'uma nota' });
+    await tenta('receitas_saude', { episodio: feitos.episodios_saude, nome: 'Ferro' });
+  }
+  await tenta('alergias_saude', { membro: dono.id, nome: 'amendoim', gravidade: 'grave' });
+
   return feitos;
 };
 const dadosA = await semear(casaA, adminA);
@@ -57,7 +75,11 @@ const dadosB = await semear(casaB, adminB);
 
 const quantos = async (casa) => {
   let n = 0;
-  for (const c of ['eventos', 'tarefas', 'envelopes', 'lojas', 'especialidades']) {
+  // ⚠ As de saúde contam-se TODAS, e pelo nome. Uma que não esteja aqui é uma
+  // que pode sobreviver ao «Começar de Zero» sem esta prova reparar.
+  for (const c of ['eventos', 'tarefas', 'envelopes', 'lojas', 'especialidades',
+    'episodios_saude', 'notas_saude', 'receitas_saude', 'decisoes_saude',
+    'tomas_saude', 'alergias_saude', 'anexos']) {
     try {
       n += (await admin.collection(c).getFullList({ filter: `casa = "${casa.id}"` })).length;
     } catch (e) { /* segue */ }

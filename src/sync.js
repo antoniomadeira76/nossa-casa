@@ -48,6 +48,9 @@ import { eEnderecoDeCasa, PORQUE_NAO_SOBE } from './endereco';
 // A regra do titulo neutro de um evento de saude, partilhada com a agenda da
 // Google. Puro, sem `react-native` nem SDK: as provas carregam-no em Node.
 import { tituloLaFora } from './evento-de-saude';
+// A lista das coleccoes de saude, partilhada com o `pocketbase.js` — o cabecalho
+// dela explica porque e que teve de sair deste ficheiro.
+import { eColecaoDeSaude } from './colecoes-de-saude';
 // ⚠ O `format` é seguro de importar aqui: não importa `react-native`, e por
 // isso as provas em Node conseguem carregar este ficheiro. Uma importação que
 // arraste o RN parte todas elas — já aconteceu com o `Platform`.
@@ -1005,12 +1008,42 @@ export async function registoDaCasa({ casa, texto, quem, quando, area }) {
     casa,
     // O servidor limita a 300 e ignora em silêncio o que não conhece; cortar
     // aqui é a diferença entre uma linha truncada e uma escrita recusada.
-    texto: String(texto || '').slice(0, 300),
+    texto: String(textoDoRegisto(texto, area)).slice(0, 300),
     quem: quem || null,
     quando: quando ? new Date(quando).toISOString() : new Date().toISOString(),
     area: String(area || '').slice(0, 40),
   });
 }
+
+// ── ⚠ O diário da casa não conta a saúde de ninguém ──────────────────────────
+//
+// As linhas de saúde do registo já eram cuidadosas, e está escrito no
+// `store.jsx`: não dizem o alergénio, nem o medicamento, nem a especialidade.
+// Mas dizem **de quem é a ficha**:
+//
+//     «Alergia acrescentada à ficha da Mia»
+//     «Tomas de uma receita da Mia na agenda: 14 dias»
+//
+// Enquanto a saúde subia, isso era menos do que o servidor já tinha. Com o
+// travão fechado inverte-se: a `alergias_saude` não sobe, e a linha do diário
+// passa a ser o ÚNICO rasto — a anunciar que a Mia tem uma alergia e andou
+// catorze dias medicada, num servidor onde nada disso devia estar.
+//
+// A saída é a mesma que ele escolheu para a agenda (28/09/2026): o texto vai
+// neutro para fora, e o verdadeiro fica no dispositivo, onde a app o mostra a
+// quem pode. O diário continua a dizer que houve movimento na saúde e quando —
+// que é para o que serve — sem dizer em quem nem de quê.
+//
+// ⚠ E só quando o travão está FECHADO. Num servidor de casa não há nada a
+// esconder de quem já lá tem a ficha inteira, e um diário mais pobre do que
+// precisa de ser também é um defeito.
+export const TEXTO_NEUTRO_DE_SAUDE = 'Uma ficha de saúde foi actualizada';
+
+export const textoDoRegisto = (texto, area) => (
+  String(area || '') === 'Saúde' && !saudeSincroniza()
+    ? TEXTO_NEUTRO_DE_SAUDE
+    : String(texto || '')
+);
 
 export async function acerto({ casa, de, para, valor, data }) {
   if (!ligado()) return { enviadas: 0, pendentes: 0 };
@@ -1895,20 +1928,34 @@ export const saudeSincroniza = () => ligado() && eEnderecoDeCasa(servidor.endere
 // Uma rede de segurança, não uma decisão de desenho: qualquer escrita de saúde
 // passa por aqui, e se o servidor não for de casa isto rebenta — em testes
 // antes de rebentar na vida de alguém.
-// ⚠ A lista é EXPLÍCITA e não um `/saude/.test(colecao)`. Uma coleção nova de
-// saúde tem de ser acrescentada aqui à mão, e é isso que se quer: o travão que
-// se aplica sozinho a nomes que combinam é o travão que um dia deixa passar
-// `anexos`, que não tem «saude» no nome.
-// As `tomas_saude` entraram em 12/09/2026, por decisão do dono da casa: «as
-// tomas sobem pelo travão de casa» — o mesmo das consultas.
-const SAUDE = ['episodios_saude', 'anexos', 'notas_saude', 'receitas_saude', 'decisoes_saude', 'tomas_saude',
-  // E as alergias da ficha de emergência (12/09/2026), pelo mesmo travão.
-  'alergias_saude'];
-
+// ⚠ A lista saiu daqui para `src/colecoes-de-saude.js`, em 29/09/2026, e o
+// cabeçalho de lá explica porquê: o travão era perguntado só AQUI, à entrada da
+// fila, e o `despachar()` do `pocketbase.js` enviava o que lá estava sem
+// consultar ninguém. O `pocketbase.js` não pode importar este ficheiro — é este
+// que o importa a ele —, portanto a lista tem de viver num terceiro sítio, puro,
+// que os dois leiam.
 export function recusaSaude(colecao) {
-  if (SAUDE.includes(colecao)) {
+  if (eColecaoDeSaude(colecao)) {
     if (!saudeSincroniza()) throw new Error(PORQUE_NAO_SOBE);
   }
+  return colecao;
+}
+
+// ── ⚠ APAGAR não é travado, e é uma correcção, não um esquecimento ───────────
+//
+// O `recusaSaude` estava em TODAS as funções de saúde, incluindo as que apagam.
+// Com o travão fechado, o `apagarEpisodioDeSaude` rebentava ANTES de falar com o
+// servidor: a app dava a consulta por apagada, tirava-a do ecrã, e a linha ficava
+// no servidor para sempre. O travão fechado tornava o servidor MAIS sujo, não
+// menos.
+//
+// A pergunta que o travão faz é «esta informação pode ir para este servidor?».
+// Apagar não leva informação nenhuma para lado nenhum — tira-a. É sempre seguro,
+// e com o travão fechado é precisamente o que se quer poder fazer.
+//
+// Quem valida continua a ser o servidor: um adulto apaga a sua ficha ou a de uma
+// criança da casa, e mais ninguém.
+export function apagarPodeSempre(colecao) {
   return colecao;
 }
 
@@ -2023,7 +2070,7 @@ export async function alterarNotaDeSaude(idNoServidor, texto) {
 }
 
 export async function apagarNotaDeSaude(idNoServidor) {
-  recusaSaude('notas_saude');
+  apagarPodeSempre('notas_saude');
   if (!idNoServidor) return { pendente: true };
   return servidor.pb.collection('notas_saude').delete(idNoServidor);
 }
@@ -2045,7 +2092,7 @@ export async function apagarNotaDeSaude(idNoServidor) {
 // `cascadeDelete` no servidor, e há uma prova em `provar-notas-saude.mjs` que
 // mede exatamente isso — «restantes 0» nas três coleções filhas.
 export async function apagarEpisodioDeSaude(idNoServidor) {
-  recusaSaude('episodios_saude');
+  apagarPodeSempre('episodios_saude');
   if (!idNoServidor) return { pendente: true };
   return servidor.pb.collection('episodios_saude').delete(idNoServidor);
 }
@@ -2230,7 +2277,7 @@ export async function alergiaDeSaude({ casa, membro, nome, gravidade, nota }) {
 }
 
 export async function apagarAlergiaDeSaude(idNoServidor) {
-  recusaSaude('alergias_saude');
+  apagarPodeSempre('alergias_saude');
   if (!idNoServidor) return { pendente: true };
   return servidor.pb.collection('alergias_saude').delete(idNoServidor);
 }
@@ -2289,7 +2336,7 @@ export async function tomaDeSaude({ casa, receita, quando, por }) {
 }
 
 export async function apagarTomaDeSaude(idNoServidor) {
-  recusaSaude('tomas_saude');
+  apagarPodeSempre('tomas_saude');
   if (!idNoServidor) return { pendente: true };
   return servidor.pb.collection('tomas_saude').delete(idNoServidor);
 }

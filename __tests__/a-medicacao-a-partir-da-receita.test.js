@@ -109,8 +109,10 @@ describe('⚠ a medicação: o servidor', () => {
 
   it('⚠ as tomas estão dentro do travão de casa, e a ficha desce com elas', () => {
     const sync = ler('src/sync.js');
-    const i = sync.indexOf('const SAUDE = [');
-    expect(sync.slice(i, sync.indexOf(']', i))).toContain("'tomas_saude'");
+    // ⚠ A lista mudou de casa em 29/09/2026, para `src/colecoes-de-saude.js`:
+    // o travão passou a ser perguntado também À SAÍDA da fila, no
+    // `pocketbase.js`, e esse não pode importar o `sync.js`. A regra é a mesma.
+    expect(ler('src/colecoes-de-saude.js')).toContain("'tomas_saude'");
     expect(semComentarios(sync)).toMatch(/export async function tomaDeSaude\(/);
     expect(semComentarios(sync)).toMatch(/for \(const \w+ of ficha\.tomas \|\| \[\]\)/);
     expect(semComentarios(ler('src/pocketbase.js'))).toMatch(/collection\('tomas_saude'\)/);

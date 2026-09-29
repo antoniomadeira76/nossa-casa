@@ -198,14 +198,48 @@ describe('a pergunta diz o que leva atrás', () => {
   });
 });
 
-describe('a saúde só se apaga onde se pode escrever', () => {
-  it('⚠ passa pelo mesmo travão das outras escritas de saúde', () => {
-    // `recusaSaude` rebenta quando o servidor não é de casa. Apagar é uma
-    // escrita, e escapava-lhe se não o chamasse.
+describe('⚠ a saúde APAGA-SE sempre, mesmo onde não se pode escrever', () => {
+  it('⚠ o apagamento NÃO passa pelo travão — e a inversão é a correcção', () => {
+    // ── Isto era o contrário, e o contrário estava errado ────────────────────
+    //
+    // A regra antiga dizia «a saúde só se apaga onde se pode escrever», e a
+    // razão escrita era de classificação: «apagar é uma escrita, e escapava-lhe
+    // se não o chamasse». Classificar não é a mesma coisa que pensar na
+    // consequência.
+    //
+    // A pergunta que o travão faz é «esta informação pode ir para este
+    // servidor?». Apagar não leva informação nenhuma — TIRA-A. Com o travão
+    // fechado, o `recusaSaude` rebentava antes de o servidor ser chamado, e a
+    // consulta ficava lá para sempre: o travão fechado tornava o servidor mais
+    // SUJO, não mais limpo. É o oposto do que ele existe para fazer.
+    //
+    // Quem valida continua a ser o servidor — um adulto apaga a sua ficha ou a
+    // de uma criança da casa, e mais ninguém.
     const sync = ler('src/sync.js');
-    const bloco = sync.slice(sync.indexOf('export async function apagarEpisodioDeSaude'),
-      sync.indexOf('export async function apagarEpisodioDeSaude') + 400);
-    expect(bloco).toMatch(/recusaSaude\('episodios_saude'\)/);
+    const bloco = (nome) => {
+      const i = sync.indexOf(`export async function ${nome}`);
+      expect(i).toBeGreaterThan(0);
+      return sync.slice(i, sync.indexOf('\n}', i));
+    };
+    for (const f of ['apagarEpisodioDeSaude', 'apagarNotaDeSaude',
+      'apagarAlergiaDeSaude', 'apagarTomaDeSaude']) {
+      expect(`${f}: ${/recusaSaude\(/.test(bloco(f))}`).toBe(`${f}: false`);
+      expect(`${f}: ${/apagarPodeSempre\(/.test(bloco(f))}`).toBe(`${f}: true`);
+    }
+  });
+
+  it('⚠ mas ESCREVER saúde continua travado — a inversão é só do apagar', () => {
+    // Um guarda que só prove metade deixa a outra metade cair na próxima vez.
+    const sync = ler('src/sync.js');
+    const bloco = (nome) => {
+      const i = sync.indexOf(`export async function ${nome}`);
+      expect(i).toBeGreaterThan(0);
+      return sync.slice(i, sync.indexOf('\n}', i));
+    };
+    for (const f of ['episodioDeSaude', 'anexoDeSaude', 'alterarNotaDeSaude',
+      'alterarReceitaDeSaude', 'decisaoDeSaude']) {
+      expect(`${f}: ${/recusaSaude\(/.test(bloco(f))}`).toBe(`${f}: true`);
+    }
   });
 
   it('e o servidor é chamado primeiro, antes de a app se apagar a si', () => {

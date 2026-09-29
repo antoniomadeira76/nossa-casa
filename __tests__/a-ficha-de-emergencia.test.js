@@ -90,8 +90,10 @@ describe('⚠ a ficha de emergência: o servidor', () => {
     expect(cria.slice(i, i + 900)).toMatch(/listRule: SAUDE_VISIVEL/);
     expect(acresc).toMatch(/nome: 'alergias_saude'/);
     const sync = ler('src/sync.js');
-    const j = sync.indexOf('const SAUDE = [');
-    expect(sync.slice(j, sync.indexOf(']', j))).toContain("'alergias_saude'");
+    // ⚠ A lista mudou de casa em 29/09/2026, para `src/colecoes-de-saude.js`:
+    // o travão passou a ser perguntado também À SAÍDA da fila, no
+    // `pocketbase.js`, e esse não pode importar o `sync.js`. A regra é a mesma.
+    expect(ler('src/colecoes-de-saude.js')).toContain("'alergias_saude'");
     expect(semComentarios(sync)).toMatch(/export async function alergiaDeSaude\(/);
     expect(semComentarios(sync)).toMatch(/for \(const \w+ of ficha\.alergias \|\| \[\]\)/);
     expect(semComentarios(ler('src/pocketbase.js'))).toMatch(/collection\('alergias_saude'\)/);

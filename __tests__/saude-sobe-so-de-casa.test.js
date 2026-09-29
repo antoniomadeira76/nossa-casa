@@ -89,9 +89,11 @@ describe('⚠ o travão existe, e chama a regra em vez de a repetir', () => {
   });
 
   it('e o `recusaSaude` pergunta-lhe, para TODAS as coleções de saúde', () => {
-    const i = sync.indexOf('const SAUDE = [');
-    expect(i).toBeGreaterThan(0);
-    const lista = sync.slice(i, sync.indexOf(']', i));
+    // ⚠ A lista mudou de casa em 29/09/2026, para `src/colecoes-de-saude.js`:
+    // o travão passou a ser perguntado também À SAÍDA da fila, no
+    // `pocketbase.js`, e esse não pode importar o `sync.js` — é o `sync.js`
+    // que o importa a ele. A regra é a mesma; o que mudou foi o ficheiro.
+    const lista = ler('src/colecoes-de-saude.js');
     // ⚠ As cinco, pelo nome. Eram duas até 04/09/2026; as notas, as receitas e
     // as decisões passaram a ter coleção e entraram no travão no mesmo dia.
     for (const c of ['episodios_saude', 'anexos', 'notas_saude',
@@ -101,7 +103,7 @@ describe('⚠ o travão existe, e chama a regra em vez de a repetir', () => {
 
     const j = sync.indexOf('export function recusaSaude');
     const bloco = sync.slice(j, j + 320);
-    expect(bloco).toContain('SAUDE.includes(colecao)');
+    expect(bloco).toContain('eColecaoDeSaude(colecao)');
     expect(bloco).toMatch(/if \(!saudeSincroniza\(\)\) throw new Error\(PORQUE_NAO_SOBE\)/);
   });
 

@@ -46,6 +46,21 @@ routerAdd('POST', '/api/casa/limpar', (e) => {
   //
   // É a mesma ordem que a limpeza das provas usa, e por a mesma razão.
   const PELA_ORDEM = [
+    // ⚠ As ALERGIAS têm de estar aqui pelo nome, e ficaram de fora até
+    // 29/09/2026.
+    //
+    // As outras coleções de saúde caem por arrasto: as notas, as receitas, as
+    // decisões e os anexos apontam para o `episodio`, e as tomas apontam para a
+    // receita. Apagar os episódios leva-as a todas.
+    //
+    // As alergias não. Elas apontam para a `casa` e para o `membro` — e o
+    // «Começar de Zero» não apaga nem a casa nem os membros, que é o que o faz
+    // ser «começar de zero» e não «ir embora». Ficavam para trás, em silêncio:
+    // as alergias dos filhos sobreviviam a quem pediu para apagar tudo.
+    //
+    // É a mesma forma do que aconteceu aos pedidos por voz na primeira versão
+    // desta lista. Uma coleção que não cascateia tem de ser nomeada.
+    'alergias_saude',
     'anexos', 'episodios_saude',
     'tarefas_feitas', 'artigos', 'listas_compras',
     'cofre_movimentos', 'despesas', 'transferencias', 'acertos',
