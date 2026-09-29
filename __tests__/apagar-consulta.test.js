@@ -56,24 +56,27 @@ const marcar = (ler_, membro = 'Léo') => {
 };
 
 describe('⚠ apagar uma consulta — o que faltava', () => {
-  it('a consulta desaparece das fichas', () => {
+  it('a consulta desaparece das fichas', async () => {
     const l = loja();
     const id = marcar(l);
     expect(l().allHealth().some(h => h.id === id)).toBe(true);
     let porque;
-    TestRenderer.act(() => { porque = l().apagarConsulta(id, 'Rita'); });
+    // ⚠ Com `await`. O `apagarConsulta` passou a ser assíncrono em
+    // 29/09/2026 — chama o servidor PRIMEIRO e espera pela resposta. Sem o
+    // `await`, o `porque` é uma PROMESSA, e uma promessa é sempre verdadeira.
+    await TestRenderer.act(async () => { porque = await l().apagarConsulta(id, 'Rita'); });
     expect(porque).toBe(null);
     expect(l().allHealth().some(h => h.id === id)).toBe(false);
   });
 
-  it('e a lápide fica escrita — que é o que a faz desaparecer', () => {
+  it('e a lápide fica escrita — que é o que a faz desaparecer', async () => {
     const l = loja();
     const id = marcar(l);
-    TestRenderer.act(() => { l().apagarConsulta(id, 'Rita'); });
+    await TestRenderer.act(async () => { await l().apagarConsulta(id, 'Rita'); });
     expect(l().s.healthGone[id]).toBe(true);
   });
 
-  it('⚠ as notas, as receitas e os documentos vão com ela', () => {
+  it('⚠ as notas, as receitas e os documentos vão com ela', async () => {
     const l = loja();
     const id = marcar(l);
     TestRenderer.act(() => {
@@ -82,14 +85,14 @@ describe('⚠ apagar uma consulta — o que faltava', () => {
       l().setHealthDecision(id, { type: 'Exame', status: 'Pendente', note: '' });
     });
     expect((l().s.healthNotes[id] || []).length).toBe(1);
-    TestRenderer.act(() => { l().apagarConsulta(id, 'Rita'); });
+    await TestRenderer.act(async () => { await l().apagarConsulta(id, 'Rita'); });
     expect(l().s.healthNotes[id]).toBeUndefined();
     expect(l().s.healthRecipes[id]).toBeUndefined();
     expect(l().s.healthDecisions[id]).toBeUndefined();
     expect(l().docsDaConsulta(id)).toEqual([]);
   });
 
-  it('⚠ e o evento da agenda também — senão fica a apitar à hora de nada', () => {
+  it('⚠ e o evento da agenda também — senão fica a apitar à hora de nada', async () => {
     const l = loja();
     let id;
     TestRenderer.act(() => {
@@ -108,16 +111,16 @@ describe('⚠ apagar uma consulta — o que faltava', () => {
         owner: 'Rita', visibilidade: 'adultos', tag: 'Saúde', healthId: real });
     });
     expect(l().allEvents().some(e => e.healthId === real)).toBe(true);
-    TestRenderer.act(() => { l().apagarConsulta(real, 'Rita'); });
+    await TestRenderer.act(async () => { await l().apagarConsulta(real, 'Rita'); });
     expect(l().allEvents().some(e => e.healthId === real)).toBe(false);
   });
 
-  it('o registo da casa regista — sem dizer de quem nem de quê', () => {
+  it('o registo da casa regista — sem dizer de quem nem de quê', async () => {
     // ⚠ O registo é lido por todos os adultos. «Consulta de Dentista da Mia
     // apagada» punha no histórico exatamente o que a ficha existe para fechar.
     const l = loja();
     const id = marcar(l);
-    TestRenderer.act(() => { l().apagarConsulta(id, 'Rita'); });
+    await TestRenderer.act(async () => { await l().apagarConsulta(id, 'Rita'); });
     const linha = (l().s.registo || [])[0];
     expect(linha.t).toBe('Uma consulta foi apagada');
     expect(linha.a).toBe('Saúde');
@@ -131,24 +134,27 @@ describe('⚠ e a validação recusa quando tem de recusar', () => {
     expect(l().porqueNaoApaga('inventado', 'Rita')).toMatch(/já não existe/);
   });
 
-  it('⚠ a ficha de um adulto não é apagada pelo OUTRO adulto', () => {
+  it('⚠ a ficha de um adulto não é apagada pelo OUTRO adulto', async () => {
     const l = loja();
     const id = marcar(l, 'Rita');
     expect(l().porqueNaoApaga(id, 'Tomás')).toMatch(/não é sua/);
     let porque;
-    TestRenderer.act(() => { porque = l().apagarConsulta(id, 'Tomás'); });
+    await TestRenderer.act(async () => { porque = await l().apagarConsulta(id, 'Tomás'); });
     expect(porque).toMatch(/não é sua/);
     // E continua lá.
     expect(l().allHealth().some(h => h.id === id)).toBe(true);
   });
 
-  it('⚠ nem uma criança apaga a sua própria — que nem a vê', () => {
+  it('⚠ nem uma criança apaga a sua própria — que nem a vê', async () => {
     const l = loja();
     const id = marcar(l, 'Léo');
     expect(l().porqueNaoApaga(id, 'Léo')).toMatch(/não é sua/);
     let porque;
-    TestRenderer.act(() => { porque = l().apagarConsulta(id, 'Léo'); });
-    expect(porque).toBeTruthy();
+    await TestRenderer.act(async () => { porque = await l().apagarConsulta(id, 'Léo'); });
+    // ⚠ `toMatch` e não `toBeTruthy`: sem o `await` isto era uma PROMESSA, e
+    // uma promessa é verdadeira — a prova ficava verde mesmo que a loja
+    // deixasse a criança apagar. Um falso verde apanhado em 29/09/2026.
+    expect(porque).toMatch(/não é sua/);
     expect(l().allHealth().some(h => h.id === id)).toBe(true);
   });
 
@@ -240,6 +246,63 @@ describe('⚠ a saúde APAGA-SE sempre, mesmo onde não se pode escrever', () =>
       'alterarReceitaDeSaude', 'decisaoDeSaude']) {
       expect(`${f}: ${/recusaSaude\(/.test(bloco(f))}`).toBe(`${f}: true`);
     }
+  });
+
+  it('⚠ e ESPERA-SE por ele — uma promessa rejeitada não chega a um `try` síncrono', () => {
+    // ── O defeito, e é da linguagem antes de ser meu ─────────────────────────
+    //
+    // O `apagarConsulta` era síncrono e chamava o servidor assim:
+    //
+    //     try { sync.apagarEpisodioDeSaude(id).catch(() => {}); }
+    //     catch (e) { return e.message; }
+    //
+    // Lê-se como se tratasse o erro. Não trata nenhum. O
+    // `apagarEpisodioDeSaude` é `async`: o que ele atira vira uma promessa
+    // REJEITADA, e uma promessa rejeitada nunca chega a um `try/catch`
+    // síncrono. O `catch (e)` não disparava, o `.catch(() => {})` engolia, e a
+    // execução seguia direita à lápide.
+    //
+    // Resultado: a app dava a consulta por apagada e o servidor ficava com ela
+    // — exactamente o que o comentário ao lado jura evitar, escrito com todas
+    // as letras três linhas acima do código que faz o contrário.
+    //
+    // ⚠ E o ecrã tem de esperar também. Sem o `await` lá, o `porque` é uma
+    // promessa — sempre verdadeira — e a folha diria «não apaguei» mesmo
+    // quando apagou.
+    const codigo = ler('src/store.jsx');
+    const i = codigo.indexOf('const apagarConsulta');
+    expect(i).toBeGreaterThan(0);
+    const corpo = codigo.slice(i, codigo.indexOf('\n  };', i));
+
+    expect(corpo).toMatch(/const apagarConsulta = async \(/);
+    expect(corpo).toMatch(/await sync\.apagarEpisodioDeSaude\(/);
+    // E o `.catch(` engolidor não volta a aparecer nesta chamada.
+    expect(corpo).not.toMatch(/apagarEpisodioDeSaude\([^)]*\)\.catch\(/);
+
+    const ecra = ler('src/screens/Saude.jsx');
+    expect(ecra).toMatch(/await apagarConsulta\(/);
+  });
+
+  it('⚠ e um 404 do servidor NÃO impede de apagar aqui', () => {
+    // A linha já não está lá. Travar no 404 deixava uma consulta impossível de
+    // apagar para sempre: apagada no servidor por outro dispositivo, e eterna
+    // neste, com a app a insistir que não consegue.
+    const codigo = ler('src/store.jsx');
+    const i = codigo.indexOf('const apagarConsulta');
+    const corpo = codigo.slice(i, codigo.indexOf('\n  };', i));
+    expect(corpo).toMatch(/404/);
+  });
+
+  it('⚠ e a recusa é dita em português, não no inglês do PocketBase', () => {
+    // «The requested resource wasn't found.» num `Tile` de uma app inteira em
+    // português europeu parece avariada em vez de se explicar.
+    const codigo = ler('src/store.jsx');
+    const i = codigo.indexOf('const porqueNaoApagouNoServidor');
+    expect(i).toBeGreaterThan(0);
+    const corpo = codigo.slice(i, codigo.indexOf('\n  };', i));
+    for (const estado of ['401', '403']) expect(corpo).toContain(estado);
+    // E o caso sem estado nenhum, que é a rede em baixo.
+    expect(corpo).toMatch(/if \(!estado\)/);
   });
 
   it('e o servidor é chamado primeiro, antes de a app se apagar a si', () => {

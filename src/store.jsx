@@ -5539,7 +5539,42 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
   };
 
   // Devolve `null` quando apagou, ou a razão por escrito quando não.
-  const apagarConsulta = (healthId, quemPede) => {
+  // ── Porque é que o servidor não deixou, dito em português ──────────────────
+  //
+  // ⚠ A mensagem do PocketBase vem em inglês — «The requested resource wasn't
+  // found.», «Only superusers can perform this action.» — e o ecrã mostra-a tal
+  // e qual num `Tile`. Uma app inteira em português europeu que, no momento em
+  // que falha, responde em inglês, parece avariada em vez de se explicar.
+  //
+  // Traduz-se o que se sabe e diz-se o resto com o número, que é melhor do que
+  // uma frase vaga: quem nos ler o registo precisa de distinguir os casos.
+  const porqueNaoApagouNoServidor = (e) => {
+    const estado = Number(e && e.status) || 0;
+    if (estado === 401) return 'A sessão expirou. Entre outra vez e tente de novo.';
+    if (estado === 403) return 'O servidor não deixou apagar esta consulta.';
+    // Sem estado é rede: não houve resposta nenhuma. A consulta fica como está,
+    // de propósito — apagá-la aqui e não lá fazia a leitura seguinte trazê-la
+    // de volta, sem ninguém perceber porquê.
+    if (!estado) return 'Não consegui falar com o servidor. A consulta fica como está — tente quando houver ligação.';
+    return `O servidor recusou apagar a consulta (${estado}).`;
+  };
+
+  // ⚠ ASSÍNCRONA, e é uma correcção — não uma preferência de estilo.
+  //
+  // Isto era síncrono e o servidor era chamado assim:
+  //
+  //     try { sync.apagarEpisodioDeSaude(id).catch(() => {}); }
+  //     catch (e) { return e.message; }
+  //
+  // O `apagarEpisodioDeSaude` é `async`. O que ele atira vira uma promessa
+  // REJEITADA, e uma promessa rejeitada não chega a um `try/catch` síncrono: o
+  // `catch (e)` nunca disparava, o `.catch(() => {})` engolia em silêncio, e a
+  // execução seguia para a lápide.
+  //
+  // O comentário a seguir promete «se o servidor recusar, a consulta fica
+  // intacta aqui» — e o código fazia exactamente o contrário. A app dava a
+  // consulta por apagada e a linha ficava no servidor.
+  const apagarConsulta = async (healthId, quemPede) => {
     const porque = porqueNaoApaga(healthId, quemPede);
     if (porque) return porque;
 
@@ -5549,13 +5584,18 @@ function build(s, set, mapaServidor = { current: { casa: null, membros: {}, enve
     // ⚠ O servidor PRIMEIRO, ao contrário do resto da app.
     //
     // É a mesma escolha do «Começar de Zero»: se o servidor recusar — sessão
-    // caducada, papel mudado entretanto, endereço fora de casa —, a consulta
-    // fica intacta aqui e a folha diz porquê. Apagar cá e falhar lá deixava as
-    // duas metades a discordar, e a leitura seguinte trazia-a de volta sem
-    // ninguém perceber.
+    // caducada, papel mudado entretanto —, a consulta fica intacta aqui e a
+    // folha diz porquê. Apagar cá e falhar lá deixava as duas metades a
+    // discordar, e a leitura seguinte trazia-a de volta sem ninguém perceber.
     if (sync && noServidor) {
-      try { sync.apagarEpisodioDeSaude(noServidor).catch(() => {}); }
-      catch (e) { return e.message; }
+      try {
+        await sync.apagarEpisodioDeSaude(noServidor);
+      } catch (e) {
+        // ⚠ O 404 NÃO é recusa: quer dizer que a linha já não está lá. Travar
+        // nele deixava uma consulta impossível de apagar para sempre — apagada
+        // no servidor por outro dispositivo, e eterna neste.
+        if (Number(e && e.status) !== 404) return porqueNaoApagouNoServidor(e);
+      }
     }
 
     // O evento da agenda vai com ela. Um evento «Consulta» que aponta para uma

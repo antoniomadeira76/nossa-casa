@@ -1090,11 +1090,20 @@ export default function Saude({ t, user, onClose, onAbrirFicha, marcarPara, onMa
               : 'Não se desfaz — para a esconder sem a perder, use Arquivar.'}
             confirmLabel="Apagar"
             destructive
-            onConfirm={() => {
+            onConfirm={async () => {
               // A loja devolve a razão por escrito quando recusa: a ficha não é
-              // sua, ou a saúde não sai para este servidor. Mostrar o não é a
-              // diferença entre a app explicar-se e parecer avariada.
-              const porque = apagarConsulta(aApagar.id, user);
+              // sua, ou o servidor não deixou. Mostrar o não é a diferença
+              // entre a app explicar-se e parecer avariada.
+              //
+              // ⚠ E ESPERA-SE por ela. O `apagarConsulta` passou a ser
+              // assíncrono em 29/09/2026 porque chama o servidor PRIMEIRO, e
+              // antes disso a recusa dele nunca chegava aqui: a função era
+              // síncrona, o que o servidor atirava virava promessa rejeitada, e
+              // a app dava a consulta por apagada com a linha ainda lá.
+              //
+              // Sem o `await`, o `porque` seria uma promessa — sempre
+              // verdadeira — e a folha diria que não apagou mesmo quando apagou.
+              const porque = await apagarConsulta(aApagar.id, user);
               setAApagar(null);
               setNaoApagou(porque || null);
               if (!porque) setExpandedRecord(null);
