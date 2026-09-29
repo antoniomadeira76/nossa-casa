@@ -7,8 +7,8 @@
 // Porque o `db:campos` ACRESCENTA campos e não ALTERA os que já lá estão — e
 // isso é um silêncio, não um erro.
 //
-// Em 28/09/2026 o `alexa_esperas.estado` tinha `max: 500`. O `state` da Amazon
-// tem 1095 caracteres. Escrevi `max: 4096` nos dois sítios que a regra desta
+// Apanhou-se em 28/09/2026, num campo de texto que precisava de crescer de 500
+// para 4096 caracteres. Escrevi o valor novo nos dois sítios que a regra desta
 // casa manda — o `criar-colecoes.mjs` e o `acrescentar-campos.mjs` —, corri o
 // `npm run db:campos`, e ele respondeu:
 //

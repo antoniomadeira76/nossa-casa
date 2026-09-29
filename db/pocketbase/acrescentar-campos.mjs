@@ -58,12 +58,11 @@ const CAMPOS = [
   // se consegue escrever «apagar o que tem mais de trinta dias» e a tabela
   // cresce para sempre.
   //
-  // ⚠ E é uma FORMA NOVA da lição dos dois sítios, apanhada em 27/09/2026: o
-  // campo estava na entrada da coleção em `COLECOES`, mas essa tabela só CRIA
-  // a coleção quando ela falta. Numa coleção que já existe, um campo novo
-  // precisa de uma linha AQUI — e foi o próprio script a dizê-lo, com o
-  // «✕ alexa_pedidos.criado_em não ficou lá» da conferência final.
-  ['alexa_pedidos', 'criado_em', { type: 'date' }],
+  // ⚠ E é uma FORMA NOVA da lição dos dois sítios, apanhada em 27/09/2026: um
+  // campo pode estar na entrada da coleção em `COLECOES`, mas essa tabela só
+  // CRIA a coleção quando ela falta. Numa coleção que já existe, um campo novo
+  // precisa de uma linha AQUI — e foi o próprio script a dizê-lo, na
+  // conferência final, com um «✕ … não ficou lá».
   ['membros', 'avatar', { type: 'text', max: 500 }],
   ['membros', 'figura', { type: 'text', max: 24 }],
   ['artigos', 'corredor', { type: 'relation', alvo: 'seccoes', maxSelect: 1, cascadeDelete: false }],
@@ -318,118 +317,10 @@ const COLECOES = [
         + ' && (@request.auth.papel != "crianca" || aceite_em = "" && (proposta_por = @request.auth.id || tarefa_para.atribuido_a = @request.auth.id))',
     },
   },
-  // Os pedidos que chegaram por voz (27/09/2026), para a Alexa não escrever o
-  // mesmo duas vezes quando reenvia. A mesma definição do `criar-colecoes.mjs`,
-  // letra a letra. As quatro regras são nulas: só as rotas lhe chegam.
-  {
-    nome: 'alexa_pedidos',
-    campos: [
-      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
-      { name: 'membro', type: 'relation', alvo: 'membros', maxSelect: 1, required: true, cascadeDelete: false },
-      { name: 'request_id', type: 'text', required: true, max: 200 },
-      { name: 'intencao', type: 'text', max: 40 },
-      { name: 'linha', type: 'text', max: 40 },
-      // ⚠ Sem campo para a frase dita: punha títulos de eventos e nomes de
-      // artigos numa segunda cópia, fora do travão da saúde. Ver a razão longa
-      // no `criar-colecoes.mjs`.
-      { name: 'criado_em', type: 'date' },
-    ],
-    indexes: ['CREATE UNIQUE INDEX idx_alexa_pedido ON alexa_pedidos (casa, request_id)'],
-    regras: {
-      listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
-    },
-  },
-  // As credenciais da skill (27/09/2026). Coleção própria e não dois campos nas
-  // `casas`, que qualquer membro lê. A mesma definição do `criar-colecoes.mjs`.
-  {
-    nome: 'credenciais_alexa',
-    campos: [
-      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
-      { name: 'client_id', type: 'text', required: true, max: 80 },
-      { name: 'client_secret', type: 'text', required: true, max: 120 },
-    ],
-    indexes: ['CREATE UNIQUE INDEX idx_credenciais_alexa_casa ON credenciais_alexa (casa)'],
-    regras: {
-      listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
-    },
-  },
-  // As ligações de conta (27/09/2026). ⚠ O `refresh` é `required` de propósito:
-  // nasce com o código, para o índice único nunca ver dois vazios iguais.
-  {
-    nome: 'alexa_ligacoes',
-    campos: [
-      { name: 'casa', type: 'relation', alvo: 'casas', maxSelect: 1, required: true, cascadeDelete: true },
-      { name: 'membro', type: 'relation', alvo: 'membros', maxSelect: 1, required: true, cascadeDelete: true },
-      { name: 'codigo', type: 'text', max: 80 },
-      { name: 'codigo_expira', type: 'date' },
-      { name: 'redirect_uri', type: 'text', max: 500 },
-      { name: 'refresh', type: 'text', required: true, max: 80 },
-      { name: 'criado_em', type: 'date' },
-    ],
-    indexes: ['CREATE UNIQUE INDEX idx_alexa_ligacao_refresh ON alexa_ligacoes (casa, refresh)'],
-    regras: {
-      listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
-    },
-  },
-  // A identidade da VOZ (27/09/2026). A mesma definição do `criar-colecoes.mjs`,
-  // letra a letra — e o cabeçalho de lá explica porque é que ela existe.
-  //
-  // ⚠ Em duas palavras: o token da Alexa era `membro.newAuthToken()`, uma sessão
-  // de adulto boa em todo o `/api/collections/…`, que está na internet. Medido
-  // numa casa de simulação, lia a consulta de uma criança com as notas clínicas
-  // e renomeava-a — com a página de consentimento a prometer o contrário.
-  //
-  // ⚠ E o que a torna segura é o que ela NÃO TEM: nem `casa` nem `papel`. As
-  // regras desta casa são quase todas `casa = @request.auth.casa && ...`, e uma
-  // identidade sem `casa` não casa com casa nenhuma.
-  {
-    nome: 'alexa_vozes',
-    tipo: 'auth',
-    passwordAuth: { enabled: false, identityFields: [] },
-    authToken: { duration: 30 * 24 * 60 * 60 },
-    campos: [
-      { name: 'membro', type: 'relation', alvo: 'membros', maxSelect: 1, required: true, cascadeDelete: true },
-      { name: 'ligacao', type: 'relation', alvo: 'alexa_ligacoes', maxSelect: 1, required: true, cascadeDelete: true },
-    ],
-    indexes: ['CREATE UNIQUE INDEX idx_alexa_voz_ligacao ON alexa_vozes (ligacao)'],
-    regras: {
-      listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
-    },
-  },
-  // A espera enquanto se vai à Google e se volta (28/09/2026). A mesma definição
-  // do `criar-colecoes.mjs`, letra a letra — e o cabeçalho de lá explica porquê.
-  //
-  // ⚠ Em duas linhas: a página ganhou um «Continuar com Google» porque os
-  // adultos desta casa entram por lá e nunca tiveram palavra-passe. Isso põe
-  // dois OAuth encadeados, e o pedido da Amazon não pode viajar dentro do
-  // `state` da Google — volta por mãos de quem se está a autenticar. Viaja uma
-  // chave ao acaso; o pedido fica aqui.
-  {
-    nome: 'alexa_esperas',
-    campos: [
-      { name: 'chave', type: 'text', required: true, max: 80 },
-      { name: 'client_id', type: 'text', required: true, max: 80 },
-      { name: 'redirect_uri', type: 'text', required: true, max: 500 },
-      // ⚠ 4096 e nao 500: o `state` da Amazon tem 1095 caracteres.
-      { name: 'estado', type: 'text', max: 4096 },
-      { name: 'expira', type: 'date', required: true },
-    ],
-    indexes: ['CREATE UNIQUE INDEX idx_alexa_espera_chave ON alexa_esperas (chave)'],
-    regras: {
-      listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
-    },
-  },
 ];
 
 // ⚠ O que uma coleção NÃO pode ter. `[coleção, campo, porquê]`.
 const CAMPOS_A_TIRAR = [
-  ['alexa_pedidos', 'resposta',
-    'guardava a frase que a Alexa disse em voz alta — «Marquei consulta no '
-    + 'dentista para 2026-09-30 às 09:30» —, e com ela títulos de eventos e '
-    + 'nomes de artigos numa SEGUNDA cópia, numa coleção que não é de saúde. '
-    + 'Um título de consulta médica acabava fora do `recusaSaude()` e de tudo '
-    + 'o que o travão da saúde defende, sem ninguém decidir isso. No reenvio a '
-    + 'frase refaz-se da linha criada: o texto vive num sítio só.'],
   ['metas', 'atual',
     'era um saldo ESCRITO (INVARIANTE #2). O que está juntado numa meta é a '
     + 'SOMA dos `meta_movimentos` — dois telefones a reforçar a mesma meta '
@@ -462,7 +353,7 @@ const REGRAS = [
   //
   // As rotas já dizem `requireAuth('membros')`, mas deixar um ponto de registo
   // aberto numa casa que o não usa é dívida à espera do dia em que o servidor
-  // for exposto — que é a decisão pendente do `docs/alexa.md`.
+  // for exposto.
   //
   // Fecha-se, não se apaga: zero linhas, `system: false`, e um `null` desfaz-se
   // numa linha se algum dia fizer falta. `null` é «só superutilizadores».
@@ -546,10 +437,10 @@ for (const c of COLECOES) {
   for (const { alvo, ...f } of c.campos) {
     campos.push({ ...f, ...(alvo ? { collectionId: await idDaColecao(alvo) } : {}) });
   }
-  // ⚠ O `type` era `'base'` escrito à mão, e a `alexa_vozes` é de AUTENTICAÇÃO
-  // (27/09/2026). Criada como base, nascia sem `tokenKey` e sem `password`, o
-  // `newAuthToken()` do hook rebentava, e a Alexa deixava de poder falar — numa
-  // casa habitada, que é a única onde este ficheiro corre.
+  // ⚠ O `type` era `'base'` escrito à mão, e uma coleção de AUTENTICAÇÃO criada
+  // assim nasce sem `tokenKey` e sem `password` (27/09/2026): o `newAuthToken()`
+  // de quem a usasse rebentava — numa casa habitada, que é a única onde este
+  // ficheiro corre.
   await pb.collections.create({
     name: c.nome, type: c.tipo || 'base', fields: campos, indexes: c.indexes || [],
     ...(c.passwordAuth ? { passwordAuth: c.passwordAuth } : {}),

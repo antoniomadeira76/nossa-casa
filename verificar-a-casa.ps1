@@ -32,7 +32,7 @@ function Codigo($url, $metodo = "GET") {
 }
 
 "=== os servicos ==="
-foreach ($s in "Cloudflared", "NossaCasaPocketBase", "NossaCasaAlexa") {
+foreach ($s in "Cloudflared", "NossaCasaPocketBase") {
   $x = Get-Service $s -ErrorAction SilentlyContinue
   Ver $s $(if ($x) { $x.Status } else { "NAO EXISTE" }) "Running"
 }
@@ -40,7 +40,6 @@ foreach ($s in "Cloudflared", "NossaCasaPocketBase", "NossaCasaAlexa") {
 "`n=== na maquina ==="
 Ver "127.0.0.1:8095/api/health" (Codigo "http://127.0.0.1:8095/api/health") 200
 Ver "127.0.0.1:8095/_/ (painel local, tem de funcionar)" (Codigo "http://127.0.0.1:8095/_/") 200
-Ver "127.0.0.1:8094/saude (o endpoint da skill)" (Codigo "http://127.0.0.1:8094/saude") 200
 
 # !! O TUNEL CONFERE-SE AQUI, e nao la fora.
 #
@@ -83,15 +82,6 @@ if ($filtro) {
 Ver "casa.anossacasa.app/api/health" (Codigo "https://casa.anossacasa.app/api/health") 200
 Ver "casa.anossacasa.app/_/ (tem de ser 404)" (Codigo "https://casa.anossacasa.app/_/") 404
 Ver "superusers auth (tem de ser 404)" (Codigo "https://casa.anossacasa.app/api/collections/_superusers/auth-with-password" "POST") 404
-Ver "POST /api/alexa/artigo (tem de ser 401)" (Codigo "https://casa.anossacasa.app/api/alexa/artigo" "POST") 401
-
-# O endpoint da skill nao e o PocketBase - e o servico Node na 8094. Estas duas
-# linhas provam as DUAS coisas de uma vez: que a regra do tunel manda para la
-# (um 404 aqui seria a regra em falta, e um 401 seria o PocketBase a atender),
-# e que ele recusa um pedido sem assinatura. Os codigos sao dele e de mais
-# ninguem: 400 "faltam os cabecalhos da assinatura", 405 "so POST".
-Ver "POST /alexa/skill sem assinatura (tem de ser 400)" (Codigo "https://casa.anossacasa.app/alexa/skill" "POST") 400
-Ver "GET /alexa/skill (tem de ser 405)" (Codigo "https://casa.anossacasa.app/alexa/skill") 405
 
 "`n=== a saude NAO sai ==="
 foreach ($c in "episodios_saude", "notas_saude", "receitas_saude", "anexos", "alergias_saude", "tomas_saude") {
@@ -118,13 +108,6 @@ try {
   $ap = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\NossaCasaPocketBase\Parameters").AppParameters
   Ver "o servico aponta ao pb_data desta casa" $($ap -match [regex]::Escape("--dir `"$raiz\pb_data`"")) "True"
 } catch { Ver "o servico aponta ao pb_data desta casa" "nao li o registo" "True" }
-
-# O mesmo risco, no servico da skill: sem as aspas, o NSSM parte o caminho no
-# espaco de "Nossa Casa" e o node arranca com um ficheiro que nao existe.
-try {
-  $aa = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\NossaCasaAlexa\Parameters").AppParameters
-  Ver "o servico da skill aponta ao guiao desta casa" $($aa -eq "`"$raiz\alexa\servidor-da-skill.mjs`"") "True"
-} catch { Ver "o servico da skill aponta ao guiao desta casa" "nao li o registo" "True" }
 
 $db = "$raiz\pb_data\data.db"
 if (Test-Path $db) {

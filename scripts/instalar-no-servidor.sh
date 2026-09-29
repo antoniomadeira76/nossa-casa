@@ -135,8 +135,8 @@ Falta, e é do documento `docs/mudar-de-maquina.md`, por esta ordem:
   4. copiar o pb_data      — a pasta inteira; ela É a base de dados
      e os hooks:  db/pocketbase/pb_hooks  e  db/pocketbase/pb_migrations
   5. copiar as credenciais do túnel para /opt/nossa-casa/.cloudflared
-     ⚠ e REVER o config.yml: a regra de /alexa/skill aponta para a 8094, e o
-       serviço da Alexa está em espera
+     ⚠ e REVER o config.yml antes de o copiar: uma regra que aponte para uma
+       porta sem nada atrás dá 502 a quem lá bater
   6. systemctl enable --now nossa-casa
      systemctl enable --now cloudflared
 

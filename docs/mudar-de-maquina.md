@@ -10,8 +10,7 @@
 ⚠ **O túnel vai com a casa, e mais nada muda lá fora.**
 
 Seria natural pensar que mudar de máquina obriga a mexer no DNS, nos URIs
-autorizados da Google e nos dois endereços do Account Linking da Amazon. **Não
-obriga** — desde que o `cloudflared` passe a correr na máquina nova com as
+autorizados da consola da Google. **Não obriga** — desde que o `cloudflared` passe a correr na máquina nova com as
 mesmas credenciais do túnel.
 
 Um túnel da Cloudflare não é um endereço: é uma ligação de saída. O
@@ -25,7 +24,6 @@ O que isso poupa:
 |---|---|
 | DNS na Cloudflare | **não muda** |
 | URIs autorizados na consola da Google | **não mudam** |
-| Account Linking na consola da Amazon | **não muda** |
 | Certificado TLS | **não há** — é da Cloudflare, como hoje |
 | Portas abertas na VPS | **nenhuma** — nem 80, nem 443, nem 8095 |
 
@@ -68,9 +66,8 @@ decididos.** Ficam, ou saem? Se ficarem, viajam para a máquina alugada dentro d
 
 - [ ] Perguntar ao fornecedor, por escrito: **em que país fica a máquina** e se
       dão **contrato de subcontratação (artigo 28.º)**. Guardar a resposta.
-- [ ] Resolver os caminhos de saúde por travar (ver `docs/alexa.md` e o commit
-      `d9d439a`; falta a fila, o apagamento, o `registo`, o `ler.saude()` e o
-      `/api/casa/limpar`).
+- [ ] Resolver os caminhos de saúde por travar (commit `d9d439a`; falta a fila,
+      o apagamento, o `registo`, o `ler.saude()` e o `/api/casa/limpar`).
 - [ ] Decidir o que fazer aos 22 registos clínicos que já estão no servidor.
 - [ ] Ter uma cópia do `pb_data` **fora** das duas máquinas.
 
@@ -104,7 +101,6 @@ janela em que o túnel entrega pedidos a um servidor que já morreu.
 ```powershell
 Stop-Service Cloudflared
 Stop-Service NossaCasaPocketBase
-Stop-Service NossaCasaAlexa      # se ainda existir; a Alexa está em espera
 ```
 
 ### 4. Copiar o `pb_data` inteiro
@@ -117,8 +113,7 @@ scp -r "C:/Users/amadeira/Claude/Projects/Nossa Casa/pb_data" casa@<a-maquina>:/
 ```
 
 Leva com ela: a casa, os membros, as credenciais da Google (que vivem numa
-coleção, não no `.env.local`), as da Alexa, e a pasta `storage` com as
-fotografias.
+coleção, não no `.env.local`) e a pasta `storage` com as fotografias.
 
 ### 5. Levar o túnel
 
@@ -127,10 +122,8 @@ scp C:/Users/amadeira/.cloudflared/458b213d-*.json  casa@<a-maquina>:/opt/nossa-
 scp C:/Users/amadeira/.cloudflared/config.yml        casa@<a-maquina>:/opt/nossa-casa/.cloudflared/
 ```
 
-⚠ **O `config.yml` tem de ser revisto**, não copiado às cegas: hoje tem a regra
-`^/alexa/skill → 127.0.0.1:8094`, e o serviço da Alexa está em espera. Ou se
-leva também, ou se tira a regra — uma regra que aponta para uma porta sem nada
-atrás dá 502 a quem lá bater.
+⚠ **O `config.yml` tem de ser revisto**, não copiado às cegas: uma regra que
+aponte para uma porta sem nada atrás dá 502 a quem lá bater.
 
 ### 6. Arrancar, e medir antes de acreditar
 
@@ -162,7 +155,7 @@ CASA_URL_PUBLICA=https://casa.anossacasa.app
 
 ### 8. O que fica para trás
 
-- Os serviços do Windows (`NossaCasaPocketBase`, `NossaCasaAlexa`, `Cloudflared`)
+- Os serviços do Windows (`NossaCasaPocketBase` e `Cloudflared`)
   deixam de fazer sentido — remover com o NSSM depois de a casa nova estar
   provada, e **não antes**.
 - O `pb_data` da máquina antiga **não se apaga**: é a cópia de segurança que

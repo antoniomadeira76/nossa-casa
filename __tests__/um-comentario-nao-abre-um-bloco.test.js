@@ -15,10 +15,9 @@
  * comentário de linha: vê a abertura, e apaga tudo até ao fecho seguinte, que
  * pode estar cem linhas abaixo.
  *
- * O sintoma foi o guarda `a-voz-so-escreve` a jurar que
- * `db/pocketbase/pb_hooks/alexa-conta-comum.js` não continha a linha que cunha
- * o token da voz — e a linha estava lá, na 270, a olhar para mim. O ficheiro
- * chegava ao `toContain` com o meio comido.
+ * O sintoma foi um guarda a jurar que um hook não continha uma linha que estava
+ * lá, na 270, a olhar para mim. O ficheiro chegava ao `toContain` com o meio
+ * comido.
  *
  * ⚠ E o perigoso é o contrário disto. Ali o guarda ficou vermelho e apanhei-o.
  * Um guarda que procure o que NÃO pode estar lá — e há muitos nesta casa — fica
@@ -43,7 +42,7 @@ const RAIZ = path.join(__dirname, '..');
 const ABRE = '/' + '*';
 const FECHA = '*' + '/';
 
-const PASTAS = ['src', 'db', 'alexa', 'scripts', '__tests__'];
+const PASTAS = ['src', 'db', 'scripts', '__tests__'];
 const EXTENSOES = /\.(js|jsx|mjs|cjs)$/;
 
 // ── Os que PODEM citar a sequência, com a razão escrita ──────────────────────
@@ -51,7 +50,7 @@ const EXTENSOES = /\.(js|jsx|mjs|cjs)$/;
 // Três ficheiros têm de a escrever: são os que explicam a armadilha. Estão aqui
 // por nome — e o que os torna seguros não é serem perdoados, é serem ficheiros
 // de PROVA: nenhum guarda desta casa lê `__tests__/` como texto. O que tem de
-// ficar limpo é o que os guardas leem — `src/`, `db/` e `alexa/` —, e daí não se
+// ficar limpo é o que os guardas leem — `src/` e `db/` —, e daí não se
 // perdoa nada.
 //
 // Uma lista com razões, e não uma excepção calada: um ficheiro novo com o mesmo
@@ -119,7 +118,7 @@ describe('um comentário não abre um bloco', () => {
 
   it('varre a casa toda — e um guarda que não lê nada passa sempre', () => {
     expect(todos.length).toBeGreaterThan(150);
-    expect(todos).toContain('db/pocketbase/pb_hooks/alexa-conta-comum.js');
+    expect(todos).toContain('db/pocketbase/pb_hooks/limpar-casa.pb.js');
     expect(todos).toContain('src/store.jsx');
   });
 
