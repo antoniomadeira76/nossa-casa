@@ -44,7 +44,7 @@
 // porque é que não se faz: «mudar a app para agradar à prova é ao contrário. A
 // prova é que se adapta.» As provas resolvem-no com um `registerHooks`.
 import * as servidor from './pocketbase';
-import { eEnderecoDeCasa, PORQUE_NAO_SOBE } from './endereco';
+import { A_SAUDE_SOBE, eEnderecoDeCasa, PORQUE_NAO_SOBE } from './endereco';
 // A regra do titulo neutro de um evento de saude, partilhada com a agenda da
 // Google. Puro, sem `react-native` nem SDK: as provas carregam-no em Node.
 import { tituloLaFora } from './evento-de-saude';
@@ -1920,7 +1920,12 @@ export const esvaziar = () => servidor.escrever.esvaziar();
 // A REGRA vive em `src/endereco.js`, pura e sem importar nada — é a única
 // forma de a provar sem arrastar o SDK do PocketBase, que é ESM e que o jest
 // desta app não transforma. Aqui fica só a ligação dela ao servidor real.
-export const saudeSincroniza = () => ligado() && eEnderecoDeCasa(servidor.enderecoDoServidor());
+// ⚠ Lê a DECISÃO, não o endereço. Era
+// `ligado() && eEnderecoDeCasa(servidor.enderecoDoServidor())` até 30/09/2026,
+// e o cabeçalho do `src/endereco.js` conta porquê: a pergunta deixou de ser
+// «este servidor está em casa?» — uma medição — e passou a ser «esta casa
+// guarda saúde no servidor?», que é uma escolha, e uma escolha escreve-se.
+export const saudeSincroniza = () => ligado() && A_SAUDE_SOBE;
 
 
 // ─── Guarda ──────────────────────────────────────────────────────────────────

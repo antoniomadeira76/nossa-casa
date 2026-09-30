@@ -134,26 +134,53 @@ await prova('⚠ e o telemóvel do LÉO não recebe nenhum', async () => {
 });
 
 // ── 4. Fora de casa, não sobe ────────────────────────────────────────────────
-console.log('\n── e para um servidor fora de casa não sobe nada ──');
+console.log('\n── e para um servidor fora de casa sobe na mesma ──');
 
-await prova('o travão da conformidade recusa antes de tocar no ficheiro', async () => {
-  configurar({ url: 'https://nossa-casa.exemplo.com' });
+await prova('⚠ o anexo SOBE de um endereço fora de casa — com a fotografia', async () => {
+  // ⚠ INVERTIDA EM 30/09/2026. Esta prova defendia que o travão recusava antes
+  // de tocar no ficheiro. A casa mudou-se para uma máquina alugada e o dono
+  // decidiu que a saúde sobe na mesma — o cabeçalho do `src/endereco.js` tem a
+  // decisão, a data e o custo.
+  //
+  // O anexo é o mais sensível de todos: leva a FOTOGRAFIA do exame. Por isso é
+  // também o que mais interessa ver chegar, e o defeito que agora se apanha é
+  // ele deixar de chegar.
+  //
+  // ⚠ E o endereço é o `localtest.me`, que resolve para 127.0.0.1 e não conta
+  // como de casa. A versão anterior usava `nossa-casa.exemplo.com`, que não
+  // existe: servia para provar uma RECUSA, mas não serve para provar uma
+  // SUBIDA — nada subiria de qualquer maneira, e a prova ficaria verde por
+  // engano.
+  const foraDeCasa = URL.replace('127.0.0.1', 'localtest.me');
+  const quantos = async () => (await admin.collection('anexos')
+    .getList(1, 1, { filter: `casa = "${casa.id}"` })).totalItems;
+  const antes = await quantos();
+
+  configurar({ url: foraDeCasa });
+  // ⚠ Reautenticar. Mudar de endereço reconstrói o cliente e PERDE a sessão —
+  // e sem sessão a regra da coleção recusa com um «Failed to create record»
+  // que se lê como «o travão segurou», e não é. Já me enganou uma vez, na
+  // `provar-a-fila-nao-leva-saude.mjs`. A app faz o mesmo: tem sessão contra o
+  // servidor com que estiver a falar.
+  await auth.entrarAdulto('rita@x.pt', 'palavra-longa-1');
+
   let mensagem = null;
   try {
     await anexoDeSaude({
-      casa: casa.id, episodio, tipo: 'Exame', titulo: 'Não devia subir',
+      casa: casa.id, episodio, tipo: 'Exame', titulo: 'sobe de fora',
       blob: new Blob([PNG_1x1], { type: 'image/png' }), nome: 'x.png', mime: 'image/png' });
   } catch (e) { mensagem = e.message; }
   configurar({ url: URL });
 
-  // ⚠ A MENSAGEM, e não só «rebentou». Esta prova usava um `recusado()`, que
-  // passa com qualquer erro — e sem travão haveria um erro de rede de qualquer
-  // modo, porque o endereço não existe. Passava com o travão e sem ele: não
-  // distinguia recusa de falha, que é a única coisa que aqui interessa.
-  if (!mensagem) throw new Error('PASSOU — devia ter sido recusado');
-  if (!/cinco pontos de conformidade/.test(mensagem)) {
-    throw new Error('rebentou por outra razão, não pelo travão: ' + mensagem);
+  if (mensagem && /cinco pontos de conformidade/.test(mensagem)) {
+    throw new Error('o travão recusou, e já não devia: ' + mensagem);
   }
+  if (mensagem) throw new Error('rebentou: ' + mensagem);
+
+  // ⚠ A CONTAGEM, e não só «não rebentou». Um anexo que não chegue ao servidor
+  // também não rebenta — fica na fila, calado.
+  const depois = await quantos();
+  if (depois !== antes + 1) throw new Error(`o anexo não chegou: ${antes} -> ${depois}`);
 });
 
 await unlink(caminho).catch(() => {});

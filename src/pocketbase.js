@@ -35,7 +35,7 @@ import { terminaSessao } from './sessao.js';
 // ⚠ Com extensão, pela mesma razão de cima. Os dois são PUROS — não importam o
 // `react-native` nem o SDK —, e é isso que permite ao travão da saúde viver dos
 // dois lados da fila: aqui, no envio, e no `sync.js`, na entrada.
-import { eEnderecoDeCasa, PORQUE_NAO_SOBE } from './endereco.js';
+import { A_SAUDE_SOBE, PORQUE_NAO_SOBE } from './endereco.js';
 import { eColecaoDeSaude } from './colecoes-de-saude.js';
 
 // O armazenamento é injetável para este módulo poder ser exercitado fora do
@@ -970,7 +970,7 @@ export const ler = {
     // ⚠ O mesmo vazio do resto da função, e não uma excepção: «não escondido,
     // ausente» é o que a §5 pede, e uma excepção aqui mudaria a forma da
     // resposta só neste caso.
-    if (!eEnderecoDeCasa(URL)) {
+    if (!A_SAUDE_SOBE) {
       return { episodios: [], anexos: [], notas: [], receitas: [], decisoes: [], tomas: [], alergias: [] };
     }
 
@@ -1375,7 +1375,7 @@ export const escrever = {
       // o critério das `recusadas` escrito em cima. A consulta continua no
       // dispositivo — o que se abandona é a subida, e quem chamou fica a saber
       // porquê em vez de ver um número de pendentes a subir.
-      if (eColecaoDeSaude(w.colecao) && !eEnderecoDeCasa(URL)) {
+      if (eColecaoDeSaude(w.colecao) && !A_SAUDE_SOBE) {
         recusadas.push({
           op: w.op, colecao: w.colecao, estado: 0, mensagem: PORQUE_NAO_SOBE, campos: null,
         });

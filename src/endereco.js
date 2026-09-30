@@ -1,36 +1,68 @@
 // Onde é que a saúde pode ir.
 //
-// ── Porquê um ficheiro só para isto ──────────────────────────────────────────
+// ── A DECISÃO EM VIGOR (30/09/2026) ─────────────────────────────────────────
 //
-// Porque é uma REGRA, e uma regra que só se verifica a olho não é uma regra —
-// é uma esperança. Igual ao `podeVerSaude` da loja: pura, sem importar nada, e
-// portanto provável sem React, sem servidor e sem o SDK do PocketBase.
+// **A saúde sobe para o servidor da casa, seja ele onde for** — incluindo uma
+// máquina alugada. Decisão do dono da casa, tomada com o custo à frente e
+// depois de eu o ter levantado duas vezes.
 //
-// A primeira versão vivia dentro do `src/sync.js`. As provas não conseguiam
-// chegar-lhe: importar o `sync` arrasta o `pocketbase`, que é ESM, e o jest
-// desta app não o transforma. Uma regra que não se consegue provar por estar
-// no ficheiro errado é o ficheiro errado.
+// O que ele disse, e fica escrito porque é a razão e não um detalhe: «o RGPD é
+// preocupação minha». É a casa dele, os filhos dele e a responsabilidade dele.
 //
-// ── A decisão que ela codifica ───────────────────────────────────────────────
+// ── O que isto substituiu, e porque é que a substituição foi precisa ────────
 //
-// O travão da saúde era um «não» inteiro. Passou a ser uma condição, porque a
-// decisão do dono da casa foi condicional: «o servidor fica na minha máquina
-// por agora» (03/09/2026).
+// De 03/09 a 29/09/2026 a regra foi outra: a saúde subia **só para um servidor
+// que vivesse dentro de casa**, e isso decidia-se olhando para o ENDEREÇO —
+// `127.0.0.1` era casa, um nome na internet não era.
 //
-// Enquanto o servidor vive na casa, os cinco pontos de conformidade do
-// db/postgres/README.md colapsam: não há subcontratante para contratar, não há
-// política a publicar para titulares que não existem fora do lar, e o RGPD tem
-// uma exclusão para actividade puramente pessoal ou doméstica. Não é uma
-// manobra — é o âmbito do regulamento.
+// Essa regra fez o seu trabalho. Foi ela que obrigou a voltar a esta conversa
+// no dia em que o servidor mudou de sítio, que é exactamente o que o comentário
+// dela prometia. E foi a medir o que ela faria no servidor alugado que se viu o
+// preço: as histórias de aceitação da medicação e da ficha de emergência
+// falhavam, porque o outro adulto deixava de ver a receita e a alergia.
 //
-// ⚠ «Por agora» quer dizer que isto muda. Se a condição vivesse numa nota, o
-// dia em que o servidor fosse para a internet passaria sem ninguém voltar a
-// esta conversa, e a saúde continuaria a subir. Aqui, deixa de subir sozinha.
+// ⚠ Mantê-la teria sido pior do que mudá-la em silêncio: a app deixaria de
+// sincronizar a saúde no dia da mudança, sem ninguém pedir isso, e o código
+// continuaria a prometer uma coisa enquanto a casa vivia outra.
+//
+// ── Porque é que é uma CONSTANTE e não o endereço ───────────────────────────
+//
+// Porque a pergunta deixou de ser técnica. «Este servidor está em casa?» era
+// uma medição; «esta casa guarda saúde no servidor?» é uma escolha — e uma
+// escolha escreve-se, não se infere.
+//
+// Escrita aqui, num sítio só, ela é lida pelos SEIS caminhos por onde a saúde
+// pode sair deste dispositivo (ver
+// `__tests__/o-travao-da-saude-em-todo-o-lado.test.js`). Inverter a decisão é
+// mudar esta linha: os seis obedecem, e nenhum fica para trás.
+//
+// E é uma constante do CÓDIGO, não uma variável de ambiente. Uma variável de
+// ambiente é configuração por máquina, e foi assim que a regra antiga se tornou
+// mentira sem ninguém reparar — o endereço mudou, e ninguém voltou ao texto.
+// Uma constante aparece no `diff`, com data e razão.
+export const A_SAUDE_SOBE = true;
 
-// O que conta como «de casa»: o próprio dispositivo, a rede local, ou um nome
-// mDNS que só existe nela. Um nome que não acabe em `.local` é a internet, e a
-// dúvida resolve-se sempre para o lado de NÃO subir.
-// O anfitrião de um endereço, sem `new URL`.
+// A frase que se mostra quando não sobe. Fica, porque a decisão pode voltar
+// atrás numa linha — e nesse dia a app tem de saber explicar-se.
+export const PORQUE_NAO_SOBE =
+  'A saúde não sai deste dispositivo para um servidor fora de casa: cinco '
+  + 'pontos de conformidade por resolver (db/postgres/README.md). São dados '
+  + 'clínicos de menores.';
+
+// ── O que conta como «de casa» ──────────────────────────────────────────────
+//
+// ⚠ Isto JÁ NÃO DECIDE se a saúde sobe — a constante acima é que decide, desde
+// 30/09/2026. Continua aqui por duas razões, e nenhuma é sentimental:
+//
+//  1. É a implementação da decisão anterior, provada por seis provas em
+//     `db/pocketbase/provar-saude-sobe.mjs`. Se a decisão voltar atrás, volta
+//     inteira e medida, em vez de ser reescrita de memória.
+//  2. Diz, em código, o que «dentro de casa» quer dizer nesta casa — que é a
+//     pergunta que se voltará a fazer no dia em que alguém reabrir o assunto.
+//
+// O próprio dispositivo, a rede local, ou um nome mDNS que só existe nela. Um
+// nome que não acabe em `.local` é a internet, e a dúvida resolve-se sempre
+// para o lado de NÃO.
 //
 // ⚠ E é uma correção, não uma preferência. A primeira versão usava
 // `new URL(url).hostname`, e o React Native não tem um `URL` completo — no
@@ -70,8 +102,3 @@ export const eEnderecoDeCasa = (url) => {
   if (a === 169 && b === 254) return true;                   // ligação local
   return false;
 };
-
-export const PORQUE_NAO_SOBE =
-  'A saúde não sai deste dispositivo para um servidor fora de casa: cinco '
-  + 'pontos de conformidade por resolver (db/postgres/README.md). São dados '
-  + 'clínicos de menores.';

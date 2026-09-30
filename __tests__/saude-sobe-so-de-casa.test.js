@@ -84,8 +84,18 @@ describe('⚠ e o que NÃO conta, mesmo parecendo', () => {
 });
 
 describe('⚠ o travão existe, e chama a regra em vez de a repetir', () => {
-  it('o `saudeSincroniza` exige ligação E endereço de casa', () => {
-    expect(sync).toMatch(/export const saudeSincroniza = \(\) =>\s*ligado\(\) && eEnderecoDeCasa\(servidor\.enderecoDoServidor\(\)\)/);
+  it('⚠ o `saudeSincroniza` exige ligação E a DECISÃO — já não o endereço', () => {
+    // ⚠ Mudou em 30/09/2026, e o cabeçalho do `src/endereco.js` tem a história.
+    // Em duas linhas: a casa mudou-se para uma máquina alugada e o dono decidiu
+    // que a saúde sobe na mesma. A pergunta deixou de ser técnica — «este
+    // servidor está em casa?» era uma medição — e passou a ser uma escolha,
+    // escrita numa constante que os seis caminhos leem.
+    //
+    // A `ligação` fica, e é outra coisa: sem servidor não há para onde subir.
+    expect(sync).toMatch(/export const saudeSincroniza = \(\) => ligado\(\) && A_SAUDE_SOBE;/);
+    // E a decisão vive num sítio só.
+    const endereco = ler('src/endereco.js');
+    expect(endereco).toMatch(/export const A_SAUDE_SOBE = (true|false);/);
   });
 
   it('e o `recusaSaude` pergunta-lhe, para TODAS as coleções de saúde', () => {

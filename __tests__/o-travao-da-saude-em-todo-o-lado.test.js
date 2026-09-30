@@ -128,7 +128,11 @@ describe('o travão da saúde é perguntado em todo o lado', () => {
     expect(i).toBeGreaterThan(0);
     const corpo = pb.slice(i, pb.indexOf('\n  },', i));
     expect(corpo).toMatch(/eColecaoDeSaude\(/);
-    expect(corpo).toMatch(/eEnderecoDeCasa\(/);
+    // ⚠ `A_SAUDE_SOBE` e já não `eEnderecoDeCasa`: desde 30/09/2026 a decisão é
+    // declarada em vez de inferida do endereço. A MÁQUINA é a mesma — a fila
+    // continua a perguntar à saída — e é ela que faz a decisão ser reversível
+    // numa linha, com os seis caminhos a obedecer.
+    expect(corpo).toMatch(/A_SAUDE_SOBE/);
     // E a decisão é tomada ANTES de a escrita ser tentada.
     expect(corpo.indexOf('eColecaoDeSaude(')).toBeLessThan(corpo.indexOf('.create('));
   });
@@ -138,9 +142,9 @@ describe('o travão da saúde é perguntado em todo o lado', () => {
     const i = pb.indexOf('async saude(membroId)');
     expect(i).toBeGreaterThan(0);
     const corpo = pb.slice(i, i + 1400);
-    expect(corpo).toMatch(/eEnderecoDeCasa\(/);
+    expect(corpo).toMatch(/A_SAUDE_SOBE/);
     // Antes de ir buscar o que quer que seja.
-    expect(corpo.indexOf('eEnderecoDeCasa(')).toBeLessThan(corpo.indexOf('getFullList'));
+    expect(corpo.indexOf('A_SAUDE_SOBE')).toBeLessThan(corpo.indexOf('getFullList'));
   });
 
   it('⚠ e o DIÁRIO da casa não conta a saúde quando o travão está fechado', () => {

@@ -22,6 +22,8 @@ import PocketBase from 'pocketbase';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { URL, PREFIXO, comecar, prova, igual, recusado, resumo } from './provas.mjs';
+// A decisão em vigor, lida do sítio onde ela vive.
+import { A_SAUDE_SOBE } from '../../src/endereco.js';
 const { configurar, auth } = await import('../../src/pocketbase.js');
 const { episodioDeSaude, saudeSincroniza, recusaSaude, eEnderecoDeCasa,
         NUNCA_SINCRONIZA, pendentes, esvaziar } = await import('../../src/sync.js');
@@ -50,26 +52,56 @@ const tomas = await mk('tomas', 'adulto', { email: 'tomas@x.pt', password: 'pala
 const leo = await mk('leo', 'crianca', { password: '1357', passwordConfirm: '1357' });
 
 // ── 1. O travão, antes de qualquer coisa ─────────────────────────────────────
-console.log('\n── o travão decide pelo ENDEREÇO, não pela intenção ──');
+//
+// ⚠ ESTA SECÇÃO MUDOU DE SENTIDO EM 30/09/2026, e o cabeçalho do
+// `src/endereco.js` conta a história inteira. Em duas linhas: o travão decidia
+// pelo ENDEREÇO — `127.0.0.1` era casa, um nome na internet não era — e a casa
+// mudou-se para uma máquina alugada. O dono da casa decidiu que a saúde sobe na
+// mesma, e que o RGPD é preocupação dele.
+//
+// A decisão passou a ser uma CONSTANTE declarada, `A_SAUDE_SOBE`, porque a
+// pergunta deixou de ser técnica: «este servidor está em casa?» era uma
+// medição; «esta casa guarda saúde no servidor?» é uma escolha.
+//
+// O que estas provas defendem é agora o CONTRÁRIO do que defendiam, e é de
+// propósito: o defeito que interessa apanhar passou a ser a saúde DEIXAR de
+// subir no dia da mudança, sem ninguém pedir isso.
+console.log('\n── o travão lê a DECISÃO, não o endereço ──');
 
-await prova('com o servidor FORA de casa, a saúde não sobe', async () => {
-  configurar({ storage, url: 'https://nossa-casa.exemplo.com' });
-  igual(saudeSincroniza(), false);
-  await recusado(() => episodioDeSaude({
-    casa: casa.id, membro: leo.id, especialidade: 'Dentista', dia: '2026-09-20' }));
+await prova('⚠ com o servidor fora de casa, a saúde SOBE na mesma', async () => {
+  // Era o contrário até 29/09/2026. É isto que tem de continuar a acontecer
+  // quando a casa viver na máquina alugada.
+  configurar({ storage, url: URL.replace('127.0.0.1', 'localtest.me') });
+  igual(eEnderecoDeCasa('http://localtest.me:8095'), false, 'o endereço devia contar como de fora');
+  igual(saudeSincroniza(), true, 'a saúde deixou de subir fora de casa');
 });
 
-await prova('e sem servidor nenhum também não', async () => {
-  configurar({ storage, url: undefined });
+await prova('mas sem servidor nenhum não sobe — que é outra coisa', async () => {
+  // Isto não é o travão: é não haver para onde. A app corre local como sempre
+  // correu, e a distinção importa — uma confundia-se com a outra se o
+  // `saudeSincroniza` só olhasse para a decisão.
+  //
+  // ⚠ `url: ''` e NÃO `url: undefined`. O `configurar` só troca o endereço
+  // quando ele é diferente de `undefined` — passar `undefined` não limpa nada,
+  // deixa o anterior. A versão antiga desta prova passava por esse acaso: o
+  // teste antes dela punha um endereço da internet, e era ESSE que a fazia
+  // dizer «não». Media o endereço de outro teste, não a ausência de servidor.
+  configurar({ storage, url: '' });
   igual(saudeSincroniza(), false);
   await recusado(() => recusaSaude('episodios_saude'));
 });
 
-await prova('com o servidor em casa, sobe', () => {
+await prova('e a decisão vem do `A_SAUDE_SOBE`, não do endereço', () => {
+  // ⚠ Um guarda que não lesse nada passava sempre. Este confirma que a
+  // constante É lida: posta a `false`, o `saudeSincroniza` tem de dizer que
+  // não, esteja o servidor onde estiver.
+  //
+  // ⚠ E NÃO se afirma nada sobre o endereço desta bateria. Ela corre contra
+  // `127.0.0.1` de um lado e contra `localtest.me` do outro — é assim que se
+  // mede o servidor alugado sem ter a máquina —, e uma prova que fixasse o
+  // endereço só passaria numa das duas.
   configurar({ storage, url: URL });
-  // A casa de provas corre em 127.0.0.1, que é o caso de casa.
-  igual(eEnderecoDeCasa(URL), true, URL);
-  igual(saudeSincroniza(), true);
+  igual(saudeSincroniza(), A_SAUDE_SOBE, 'o travão não segue a decisão');
 });
 
 // ── 2. O caminho todo ────────────────────────────────────────────────────────

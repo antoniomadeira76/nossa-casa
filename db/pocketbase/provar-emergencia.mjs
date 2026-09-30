@@ -104,14 +104,30 @@ await prova('⚠ uma adulta de outra casa não escreve nem lê alergias desta', 
   await recusado(() => cVizinha.collection('alergias_saude').create({ casa: outra.id, membro: leo.id, nome: 'Ovo' }));
 });
 
-await prova('⚠ e para um servidor FORA de casa a alergia não sobe — o travão é o das consultas', async () => {
-  configurar({ url: 'https://nossa-casa.exemplo.com' });
+await prova('⚠ e para um servidor FORA de casa a alergia SOBE na mesma', async () => {
+  // ⚠ INVERTIDA EM 30/09/2026. Esta prova defendia que a saúde NÃO subia para
+  // um servidor fora de casa. A casa mudou-se para uma máquina alugada e o dono
+  // decidiu que sobe na mesma — o cabeçalho do `src/endereco.js` tem a decisão,
+  // a data e o custo.
+  //
+  // O defeito que interessa apanhar passou a ser o contrário: a saúde DEIXAR de
+  // subir no dia da mudança, sem ninguém pedir isso.
+  //
+  // ⚠ E o endereço é o `localtest.me`, que resolve para 127.0.0.1 e não conta
+  // como de casa. A versão anterior usava `nossa-casa.exemplo.com`, que não
+  // existe: servia para provar uma recusa, mas não serve para provar uma
+  // SUBIDA — nada subiria de qualquer maneira, e a prova ficaria verde por
+  // engano.
+  const foraDeCasa = URL.replace('127.0.0.1', 'localtest.me');
+  const antes = (await admin.collection('alergias_saude').getList(1, 1, { filter: `casa = "${casa.id}"` })).totalItems;
+  configurar({ url: foraDeCasa });
   let mensagem = null;
-  try { await sync.alergiaDeSaude({ casa: casa.id, membro: leo.id, nome: 'Não devia subir' }); }
+  try { await sync.alergiaDeSaude({ casa: casa.id, membro: leo.id, nome: 'sobe de fora' }); }
   catch (e) { mensagem = e.message; }
   configurar({ url: URL });
-  if (!mensagem) throw new Error('PASSOU — devia ter sido recusado');
-  if (!/cinco pontos de conformidade/.test(mensagem)) throw new Error('rebentou por outra razão: ' + mensagem);
+  if (mensagem) throw new Error('foi recusada: ' + mensagem);
+  const depois = (await admin.collection('alergias_saude').getList(1, 1, { filter: `casa = "${casa.id}"` })).totalItems;
+  if (depois !== antes + 1) throw new Error(`a alergia não chegou ao servidor: ${antes} -> ${depois}`);
 });
 
 resumo();

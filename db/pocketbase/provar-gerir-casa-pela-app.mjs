@@ -168,13 +168,25 @@ await prova('com o servidor em casa, a saúde passa a guarda', () => {
   igual(sync.recusaSaude('despesas'), 'despesas', 'o resto passa sempre');
 });
 
-await prova('⚠ e um endereço da internet fecha-a outra vez', () => {
-  servidor.configurar({ url: 'https://nossa-casa.exemplo.com' });
-  igual(sync.saudeSincroniza(), false);
+await prova('⚠ e um endereço da internet NÃO a fecha — a decisão é que manda', () => {
+  // ⚠ INVERTIDA EM 30/09/2026. Esta prova defendia que a saúde NÃO subia para
+  // um servidor fora de casa. A casa mudou-se para uma máquina alugada e o dono
+  // decidiu que sobe na mesma — o cabeçalho do `src/endereco.js` tem a decisão,
+  // a data e o custo.
+  //
+  // O defeito que interessa apanhar passou a ser o contrário: a saúde DEIXAR de
+  // subir no dia da mudança, sem ninguém pedir isso.
+  //
+  // ⚠ E o endereço é o `localtest.me`, que resolve para 127.0.0.1 e não conta
+  // como de casa. A versão anterior usava `nossa-casa.exemplo.com`, que não
+  // existe: servia para provar uma recusa, mas não serve para provar uma
+  // SUBIDA — nada subiria de qualquer maneira, e a prova ficaria verde por
+  // engano.
+  const foraDeCasa = URL.replace('127.0.0.1', 'localtest.me');
+  servidor.configurar({ url: foraDeCasa });
+  igual(sync.saudeSincroniza(), true, 'a saúde fechou-se num endereço da internet');
   for (const c of ['episodios_saude', 'anexos']) {
-    let passou = false;
-    try { sync.recusaSaude(c); passou = true; } catch { /* como devia */ }
-    if (passou) throw new Error(`${c} passou pela guarda com o servidor na internet`);
+    try { sync.recusaSaude(c); } catch (e) { throw new Error(`${c} foi recusada: ${e.message}`); }
   }
   servidor.configurar({ url: URL });        // devolver ao que estava
 });

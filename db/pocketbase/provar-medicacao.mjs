@@ -142,14 +142,31 @@ await prova('⚠ apagar a receita leva as tomas com ela', async () => {
   igual((await admin.collection('tomas_saude').getFullList()).filter(t => t.receita === ferro).length, 0);
 });
 
-await prova('⚠ e para um servidor FORA de casa a toma não sobe — o travão é o das consultas', async () => {
-  configurar({ url: 'https://nossa-casa.exemplo.com' });
+await prova('⚠ e para um servidor FORA de casa a toma SOBE na mesma', async () => {
+  // ⚠ INVERTIDA EM 30/09/2026. Esta prova defendia que a saúde NÃO subia para
+  // um servidor fora de casa. A casa mudou-se para uma máquina alugada e o dono
+  // decidiu que sobe na mesma — o cabeçalho do `src/endereco.js` tem a decisão,
+  // a data e o custo.
+  //
+  // O defeito que interessa apanhar passou a ser o contrário: a saúde DEIXAR de
+  // subir no dia da mudança, sem ninguém pedir isso.
+  //
+  // ⚠ E o endereço é o `localtest.me`, que resolve para 127.0.0.1 e não conta
+  // como de casa. A versão anterior usava `nossa-casa.exemplo.com`, que não
+  // existe: servia para provar uma recusa, mas não serve para provar uma
+  // SUBIDA — nada subiria de qualquer maneira, e a prova ficaria verde por
+  // engano.
+  const foraDeCasa = URL.replace('127.0.0.1', 'localtest.me');
+  configurar({ url: foraDeCasa });
   let mensagem = null;
   try { await sync.tomaDeSaude({ casa: casa.id, receita: 'x', quando, por: rita.id }); }
   catch (e) { mensagem = e.message; }
   configurar({ url: URL });
-  if (!mensagem) throw new Error('PASSOU — devia ter sido recusado');
-  if (!/cinco pontos de conformidade/.test(mensagem)) throw new Error('rebentou por outra razão: ' + mensagem);
+  // ⚠ O travão não pode recusar. O servidor pode — a receita 'x' não existe —
+  // e essa recusa é outra coisa: distinguem-se pela MENSAGEM.
+  if (mensagem && /cinco pontos de conformidade/.test(mensagem)) {
+    throw new Error('o travão recusou, e já não devia: ' + mensagem);
+  }
 });
 
 resumo();
